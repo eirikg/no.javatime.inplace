@@ -1,0 +1,20 @@
+Manifest-Version: 1.0
+Require-Bundle: org.eclipse.ui,org.eclipse.core.runtime,org.eclipse.jd
+ t.core,org.eclipse.osgi.services,org.eclipse.debug.ui,org.eclipse.pde
+ .core,org.eclipse.jdt.ui,org.eclipse.jdt.launching,org.eclipse.equino
+ x.common
+Export-Package: no.javatime.inplace.bundlejobs,no.javatime.inplace.bun
+ dlejobs.events,no.javatime.inplace.bundlemanager,no.javatime.inplace.
+ bundlemanager.state,no.javatime.inplace.bundleproject,no.javatime.inp
+ lace.dependencies,no.javatime.inplace.statushandler
+Bundle-Vendor: JavaTime
+Bundle-ActivationPolicy: lazy
+Bundle-Version: 0.1.7.201403121510
+Bundle-Name: InPlace Activator Bundle Manager
+Bundle-Activator: no.javatime.inplace.InPlace
+Bundle-ManifestVersion: 2
+Import-Package: no.javatime.util.messages,no.javatime.util.messages.ex
+ ceptions, no.javatime.util.messages.views
+Bundle-SymbolicName: no.javatime.inplace;singleton:=true
+Bundle-RequiredExecutionEnvironment: JavaSE-1.7
+

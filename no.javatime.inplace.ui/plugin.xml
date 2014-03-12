@@ -1,0 +1,336 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+<!-- ================================================================================= -->
+<!-- Startup                                                                           -->
+<!-- ================================================================================= -->
+<!-- ================================================================================= -->
+<!-- Command menus                                                                     -->
+<!-- ================================================================================= -->
+      <extension
+            id="no.javatime.inplace.commands"
+            name="InPlace Commands"
+            point="org.eclipse.ui.commands">
+         <command
+               categoryId="no.javatime.inplace.command.category"
+               description="Command for maintaining dynamic commands in pop-up menus"
+               id="no.javatime.inplace.command.dynamicitems.popup"
+               name="no.javatime.inplace.command.dynamicitems.popup">
+            <commandParameter
+                  id="no.javatime.inplace.commandParameter.menuid"
+                  name="Menu id"
+                  optional="true">
+            </commandParameter>
+         </command>
+         <command
+               categoryId="no.javatime.inplace.command.category"
+               description="Command for maintaining dynamic commands in main menu"
+               id="no.javatime.inplace.command.dynamicitems.main"
+               name="no.javatime.inplace.command.dynamicitems.main">
+            <commandParameter
+                  id="no.javatime.inplace.commandParameter.menuid"
+                  name="Menu id"
+                  optional="true">
+            </commandParameter>
+         </command>
+         <command
+               categoryId="no.javatime.inplace.command.category"
+               defaultHandler="no.javatime.inplace.ui.command.handlers.DependencyHandler"
+               description="Set bundle dependencies"
+               id="no.javatime.inplace.command.dependencies"
+               name="no.javatime.inplace.command.dependencies">
+         </command>
+         <command
+               categoryId="no.javatime.inplace.command.category"
+               defaultHandler="no.javatime.inplace.ui.command.handlers.AutoDependencyHandler"
+               description="Handle external bundle operations automatically or not"
+               id="no.javatime.inplace.command.autodependency"
+               name="no.javatime.inplace.command.autodependency">
+            <state
+                  class="org.eclipse.ui.handlers.RegistryToggleState:true"
+                  id="org.eclipse.ui.commands.toggleState">
+            </state>
+         </command>
+         <command
+               categoryId="no.javatime.inplace.command.category"
+               defaultHandler="no.javatime.inplace.ui.command.handlers.UpdateClassPathOnActivateHandler"
+               description="Updates Bundle-ClassPath on Bundle Activation"
+               id="no.javatime.inplace.command.activateclasspath"
+               name="no.javatime.inplace.command.activateclasspath">
+            <state
+                  class="org.eclipse.ui.handlers.RegistryToggleState:true"
+                  id="org.eclipse.ui.commands.toggleState">
+            </state>
+         </command>
+         <command
+               categoryId="no.javatime.inplace.command.category"
+               defaultHandler="no.javatime.inplace.ui.command.handlers.EagerActivationHandler"
+               description="Set activation policy to eager on Bundle Activation"
+               id="no.javatime.inplace.command.eageractivation"
+               name="no.javatime.inplace.command.eageractivation">
+            <state
+                  class="org.eclipse.ui.handlers.RegistryToggleState:true"
+                  id="org.eclipse.ui.commands.toggleState">
+            </state>
+         </command>
+         <command
+               categoryId="no.javatime.inplace.command.category"
+               defaultHandler="no.javatime.inplace.ui.command.handlers.AutoRefreshHandler"
+               description="Refresh when bundles are updated"
+               id="no.javatime.inplace.command.autorefresh"
+               name="no.javatime.inplace.command.autorefresh">
+            <state
+                  class="org.eclipse.ui.handlers.RegistryToggleState:true"
+                  id="org.eclipse.ui.commands.toggleState">
+            </state>
+         </command>
+         <command
+               categoryId="no.javatime.inplace.command.category"
+               defaultHandler="no.javatime.inplace.ui.command.handlers.AutoUpdateHandler"
+               description="Update when projects are built"
+               id="no.javatime.inplace.command.autoupdate"
+               name="no.javatime.inplace.command.autoupdate">
+            <state
+                  class="org.eclipse.ui.handlers.RegistryToggleState:true"
+                  id="org.eclipse.ui.commands.toggleState">
+            </state>
+         </command>
+         <command
+               categoryId="no.javatime.inplace.command.category"
+               defaultHandler="no.javatime.inplace.ui.command.handlers.DeactivateOnExitHandler"
+               description="Deactivate Workspace on Exit"
+               id="no.javatime.inplace.command.deactivate"
+               name="no.javatime.inplace.command.deactivate">
+            <state
+                  class="org.eclipse.ui.handlers.RegistryToggleState:true"
+                  id="org.eclipse.ui.commands.toggleState">
+            </state>
+         </command>
+         <command
+               categoryId="no.javatime.inplace.command.category"
+               defaultHandler="no.javatime.inplace.ui.command.handlers.UIContributorsHandler"
+               description="Allow UI Contributors"
+               id="no.javatime.inplace.command.uicontributors"
+               name="no.javatime.inplace.command.uicontributors">
+            <state
+                  class="org.eclipse.ui.handlers.RegistryToggleState:true"
+                  id="org.eclipse.ui.commands.toggleState">
+            </state>
+         </command>
+         <category
+               id="no.javatime.inplace.command.category"
+               name="no.javatime.inplace.command.category">
+         </category>
+         <category
+               description="Local bundle view toolbar menu"
+               id="no.javatime.inplace.command.category.bundles"
+               name="no.javatime.inplace.command.category.bundles">
+         </category>
+         <command
+               categoryId="no.javatime.inplace.command.category"
+               defaultHandler="no.javatime.inplace.ui.command.handlers.NewPluginProjectHandler"
+               description="New Plug-in Wizard"
+               id="no.javatime.inplace.command.newpluginwizard"
+               name="no.javatime.inplace.command.newpluginwizard">
+         </command>
+      </extension>
+      <extension
+            id="no.javatime.inplace.menucontributions"
+            name="InPlace Menu Contributions"
+            point="org.eclipse.ui.menus">
+         <menuContribution
+               locationURI="menu:org.eclipse.ui.main.menu?after=project">
+            <menu
+                  id="no.javatime.inplace.main"
+                  label="Bundle"
+                  mnemonic="B">
+               <command
+                     commandId="no.javatime.inplace.command.newpluginwizard"
+                     icon="icons/new_prj_bundle_wizard.gif"
+                     label="New Plug-in or OSGi Bundle Project..."
+                     style="push">
+               </command>
+ <!--
+               <command
+                     commandId="org.eclipse.ui.newWizard"
+                     label="Create new Bundle"
+                     style="push">
+                  <parameter
+                        name="newWizardId"
+                        value="org.eclipse.pde.ui.NewProjectWizard">
+                  </parameter>
+               </command>
+-->
+               <dynamic
+                     class="no.javatime.inplace.ui.command.contributions.BundleMainCommandsContributionItems"
+                     id="no.javatime.inplace.command.contributions.dynamicitems.main">
+               </dynamic>
+               <separator
+                     name="no.javatime.inplace.separator.main1"
+                     visible="true">
+               </separator>
+               <menu
+                     icon="icons/classpath.gif"
+                     id="no.javatime.inplace.classpath"
+                     label="Default Output Folder">
+                  <dynamic
+                        class="no.javatime.inplace.ui.command.contributions.BundleClassPathCommandContribution"
+                        id="no.javatime.inplace.command.contributions.dynamicitems.main.classpath">
+                  </dynamic>
+                  <command
+                        commandId="no.javatime.inplace.command.activateclasspath"
+                        label="Update Bundle-ClassPath on Activate/Deactivate"
+                        style="toggle">
+                  </command>
+               </menu>
+               <command
+                     commandId="no.javatime.inplace.command.dependencies"
+                     icon="icons/dependencies.gif"
+                     label="Partial Dependencies..."
+                     style="push">
+               </command>
+               <separator
+                     name="no.javatime.inplace.separator.main2"
+                     visible="true">
+               </separator>
+               <command
+                     commandId="no.javatime.inplace.command.autorefresh"
+                     label="Refresh on Update"
+                     style="toggle">
+               </command>
+               <command
+                     commandId="no.javatime.inplace.command.autoupdate"
+                     label="Update on Build"
+                     style="toggle">
+               </command>
+               <command
+                     commandId="no.javatime.inplace.command.deactivate"
+                     label="Deactivate Workspace on Exit"
+                     style="toggle">
+               </command>
+               <command
+                     commandId="no.javatime.inplace.command.eageractivation"
+                     label="Set Activation Policy to Eager on Activate"
+                     style="toggle">
+               </command>
+               <command
+                     commandId="no.javatime.inplace.command.autodependency"
+                     label="Handle External Commands Automatically"
+                     style="toggle">
+               </command>
+               <command
+                     commandId="no.javatime.inplace.command.uicontributors"
+                     label="Allow UI Contributions using Extensions"
+                     style="toggle">
+               </command>
+            </menu>
+         </menuContribution>
+         <menuContribution
+               allPopups="true"
+               locationURI="popup:org.eclipse.jdt.ui.PackageExplorer?after=additions">
+            <menu
+                  icon="icons/gear_list_title.png"
+                  id="no.javatime.inplace.popup.packageexplorer"
+                  label="Bundle">
+               <dynamic
+                     class="no.javatime.inplace.ui.command.contributions.BundlePopUpCommandsContributionItems"
+                     id="no.javatime.inplace.command.contributions.dynamicitems.popup">
+               </dynamic>
+               <separator
+                     name="no.javatime.inplace.separator.popup.package"
+                     visible="true">
+               </separator>
+               <visibleWhen>
+                  <reference
+                        definitionId="JavaProjectSelected">
+                  </reference>
+               </visibleWhen>
+            </menu>
+         </menuContribution>
+         <menuContribution
+               allPopups="true"
+               locationURI="popup:no.javatime.inplace.ui.views.BundleView">
+            <dynamic
+                  class="no.javatime.inplace.ui.command.contributions.BundlePopUpCommandsContributionItems"
+                  id="no.javatime.inplace.command.contributions.dynamicitems.popup">
+            </dynamic>
+            <separator
+                  name="no.javatime.inplace.separator.popup"
+                  visible="true">
+            </separator>
+         </menuContribution>
+      </extension>
+      <extension
+            id="no.javatime.inplace.handlers"
+            name="InPlace Handlers"
+            point="org.eclipse.ui.handlers">
+         <handler
+               class="no.javatime.inplace.ui.command.handlers.BundlePopUpActivationHandler"
+               commandId="no.javatime.inplace.command.dynamicitems.popup">
+         </handler>
+         <handler
+               class="no.javatime.inplace.ui.command.handlers.BundleMainActivationHandler"
+               commandId="no.javatime.inplace.command.dynamicitems.main">
+         </handler>
+      </extension>
+         <extension
+         point="org.eclipse.core.expressions.definitions">
+      <definition
+            id="JavaProjectSelected">
+         <with
+               variable="activeMenuSelection">
+            <iterate>
+               <adapt
+                     type="org.eclipse.jdt.core.IJavaProject">
+               </adapt>
+            </iterate>
+         </with>
+      </definition>
+      <definition
+            id="ProjectSelected">
+         <with
+               variable="activeMenuSelection">
+            <iterate>
+               <adapt
+                     type="org.eclipse.core.resources.IProject">
+               </adapt>
+            </iterate>
+         </with>
+      </definition>
+   </extension>
+         <extension
+           point="org.eclipse.ui.views">
+		   <category
+		        id="no.javatime.category"
+		        name="InPlace">
+		    </category>
+            <view
+                  allowMultiple="false"
+                  category="no.javatime.category"
+                  class="no.javatime.inplace.ui.views.BundleView"
+                  icon="icons/gear_list_title.png"
+                  id="no.javatime.inplace.ui.views.BundleView"
+                  name="Bundle"
+                  restorable="true">
+            </view>
+         </extension>
+         <extension
+               point="org.eclipse.core.runtime.adapters">
+            <factory
+                  adaptableType="no.javatime.inplace.ui.views.BundleProperties"
+                  class="no.javatime.inplace.ui.views.BundlePropertiesAdapterFactory">
+               <adapter
+                     type="org.eclipse.ui.views.properties.IPropertySource">
+               </adapter>
+               <adapter
+                     type="org.eclipse.jdt.core.IJavaProject">
+               </adapter>
+               <adapter
+                     type="org.eclipse.core.resources.IResource">
+               </adapter>
+               <adapter
+                     type="org.eclipse.core.resources.IProject">
+               </adapter>
+            </factory>
+         </extension>
+</plugin>

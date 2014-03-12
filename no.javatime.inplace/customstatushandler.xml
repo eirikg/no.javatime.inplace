@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+         <extension
+               id="no.javatime.inplace.statushandler"
+               name="no.javatime.inplace.statushandler"
+               point="org.eclipse.ui.statusHandlers">
+            <statusHandler
+                  class="no.javatime.inplace.statushandler"
+                  id="no.javatime.inplace.statushandler">
+            </statusHandler>
+            <statusHandlerProductBinding
+                  handlerId="no.javatime.inplace.statushandler"
+                  productId="no.javatime.inplace.status">
+            </statusHandlerProductBinding>
+            <statusHandlerProductBinding
+                  handlerId="no.javatime.inplace.statushandler"
+                  productId="org.eclipse.sdk.ide">
+            </statusHandlerProductBinding>
+            <statusHandlerProductBinding
+                  handlerId="no.javatime.inplace.statushandler"
+                  productId="org.eclipse.platform.ide">
+            </statusHandlerProductBinding>
+         </extension>
+
+</plugin>

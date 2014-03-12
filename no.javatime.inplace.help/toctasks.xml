@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?NLS TYPE="org.eclipse.help.toc"?>
+
+<toc label="Tasks" link_to="toc.xml#tasks">
+ <topic href="html/tasks/Setting Bundle Options.htm" label="Setting Bundle Options">
+ </topic>
+ <topic href="html/tasks/Activate and Deactivate Bundles.htm" label="Activate and Deactivate Bundles">
+ </topic>
+ <topic href="html/tasks/Update and Refresh.htm" label="Update and Refresh Bundles">
+ </topic>
+ <topic href="html/tasks/Start and Stop Bundles.htm" label="Start and Stop Bundles">
+ </topic> 
+ <topic href="html/tasks/Project and Bundle Operations.htm" label="Project and Bundle Operations">
+ </topic>
+ <topic href="html/tasks/Resetting Bundles.htm" label="Resetting Bundles">
+ </topic>
+ <topic href="html/tasks/External Bundle operations.htm" label="External Bundle Operations">
+ </topic>
+</toc>

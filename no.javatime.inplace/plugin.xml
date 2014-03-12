@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+<!-- ================================================================================= -->
+<!-- Builders                                                                          -->
+<!-- ================================================================================= -->
+   <extension
+         id="JavaTimeBuilder"
+         name="JavaTime Builder"
+         point="org.eclipse.core.resources.builders">
+      <builder
+            callOnEmptyDelta="true"
+            hasNature="true"
+            isConfigurable="false">
+         <run
+               class="no.javatime.inplace.builder.JavaTimeBuilder">
+         </run>
+      </builder>
+   </extension>
+<!-- ================================================================================= -->
+<!-- Natures                                                                           -->
+<!-- ================================================================================= -->
+   <extension
+         id="no.javatime.inplace.builder.javatimenature"
+         name="JavaTime Nature"
+         point="org.eclipse.core.resources.natures">
+      <runtime>
+         <run
+               class="no.javatime.inplace.builder.JavaTimeNature">
+         </run>
+      </runtime>
+      <builder
+            id="no.javatime.inplace.JavaTimeBuilder">
+      </builder>
+      <requires-nature
+        	id="org.eclipse.jdt.core.javanature">
+      </requires-nature>
+      <requires-nature
+            id="org.eclipse.pde.PluginNature">
+      </requires-nature>
+   </extension>
+   <extension
+         point="org.eclipse.pde.core.bundleClasspathResolvers">
+      <resolver
+            class="no.javatime.inplace.BundleClasspathResolver"
+            nature="no.javatime.inplace.builder.javatimenature">
+      </resolver>
+   </extension>
+   <extension
+         point="org.eclipse.ui.startup">
+      <startup
+            class="no.javatime.inplace.StartUp">
+      </startup>
+   </extension>
+<!-- ================================================================================= -->
+<!-- Implented as a dynamic extension                                                  -->
+<!-- ================================================================================= -->
+<!--
+         <extension
+               id="no.javatime.inplace.statushandler"
+               name="no.javatime.inplace.statushandler"
+               point="org.eclipse.ui.statusHandlers">
+            <statusHandler
+                  class="no.javatime.inplace.statushandler"
+                  id="no.javatime.inplace.statushandler">
+            </statusHandler>
+            <statusHandlerProductBinding
+                  handlerId="no.javatime.inplace.statushandler"
+                  productId="no.javatime.inplace.activator">
+            </statusHandlerProductBinding>
+
+            <statusHandlerProductBinding
+                  handlerId="no.javatime.inplace.statushandler"
+                  productId="org.eclipse.sdk.ide">
+            </statusHandlerProductBinding>
+            <statusHandlerProductBinding
+                  handlerId="no.javatime.inplace.statushandler"
+                  productId="org.eclipse.platform.ide">
+            </statusHandlerProductBinding>
+         </extension>
+-->
+</plugin>

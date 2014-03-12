@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.2"?>
+<plugin>
+   <extension
+         point="org.eclipse.ui.views">
+      <category
+            id="no.javatime.category"
+            name="InPlace">
+      </category>
+      <view
+            category="no.javatime.category"
+            class="no.javatime.util.messages.views.MessageView"
+            icon="icons/message_view.gif"
+            id="no.javatime.util.messages.views.MessageView"
+            name="Messages">
+      </view>
+   </extension>
+   <extension
+         point="org.eclipse.ui.console.consolePageParticipants">
+      <consolePageParticipant
+            class="no.javatime.util.messages.views.BundleConsolePageParticipant"
+            id="no.javatime.util.messages.views.MessageConsolePageParticipant">
+         <enablement>
+            <instanceof
+                  value="no.javatime.util.messages.views.BundleConsole">
+            </instanceof></enablement>
+      </consolePageParticipant>
+   </extension>
+   <extension
+         point="org.eclipse.ui.console.consoleFactories">
+      <consoleFactory
+            class="no.javatime.util.messages.views.BundleConsoleFactory"
+            icon="icons/console_view.gif"
+            label="Bundle Console">
+      </consoleFactory>
+   </extension>
+</plugin>

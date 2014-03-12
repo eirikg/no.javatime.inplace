@@ -1,0 +1,17 @@
+Manifest-Version: 1.0
+Require-Bundle: org.eclipse.ui,org.eclipse.core.runtime,org.eclipse.jd
+ t.core,org.eclipse.debug.ui,org.eclipse.ui.ide,org.eclipse.jdt.ui,org
+ .eclipse.ui.navigator,org.eclipse.pde.ui
+Bundle-Vendor: JavaTime
+Bundle-ActivationPolicy: lazy
+Bundle-Version: 0.1.7.201403121511
+Bundle-Name: InPlace Activator Bundle UI
+Bundle-Activator: no.javatime.inplace.ui.Activator
+Bundle-ManifestVersion: 2
+Import-Package: no.javatime.inplace.bundlejobs,no.javatime.inplace.bun
+ dlejobs.events,no.javatime.inplace.bundlemanager,no.javatime.inplace.
+ bundleproject,no.javatime.inplace.dependencies,no.javatime.inplace.st
+ atushandler,no.javatime.util.messages,no.javatime.util.messages.views
+Bundle-SymbolicName: no.javatime.inplace.ui;singleton:=true
+Bundle-RequiredExecutionEnvironment: JavaSE-1.7
+

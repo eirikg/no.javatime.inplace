@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?NLS TYPE="org.eclipse.help.toc"?>
+
+<toc label="Getting Started" link_to="toc.xml#gettingstarted" topic="html/gettingstarted/Getting started subtopic 1.htm"> 
+ <topic href="html/gettingstarted/Basic Tutorial Activating Bundles.htm" label="Basic Tutorial">
+ </topic>
+ <topic href="html/gettingstarted/Tutorial Working with Multiple Bundles.htm" label="Multple Bundles Tutorial">
+ </topic>
+</toc>
