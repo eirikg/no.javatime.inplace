@@ -3,21 +3,17 @@ package no.javatime.inplace.ui.command.contributions;
 import java.util.ArrayList;
 import java.util.Collection;
 
+import no.javatime.inplace.bundlemanager.InPlaceException;
+import no.javatime.inplace.bundleproject.BundleProject;
+import no.javatime.inplace.bundleproject.ProjectProperties;
+import no.javatime.util.messages.Category;
+import no.javatime.util.messages.Message;
+import no.javatime.util.messages.WarnMessage;
+
 import org.eclipse.core.resources.IProject;
 import org.eclipse.jface.action.ContributionItem;
 import org.eclipse.jface.action.IContributionItem;
 import org.eclipse.ui.menus.CommandContributionItem;
-import org.eclipse.ui.statushandlers.StatusManager;
-
-import no.javatime.inplace.bundlemanager.InPlaceException;
-import no.javatime.inplace.bundleproject.BundleProject;
-import no.javatime.inplace.bundleproject.ProjectProperties;
-import no.javatime.inplace.statushandler.BundleStatus;
-import no.javatime.inplace.statushandler.IBundleStatus.StatusCode;
-import no.javatime.inplace.ui.Activator;
-import no.javatime.util.messages.Category;
-import no.javatime.util.messages.Message;
-import no.javatime.util.messages.WarnMessage;
 
 public class BundleClassPathCommandContribution extends BundleCommandsContributionItems {
 

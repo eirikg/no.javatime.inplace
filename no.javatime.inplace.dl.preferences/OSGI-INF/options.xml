@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<c:components xmlns:scr="http://www.osgi.org/xmlns/scr/v1.0.0"  
+      xmlns:c="http://www.harmanbecker.com/anaconda/components">  
+
+<scr:component name="no.javatime.inplace.dl.prefrences.intface.options.command">
+   <implementation class="no.javatime.inplace.dl.preferences.impl.CommandOptionsImpl"/>
+   <service>
+      <provide interface="no.javatime.inplace.dl.preferences.intface.CommandOptions"/>
+   </service>
+</scr:component>
+
+<scr:component name="no.javatime.inplace.dl.prefrences.intface.options.outputfolder">
+   <implementation class="no.javatime.inplace.dl.preferences.impl.ManifestOptionsImpl"/>
+   <service>
+      <provide interface="no.javatime.inplace.dl.preferences.intface.ManifestOptions"/>
+   </service>
+</scr:component>
+
+<scr:component name="no.javatime.inplace.dl.prefrences.intface.options.preferencestore">
+   <implementation class="no.javatime.inplace.dl.preferences.impl.PreferencesStoreImpl"/>
+   <service>
+      <provide interface="no.javatime.inplace.dl.preferences.intface.PreferencesStore"/>
+   </service>
+</scr:component>
+
+</c:components>  

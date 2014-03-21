@@ -32,6 +32,7 @@ import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.dependencies.BundleSorter;
 import no.javatime.inplace.dependencies.CircularReferenceException;
 import no.javatime.inplace.dependencies.ProjectSorter;
+import no.javatime.inplace.dl.preferences.intface.CommandOptions;
 import no.javatime.inplace.statushandler.BundleStatus;
 import no.javatime.inplace.statushandler.IBundleStatus;
 import no.javatime.inplace.statushandler.IBundleStatus.StatusCode;
@@ -739,7 +740,7 @@ public abstract class BundleJob extends JobStatus {
 		try {
 			BundleProject.setDevClasspath(BundleProject.getSymbolicNameFromManifest(project), BundleProject
 					.getDefaultOutputLocation(project).toString());
-			if (Category.getState(Category.updateClassPathOnActivate)) {
+			if (getPrefService().isUpdateDefaultOutPutFolder()) {
 				BundleProject.addOutputLocationToBundleClassPath(project);
 			}
 		} catch (InPlaceException e) {
@@ -1075,7 +1076,11 @@ public abstract class BundleJob extends JobStatus {
 		}
 		return duplicates;
 	}
-
+	
+	 protected CommandOptions getPrefService() {
+		 return InPlace.getDefault().getPrefService();
+	 }
+	 
 	/**
 	 * Debug for synchronizing the progress monitor. Default number of mills to sleep
 	 */

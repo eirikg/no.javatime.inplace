@@ -114,7 +114,7 @@ public abstract class NatureJob extends BundleJob {
 				if (ProjectProperties.isProjectActivated(project)) {
 					toggleNatureActivation(project, new SubProgressMonitor(monitor, 1));
 					bundleTransition.clearTransitionError(project);
-					if (Category.getState(Category.updateClassPathOnActivate)) {
+					if (getPrefService().isUpdateDefaultOutPutFolder()) {
 						BundleProject.removeOutputLocationFromClassPath(project);
 					}
 				}
@@ -153,7 +153,7 @@ public abstract class NatureJob extends BundleJob {
 					toggleNatureActivation(project, new SubProgressMonitor(monitor, 1));
 					result = resolveBundleClasspath(project);
 					Bundle bundle = bundleRegion.get(project);
-					if (Category.getState(Category.eagerActivation)) {
+					if (getPrefService().isEagerOnActivate()) {
 						try {
 							Boolean isLazy = BundleProject.getLazyActivationPolicyFromManifest(project.getProject());
 							if (isLazy) {

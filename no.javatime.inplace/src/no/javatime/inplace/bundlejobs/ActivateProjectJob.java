@@ -182,7 +182,7 @@ public class ActivateProjectJob extends NatureJob {
 			// an activate bundle job when the workspace is deactivated
 			// If Update on Build is switched off and workspace is activated, mark that these projects
 			// should be updated as part of the activation process
-			if (!Category.getState(Category.autoUpdate) && bundleRegion.isBundleWorkspaceActivated()) {
+			if (!getPrefService().isUpdateOnBuild() && bundleRegion.isBundleWorkspaceActivated()) {
 				for (IProject project : getPendingProjects()) {
 					if (ProjectProperties.isProjectActivated(project)) {
 						bundleTransition.addPending(project, Transition.UPDATE_ON_ACTIVATE);

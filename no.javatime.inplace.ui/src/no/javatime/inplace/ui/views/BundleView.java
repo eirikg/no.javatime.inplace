@@ -623,7 +623,8 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 			if (null != workbench && workbench.isClosing()) {
 				return;
 			}
-			if (!Category.getState(Category.autoUpdate) && BundleManager.getTransition().containsPending(Transition.UPDATE)) {
+			if (!Activator.getDefault().getPrefService().isUpdateOnBuild() 
+					&& BundleManager.getTransition().containsPending(Transition.UPDATE)) {
 				showProjectInfo();
 			}
 		} else if (job instanceof BundleJob) {

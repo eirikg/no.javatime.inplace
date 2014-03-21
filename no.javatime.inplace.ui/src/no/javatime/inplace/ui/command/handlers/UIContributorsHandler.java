@@ -13,29 +13,28 @@ package no.javatime.inplace.ui.command.handlers;
 import java.util.Collection;
 import java.util.Map;
 
+import no.javatime.inplace.bundlejobs.DeactivateJob;
+import no.javatime.inplace.bundlemanager.BundleManager;
+import no.javatime.inplace.bundleproject.ProjectProperties;
+import no.javatime.inplace.dependencies.CircularReferenceException;
+import no.javatime.inplace.dl.preferences.intface.CommandOptions;
+import no.javatime.inplace.statushandler.BundleStatus;
+import no.javatime.inplace.statushandler.IBundleStatus.StatusCode;
+import no.javatime.inplace.ui.Activator;
+import no.javatime.inplace.ui.msg.Msg;
+import no.javatime.util.messages.ExceptionMessage;
+
 import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.Command;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.commands.State;
 import org.eclipse.core.resources.IProject;
-import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.ICommandService;
 import org.eclipse.ui.commands.IElementUpdater;
-import org.eclipse.ui.handlers.HandlerUtil;
-import org.eclipse.ui.handlers.RegistryToggleState;
 import org.eclipse.ui.menus.UIElement;
 import org.eclipse.ui.statushandlers.StatusManager;
-
-import no.javatime.inplace.bundlejobs.DeactivateJob;
-import no.javatime.inplace.bundlemanager.BundleManager;
-import no.javatime.inplace.bundleproject.ProjectProperties;
-import no.javatime.inplace.dependencies.CircularReferenceException;
-import no.javatime.inplace.statushandler.BundleStatus;
-import no.javatime.inplace.statushandler.IBundleStatus.StatusCode;
-import no.javatime.inplace.ui.Activator;
-import no.javatime.util.messages.Category;
-import no.javatime.util.messages.ExceptionMessage;
+import org.osgi.service.prefs.BackingStoreException;
 
 /**
  * Checked menu item allowing/disallowing activating bundles with ui contributions
@@ -43,15 +42,29 @@ import no.javatime.util.messages.ExceptionMessage;
 public class UIContributorsHandler extends AbstractHandler implements IElementUpdater {
 
 	public static String commandId = "no.javatime.inplace.command.uicontributors";
+	public static String stateId = "no.javatime.inplace.command.uicontributiors.toggleState";
 
 	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
-		Boolean beforeState = HandlerUtil.toggleCommandState(event.getCommand()); 
-		Category.setState(Category.uiContributors, !beforeState);
+
+		State state = event.getCommand().getState(stateId);
+		CommandOptions cmdStore = Activator.getDefault().getPrefService();
+		// Flip state value, update state and sync state with store
+		Boolean stateVal = !(Boolean) state.getValue();
+		state.setValue(stateVal);
+		cmdStore.setIsAllowUIContributions(stateVal);
+		try {
+			cmdStore.flush();
+		} catch (BackingStoreException e) {
+			StatusManager.getManager().handle(
+					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, Msg.PREFERENCE_FLUSH_EXCEPTION, e),
+					StatusManager.LOG);
+		}
+		
 		// Deactivate all activated projects that are involved in UI contributions when
 		// UI contributions are not allowed
 		DeactivateJob deactivateJob = null;
-		if (beforeState) {
+		if (!stateVal) {
 			try {
 				Collection<IProject> uiProjects = ProjectProperties.getUIContributors();
 				deactivateJob = new DeactivateJob(DeactivateJob.deactivateJobName);
@@ -83,30 +96,28 @@ public class UIContributorsHandler extends AbstractHandler implements IElementUp
 
 	@Override
 	public void updateElement(UIElement element, @SuppressWarnings("rawtypes") Map parameters) {
-		Command command = null;
-		ICommandService commandService = (ICommandService) PlatformUI.getWorkbench().getService(
-				ICommandService.class);
-		if (commandService != null) {
-			command = commandService.getCommand(commandId);
-			if (command.isDefined()) {
-				State state = command.getState(RegistryToggleState.STATE_ID);
-				if (state != null) {
-					Boolean stateVal = ((Boolean) state.getValue());
-					Category.setState(Category.uiContributors, stateVal);
-					element.setChecked(stateVal);
-//					if (Message.isViewVisible(BundleView.ID)) {
-//						BundleView bv = BundleCommandsContributionItems.getBundleView();
-//						if (null != bv && bv.isListPageActive()) {
-//							bv.showProjects(ProjectProperties.toJavaProjects(ProjectProperties.getInstallableProjects()), true);
-//						}
-//					}
-				}
-			}
-		}
+
+		CommandOptions cmdStore = Activator.getDefault().getPrefService();
+		element.setChecked(cmdStore.isAllowUIContributions());
 	}
 
 	@Override
 	public boolean isEnabled() {
+		ICommandService service = (ICommandService) Activator.getDefault().getWorkbench().getService(ICommandService.class);
+		if (null != service) {
+			// Get stored value and synch with state. 
+			Command command = service.getCommand(commandId);
+			CommandOptions cmdStore = Activator.getDefault().getPrefService();
+			State state = command.getState(stateId);
+			Boolean stateVal = (Boolean) state.getValue();
+			Boolean storeVal = cmdStore.isAllowUIContributions();
+			// Values may be different if stored  value has been changed elsewhere (e.g. preference page)
+			// If different update checked menu element before the menu becomes visible by broadcasting the change 
+			if (!stateVal.equals(storeVal)) {
+				state.setValue(storeVal);
+				service.refreshElements(command.getId(), null);
+			}
+		}
 		return true;
 	}
 

@@ -159,7 +159,7 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 
 		// Activated project is imported, opened or has new requirements on UI plug-in(s), when UI plug-ins are
 		// not allowed
-		if (!Category.getState(Category.uiContributors)
+		if (!InPlace.getDefault().getPrefService().isAllowUIContributions()
 				&& ProjectProperties.getUIContributors().contains(project)) {
 			if (null == bundle) {
 				bundleCommand.registerBundleProject(project, bundle, null != bundle ? true : false);
@@ -256,7 +256,7 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 			cycle = true;
 		}
 		String msg = null;
-		if (Category.getState(Category.autoUpdate)) {
+		if (InPlace.getDefault().getPrefService().isUpdateOnBuild()) {
 			msg = WarnMessage.getInstance().formatString("build_error_in_project_to_update", project.getName());
 		} else {
 			msg = WarnMessage.getInstance().formatString("build_error_in_project", project.getName());

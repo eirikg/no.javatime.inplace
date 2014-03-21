@@ -146,7 +146,7 @@ class BundleEventManager implements FrameworkListener, SynchronousBundleListener
 		}
 		Command autoBuildCmd = commandEvent.getCommand();
 		if (autoBuildCmd.isDefined() && !ProjectProperties.isAutoBuilding()) {
-			if (Category.getState(Category.autoUpdate)) {
+			if (InPlace.getDefault().getPrefService().isUpdateOnBuild()) {
 				BundleManager.getRegion().setAutoBuild(true);
 				Collection<IProject> activatedProjects = ProjectProperties.getActivatedProjects();
 				Collection<IProject> pendingProjects = bundleTransition.getPendingProjects(
@@ -478,7 +478,7 @@ class BundleEventManager implements FrameworkListener, SynchronousBundleListener
 					}
 				}
 				// User choice to deactivate workspace or restore uninstalled bundle
-				if (!Category.getState(Category.autoDependency)) {
+				if (!InPlace.getDefault().getPrefService().isAutoHandleExternalCommands()) {
 					String question = null;
 					int index = 0;
 					if (dependencies) {

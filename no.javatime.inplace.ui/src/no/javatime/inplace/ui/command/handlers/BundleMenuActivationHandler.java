@@ -199,7 +199,7 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 										addWarning(null, msg, project);
 									} 
 								}
-								if (Category.getState(Category.infoMessages) && !Category.getState(Category.autoUpdate)) {
+								if (Category.getState(Category.infoMessages) && !Activator.getDefault().getPrefService().isUpdateOnBuild()) {
 									if (bundleRegion.isActivated(bundle)) {
 										UserMessage.getInstance().getString("autoupdate_off", project.getName());
 									}

@@ -10,6 +10,19 @@
  *******************************************************************************/
 package no.javatime.inplace.ui;
 
+import no.javatime.inplace.bundlejobs.BundleJob;
+import no.javatime.inplace.bundlejobs.events.BundleJobEvent;
+import no.javatime.inplace.bundlejobs.events.BundleJobEventListener;
+import no.javatime.inplace.bundlemanager.BundleManager;
+import no.javatime.inplace.bundlemanager.InPlaceException;
+import no.javatime.inplace.dl.preferences.intface.CommandOptions;
+import no.javatime.inplace.statushandler.BundleStatus;
+import no.javatime.inplace.statushandler.IBundleStatus.StatusCode;
+import no.javatime.inplace.ui.views.BundleView;
+import no.javatime.util.messages.Category;
+import no.javatime.util.messages.Message;
+import no.javatime.util.messages.WarnMessage;
+
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.resources.WorkspaceJob;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences;
@@ -25,25 +38,8 @@ import org.eclipse.ui.statushandlers.StatusManager;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.service.prefs.BackingStoreException;
+import org.osgi.util.tracker.ServiceTracker;
 
-import no.javatime.inplace.bundlejobs.BundleJob;
-import no.javatime.inplace.bundlejobs.events.BundleJobEvent;
-import no.javatime.inplace.bundlejobs.events.BundleJobEventListener;
-import no.javatime.inplace.bundlemanager.BundleManager;
-import no.javatime.inplace.statushandler.BundleStatus;
-import no.javatime.inplace.statushandler.IBundleStatus.StatusCode;
-import no.javatime.inplace.ui.command.handlers.AutoDependencyHandler;
-import no.javatime.inplace.ui.command.handlers.AutoRefreshHandler;
-import no.javatime.inplace.ui.command.handlers.AutoUpdateHandler;
-import no.javatime.inplace.ui.command.handlers.BundleMenuActivationHandler;
-import no.javatime.inplace.ui.command.handlers.DeactivateOnExitHandler;
-import no.javatime.inplace.ui.command.handlers.EagerActivationHandler;
-import no.javatime.inplace.ui.command.handlers.UIContributorsHandler;
-import no.javatime.inplace.ui.command.handlers.UpdateClassPathOnActivateHandler;
-import no.javatime.inplace.ui.views.BundleView;
-import no.javatime.util.messages.Category;
-import no.javatime.util.messages.Message;
-import no.javatime.util.messages.WarnMessage;
 
 /**
  * The activator class controls the plug-in life cycle
@@ -57,6 +53,7 @@ public class Activator extends AbstractUIPlugin implements BundleJobEventListene
 	
 	// Get the workbench window from UI thread
 	private IWorkbenchWindow workBenchWindow = null;
+	private ServiceTracker<CommandOptions, CommandOptions> preferenceStoretracker;
 
 	/**
 	 * The constructor
@@ -74,7 +71,9 @@ public class Activator extends AbstractUIPlugin implements BundleJobEventListene
 		Activator.context = context;
 		BundleManager.addBundleJobListener(Activator.getDefault());
 		loadPluginSettings(true);
-		loadCheckedMenus();
+		preferenceStoretracker = new ServiceTracker<CommandOptions, CommandOptions>
+				(context, CommandOptions.class, null);
+		preferenceStoretracker.open();
 	}
 
 	/*
@@ -84,10 +83,21 @@ public class Activator extends AbstractUIPlugin implements BundleJobEventListene
 	public void stop(BundleContext context) throws Exception {
 		savePluginSettings(true);
 		BundleManager.removeBundleJobListener(this);
-		plugin = null;
+		preferenceStoretracker.close();
+		preferenceStoretracker = null;
 		super.stop(context);
+		plugin = null;
 	}
 	
+	public CommandOptions getPrefService() {
+		CommandOptions storeService = null;
+		storeService = (CommandOptions) preferenceStoretracker.getService();
+		if (null == storeService) {
+			throw new InPlaceException("invalid_prefernece_store_service");	
+		}
+		return storeService;
+	}
+
 	@Override
 	public void bundleJobEvent(BundleJobEvent event) {
 		WorkspaceJob bundleJob = event.getBundleJob();
@@ -135,27 +145,6 @@ public class Activator extends AbstractUIPlugin implements BundleJobEventListene
 		return InstanceScope.INSTANCE.getNode(PLUGIN_ID);
 	}
 	
-	/**
-	 * Restore state of checked menu entries
-	 */
-	public void loadCheckedMenus() {
-
-		BundleMenuActivationHandler.setCheckedMenuEntry(Category.eagerActivation,
-				EagerActivationHandler.commandId);
-		BundleMenuActivationHandler.setCheckedMenuEntry(Category.autoDependency, 
-				AutoDependencyHandler.commandId);
-		BundleMenuActivationHandler.setCheckedMenuEntry(Category.autoRefresh, 
-				AutoRefreshHandler.commandId);
-		BundleMenuActivationHandler.setCheckedMenuEntry(Category.autoUpdate, 
-				AutoUpdateHandler.commandId);
-		BundleMenuActivationHandler.setCheckedMenuEntry(Category.deactivateOnExit, 
-				DeactivateOnExitHandler.commandId);
-		BundleMenuActivationHandler.setCheckedMenuEntry(Category.updateClassPathOnActivate,
-				UpdateClassPathOnActivateHandler.commandId);
-		BundleMenuActivationHandler.setCheckedMenuEntry(Category.uiContributors, 
-				UIContributorsHandler.commandId);
-	}
-
 	public void loadPluginSettings(Boolean sync) {
 
 		IEclipsePreferences prefs = getEclipsePreferenceStore();

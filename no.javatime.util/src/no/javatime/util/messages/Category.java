@@ -104,14 +104,7 @@ public class Category extends Message {
 	public static final String requiringOnStop = "requiringOnStop";
 	public static final String providingOnStop = "providingOnStop";
 	public static final String providingOnDeactivate = "providingOnDeactivate";
-	// Checked menu entries in Bundle main menu
-	public static final String updateClassPathOnActivate = "updateClassPathOnActivate";
-	public static final String eagerActivation = "eagerActivation";
-	public static final String autoDependency = "autoDependency";
-	public static final String autoRefresh = "autoRefresh";
-	public static final String autoUpdate = "autoUpdate";
-	public static final String uiContributors = "uiContributors";
-	public static final String deactivateOnExit = "deactivateOnExit";
+	
 	// InPlace Console tool bar items
 	public static final String bundleEvents = "bundleEvents";
 	public static final String bundleOperations = "bundleOperations";
@@ -154,14 +147,6 @@ public class Category extends Message {
 		categories.put(requiringOnStop, (get(requiringOnStop, categoryBundle).startsWith(enable.toString()) ? enable : disable));
 		categories.put(providingOnStop, (get(providingOnStop, categoryBundle).startsWith(enable.toString()) ? enable : disable));
 		categories.put(providingOnDeactivate, (get(providingOnDeactivate, categoryBundle).startsWith(enable.toString()) ? enable : disable));
-		// Checked main menu entries
-		categories.put(updateClassPathOnActivate, (get(updateClassPathOnActivate, categoryBundle).startsWith(enable.toString()) ? enable : disable));
-		categories.put(eagerActivation, (get(eagerActivation, categoryBundle).startsWith(enable.toString()) ? enable : disable));
-		categories.put(autoDependency, (get(autoDependency, categoryBundle).startsWith(enable.toString()) ? enable : disable));
-		categories.put(autoRefresh, (get(autoRefresh, categoryBundle).startsWith(enable.toString()) ? enable : disable));
-		categories.put(autoUpdate, (get(autoUpdate, categoryBundle).startsWith(enable.toString()) ? enable : disable));
-		categories.put(deactivateOnExit, (get(deactivateOnExit, categoryBundle).startsWith(enable.toString()) ? enable : disable));
-		categories.put(uiContributors, (get(uiContributors, categoryBundle).startsWith(enable.toString()) ? enable : disable));
 		// InPlace Console context menu tool bar items
 		categories.put(bundleEvents, (get(bundleEvents, categoryBundle).startsWith(enable.toString()) ? enable : disable));
 		categories.put(bundleOperations, (get(bundleOperations, categoryBundle).startsWith(enable.toString()) ? enable : disable));

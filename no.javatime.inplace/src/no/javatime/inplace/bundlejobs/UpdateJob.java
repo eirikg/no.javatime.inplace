@@ -181,7 +181,7 @@ public class UpdateJob extends BundleJob {
 		} 
 		// This is an optimization to reduce the number of update jobs, by including pending projects
 		// waiting for the next update job. See post build listener for delayed projects on update
-		if (Category.getState(Category.autoUpdate)) {
+		if (getPrefService().isUpdateOnBuild()) {
 			addPendingProjects(bundleTransition.getPendingProjects(bundleRegion.getProjects(true),
 					Transition.UPDATE));
 		}
@@ -237,7 +237,7 @@ public class UpdateJob extends BundleJob {
 				bundlesToRestart.addAll(installedBundlesToRefresh);
 			}
 
-			if (Category.getState(Category.autoRefresh)) {
+			if (getPrefService().isRefreshOnUpdate()) {
 				refresh(bundlesToRefresh, new SubProgressMonitor(monitor, 1));
 			} else {
 				Collection<Bundle> notResolvedBundles = resolve(bundlesToRefresh, new SubProgressMonitor(monitor, 1));

@@ -1,0 +1,14 @@
+Manifest-Version: 1.0
+Service-Component: OSGI-INF/options.xml
+Require-Bundle: org.eclipse.ui,org.eclipse.core.runtime
+Bundle-ActivationPolicy: lazy
+Bundle-Version: 1.0.0.201403122153
+Bundle-Name: InPlace Preferences
+Bundle-Activator: no.javatime.inplace.pl.preferences.PreferencePlActiv
+ ator
+Bundle-ManifestVersion: 2
+Import-Package: no.javatime.inplace.dl.preferences.intface
+Bundle-SymbolicName: no.javatime.inplace.pl.preferences;singleton:=tru
+ e
+Bundle-RequiredExecutionEnvironment: JavaSE-1.7
+

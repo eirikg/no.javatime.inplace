@@ -47,8 +47,8 @@
                id="no.javatime.inplace.command.autodependency"
                name="no.javatime.inplace.command.autodependency">
             <state
-                  class="org.eclipse.ui.handlers.RegistryToggleState:true"
-                  id="org.eclipse.ui.commands.toggleState">
+                  class="org.eclipse.jface.commands.ToggleState"
+                  id="no.javatime.inplace.command.autodependency.toggleState">
             </state>
          </command>
          <command
@@ -58,8 +58,8 @@
                id="no.javatime.inplace.command.activateclasspath"
                name="no.javatime.inplace.command.activateclasspath">
             <state
-                  class="org.eclipse.ui.handlers.RegistryToggleState:true"
-                  id="org.eclipse.ui.commands.toggleState">
+                  class="org.eclipse.jface.commands.ToggleState"
+                  id="no.javatime.inplace.command.activateclasspath.toggleState">
             </state>
          </command>
          <command
@@ -69,8 +69,8 @@
                id="no.javatime.inplace.command.eageractivation"
                name="no.javatime.inplace.command.eageractivation">
             <state
-                  class="org.eclipse.ui.handlers.RegistryToggleState:true"
-                  id="org.eclipse.ui.commands.toggleState">
+                  class="org.eclipse.jface.commands.ToggleState"
+                  id="no.javatime.inplace.command.eageractivation.toggleState">
             </state>
          </command>
          <command
@@ -79,9 +79,9 @@
                description="Refresh when bundles are updated"
                id="no.javatime.inplace.command.autorefresh"
                name="no.javatime.inplace.command.autorefresh">
-            <state
-                  class="org.eclipse.ui.handlers.RegistryToggleState:true"
-                  id="org.eclipse.ui.commands.toggleState">
+                <state
+                  class="org.eclipse.jface.commands.ToggleState"
+                  id="no.javatime.inplace.command.autorefresh.toggleState">
             </state>
          </command>
          <command
@@ -91,8 +91,8 @@
                id="no.javatime.inplace.command.autoupdate"
                name="no.javatime.inplace.command.autoupdate">
             <state
-                  class="org.eclipse.ui.handlers.RegistryToggleState:true"
-                  id="org.eclipse.ui.commands.toggleState">
+                  class="org.eclipse.jface.commands.ToggleState"
+                  id="no.javatime.inplace.command.autoupdate.toggleState">
             </state>
          </command>
          <command
@@ -102,8 +102,8 @@
                id="no.javatime.inplace.command.deactivate"
                name="no.javatime.inplace.command.deactivate">
             <state
-                  class="org.eclipse.ui.handlers.RegistryToggleState:true"
-                  id="org.eclipse.ui.commands.toggleState">
+                  class="org.eclipse.jface.commands.ToggleState"
+                  id="no.javatime.inplace.command.deactivate.toggleState">
             </state>
          </command>
          <command
@@ -113,8 +113,8 @@
                id="no.javatime.inplace.command.uicontributors"
                name="no.javatime.inplace.command.uicontributors">
             <state
-                  class="org.eclipse.ui.handlers.RegistryToggleState:true"
-                  id="org.eclipse.ui.commands.toggleState">
+                  class="org.eclipse.jface.commands.ToggleState"
+                  id="no.javatime.inplace.command.uicontributiors.toggleState">
             </state>
          </command>
          <category

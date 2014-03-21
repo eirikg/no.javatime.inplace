@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<scr:component xmlns:scr="http://www.osgi.org/xmlns/scr/v1.1.0" name="no.javatime.inplace.pl.preferences.service.options">
+   <implementation class="no.javatime.inplace.pl.preferences.service.OptionsService"/>
+   <reference bind="setCommandOptions" cardinality="1..1" interface="no.javatime.inplace.dl.preferences.intface.CommandOptions" name="CommandOptions" policy="static" unbind="unsetCommandOptions"/>
+   <reference bind="setOutputFolderOptions" cardinality="1..1" interface="no.javatime.inplace.dl.preferences.intface.ManifestOptions" name="OutputFolderOptions" policy="static" unbind="unsetOutputFolderOptions"/>
+   <reference bind="setPreferencesStore" cardinality="1..1" interface="no.javatime.inplace.dl.preferences.intface.PreferencesStore" name="PreferencesStore" policy="static" unbind="unsetPreferencesStore"/>
+</scr:component>

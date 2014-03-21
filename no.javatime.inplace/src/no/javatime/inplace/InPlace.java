@@ -12,6 +12,38 @@ package no.javatime.inplace;
 
 import java.util.Collection;
 
+import no.javatime.inplace.builder.PostBuildListener;
+import no.javatime.inplace.builder.PreBuildListener;
+import no.javatime.inplace.builder.PreChangeListener;
+import no.javatime.inplace.builder.ProjectChangeListener;
+import no.javatime.inplace.bundlejobs.BundleJob;
+import no.javatime.inplace.bundlejobs.DeactivateJob;
+import no.javatime.inplace.bundlejobs.UninstallJob;
+import no.javatime.inplace.bundlejobs.events.BundleJobEvent;
+import no.javatime.inplace.bundlejobs.events.BundleJobEventListener;
+import no.javatime.inplace.bundlemanager.BundleManager;
+import no.javatime.inplace.bundlemanager.BundleRegion;
+import no.javatime.inplace.bundlemanager.BundleTransition.Transition;
+import no.javatime.inplace.bundlemanager.InPlaceException;
+import no.javatime.inplace.bundlemanager.ProjectLocationException;
+import no.javatime.inplace.bundlemanager.events.BundleTransitionEvent;
+import no.javatime.inplace.bundlemanager.events.BundleTransitionEventListener;
+import no.javatime.inplace.bundleproject.ProjectProperties;
+import no.javatime.inplace.dl.preferences.intface.CommandOptions;
+import no.javatime.inplace.statushandler.ActionSetContexts;
+import no.javatime.inplace.statushandler.BundleStatus;
+import no.javatime.inplace.statushandler.DynamicExtensionContribution;
+import no.javatime.inplace.statushandler.IBundleStatus;
+import no.javatime.inplace.statushandler.IBundleStatus.StatusCode;
+import no.javatime.util.messages.Category;
+import no.javatime.util.messages.ErrorMessage;
+import no.javatime.util.messages.ExceptionMessage;
+import no.javatime.util.messages.Message;
+import no.javatime.util.messages.TraceMessage;
+import no.javatime.util.messages.UserMessage;
+import no.javatime.util.messages.WarnMessage;
+import no.javatime.util.messages.views.BundleConsoleFactory;
+
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResourceChangeEvent;
 import org.eclipse.core.resources.IResourceChangeListener;
@@ -39,38 +71,6 @@ import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.service.prefs.BackingStoreException;
 import org.osgi.util.tracker.ServiceTracker;
-
-import no.javatime.inplace.builder.PostBuildListener;
-import no.javatime.inplace.builder.PreBuildListener;
-import no.javatime.inplace.builder.PreChangeListener;
-import no.javatime.inplace.builder.ProjectChangeListener;
-import no.javatime.inplace.bundlejobs.BundleJob;
-import no.javatime.inplace.bundlejobs.DeactivateJob;
-import no.javatime.inplace.bundlejobs.UninstallJob;
-import no.javatime.inplace.bundlejobs.events.BundleJobEvent;
-import no.javatime.inplace.bundlejobs.events.BundleJobEventListener;
-import no.javatime.inplace.bundlemanager.BundleManager;
-import no.javatime.inplace.bundlemanager.BundleRegion;
-import no.javatime.inplace.bundlemanager.BundleTransition.Transition;
-import no.javatime.inplace.bundlemanager.InPlaceException;
-import no.javatime.inplace.bundlemanager.ProjectLocationException;
-import no.javatime.inplace.bundlemanager.events.BundleTransitionEvent;
-import no.javatime.inplace.bundlemanager.events.BundleTransitionEventListener;
-import no.javatime.inplace.bundleproject.ProjectProperties;
-import no.javatime.inplace.statushandler.ActionSetContexts;
-import no.javatime.inplace.statushandler.BundleStatus;
-import no.javatime.inplace.statushandler.DynamicExtensionContribution;
-import no.javatime.inplace.statushandler.IBundleStatus;
-import no.javatime.inplace.statushandler.IBundleStatus.StatusCode;
-import no.javatime.util.messages.Category;
-import no.javatime.util.messages.ErrorMessage;
-import no.javatime.util.messages.ExceptionMessage;
-import no.javatime.util.messages.Message;
-import no.javatime.util.messages.Message.Output;
-import no.javatime.util.messages.TraceMessage;
-import no.javatime.util.messages.UserMessage;
-import no.javatime.util.messages.WarnMessage;
-import no.javatime.util.messages.views.BundleConsoleFactory;
 /**
  * A bundle manager plug-in. Provides the following functionality:
  * <ul>
@@ -88,6 +88,8 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 	private static InPlace plugin;
 	private static BundleContext context;
 	private ServiceTracker<IBundleProjectService, IBundleProjectService> bundleProjectTracker;
+	private ServiceTracker<CommandOptions, CommandOptions> preferenceStoretracker;
+
 	/**
 	 * Framework launching property specifying whether Equinox's FrameworkWiring
 	 * implementation should refresh bundles with equal symbolic names.
@@ -150,6 +152,9 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 		bundleProjectTracker =  new ServiceTracker<IBundleProjectService, IBundleProjectService>
 				(context, IBundleProjectService.class, null);
 		bundleProjectTracker.open();
+		preferenceStoretracker = new ServiceTracker<CommandOptions, CommandOptions>
+		(context, CommandOptions.class, null);
+		preferenceStoretracker.open();
 		BundleManager.addBundleJobListener(getDefault());
 		bundleRegion = BundleManager.getRegion();
 		BundleManager.addBundleTransitionListener(getDefault());
@@ -166,6 +171,8 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 			bundleProjectTracker = null;		
 			BundleManager.removeBundleJobListener(getDefault());
 			BundleManager.removeBundleTransitionListener(getDefault());
+			preferenceStoretracker.close();
+			preferenceStoretracker = null;
 			super.stop(context);
 			plugin = null;
 			InPlace.context = null;
@@ -193,7 +200,7 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 			if (ProjectProperties.isProjectWorkspaceActivated()) {
 				BundleJob shutdDownJob = null;
 				Collection<IProject> projects = ProjectProperties.getActivatedProjects();
-				if (Category.getState(Category.deactivateOnExit)) {
+				if (getPrefService().isDeactivateOnExit()) {
 					shutdDownJob = new DeactivateJob(DeactivateJob.deactivateOnshutDownJobName);
 				} else if (bundles.size() > 0) {
 					shutdDownJob = new UninstallJob(UninstallJob.shutDownJobName);
@@ -350,6 +357,15 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 		}
 	}
 	
+	public CommandOptions getPrefService() {
+		CommandOptions storeService = null;
+		storeService = (CommandOptions) preferenceStoretracker.getService();
+		if (null == storeService) {
+			throw new InPlaceException("invalid_prefernece_store_service");	
+		}
+		return storeService;
+	}
+
 	/**
 	 * Adds resource listener for project changes and builds
 	 */
@@ -543,7 +559,7 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 			// Ignore
 		}
 	}	
-	
+
 	public boolean isRefreshDuplicateBSNAllowed() {
 		return allowRefreshDuplicateBSN;
 	}

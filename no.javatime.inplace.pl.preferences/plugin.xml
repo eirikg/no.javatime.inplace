@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+
+   <extension
+         point="org.eclipse.ui.preferencePages">
+      <page
+            name="InPlace Activator"
+            class="no.javatime.inplace.pl.preferences.page.PreferencePage"
+            id="no.javatime.inplace.ui.preferencepage.page.PreferencePage">
+      </page>
+   </extension>
+   <extension
+         point="org.eclipse.core.runtime.preferences">
+      <initializer
+            class="no.javatime.inplace.pl.preferences.page.PreferenceInitializer">
+      </initializer>
+   </extension>
+
+</plugin>

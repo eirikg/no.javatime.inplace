@@ -10,6 +10,7 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.WorkspaceJob;
 import org.osgi.framework.Bundle;
 
+import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundlemanager.BundleManager;
 import no.javatime.inplace.bundlemanager.BundleRegion;
 import no.javatime.inplace.bundlemanager.BundleTransition;
@@ -51,7 +52,7 @@ public class UpdateScheduler {
 			
 			if (activateProjectJob.pendingProjects() > 0) {
 				// Update all projects together with the deactivated providers to activate
-				if (!Category.getState(Category.autoUpdate)) {
+				if (!InPlace.getDefault().getPrefService().isUpdateOnBuild()) {
 					for (IProject project : projects) {
 						BundleManager.getTransition().addPending(project, Transition.UPDATE_ON_ACTIVATE);					
 					}

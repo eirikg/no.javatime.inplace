@@ -251,8 +251,8 @@ public class ActivateBundleJob extends BundleJob {
 		}
 		// Set the bundle class path on start up if settings (dev and/or update bundle class path) are changed
 		if (getName().equals(ActivateBundleJob.activateStartupJobName)
-				&& (null != BundleProject.inDevelopmentMode() || Category
-						.getState(Category.updateClassPathOnActivate))) {
+				&& (null != BundleProject.inDevelopmentMode() || 
+						getPrefService().isUpdateDefaultOutPutFolder())) {
 			for (Bundle bundle : activatedBundles) {
 				resolveBundleClasspath(bundleRegion.getProject(bundle));
 			}

@@ -141,7 +141,7 @@ public class ProjectProperties {
 			} catch (CoreException e) {
 				// Ignore closed or non-existing project
 			}
-			if (!Category.getState(Category.uiContributors)) {
+			if (!InPlace.getDefault().getPrefService().isAllowUIContributions()) {
 				try {
 					projects.removeAll(getUIContributors());
 				} catch (CircularReferenceException e) {
@@ -169,7 +169,7 @@ public class ProjectProperties {
 			} catch (CoreException e) {
 				// Ignore closed or non-existing project
 			}
-			if (!Category.getState(Category.uiContributors)) {
+			if (!InPlace.getDefault().getPrefService().isAllowUIContributions()) {
 				try {
 					projects.removeAll(getUIContributors());
 				} catch (CircularReferenceException e) {
@@ -260,7 +260,7 @@ public class ProjectProperties {
 		try {
 			if (project.hasNature(JavaCore.NATURE_ID) && project.isNatureEnabled(PLUGIN_NATURE_ID)
 					&& !isProjectActivated(project)) {
-				if (Category.getState(Category.uiContributors)) {
+				if (InPlace.getDefault().getPrefService().isAllowUIContributions()) {
 					return true;
 				} else {
 					Collection<IProject> uiContributors = getUIContributors();
