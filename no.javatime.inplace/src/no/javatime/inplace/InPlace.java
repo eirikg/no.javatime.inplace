@@ -109,7 +109,7 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 	 */
 	public static final String REFRESH_DUPLICATE_BSN = "equinox.refresh.duplicate.bsn";
 	private boolean allowRefreshDuplicateBSN;
-	public static final int TIMEOUT = 5;
+
 	/*
 	 * Dynamically load contexts for action sets
 	 */

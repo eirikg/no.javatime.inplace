@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Service-Component: OSGI-INF/options.xml
 Require-Bundle: org.eclipse.ui,org.eclipse.core.runtime
 Bundle-ActivationPolicy: lazy
-Bundle-Version: 1.0.0.201403122153
+Bundle-Version: 0.1.1.qualifier
 Bundle-Name: InPlace Preferences
 Bundle-Activator: no.javatime.inplace.pl.preferences.PreferencePlActiv
  ator

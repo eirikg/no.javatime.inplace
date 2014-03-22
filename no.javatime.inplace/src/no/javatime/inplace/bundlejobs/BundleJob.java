@@ -411,6 +411,8 @@ public abstract class BundleJob extends JobStatus {
 				bundles = bs.sortProvidingBundles(bundles, bundleRegion.getActivatedBundles());
 			}
 			SubMonitor localMonitor = SubMonitor.convert(monitor, bundles.size());
+			boolean timeout = getPrefService().isTimeOut();
+			int timeoutSeconds = getPrefService().getTimeout();	
 			for (Bundle bundle : bundles) {
 				try {
 					if (localMonitor.isCanceled()) {
@@ -423,11 +425,15 @@ public abstract class BundleJob extends JobStatus {
 							&& (!ManifestUtil.isFragment(bundle))
 							&& ((bundle.getState() & (Bundle.RESOLVED | Bundle.STOPPING)) != 0)) {
 						TransitionError transitionError = bundleTransition.getError(bundle);
+						int startOption = Bundle.START_TRANSIENT;
 						if (ManifestUtil.getlazyActivationPolicy(bundle)) {
-							bundleCommand.start(bundle, Bundle.START_ACTIVATION_POLICY,InPlace.TIMEOUT);
+							startOption = Bundle.START_ACTIVATION_POLICY; 
+						}
+						if (timeout) {
+							bundleCommand.start(bundle, startOption, timeoutSeconds);
 						} else {
-							bundleCommand.start(bundle, Bundle.START_TRANSIENT, InPlace.TIMEOUT);
-						}							
+							bundleCommand.start(bundle, startOption);									
+						}
 						bundleTransition.setTransitionError(bundle, transitionError);
 						if (Thread.currentThread().isInterrupted()) {
 							throw new InterruptedException();
@@ -436,7 +442,7 @@ public abstract class BundleJob extends JobStatus {
 				} catch (BundleActivatorException e) {
 					result = addError(e, e.getLocalizedMessage(), bundle.getBundleId());
 					// Only check for output folder in class path if class path is set to be updated on activation
-					// If missing instruct the bundle and its requiring bundle to resolve, but not start.
+					// If missing instruct the bundle and its requiring bundles to resolve, but not start.
 					IBundleStatus classPathStatus = checkClassPath(Collections.singletonList(bundle));
 					// Add class path messages into the activation exception
 					if (!classPathStatus.hasStatus(StatusCode.OK)) {
@@ -445,7 +451,7 @@ public abstract class BundleJob extends JobStatus {
 				} catch (InPlaceException e) {
 					result = addError(e, e.getLocalizedMessage(), bundle.getBundleId());
 				} catch (TimeoutException e) {
-					String msg = ExceptionMessage.getInstance().formatString("bundle_start_timeout_error", Integer.toString(InPlace.TIMEOUT), bundle);
+					String msg = ExceptionMessage.getInstance().formatString("bundle_start_timeout_error", Integer.toString(timeoutSeconds), bundle);
 					IBundleStatus errStat = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg, e);
 					msg = WarnMessage.getInstance().formatString("state_changing", bundle);
 					createMultiStatus(errStat, addWarning(null, msg, BundleManager.getRegion().getProject(bundle)));
@@ -482,6 +488,9 @@ public abstract class BundleJob extends JobStatus {
 				bundles = bs.sortRequiringBundles(bundles);
 			}
 			SubMonitor localMonitor = SubMonitor.convert(monitor, bundles.size());
+			boolean timeout = getPrefService().isTimeOut();
+			int timeoutSeconds = getPrefService().getTimeout();	
+
 			for (Bundle bundle : bundles) {
 				try {
 					if (Category.getState(Category.progressBar))
@@ -489,7 +498,11 @@ public abstract class BundleJob extends JobStatus {
 					localMonitor.subTask(StopJob.stopSubTaskName + bundle.getSymbolicName());
 					if ((bundle.getState() & (Bundle.ACTIVE | Bundle.STARTING)) != 0) {
 						TransitionError transitionError = bundleTransition.getError(bundle);
-						bundleCommand.stop(bundle, false, InPlace.TIMEOUT);
+						if (timeout) {
+							bundleCommand.stop(bundle, false, timeoutSeconds);
+						} else {
+							bundleCommand.stop(bundle, false);							
+						}
 						bundleTransition.setTransitionError(bundle, transitionError);
 						if (Thread.currentThread().isInterrupted()) {
 							throw new InterruptedException();
@@ -498,7 +511,7 @@ public abstract class BundleJob extends JobStatus {
 				} catch (InPlaceException e) {
 					result = addError(e, e.getLocalizedMessage(), bundle.getBundleId());
 				} catch (TimeoutException e) {
-					String msg = ExceptionMessage.getInstance().formatString("bundle_stop_timeout_error", Integer.toString(InPlace.TIMEOUT), bundle);
+					String msg = ExceptionMessage.getInstance().formatString("bundle_stop_timeout_error", Integer.toString(timeoutSeconds), bundle);
 					IBundleStatus errStat = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg, e);
 					msg = WarnMessage.getInstance().formatString("state_changing", bundle);
 					createMultiStatus(errStat, addWarning(null, msg, BundleManager.getRegion().getProject(bundle)));
