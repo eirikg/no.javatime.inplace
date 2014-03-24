@@ -1,8 +1,11 @@
 package no.javatime.inplace.pl.preferences;
 
+import no.javatime.inplace.dl.preferences.intface.CommandOptions;
+
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.osgi.framework.BundleContext;
+import org.osgi.util.tracker.ServiceTracker;
 
 /**
  * The activator class controls the plug-in life cycle
@@ -14,7 +17,9 @@ public class PreferencePlActivator extends AbstractUIPlugin {
 
 	// The shared instance
 	private static PreferencePlActivator plugin;
-	
+	private static BundleContext context;
+	private ServiceTracker<CommandOptions, CommandOptions> preferenceStoretracker;
+
 	/**
 	 * The constructor
 	 */
@@ -28,6 +33,10 @@ public class PreferencePlActivator extends AbstractUIPlugin {
 	public void start(BundleContext context) throws Exception {
 		super.start(context);
 		plugin = this;
+		PreferencePlActivator.context = context;
+		preferenceStoretracker = new ServiceTracker<CommandOptions, CommandOptions>
+			(getContext(), CommandOptions.class.getName(), null);
+		preferenceStoretracker.open();
 	}
 
 	/*
@@ -35,8 +44,19 @@ public class PreferencePlActivator extends AbstractUIPlugin {
 	 * @see org.eclipse.ui.plugin.AbstractUIPlugin#stop(org.osgi.framework.BundleContext)
 	 */
 	public void stop(BundleContext context) throws Exception {
-		plugin = null;
 		super.stop(context);
+		preferenceStoretracker.close();
+		plugin = null;
+		PreferencePlActivator.context = null;
+	}
+	
+	/**
+	 * The context for interacting with the FrameWork
+	 * 
+	 * @return the bundle execution context within the FrameWork
+	 */
+	public static BundleContext getContext() {
+		return context;
 	}
 
 	/**
@@ -46,6 +66,18 @@ public class PreferencePlActivator extends AbstractUIPlugin {
 	 */
 	public static PreferencePlActivator getDefault() {
 		return plugin;
+	}
+
+	public CommandOptions getPrefService() {
+		try {		
+			return preferenceStoretracker.getService();
+			// return preferenceStoretracker.waitForService(1000);
+			// If timeout parameter becomes dynamic
+		} catch (IllegalArgumentException e) {
+//		} catch (InterruptedException e) {
+//			Thread.currentThread().interrupt();
+		}
+		return null;
 	}
 
 	/**

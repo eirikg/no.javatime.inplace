@@ -42,7 +42,7 @@
          </command>
          <command
                categoryId="no.javatime.inplace.command.category"
-               defaultHandler="no.javatime.inplace.ui.command.handlers.AutoDependencyHandler"
+               defaultHandler="no.javatime.inplace.ui.command.handlers.AutoExternalCommandHandler"
                description="Handle external bundle operations automatically or not"
                id="no.javatime.inplace.command.autodependency"
                name="no.javatime.inplace.command.autodependency">

@@ -1,5 +1,9 @@
 package no.javatime.inplace.dl.preferences;
 
+import no.javatime.inplace.dl.preferences.impl.CommandOptionsImpl;
+import no.javatime.inplace.dl.preferences.impl.CommandOptionsTrackerImpl;
+import no.javatime.inplace.dl.preferences.intface.CommandOptions;
+
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 import org.osgi.service.prefs.Preferences;
@@ -20,7 +24,7 @@ public class PreferencesDlActivator implements BundleActivator {
 	private PreferencesService prefService;
 	private static PreferencesDlActivator thisBundle = null;
 	private static BundleContext context;
-
+	CommandOptionsTrackerImpl optionsTracker;
 	/*
 	 * (non-Javadoc)
 	 * @see org.osgi.framework.BundleActivator#start(org.osgi.framework.BundleContext)
@@ -31,6 +35,11 @@ public class PreferencesDlActivator implements BundleActivator {
 		prefTracker = new ServiceTracker<PreferencesService, PreferencesService>
 				(context, PreferencesService.class, null);
 		prefTracker.open();
+		
+		CommandOptions cmdOpt = new CommandOptionsImpl();
+		context.registerService(CommandOptions.class.getName(), cmdOpt, null);
+//		optionsTracker = new CommandOptionsTrackerImpl(context);
+//		optionsTracker.open();
 	}
 	
 	/*
@@ -41,6 +50,7 @@ public class PreferencesDlActivator implements BundleActivator {
 		prefTracker.close();
 		prefTracker = null;
 		prefService = null;
+//		optionsTracker.close();
 		PreferencesDlActivator.context = null;
 		thisBundle = null;
 	}

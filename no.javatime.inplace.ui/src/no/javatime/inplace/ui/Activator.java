@@ -72,7 +72,7 @@ public class Activator extends AbstractUIPlugin implements BundleJobEventListene
 		BundleManager.addBundleJobListener(Activator.getDefault());
 		loadPluginSettings(true);
 		preferenceStoretracker = new ServiceTracker<CommandOptions, CommandOptions>
-				(context, CommandOptions.class, null);
+				(context, CommandOptions.class.getName(), null);
 		preferenceStoretracker.open();
 	}
 
@@ -89,13 +89,22 @@ public class Activator extends AbstractUIPlugin implements BundleJobEventListene
 		plugin = null;
 	}
 	
-	public CommandOptions getPrefService() {
+	public CommandOptions getPrefService()throws InPlaceException {
 		CommandOptions storeService = null;
-		storeService = (CommandOptions) preferenceStoretracker.getService();
-		if (null == storeService) {
-			throw new InPlaceException("invalid_prefernece_store_service");	
+		try {		
+			storeService = preferenceStoretracker.getService();
+			//storeService = preferenceStoretracker.waitForService(1000);
+			if (null == storeService) {
+				throw new InPlaceException("invalid_preference_service", CommandOptions.class.getName());			
+			}
+			return storeService;
+			// If timeout parameter becomes dynamic
+		} catch (IllegalArgumentException e) {
+			throw new InPlaceException(e, "invalid_preference_service", CommandOptions.class.getName());			
+//		} catch (InterruptedException e) {
+//			Thread.currentThread().interrupt();
+//			throw new InPlaceException("invalid_preference_service", CommandOptions.class.getName());	
 		}
-		return storeService;
 	}
 
 	@Override

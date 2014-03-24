@@ -21,7 +21,7 @@ public class PreferenceInitializer extends AbstractPreferenceInitializer {
 	public void initializeDefaultPreferences() {
 				
 		IPreferenceStore prefStore = PreferencePlActivator.getDefault().getPreferenceStore();
-		CommandOptions cmdStore = OptionsService.getCommandOptions();
+		CommandOptions cmdStore = PreferencePlActivator.getDefault().getPrefService();
 		prefStore.setDefault(CommandOptions.IS_TIMEOUT, cmdStore.getDefaultIsTimeOut());
 		prefStore.setDefault(CommandOptions.TIMEOUT_SECONDS, cmdStore.getDeafultTimeout());
 		prefStore.setDefault(CommandOptions.IS_DEACTIVATE_ON_EXIT, cmdStore.getDefaultIsDeactivateOnExit());

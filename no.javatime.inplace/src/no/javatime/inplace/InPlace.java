@@ -150,10 +150,10 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 		allowRefreshDuplicateBSN = Boolean.TRUE.toString().equals(refreshBSNResult != null ? refreshBSNResult : Boolean.TRUE.toString());
 		addDynamicExtensions();
 		bundleProjectTracker =  new ServiceTracker<IBundleProjectService, IBundleProjectService>
-				(context, IBundleProjectService.class, null);
+				(context, IBundleProjectService.class.getName(), null);
 		bundleProjectTracker.open();
 		preferenceStoretracker = new ServiceTracker<CommandOptions, CommandOptions>
-		(context, CommandOptions.class, null);
+		(context, CommandOptions.class.getName(), null);
 		preferenceStoretracker.open();
 		BundleManager.addBundleJobListener(getDefault());
 		bundleRegion = BundleManager.getRegion();
@@ -317,25 +317,26 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 		IBundleProjectService bundleProjectService = null;
 		try {		
 			bundleProjectService = bundleProjectTracker.getService();
+			//bundleProjectService = bundleProjectTracker.waitForService(1000);
 			if (null == bundleProjectService) {
 				throw new InPlaceException("invalid_project_description_service", project.getName());	
 			}
-		} catch (IllegalStateException e) {
-			throw new InPlaceException(e, "invalid_project_description_service", project.getName());
+			// If timeout parameter becomes dynamic
 		} catch (IllegalArgumentException e) {
 			throw new InPlaceException(e, "invalid_project_description_service", project.getName());			
-		} catch (SecurityException e) {
-			throw new InPlaceException(e, "invalid_project_description_service", project.getName());						
+//		} catch (InterruptedException e) {
+//			Thread.currentThread().interrupt();
+//			throw new InPlaceException("invalid_project_description_service", project.getName());	
 		}
 		try {
 			return bundleProjectService.getDescription(project);
 		} catch (CoreException e) {
 			// Core and Bundle exception has same message
-			Throwable t = e.getCause();
-			if (null == t || !(t.getMessage().equals(e.getMessage()))) {
-				t = e;
+			Throwable cause = e.getCause();
+			if (null == cause || !(cause.getMessage().equals(e.getMessage()))) {
+				cause = e;
 			}
-			throw new InPlaceException(t, "invalid_project_description", project.getName());
+			throw new InPlaceException(cause, "invalid_project_description", project.getName());
 		}
 	}
 
@@ -348,22 +349,31 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 				throw new InPlaceException("invalid_project_description_service", project.getName());	
 			}
 			return bundleProjectService;
-		} catch (IllegalStateException e) {
-			throw new InPlaceException(e, "invalid_project_description_service", project.getName());
+			// If timeout parameter becomes dynamic
 		} catch (IllegalArgumentException e) {
 			throw new InPlaceException(e, "invalid_project_description_service", project.getName());			
-		} catch (SecurityException e) {
-			throw new InPlaceException(e, "invalid_project_description_service", project.getName());						
+//		} catch (InterruptedException e) {
+//			Thread.currentThread().interrupt();
+//			throw new InPlaceException("invalid_project_description_service", project.getName());	
 		}
 	}
 	
-	public CommandOptions getPrefService() {
+	public CommandOptions getPrefService()throws InPlaceException {
 		CommandOptions storeService = null;
-		storeService = (CommandOptions) preferenceStoretracker.getService();
-		if (null == storeService) {
-			throw new InPlaceException("invalid_prefernece_store_service");	
+		try {		
+			//storeService = preferenceStoretracker.waitForService(1000);
+			storeService = preferenceStoretracker.getService();
+			if (null == storeService) {
+				throw new InPlaceException("invalid_preference_service", CommandOptions.class.getName());			
+			}
+			return storeService;
+			// If timeout parameter becomes dynamic
+		} catch (IllegalArgumentException e) {
+			throw new InPlaceException(e, "invalid_preference_service", CommandOptions.class.getName());			
+//		} catch (InterruptedException e) {
+//			Thread.currentThread().interrupt();
+//			throw new InPlaceException("invalid_preference_service", CommandOptions.class.getName());	
 		}
-		return storeService;
 	}
 
 	/**

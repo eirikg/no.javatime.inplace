@@ -42,8 +42,6 @@ public class AutoRefreshHandler extends AbstractHandler implements IElementUpdat
 		// Flip state value, update state and sync state with store
 		Boolean stateVal = !(Boolean) state.getValue();
 		state.setValue(stateVal);
-		System.out.println("Refresh on update: execute." + " Old  (store): " + cmdStore.isRefreshOnUpdate()
-				+ " New: (state) " + stateVal);
 		cmdStore.setIsRefreshOnUpdate(stateVal);
 		try {
 			cmdStore.flush();
@@ -64,7 +62,6 @@ public class AutoRefreshHandler extends AbstractHandler implements IElementUpdat
 	@Override
 	public void updateElement(UIElement element, @SuppressWarnings("rawtypes") Map parameters) {
 		CommandOptions cmdStore = Activator.getDefault().getPrefService();
-		System.out.println("Refresh on update: updateElement. Val: " + cmdStore.isRefreshOnUpdate());
 		element.setChecked(cmdStore.isRefreshOnUpdate());
 	}
 	
@@ -84,7 +81,6 @@ public class AutoRefreshHandler extends AbstractHandler implements IElementUpdat
 			State state = command.getState(stateId);
 			Boolean stateVal = (Boolean) state.getValue();
 			Boolean storeVal = cmdStore.isRefreshOnUpdate();
-			System.out.println("Refresh on update: isEnabled Store val: " + cmdStore.isRefreshOnUpdate() + " StateVal: " + stateVal);
 			// Values may be different if stored  value has been changed elsewhere (e.g. preference page)
 			// If different update checked menu element before the menu becomes visible by broadcasting the change 
 			if (!stateVal.equals(storeVal)) {
@@ -97,8 +93,6 @@ public class AutoRefreshHandler extends AbstractHandler implements IElementUpdat
 
 	@Override
 	public boolean isHandled() {
-		CommandOptions cmdStore = Activator.getDefault().getPrefService();
-		System.out.println("Refresh on update: ishandled Store val: " + cmdStore.isRefreshOnUpdate());
 		return true;
 	}
 }

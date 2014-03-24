@@ -12,6 +12,12 @@ package no.javatime.inplace.ui.command.handlers;
 
 import java.util.Map;
 
+import no.javatime.inplace.dl.preferences.intface.CommandOptions;
+import no.javatime.inplace.statushandler.BundleStatus;
+import no.javatime.inplace.statushandler.IBundleStatus.StatusCode;
+import no.javatime.inplace.ui.Activator;
+import no.javatime.inplace.ui.msg.Msg;
+
 import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.Command;
 import org.eclipse.core.commands.ExecutionEvent;
@@ -19,17 +25,9 @@ import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.commands.State;
 import org.eclipse.ui.commands.ICommandService;
 import org.eclipse.ui.commands.IElementUpdater;
-import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.menus.UIElement;
 import org.eclipse.ui.statushandlers.StatusManager;
 import org.osgi.service.prefs.BackingStoreException;
-
-import no.javatime.inplace.dl.preferences.intface.CommandOptions;
-import no.javatime.inplace.statushandler.BundleStatus;
-import no.javatime.inplace.statushandler.IBundleStatus.StatusCode;
-import no.javatime.inplace.ui.Activator;
-import no.javatime.inplace.ui.msg.Msg;
-import no.javatime.util.messages.Category;
 
 public class DeactivateOnExitHandler extends AbstractHandler implements IElementUpdater {
 

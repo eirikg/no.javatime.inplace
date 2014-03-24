@@ -412,7 +412,7 @@ public abstract class BundleJob extends JobStatus {
 			}
 			SubMonitor localMonitor = SubMonitor.convert(monitor, bundles.size());
 			boolean timeout = getPrefService().isTimeOut();
-			int timeoutSeconds = getPrefService().getTimeout();	
+			int timeoutVal = getTimeout(timeout);	
 			for (Bundle bundle : bundles) {
 				try {
 					if (localMonitor.isCanceled()) {
@@ -430,7 +430,7 @@ public abstract class BundleJob extends JobStatus {
 							startOption = Bundle.START_ACTIVATION_POLICY; 
 						}
 						if (timeout) {
-							bundleCommand.start(bundle, startOption, timeoutSeconds);
+							bundleCommand.start(bundle, startOption, timeoutVal);
 						} else {
 							bundleCommand.start(bundle, startOption);									
 						}
@@ -451,7 +451,7 @@ public abstract class BundleJob extends JobStatus {
 				} catch (InPlaceException e) {
 					result = addError(e, e.getLocalizedMessage(), bundle.getBundleId());
 				} catch (TimeoutException e) {
-					String msg = ExceptionMessage.getInstance().formatString("bundle_start_timeout_error", Integer.toString(timeoutSeconds), bundle);
+					String msg = ExceptionMessage.getInstance().formatString("bundle_start_timeout_error", Integer.toString(timeoutVal), bundle);
 					IBundleStatus errStat = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg, e);
 					msg = WarnMessage.getInstance().formatString("state_changing", bundle);
 					createMultiStatus(errStat, addWarning(null, msg, BundleManager.getRegion().getProject(bundle)));
@@ -489,8 +489,7 @@ public abstract class BundleJob extends JobStatus {
 			}
 			SubMonitor localMonitor = SubMonitor.convert(monitor, bundles.size());
 			boolean timeout = getPrefService().isTimeOut();
-			int timeoutSeconds = getPrefService().getTimeout();	
-
+			int timeoutVal = getTimeout(timeout);	
 			for (Bundle bundle : bundles) {
 				try {
 					if (Category.getState(Category.progressBar))
@@ -499,7 +498,7 @@ public abstract class BundleJob extends JobStatus {
 					if ((bundle.getState() & (Bundle.ACTIVE | Bundle.STARTING)) != 0) {
 						TransitionError transitionError = bundleTransition.getError(bundle);
 						if (timeout) {
-							bundleCommand.stop(bundle, false, timeoutSeconds);
+							bundleCommand.stop(bundle, false, timeoutVal);
 						} else {
 							bundleCommand.stop(bundle, false);							
 						}
@@ -511,7 +510,7 @@ public abstract class BundleJob extends JobStatus {
 				} catch (InPlaceException e) {
 					result = addError(e, e.getLocalizedMessage(), bundle.getBundleId());
 				} catch (TimeoutException e) {
-					String msg = ExceptionMessage.getInstance().formatString("bundle_stop_timeout_error", Integer.toString(timeoutSeconds), bundle);
+					String msg = ExceptionMessage.getInstance().formatString("bundle_stop_timeout_error", Integer.toString(timeoutVal), bundle);
 					IBundleStatus errStat = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg, e);
 					msg = WarnMessage.getInstance().formatString("state_changing", bundle);
 					createMultiStatus(errStat, addWarning(null, msg, BundleManager.getRegion().getProject(bundle)));
@@ -523,6 +522,23 @@ public abstract class BundleJob extends JobStatus {
 		return result;
 	}
 
+	/**
+	 * Gets and validate the specified timeout value and use default if invalid
+	 * @param seconds timeout value
+	 * @return timeout value in ms
+	 */
+	private int getTimeout(boolean isTimeout) {
+		int seconds = getPrefService().getTimeout();
+		if (seconds < 1 || seconds > 60) {
+			int defaultTimeout = getPrefService().getDeafultTimeout();
+			if (isTimeout){
+				String msg = WarnMessage.getInstance().formatString("illegal_timout_value", seconds, defaultTimeout);
+				addWarning(null, msg, null);
+			}
+			return defaultTimeout*1000;
+		}
+		return seconds*1000;
+	}
 	/**
 	 * Refresh the specified collection of bundles. If the collection of specified bundles is empty refresh is
 	 * not invoked. Refresh runs in a separate thread causing this job, when calling the framework refresh

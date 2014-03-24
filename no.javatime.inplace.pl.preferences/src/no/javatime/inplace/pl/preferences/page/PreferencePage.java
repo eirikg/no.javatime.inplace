@@ -1,6 +1,5 @@
 package no.javatime.inplace.pl.preferences.page;
 
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -22,6 +21,7 @@ import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkbenchPreferencePage;
 import org.eclipse.ui.statushandlers.StatusManager;
 import org.osgi.service.prefs.BackingStoreException;
+import org.osgi.util.tracker.ServiceTracker;
 
 /**
  * Maintains preferences stored in the OSGi preference store with a copy in the the default plug-in preference store for
@@ -54,7 +54,12 @@ public class PreferencePage extends FieldEditorPreferencePage implements IWorkbe
 	public PreferencePage() {
 		super(GRID);
 		setPreferenceStore(PreferencePlActivator.getDefault().getPreferenceStore());
-		setDescription("Settings for InPlace Bundle Activator");
+		setDescription("Bundle Options");
+	}
+
+	public CommandOptions getPrefService() {
+		return PreferencePlActivator.getDefault().getPrefService(); // tracker	
+		// return OptionsService.getCommandOptions(); // DS
 	}
 
 	/**
@@ -171,7 +176,7 @@ public class PreferencePage extends FieldEditorPreferencePage implements IWorkbe
 	 */
 	private void initializeValues() {
 
-		CommandOptions cmdStore = OptionsService.getCommandOptions();
+		CommandOptions cmdStore = getPrefService();
 		IPreferenceStore prefStore = getPreferenceStore();
 
 		if (fields != null) {
@@ -206,7 +211,7 @@ public class PreferencePage extends FieldEditorPreferencePage implements IWorkbe
 
 	protected void performDefaults() {
 		super.performDefaults();
-		CommandOptions cmdStore = OptionsService.getCommandOptions();
+		CommandOptions cmdStore = getPrefService();
 		Boolean timeout = cmdStore.getDefaultIsTimeOut();
 		setEnabledOnTimeoutSeconds(timeout.toString());
 	}
@@ -222,7 +227,7 @@ public class PreferencePage extends FieldEditorPreferencePage implements IWorkbe
 	 */
 	private void storeValues() {
 
-		CommandOptions cmdStore = OptionsService.getCommandOptions();
+		CommandOptions cmdStore = getPrefService();
 		if (fields != null) {
 			Iterator<FieldEditor> e = fields.iterator();
 			while (e.hasNext()) {

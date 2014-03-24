@@ -1,13 +1,14 @@
 Manifest-Version: 1.0
-Export-Package: no.javatime.inplace.dl.preferences.intface
-Service-Component: OSGI-INF/options.xml, OSGI-INF/preferences.xml
-Bundle-Name: Preferences
-Bundle-RequiredExecutionEnvironment: JavaSE-1.7
-Require-Bundle: org.eclipse.osgi.services,org.eclipse.osgi
-Bundle-Version: 0.1.1.qualifier
 Bundle-ManifestVersion: 2
-Import-Package: org.osgi.framework,org.osgi.service.component,org.osgi
- .service.prefs,org.osgi.util.tracker
+Bundle-Name: Preferences
 Bundle-SymbolicName: no.javatime.inplace.dl.preferences
+Bundle-Version: 0.1.1.qualifier
+Bundle-Activator: no.javatime.inplace.dl.preferences.PreferencesDlActivator
+Export-Package: no.javatime.inplace.dl.preferences.intface
+Require-Bundle: org.eclipse.osgi.services,
+ org.eclipse.osgi
+Bundle-RequiredExecutionEnvironment: JavaSE-1.7
+Import-Package: org.osgi.framework,
+ org.osgi.service.prefs,
+ org.osgi.util.tracker
 Bundle-ActivationPolicy: lazy
-

@@ -7,4 +7,5 @@ Bundle-Activator: no.javatime.help.Activator
 Bundle-ManifestVersion: 2
 Bundle-SymbolicName: no.javatime.inplace.help;singleton:=true
 Bundle-RequiredExecutionEnvironment: JavaSE-1.7
+Bundle-ActivationPolicy: lazy
 

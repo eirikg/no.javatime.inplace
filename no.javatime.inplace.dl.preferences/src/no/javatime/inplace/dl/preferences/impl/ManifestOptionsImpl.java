@@ -1,9 +1,11 @@
 package no.javatime.inplace.dl.preferences.impl;
 
+import no.javatime.inplace.dl.preferences.PreferencesDlActivator;
 import no.javatime.inplace.dl.preferences.intface.ManifestOptions;
 import no.javatime.inplace.dl.preferences.service.PreferencesServiceStore;
 
 import org.osgi.framework.BundleContext;
+import org.osgi.framework.FrameworkUtil;
 import org.osgi.service.component.ComponentContext;
 import org.osgi.service.prefs.BackingStoreException;
 import org.osgi.service.prefs.Preferences;
@@ -13,11 +15,13 @@ public class ManifestOptionsImpl implements ManifestOptions {
 	private static final boolean defUpdateDefaultOutputFolder = true;
 	private final static boolean defIsEagerOnActivate = true;
 	
-	protected BundleContext bundleContext;
-	protected final Preferences wrapper;
+	protected BundleContext bundleContext = 
+			FrameworkUtil.getBundle(this.getClass()).getBundleContext();;
+	private Preferences wrapper;
 
 	public ManifestOptionsImpl() {
-		wrapper = PreferencesServiceStore.getPreferences();
+		// wrapper = PreferencesDlActivator.getThisBundle().getStore();
+		//		wrapper = PreferencesServiceStore.getPreferences();
 	}
 
 	/**
@@ -33,10 +37,16 @@ public class ManifestOptionsImpl implements ManifestOptions {
 	protected void deactivate(ComponentContext context) {
 		bundleContext = null;
 	}
-
+	protected Preferences getPrefs () {
+		if (null == wrapper) {
+			wrapper = PreferencesDlActivator.getThisBundle().getStore();
+			// wrapper = PreferencesServiceStore.getPreferences();
+		}
+		return wrapper;
+	}
 	@Override
 	public boolean isUpdateDefaultOutPutFolder() {
-		return wrapper.getBoolean(IS_UPDATE_DEFAULT_OUTPUT_FOLDER, getDefaultUpdateDefaultOutPutFolder());
+		return getPrefs().getBoolean(IS_UPDATE_DEFAULT_OUTPUT_FOLDER, getDefaultUpdateDefaultOutPutFolder());
 	}
 
 	@Override
@@ -46,12 +56,12 @@ public class ManifestOptionsImpl implements ManifestOptions {
 
 	@Override
 	public void setIsUpdateDefaultOutPutFolder(boolean updateDefaultOutputFolder) {
-		wrapper.putBoolean(IS_UPDATE_DEFAULT_OUTPUT_FOLDER, updateDefaultOutputFolder);
+		getPrefs().putBoolean(IS_UPDATE_DEFAULT_OUTPUT_FOLDER, updateDefaultOutputFolder);
 	}
 
 	@Override
 	public boolean isEagerOnActivate() {
-		return wrapper.getBoolean(IS_EAGER_ON_ACTIVATE, getDefaultIsEagerOnActivate());
+		return getPrefs().getBoolean(IS_EAGER_ON_ACTIVATE, getDefaultIsEagerOnActivate());
 	}
 
 	@Override
@@ -61,7 +71,7 @@ public class ManifestOptionsImpl implements ManifestOptions {
 
 	@Override
 	public void setIsEagerOnActivate(boolean eager) {
-		wrapper.putBoolean(IS_EAGER_ON_ACTIVATE, eager);
+		getPrefs().putBoolean(IS_EAGER_ON_ACTIVATE, eager);
 	}
 
 	/* (non-Javadoc)
@@ -69,6 +79,6 @@ public class ManifestOptionsImpl implements ManifestOptions {
 	 */
 	@Override
 	public void flush() throws BackingStoreException {
-		wrapper.flush();
+		getPrefs().flush();
 	}
 }
