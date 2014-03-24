@@ -32,9 +32,9 @@ public class PreferencesDlActivator implements BundleActivator {
 	public void start(BundleContext context) throws Exception {
 		thisBundle = this;		
 		PreferencesDlActivator.context = context;
-		prefTracker = new ServiceTracker<PreferencesService, PreferencesService>
-				(context, PreferencesService.class, null);
-		prefTracker.open();
+//		prefTracker = new ServiceTracker<PreferencesService, PreferencesService>
+//				(context, PreferencesService.class, null);
+//		prefTracker.open();
 		
 		CommandOptions cmdOpt = new CommandOptionsImpl();
 		context.registerService(CommandOptions.class.getName(), cmdOpt, null);
@@ -47,9 +47,9 @@ public class PreferencesDlActivator implements BundleActivator {
 	 * @see org.osgi.framework.BundleActivator#stop(org.osgi.framework.BundleContext)
 	 */
 	public void stop(BundleContext context) throws Exception {
-		prefTracker.close();
-		prefTracker = null;
-		prefService = null;
+//		prefTracker.close();
+//		prefTracker = null;
+//		prefService = null;
 //		optionsTracker.close();
 		PreferencesDlActivator.context = null;
 		thisBundle = null;

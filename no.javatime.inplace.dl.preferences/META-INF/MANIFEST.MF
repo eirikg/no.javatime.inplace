@@ -12,3 +12,4 @@ Import-Package: org.osgi.framework,
  org.osgi.service.prefs,
  org.osgi.util.tracker
 Bundle-ActivationPolicy: lazy
+Service-Component: OSGI-INF/preferences.xml
