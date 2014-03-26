@@ -3,7 +3,13 @@ package no.javatime.inplace.dl.preferences.service;
 import org.osgi.service.component.ComponentContext;
 import org.osgi.service.prefs.Preferences;
 import org.osgi.service.prefs.PreferencesService;
-
+/**
+ * DS declaration of OSGi preference service store.
+ * <p>
+ * Uses the system preferences only and depends on
+ * the OSGI_INF/preferences.xml
+ * 
+ */
 public class PreferencesServiceStore {
 
 	private PreferencesService preferencesService;

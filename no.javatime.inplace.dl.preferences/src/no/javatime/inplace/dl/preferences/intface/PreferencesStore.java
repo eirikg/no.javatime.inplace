@@ -6,6 +6,8 @@ import org.osgi.service.prefs.Preferences;
 /**
  * Wrapper of {@link org.osgi.service.prefs.Preferences}
  * <p>
+ * Not in use. Intended to be used as an interface with the 
+ * options service interface
  */
 public interface PreferencesStore {
 

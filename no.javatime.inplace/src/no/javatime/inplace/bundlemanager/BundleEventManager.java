@@ -130,7 +130,7 @@ class BundleEventManager implements FrameworkListener, SynchronousBundleListener
 	 * Auto build is set to true when "Build Automatically" is switched on.
 	 * <p>
 	 * When auto build is switched on the post builder is not invoked,
-	 * so an update job is scheduled to update projects being built when
+	 * so an update job is scheduled here to update projects being built when
 	 * the auto build option is switched on.
 	 */
 	@Override
@@ -145,23 +145,29 @@ class BundleEventManager implements FrameworkListener, SynchronousBundleListener
 			return;
 		}
 		Command autoBuildCmd = commandEvent.getCommand();
-		if (autoBuildCmd.isDefined() && !ProjectProperties.isAutoBuilding()) {
-			if (InPlace.getDefault().getPrefService().isUpdateOnBuild()) {
-				BundleManager.getRegion().setAutoBuild(true);
-				Collection<IProject> activatedProjects = ProjectProperties.getActivatedProjects();
-				Collection<IProject> pendingProjects = bundleTransition.getPendingProjects(
-						activatedProjects, Transition.BUILD);
-				Collection<IProject> pendingProjectsToUpdate = bundleTransition.getPendingProjects(
-						activatedProjects, Transition.UPDATE);
-				if (pendingProjectsToUpdate.size() > 0) {
-					pendingProjects.addAll(pendingProjectsToUpdate);
+		try {
+			if (autoBuildCmd.isDefined() && !ProjectProperties.isAutoBuilding()) {
+				if (InPlace.getDefault().getOptionsService().isUpdateOnBuild()) {
+					BundleManager.getRegion().setAutoBuild(true);
+					Collection<IProject> activatedProjects = ProjectProperties.getActivatedProjects();
+					Collection<IProject> pendingProjects = bundleTransition.getPendingProjects(
+							activatedProjects, Transition.BUILD);
+					Collection<IProject> pendingProjectsToUpdate = bundleTransition.getPendingProjects(
+							activatedProjects, Transition.UPDATE);
+					if (pendingProjectsToUpdate.size() > 0) {
+						pendingProjects.addAll(pendingProjectsToUpdate);
+					}
+					if (pendingProjects.size() > 0) {
+						UpdateScheduler.scheduleUpdateJob(pendingProjects, 1000);
+					}
 				}
-				if (pendingProjects.size() > 0) {
-					UpdateScheduler.scheduleUpdateJob(pendingProjects, 1000);
-				}
+			} else {
+				BundleManager.getRegion().setAutoBuild(false);			
 			}
-		} else {
-			BundleManager.getRegion().setAutoBuild(false);			
+		} catch (InPlaceException e) {
+			StatusManager.getManager().handle(
+					new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, e.getMessage(), e),
+					StatusManager.LOG);			
 		}
 	}
 
@@ -478,19 +484,25 @@ class BundleEventManager implements FrameworkListener, SynchronousBundleListener
 					}
 				}
 				// User choice to deactivate workspace or restore uninstalled bundle
-				if (!InPlace.getDefault().getPrefService().isAutoHandleExternalCommands()) {
-					String question = null;
-					int index = 0;
-					if (dependencies) {
-						question = Message.getInstance().formatString("deactivate_question_requirements", symbolicName,
-								location, bundleRegion.formatBundleList(bundleRegion.getBundles(reqProjects), true));
-						index = 1;
-					} else {
-						question = Message.getInstance().formatString("deactivate_question", symbolicName, location);
+				try {
+					if (!InPlace.getDefault().getOptionsService().isAutoHandleExternalCommands()) {
+						String question = null;
+						int index = 0;
+						if (dependencies) {
+							question = Message.getInstance().formatString("deactivate_question_requirements", symbolicName,
+									location, bundleRegion.formatBundleList(bundleRegion.getBundles(reqProjects), true));
+							index = 1;
+						} else {
+							question = Message.getInstance().formatString("deactivate_question", symbolicName, location);
+						}
+						MessageDialog dialog = new MessageDialog(null, "InPlace Activator", null, question,
+								MessageDialog.QUESTION, new String[] { "Yes", "No" }, index);
+						autoDependencyAction = dialog.open();
 					}
-					MessageDialog dialog = new MessageDialog(null, "InPlace Activator", null, question,
-							MessageDialog.QUESTION, new String[] { "Yes", "No" }, index);
-					autoDependencyAction = dialog.open();
+				} catch (InPlaceException e) {
+					StatusManager.getManager().handle(
+							new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, e.getMessage(), e),
+							StatusManager.LOG);			
 				}
 				bundleManager.unregisterBundle(bundle);
 				if (autoDependencyAction == 0) {

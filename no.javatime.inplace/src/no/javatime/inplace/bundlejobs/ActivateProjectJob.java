@@ -182,14 +182,14 @@ public class ActivateProjectJob extends NatureJob {
 			// an activate bundle job when the workspace is deactivated
 			// If Update on Build is switched off and workspace is activated, mark that these projects
 			// should be updated as part of the activation process
-			if (!getPrefService().isUpdateOnBuild() && bundleRegion.isBundleWorkspaceActivated()) {
+			if (!getOptionsService().isUpdateOnBuild() && bundleRegion.isBundleWorkspaceActivated()) {
 				for (IProject project : getPendingProjects()) {
 					if (ProjectProperties.isProjectActivated(project)) {
 						bundleTransition.addPending(project, Transition.UPDATE_ON_ACTIVATE);
 					}
 				}
 			}
-		InPlace.getDefault().savePluginSettings(true, true);
+			InPlace.getDefault().savePluginSettings(true, true);
 		} else {
 			if (Category.getState(Category.infoMessages)) {
 				UserMessage.getInstance().getString("no_projects_to_activate");

@@ -170,9 +170,15 @@ public class PostBuildListener implements IResourceChangeListener {
 		}
 		// Include bundles that are no longer duplicates
 		ActivateBundleJob postActivateBundleJob = null;
-		if (InPlace.getDefault().getPrefService().isUpdateOnBuild() && updateJob.pendingProjects() > 0) {
-			postActivateBundleJob = UpdateScheduler.resolveduplicates(activateProjectJob, activateBundleJob,
-					updateJob);
+		try {
+			if (InPlace.getDefault().getOptionsService().isUpdateOnBuild() && updateJob.pendingProjects() > 0) {
+				postActivateBundleJob = UpdateScheduler.resolveduplicates(activateProjectJob, activateBundleJob,
+						updateJob);
+			}
+		} catch (InPlaceException e) {
+			StatusManager.getManager().handle(
+					new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, e.getMessage(), e),
+					StatusManager.LOG);			
 		}
 		scheduleJob(uninstallJob);
 		scheduleJob(installJob);
@@ -243,10 +249,16 @@ public class PostBuildListener implements IResourceChangeListener {
 		if (bundleTransition.containsPending(project, Transition.UPDATE, Boolean.FALSE)) {
 			// If this project is part of an activate process and auto update is off, the project is tagged
 			// with an update on activate transition and should be updated
-			if (InPlace.getDefault().getPrefService().isUpdateOnBuild()
-					|| bundleTransition.containsPending(project, Transition.UPDATE_ON_ACTIVATE, Boolean.FALSE)) {
-				UpdateScheduler.addChangedProject(project, updateJob, activateProjectJob);
-				isPending = true;
+			try {
+				if (InPlace.getDefault().getOptionsService().isUpdateOnBuild()
+						|| bundleTransition.containsPending(project, Transition.UPDATE_ON_ACTIVATE, Boolean.FALSE)) {
+					UpdateScheduler.addChangedProject(project, updateJob, activateProjectJob);
+					isPending = true;
+				}
+			} catch (InPlaceException e) {
+				StatusManager.getManager().handle(
+						new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, e.getMessage(), e),
+						StatusManager.LOG);			
 			}
 		}
 		// Usually set when a project is activated and in state uninstalled or deactivated and in state 

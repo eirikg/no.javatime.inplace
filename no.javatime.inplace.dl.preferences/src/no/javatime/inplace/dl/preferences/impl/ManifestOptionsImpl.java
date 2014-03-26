@@ -4,44 +4,47 @@ import no.javatime.inplace.dl.preferences.intface.ManifestOptions;
 import no.javatime.inplace.dl.preferences.service.PreferencesServiceStore;
 
 import org.osgi.framework.BundleContext;
+import org.osgi.framework.FrameworkUtil;
 import org.osgi.service.component.ComponentContext;
 import org.osgi.service.prefs.BackingStoreException;
 import org.osgi.service.prefs.Preferences;
 
+/**
+ * Service implementation for access and flushing manifest options
+ */
 public class ManifestOptionsImpl implements ManifestOptions {
-	
+
 	private static final boolean defUpdateDefaultOutputFolder = true;
 	private final static boolean defIsEagerOnActivate = true;
-	
+
 	protected BundleContext bundleContext;
-	//= FrameworkUtil.getBundle(this.getClass()).getBundleContext();;
 	private Preferences wrapper;
 
 	public ManifestOptionsImpl() {
-		// wrapper = PreferencesDlActivator.getThisBundle().getStore();
-		//		wrapper = PreferencesServiceStore.getPreferences();
+		bundleContext = FrameworkUtil.getBundle(this.getClass()).getBundleContext();
 	}
 
 	/**
-	 * Activate method from Declarative service
+	 * Activate method from Declarative service. DS is disabled. See comments in activator class
 	 */
 	protected void activate(ComponentContext context) {
 		bundleContext = context.getBundleContext();
 	}
 
 	/**
-	 * Deactivate method from Declarative Service
+	 * Deactivate method from Declarative Service DS is disabled. See comments in activator class
 	 */
 	protected void deactivate(ComponentContext context) {
 		bundleContext = null;
 	}
-	protected Preferences getPrefs () {
+
+	protected Preferences getPrefs() {
 		if (null == wrapper) {
-			//wrapper = PreferencesDlActivator.getThisBundle().getStore();
 			wrapper = PreferencesServiceStore.getPreferences();
 		}
 		return wrapper;
 	}
+
 	@Override
 	public boolean isUpdateDefaultOutPutFolder() {
 		return getPrefs().getBoolean(IS_UPDATE_DEFAULT_OUTPUT_FOLDER, getDefaultUpdateDefaultOutPutFolder());
@@ -72,7 +75,9 @@ public class ManifestOptionsImpl implements ManifestOptions {
 		getPrefs().putBoolean(IS_EAGER_ON_ACTIVATE, eager);
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see no.javatime.inplace.dl.preferences.impl.PreferencesStore#flush()
 	 */
 	@Override

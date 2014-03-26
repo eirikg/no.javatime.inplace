@@ -411,8 +411,14 @@ public abstract class BundleJob extends JobStatus {
 				bundles = bs.sortProvidingBundles(bundles, bundleRegion.getActivatedBundles());
 			}
 			SubMonitor localMonitor = SubMonitor.convert(monitor, bundles.size());
-			boolean timeout = getPrefService().isTimeOut();
-			int timeoutVal = getTimeout(timeout);	
+			boolean timeout = true;
+			int timeoutVal = 5000;
+			try {
+				timeout = getOptionsService().isTimeOut();
+				timeoutVal = getTimeout(timeout);	
+			} catch (InPlaceException e) {
+				addStatus(new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, e.getMessage(), e));			
+			}
 			for (Bundle bundle : bundles) {
 				try {
 					if (localMonitor.isCanceled()) {
@@ -488,8 +494,14 @@ public abstract class BundleJob extends JobStatus {
 				bundles = bs.sortRequiringBundles(bundles);
 			}
 			SubMonitor localMonitor = SubMonitor.convert(monitor, bundles.size());
-			boolean timeout = getPrefService().isTimeOut();
-			int timeoutVal = getTimeout(timeout);	
+			boolean timeout = true;
+			int timeoutVal = 5000;
+			try {
+				timeout = getOptionsService().isTimeOut();
+				timeoutVal = getTimeout(timeout);	
+			} catch (InPlaceException e) {
+				addStatus(new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, e.getMessage(), e));			
+			}
 			for (Bundle bundle : bundles) {
 				try {
 					if (Category.getState(Category.progressBar))
@@ -528,14 +540,19 @@ public abstract class BundleJob extends JobStatus {
 	 * @return timeout value in ms
 	 */
 	private int getTimeout(boolean isTimeout) {
-		int seconds = getPrefService().getTimeout();
-		if (seconds < 1 || seconds > 60) {
-			int defaultTimeout = getPrefService().getDeafultTimeout();
-			if (isTimeout){
-				String msg = WarnMessage.getInstance().formatString("illegal_timout_value", seconds, defaultTimeout);
-				addWarning(null, msg, null);
+		int seconds = 5;
+		try {
+			seconds = getOptionsService().getTimeout();
+			if (seconds < 1 || seconds > 60) {
+				int defaultTimeout = getOptionsService().getDeafultTimeout();
+				if (isTimeout){
+					String msg = WarnMessage.getInstance().formatString("illegal_timout_value", seconds, defaultTimeout);
+					addWarning(null, msg, null);
+				}
+				return defaultTimeout*1000;
 			}
-			return defaultTimeout*1000;
+		} catch (InPlaceException e) {
+			addStatus(new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, e.getMessage(), e));			
 		}
 		return seconds*1000;
 	}
@@ -769,7 +786,7 @@ public abstract class BundleJob extends JobStatus {
 		try {
 			BundleProject.setDevClasspath(BundleProject.getSymbolicNameFromManifest(project), BundleProject
 					.getDefaultOutputLocation(project).toString());
-			if (getPrefService().isUpdateDefaultOutPutFolder()) {
+			if (getOptionsService().isUpdateDefaultOutPutFolder()) {
 				BundleProject.addOutputLocationToBundleClassPath(project);
 			}
 		} catch (InPlaceException e) {
@@ -1106,8 +1123,8 @@ public abstract class BundleJob extends JobStatus {
 		return duplicates;
 	}
 	
-	 protected CommandOptions getPrefService() {
-		 return InPlace.getDefault().getPrefService();
+	 protected CommandOptions getOptionsService() throws InPlaceException{
+		 return InPlace.getDefault().getOptionsService();
 	 }
 	 
 	/**

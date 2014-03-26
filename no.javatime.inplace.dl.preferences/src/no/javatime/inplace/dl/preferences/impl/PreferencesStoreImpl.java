@@ -6,6 +6,14 @@ import no.javatime.inplace.dl.preferences.service.PreferencesServiceStore;
 import org.osgi.service.prefs.BackingStoreException;
 import org.osgi.service.prefs.Preferences;
 
+/**
+ * Implementation of the preference store service interface
+ * <p>
+ * Not in use. Intended to be used as an interface with the 
+ * options service interface
+ * <p>
+ * Uses OSGI-INF/options.xml
+ */
 public class PreferencesStoreImpl implements PreferencesStore {
 
 	private final Preferences wrapper;

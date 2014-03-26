@@ -6,22 +6,26 @@ import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 
-import org.eclipse.core.resources.IProject;
-import org.eclipse.core.resources.WorkspaceJob;
-import org.osgi.framework.Bundle;
-
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundlemanager.BundleManager;
 import no.javatime.inplace.bundlemanager.BundleRegion;
 import no.javatime.inplace.bundlemanager.BundleTransition;
 import no.javatime.inplace.bundlemanager.BundleTransition.Transition;
 import no.javatime.inplace.bundlemanager.BundleTransition.TransitionError;
+import no.javatime.inplace.bundlemanager.InPlaceException;
 import no.javatime.inplace.bundleproject.OpenProjectHandler;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.dependencies.CircularReferenceException;
 import no.javatime.inplace.dependencies.ProjectSorter;
+import no.javatime.inplace.statushandler.BundleStatus;
+import no.javatime.inplace.statushandler.IBundleStatus.StatusCode;
 import no.javatime.util.messages.Category;
 import no.javatime.util.messages.UserMessage;
+
+import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.WorkspaceJob;
+import org.eclipse.ui.statushandlers.StatusManager;
+import org.osgi.framework.Bundle;
 
 public class UpdateScheduler {
 
@@ -52,12 +56,18 @@ public class UpdateScheduler {
 			
 			if (activateProjectJob.pendingProjects() > 0) {
 				// Update all projects together with the deactivated providers to activate
-				if (!InPlace.getDefault().getPrefService().isUpdateOnBuild()) {
-					for (IProject project : projects) {
-						BundleManager.getTransition().addPending(project, Transition.UPDATE_ON_ACTIVATE);					
+				try {
+					if (!InPlace.getDefault().getOptionsService().isUpdateOnBuild()) {
+						for (IProject project : projects) {
+							BundleManager.getTransition().addPending(project, Transition.UPDATE_ON_ACTIVATE);					
+						}
 					}
+				} catch (InPlaceException e) {
+					StatusManager.getManager().handle(
+							new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, e.getMessage(), e),
+							StatusManager.LOG);			
 				}
-				jobHandler(activateProjectJob, delay);			
+			jobHandler(activateProjectJob, delay);			
 			}	 else {
 				// No deactivated providers to activate
 				jobHandler(updateJob, delay);

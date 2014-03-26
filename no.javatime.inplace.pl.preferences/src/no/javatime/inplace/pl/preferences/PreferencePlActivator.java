@@ -1,8 +1,10 @@
 package no.javatime.inplace.pl.preferences;
 
 import no.javatime.inplace.dl.preferences.intface.CommandOptions;
+import no.javatime.inplace.pl.preferences.msg.Msg;
 
 import org.eclipse.jface.resource.ImageDescriptor;
+import org.eclipse.osgi.util.NLS;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.osgi.framework.BundleContext;
 import org.osgi.util.tracker.ServiceTracker;
@@ -18,7 +20,7 @@ public class PreferencePlActivator extends AbstractUIPlugin {
 	// The shared instance
 	private static PreferencePlActivator plugin;
 	private static BundleContext context;
-	private ServiceTracker<CommandOptions, CommandOptions> preferenceStoretracker;
+	private ServiceTracker<CommandOptions, CommandOptions> optionsStoretracker;
 
 	/**
 	 * The constructor
@@ -34,9 +36,9 @@ public class PreferencePlActivator extends AbstractUIPlugin {
 		super.start(context);
 		plugin = this;
 		PreferencePlActivator.context = context;
-		preferenceStoretracker = new ServiceTracker<CommandOptions, CommandOptions>
+		optionsStoretracker = new ServiceTracker<CommandOptions, CommandOptions>
 			(getContext(), CommandOptions.class.getName(), null);
-		preferenceStoretracker.open();
+		optionsStoretracker.open();
 	}
 
 	/*
@@ -45,7 +47,7 @@ public class PreferencePlActivator extends AbstractUIPlugin {
 	 */
 	public void stop(BundleContext context) throws Exception {
 		super.stop(context);
-		preferenceStoretracker.close();
+		optionsStoretracker.close();
 		plugin = null;
 		PreferencePlActivator.context = null;
 	}
@@ -67,17 +69,18 @@ public class PreferencePlActivator extends AbstractUIPlugin {
 	public static PreferencePlActivator getDefault() {
 		return plugin;
 	}
-
-	public CommandOptions getPrefService() {
-		try {		
-			return preferenceStoretracker.getService();
-			// return preferenceStoretracker.waitForService(1000);
-			// If timeout parameter becomes dynamic
-		} catch (IllegalArgumentException e) {
-//		} catch (InterruptedException e) {
-//			Thread.currentThread().interrupt();
+	/**
+	 * Get the service object for the command and manifest options
+	 * @return the command options service object
+	 * @throws IllegalStateException if the service object is null
+	 */
+	public CommandOptions getOptionsService() throws IllegalStateException {
+		
+		CommandOptions cmdOpt = optionsStoretracker.getService();
+		if (null == cmdOpt) {
+			throw new IllegalStateException(NLS.bind(Msg.STORE_SERVICE_EXCEPTION,  CommandOptions.class.getName()));
 		}
-		return null;
+		return cmdOpt;
 	}
 
 	/**

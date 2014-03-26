@@ -18,11 +18,20 @@ import no.javatime.inplace.bundlemanager.InPlaceException;
 import no.javatime.inplace.dl.preferences.intface.CommandOptions;
 import no.javatime.inplace.statushandler.BundleStatus;
 import no.javatime.inplace.statushandler.IBundleStatus.StatusCode;
+import no.javatime.inplace.ui.command.handlers.AutoExternalCommandHandler;
+import no.javatime.inplace.ui.command.handlers.AutoRefreshHandler;
+import no.javatime.inplace.ui.command.handlers.AutoUpdateHandler;
+import no.javatime.inplace.ui.command.handlers.DeactivateOnExitHandler;
+import no.javatime.inplace.ui.command.handlers.EagerActivationHandler;
+import no.javatime.inplace.ui.command.handlers.UIContributorsHandler;
+import no.javatime.inplace.ui.command.handlers.UpdateClassPathOnActivateHandler;
 import no.javatime.inplace.ui.views.BundleView;
 import no.javatime.util.messages.Category;
 import no.javatime.util.messages.Message;
 import no.javatime.util.messages.WarnMessage;
 
+import org.eclipse.core.commands.Command;
+import org.eclipse.core.commands.State;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.resources.WorkspaceJob;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences;
@@ -32,6 +41,8 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchWindow;
+import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.commands.ICommandService;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.eclipse.ui.progress.IWorkbenchSiteProgressService;
 import org.eclipse.ui.statushandlers.StatusManager;
@@ -53,7 +64,7 @@ public class Activator extends AbstractUIPlugin implements BundleJobEventListene
 	
 	// Get the workbench window from UI thread
 	private IWorkbenchWindow workBenchWindow = null;
-	private ServiceTracker<CommandOptions, CommandOptions> preferenceStoretracker;
+	private ServiceTracker<CommandOptions, CommandOptions> optionsStoretracker;
 
 	/**
 	 * The constructor
@@ -71,9 +82,17 @@ public class Activator extends AbstractUIPlugin implements BundleJobEventListene
 		Activator.context = context;
 		BundleManager.addBundleJobListener(Activator.getDefault());
 		loadPluginSettings(true);
-		preferenceStoretracker = new ServiceTracker<CommandOptions, CommandOptions>
+		optionsStoretracker = new ServiceTracker<CommandOptions, CommandOptions>
 				(context, CommandOptions.class.getName(), null);
-		preferenceStoretracker.open();
+		optionsStoretracker.open();
+		try {			
+			loadCheckedMenus();
+		} catch (InPlaceException e) {
+			StatusManager.getManager().handle(
+					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),
+					StatusManager.LOG);			
+			throw e;
+		}
 	}
 
 	/*
@@ -83,28 +102,19 @@ public class Activator extends AbstractUIPlugin implements BundleJobEventListene
 	public void stop(BundleContext context) throws Exception {
 		savePluginSettings(true);
 		BundleManager.removeBundleJobListener(this);
-		preferenceStoretracker.close();
-		preferenceStoretracker = null;
+		optionsStoretracker.close();
+		optionsStoretracker = null;
 		super.stop(context);
 		plugin = null;
 	}
 	
-	public CommandOptions getPrefService()throws InPlaceException {
-		CommandOptions storeService = null;
-		try {		
-			storeService = preferenceStoretracker.getService();
-			//storeService = preferenceStoretracker.waitForService(1000);
-			if (null == storeService) {
-				throw new InPlaceException("invalid_preference_service", CommandOptions.class.getName());			
-			}
-			return storeService;
-			// If timeout parameter becomes dynamic
-		} catch (IllegalArgumentException e) {
-			throw new InPlaceException(e, "invalid_preference_service", CommandOptions.class.getName());			
-//		} catch (InterruptedException e) {
-//			Thread.currentThread().interrupt();
-//			throw new InPlaceException("invalid_preference_service", CommandOptions.class.getName());	
+	public CommandOptions getOptionsService() throws InPlaceException {
+
+		CommandOptions cmdOpt = optionsStoretracker.getService();
+		if (null == cmdOpt) {
+			throw new InPlaceException("invalid_service", CommandOptions.class.getName());			
 		}
+		return cmdOpt;
 	}
 
 	@Override
@@ -154,6 +164,56 @@ public class Activator extends AbstractUIPlugin implements BundleJobEventListene
 		return InstanceScope.INSTANCE.getNode(PLUGIN_ID);
 	}
 	
+	/**
+	 * Restore state of checked menu entries
+	 * <p>
+	 * Only necessary on startup
+	 * @throws InPlaceException - if the command service or the option store is unavailable
+	 */
+	public void loadCheckedMenus() throws InPlaceException {
+
+		ICommandService service =
+				(ICommandService) PlatformUI.getWorkbench().getService(ICommandService.class);
+		if (null == service) {
+			throw new InPlaceException("invalid_service", ICommandService.class.getName());
+		}
+		CommandOptions cmdOpt = getOptionsService();
+		Command command = service.getCommand(EagerActivationHandler.commandId);
+		State state = command.getState(EagerActivationHandler.stateId);
+		state.setValue(cmdOpt.isEagerOnActivate());
+		service.refreshElements(EagerActivationHandler.commandId, null);
+
+		command = service.getCommand(AutoExternalCommandHandler.commandId);
+		state = command.getState(AutoExternalCommandHandler.stateId);
+		state.setValue(cmdOpt.isAutoHandleExternalCommands());
+		service.refreshElements(AutoExternalCommandHandler.commandId, null);
+
+		command = service.getCommand(AutoRefreshHandler.commandId);
+		state = command.getState(AutoRefreshHandler.stateId);
+		state.setValue(cmdOpt.isRefreshOnUpdate());
+		service.refreshElements(AutoRefreshHandler.commandId, null);
+
+		command = service.getCommand(AutoUpdateHandler.commandId);
+		state = command.getState(AutoUpdateHandler.stateId);
+		state.setValue(cmdOpt.isUpdateOnBuild());
+		service.refreshElements(AutoUpdateHandler.commandId, null);
+
+		command = service.getCommand(DeactivateOnExitHandler.commandId);
+		state = command.getState(DeactivateOnExitHandler.stateId);
+		state.setValue(cmdOpt.isDeactivateOnExit());
+		service.refreshElements(DeactivateOnExitHandler.commandId, null);
+
+		command = service.getCommand(UpdateClassPathOnActivateHandler.commandId);
+		state = command.getState(UpdateClassPathOnActivateHandler.stateId);
+		state.setValue(cmdOpt.isUpdateDefaultOutPutFolder());
+		service.refreshElements(UpdateClassPathOnActivateHandler.commandId, null);
+
+		command = service.getCommand(UIContributorsHandler.commandId);
+		state = command.getState(UIContributorsHandler.stateId);
+		state.setValue(cmdOpt.isAllowUIContributions());
+		service.refreshElements(UIContributorsHandler.commandId, null);
+	}
+
 	public void loadPluginSettings(Boolean sync) {
 
 		IEclipsePreferences prefs = getEclipsePreferenceStore();

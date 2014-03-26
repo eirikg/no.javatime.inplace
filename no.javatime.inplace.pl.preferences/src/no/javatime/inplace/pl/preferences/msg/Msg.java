@@ -8,6 +8,11 @@ public class Msg extends NLS {
 	private static final String BUNDLE_NAME = "no.javatime.inplace.pl.preferences.msg.PreferencesMessages"; //$NON-NLS-1$
 	
 	public static String PREFERENCE_FLUSH_EXCEPTION;
+	public static String STORE_SERVICE_EXCEPTION;
+	public static String INIT_PREF_PAGE_ERROR;
+	public static String INIT_DEFAULT_PREF_PAGE_ERROR;
+	public static String DEFAULT_PREF_PAGE_ERROR;
+	public static String SAVE_PREF_PAGE_ERROR;
 	public static String TIMEOUT_GROUP_LABEL;
 	public static String IS_TIMEOUT_LABEL;
 	public static String TIMEOUT_SECONDS_LABEL;

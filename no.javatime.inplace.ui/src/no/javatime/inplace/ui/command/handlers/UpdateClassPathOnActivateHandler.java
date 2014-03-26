@@ -12,6 +12,7 @@ package no.javatime.inplace.ui.command.handlers;
 
 import java.util.Map;
 
+import no.javatime.inplace.bundlemanager.InPlaceException;
 import no.javatime.inplace.dl.preferences.intface.CommandOptions;
 import no.javatime.inplace.statushandler.BundleStatus;
 import no.javatime.inplace.statushandler.IBundleStatus.StatusCode;
@@ -32,23 +33,27 @@ import org.osgi.service.prefs.BackingStoreException;
 public class UpdateClassPathOnActivateHandler extends AbstractHandler implements IElementUpdater {
 
 	public static String commandId = "no.javatime.inplace.command.activateclasspath";
-	public static String stateId = "no.javatime.inplace.command.activateclasspath.toggleState";
+	public static String stateId = "org.eclipse.ui.commands.toggleState";
 
 	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		
+		try {
 		State state = event.getCommand().getState(stateId);
-		CommandOptions cmdStore = Activator.getDefault().getPrefService();
+		CommandOptions cmdStore = Activator.getDefault().getOptionsService();
 		// Flip state value, update state and sync state with store
 		Boolean stateVal = !(Boolean) state.getValue();
 		state.setValue(stateVal);
 		cmdStore.setIsUpdateDefaultOutPutFolder(stateVal);
-		try {
 			cmdStore.flush();
 		} catch (BackingStoreException e) {
 			StatusManager.getManager().handle(
 					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, Msg.PREFERENCE_FLUSH_EXCEPTION, e),
 					StatusManager.LOG);
+		} catch (InPlaceException e) {
+			StatusManager.getManager().handle(
+					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),
+					StatusManager.LOG);			
 		}
 		return null;
 	}
@@ -61,8 +66,15 @@ public class UpdateClassPathOnActivateHandler extends AbstractHandler implements
 	 */
 	@Override
 	public void updateElement(UIElement element, @SuppressWarnings("rawtypes") Map parameters) {
-		CommandOptions cmdStore = Activator.getDefault().getPrefService();
-		element.setChecked(cmdStore.isUpdateDefaultOutPutFolder());
+
+		try {
+			CommandOptions cmdStore = Activator.getDefault().getOptionsService();
+			element.setChecked(cmdStore.isUpdateDefaultOutPutFolder());
+		}	catch (InPlaceException e) {
+			StatusManager.getManager().handle(
+					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),
+					StatusManager.LOG);			
+		}
 	}
 	
 	/**
@@ -73,20 +85,26 @@ public class UpdateClassPathOnActivateHandler extends AbstractHandler implements
 	@Override
 	public boolean isEnabled() {
 		
-		ICommandService service = (ICommandService) Activator.getDefault().getWorkbench().getService(ICommandService.class);
-		if (null != service) {
-			// Get stored value and synch with state. 
-			Command command = service.getCommand(commandId);
-			CommandOptions cmdStore = Activator.getDefault().getPrefService();
-			State state = command.getState(stateId);
-			Boolean stateVal = (Boolean) state.getValue();
-			Boolean storeVal = cmdStore.isUpdateDefaultOutPutFolder();
-			// Values may be different if stored  value has been changed elsewhere (e.g. preference page)
-			// If different update checked menu element before the menu becomes visible by broadcasting the change 
-			if (!stateVal.equals(storeVal)) {
-				state.setValue(storeVal);
-				service.refreshElements(command.getId(), null);
+		try {
+			ICommandService service = (ICommandService) Activator.getDefault().getWorkbench().getService(ICommandService.class);
+			if (null != service) {
+				// Get stored value and synch with state. 
+				Command command = service.getCommand(commandId);
+				CommandOptions cmdStore = Activator.getDefault().getOptionsService();
+				State state = command.getState(stateId);
+				Boolean stateVal = (Boolean) state.getValue();
+				Boolean storeVal = cmdStore.isUpdateDefaultOutPutFolder();
+				// Values may be different if stored  value has been changed elsewhere (e.g. preference page)
+				// If different update checked menu element before the menu becomes visible by broadcasting the change 
+				if (!stateVal.equals(storeVal)) {
+					state.setValue(storeVal);
+					service.refreshElements(command.getId(), null);
+				}
 			}
+		}	catch (InPlaceException e) {
+			StatusManager.getManager().handle(
+					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),
+					StatusManager.LOG);			
 		}
 		return true;
 	}

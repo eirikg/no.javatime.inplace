@@ -88,7 +88,7 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 	private static InPlace plugin;
 	private static BundleContext context;
 	private ServiceTracker<IBundleProjectService, IBundleProjectService> bundleProjectTracker;
-	private ServiceTracker<CommandOptions, CommandOptions> preferenceStoretracker;
+	private ServiceTracker<CommandOptions, CommandOptions> optionsStoretracker;
 
 	/**
 	 * Framework launching property specifying whether Equinox's FrameworkWiring
@@ -152,9 +152,9 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 		bundleProjectTracker =  new ServiceTracker<IBundleProjectService, IBundleProjectService>
 				(context, IBundleProjectService.class.getName(), null);
 		bundleProjectTracker.open();
-		preferenceStoretracker = new ServiceTracker<CommandOptions, CommandOptions>
-		(context, CommandOptions.class.getName(), null);
-		preferenceStoretracker.open();
+		optionsStoretracker = new ServiceTracker<CommandOptions, CommandOptions>
+				(context, CommandOptions.class.getName(), null);
+		optionsStoretracker.open();
 		BundleManager.addBundleJobListener(getDefault());
 		bundleRegion = BundleManager.getRegion();
 		BundleManager.addBundleTransitionListener(getDefault());
@@ -171,8 +171,8 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 			bundleProjectTracker = null;		
 			BundleManager.removeBundleJobListener(getDefault());
 			BundleManager.removeBundleTransitionListener(getDefault());
-			preferenceStoretracker.close();
-			preferenceStoretracker = null;
+			optionsStoretracker.close();
+			optionsStoretracker = null;
 			super.stop(context);
 			plugin = null;
 			InPlace.context = null;
@@ -200,7 +200,7 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 			if (ProjectProperties.isProjectWorkspaceActivated()) {
 				BundleJob shutdDownJob = null;
 				Collection<IProject> projects = ProjectProperties.getActivatedProjects();
-				if (getPrefService().isDeactivateOnExit()) {
+				if (getOptionsService().isDeactivateOnExit()) {
 					shutdDownJob = new DeactivateJob(DeactivateJob.deactivateOnshutDownJobName);
 				} else if (bundles.size() > 0) {
 					shutdDownJob = new UninstallJob(UninstallJob.shutDownJobName);
@@ -240,6 +240,8 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 					System.err.println(msg);
 				}
 			}				
+		} catch (InPlaceException e) {
+			ExceptionMessage.getInstance().handleMessage(e, e.getMessage());
 		} catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
 		} catch (OperationCanceledException e) {
@@ -315,19 +317,11 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 	public IBundleProjectDescription getBundleDescription(IProject project) throws InPlaceException {
 
 		IBundleProjectService bundleProjectService = null;
-		try {		
-			bundleProjectService = bundleProjectTracker.getService();
-			//bundleProjectService = bundleProjectTracker.waitForService(1000);
+
+		bundleProjectService = bundleProjectTracker.getService();
 			if (null == bundleProjectService) {
 				throw new InPlaceException("invalid_project_description_service", project.getName());	
 			}
-			// If timeout parameter becomes dynamic
-		} catch (IllegalArgumentException e) {
-			throw new InPlaceException(e, "invalid_project_description_service", project.getName());			
-//		} catch (InterruptedException e) {
-//			Thread.currentThread().interrupt();
-//			throw new InPlaceException("invalid_project_description_service", project.getName());	
-		}
 		try {
 			return bundleProjectService.getDescription(project);
 		} catch (CoreException e) {
@@ -343,37 +337,19 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 	public IBundleProjectService getBundleProjectService(IProject project) throws InPlaceException {
 
 		IBundleProjectService bundleProjectService = null;
-		try {		
-			bundleProjectService = bundleProjectTracker.getService();
-			if (null == bundleProjectService) {
-				throw new InPlaceException("invalid_project_description_service", project.getName());	
-			}
-			return bundleProjectService;
-			// If timeout parameter becomes dynamic
-		} catch (IllegalArgumentException e) {
-			throw new InPlaceException(e, "invalid_project_description_service", project.getName());			
-//		} catch (InterruptedException e) {
-//			Thread.currentThread().interrupt();
-//			throw new InPlaceException("invalid_project_description_service", project.getName());	
+		bundleProjectService = bundleProjectTracker.getService();
+		if (null == bundleProjectService) {
+			throw new InPlaceException("invalid_project_description_service", project.getName());	
 		}
+		return bundleProjectService;
 	}
-	
-	public CommandOptions getPrefService()throws InPlaceException {
-		CommandOptions storeService = null;
-		try {		
-			//storeService = preferenceStoretracker.waitForService(1000);
-			storeService = preferenceStoretracker.getService();
-			if (null == storeService) {
-				throw new InPlaceException("invalid_preference_service", CommandOptions.class.getName());			
-			}
-			return storeService;
-			// If timeout parameter becomes dynamic
-		} catch (IllegalArgumentException e) {
-			throw new InPlaceException(e, "invalid_preference_service", CommandOptions.class.getName());			
-//		} catch (InterruptedException e) {
-//			Thread.currentThread().interrupt();
-//			throw new InPlaceException("invalid_preference_service", CommandOptions.class.getName());	
+
+	public CommandOptions getOptionsService() throws InPlaceException {
+		CommandOptions cmdOpt = optionsStoretracker.getService();
+		if (null == cmdOpt) {
+			throw new InPlaceException("invalid_service", CommandOptions.class.getName());			
 		}
+		return cmdOpt;
 	}
 
 	/**

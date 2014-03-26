@@ -623,10 +623,17 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 			if (null != workbench && workbench.isClosing()) {
 				return;
 			}
-			if (!Activator.getDefault().getPrefService().isUpdateOnBuild() 
-					&& BundleManager.getTransition().containsPending(Transition.UPDATE)) {
-				showProjectInfo();
+			try {
+				if (!Activator.getDefault().getOptionsService().isUpdateOnBuild() 
+						&& BundleManager.getTransition().containsPending(Transition.UPDATE)) {
+					showProjectInfo();
+				}
+			}	catch (InPlaceException e) {
+				StatusManager.getManager().handle(
+						new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),
+						StatusManager.LOG);			
 			}
+
 		} else if (job instanceof BundleJob) {
 			// Don't update pages while Eclipse shuts down
 			IWorkbench workbench = Activator.getDefault().getWorkbench();

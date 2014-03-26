@@ -1,8 +1,10 @@
 package no.javatime.inplace.dl.preferences.intface;
 
+/**
+ * Service interface for access and flushing of commands and manifest (extended interface) options
+ */
 public interface CommandOptions extends ManifestOptions {
 
-	
 	public static final String IS_UPDATE_ON_BUILD = "isUpdateOnBuild";
 	public static final String IS_DEACTIVATE_ON_EXIT = "isDeactivateOnExit";
 	public static final String TIMEOUT_SECONDS = "timeoutSeconds";
@@ -11,22 +13,23 @@ public interface CommandOptions extends ManifestOptions {
 	public static final String IS_REFRESH_ON_UPDATE = "isRefreshOnUpdate";
 	public static final String IS_AUTO_HANDLE_EXTERNAL_COMMANDS = "isAutoHandleExternalCommands";
 	public static final String IS_ALLOW_UI_CONTRIBUTIONS = "isAllowUIContributions";
-	
+
 	/**
 	 * Get option for allowing UI contributions using extensions
 	 * 
 	 * @return true if UI contributions is allowed, otherwise false.
 	 */
 	public abstract boolean isAllowUIContributions();
-	
+
 	/**
 	 * Get default option for allowing UI contributions using extensions
+	 * 
 	 * @return true if UI contributions using extensions should be allowed , otherwise false.
 	 */
 	public abstract boolean getDefaultIsAllowUIContributions();
 
 	/**
-	 * Set if UI contributions using extensions should be allowed 
+	 * Set if UI contributions using extensions should be allowed
 	 * 
 	 * @param automatic true to allow UI contributions using extensions and false to not
 	 */
@@ -38,57 +41,63 @@ public interface CommandOptions extends ManifestOptions {
 	 * @return true if external commands are handled automatically, otherwise false.
 	 */
 	public abstract boolean isAutoHandleExternalCommands();
-	
+
 	/**
 	 * Get default option for handling external bundle commands
+	 * 
 	 * @return true if activation policy should be set to eager on activation , otherwise false.
 	 */
 	public abstract boolean getDefaultIsAutoHandleExternalCommands();
 
 	/**
-	 * Set if external bundle commands should be handled automatically 
+	 * Set if external bundle commands should be handled automatically
 	 * 
 	 * @param automatic true to handle external commands automatically and false to not
 	 */
 	public abstract void setIsAutoHandleExternalCommands(boolean automatic);
 
-
 	/**
 	 * Should bundles be refreshed right after they are updated
+	 * 
 	 * @return true if refresh after update, otherwise false.
 	 */
 	public abstract boolean isRefreshOnUpdate();
-	
+
 	/**
 	 * Get default option for refresh bundle after update
+	 * 
 	 * @return true if default is refresh after update, otherwise false.
 	 */
 	public abstract boolean getDefaultIsRefreshOnUpdate();
 
 	/**
 	 * Set whether bundles should be refreshed after they are updated
+	 * 
 	 * @param refresh true to refresh after update and false to not
 	 */
 	public abstract void setIsRefreshOnUpdate(boolean refresh);
 
 	/**
 	 * Should bundles be updated right after they are built
+	 * 
 	 * @return true if update after build, otherwise false.
 	 */
 	public abstract boolean isUpdateOnBuild();
-	
+
 	/**
 	 * Get default option for update bundle after build
+	 * 
 	 * @return true if default is update after build, otherwise false.
 	 */
 	public abstract boolean getDefaultIsUpdateOnBuild();
 
 	/**
 	 * Set whether bundles should be updated after they are built
+	 * 
 	 * @param update true to update after build and false to not
 	 */
 	public abstract void setIsUpdateOnBuild(boolean update);
-	
+
 	/**
 	 * Check for enabling/disabling the timeout functionality in Start and Stop methods
 	 * 

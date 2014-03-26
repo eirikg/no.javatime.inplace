@@ -13,8 +13,14 @@ package no.javatime.inplace.ui.command.contributions;
 import java.util.HashMap;
 import java.util.Map;
 
+import no.javatime.inplace.bundlejobs.BundleJob;
+import no.javatime.inplace.bundleproject.OpenProjectHandler;
+import no.javatime.inplace.ui.Activator;
+import no.javatime.inplace.ui.views.BundleProperties;
+import no.javatime.inplace.ui.views.BundleView;
+import no.javatime.util.messages.Message;
+
 import org.eclipse.jdt.core.IJavaProject;
-import org.eclipse.jdt.ui.IPackagesViewPart;
 import org.eclipse.jface.action.IContributionItem;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.viewers.ISelection;
@@ -25,16 +31,7 @@ import org.eclipse.ui.actions.CompoundContributionItem;
 import org.eclipse.ui.menus.CommandContributionItem;
 import org.eclipse.ui.menus.CommandContributionItemParameter;
 import org.eclipse.ui.menus.IWorkbenchContribution;
-import org.eclipse.ui.navigator.CommonNavigator;
 import org.eclipse.ui.services.IServiceLocator;
-
-import no.javatime.inplace.bundlejobs.BundleJob;
-import no.javatime.inplace.bundleproject.OpenProjectHandler;
-import no.javatime.inplace.bundleproject.ProjectProperties;
-import no.javatime.inplace.ui.Activator;
-import no.javatime.inplace.ui.views.BundleProperties;
-import no.javatime.inplace.ui.views.BundleView;
-import no.javatime.util.messages.Message;
 
 /**
  * Common parameters, images, labels and a utility for adding contribution elements to the main menu and the

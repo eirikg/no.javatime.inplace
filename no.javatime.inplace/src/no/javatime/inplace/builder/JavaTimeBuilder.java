@@ -14,18 +14,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 
-import org.eclipse.core.resources.IFile;
-import org.eclipse.core.resources.IProject;
-import org.eclipse.core.resources.IResource;
-import org.eclipse.core.resources.IResourceDelta;
-import org.eclipse.core.resources.IResourceDeltaVisitor;
-import org.eclipse.core.resources.IResourceVisitor;
-import org.eclipse.core.resources.IncrementalProjectBuilder;
-import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.ui.statushandlers.StatusManager;
-import org.osgi.framework.Bundle;
-
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundlemanager.BundleCommand;
 import no.javatime.inplace.bundlemanager.BundleManager;
@@ -45,6 +33,18 @@ import no.javatime.util.messages.Category;
 import no.javatime.util.messages.ExceptionMessage;
 import no.javatime.util.messages.TraceMessage;
 import no.javatime.util.messages.WarnMessage;
+
+import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.IResource;
+import org.eclipse.core.resources.IResourceDelta;
+import org.eclipse.core.resources.IResourceDeltaVisitor;
+import org.eclipse.core.resources.IResourceVisitor;
+import org.eclipse.core.resources.IncrementalProjectBuilder;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.ui.statushandlers.StatusManager;
+import org.osgi.framework.Bundle;
 
 /**
  * Checks and tags bundle projects that are JavaTime nature enabled with pending bundle operations. What kind
@@ -125,88 +125,92 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 	protected IProject[] build(int kind, @SuppressWarnings("rawtypes") Map args, IProgressMonitor monitor)
 			throws CoreException {
 
-		IProject project = getProject();
-		BundleTransition bundleTransition = BundleManager.getTransition();
-		BundleCommand bundleCommand = BundleManager.getCommand();
-		// Build is no longer pending. Remove as early as possible
-		// Also removed in the post build listener
-		bundleTransition.removePending(project, Transition.BUILD);
-		if (Category.DEBUG && Category.getState(Category.build))
-			TraceMessage.getInstance().getString("start_build");
-		IResourceDelta delta = getDelta(project);
-		if (kind == FULL_BUILD) {
-			fullBuild(monitor);
-		} else { // (kind == INCREMENTAL_BUILD || kind == AUTO_BUILD)
-			incrementalBuild(delta, monitor);
-		}
-		BundleRegion bundleRegion = BundleManager.getRegion();
-		Bundle bundle = bundleRegion.get(project);
-		// Uninstalled project with no deltas
-		IResourceDelta[] resourceDelta = null;
-		if (null != delta) {
-			resourceDelta = delta
-					.getAffectedChildren(IResourceDelta.ADDED | IResourceDelta.CHANGED, IResource.NONE);
-		} else if (kind != FULL_BUILD) { // null delta when not a full build imply an unspecified change
-			if (Category.getState(Category.bundleOperations)) {
-				TraceMessage.getInstance().getString("no_build_delta_available", project.getName());
+		try {
+			IProject project = getProject();
+			BundleTransition bundleTransition = BundleManager.getTransition();
+			BundleCommand bundleCommand = BundleManager.getCommand();
+			// Build is no longer pending. Remove as early as possible
+			// Also removed in the post build listener
+			bundleTransition.removePending(project, Transition.BUILD);
+			if (Category.DEBUG && Category.getState(Category.build))
+				TraceMessage.getInstance().getString("start_build");
+			IResourceDelta delta = getDelta(project);
+			if (kind == FULL_BUILD) {
+				fullBuild(monitor);
+			} else { // (kind == INCREMENTAL_BUILD || kind == AUTO_BUILD)
+				incrementalBuild(delta, monitor);
 			}
-		}
-		if (null != resourceDelta && resourceDelta.length == 0) { // no change since last build
-			if (Category.getState(Category.bundleOperations)) {
-				TraceMessage.getInstance().getString("no_build_delta", project.getName());
-			}
-		}
-
-		// Activated project is imported, opened or has new requirements on UI plug-in(s), when UI plug-ins are
-		// not allowed
-		if (!InPlace.getDefault().getPrefService().isAllowUIContributions()
-				&& ProjectProperties.getUIContributors().contains(project)) {
-			if (null == bundle) {
-				bundleCommand.registerBundleProject(project, bundle, null != bundle ? true : false);
-				// When an activated project is imported or opened, install in an activated workspace before
-				// deactivating the bundle
-				if (ProjectProperties.getActivatedProjects().size() > 1) {
-					bundleTransition.addPending(project, Transition.INSTALL);
+			BundleRegion bundleRegion = BundleManager.getRegion();
+			Bundle bundle = bundleRegion.get(project);
+			// Uninstalled project with no deltas
+			IResourceDelta[] resourceDelta = null;
+			if (null != delta) {
+				resourceDelta = delta
+						.getAffectedChildren(IResourceDelta.ADDED | IResourceDelta.CHANGED, IResource.NONE);
+			} else if (kind != FULL_BUILD) { // null delta when not a full build imply an unspecified change
+				if (Category.getState(Category.bundleOperations)) {
+					TraceMessage.getInstance().getString("no_build_delta_available", project.getName());
 				}
 			}
-			logDependentUIContributors(project);
-			bundleTransition.addPending(project, Transition.DEACTIVATE);
-		} else {
-			if (!ProjectProperties.hasBuildErrors(project) && ProjectProperties.hasBuildState(project)) {
-				if (null != bundle) {
-					// Moved projects requires a reactivate (uninstall and bundle activate)
-					try {
-						if (isMoveOperation(project)) {
-							bundleTransition.addPending(project, Transition.UNINSTALL);
-							bundleTransition.addPending(project, Transition.ACTIVATE);
-							// Project changed since last build
-						} else if (null != resourceDelta && resourceDelta.length > 0) {
-							bundleTransition.addPending(project, Transition.UPDATE);
-							// Unspecified change or a full build
-						} else if (null == delta) {
-							bundleTransition.addPending(project, Transition.UPDATE);
+			if (null != resourceDelta && resourceDelta.length == 0) { // no change since last build
+				if (Category.getState(Category.bundleOperations)) {
+					TraceMessage.getInstance().getString("no_build_delta", project.getName());
+				}
+			}
+
+			// Activated project is imported, opened or has new requirements on UI plug-in(s), when UI plug-ins are
+			// not allowed
+			if (!InPlace.getDefault().getOptionsService().isAllowUIContributions()
+					&& ProjectProperties.getUIContributors().contains(project)) {
+				if (null == bundle) {
+					bundleCommand.registerBundleProject(project, bundle, null != bundle ? true : false);
+					// When an activated project is imported or opened, install in an activated workspace before
+					// deactivating the bundle
+					if (ProjectProperties.getActivatedProjects().size() > 1) {
+						bundleTransition.addPending(project, Transition.INSTALL);
+					}
+				}
+				logDependentUIContributors(project);
+				bundleTransition.addPending(project, Transition.DEACTIVATE);
+			} else {
+				if (!ProjectProperties.hasBuildErrors(project) && ProjectProperties.hasBuildState(project)) {
+					if (null != bundle) {
+						// Moved projects requires a reactivate (uninstall and bundle activate)
+						try {
+							if (isMoveOperation(project)) {
+								bundleTransition.addPending(project, Transition.UNINSTALL);
+								bundleTransition.addPending(project, Transition.ACTIVATE);
+								// Project changed since last build
+							} else if (null != resourceDelta && resourceDelta.length > 0) {
+								bundleTransition.addPending(project, Transition.UPDATE);
+								// Unspecified change or a full build
+							} else if (null == delta) {
+								bundleTransition.addPending(project, Transition.UPDATE);
+							}
+						} catch (ProjectLocationException e) {
+							String msg = null;
+							if (project.isAccessible()) {
+								msg = ExceptionMessage.getInstance().formatString("project_location_error", project.getName());
+							} else {
+								msg = ExceptionMessage.getInstance().formatString("project_to_move_is_not_accessible");							
+							}
+							IBundleStatus status = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg, e);
+							StatusManager.getManager().handle(status, StatusManager.LOG);
 						}
-					} catch (ProjectLocationException e) {
-						String msg = null;
-						if (project.isAccessible()) {
-							msg = ExceptionMessage.getInstance().formatString("project_location_error", project.getName());
-						} else {
-							msg = ExceptionMessage.getInstance().formatString("project_to_move_is_not_accessible");							
-						}
-						IBundleStatus status = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg, e);
-						StatusManager.getManager().handle(status, StatusManager.LOG);
+					} else {
+						// Always tag an uninstalled activated project for bundle activation
+						bundleCommand.registerBundleProject(project, bundle, null != bundle ? true : false);
+						bundleTransition.addPending(project, Transition.ACTIVATE);
 					}
 				} else {
-					// Always tag an uninstalled activated project for bundle activation
-					bundleCommand.registerBundleProject(project, bundle, null != bundle ? true : false);
-					bundleTransition.addPending(project, Transition.ACTIVATE);
+					logBuildError(project);
 				}
-			} else {
-				logBuildError(project);
 			}
+			if (Category.DEBUG && Category.getState(Category.build))
+				TraceMessage.getInstance().getString("end_build");
+		} catch (InPlaceException e) {
+			ExceptionMessage.getInstance().handleMessage(e, e.getMessage());
 		}
-		if (Category.DEBUG && Category.getState(Category.build))
-			TraceMessage.getInstance().getString("end_build");
 		return null; // ok to return null;
 	}
 
@@ -255,30 +259,36 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 			StatusManager.getManager().handle(multiStatus, StatusManager.LOG);
 			cycle = true;
 		}
-		String msg = null;
-		if (InPlace.getDefault().getPrefService().isUpdateOnBuild()) {
-			msg = WarnMessage.getInstance().formatString("build_error_in_project_to_update", project.getName());
-		} else {
-			msg = WarnMessage.getInstance().formatString("build_error_in_project", project.getName());
-		}
-		IBundleStatus buildStatus = new BundleStatus(StatusCode.BUILDERROR, InPlace.PLUGIN_ID, msg);
-		Bundle bundle = BundleManager.getRegion().get(project);
-		if (null != bundle && (bundle.getState() & (Bundle.INSTALLED)) == 0) {
-			msg = WarnMessage.getInstance().formatString("using_current_revision", bundle);
-			IBundleStatus revisionStatus = new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, msg);
-			buildStatus.add(revisionStatus);
-		}
-		if (!cycle) {
-			projectErrorClosures.remove(project);
-			if (projectErrorClosures.size() > 0) {
-				// Add requiring bundles to build error message
-				msg = WarnMessage.getInstance().formatString("requiring_bundles",
-						ProjectProperties.formatProjectList(projectErrorClosures));
-				IBundleStatus status = new BundleStatus(StatusCode.BUILDERROR, InPlace.PLUGIN_ID, msg);
-				buildStatus.add(status);
+		try {
+			String msg = null;
+			if (InPlace.getDefault().getOptionsService().isUpdateOnBuild()) {
+				msg = WarnMessage.getInstance().formatString("build_error_in_project_to_update", project.getName());
+			} else {
+				msg = WarnMessage.getInstance().formatString("build_error_in_project", project.getName());
 			}
+			IBundleStatus buildStatus = new BundleStatus(StatusCode.BUILDERROR, InPlace.PLUGIN_ID, msg);
+			Bundle bundle = BundleManager.getRegion().get(project);
+			if (null != bundle && (bundle.getState() & (Bundle.INSTALLED)) == 0) {
+				msg = WarnMessage.getInstance().formatString("using_current_revision", bundle);
+				IBundleStatus revisionStatus = new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, msg);
+				buildStatus.add(revisionStatus);
+			}
+			if (!cycle) {
+				projectErrorClosures.remove(project);
+				if (projectErrorClosures.size() > 0) {
+					// Add requiring bundles to build error message
+					msg = WarnMessage.getInstance().formatString("requiring_bundles",
+							ProjectProperties.formatProjectList(projectErrorClosures));
+					IBundleStatus status = new BundleStatus(StatusCode.BUILDERROR, InPlace.PLUGIN_ID, msg);
+					buildStatus.add(status);
+				}
+			}
+			StatusManager.getManager().handle(buildStatus, StatusManager.LOG);
+		} catch (InPlaceException e) {
+			StatusManager.getManager().handle(
+					new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, e.getMessage(), e),
+					StatusManager.LOG);			
 		}
-		StatusManager.getManager().handle(buildStatus, StatusManager.LOG);
 	}
 
 	/**

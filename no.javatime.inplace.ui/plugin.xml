@@ -44,11 +44,11 @@
                categoryId="no.javatime.inplace.command.category"
                defaultHandler="no.javatime.inplace.ui.command.handlers.AutoExternalCommandHandler"
                description="Handle external bundle operations automatically or not"
-               id="no.javatime.inplace.command.autodependency"
-               name="no.javatime.inplace.command.autodependency">
+               id="no.javatime.inplace.command.autoexternalcommands"
+               name="no.javatime.inplace.command.autoexternalcommands">
             <state
-                  class="org.eclipse.jface.commands.ToggleState"
-                  id="no.javatime.inplace.command.autodependency.toggleState">
+                  class="org.eclipse.ui.handlers.RegistryToggleState:true"
+                  id="org.eclipse.ui.commands.toggleState">
             </state>
          </command>
          <command
@@ -58,8 +58,8 @@
                id="no.javatime.inplace.command.activateclasspath"
                name="no.javatime.inplace.command.activateclasspath">
             <state
-                  class="org.eclipse.jface.commands.ToggleState"
-                  id="no.javatime.inplace.command.activateclasspath.toggleState">
+                  class="org.eclipse.ui.handlers.RegistryToggleState:true"
+                  id="org.eclipse.ui.commands.toggleState">
             </state>
          </command>
          <command
@@ -69,8 +69,8 @@
                id="no.javatime.inplace.command.eageractivation"
                name="no.javatime.inplace.command.eageractivation">
             <state
-                  class="org.eclipse.jface.commands.ToggleState"
-                  id="no.javatime.inplace.command.eageractivation.toggleState">
+                  class="org.eclipse.ui.handlers.RegistryToggleState:true"
+                  id="org.eclipse.ui.commands.toggleState">
             </state>
          </command>
          <command
@@ -80,8 +80,8 @@
                id="no.javatime.inplace.command.autorefresh"
                name="no.javatime.inplace.command.autorefresh">
                 <state
-                  class="org.eclipse.jface.commands.ToggleState"
-                  id="no.javatime.inplace.command.autorefresh.toggleState">
+                  class="org.eclipse.ui.handlers.RegistryToggleState:true"
+                  id="org.eclipse.ui.commands.toggleState">
             </state>
          </command>
          <command
@@ -91,8 +91,8 @@
                id="no.javatime.inplace.command.autoupdate"
                name="no.javatime.inplace.command.autoupdate">
             <state
-                  class="org.eclipse.jface.commands.ToggleState"
-                  id="no.javatime.inplace.command.autoupdate.toggleState">
+                  class="org.eclipse.ui.handlers.RegistryToggleState:true"
+                  id="org.eclipse.ui.commands.toggleState">
             </state>
          </command>
          <command
@@ -102,8 +102,8 @@
                id="no.javatime.inplace.command.deactivate"
                name="no.javatime.inplace.command.deactivate">
             <state
-                  class="org.eclipse.jface.commands.ToggleState"
-                  id="no.javatime.inplace.command.deactivate.toggleState">
+                  class="org.eclipse.ui.handlers.RegistryToggleState:true"
+                  id="org.eclipse.ui.commands.toggleState">
             </state>
          </command>
          <command
@@ -113,8 +113,8 @@
                id="no.javatime.inplace.command.uicontributors"
                name="no.javatime.inplace.command.uicontributors">
             <state
-                  class="org.eclipse.jface.commands.ToggleState"
-                  id="no.javatime.inplace.command.uicontributiors.toggleState">
+                  class="org.eclipse.ui.handlers.RegistryToggleState:true"
+                  id="org.eclipse.ui.commands.toggleState">
             </state>
          </command>
          <category
@@ -214,7 +214,7 @@
                      style="toggle">
                </command>
                <command
-                     commandId="no.javatime.inplace.command.autodependency"
+                     commandId="no.javatime.inplace.command.autoexternalcommands"
                      label="Handle External Commands Automatically"
                      style="toggle">
                </command>

@@ -1,81 +1,57 @@
 package no.javatime.inplace.dl.preferences;
 
 import no.javatime.inplace.dl.preferences.impl.CommandOptionsImpl;
-import no.javatime.inplace.dl.preferences.impl.CommandOptionsTrackerImpl;
 import no.javatime.inplace.dl.preferences.intface.CommandOptions;
 
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
-import org.osgi.service.prefs.Preferences;
-import org.osgi.service.prefs.PreferencesService;
-import org.osgi.util.tracker.ServiceTracker;
+import org.osgi.framework.ServiceRegistration;
 
 /**
- * The activator is not in use. Activate/Deactivate is used for each declarative service
- * in this bundle. To enable use of the this bundle activator add a reference to it in manifest.
+ * Service interface for access and flushing of commands and manifest options
  * <p>
- * Consumes and provide access to the OSGi preference store using the service tracker service
- *
+ * The bundle uses the OSGi preference store for storage and access of the options. 
+ * <p>
+ * The provided service interface for options is also implemented using DS, which is not in use. 
+ * To enable DS remove the service registration/unregistration in the start/stop method and add the 
+ * OSGI-INFO/optins.xml file to the Service-Component header in the META-INF/manifest.mf
  */
 public class PreferencesDlActivator implements BundleActivator {
 
-	// OSGi preference store
-	private ServiceTracker<PreferencesService, PreferencesService> prefTracker;
-	private PreferencesService prefService;
 	private static PreferencesDlActivator thisBundle = null;
 	private static BundleContext context;
-	CommandOptionsTrackerImpl optionsTracker;
+	private ServiceRegistration<?> registration;
+
 	/*
 	 * (non-Javadoc)
+	 * 
 	 * @see org.osgi.framework.BundleActivator#start(org.osgi.framework.BundleContext)
 	 */
 	public void start(BundleContext context) throws Exception {
-		thisBundle = this;		
+		thisBundle = this;
 		PreferencesDlActivator.context = context;
-//		prefTracker = new ServiceTracker<PreferencesService, PreferencesService>
-//				(context, PreferencesService.class, null);
-//		prefTracker.open();
-		
-		CommandOptions cmdOpt = new CommandOptionsImpl();
-		context.registerService(CommandOptions.class.getName(), cmdOpt, null);
-//		optionsTracker = new CommandOptionsTrackerImpl(context);
-//		optionsTracker.open();
+		CommandOptionsImpl commandOptImpl = new CommandOptionsImpl();
+		registration = context.registerService(CommandOptions.class.getName(), commandOptImpl, null);
 	}
-	
+
 	/*
 	 * (non-Javadoc)
+	 * 
 	 * @see org.osgi.framework.BundleActivator#stop(org.osgi.framework.BundleContext)
 	 */
 	public void stop(BundleContext context) throws Exception {
-//		prefTracker.close();
-//		prefTracker = null;
-//		prefService = null;
-//		optionsTracker.close();
+		registration.unregister();
 		PreferencesDlActivator.context = null;
 		thisBundle = null;
 	}
-	
+
 	public static BundleContext getContext() {
 		return context;
 	}
 
 	/**
-	 * Get the preference store
-	 * @return a reference to the OSGi standard preference store interface
-	 * @throws Exception 
-	 */
-	public Preferences getStore() throws RuntimeException {
-		prefService = (PreferencesService) prefTracker.getService();
-		if (null == prefService) {
-			throw new RuntimeException("Failed to get the OSGi prefrence service");
-		}
-		Preferences preferences = prefService.getSystemPreferences();
-		return preferences;
-	}
-
-	/**
 	 * Returns the shared instance
-	 *
+	 * 
 	 * @return the shared instance
 	 */
 	public static PreferencesDlActivator getThisBundle() {

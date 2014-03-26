@@ -1,11 +1,11 @@
 package no.javatime.inplace.dl.preferences.impl;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-
 import no.javatime.inplace.dl.preferences.intface.CommandOptions;
 
+/**
+ * Service implementation for access and flushing of commands and manifest (extended class) options
+ *
+ */
 public class CommandOptionsImpl extends ManifestOptionsImpl implements CommandOptions {
 	
 	private final static boolean defIsDeactivateOnExit = false;
@@ -16,20 +16,7 @@ public class CommandOptionsImpl extends ManifestOptionsImpl implements CommandOp
 	private final static boolean defIsTimeOut = true;
 	private final static int defTimeOut = 5;
 	
-	private Collection<CommandOptions> options =
-			Collections.synchronizedCollection(new ArrayList<CommandOptions>());
-	
 	public CommandOptionsImpl() {
-	}
-
-	protected void bindCommandOptions (CommandOptions commandOptions) {
-		options.add(commandOptions);
-		System.out.println("Binding options");
-	}
-	
-	protected void unbindCommandOptions (CommandOptions commandOptions) {
-		options.remove(commandOptions);
-		System.out.println("Unbinding options");
 	}
 	
 	@Override

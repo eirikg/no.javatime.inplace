@@ -21,6 +21,7 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences;
+import org.eclipse.ui.statushandlers.StatusManager;
 import org.osgi.framework.Bundle;
 
 import no.javatime.inplace.InPlace;
@@ -184,7 +185,8 @@ public class ActivateBundleJob extends BundleJob {
 	 *         with a {@code StatusCode.OK} if no errors. All failures are added to the job status list.
 	 * @throws OperationCanceledException after install and resolve
 	 */
-	private IBundleStatus activate(IProgressMonitor monitor) throws OperationCanceledException, InterruptedException{
+	private IBundleStatus activate(IProgressMonitor monitor) throws 
+			OperationCanceledException, InterruptedException, InPlaceException {
 
 		Collection<Bundle> activatedBundles = null;
 		ProjectSorter projectSorter = new ProjectSorter();
@@ -252,7 +254,7 @@ public class ActivateBundleJob extends BundleJob {
 		// Set the bundle class path on start up if settings (dev and/or update bundle class path) are changed
 		if (getName().equals(ActivateBundleJob.activateStartupJobName)
 				&& (null != BundleProject.inDevelopmentMode() || 
-						getPrefService().isUpdateDefaultOutPutFolder())) {
+				getOptionsService().isUpdateDefaultOutPutFolder())) {
 			for (Bundle bundle : activatedBundles) {
 				resolveBundleClasspath(bundleRegion.getProject(bundle));
 			}

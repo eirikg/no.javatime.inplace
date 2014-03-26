@@ -141,12 +141,17 @@ public class ProjectProperties {
 			} catch (CoreException e) {
 				// Ignore closed or non-existing project
 			}
-			if (!InPlace.getDefault().getPrefService().isAllowUIContributions()) {
-				try {
+			try {
+				if (!InPlace.getDefault().getOptionsService().isAllowUIContributions()) {
 					projects.removeAll(getUIContributors());
-				} catch (CircularReferenceException e) {
-					// Ignore. Cycles are detected in any bundle job
 				}
+			} catch (CircularReferenceException e) {
+				// Ignore. Cycles are detected in any bundle job
+			}	catch (InPlaceException e) {
+				StatusManager.getManager().handle(
+						new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, e.getMessage(), e),
+						StatusManager.LOG);
+				// assume allow ui contributers
 			}
 		}
 		return projects;
@@ -169,12 +174,17 @@ public class ProjectProperties {
 			} catch (CoreException e) {
 				// Ignore closed or non-existing project
 			}
-			if (!InPlace.getDefault().getPrefService().isAllowUIContributions()) {
-				try {
+			try {
+				if (!InPlace.getDefault().getOptionsService().isAllowUIContributions()) {
 					projects.removeAll(getUIContributors());
-				} catch (CircularReferenceException e) {
-					// Ignore. Cycles are detected in any bundle job
 				}
+			} catch (CircularReferenceException e) {
+				// Ignore. Cycles are detected in any bundle job
+			}	catch (InPlaceException e) {
+				StatusManager.getManager().handle(
+						new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, e.getMessage(), e),
+						StatusManager.LOG);
+				// assume allow ui contributers
 			}
 		}
 		return projects;
@@ -260,7 +270,7 @@ public class ProjectProperties {
 		try {
 			if (project.hasNature(JavaCore.NATURE_ID) && project.isNatureEnabled(PLUGIN_NATURE_ID)
 					&& !isProjectActivated(project)) {
-				if (InPlace.getDefault().getPrefService().isAllowUIContributions()) {
+				if (InPlace.getDefault().getOptionsService().isAllowUIContributions()) {
 					return true;
 				} else {
 					Collection<IProject> uiContributors = getUIContributors();
@@ -275,7 +285,13 @@ public class ProjectProperties {
 			// Ignore closed or non-existing project
 		} catch (CircularReferenceException e) {
 			// Ignore. Cycles are detected in any bundle job
+		}	catch (InPlaceException e) {
+			StatusManager.getManager().handle(
+					new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, e.getMessage(), e),
+					StatusManager.LOG);
+			// assume not candidate
 		}
+
 		return false;
 	}
 
