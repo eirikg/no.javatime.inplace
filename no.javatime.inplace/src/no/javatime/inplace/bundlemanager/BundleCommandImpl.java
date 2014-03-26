@@ -27,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.eclipse.core.resources.IProject;
+import org.eclipse.osgi.framework.internal.core.BundleHost;
 import org.eclipse.ui.statushandlers.StatusManager;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -476,17 +477,19 @@ class BundleCommandImpl implements BundleCommand {
 		try {
 			Future<String> future = null;
 			future = executor.submit(new StartTask(bundle, startOption));
-			future.get(timeOut, TimeUnit.SECONDS);
+			future.get(timeOut, TimeUnit.MILLISECONDS);
 		} catch (CancellationException e) {			
 			throw new InPlaceException(e);
 		} catch (TimeoutException e) {			
-			// TODO Work on a solution to interrupt the running bundle
+			// TODO Work on a solution to stop the running bundle
 			// Using BundleHost is for testing/experimenting
-//			BundleHost bh = bundle.adapt(BundleHost.class);
-//			if (bh != null) {
-//				System.out.println("BundleHost ok");
-//				t = bh.getStateChanging();
-//				t.interrupt();
+			BundleHost bh = bundle.adapt(BundleHost.class);
+			if (bh != null) {
+				System.out.println("BundleHost ok");
+				t = bh.getStateChanging();
+				t.interrupt();
+				t.stop();
+			}
 //			} else
 //				System.out.println("BundleHost failed to adapt");
 //			new Thread(new Runnable() {
@@ -614,7 +617,7 @@ class BundleCommandImpl implements BundleCommand {
 		try {
 			Future<String> future = null;
 			future = executor.submit(new StopTask(bundle, stopTransient));
-			future.get(timeOut, TimeUnit.SECONDS);
+			future.get(timeOut, TimeUnit.MILLISECONDS);
 		} catch (CancellationException e) {			
 			throw new InPlaceException(e);
 		} catch (TimeoutException e) {			
