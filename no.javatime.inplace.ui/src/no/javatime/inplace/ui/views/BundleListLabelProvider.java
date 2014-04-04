@@ -141,6 +141,8 @@ public class BundleListLabelProvider extends LabelProvider implements ITableLabe
 						TransitionError error = bundleTransition.getError(project);
 						if (error == TransitionError.DEPENDENCY) {
 							return warningImage;
+						} else if (error == TransitionError.INCOMPLETE) {
+							return errorImage;							
 						} else if (error == TransitionError.BUILD) {
 							return warningImage; 
 						} else {

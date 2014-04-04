@@ -102,7 +102,7 @@
                id="no.javatime.inplace.command.deactivate"
                name="no.javatime.inplace.command.deactivate">
             <state
-                  class="org.eclipse.ui.handlers.RegistryToggleState:true"
+                  class="org.eclipse.ui.handlers.RegistryToggleState:false"
                   id="org.eclipse.ui.commands.toggleState">
             </state>
          </command>

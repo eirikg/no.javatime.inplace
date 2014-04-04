@@ -415,7 +415,9 @@ public abstract class BundleJob extends JobStatus {
 			int timeoutVal = 5000;
 			try {
 				timeout = getOptionsService().isTimeOut();
-				timeoutVal = getTimeout(timeout);	
+				if (timeout) {
+					timeoutVal = getTimeout(timeout);
+				}
 			} catch (InPlaceException e) {
 				addStatus(new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, e.getMessage(), e));			
 			}
@@ -427,10 +429,12 @@ public abstract class BundleJob extends JobStatus {
 					if (Category.getState(Category.progressBar))
 						sleep(sleepTime);
 					localMonitor.subTask(StartJob.startSubTaskName + bundle.getSymbolicName());
+					if (Thread.currentThread().isInterrupted()) {
+						throw new InterruptedException();
+					}
 					if (!bundleTransition.containsPending(bundle, Transition.RESOLVE, true)
 							&& (!ManifestUtil.isFragment(bundle))
 							&& ((bundle.getState() & (Bundle.RESOLVED | Bundle.STOPPING)) != 0)) {
-						TransitionError transitionError = bundleTransition.getError(bundle);
 						int startOption = Bundle.START_TRANSIENT;
 						if (ManifestUtil.getlazyActivationPolicy(bundle)) {
 							startOption = Bundle.START_ACTIVATION_POLICY; 
@@ -439,10 +443,6 @@ public abstract class BundleJob extends JobStatus {
 							bundleCommand.start(bundle, startOption, timeoutVal);
 						} else {
 							bundleCommand.start(bundle, startOption);									
-						}
-						bundleTransition.setTransitionError(bundle, transitionError);
-						if (Thread.currentThread().isInterrupted()) {
-							throw new InterruptedException();
 						}
 					}
 				} catch (BundleActivatorException e) {
@@ -456,11 +456,27 @@ public abstract class BundleJob extends JobStatus {
 					}
 				} catch (InPlaceException e) {
 					result = addError(e, e.getLocalizedMessage(), bundle.getBundleId());
-				} catch (TimeoutException e) {
-					String msg = ExceptionMessage.getInstance().formatString("bundle_start_timeout_error", Integer.toString(timeoutVal), bundle);
-					IBundleStatus errStat = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg, e);
-					msg = WarnMessage.getInstance().formatString("state_changing", bundle);
-					createMultiStatus(errStat, addWarning(null, msg, BundleManager.getRegion().getProject(bundle)));
+				} catch (IllegalStateException e) {
+					try {
+						boolean deactivateOnTerminate = getOptionsService().isRefreshOnTerminate();
+						if (deactivateOnTerminate) {
+//							if (!isPendingProject(bundleRegion.getProject(bundle))) {
+//								addPendingProject(bundleRegion.getProject(bundle));
+//							}
+							bundleTransition.addPending(bundle, Transition.REFRESH);
+						}
+					} catch (InPlaceException ed) {
+						addStatus(new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, e.getMessage(), ed));			
+					}					
+					if (null != e.getCause() && e.getCause() instanceof TimeoutException) {
+						String msg = ExceptionMessage.getInstance().formatString("bundle_start_timeout_error", Integer.toString(timeoutVal), bundle);
+						IBundleStatus errStat = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg, e);
+						msg = WarnMessage.getInstance().formatString("state_changing", bundle);
+						createMultiStatus(errStat, addWarning(null, msg, BundleManager.getRegion().getProject(bundle)));
+						// Thread.currentThread().interrupt();
+					}
+					addError(e,e.getMessage());
+					throw new InterruptedException();
 				} finally {
 					localMonitor.worked(1);
 				}
@@ -498,7 +514,9 @@ public abstract class BundleJob extends JobStatus {
 			int timeoutVal = 5000;
 			try {
 				timeout = getOptionsService().isTimeOut();
-				timeoutVal = getTimeout(timeout);	
+				if (timeout) {
+					timeoutVal = getTimeout(timeout);
+				}
 			} catch (InPlaceException e) {
 				addStatus(new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, e.getMessage(), e));			
 			}
@@ -507,25 +525,40 @@ public abstract class BundleJob extends JobStatus {
 					if (Category.getState(Category.progressBar))
 						sleep(sleepTime);
 					localMonitor.subTask(StopJob.stopSubTaskName + bundle.getSymbolicName());
+					if (Thread.currentThread().isInterrupted()) {
+						throw new InterruptedException();
+					}
 					if ((bundle.getState() & (Bundle.ACTIVE | Bundle.STARTING)) != 0) {
-						TransitionError transitionError = bundleTransition.getError(bundle);
 						if (timeout) {
 							bundleCommand.stop(bundle, false, timeoutVal);
 						} else {
 							bundleCommand.stop(bundle, false);							
 						}
-						bundleTransition.setTransitionError(bundle, transitionError);
-						if (Thread.currentThread().isInterrupted()) {
-							throw new InterruptedException();
-						}
 					}
 				} catch (InPlaceException e) {
 					result = addError(e, e.getLocalizedMessage(), bundle.getBundleId());
-				} catch (TimeoutException e) {
-					String msg = ExceptionMessage.getInstance().formatString("bundle_stop_timeout_error", Integer.toString(timeoutVal), bundle);
-					IBundleStatus errStat = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg, e);
-					msg = WarnMessage.getInstance().formatString("state_changing", bundle);
-					createMultiStatus(errStat, addWarning(null, msg, BundleManager.getRegion().getProject(bundle)));
+				} catch (IllegalStateException e) {
+					try {
+						// Deactiavte here
+//						uninstall(Collections.singletonList(bundle),EnumSet.of(Integrity.REQUIRING),
+//								new SubProgressMonitor(monitor, 1), false);
+						boolean refreshOnTerminate = getOptionsService().isRefreshOnTerminate();
+						if (refreshOnTerminate) {
+							bundleTransition.addPending(bundle, Transition.REFRESH);
+							// Bundle will be updated when reactivated
+							bundleTransition.removePending(bundle, Transition.UPDATE);
+						}
+					} catch (InPlaceException ed) {
+						addStatus(new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, e.getMessage(), ed));			
+					}					
+					if (null != e.getCause() && e.getCause() instanceof TimeoutException) {
+						String msg = ExceptionMessage.getInstance().formatString("bundle_stop_timeout_error", Integer.toString(timeoutVal), bundle);
+						IBundleStatus errStat = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg, e);
+						msg = WarnMessage.getInstance().formatString("state_changing", bundle);
+						createMultiStatus(errStat, addWarning(null, msg, BundleManager.getRegion().getProject(bundle)));
+					}
+					addError(e,e.getMessage());
+					throw new InterruptedException();
 				} finally {
 					localMonitor.worked(1);
 				}

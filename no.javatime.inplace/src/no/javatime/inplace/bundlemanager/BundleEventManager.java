@@ -37,6 +37,7 @@ import no.javatime.inplace.bundlejobs.InstallJob;
 import no.javatime.inplace.bundlejobs.UninstallJob;
 import no.javatime.inplace.bundlejobs.UpdateScheduler;
 import no.javatime.inplace.bundlemanager.BundleTransition.Transition;
+import no.javatime.inplace.bundlemanager.BundleTransition.TransitionError;
 import no.javatime.inplace.bundlemanager.state.ActiveState;
 import no.javatime.inplace.bundlemanager.state.BundleNode;
 import no.javatime.inplace.bundlemanager.state.BundleState;
@@ -289,7 +290,7 @@ class BundleEventManager implements FrameworkListener, SynchronousBundleListener
 				}
 			} else {
 				bundleNode.setCurrentState(BundleStateFactory.INSTANCE.installedState);
-				externalTransitionMsg(event);
+				undefinedTransitions(event);
 			}
 			break;
 		}
@@ -302,7 +303,7 @@ class BundleEventManager implements FrameworkListener, SynchronousBundleListener
 		case BundleEvent.UPDATED: {
 			if (!(state instanceof InstalledState)) {
 				bundleNode.setCurrentState(BundleStateFactory.INSTANCE.installedState);
-				externalTransitionMsg(event);
+				undefinedTransitions(event);
 			}
 			break;
 		}
@@ -315,7 +316,7 @@ class BundleEventManager implements FrameworkListener, SynchronousBundleListener
 				if (null != bundleNode) {
 					bundleNode.setCurrentState(BundleStateFactory.INSTANCE.uninstalledState);
 				}
-				externalTransitionMsg(event);
+				undefinedTransitions(event);
 				// Uninstalling a bundle from an external source is not permitted in an activated workspace
 				if (ProjectProperties.isProjectWorkspaceActivated()) {
 					externalUninstall(bundle, project);
@@ -355,7 +356,7 @@ class BundleEventManager implements FrameworkListener, SynchronousBundleListener
 				}
 			} else if (!(state instanceof ActiveState)) {
 				bundleNode.setCurrentState(BundleStateFactory.INSTANCE.activeState);
-				externalTransitionMsg(event);
+				undefinedTransitions(event);
 			}
 			break;
 		}
@@ -366,7 +367,7 @@ class BundleEventManager implements FrameworkListener, SynchronousBundleListener
 		case BundleEvent.STARTED: {
 			if (!(state instanceof ActiveState)) {
 				bundleNode.setCurrentState(BundleStateFactory.INSTANCE.activeState);
-				externalTransitionMsg(event);
+				undefinedTransitions(event);
 			}
 			break;
 		}
@@ -382,10 +383,10 @@ class BundleEventManager implements FrameworkListener, SynchronousBundleListener
 		case BundleEvent.STOPPED: {
 			if (transition == Transition.START) {
 				// Error starting bundle. The framework is stopping the bundle
-			} //else // Denne tuller nÃ¥r vi kjÃ¸rer en extern operasjon
+			} //else // Denne tuller når vi kjører en ekstern operasjon
 			if (!(state instanceof ResolvedState)) {
 				bundleNode.setCurrentState(BundleStateFactory.INSTANCE.resolvedState);
-				externalTransitionMsg(event);
+				undefinedTransitions(event);
 			}
 			break;
 		}
@@ -414,12 +415,12 @@ class BundleEventManager implements FrameworkListener, SynchronousBundleListener
 				} else {
 					bundleNode.setCurrentState(BundleStateFactory.INSTANCE.resolvedState);
 				}
-				externalTransitionMsg(event);
+				undefinedTransitions(event);
 			}
 			break;
 		}
 		default: {
-			externalTransitionMsg(event);
+			undefinedTransitions(event);
 		}
 		} // switch
 		// @formatter:on
@@ -434,19 +435,26 @@ class BundleEventManager implements FrameworkListener, SynchronousBundleListener
 	}
 
 	/**
-	 * Register external transition and output that an external operation has been executed.
+	 * Register external and incomplete transitions and informs that they have been executed.
 	 * 
 	 * @param event bundle event after a bundle operation has been executed
 	 */
-	private void externalTransitionMsg(BundleEvent event) {
+	private void undefinedTransitions(BundleEvent event) {
 		Bundle bundle = event.getBundle();
 		final String location = bundle.getLocation();
 		BundleCommandImpl bundleCommand = BundleCommandImpl.INSTANCE;
-		BundleTransitionImpl.INSTANCE.setTransition(bundle, Transition.EXTERNAL);
-		if (Category.getState(Category.infoMessages)) {
-			final String symbolicName = bundleRegion.getSymbolicKey(bundle, null);
-			final String stateName = bundleCommand.getStateName(event);
-			UserMessage.getInstance().getString("external_bundle_operation", symbolicName, stateName, location);
+		BundleTransitionImpl bundleTransition = BundleTransitionImpl.INSTANCE;
+		final String symbolicName = bundleRegion.getSymbolicKey(bundle, null);
+		final String stateName = bundleCommand.getStateName(event);
+		if (bundleTransition.getError(bundle) == TransitionError.INCOMPLETE) {
+			if (Category.getState(Category.infoMessages)) {
+				UserMessage.getInstance().getString("incomplete_bundle_operation", symbolicName, stateName, location);
+			}
+		} else {
+			bundleTransition.setTransition(bundle, Transition.EXTERNAL);
+			if (Category.getState(Category.infoMessages)) {
+				UserMessage.getInstance().getString("external_bundle_operation", symbolicName, stateName, location);
+			}
 		}
 	}
 
@@ -524,7 +532,7 @@ class BundleEventManager implements FrameworkListener, SynchronousBundleListener
 					}
 				} else if (autoDependencyAction == 1) {
 					// Deactivate workspace to obtain a consistent state between all workspace bundles
-					DeactivateJob deactivateJob = new DeactivateJob(DeactivateJob.deactivateJobName);
+					DeactivateJob deactivateJob = new DeactivateJob(DeactivateJob.deactivateWorkspaceJobName);
 					deactivateJob.addPendingProjects(ProjectProperties.getActivatedProjects());
 					BundleManager.addBundleJob(deactivateJob, 0);
 				}

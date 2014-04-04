@@ -12,7 +12,9 @@ package no.javatime.inplace.bundlejobs;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
 
+import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.jobs.IJobChangeEvent;
 import org.eclipse.core.runtime.jobs.IJobManager;
 import org.eclipse.core.runtime.jobs.Job;
@@ -20,6 +22,10 @@ import org.eclipse.core.runtime.jobs.JobChangeAdapter;
 import org.eclipse.ui.statushandlers.StatusManager;
 
 import no.javatime.inplace.InPlace;
+import no.javatime.inplace.bundlemanager.BundleManager;
+import no.javatime.inplace.bundlemanager.BundleTransition;
+import no.javatime.inplace.bundlemanager.BundleTransition.Transition;
+import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.statushandler.BundleStatus;
 import no.javatime.inplace.statushandler.IBundleStatus;
 import no.javatime.inplace.statushandler.IBundleStatus.StatusCode;
@@ -112,12 +118,36 @@ public class BundleJobListener extends JobChangeAdapter {
 						InPlace.PLUGIN_ID, rootMsg));
 				StatusManager.getManager().handle(multiStatus, StatusManager.LOG);
 			}
-
 			if (Category.getState(Category.bundleOperations)) {
 				if (Category.DEBUG)
 					getBundlesJobRunState(bundleJob);
 				TraceMessage.getInstance().getString("end_job", job.getName());					
 			}
+			schedulePendingOperations(bundleJob);
+		}
+	}
+	
+	private void schedulePendingOperations(BundleJob job) {
+
+		BundleTransition bundleTransition = BundleManager.getTransition();
+		RefreshJob refreshJob = null;
+		DeactivateJob deactivateJob = null;
+		Collection<IProject> activatedProjects = ProjectProperties.getActivatedProjects();
+		Collection<IProject> projectsToRefresh = 
+				bundleTransition.getPendingProjects(activatedProjects, Transition.REFRESH);
+		if (projectsToRefresh.size() > 0) {
+			refreshJob = new RefreshJob(RefreshJob.refreshJobName);			
+			refreshJob.addPendingProjects(projectsToRefresh);
+			bundleTransition.removePending(projectsToRefresh, Transition.REFRESH);
+			BundleManager.addBundleJob(refreshJob, 0);
+		}
+		Collection<IProject> projectsToDeactivate = 
+				bundleTransition.getPendingProjects(activatedProjects, Transition.DEACTIVATE);
+		if (projectsToDeactivate.size() > 0) {
+			deactivateJob = new DeactivateJob(DeactivateJob.deactivateJobName);
+			deactivateJob.addPendingProjects(projectsToDeactivate);
+			bundleTransition.removePending(projectsToDeactivate, Transition.DEACTIVATE);
+			BundleManager.addBundleJob(deactivateJob, 0);
 		}
 	}
 	

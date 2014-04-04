@@ -22,6 +22,7 @@ import org.eclipse.core.runtime.SubProgressMonitor;
 import org.osgi.framework.Bundle;
 
 import no.javatime.inplace.InPlace;
+import no.javatime.inplace.bundlemanager.BundleTransition.TransitionError;
 import no.javatime.inplace.bundlemanager.InPlaceException;
 import no.javatime.inplace.dependencies.BundleSorter;
 import no.javatime.inplace.dependencies.CircularReferenceException;

@@ -67,7 +67,7 @@ public interface BundleCommand {
 	 */
 	public void start(Bundle bundle, int startOption) throws InPlaceException;
 	
-	public void start(Bundle bundle, int startOption, int timeOut) throws InPlaceException, InterruptedException, TimeoutException;
+	public void start(Bundle bundle, int startOption, int timeOut) throws InPlaceException, InterruptedException, IllegalStateException;
 
 	/**
 	 * Stops the specified bundle. The bundle is ignored if not in state STARTING or ACTIVE.
@@ -78,7 +78,7 @@ public interface BundleCommand {
 	 */
 	public void stop(Bundle bundle, Boolean stopTransient) throws InPlaceException;
 	public void stop(Bundle bundle, boolean stopTransient, int timeOut) 
-			throws InPlaceException, InterruptedException, TimeoutException;
+			throws InPlaceException, InterruptedException, IllegalStateException;
 
 
 	/**
@@ -245,5 +245,10 @@ public interface BundleCommand {
 	 * @return true if bundle project is registered as a bundle project and false if not
 	 */
 	public boolean isBundleProjectRegistered(IProject project);
+	
+	public boolean isStateChanging();
+	public void stopCurrentBundleOperation() throws TimeoutException;
+
+
 
 }

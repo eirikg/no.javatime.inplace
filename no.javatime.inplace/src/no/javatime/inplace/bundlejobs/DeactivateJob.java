@@ -56,6 +56,9 @@ public class DeactivateJob extends NatureJob {
 
 	/** Standard name of an deactivate job */
 	final public static String deactivateJobName = Message.getInstance().formatString("deactivate_job_name");
+	final public static String deactivateWorkspaceJobName = Message.getInstance().formatString("deactivate_workspace_job_name");
+
+	
 	/** Can be used at IDE shut down */
 	final public static String deactivateOnshutDownJobName = Message.getInstance().formatString("deactivate_on_shutDown_job_name");
 	/** Used to name the set of operations needed to deactivate a bundle */
@@ -165,12 +168,13 @@ public class DeactivateJob extends NatureJob {
 				addWarning(null, msg, null);
 			}
 		}
-		deactivateNature(getPendingProjects(), new SubProgressMonitor(monitor, 1));
+//		deactivateNature(getPendingProjects(), new SubProgressMonitor(monitor, 1));
 		InPlace.getDefault().savePluginSettings(true, true);
 		// Keep a consistent set of states among not activated bundles. All not activated bundles are
 		// collectively either in state installed or in state uninstalled.
 		// If this is the last project(s) to deactivate, move all bundles to state uninstalled
-		if (ProjectProperties.getActivatedProjects().size() == 0) {
+//		if (ProjectProperties.getActivatedProjects().size() == 0) {
+		if (ProjectProperties.getActivatedProjects().size() <= pendingProjects()) {
 			Collection<Bundle> allBundles = bundleRegion.getBundles();
 			// Only sort bundles
 			Collection<Bundle> bundles = bs.sortDeclaredRequiringBundles(allBundles, allBundles);
@@ -182,6 +186,7 @@ public class DeactivateJob extends NatureJob {
 				if (monitor.isCanceled()) {
 					throw new OperationCanceledException();
 				}
+				deactivateNature(getPendingProjects(), new SubProgressMonitor(monitor, 1));
 				refresh(bundles, new SubProgressMonitor(monitor, 1));
 			} catch (InPlaceException e) {
 				String msg = ExceptionMessage.getInstance().formatString("deactivate_job_uninstalled_state",
@@ -227,6 +232,7 @@ public class DeactivateJob extends NatureJob {
 				if (null != bundlesToResolve) {
 					pendingBundles.addAll(bundlesToResolve);
 				}
+				deactivateNature(getPendingProjects(), new SubProgressMonitor(monitor, 1));
 				refresh(pendingBundles, new SubProgressMonitor(monitor, 2));
 				if (monitor.isCanceled()) {
 					throw new OperationCanceledException();

@@ -41,14 +41,13 @@ public interface BundleTransition {
 		/** Set when receiving the {@linkplain BundleEvent#STARTING} event from the framework */
 		LAZY_LOAD,
 		/**
-		 * Set as pending to indicate the bundle should be updated together with deactivated bundles to activate
+		 * Set as pending to indicate that the bundle should be updated together with deactivated bundles to activate
 		 * in an activated workspace
 		 */
-		ACTIVATE,
-		
+		ACTIVATE,	
 		/**
-		 * An activate project job triggers an update job when the workspace is activated and
-		 * an activate bundle job when the workspace is deactivated.
+		 * An activate project job triggers an update job when the workspace is deactivated and
+		 * an activate bundle job when the workspace is activated.
 		 * If Update on Build is switched off and the workspace is activated, mark that these projects
 		 * should be updated as part of the activation process		 
 		 */
@@ -93,7 +92,14 @@ public interface BundleTransition {
 	}
 
 	public static enum TransitionError {
-		NOERROR, ERROR, DUPLICATE, CYCLE, BUILD, DEPENDENCY
+		NOERROR, ERROR, DUPLICATE, CYCLE, BUILD, DEPENDENCY, 
+		/**
+		 * A state indicating that a bundle command/operation did not complete or did complete, but possibly in an 
+		 * inconsistent manner. May for instance happen when executing an infinite loop in Start/Stop methods
+		 * Never ending or operations that timeout will have an incomplete transition error and the 
+		 * state will be the state the bundle had when the previous transition ended. 
+		 */
+		INCOMPLETE
 	}
 
 	/**
@@ -357,6 +363,7 @@ public interface BundleTransition {
 	 * 
 	 * @param project bundle project to remove this transition from
 	 * @param transition to remove from this bundle project
+	 * @return false if remove fails for the specified project
 	 */
 	public boolean removePending(IProject project, Transition transition);
 
@@ -364,8 +371,18 @@ public interface BundleTransition {
 	 * Remove the specified pending transition from this bundle project. This is the same as using
 	 * {@linkplain #removePending(IProject, Transition)}
 	 * 
-	 * @param bundle bundle project to remove this trnsition from
+	 * @param bundle bundle project to remove this transition from
 	 * @param transition to remove from this bundle project
+	 * @return false if remove fails for the specified bundle
 	 */
 	public boolean removePending(Bundle bundle, Transition transition);
+
+	/**
+	 * Remove the specified pending transition from the collection of bundle projects. 
+	 * 
+	 * @param projects bundle projects to remove this transition from
+	 * @param operation
+	 * @return false if one of the removals fails among the specified projects
+	 */
+	public boolean removePending(Collection<IProject> projects, Transition operation);
 }

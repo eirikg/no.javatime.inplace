@@ -10,6 +10,7 @@
  *******************************************************************************/
 package no.javatime.inplace.bundlejobs;
 
+import java.io.InterruptedIOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -165,6 +166,7 @@ public class UpdateJob extends BundleJob {
 	 * @return status object describing the result of updating with {@code StatusCode.OK} if no failure,
 	 *         otherwise one of the failure codes are returned. If more than one bundle fails, status of the
 	 *         last failed bundle is returned. All failures are added to the job status list
+	 * @throws InterruptedIOException 
 	 */
 	private IBundleStatus update(IProgressMonitor monitor) throws InPlaceException, InterruptedException, CoreException {
 

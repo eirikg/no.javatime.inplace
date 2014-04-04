@@ -290,4 +290,14 @@ class BundleTransitionImpl implements BundleTransition {
 	public boolean removePending(IProject project, Transition operation) {
 		return ws.removePendingCommand(project, operation);
 	}
+
+	public boolean removePending(Collection<IProject> projects, Transition operation) {
+		boolean removed = true;
+		for (IProject project : projects) {
+			if (!ws.removePendingCommand(project, operation)) {
+				removed = false;
+			}
+		}
+		return removed;
+	}
 }

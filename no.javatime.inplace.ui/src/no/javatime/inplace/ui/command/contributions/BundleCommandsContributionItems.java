@@ -14,7 +14,10 @@ import java.util.HashMap;
 import java.util.Map;
 
 import no.javatime.inplace.bundlejobs.BundleJob;
+import no.javatime.inplace.bundlemanager.BundleManager;
+import no.javatime.inplace.bundlemanager.InPlaceException;
 import no.javatime.inplace.bundleproject.OpenProjectHandler;
+import no.javatime.inplace.dl.preferences.intface.CommandOptions;
 import no.javatime.inplace.ui.Activator;
 import no.javatime.inplace.ui.views.BundleProperties;
 import no.javatime.inplace.ui.views.BundleView;
@@ -62,6 +65,7 @@ public abstract class BundleCommandsContributionItems extends CompoundContributi
 	public static String messageViewParamId = "messageView"; //$NON-NLS-1$
 	public static String addClassPathParamId = Message.getInstance().formatString("add_classpath_menu_parameter"); //$NON-NLS-1$
 	public static String removeClassPathParamId = Message.getInstance().formatString("remove_classpath_menu_parameter"); //$NON-NLS-1$
+	public static String stopOperationParamId = "Stop Bundle Operation"; //$NON-NLS-1$
 
 	// Menu icons
 	public static ImageDescriptor activateImage = Activator.getImageDescriptor("icons/activate.gif"); //$NON-NLS-1$
@@ -82,7 +86,6 @@ public abstract class BundleCommandsContributionItems extends CompoundContributi
 	protected static String hideBundleView = "Hide Bundle View"; //$NON-NLS-1$
 	protected static String showBundleListPage = "Show Bundle List Page"; //$NON-NLS-1$
 	final protected String showBundleDetailsPage = "Show Bundle Details Page"; 
-	// Message.getInstance().formatString("flip_details_general_text"); //$NON-NLS-1$
 	protected static String showConsolePage = "Show Console Page"; //$NON-NLS-1$
 	protected static String hideConsolePage = "Hide Console Page"; //$NON-NLS-1$
 	protected static String showMessageView = "Show Message View"; //$NON-NLS-1$
@@ -122,6 +125,17 @@ public abstract class BundleCommandsContributionItems extends CompoundContributi
 				true); // Visible enabled
 
 		return new CommandContributionItem(cmdPar);
+	}
+	protected CommandContributionItem addStopOperation(String menuId, String commandId) {
+		try {			
+			CommandOptions co = Activator.getDefault().getOptionsService();
+			if ((!co.isTimeOut()) && BundleManager.getCommand().isStateChanging()) {			
+				return addContribution(menuId, commandId, "Stop Current Bundle Operation", stopOperationParamId,
+						CommandContributionItem.STYLE_PUSH, null);
+			}
+		} catch (InPlaceException e) {
+		}
+		return null;
 	}
 
 	protected CommandContributionItem addBusy(String menuId, String commandId) {

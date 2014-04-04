@@ -59,8 +59,14 @@ public class BundleMainCommandsContributionItems extends BundleCommandsContribut
 
 		// Busy running bundle jobs. Show a limited set of contributors
 		if (OpenProjectHandler.getBundlesJobRunState()) {
+			contribution = addStopOperation(menuId, dynamicMainCommandId);
+			if (null != contribution) {
+				contributions.add(contribution);				
+			}
 			contributions.add(addBusy(menuId, dynamicMainCommandId));
-			if (activatedProjects.size() > 0) {
+			contributions.add(new Separator(IWorkbenchActionConstants.MB_ADDITIONS));
+
+			if (activatedProjects.size() > 0) {				
 				contributions.add(addRefresh());
 				contributions.add(addReset());
 			}

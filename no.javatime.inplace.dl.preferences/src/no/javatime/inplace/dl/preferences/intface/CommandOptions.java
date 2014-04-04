@@ -10,6 +10,8 @@ public interface CommandOptions extends ManifestOptions {
 	public static final String TIMEOUT_SECONDS = "timeoutSeconds";
 	public static final String DEFAULT_TIMEOUT_SECONDS = "defaultTimeoutSeconds";
 	public static final String IS_TIMEOUT = "isTimeout";
+	public static final String IS_MANUAL_TERMINATE = "isManualTerminate";
+	public static final String IS_REFRESH_ON_TERMINATE = "isDeactivateOnTerminate";
 	public static final String IS_REFRESH_ON_UPDATE = "isRefreshOnUpdate";
 	public static final String IS_AUTO_HANDLE_EXTERNAL_COMMANDS = "isAutoHandleExternalCommands";
 	public static final String IS_ALLOW_UI_CONTRIBUTIONS = "isAllowUIContributions";
@@ -112,7 +114,28 @@ public interface CommandOptions extends ManifestOptions {
 	 * @return true if the default timeout functionality is enabled in Start and Stop methods and false if not
 	 */
 	public abstract boolean getDefaultIsTimeOut();
+	
+	/**
+	 * Set value determining if Start and Stop should be manually stopped 
+	 * 
+	 * @param terminate true to force stopping running start and stop methods. Otherwise false
+	 */
+	public abstract void setIsManualTerminate(boolean terminate);
 
+	/**
+	 * Get value determining if Start and Stop should be manually stopped 
+	 * 
+	 * @return True if force termination of start and stop methods. Otherwise false
+	 */
+	public abstract boolean isManualTerminate();
+
+	/**
+	 * Get default value determining if Start and Stop should be manually stopped
+	 *  
+	 * @return True if default is to force termination of start and stop methods. Otherwise false
+	 */
+	public abstract boolean getDefaultIsManualTerminate();
+	
 	/**
 	 * Enable or disable the timeout functionality in Start and Stop methods
 	 * 
@@ -175,10 +198,30 @@ public interface CommandOptions extends ManifestOptions {
 	public abstract boolean getDefaultIsDeactivateOnExit();
 
 	/**
-	 * Set whether all bundles should be deactivated when the Framework shuts down
+	 * Set whether bundle should be deactivated when the Framework shuts down
 	 * 
 	 * @param deactivate true to deactivate and false to not deactivate
 	 */
 	public abstract void setIsDeactivateOnExit(boolean deactivate);
 
+	/**
+	 * Check whether a bundle is going to be deactivated when the bundle task is terminated
+	 * 
+	 * @return true if deactivate on terminate and false if not
+	 */
+	public abstract boolean isRefreshOnTerminate();
+
+	/**
+	 * Get default of whether a bundle is going to be deactivated when the bundle task is terminated
+	 * 
+	 * @return true if default is deactivate on terminate and false if not
+	 */
+	public abstract boolean getDefaultIsRefreshOnTerminate();
+
+	/**
+	 * Set whether all bundles should be deactivated when the bundle task is terminated
+	 * 
+	 * @param deactivate true to deactivate and false to not deactivate
+	 */
+	public abstract void setIsRefreshOnTerminate(boolean deactivate);
 }

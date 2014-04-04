@@ -256,6 +256,8 @@ public class BundleProperties {
 					return "Cycle";
 				} else if (error == TransitionError.DEPENDENCY) {
 					return "Dependent Bundle";
+				} else if (error == TransitionError.INCOMPLETE) {
+					return "Incomplete";
 				} else if (error == TransitionError.BUILD) {
 					return "Build Problems";
 				} else if (isProjectActivated && (bundleCommand.getState(bundle) & (Bundle.UNINSTALLED)) != 0) {

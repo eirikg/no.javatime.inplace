@@ -12,10 +12,14 @@ package no.javatime.inplace.ui.command.handlers;
 
 import java.util.Collection;
 import java.util.LinkedHashSet;
+import java.util.concurrent.TimeoutException;
 
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.resources.IProject;
+import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Status;
+import org.eclipse.ui.statushandlers.StatusManager;
 import org.osgi.framework.Bundle;
 
 import no.javatime.inplace.bundlejobs.BundleJob;
@@ -23,6 +27,8 @@ import no.javatime.inplace.bundlemanager.BundleManager;
 import no.javatime.inplace.bundlemanager.BundleTransition;
 import no.javatime.inplace.bundleproject.OpenProjectHandler;
 import no.javatime.inplace.bundleproject.ProjectProperties;
+import no.javatime.inplace.dl.preferences.intface.CommandOptions;
+import no.javatime.inplace.ui.Activator;
 import no.javatime.inplace.ui.command.contributions.BundleMainCommandsContributionItems;
 import no.javatime.inplace.ui.command.contributions.BundlePopUpCommandsContributionItems;
 
@@ -110,6 +116,18 @@ public class BundleMainActivationHandler extends BundleMenuActivationHandler {
 					// Requires that the user code (e.g. in the start method) is aware of interrupts
 					thread.interrupt();
 				}
+			}
+		}	else if (parameterId.equals(BundlePopUpCommandsContributionItems.stopOperationParamId)) {
+			try {
+				BundleJob job = OpenProjectHandler.getRunningBundleJob();
+				CommandOptions co = Activator.getDefault().getOptionsService();
+				if (null != job && (!co.isTimeOut()) && BundleManager.getCommand().isStateChanging()) {			
+					BundleManager.getCommand().stopCurrentBundleOperation();
+				}
+			} catch (TimeoutException e) {
+				StatusManager.getManager().handle(
+						new Status(IStatus.ERROR, Activator.PLUGIN_ID, e.getMessage(), e),
+						StatusManager.LOG);
 			}
 		}	
 		return null; 

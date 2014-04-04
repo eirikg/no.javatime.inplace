@@ -41,7 +41,7 @@ public class GroupFieldEditor extends FieldEditor {
 		this.name = name;
 		this.parent = groupFieldEditorParent;
 
-
+		// Comments are original code from author
 //	this.group = new Group(parent, SWT.DEFAULT);
 //	this.group.setText(this.name);
 //
@@ -83,6 +83,8 @@ public class GroupFieldEditor extends FieldEditor {
 	 * <p>
 	 * Note that this group editor only support the grid style (not the flat style)
 	 * 
+	 * @author eg
+	 * 
 	 * @return composite of group member field editors
 	 */
 	public Composite getMemberFieldEditorParent() {
@@ -93,6 +95,8 @@ public class GroupFieldEditor extends FieldEditor {
 
 	/**
 	 * The parent group for all the FieldEditors that are of members this Group.
+	 * 
+	 * @author eg
 	 * 
 	 * @return - the parent group for field editor members
 	 */

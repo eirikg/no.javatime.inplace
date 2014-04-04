@@ -112,7 +112,7 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 	 */
 	static public void deactivateHandler(Collection<IProject> projects) {
 
-		DeactivateJob deactivateJob = new DeactivateJob(DeactivateJob.deactivateJobName, projects);
+		DeactivateJob deactivateJob = new DeactivateJob(DeactivateJob.deactivateWorkspaceJobName, projects);
 		jobHandler(deactivateJob);
 	}
 

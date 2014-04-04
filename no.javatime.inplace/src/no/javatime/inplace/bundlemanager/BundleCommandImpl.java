@@ -378,9 +378,7 @@ class BundleCommandImpl implements BundleCommand {
 				}
 			}
 		} catch (InterruptedException e) {
-			String msg = ExceptionMessage.getInstance().formatString("interrupt_exception_refresh",
-					BundleCommandImpl.class.getSimpleName());
-			throw new InPlaceException(e, msg);
+			throw new InPlaceException(e, "interrupt_exception_refresh", BundleCommandImpl.class.getSimpleName());
 		} finally {
 			if (Category.DEBUG && Category.getState(Category.listeners))
 				TraceMessage.getInstance().getString("continuing_after_refresh",
@@ -449,14 +447,14 @@ class BundleCommandImpl implements BundleCommand {
 					true));
 		}
 	}
-	private volatile Thread t;
+
 	public void start(Bundle bundle, int startOption, int timeOut) 
-			throws InPlaceException, InterruptedException, TimeoutException {
+			throws InPlaceException, InterruptedException, IllegalStateException {
 
 		class StartTask implements Callable<String> {
 			Bundle bundle;
 			int startOption = Bundle.START_TRANSIENT;
-			
+	
 			public StartTask(Bundle bundle, int startOption) {
 				this.bundle = bundle;
 				this.startOption = startOption;
@@ -464,11 +462,7 @@ class BundleCommandImpl implements BundleCommand {
 			
 			@Override
 			public String call() throws Exception {
-//				try {						
 					start(bundle, startOption);
-//				} catch (Exception e) {
-//					throw e;
-//				}
 				return null;				
 			}
 		}
@@ -481,38 +475,10 @@ class BundleCommandImpl implements BundleCommand {
 		} catch (CancellationException e) {			
 			throw new InPlaceException(e);
 		} catch (TimeoutException e) {			
-			// TODO Work on a solution to stop the running bundle
-			// Using BundleHost is for testing/experimenting
-			BundleHost bh = bundle.adapt(BundleHost.class);
-			if (bh != null) {
-				System.out.println("BundleHost ok");
-				t = bh.getStateChanging();
-				t.interrupt();
-				t.stop();
-			}
-//			} else
-//				System.out.println("BundleHost failed to adapt");
-//			new Thread(new Runnable() {
-//				public void run(){
-//					Thread thisThread = Thread.currentThread();
-//					while (t.isAlive()) {
-//						t.interrupt();
-//					}
-//				}
-//			}).start();			
-//
-//			while (t.isAlive()) {
-//				try {
-//					t.join(1000);
-//				} catch (InterruptedException e1) {
-//					System.out.println("Correctly interrupted");
-//					e1.printStackTrace();
-//				}
-//			}
-
-			throw e;
+			stopBundleThread(bundle);
+			String msg = ExceptionMessage.getInstance().formatString("bundle_task_start_terminate", bundle);
+			throw new IllegalStateException(msg,e);
 		} catch (InterruptedException e) {
-			System.out.print("Thread exited");
 			throw e;
 		} catch (ExecutionException e) {
 			Throwable cause = e.getCause();
@@ -531,7 +497,50 @@ class BundleCommandImpl implements BundleCommand {
 			}
 		}
 	}
-
+	
+	/** Flag to denote whether a bundle state change is in progress */
+	private volatile Thread stateChanging;
+	private static Bundle currentBundle;
+	
+	@SuppressWarnings({ "restriction", "deprecation" })
+	private boolean stopBundleThread(Bundle bundle) {
+		if (null != bundle) {
+			BundleHost bh = bundle.adapt(BundleHost.class);
+			if (bh != null) {
+				stateChanging = bh.getStateChanging();
+				// Bundle state change is in progress
+				if (null != stateChanging) {
+					bundleTransition.setTransitionError(bundle, TransitionError.INCOMPLETE);
+					stateChanging.stop();
+					stateChanging = null;
+					return true;
+				}
+			}	
+		}
+		return false;
+	}
+	
+	public void stopCurrentBundleOperation() {
+		if (null != currentBundle) {
+			stopBundleThread(currentBundle);
+			currentBundle = null;
+		}
+	}
+	
+	@SuppressWarnings("restriction")
+	public boolean isStateChanging() {
+		if (null != currentBundle) {
+			BundleHost bh = currentBundle.adapt(BundleHost.class);
+			if (bh != null) {
+				stateChanging = bh.getStateChanging();
+				if (null != stateChanging) {
+					return true;
+				}
+			}	
+		}
+		return false;
+	}
+		
 	/**
 	 * Start the specified bundle according to the specified activation policy.
 	 * 
@@ -546,6 +555,7 @@ class BundleCommandImpl implements BundleCommand {
 		if (null == bundle) {
 			throw new InPlaceException("null_bundle_start");
 		}
+		currentBundle = bundle;
 		BundleState state = bundleRegion.getActiveState(bundle);
 		try {
 			bundleTransition.setTransition(bundle, Transition.START);
@@ -571,16 +581,23 @@ class BundleCommandImpl implements BundleCommand {
 				TraceMessage.getInstance().getString("security_error_start_bundle", bundle, e.getLocalizedMessage());
 			throw new InPlaceException(e, "bundle_security_error", bundle);
 		} catch (BundleException e) {
-			bundleTransition.setTransitionError(bundle);
-			bundleRegion.setActiveState(bundle, state);
 			if (Category.DEBUG && Category.isEnabled(Category.bundleOperations))
 				TraceMessage.getInstance().getString("error_start_bundle", bundle, e.getLocalizedMessage());
+			bundleRegion.setActiveState(bundle, state);
+			if (null != e.getCause() && (e.getCause() instanceof ThreadDeath)) {
+				bundleTransition.setTransitionError(bundle, TransitionError.INCOMPLETE);
+				String msg = ExceptionMessage.getInstance().formatString("bundle_task_start_terminate", bundle);
+				throw new IllegalStateException(msg, e);
+			} else {
+				bundleTransition.setTransitionError(bundle);
+			}
 			if (e.getType() == BundleException.ACTIVATOR_ERROR) {
 				throw new BundleActivatorException(e, "bundle_activator_error", bundle);
 			} else {
 				throw new InPlaceException(e, "bundle_start_error", bundle);
 			}
 		} finally {
+			currentBundle = null;
 			try {
 				BundleManager.addBundleTransition(new TransitionEvent(bundle, bundleTransition
 						.getTransition(bundleRegion.getProject(bundle))));
@@ -591,7 +608,7 @@ class BundleCommandImpl implements BundleCommand {
 	}
 
 	public void stop(Bundle bundle, boolean stopTransient, int timeOut) 
-			throws InPlaceException, InterruptedException, TimeoutException {
+			throws InPlaceException, InterruptedException, IllegalStateException {
 		
 		class StopTask implements Callable<String> {
 			Bundle bundle;
@@ -621,7 +638,9 @@ class BundleCommandImpl implements BundleCommand {
 		} catch (CancellationException e) {			
 			throw new InPlaceException(e);
 		} catch (TimeoutException e) {			
-			throw e;
+			stopBundleThread(bundle);
+			String msg = ExceptionMessage.getInstance().formatString("bundle_task_stop_terminate", bundle);
+			throw new IllegalStateException(msg,e);
 		} catch (InterruptedException e) {
 			throw e;
 		} catch (ExecutionException e) {
@@ -656,6 +675,7 @@ class BundleCommandImpl implements BundleCommand {
 			throw new InPlaceException("null_bundle_stop");
 		}
 		BundleState state = bundleRegion.getActiveState(bundle);
+		currentBundle = bundle;
 		try {
 			bundleTransition.setTransition(bundle, Transition.STOP);
 			state.stop(bundleRegion.getBundleNode(bundle));
@@ -684,12 +704,17 @@ class BundleCommandImpl implements BundleCommand {
 				TraceMessage.getInstance().getString("security_error_stop_bundle", bundle, e.getLocalizedMessage());
 			throw new InPlaceException(e, "bundle_security_error", bundle);
 		} catch (BundleException e) {
-			bundleTransition.setTransitionError(bundle);
-			bundleRegion.setActiveState(bundle, state);
-			if (Category.DEBUG && Category.isEnabled(Category.bundleOperations))
-				TraceMessage.getInstance().getString("error_stop_bundle", bundle, e.getLocalizedMessage());
+			state.stop(bundleRegion.getBundleNode(bundle));
+			if (null != e.getCause() && (e.getCause() instanceof ThreadDeath)) {
+				bundleTransition.setTransitionError(bundle, TransitionError.INCOMPLETE);
+				String msg = ExceptionMessage.getInstance().formatString("bundle_task_stop_terminate", bundle);
+				throw new IllegalStateException(msg, e);
+			} else {
+				bundleTransition.setTransitionError(bundle);
+			}
 			throw new InPlaceException(e, "bundle_stop_error", bundle);
 		} finally {
+			currentBundle = null;
 			try {
 				BundleManager.addBundleTransition(new TransitionEvent(bundle, bundleTransition
 						.getTransition(bundleRegion.getProject(bundle))));

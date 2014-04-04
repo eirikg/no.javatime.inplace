@@ -15,15 +15,6 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.LinkedHashSet;
 
-import org.eclipse.core.resources.IProject;
-import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.OperationCanceledException;
-import org.eclipse.core.runtime.SubProgressMonitor;
-import org.eclipse.core.runtime.preferences.IEclipsePreferences;
-import org.eclipse.ui.statushandlers.StatusManager;
-import org.osgi.framework.Bundle;
-
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundlemanager.BundleTransition.TransitionError;
 import no.javatime.inplace.bundlemanager.InPlaceException;
@@ -43,6 +34,14 @@ import no.javatime.util.messages.Message;
 import no.javatime.util.messages.TraceMessage;
 import no.javatime.util.messages.UserMessage;
 import no.javatime.util.messages.WarnMessage;
+
+import org.eclipse.core.resources.IProject;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.OperationCanceledException;
+import org.eclipse.core.runtime.SubProgressMonitor;
+import org.eclipse.core.runtime.preferences.IEclipsePreferences;
+import org.osgi.framework.Bundle;
 
 /**
  * Activates a bundle or set of bundles by installing, resolving and starting the bundle(s). A bundle is only
