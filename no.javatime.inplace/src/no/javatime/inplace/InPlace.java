@@ -482,16 +482,34 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 		if (allResolve) {
 			if (ProjectProperties.isProjectWorkspaceActivated()) {
 				for (IProject project : ProjectProperties.getActivatedProjects()) {
-					String symbolicKey = bundleRegion.getSymbolicKey(null, project);
-					prefs.putInt(symbolicKey, Bundle.RESOLVED);					
+					try {
+						String symbolicKey = bundleRegion.getSymbolicKey(null, project);
+						if (symbolicKey.isEmpty()) {
+							continue;
+						}
+						prefs.putInt(symbolicKey, Bundle.RESOLVED);					
+					} catch (IllegalStateException e) {
+						String msg = WarnMessage.getInstance().formatString("node_removed_preference_store");
+						StatusManager.getManager().handle(new BundleStatus(StatusCode.WARNING, InPlace.PLUGIN_ID, msg),
+								StatusManager.LOG);
+					}
 				}
 			} 			
 		} else {
 			if (bundleRegion.isBundleWorkspaceActivated()) {
 				for (Bundle bundle : bundleRegion.getBundles()) {
-					String symbolicKey = bundleRegion.getSymbolicKey(bundle, null);
-					if ((bundle.getState() & (Bundle.RESOLVED)) != 0) {
-						prefs.putInt(symbolicKey, bundle.getState());
+					try {
+						String symbolicKey = bundleRegion.getSymbolicKey(bundle, null);
+						if (symbolicKey.isEmpty()) {
+							continue;
+						}
+						if ((bundle.getState() & (Bundle.RESOLVED)) != 0) {
+							prefs.putInt(symbolicKey, bundle.getState());
+						}
+					} catch (IllegalStateException e) {
+						String msg = WarnMessage.getInstance().formatString("node_removed_preference_store");
+						StatusManager.getManager().handle(new BundleStatus(StatusCode.WARNING, InPlace.PLUGIN_ID, msg),
+								StatusManager.LOG);
 					}
 				} 
 			} else {
@@ -508,6 +526,10 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 						}
 					} catch (ProjectLocationException e) {
 						// Ignore. Will be defined as no transition when loaded again
+					} catch (IllegalStateException e) {
+						String msg = WarnMessage.getInstance().formatString("node_removed_preference_store");
+						StatusManager.getManager().handle(new BundleStatus(StatusCode.WARNING, InPlace.PLUGIN_ID, msg),
+								StatusManager.LOG);
 					}
 				}
 			}

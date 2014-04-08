@@ -118,17 +118,23 @@ public class BundleMainActivationHandler extends BundleMenuActivationHandler {
 				}
 			}
 		}	else if (parameterId.equals(BundlePopUpCommandsContributionItems.stopOperationParamId)) {
-			try {
-				BundleJob job = OpenProjectHandler.getRunningBundleJob();
-				CommandOptions co = Activator.getDefault().getOptionsService();
-				if (null != job && (!co.isTimeOut()) && BundleManager.getCommand().isStateChanging()) {			
-					BundleManager.getCommand().stopCurrentBundleOperation();
+			Activator.getDisplay().asyncExec(new Runnable() {
+				public void run() {
+					try {
+						BundleJob job = OpenProjectHandler.getRunningBundleJob();
+						CommandOptions co = Activator.getDefault().getOptionsService();
+						if (null != job && (!co.isTimeOut()) && BundleManager.getCommand().isStateChanging()) {			
+							BundleManager.getCommand().stopCurrentBundleOperation();
+						}
+					} catch (IllegalStateException e) {
+						// Also caught by the bundle API
+					} catch (TimeoutException e) {
+						StatusManager.getManager().handle(
+								new Status(IStatus.ERROR, Activator.PLUGIN_ID, e.getMessage(), e),
+								StatusManager.LOG);
+					}
 				}
-			} catch (TimeoutException e) {
-				StatusManager.getManager().handle(
-						new Status(IStatus.ERROR, Activator.PLUGIN_ID, e.getMessage(), e),
-						StatusManager.LOG);
-			}
+			});
 		}	
 		return null; 
 	}

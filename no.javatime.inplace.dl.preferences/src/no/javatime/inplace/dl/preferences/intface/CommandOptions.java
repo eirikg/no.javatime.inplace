@@ -11,7 +11,7 @@ public interface CommandOptions extends ManifestOptions {
 	public static final String DEFAULT_TIMEOUT_SECONDS = "defaultTimeoutSeconds";
 	public static final String IS_TIMEOUT = "isTimeout";
 	public static final String IS_MANUAL_TERMINATE = "isManualTerminate";
-	public static final String IS_REFRESH_ON_TERMINATE = "isDeactivateOnTerminate";
+	public static final String IS_DEACTIVATE_ON_TERMINATE = "isDeactivateOnTerminate";
 	public static final String IS_REFRESH_ON_UPDATE = "isRefreshOnUpdate";
 	public static final String IS_AUTO_HANDLE_EXTERNAL_COMMANDS = "isAutoHandleExternalCommands";
 	public static final String IS_ALLOW_UI_CONTRIBUTIONS = "isAllowUIContributions";
@@ -209,19 +209,19 @@ public interface CommandOptions extends ManifestOptions {
 	 * 
 	 * @return true if deactivate on terminate and false if not
 	 */
-	public abstract boolean isRefreshOnTerminate();
+	public abstract boolean isDeactivateOnTerminate();
 
 	/**
 	 * Get default of whether a bundle is going to be deactivated when the bundle task is terminated
 	 * 
 	 * @return true if default is deactivate on terminate and false if not
 	 */
-	public abstract boolean getDefaultIsRefreshOnTerminate();
+	public abstract boolean getDefaultIsDeactivateOnTerminate();
 
 	/**
 	 * Set whether all bundles should be deactivated when the bundle task is terminated
 	 * 
 	 * @param deactivate true to deactivate and false to not deactivate
 	 */
-	public abstract void setIsRefreshOnTerminate(boolean deactivate);
+	public abstract void setIsDeactivateOnTerminate(boolean deactivate);
 }

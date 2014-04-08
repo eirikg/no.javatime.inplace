@@ -6,7 +6,7 @@ Export-Package: no.javatime.util.messages;uses:="org.osgi.service.log,
  l.messages.exceptions,no.javatime.util.messages.views
 Bundle-Vendor: JavaTime
 Bundle-ActivationPolicy: lazy
-Bundle-Version: 0.1.7.qualifier
+Bundle-Version: 0.1.8.qualifier
 Bundle-Name: JavaTime General Purpose Utilities
 Bundle-Activator: no.javatime.util.Activator
 Bundle-ManifestVersion: 2

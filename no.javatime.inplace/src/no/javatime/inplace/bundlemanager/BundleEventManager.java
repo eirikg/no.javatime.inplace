@@ -13,22 +13,6 @@ package no.javatime.inplace.bundlemanager;
 import java.util.Collection;
 import java.util.Collections;
 
-import org.eclipse.core.commands.Command;
-import org.eclipse.core.commands.CommandEvent;
-import org.eclipse.core.commands.ICommandListener;
-import org.eclipse.core.resources.IProject;
-import org.eclipse.core.runtime.jobs.Job;
-import org.eclipse.jface.dialogs.MessageDialog;
-import org.eclipse.ui.IWorkbench;
-import org.eclipse.ui.PlatformUI;
-import org.eclipse.ui.commands.ICommandService;
-import org.eclipse.ui.statushandlers.StatusManager;
-import org.osgi.framework.Bundle;
-import org.osgi.framework.BundleEvent;
-import org.osgi.framework.FrameworkEvent;
-import org.osgi.framework.FrameworkListener;
-import org.osgi.framework.SynchronousBundleListener;
-
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundlejobs.ActivateBundleJob;
 import no.javatime.inplace.bundlejobs.BundleJobListener;
@@ -57,6 +41,22 @@ import no.javatime.util.messages.Message;
 import no.javatime.util.messages.TraceMessage;
 import no.javatime.util.messages.UserMessage;
 import no.javatime.util.messages.WarnMessage;
+
+import org.eclipse.core.commands.Command;
+import org.eclipse.core.commands.CommandEvent;
+import org.eclipse.core.commands.ICommandListener;
+import org.eclipse.core.resources.IProject;
+import org.eclipse.core.runtime.jobs.Job;
+import org.eclipse.jface.dialogs.MessageDialog;
+import org.eclipse.ui.IWorkbench;
+import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.commands.ICommandService;
+import org.eclipse.ui.statushandlers.StatusManager;
+import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleEvent;
+import org.osgi.framework.FrameworkEvent;
+import org.osgi.framework.FrameworkListener;
+import org.osgi.framework.SynchronousBundleListener;
 
 /**
  * Registers a bundle job listener and acts on events received from the OSGI framework, bundles and the log
@@ -252,6 +252,7 @@ class BundleEventManager implements FrameworkListener, SynchronousBundleListener
 		 * Refresh on an installed bundle is not put to use
 		 */
 		case BundleEvent.INSTALLED: {
+
 			// Transition: Install. Source: External
 			if (null == state || !(state instanceof InstalledState)) {
 				// Register the external installed workspace bundle
@@ -446,9 +447,11 @@ class BundleEventManager implements FrameworkListener, SynchronousBundleListener
 		BundleTransitionImpl bundleTransition = BundleTransitionImpl.INSTANCE;
 		final String symbolicName = bundleRegion.getSymbolicKey(bundle, null);
 		final String stateName = bundleCommand.getStateName(event);
-		if (bundleTransition.getError(bundle) == TransitionError.INCOMPLETE) {
-			if (Category.getState(Category.infoMessages)) {
-				UserMessage.getInstance().getString("incomplete_bundle_operation", symbolicName, stateName, location);
+		if (bundleTransition.hasTransitionError(bundle)) { 		
+			if (bundleTransition.getError(bundle) == TransitionError.INCOMPLETE) {
+				if (Category.getState(Category.infoMessages)) {
+					UserMessage.getInstance().getString("incomplete_bundle_operation", symbolicName, stateName, location);
+				}
 			}
 		} else {
 			bundleTransition.setTransition(bundle, Transition.EXTERNAL);

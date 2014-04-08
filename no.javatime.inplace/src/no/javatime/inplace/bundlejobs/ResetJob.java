@@ -13,13 +13,6 @@ package no.javatime.inplace.bundlejobs;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 
-import org.eclipse.core.resources.IProject;
-import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.OperationCanceledException;
-import org.eclipse.core.runtime.jobs.Job;
-import org.eclipse.ui.statushandlers.StatusManager;
-
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundlemanager.BundleManager;
 import no.javatime.inplace.bundlemanager.BundleTransition.Transition;
@@ -35,6 +28,12 @@ import no.javatime.util.messages.ExceptionMessage;
 import no.javatime.util.messages.Message;
 import no.javatime.util.messages.TraceMessage;
 import no.javatime.util.messages.UserMessage;
+
+import org.eclipse.core.resources.IProject;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.OperationCanceledException;
+import org.eclipse.core.runtime.jobs.Job;
 
 /**
  * Reset first uninstalls and then activates bundles to the same state as they had before the reset job.

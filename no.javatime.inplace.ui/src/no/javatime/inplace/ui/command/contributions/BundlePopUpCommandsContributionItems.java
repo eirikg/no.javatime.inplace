@@ -12,16 +12,6 @@ package no.javatime.inplace.ui.command.contributions;
 
 import java.util.ArrayList;
 
-import org.eclipse.core.resources.IProject;
-import org.eclipse.jdt.core.IJavaProject;
-import org.eclipse.jface.action.ContributionItem;
-import org.eclipse.jface.action.IContributionItem;
-import org.eclipse.jface.action.Separator;
-import org.eclipse.ui.IWorkbenchActionConstants;
-import org.eclipse.ui.menus.CommandContributionItem;
-import org.eclipse.ui.statushandlers.StatusManager;
-import org.osgi.framework.Bundle;
-
 import no.javatime.inplace.bundlemanager.BundleManager;
 import no.javatime.inplace.bundlemanager.BundleTransition.Transition;
 import no.javatime.inplace.bundlemanager.InPlaceException;
@@ -29,16 +19,21 @@ import no.javatime.inplace.bundleproject.BundleProject;
 import no.javatime.inplace.bundleproject.ManifestUtil;
 import no.javatime.inplace.bundleproject.OpenProjectHandler;
 import no.javatime.inplace.bundleproject.ProjectProperties;
-import no.javatime.inplace.statushandler.BundleStatus;
-import no.javatime.inplace.statushandler.IBundleStatus.StatusCode;
-import no.javatime.inplace.ui.Activator;
 import no.javatime.inplace.ui.command.handlers.BundleMenuActivationHandler;
 import no.javatime.inplace.ui.views.BundleView;
-import no.javatime.util.messages.ErrorMessage;
 import no.javatime.util.messages.Message;
 import no.javatime.util.messages.views.BundleConsole;
 import no.javatime.util.messages.views.BundleConsoleFactory;
 import no.javatime.util.messages.views.MessageView;
+
+import org.eclipse.core.resources.IProject;
+import org.eclipse.jdt.core.IJavaProject;
+import org.eclipse.jface.action.ContributionItem;
+import org.eclipse.jface.action.IContributionItem;
+import org.eclipse.jface.action.Separator;
+import org.eclipse.ui.IWorkbenchActionConstants;
+import org.eclipse.ui.menus.CommandContributionItem;
+import org.osgi.framework.Bundle;
 
 
 /**
@@ -64,7 +59,7 @@ public class BundlePopUpCommandsContributionItems extends BundleCommandsContribu
 	protected IContributionItem[] getContributionItems() {
 
 		ArrayList<ContributionItem> contributions = new ArrayList<ContributionItem>();
-		CommandContributionItem contributor = null;
+		CommandContributionItem contribution = null;
 		IJavaProject javaProject = BundleMenuActivationHandler.getSelectedJavaProject();
 		if (null == javaProject) {
 			return new IContributionItem[0];
@@ -76,20 +71,24 @@ public class BundlePopUpCommandsContributionItems extends BundleCommandsContribu
 
 		// Busy running bundle jobs. Show a limited set of contributors
 		if (OpenProjectHandler.getBundlesJobRunState()) {
+			contribution = addStopOperation(menuId, dynamicPopUpCommandId);
+			if (null != contribution) {
+				contributions.add(contribution);				
+			}
 			contributions.add(addBusy(menuId, dynamicPopUpCommandId));
 			contributions.add(new Separator(IWorkbenchActionConstants.MB_ADDITIONS));
-			contributor = addRefresh(activated, bundle);
-			if (null != contributor) {
-				contributions.add(contributor);
+			contribution = addRefresh(activated, bundle);
+			if (null != contribution) {
+				contributions.add(contribution);
 			}
-			contributor = addReset(activated, bundle);
-			if (null != contributor) {
-				contributions.add(contributor);
+			contribution = addReset(activated, bundle);
+			if (null != contribution) {
+				contributions.add(contribution);
 			}
 			contributions.add(new Separator(IWorkbenchActionConstants.MB_ADDITIONS));
-			contributor = addShowBundleView();
-			if (null != contributor) {
-				contributions.add(contributor);
+			contribution = addShowBundleView();
+			if (null != contribution) {
+				contributions.add(contribution);
 			}
 			contributions.add(addToggleConsoleView());
 			contributions.add(addToggleMessageView());
@@ -99,47 +98,47 @@ public class BundlePopUpCommandsContributionItems extends BundleCommandsContribu
 		}
 		
 		if (!activated) {
-			contributor = addActivate(activated, project, bundle);
-			if (null != contributor) {
-				contributions.add(contributor);
+			contribution = addActivate(activated, project, bundle);
+			if (null != contribution) {
+				contributions.add(contribution);
 			}
 		} else {
-			contributor = addDeactivate(activated, project, bundle);
-			if (null != contributor) {
-				contributions.add(contributor);
+			contribution = addDeactivate(activated, project, bundle);
+			if (null != contribution) {
+				contributions.add(contribution);
 			}
 		}
-		contributor = addStart(activated, bundle);
-		if (null != contributor) {
-			contributions.add(contributor);
+		contribution = addStart(activated, bundle);
+		if (null != contribution) {
+			contributions.add(contribution);
 		}
-		contributor = addStop(activated, bundle);
-		if (null != contributor) {
-			contributions.add(contributor);
+		contribution = addStop(activated, bundle);
+		if (null != contribution) {
+			contributions.add(contribution);
 		}
-		contributor = addRefresh(activated, bundle);
-		if (null != contributor) {
-			contributions.add(contributor);
+		contribution = addRefresh(activated, bundle);
+		if (null != contribution) {
+			contributions.add(contribution);
 		}
-		contributor = addUpdate(activated, project, bundle);
-		if (null != contributor) {
-			contributions.add(contributor);
+		contribution = addUpdate(activated, project, bundle);
+		if (null != contribution) {
+			contributions.add(contribution);
 		}		
-		contributor = addReset(activated, bundle);
-		if (null != contributor) {
-			contributions.add(contributor);
+		contribution = addReset(activated, bundle);
+		if (null != contribution) {
+			contributions.add(contribution);
 		}
 		contributions.add(new Separator(IWorkbenchActionConstants.MB_ADDITIONS));
-		contributor = addShowBundleView();
-		if (null != contributor) {
-			contributions.add(contributor);
+		contribution = addShowBundleView();
+		if (null != contribution) {
+			contributions.add(contribution);
 		}
 		contributions.add(addToggleConsoleView());
 		contributions.add(addToggleMessageView());
 		contributions.add(new Separator(IWorkbenchActionConstants.MB_ADDITIONS));
-		contributor = addClassPath(project);
-		if (null != contributor) {
-			contributions.add(contributor);
+		contribution = addClassPath(project);
+		if (null != contribution) {
+			contributions.add(contribution);
 		}
 		contributions.add(addEagerActivation());
 		IContributionItem[] contributionArray = contributions.toArray(new ContributionItem[contributions.size()]);

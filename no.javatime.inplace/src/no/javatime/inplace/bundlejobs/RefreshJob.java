@@ -10,17 +10,9 @@
  *******************************************************************************/
 package no.javatime.inplace.bundlejobs;
 
-import java.nio.channels.InterruptedByTimeoutException;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.LinkedHashSet;
-
-import org.eclipse.core.resources.IProject;
-import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.OperationCanceledException;
-import org.eclipse.core.runtime.SubProgressMonitor;
-import org.osgi.framework.Bundle;
 
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundlemanager.InPlaceException;
@@ -32,6 +24,13 @@ import no.javatime.util.messages.ErrorMessage;
 import no.javatime.util.messages.ExceptionMessage;
 import no.javatime.util.messages.Message;
 import no.javatime.util.messages.UserMessage;
+
+import org.eclipse.core.resources.IProject;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.OperationCanceledException;
+import org.eclipse.core.runtime.SubProgressMonitor;
+import org.osgi.framework.Bundle;
 
 /**
  * Refreshes pending projects. Active (state ACTIVE and STARTING) bundles are first stopped, refreshed and

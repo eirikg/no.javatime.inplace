@@ -95,7 +95,7 @@ public class BundleListLabelProvider extends LabelProvider implements ITableLabe
 		table.removeAll();
 		createBundleColumn();
 		// Uncomment to show in list page
-		createModeColumn();
+		// createModeColumn();
 		createStatusColumn();
 		createStateColumn();
 		// Uncomment to show in list page

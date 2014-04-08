@@ -10,13 +10,11 @@
  *******************************************************************************/
 package no.javatime.util.messages.views;
 
+import no.javatime.util.Activator;
+import no.javatime.util.messages.Message;
+
 import org.eclipse.jface.action.Action;
 import org.eclipse.ui.console.IConsole;
-import org.eclipse.ui.console.actions.CloseConsoleAction;
-
-import no.javatime.util.Activator;
-import no.javatime.util.messages.Category;
-import no.javatime.util.messages.Message;
 
 /**
  * Action to close the bundle console.

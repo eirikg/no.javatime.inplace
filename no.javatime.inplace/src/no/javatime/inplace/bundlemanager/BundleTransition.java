@@ -212,11 +212,19 @@ public interface BundleTransition {
 	 * Check if the current transition of the specified bundle project is erroneous.
 	 * 
 	 * @param project the bundle project containing the transition to check for error
-	 * @return true if the current transition of the specified bundle is erroneous or false if not.
+	 * @return true if the current transition of the specified bundle project is erroneous or false if not.
 	 * @throws ProjectLocationException if the specified project is null or the location of the specified
 	 *           project could not be found
 	 */
 	boolean hasTransitionError(IProject project) throws ProjectLocationException;
+
+	/**
+	 * Check if the current transition of the specified bundle project is erroneous.
+	 * 
+	 * @param bundle the bundle project containing the transition to check for error
+	 * @return true if the current transition of the specified bundle project is erroneous or false if not.
+	 */
+	boolean hasTransitionError(Bundle bundle);
 
 	/**
 	 * Check if the specified transition error exist among at least one of the workspace bundle projects

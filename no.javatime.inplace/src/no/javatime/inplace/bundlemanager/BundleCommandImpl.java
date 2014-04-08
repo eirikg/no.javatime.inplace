@@ -26,21 +26,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import org.eclipse.core.resources.IProject;
-import org.eclipse.osgi.framework.internal.core.BundleHost;
-import org.eclipse.ui.statushandlers.StatusManager;
-import org.osgi.framework.Bundle;
-import org.osgi.framework.BundleContext;
-import org.osgi.framework.BundleEvent;
-import org.osgi.framework.BundleException;
-import org.osgi.framework.FrameworkEvent;
-import org.osgi.framework.FrameworkListener;
-import org.osgi.framework.ServiceRegistration;
-import org.osgi.framework.hooks.resolver.ResolverHookFactory;
-import org.osgi.framework.wiring.BundleRevision;
-import org.osgi.framework.wiring.BundleRevisions;
-import org.osgi.framework.wiring.FrameworkWiring;
-
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundlemanager.BundleTransition.Transition;
 import no.javatime.inplace.bundlemanager.BundleTransition.TransitionError;
@@ -55,6 +40,22 @@ import no.javatime.util.messages.Category;
 import no.javatime.util.messages.ExceptionMessage;
 import no.javatime.util.messages.TraceMessage;
 import no.javatime.util.messages.WarnMessage;
+
+import org.eclipse.core.resources.IProject;
+import org.eclipse.osgi.framework.internal.core.BundleHost;
+import org.eclipse.ui.statushandlers.StatusManager;
+import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.BundleEvent;
+import org.osgi.framework.BundleException;
+import org.osgi.framework.FrameworkEvent;
+import org.osgi.framework.FrameworkListener;
+import org.osgi.framework.ServiceRegistration;
+import org.osgi.framework.hooks.resolver.ResolverHookFactory;
+import org.osgi.framework.wiring.BundleRevision;
+import org.osgi.framework.wiring.BundleRevisions;
+import org.osgi.framework.wiring.FrameworkWiring;
+/* import org.eclipse.osgi.container.Module; */
 
 /**
  * Maintains workspace bundles and provides an interface to the BundleManager wiring framework (refresh,
@@ -312,6 +313,15 @@ class BundleCommandImpl implements BundleCommand {
 		}
 	}
 
+	/**
+	 * Refresh the specified set of bundles synchronously.
+	 * 
+	 * @param bundles to refresh. Must not be null.
+	 * @throws InPlaceException when the framework wiring object is null, the bundle was created with another
+	 *           framework wiring object than the current or if a security permission is missing. See
+	 *           {@link FrameworkWiring#refreshBundles(Collection, FrameworkListener...)} for details.
+	 * @see FrameworkWiring#refreshBundles(Collection, FrameworkListener...)
+	 */
 	public void refresh(final Collection<Bundle> bundles) throws InPlaceException {
 
 		if (bundles.size() == 0) {
@@ -395,7 +405,7 @@ class BundleCommandImpl implements BundleCommand {
 	}
 
 	/**
-	 * Refresh the specified set of bundles. Note that BundleManager refresh spawns a new thread.
+	 * Refresh the specified set of bundles asynchronously
 	 * 
 	 * @param bundles to refresh. Must not be null.
 	 * @param listener to be notified when refresh has been completed
@@ -404,7 +414,6 @@ class BundleCommandImpl implements BundleCommand {
 	 *           {@link FrameworkWiring#refreshBundles(Collection, FrameworkListener...)} for details.
 	 * @see FrameworkWiring#refreshBundles(Collection, FrameworkListener...)
 	 */
-	@Override
 	public void refresh(Collection<Bundle> bundles, FrameworkListener listener) throws InPlaceException {
 		if (null == frameworkWiring) {
 			if (Category.DEBUG && Category.isEnabled(Category.bundleOperations))
@@ -505,6 +514,21 @@ class BundleCommandImpl implements BundleCommand {
 	@SuppressWarnings({ "restriction", "deprecation" })
 	private boolean stopBundleThread(Bundle bundle) {
 		if (null != bundle) {
+//			Module m = bundle.adapt(Module.class);
+//			if (null != m) {
+//				stateChanging = m.getStateChangeOwner();
+//				Thread currentThread = Thread.currentThread();
+//				System.out.println("Current thread name (id) " +currentThread.getName() + "(" + currentThread.getId() + ")" + " " + currentThread.getThreadGroup());
+//				if (null != stateChanging) {
+//					System.out.println("Start/Stop thread name (id) " +stateChanging.getName() + "(" + stateChanging.getId() + ")" + " " + stateChanging.getThreadGroup());
+//					bundleTransition.setTransitionError(bundle, TransitionError.INCOMPLETE);
+//					//stateChanging.interrupt();
+//					stateChanging.stop();
+//					stateChanging = null;
+//					return true;
+//				}				
+//			}
+			
 			BundleHost bh = bundle.adapt(BundleHost.class);
 			if (bh != null) {
 				stateChanging = bh.getStateChanging();
@@ -523,13 +547,24 @@ class BundleCommandImpl implements BundleCommand {
 	public void stopCurrentBundleOperation() {
 		if (null != currentBundle) {
 			stopBundleThread(currentBundle);
+			String msg = ExceptionMessage.getInstance().formatString("bundle_task_stop_terminate", currentBundle);
 			currentBundle = null;
+			throw new IllegalStateException(msg);
 		}
 	}
 	
 	@SuppressWarnings("restriction")
 	public boolean isStateChanging() {
+
 		if (null != currentBundle) {
+//			Module m = currentBundle.adapt(Module.class);
+//			if (null != m) {
+//				stateChanging = m.getStateChangeOwner();
+//				if (null != stateChanging) {
+//					return true;
+//				}
+//			}
+				
 			BundleHost bh = currentBundle.adapt(BundleHost.class);
 			if (bh != null) {
 				stateChanging = bh.getStateChanging();
@@ -583,6 +618,7 @@ class BundleCommandImpl implements BundleCommand {
 		} catch (BundleException e) {
 			if (Category.DEBUG && Category.isEnabled(Category.bundleOperations))
 				TraceMessage.getInstance().getString("error_start_bundle", bundle, e.getLocalizedMessage());
+			bundleTransition.setTransition(bundle, Transition.START);
 			bundleRegion.setActiveState(bundle, state);
 			if (null != e.getCause() && (e.getCause() instanceof ThreadDeath)) {
 				bundleTransition.setTransitionError(bundle, TransitionError.INCOMPLETE);
@@ -640,7 +676,7 @@ class BundleCommandImpl implements BundleCommand {
 		} catch (TimeoutException e) {			
 			stopBundleThread(bundle);
 			String msg = ExceptionMessage.getInstance().formatString("bundle_task_stop_terminate", bundle);
-			throw new IllegalStateException(msg,e);
+			throw new IllegalStateException(msg, e);
 		} catch (InterruptedException e) {
 			throw e;
 		} catch (ExecutionException e) {
@@ -707,6 +743,7 @@ class BundleCommandImpl implements BundleCommand {
 			state.stop(bundleRegion.getBundleNode(bundle));
 			if (null != e.getCause() && (e.getCause() instanceof ThreadDeath)) {
 				bundleTransition.setTransitionError(bundle, TransitionError.INCOMPLETE);
+				state.stop(bundleRegion.getBundleNode(bundle));
 				String msg = ExceptionMessage.getInstance().formatString("bundle_task_stop_terminate", bundle);
 				throw new IllegalStateException(msg, e);
 			} else {

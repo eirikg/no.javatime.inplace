@@ -550,6 +550,7 @@ public class ProjectProperties {
 	 * Check if there are build errors from the most recent build.
 	 * 
 	 * @return cancel list of projects with errors or an empty list
+	 * @throws InPlaceException if one of the specified projects does not exist or is closed
 	 */
 	public static Collection<IProject> getBuildErrors(Collection<IProject> projects) throws InPlaceException {
 		Collection<IProject> errors = new LinkedHashSet<IProject>();
@@ -567,6 +568,7 @@ public class ProjectProperties {
 	 * @param project the {@link IJavaProject} to check for errors
 	 * @return <code>true</code> if the project has compilation errors (or has never been built),
 	 *         <code>false</code> otherwise
+	 * @throws InPlaceException if project does not exist or is closed
 	 */
 	public static boolean hasBuildErrors(IProject project) throws InPlaceException {
 

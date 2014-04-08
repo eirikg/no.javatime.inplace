@@ -13,8 +13,6 @@ package no.javatime.inplace.ui.command.handlers;
 import no.javatime.inplace.bundlemanager.InPlaceException;
 import no.javatime.inplace.dl.preferences.intface.CommandOptions;
 
-import org.eclipse.ui.commands.IElementUpdater;
-
 public class AutoUpdateHandler extends AbstractOptionsHandler {
 
 	public static String commandId = "no.javatime.inplace.command.autoupdate";

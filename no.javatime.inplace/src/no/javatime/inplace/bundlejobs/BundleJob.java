@@ -54,20 +54,19 @@ import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.core.runtime.jobs.Job;
 import org.osgi.framework.Bundle;
-import org.osgi.framework.FrameworkListener;
 
 /**
  * Support processing of bundle operations on bundles added as pending projects to bundle jobs.
  * <p>
- * Pending bundle projects are added to a job before it is scheduled and the bundle projects are executed
- * according to the job type.
+ * Pending bundle projects are added to a job before it is scheduled and the bundle projects are executed according to
+ * the job type.
  */
 public abstract class BundleJob extends JobStatus {
 
-	/** Standard activate bundle job name*/
+	/** Standard activate bundle job name */
 	final public static String activateJobName = Message.getInstance().formatString("activate_bundle_job_name");
 
-	/** Standard update bundle job name*/
+	/** Standard update bundle job name */
 	final public static String updateJobName = Message.getInstance().formatString("update_job_name");
 
 	/** Name of the uninstall operation */
@@ -86,8 +85,7 @@ public abstract class BundleJob extends JobStatus {
 	public static final ISchedulingRule buildRule = ResourcesPlugin.getWorkspace().getRuleFactory().buildRule();
 
 	/**
-	 * An enumeration of all dependency rules that may be applied to bundles that are associated with a bundle
-	 * operation.
+	 * An enumeration of all dependency rules that may be applied to bundles that are associated with a bundle operation.
 	 */
 	public enum Integrity {
 		/** No dependency rule is applied */
@@ -121,8 +119,8 @@ public abstract class BundleJob extends JobStatus {
 	}
 
 	/**
-	 * Construct a bundle job with a name and pending bundle projects to perform bundle operations on. Sets job
-	 * priority and scheduling rule.
+	 * Construct a bundle job with a name and pending bundle projects to perform bundle operations on. Sets job priority
+	 * and scheduling rule.
 	 * 
 	 * @param name of the job to run
 	 * @param projects pending bundle projects to perform bundle operations on
@@ -135,8 +133,8 @@ public abstract class BundleJob extends JobStatus {
 	}
 
 	/**
-	 * Constructs a bundle job with a name and a bundle project to perform bundle operations on. Sets job
-	 * priority and scheduling rule.
+	 * Constructs a bundle job with a name and a bundle project to perform bundle operations on. Sets job priority and
+	 * scheduling rule.
 	 * 
 	 * @param name of the job to run
 	 * @param project pending bundle project to perform bundle operations on
@@ -159,8 +157,8 @@ public abstract class BundleJob extends JobStatus {
 	/**
 	 * Determine if this job belongs to the bundle family
 	 * 
-	 * @return true if the specified object == {@code Bundle.FAMILY_BUNDLE_LIFECYCLE} or is of type
-	 *         {@code BundleJob}, otherwise false
+	 * @return true if the specified object == {@code Bundle.FAMILY_BUNDLE_LIFECYCLE} or is of type {@code BundleJob},
+	 *         otherwise false
 	 */
 	@Override
 	public boolean belongsTo(Object family) {
@@ -189,8 +187,9 @@ public abstract class BundleJob extends JobStatus {
 	}
 
 	/**
-	 * Replace existing pending projects with the specified collection
-	 * The specified collection is copied and the order is maintained 
+	 * Replace existing pending projects with the specified collection The specified collection is copied and the order is
+	 * maintained
+	 * 
 	 * @param projects bundle projects to replace
 	 */
 	public void replacePendingProjects(Collection<IProject> projects) {
@@ -260,13 +259,13 @@ public abstract class BundleJob extends JobStatus {
 	}
 
 	/**
-	 * Reinstalls the specified bundle projects. Failures to reinstall are added to the job status list. Only
-	 * specified bundle projects in state INSTALLED are re-installed.
+	 * Reinstalls the specified bundle projects. Failures to reinstall are added to the job status list. Only specified
+	 * bundle projects in state INSTALLED are re-installed.
 	 * 
 	 * @param projectsToInstall a collection of bundle projects to re install
 	 * @param monitor monitor the progress monitor to use for reporting progress to the user.
-	 * @return installed and activated bundle projects. An empty set means that zero or more deactivated bundles
-	 *         have been installed
+	 * @return installed and activated bundle projects. An empty set means that zero or more deactivated bundles have been
+	 *         installed
 	 */
 	protected IBundleStatus reInstall(Collection<IProject> projectsToReinstall, IProgressMonitor monitor) {
 
@@ -298,8 +297,8 @@ public abstract class BundleJob extends JobStatus {
 	}
 
 	/**
-	 * Installs pending bundles and set activation status on the bundles. All failures to install are added to
-	 * the job status list
+	 * Installs pending bundles and set activation status on the bundles. All failures to install are added to the job
+	 * status list
 	 * 
 	 * @param projectsToInstall a collection of bundle projects to install
 	 * @param monitor monitor the progress monitor to use for reporting progress to the user.
@@ -348,16 +347,16 @@ public abstract class BundleJob extends JobStatus {
 	}
 
 	/**
-	 * Uninstalls the specified bundles. Errors are added to the job of bundles that fail to uninstall. Cycles
-	 * in bundles to stop are allowed.
+	 * Uninstalls the specified bundles. Errors are added to the job of bundles that fail to uninstall. Cycles in bundles
+	 * to stop are allowed.
 	 * 
 	 * @param bundles to uninstall
 	 * @param integrityRules if rule is {@code Integrity.REQUIRING} include requiring bundles to uninstall
 	 * @param monitor monitor the progress monitor to use for reporting progress to the user.
 	 * @param deactivate TODO
-	 * @return status object describing the result of uninstalling with {@code StatusCode.OK} if no failure,
-	 *         otherwise one of the failure codes are returned. If more than one bundle fails, status of the
-	 *         last failed bundle is returned. All failures are added to the job status list
+	 * @return status object describing the result of uninstalling with {@code StatusCode.OK} if no failure, otherwise one
+	 *         of the failure codes are returned. If more than one bundle fails, status of the last failed bundle is
+	 *         returned. All failures are added to the job status list
 	 */
 	protected IBundleStatus uninstall(Collection<Bundle> bundles, EnumSet<Integrity> integrityRules,
 			IProgressMonitor monitor, boolean deactivate) {
@@ -388,22 +387,36 @@ public abstract class BundleJob extends JobStatus {
 	}
 
 	/**
-	 * Start the specified bundles. If the activation policy for a bundle is lazy the bundle is activated
-	 * according to the declared activation policy. If the activation policy is eager, the bundle is started
-	 * transient. Only bundles in state RESOLVED and STOPPING are started.
+	 * Start the specified bundles. If the activation policy for a bundle is lazy the bundle is activated according to the
+	 * declared activation policy. If the activation policy is eager, the bundle is started transient. Only bundles in
+	 * state RESOLVED and STOPPING are started.
+	 * <p>
+	 * If the the specified integrity rule is not set to providing, the specified bundles should be sorted in providing
+	 * order. Each bundle in the specified collection of bundles to start should be part of a providing dependency closure.
+	 * <p>
+	 * Requiring bundles to bundles that fail to start are not started.
+	 * <p>
+	 * If the task running the start operation is terminated the bundle and the requiring bundles are deactivated if the
+	 * deactivate on terminate option is switched on.
 	 * 
 	 * @param bundles the set of bundles to start
 	 * @param integrityRules if rule is {@code Integrity.PROVIDING} include providing bundles to start
 	 * @param monitor the progress monitor to use for reporting progress to the user.
-	 * @return status object describing the result of starting with {@code StatusCode.OK} if no failure,
-	 *         otherwise one of the failure codes are returned. If more than one bundle fails, status of the
-	 *         last failed bundle is returned. All failures are added to the job status list
-	 * @throws InterruptedException 
+	 * @return status object describing the result of starting with {@code StatusCode.OK} if no failure, otherwise one of
+	 *         the failure codes are returned. If more than one bundle fails, status of the last failed bundle is
+	 *         returned. All failures are added to the job status list
+	 * @throws CircularReferenceException if the integrity parameter contains providing and cycles are detected in the
+	 *           project graph
+	 * @throws InterruptedException Checks for and interrupts right before call to start bundle. Start is also interrupted
+	 *           if the task running the stop method is terminated abnormally (timeout or manually)
 	 */
 	public IBundleStatus start(Collection<Bundle> bundles, EnumSet<Integrity> integrityRules,
 			IProgressMonitor monitor) throws InterruptedException {
 
 		IBundleStatus result = new BundleStatus(StatusCode.OK, InPlace.PLUGIN_ID, "");
+		DeactivateJob deactivateTask = null;
+		Collection<Bundle> exceptionBundles = null;
+
 		if (null != bundles && bundles.size() > 0) {
 			if (integrityRules.contains(Integrity.PROVIDING)) {
 				BundleSorter bs = new BundleSorter();
@@ -419,7 +432,7 @@ public abstract class BundleJob extends JobStatus {
 					timeoutVal = getTimeout(timeout);
 				}
 			} catch (InPlaceException e) {
-				addStatus(new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, e.getMessage(), e));			
+				addStatus(new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, e.getMessage(), e));
 			}
 			for (Bundle bundle : bundles) {
 				try {
@@ -429,20 +442,32 @@ public abstract class BundleJob extends JobStatus {
 					if (Category.getState(Category.progressBar))
 						sleep(sleepTime);
 					localMonitor.subTask(StartJob.startSubTaskName + bundle.getSymbolicName());
-					if (Thread.currentThread().isInterrupted()) {
-						throw new InterruptedException();
+					if (null != exceptionBundles) {
+						try {
+							// Do not start this bundle if it has requirements on bundles that are not started
+							BundleSorter bs = new BundleSorter();
+							Collection<Bundle> provBundles = bs.sortProvidingBundles(Collections.singleton(bundle),
+									exceptionBundles);
+							if (provBundles.size() > 1) {
+								exceptionBundles.add(bundle);
+								continue;
+							}
+						} catch (CircularReferenceException e) {
+							exceptionBundles.add(bundle);
+							continue;
+						}
 					}
 					if (!bundleTransition.containsPending(bundle, Transition.RESOLVE, true)
 							&& (!ManifestUtil.isFragment(bundle))
 							&& ((bundle.getState() & (Bundle.RESOLVED | Bundle.STOPPING)) != 0)) {
 						int startOption = Bundle.START_TRANSIENT;
 						if (ManifestUtil.getlazyActivationPolicy(bundle)) {
-							startOption = Bundle.START_ACTIVATION_POLICY; 
+							startOption = Bundle.START_ACTIVATION_POLICY;
 						}
 						if (timeout) {
 							bundleCommand.start(bundle, startOption, timeoutVal);
 						} else {
-							bundleCommand.start(bundle, startOption);									
+							bundleCommand.start(bundle, startOption);
 						}
 					}
 				} catch (BundleActivatorException e) {
@@ -454,52 +479,82 @@ public abstract class BundleJob extends JobStatus {
 					if (!classPathStatus.hasStatus(StatusCode.OK)) {
 						result.add(classPathStatus);
 					}
+					if (null == exceptionBundles) {
+						exceptionBundles = new LinkedHashSet<Bundle>();
+					}
+					exceptionBundles.add(bundle);
 				} catch (InPlaceException e) {
 					result = addError(e, e.getLocalizedMessage(), bundle.getBundleId());
+					if (null == exceptionBundles) {
+						exceptionBundles = new LinkedHashSet<Bundle>();
+					}
+					exceptionBundles.add(bundle);
 				} catch (IllegalStateException e) {
-					try {
-						boolean deactivateOnTerminate = getOptionsService().isRefreshOnTerminate();
-						if (deactivateOnTerminate) {
-//							if (!isPendingProject(bundleRegion.getProject(bundle))) {
-//								addPendingProject(bundleRegion.getProject(bundle));
-//							}
-							bundleTransition.addPending(bundle, Transition.REFRESH);
-						}
-					} catch (InPlaceException ed) {
-						addStatus(new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, e.getMessage(), ed));			
-					}					
+					if (null == exceptionBundles) {
+						exceptionBundles = new LinkedHashSet<Bundle>();
+					}
+					exceptionBundles.add(bundle);
+					if (null == deactivateTask) {
+						deactivateTask = new DeactivateJob(DeactivateJob.deactivateJobName);
+					}
+					deactivateTask.addPendingProject(bundleRegion.getProject(bundle));
 					if (null != e.getCause() && e.getCause() instanceof TimeoutException) {
-						String msg = ExceptionMessage.getInstance().formatString("bundle_start_timeout_error", Integer.toString(timeoutVal), bundle);
+						String msg = ExceptionMessage.getInstance().formatString("bundle_start_timeout_error",
+								Integer.toString(timeoutVal), bundle);
 						IBundleStatus errStat = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg, e);
 						msg = WarnMessage.getInstance().formatString("state_changing", bundle);
 						createMultiStatus(errStat, addWarning(null, msg, BundleManager.getRegion().getProject(bundle)));
-						// Thread.currentThread().interrupt();
 					}
-					addError(e,e.getMessage());
-					throw new InterruptedException();
+					addError(e, e.getMessage());
 				} finally {
 					localMonitor.worked(1);
 				}
+			}
+			if (null != deactivateTask) {
+				try {
+					if (getOptionsService().isDeactivateOnTerminate()) {
+						deactivateTask.deactivate(monitor);
+						String msg = UserMessage.getInstance().formatString("deactivating_after_stop_task");
+						addStatus(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, msg));
+					}
+				} catch (InPlaceException e) {
+					addStatus(new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, e.getMessage(), e));
+				} catch (InterruptedException e) {
+					addStatus(new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, e.getMessage(), e));
+				} catch (OperationCanceledException e) {
+					addStatus(new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, e.getMessage(), e));
+				}
+				throw new InterruptedException();
 			}
 		}
 		return result;
 	}
 
 	/**
-	 * Stop the specified bundles. Try to stop as many bundles as possible. May cause additional bundles to
-	 * stop, due to dependencies between bundles. Only bundles in state ACTIVE and STARTING are stopped.
+	 * Stop the specified bundles. Try to stop as many bundles as possible. May cause additional bundles to stop, due to
+	 * dependencies between bundles. Only bundles in state ACTIVE and STARTING are stopped.
+	 * <p>
+	 * If the the specified integrity rule is not set to requiring, the specified bundles should be sorted in requiring
+	 * order. Each bundle in the specified collection of bundles to start should be part of a requiring dependency closure.
+	 * <p>
+	 * If the task running the start operation is terminated the bundle and the requiring bundles are deactivated if the
+	 * deactivate on terminate option is switched on.
 	 * 
 	 * @param bundles the set of bundles to stop
 	 * @param integrityRules if rule is restrict, do not include requiring bundles
 	 * @param monitor monitor the progress monitor to use for reporting progress to the user.
-	 * @return status object describing the result of stopping with {@code StatusCode.OK} if no failure,
-	 *         otherwise one of the failure codes are returned. If more than one bundle fails, status of the
-	 *         last failed bundle is returned. All failures are added to the job status list
-	 * @throws CircularReferenceException if cycles are detected in the project graph
-	 * @throws InterruptedException 
+	 * @return status object describing the result of stopping with {@code StatusCode.OK} if no failure, otherwise one of
+	 *         the failure codes are returned. If more than one bundle fails, status of the last failed bundle is
+	 *         returned. All failures are added to the job status list
+	 * @throws CircularReferenceException if the integrity parameter contains requiring and cycles are detected in the
+	 *           project graph
+	 * @throws InterruptedException Checks for and interrupts right before call to stop bundle. Stop is also interrupted
+	 *           if the task running the stop method is terminated abnormally (timeout or manually)
 	 */
 	public IBundleStatus stop(Collection<Bundle> bundles, EnumSet<Integrity> integrityRules,
 			SubProgressMonitor monitor) throws CircularReferenceException, InterruptedException {
+
+		DeactivateJob deactivateTask = null;
 
 		IBundleStatus result = createStatus();
 
@@ -518,50 +573,57 @@ public abstract class BundleJob extends JobStatus {
 					timeoutVal = getTimeout(timeout);
 				}
 			} catch (InPlaceException e) {
-				addStatus(new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, e.getMessage(), e));			
+				addStatus(new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, e.getMessage(), e));
 			}
 			for (Bundle bundle : bundles) {
 				try {
 					if (Category.getState(Category.progressBar))
 						sleep(sleepTime);
 					localMonitor.subTask(StopJob.stopSubTaskName + bundle.getSymbolicName());
-					if (Thread.currentThread().isInterrupted()) {
-						throw new InterruptedException();
-					}
+					// if (Thread.currentThread().isInterrupted()) {
+					// throw new InterruptedException();
+					// }
 					if ((bundle.getState() & (Bundle.ACTIVE | Bundle.STARTING)) != 0) {
 						if (timeout) {
 							bundleCommand.stop(bundle, false, timeoutVal);
 						} else {
-							bundleCommand.stop(bundle, false);							
+							bundleCommand.stop(bundle, false);
 						}
 					}
 				} catch (InPlaceException e) {
 					result = addError(e, e.getLocalizedMessage(), bundle.getBundleId());
 				} catch (IllegalStateException e) {
-					try {
-						// Deactiavte here
-//						uninstall(Collections.singletonList(bundle),EnumSet.of(Integrity.REQUIRING),
-//								new SubProgressMonitor(monitor, 1), false);
-						boolean refreshOnTerminate = getOptionsService().isRefreshOnTerminate();
-						if (refreshOnTerminate) {
-							bundleTransition.addPending(bundle, Transition.REFRESH);
-							// Bundle will be updated when reactivated
-							bundleTransition.removePending(bundle, Transition.UPDATE);
-						}
-					} catch (InPlaceException ed) {
-						addStatus(new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, e.getMessage(), ed));			
-					}					
+					if (null == deactivateTask) {
+						deactivateTask = new DeactivateJob(DeactivateJob.deactivateJobName);
+					}
+					deactivateTask.addPendingProject(bundleRegion.getProject(bundle));
 					if (null != e.getCause() && e.getCause() instanceof TimeoutException) {
-						String msg = ExceptionMessage.getInstance().formatString("bundle_stop_timeout_error", Integer.toString(timeoutVal), bundle);
+						String msg = ExceptionMessage.getInstance().formatString("bundle_stop_timeout_error",
+								Integer.toString(timeoutVal), bundle);
 						IBundleStatus errStat = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg, e);
 						msg = WarnMessage.getInstance().formatString("state_changing", bundle);
 						createMultiStatus(errStat, addWarning(null, msg, BundleManager.getRegion().getProject(bundle)));
 					}
-					addError(e,e.getMessage());
-					throw new InterruptedException();
+					addError(e, e.getMessage());
 				} finally {
 					localMonitor.worked(1);
 				}
+			}
+			if (null != deactivateTask) {
+				try {
+					if (getOptionsService().isDeactivateOnTerminate()) {
+						deactivateTask.deactivate(monitor);
+						String msg = UserMessage.getInstance().formatString("deactivating_after_stop_task");
+						addStatus(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, msg));
+					}
+				} catch (InPlaceException e) {
+					addStatus(new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, e.getMessage(), e));
+				} catch (InterruptedException e) {
+					addStatus(new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, e.getMessage(), e));
+				} catch (OperationCanceledException e) {
+					addStatus(new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, e.getMessage(), e));
+				}
+				throw new InterruptedException();
 			}
 		}
 		return result;
@@ -569,6 +631,7 @@ public abstract class BundleJob extends JobStatus {
 
 	/**
 	 * Gets and validate the specified timeout value and use default if invalid
+	 * 
 	 * @param seconds timeout value
 	 * @return timeout value in ms
 	 */
@@ -578,28 +641,30 @@ public abstract class BundleJob extends JobStatus {
 			seconds = getOptionsService().getTimeout();
 			if (seconds < 1 || seconds > 60) {
 				int defaultTimeout = getOptionsService().getDeafultTimeout();
-				if (isTimeout){
-					String msg = WarnMessage.getInstance().formatString("illegal_timout_value", seconds, defaultTimeout);
+				if (isTimeout) {
+					String msg = WarnMessage.getInstance()
+							.formatString("illegal_timout_value", seconds, defaultTimeout);
 					addWarning(null, msg, null);
 				}
-				return defaultTimeout*1000;
+				return defaultTimeout * 1000;
 			}
 		} catch (InPlaceException e) {
-			addStatus(new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, e.getMessage(), e));			
+			addStatus(new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, e.getMessage(), e));
 		}
-		return seconds*1000;
+		return seconds * 1000;
 	}
+
 	/**
-	 * Refresh the specified collection of bundles. If the collection of specified bundles is empty refresh is
-	 * not invoked. Refresh runs in a separate thread causing this job, when calling the framework refresh
-	 * method, to wait until the framework fires an event indicating that refresh has finished. The event
-	 * handler then notifies this job to proceed.
+	 * Refresh the specified collection of bundles. If the collection of specified bundles is empty refresh is not
+	 * invoked. Refresh runs in a separate thread causing this job, when calling the framework refresh method, to wait
+	 * until the framework fires an event indicating that refresh has finished. The event handler then notifies this job
+	 * to proceed.
 	 * 
 	 * @param bundlesToRefresh the set of bundles to refresh
 	 * @param subMonitor monitor the progress monitor to use for reporting progress to the user.
-	 * @throws InPlaceException if this thread is interrupted, security violation, illegal argument (not same
-	 *           framework) or illegal monitor (current thread not owner of monitor)
-	 * @see BundleCommandImpl#refresh(Collection, FrameworkListener)
+	 * @throws InPlaceException if this thread is interrupted, security violation, illegal argument (not same framework)
+	 *           or illegal monitor (current thread not owner of monitor)
+	 * @see BundleCommandImpl#refresh(Collection)
 	 */
 	protected void refresh(final Collection<Bundle> bundlesToRefresh, IProgressMonitor subMonitor)
 			throws InPlaceException {
@@ -630,10 +695,10 @@ public abstract class BundleJob extends JobStatus {
 			localMonitor.worked(bundlesToRefresh.size());
 		}
 	}
-	
+
 	/**
 	 * Finds and returns the dependency closure to resolve and/or refresh giving an initial set of bundles.
-	 *  
+	 * 
 	 * @param bundles the initial set of bundles to calculate the dependency closure from
 	 * @return set of bundles to resolve and/or refresh including the specified initial set of bundles
 	 */
@@ -643,21 +708,22 @@ public abstract class BundleJob extends JobStatus {
 		Collection<Bundle> activatedBundles = bundleRegion.getActivatedBundles();
 		Collection<Bundle> bundlesToResolve = bs.sortDeclaredRequiringBundles(bundles, activatedBundles);
 		// The resolver always include bundles with the same symbolic name in the resolve process
-		Map<IProject, Bundle> duplicates = bundleRegion.getSymbolicNameDuplicates(bundleRegion.getProjects(bundlesToResolve), activatedBundles, true);
-		if (duplicates.size() > 0) {			
+		Map<IProject, Bundle> duplicates = bundleRegion.getSymbolicNameDuplicates(
+				bundleRegion.getProjects(bundlesToResolve), activatedBundles, true);
+		if (duplicates.size() > 0) {
 			bundlesToResolve.addAll(bs.sortDeclaredRequiringBundles(duplicates.values(), activatedBundles));
 		}
 		return bundlesToResolve;
 	}
-	
+
 	/**
-	 * Resolves the specified bundles. Bundle closures with errors are not excluded before resolved. Resolve
-	 * errors are added to the job status list.
+	 * Resolves the specified bundles. Bundle closures with errors are not excluded before resolved. Resolve errors are
+	 * added to the job status list.
 	 * 
 	 * @param bundlesToResolve may resolve additional bundles due to dependencies on this collection of bundles
 	 * @param monitor monitor the progress monitor to use for reporting progress and cancellation to the user.
-	 * @return the bundles not resolved among the specified bundles to resolve or an empty collection if all
-	 *         bundles where resolved
+	 * @return the bundles not resolved among the specified bundles to resolve or an empty collection if all bundles where
+	 *         resolved
 	 */
 	protected Collection<Bundle> resolve(Collection<Bundle> bundlesToResolve, SubProgressMonitor monitor) {
 		SubMonitor localMonitor = SubMonitor.convert(monitor, 1);
@@ -737,13 +803,13 @@ public abstract class BundleJob extends JobStatus {
 	}
 
 	/**
-	 * Verify that the specified bundles have a valid standard binary entry in class path. Bundles that are
-	 * missing a bin entry are tagged with {@code Transition.RESOLVE}.
+	 * Verify that the specified bundles have a valid standard binary entry in class path. Bundles that are missing a bin
+	 * entry are tagged with {@code Transition.RESOLVE}.
 	 * 
 	 * @param bundles to check for a valid bin entry in class path
-	 * @return status object describing the result of checking the class path with {@code StatusCode.OK} if no
-	 *         failure, otherwise one of the failure codes are returned. If more than one bundle fails, status
-	 *         of the last failed bundle is returned. All failures are added to the job status list
+	 * @return status object describing the result of checking the class path with {@code StatusCode.OK} if no failure,
+	 *         otherwise one of the failure codes are returned. If more than one bundle fails, status of the last failed
+	 *         bundle is returned. All failures are added to the job status list
 	 * @throws CircularReferenceException if cycles are detected in the project graph
 	 */
 	private IBundleStatus checkClassPath(Collection<Bundle> bundles) throws CircularReferenceException {
@@ -805,12 +871,12 @@ public abstract class BundleJob extends JobStatus {
 	}
 
 	/**
-	 * Sets the dev class path and/or updates the Bundle-ClassPath with the default output folder for the
-	 * specified project.
+	 * Sets the dev class path and/or updates the Bundle-ClassPath with the default output folder for the specified
+	 * project.
 	 * 
 	 * @param project the project to add the dev class path and/or the output folder to
-	 * @return an {@code BundleStatus.ERROR} code if the loading of the specified dev class path fails,
-	 *         otherwise the bundles status code returned is {@code BundleStatus.OK_BUNDLE_STATUS}
+	 * @return an {@code BundleStatus.ERROR} code if the loading of the specified dev class path fails, otherwise the
+	 *         bundles status code returned is {@code BundleStatus.OK_BUNDLE_STATUS}
 	 */
 	protected IBundleStatus resolveBundleClasspath(IProject project) {
 
@@ -830,12 +896,11 @@ public abstract class BundleJob extends JobStatus {
 	}
 
 	/**
-	 * Remove all projects with build errors and their requiring and providing projects (build error closures)
-	 * from the specified dependency closures. This extracts a path of requiring and providing bundles to/from
-	 * each error bundle.
+	 * Remove all projects with build errors and their requiring and providing projects (build error closures) from the
+	 * specified dependency closures. This extracts a path of requiring and providing bundles to/from each error bundle.
 	 * <p>
-	 * Remove build error closures bundles from the specified initial bundle set and the bundle and project
-	 * dependency closures
+	 * Remove build error closures bundles from the specified initial bundle set and the bundle and project dependency
+	 * closures
 	 * <p>
 	 * Issue a warning for all build error dependency closures.
 	 * 
@@ -843,11 +908,11 @@ public abstract class BundleJob extends JobStatus {
 	 * @param bDepClosures bundles dependency closures (requiring bundles to initial set)
 	 * @param pDepClosures projects dependency closures (requiring projects to initial set)
 	 * 
-	 * @return status object describing the result of removing build errors with {@code StatusCode.OK} if no
-	 *         failure, otherwise one of the failure codes are returned. If more than one bundle fails, status
-	 *         of the last failed bundle is returned. All failures are added to the job status list
-	 * @throws OperationCanceledException if the specified initial set of bundles becomes empty after bundle
-	 *           error closures is removed
+	 * @return status object describing the result of removing build errors with {@code StatusCode.OK} if no failure,
+	 *         otherwise one of the failure codes are returned. If more than one bundle fails, status of the last failed
+	 *         bundle is returned. All failures are added to the job status list
+	 * @throws OperationCanceledException if the specified initial set of bundles becomes empty after bundle error
+	 *           closures is removed
 	 */
 	protected IBundleStatus removeBuildErrorClosures(Collection<Bundle> initialBundleSet,
 			Collection<Bundle> bDepClosures, Collection<IProject> pDepClosures) throws OperationCanceledException {
@@ -921,20 +986,20 @@ public abstract class BundleJob extends JobStatus {
 	}
 
 	/**
-	 * Removes pending workspace projects and their requiring projects from the specified projects and
-	 * dependency closures of duplicate projects to workspace bundles.
+	 * Removes pending workspace projects and their requiring projects from the specified projects and dependency closures
+	 * of duplicate projects to workspace bundles.
+	 * 
 	 * @param projects duplicate candidates to workspace bundles
-	 * @param bDepClosures existing dependency closure of bundles to the specified candidate projects. May be
-	 *          null.
+	 * @param bDepClosures existing dependency closure of bundles to the specified candidate projects. May be null.
 	 * @param pDepClosures TODO
 	 * @param scope TODO
-	 * @param message information message added to the end of the error sent to the log view if duplicates are
-	 *          detected.  Null is allowed.
-	 * @return all duplicates and the requiring dependency closure for each duplicate or null if no duplicates
-	 *         found.
+	 * @param message information message added to the end of the error sent to the log view if duplicates are detected.
+	 *          Null is allowed.
+	 * @return all duplicates and the requiring dependency closure for each duplicate or null if no duplicates found.
 	 */
 	protected Collection<IProject> removeWorkspaceDuplicates(Collection<IProject> projects,
-			Collection<Bundle> bDepClosures, Collection<IProject> pDepClosures, Collection<IProject> scope, String message) {
+			Collection<Bundle> bDepClosures, Collection<IProject> pDepClosures, Collection<IProject> scope,
+			String message) {
 
 		Map<IProject, IProject> wsDuplicates = bundleRegion.getWorkspaceDuplicates(projects, scope);
 		Collection<IProject> duplicateClosures = null;
@@ -952,9 +1017,8 @@ public abstract class BundleJob extends JobStatus {
 					}
 					bundleTransition.setTransitionError(duplicateProject, TransitionError.DUPLICATE);
 					DuplicateBundleException duplicateBundleException = new DuplicateBundleException(
-							"duplicate_of_ws_bundle", duplicateProject.getName(), 
-							BundleProject.getSymbolicNameFromManifest(duplicateProject1), 
-							duplicateProject1.getLocation());
+							"duplicate_of_ws_bundle", duplicateProject.getName(),
+							BundleProject.getSymbolicNameFromManifest(duplicateProject1), duplicateProject1.getLocation());
 					handleDuplicateException(duplicateProject, duplicateBundleException, message);
 					Collection<IProject> requiringProjects = ps.sortRequiringProjects(Collections
 							.singletonList(duplicateProject));
@@ -984,20 +1048,18 @@ public abstract class BundleJob extends JobStatus {
 	}
 
 	/**
-	 * Removes pending workspace projects and their requiring projects from the specified projects and
-	 * dependency closures of duplicate projects to external bundles. -- Detect bundles which are duplicates of
-	 * external bundles -- Can not let update detect the duplicate -- OSGi will refresh all dependent bundles of
-	 * the jar bundle -- and suspend the refreshPackages and not return -- See private void
-	 * suspendBundle(AbstractBundle bundle) { -- attempt to suspend the bundle or obtain the state change lock
-	 * -- Note that this may fail but we cannot quit the -- refreshPackages operation because of it. (bug 84169)
+	 * Removes pending workspace projects and their requiring projects from the specified projects and dependency closures
+	 * of duplicate projects to external bundles. -- Detect bundles which are duplicates of external bundles -- Can not
+	 * let update detect the duplicate -- OSGi will refresh all dependent bundles of the jar bundle -- and suspend the
+	 * refreshPackages and not return -- See private void suspendBundle(AbstractBundle bundle) { -- attempt to suspend the
+	 * bundle or obtain the state change lock -- Note that this may fail but we cannot quit the -- refreshPackages
+	 * operation because of it. (bug 84169)
 	 * 
 	 * @param projects duplicate candidates to external bundles
-	 * @param bDepClosures existing dependency closure of bundles to the specified candidate projects. May be
-	 *          null.
-	 * @param message information message added to the end of the error sent to the log view if duplicates are
-	 *          detected.  Null is allowed.
-	 * @return all duplicates and the requiring dependency closure for each duplicate or null if no duplicates
-	 *         found.
+	 * @param bDepClosures existing dependency closure of bundles to the specified candidate projects. May be null.
+	 * @param message information message added to the end of the error sent to the log view if duplicates are detected.
+	 *          Null is allowed.
+	 * @return all duplicates and the requiring dependency closure for each duplicate or null if no duplicates found.
 	 */
 	protected Collection<IProject> removeExternalDuplicates(Collection<IProject> projects,
 			Collection<Bundle> bDepClosures, String message) {
@@ -1057,16 +1119,14 @@ public abstract class BundleJob extends JobStatus {
 	}
 
 	/**
-	 * Compares bundle projects for the same symbolic name and version. Each specified project is compared to
-	 * all other valid workspace projects as specified by {@link ProjectProperties#getInstallableProjects()}.
+	 * Compares bundle projects for the same symbolic name and version. Each specified project is compared to all other
+	 * valid workspace projects as specified by {@link ProjectProperties#getInstallableProjects()}.
 	 * <p>
-	 * When duplicates are detected the providing project - if any - in a set of duplicates is treated as the
-	 * one to be installed or updated while the rest of the duplicates in the set are those left uninstalled or
-	 * not updated. This becomes indirectly evident from the formulation of the error messages sent to the log
-	 * view.
+	 * When duplicates are detected the providing project - if any - in a set of duplicates is treated as the one to be
+	 * installed or updated while the rest of the duplicates in the set are those left uninstalled or not updated. This
+	 * becomes indirectly evident from the formulation of the error messages sent to the log view.
 	 * <p>
-	 * Any errors that occurs while retrieving the symbolic name and version of bundles are added to the job
-	 * status list
+	 * Any errors that occurs while retrieving the symbolic name and version of bundles are added to the job status list
 	 * 
 	 * @param duplicateProject duplicate project
 	 * @param duplicateException the duplicate exception object associated with the specified duplicate project
@@ -1155,11 +1215,11 @@ public abstract class BundleJob extends JobStatus {
 		}
 		return duplicates;
 	}
-	
-	 protected CommandOptions getOptionsService() throws InPlaceException{
-		 return InPlace.getDefault().getOptionsService();
-	 }
-	 
+
+	protected CommandOptions getOptionsService() throws InPlaceException {
+		return InPlace.getDefault().getOptionsService();
+	}
+
 	/**
 	 * Debug for synchronizing the progress monitor. Default number of mills to sleep
 	 */

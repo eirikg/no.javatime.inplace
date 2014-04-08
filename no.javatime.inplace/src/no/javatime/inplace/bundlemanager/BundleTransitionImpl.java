@@ -4,11 +4,11 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumSet;
 
-import org.eclipse.core.resources.IProject;
-import org.osgi.framework.Bundle;
-
 import no.javatime.inplace.bundlemanager.state.BundleNode;
 import no.javatime.inplace.dependencies.ProjectSorter;
+
+import org.eclipse.core.resources.IProject;
+import org.osgi.framework.Bundle;
 
 class BundleTransitionImpl implements BundleTransition {
 
@@ -96,8 +96,15 @@ class BundleTransitionImpl implements BundleTransition {
 			return false;
 		}
 		return bn.hasTransitionError();
-//		String location = ws.getBundleLocationIdentifier(project);
-//		return this.activeTransition.hasError(location);
+	}
+
+	@Override
+	public boolean hasTransitionError(Bundle bundle) {
+		BundleNode bn = ws.getBundleNode(bundle);
+		if (null == bn) {
+			return false;
+		}
+		return bn.hasTransitionError();
 	}
 
 	@Override

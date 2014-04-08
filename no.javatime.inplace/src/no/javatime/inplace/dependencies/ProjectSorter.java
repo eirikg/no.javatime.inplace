@@ -19,6 +19,7 @@ import org.eclipse.core.resources.IProject;
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundlemanager.BundleManager;
 import no.javatime.inplace.bundlemanager.BundleTransition;
+import no.javatime.inplace.bundlemanager.InPlaceException;
 import no.javatime.inplace.bundlemanager.BundleTransition.TransitionError;
 import no.javatime.inplace.bundleproject.BundleProject;
 import no.javatime.inplace.bundleproject.ProjectProperties;
@@ -27,11 +28,10 @@ import no.javatime.inplace.statushandler.IBundleStatus.StatusCode;
 import no.javatime.util.messages.ExceptionMessage;
 
 /**
- * Topological sort of projects in requiring (referencing) and providing (referenced) project dependency
- * order.
+ * Topological sort of projects in requiring (referencing) and providing (referenced) project dependency order.
  * <p>
- * All cycles from an initial set (start projects) of projects are detected for each sort. To detect all
- * cycles in the workspace include all workspace projects as the initial set to sort.
+ * All cycles from an initial set (start projects) of projects are detected for each sort. To detect all cycles in the
+ * workspace include all workspace projects as the initial set to sort.
  * 
  * @see CircularReferenceException
  * @see BundleSorter
@@ -62,8 +62,9 @@ public class ProjectSorter extends BaseSorter {
 	}
 
 	/**
-	 * Topological sort in referenced project order among all valid workspace projects
-	 * Initial set of specified projects are included in the result set.
+	 * Topological sort in referenced project order among all valid workspace projects Initial set of specified projects
+	 * are included in the result set.
+	 * 
 	 * @param projects a collection of start projects included in the result set
 	 * @return collection of projects in referenced sort order
 	 * @throws CircularReferenceException if cycles are detected in the project graph
@@ -82,10 +83,9 @@ public class ProjectSorter extends BaseSorter {
 	}
 
 	/**
-	 * Traverse the partial graph of the specified child as the initial project. The graph is in dependency
-	 * order and added to the internal stored project order which is accessible from
-	 * {@linkplain ProjectSorter#getProjectOrder()}. Any cycles in the graph are stored in
-	 * {@linkplain CircularReferenceException}
+	 * Traverse the partial graph of the specified child as the initial project. The graph is in dependency order and
+	 * added to the internal stored project order which is accessible from {@linkplain ProjectSorter#getProjectOrder()}.
+	 * Any cycles in the graph are stored in {@linkplain CircularReferenceException}
 	 * 
 	 * @param child the initial providing project
 	 * @param parent a requiring project to the {@code child} project parameter. May be null.
@@ -111,11 +111,11 @@ public class ProjectSorter extends BaseSorter {
 
 	/**
 	 * Topological sort in referenced project order, using depth-first search. For all workspace projects use
-	 * {@linkplain #sortRequiringProjects(Collection)}
-	 * Initial set of specified projects are included in the result set.
+	 * {@linkplain #sortRequiringProjects(Collection)} Initial set of specified projects are included in the result set.
+	 * 
 	 * @param projects a collection of start projects included in the result set
-	 * @param natureEnabled if true only consider activated projects (nature enabled) in the result set or if
-	 *          false only consider projects that are not activated
+	 * @param natureEnabled if true only consider activated projects (nature enabled) in the result set or if false only
+	 *          consider projects that are not activated
 	 * @return collection of projects in referenced sort order
 	 * @throws CircularReferenceException if cycles are detected in the project graph
 	 */
@@ -133,10 +133,9 @@ public class ProjectSorter extends BaseSorter {
 	}
 
 	/**
-	 * Traverse the partial graph of the specified child as the initial project. The graph is in dependency
-	 * order and added to the internal stored project order which is accessible from
-	 * {@linkplain ProjectSorter#getProjectOrder()}. Any cycles in the graph are stored in
-	 * {@linkplain CircularReferenceException}
+	 * Traverse the partial graph of the specified child as the initial project. The graph is in dependency order and
+	 * added to the internal stored project order which is accessible from {@linkplain ProjectSorter#getProjectOrder()}.
+	 * Any cycles in the graph are stored in {@linkplain CircularReferenceException}
 	 * 
 	 * @param child the initial providing project
 	 * @param parent a requiring project to the {@code child} project parameter. May be null.
@@ -165,8 +164,8 @@ public class ProjectSorter extends BaseSorter {
 	}
 
 	/**
-	 * Topological sort in referencing project order among all valid workspace projects.
-	 * Initial set of specified projects are included in the result set.
+	 * Topological sort in referencing project order among all valid workspace projects. Initial set of specified projects
+	 * are included in the result set.
 	 * 
 	 * @param projects a collection of start bundles included in the result set
 	 * @return collection of projects in referencing sort order
@@ -186,10 +185,9 @@ public class ProjectSorter extends BaseSorter {
 	}
 
 	/**
-	 * Traverse the partial graph of the specified child as the initial project. The graph is in dependency
-	 * order and added to the internal stored project order which is accessible from
-	 * {@linkplain ProjectSorter#getProjectOrder()}. Any cycles in the graph are stored in
-	 * {@linkplain CircularReferenceException}
+	 * Traverse the partial graph of the specified child as the initial project. The graph is in dependency order and
+	 * added to the internal stored project order which is accessible from {@linkplain ProjectSorter#getProjectOrder()}.
+	 * Any cycles in the graph are stored in {@linkplain CircularReferenceException}
 	 * 
 	 * @param child the initial requiring project
 	 * @param parent a providing project to the {@code child} project parameter. May be null.
@@ -215,13 +213,12 @@ public class ProjectSorter extends BaseSorter {
 	}
 
 	/**
-	 * Topological sort in referencing project order among all valid workspace projects For all workspace
-	 * projects use {@linkplain #sortProvidingProjects(Collection)}
-	 * Initial set of specified projects are included in the result set.
+	 * Topological sort in referencing project order among all valid workspace projects For all workspace projects use
+	 * {@linkplain #sortProvidingProjects(Collection)} Initial set of specified projects are included in the result set.
 	 * 
 	 * @param projects a collection of start bundles included in the result set
-	 * @param natureEnabled if true only consider activated projects (nature enabled) in the result set or if
-	 *          false only consider projects that are not activated
+	 * @param natureEnabled if true only consider activated projects (nature enabled) in the result set or if false only
+	 *          consider projects that are not activated
 	 * @return collection of projects in referencing sort order
 	 * @throws CircularReferenceException if cycles are detected in the project graph. All Cycles are detected.
 	 */
@@ -239,10 +236,9 @@ public class ProjectSorter extends BaseSorter {
 	}
 
 	/**
-	 * Traverse the partial graph of the specified child as the initial project. The graph is in dependency
-	 * order and added to the internal stored project order which is accessible from
-	 * {@linkplain ProjectSorter#getProjectOrder()}. Any cycles in the graph are stored in
-	 * {@linkplain CircularReferenceException}
+	 * Traverse the partial graph of the specified child as the initial project. The graph is in dependency order and
+	 * added to the internal stored project order which is accessible from {@linkplain ProjectSorter#getProjectOrder()}.
+	 * Any cycles in the graph are stored in {@linkplain CircularReferenceException}
 	 * 
 	 * @param child the initial requiring project
 	 * @param parent a providing project to the {@code child} project parameter. May be null.
@@ -319,16 +315,18 @@ public class ProjectSorter extends BaseSorter {
 	}
 
 	/**
-	 * Filters out all projects with build errors and their requiring projects from the specified project scope.
-	 * Performs a topological sort of all projects with build errors in requiring project order.
+	 * Filters out all projects with build errors and their requiring projects from the specified project scope. Performs
+	 * a topological sort of all projects with build errors in requiring project order.
 	 * 
 	 * @param projectScope of projects to check for build errors
 	 * @param activated if true only consider activated projects. If false only consider deactivated projects
 	 * @return projects and their requiring projects or an empty set if no errors where found
+	 * @throws CircularReferenceException if cycles are detected among the specified projects
+	 * @throws InPlaceException if one of the specified projects does not exist or is closed
 	 * @see #sortRequiringProjects(Collection)
 	 */
 	public Collection<IProject> getRequiringBuildErrorClosure(Collection<IProject> projectScope,
-			Boolean activated) {
+			Boolean activated) throws CircularReferenceException, InPlaceException {
 		Collection<IProject> projects = new LinkedHashSet<IProject>(projectScope);
 		if (activated) {
 			projects.retainAll(BundleManager.getRegion().getProjects(true));
@@ -339,14 +337,18 @@ public class ProjectSorter extends BaseSorter {
 	}
 
 	/**
-	 * Filters out all projects with build errors and their requiring projects from the specified project scope.
-	 * Performs a topological sort of all projects with build errors in requiring project order.
+	 * Filters out all projects with build errors and their requiring projects from the specified project scope. Performs
+	 * a topological sort of all projects with build errors in requiring project order.
 	 * 
 	 * @param projectScope of projects to check for build errors
 	 * @return projects with build errors and their requiring projects or an empty set if no errors where found
+	 * @throws InPlaceException if one of the specified projects does not exist or is closed
+	 * @throws CircularReferenceException if cycles are detected among the specified projects
 	 * @see #sortRequiringProjects(Collection)
 	 */
-	public Collection<IProject> getRequiringBuildErrorClosure(Collection<IProject> projectScope) {
+	public Collection<IProject> getRequiringBuildErrorClosure(Collection<IProject> projectScope)
+			throws InPlaceException, CircularReferenceException {
+
 		projectOrder = new LinkedHashSet<IProject>();
 		circularException = null;
 		Collection<IProject> errorProjects = null;
@@ -360,11 +362,11 @@ public class ProjectSorter extends BaseSorter {
 			}
 			BundleTransition bundleTransition = BundleManager.getTransition();
 			for (IProject errorProject : projectOrder) {
-				if (ProjectProperties.isProjectActivated(errorProject)){
+				if (ProjectProperties.isProjectActivated(errorProject)) {
 					if (errorProjects.contains(errorProject)) {
 						bundleTransition.setTransitionError(errorProject, TransitionError.BUILD);
 					} else {
-						bundleTransition.setTransitionError(errorProject, TransitionError.DEPENDENCY);					
+						bundleTransition.setTransitionError(errorProject, TransitionError.DEPENDENCY);
 					}
 				}
 			}

@@ -279,7 +279,6 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 				}
 			};
 			BundleManager.addBundleJob(updateBundleClassPathJob, 0);
-			OpenProjectHandler.waitOnBundleJob();
 			if (projects.size() > 0 && !ProjectProperties.isAutoBuilding()) {
 				if (Category.getState(Category.infoMessages)) {
 					UserMessage.getInstance().getString("atobuild_of_reset");

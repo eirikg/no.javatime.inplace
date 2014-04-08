@@ -12,7 +12,6 @@ package no.javatime.inplace.ui.command.handlers;
 
 import no.javatime.inplace.bundlemanager.InPlaceException;
 import no.javatime.inplace.dl.preferences.intface.CommandOptions;
-import no.javatime.inplace.ui.Activator;
 
 public class UpdateClassPathOnActivateHandler extends AbstractOptionsHandler {
 

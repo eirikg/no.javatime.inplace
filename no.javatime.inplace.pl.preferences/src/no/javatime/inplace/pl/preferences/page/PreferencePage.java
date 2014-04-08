@@ -79,8 +79,8 @@ public class PreferencePage extends FieldEditorPreferencePage implements IWorkbe
 		groupTimeoutEditor.add(timeoutRadioGroupEditor);
 
 		// Refresh when terminating bundle task
-		BooleanFieldEditor booleanEditor = new BooleanFieldEditor(CommandOptions.IS_REFRESH_ON_TERMINATE,
-				Msg.IS_REFRESH_ON_TERMINATE_LABEL, groupTimeoutEditor.getMemberFieldEditorParent());
+		BooleanFieldEditor booleanEditor = new BooleanFieldEditor(CommandOptions.IS_DEACTIVATE_ON_TERMINATE,
+				Msg.IS_DEACTIVATE_ON_TERMINATE_LABEL, groupTimeoutEditor.getMemberFieldEditorParent());
 		addField(booleanEditor);
 		groupTimeoutEditor.add(booleanEditor);
 
@@ -198,7 +198,7 @@ public class PreferencePage extends FieldEditorPreferencePage implements IWorkbe
 			}
 			timoutSecEditor.setEnabled(isTimeout, groupTimeoutEditor.getMemberFieldEditorParent());
 			prefStore.setValue(CommandOptions.IS_DEACTIVATE_ON_EXIT, cmdStore.isDeactivateOnExit());
-			prefStore.setValue(CommandOptions.IS_REFRESH_ON_TERMINATE, cmdStore.isRefreshOnTerminate());
+			prefStore.setValue(CommandOptions.IS_DEACTIVATE_ON_TERMINATE, cmdStore.isDeactivateOnTerminate());
 			prefStore.setValue(CommandOptions.IS_UPDATE_DEFAULT_OUTPUT_FOLDER,
 					cmdStore.isUpdateDefaultOutPutFolder());
 			prefStore.setValue(CommandOptions.IS_UPDATE_ON_BUILD, cmdStore.isUpdateOnBuild());
@@ -259,7 +259,7 @@ public class PreferencePage extends FieldEditorPreferencePage implements IWorkbe
 				cmdStore.setIsManualTerminate(true);
 			}
 			cmdStore.setIsDeactivateOnExit(prefStore.getBoolean(CommandOptions.IS_DEACTIVATE_ON_EXIT));
-			cmdStore.setIsRefreshOnTerminate(prefStore.getBoolean(CommandOptions.IS_REFRESH_ON_TERMINATE));
+			cmdStore.setIsDeactivateOnTerminate(prefStore.getBoolean(CommandOptions.IS_DEACTIVATE_ON_TERMINATE));
 			cmdStore.setIsUpdateDefaultOutPutFolder(prefStore
 					.getBoolean(CommandOptions.IS_UPDATE_DEFAULT_OUTPUT_FOLDER));
 			cmdStore.setIsUpdateOnBuild(prefStore.getBoolean(CommandOptions.IS_UPDATE_ON_BUILD));
@@ -321,7 +321,7 @@ public class PreferencePage extends FieldEditorPreferencePage implements IWorkbe
 				}
 			}
 		}
-		throw new Exception(Msg.STOP_OPERATION_OPTON_SELECTION);
+		throw new Exception(Msg.STOP_OPERATION_OPTON_SELECTION_EXCEPTION);
 	}
 
 	@SuppressWarnings("unused")
@@ -339,7 +339,7 @@ public class PreferencePage extends FieldEditorPreferencePage implements IWorkbe
 				}
 			}
 		}
-		throw new Exception(Msg.STOP_OPERATION_OPTON_SELECTION);
+		throw new Exception(Msg.STOP_OPERATION_OPTON_SELECTION_EXCEPTION);
 	}
 
 }

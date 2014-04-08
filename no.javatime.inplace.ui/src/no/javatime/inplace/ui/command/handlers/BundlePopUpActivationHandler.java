@@ -13,11 +13,14 @@ package no.javatime.inplace.ui.command.handlers;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
+import java.util.concurrent.TimeoutException;
 
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.resources.IProject;
+import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Platform;
+import org.eclipse.core.runtime.Status;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.ui.commands.IElementUpdater;
@@ -26,10 +29,12 @@ import org.eclipse.ui.menus.UIElement;
 import org.eclipse.ui.statushandlers.StatusManager;
 
 import no.javatime.inplace.bundlejobs.BundleJob;
+import no.javatime.inplace.bundlemanager.BundleManager;
 import no.javatime.inplace.bundlemanager.InPlaceException;
 import no.javatime.inplace.bundleproject.BundleProject;
 import no.javatime.inplace.bundleproject.OpenProjectHandler;
 import no.javatime.inplace.bundleproject.ProjectProperties;
+import no.javatime.inplace.dl.preferences.intface.CommandOptions;
 import no.javatime.inplace.statushandler.BundleStatus;
 import no.javatime.inplace.statushandler.IBundleStatus.StatusCode;
 import no.javatime.inplace.ui.Activator;
@@ -116,7 +121,25 @@ public class BundlePopUpActivationHandler extends BundleMenuActivationHandler im
 					thread.interrupt();
 				}
 			}
-		}			
+		}	else if (parameterId.equals(BundlePopUpCommandsContributionItems.stopOperationParamId)) {
+			Activator.getDisplay().asyncExec(new Runnable() {
+				public void run() {
+					try {
+						BundleJob job = OpenProjectHandler.getRunningBundleJob();
+						CommandOptions co = Activator.getDefault().getOptionsService();
+						if (null != job && (!co.isTimeOut()) && BundleManager.getCommand().isStateChanging()) {			
+							BundleManager.getCommand().stopCurrentBundleOperation();
+						}
+					} catch (IllegalStateException e) {
+						// Also caught by the bundle API
+					} catch (TimeoutException e) {
+						StatusManager.getManager().handle(
+								new Status(IStatus.ERROR, Activator.PLUGIN_ID, e.getMessage(), e),
+								StatusManager.LOG);
+					}
+				}
+			});
+		}				
 		return null;
 	}
 

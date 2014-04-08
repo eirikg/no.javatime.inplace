@@ -9,7 +9,7 @@ public class Msg extends NLS {
 	
 	public static String PREFERENCE_FLUSH_EXCEPTION;
 	public static String STORE_SERVICE_EXCEPTION;
-	public static String STOP_OPERATION_OPTON_SELECTION;
+	public static String STOP_OPERATION_OPTON_SELECTION_EXCEPTION;
 	public static String INIT_PREF_PAGE_ERROR;
 	public static String INIT_DEFAULT_PREF_PAGE_ERROR;
 	public static String DEFAULT_PREF_PAGE_ERROR;
@@ -21,7 +21,7 @@ public class Msg extends NLS {
 	public static String TIMEOUT_SECONDS_LABEL;
 	public static String TERMINATE_ON_TIMEOUT_LABEL;
 	public static String IS_MANUAL_TERMINATE_LABEL;
-	public static String IS_REFRESH_ON_TERMINATE_LABEL;
+	public static String IS_DEACTIVATE_ON_TERMINATE_LABEL;
 	public static String COMMAND_GROUP_LABEL;
 	public static String IS_DEACTIVATE_ON_EXIT_LABEL;
 	public static String IS_UPDATE_ON_BUILD_LABEL;

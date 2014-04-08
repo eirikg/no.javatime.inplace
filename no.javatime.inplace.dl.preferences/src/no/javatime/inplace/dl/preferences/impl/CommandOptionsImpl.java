@@ -15,7 +15,7 @@ public class CommandOptionsImpl extends ManifestOptionsImpl implements CommandOp
 	private final static boolean defIsAllowUIContributions = true;
 	private final static boolean defIsTimeOut = true;
 	private final static boolean defIsManualTerminate = false;
-	private final static boolean defIsRefreshOnTerminate = false;
+	private final static boolean defIsDeactivateOnTerminate = true;
 	private final static int defTimeOut = 5;
 	
 	public CommandOptionsImpl() {
@@ -175,17 +175,17 @@ public class CommandOptionsImpl extends ManifestOptionsImpl implements CommandOp
 	}
 
 	@Override
-	public boolean isRefreshOnTerminate() {
-		return getPrefs().getBoolean(IS_REFRESH_ON_TERMINATE, getDefaultIsRefreshOnTerminate());
+	public boolean isDeactivateOnTerminate() {
+		return getPrefs().getBoolean(IS_DEACTIVATE_ON_TERMINATE, getDefaultIsDeactivateOnTerminate());
 	}
 
 	@Override
-	public boolean getDefaultIsRefreshOnTerminate() {
-		return defIsRefreshOnTerminate;
+	public boolean getDefaultIsDeactivateOnTerminate() {
+		return defIsDeactivateOnTerminate;
 	}
 
 	@Override
-	public void setIsRefreshOnTerminate(boolean deactivate) {
-		getPrefs().putBoolean(IS_REFRESH_ON_TERMINATE, deactivate);		
+	public void setIsDeactivateOnTerminate(boolean deactivate) {
+		getPrefs().putBoolean(IS_DEACTIVATE_ON_TERMINATE, deactivate);		
 	}
 }

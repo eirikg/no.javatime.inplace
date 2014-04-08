@@ -99,9 +99,10 @@ public abstract class NatureJob extends BundleJob {
 	 * @return status object describing the result of deactivating nature with {@code StatusCode.OK} if no
 	 *         failure, otherwise one of the failure codes are returned. If more than one bundle fails, status
 	 *         of the last failed bundle is returned. All failures are added to the job status list
+	 * @throws InPlaceException failed to remove nature or the default output folder
 	 */
 	protected IBundleStatus deactivateNature(Collection<IProject> projectsToDeactivate,
-			SubProgressMonitor monitor) {
+			SubProgressMonitor monitor) throws InPlaceException{
 
 		SubMonitor localMonitor = SubMonitor.convert(monitor, projectsToDeactivate.size());
 
@@ -119,6 +120,7 @@ public abstract class NatureJob extends BundleJob {
 				}
 			} catch (InPlaceException e) {
 				addError(e, e.getLocalizedMessage(), project);
+				throw e;
 			} finally {
 				localMonitor.worked(1);
 			}

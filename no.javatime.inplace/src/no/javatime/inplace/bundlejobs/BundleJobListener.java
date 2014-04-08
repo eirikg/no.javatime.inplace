@@ -12,14 +12,6 @@ package no.javatime.inplace.bundlejobs;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Iterator;
-
-import org.eclipse.core.resources.IProject;
-import org.eclipse.core.runtime.jobs.IJobChangeEvent;
-import org.eclipse.core.runtime.jobs.IJobManager;
-import org.eclipse.core.runtime.jobs.Job;
-import org.eclipse.core.runtime.jobs.JobChangeAdapter;
-import org.eclipse.ui.statushandlers.StatusManager;
 
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundlemanager.BundleManager;
@@ -33,6 +25,13 @@ import no.javatime.util.messages.Category;
 import no.javatime.util.messages.Message;
 import no.javatime.util.messages.TraceMessage;
 import no.javatime.util.messages.WarnMessage;
+
+import org.eclipse.core.resources.IProject;
+import org.eclipse.core.runtime.jobs.IJobChangeEvent;
+import org.eclipse.core.runtime.jobs.IJobManager;
+import org.eclipse.core.runtime.jobs.Job;
+import org.eclipse.core.runtime.jobs.JobChangeAdapter;
+import org.eclipse.ui.statushandlers.StatusManager;
 
 /**
  * Listen to state changes and report job status in bundle jobs. Bundle status objects added by bundle
