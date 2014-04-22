@@ -92,7 +92,7 @@ public interface BundleTransition {
 	}
 
 	public static enum TransitionError {
-		NOERROR, ERROR, DUPLICATE, CYCLE, BUILD, DEPENDENCY, 
+		NOERROR, ERROR, EXCEPTION, DUPLICATE, CYCLE, BUILD, DEPENDENCY, STATECHANGE, 
 		/**
 		 * A state indicating that a bundle command/operation did not complete or did complete, but possibly in an 
 		 * inconsistent manner. May for instance happen when executing an infinite loop in Start/Stop methods

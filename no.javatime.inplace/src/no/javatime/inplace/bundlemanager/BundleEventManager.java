@@ -234,6 +234,7 @@ class BundleEventManager implements FrameworkListener, SynchronousBundleListener
 		// synchronously by install and the bundle will be registered as an installed workspace bundle.
 		if (null == state && Transition.INSTALL == transition) {
 			bundleCommand.registerBundleNode(project, bundle, ProjectProperties.isProjectActivated(project));
+			
 			// Get the new current state (installed) of the registered bundle
 			state = bundleRegion.getActiveState(bundle);
 		}
@@ -340,9 +341,8 @@ class BundleEventManager implements FrameworkListener, SynchronousBundleListener
 		}
 
 		/*
-		 * Incoming transitions with Starting as the current state: 
-		 * Previous state: Resolved. Possible transitions: Start 
-		 * Comments: 
+		 * Framework publish this event before calling BundleActivator.start
+		 * <p>
 		 * Activates a bundle with eager activation policy. Lazy bundles are activated
 		 * by the framework due to "on demand" class loading.
 		 */
@@ -362,6 +362,8 @@ class BundleEventManager implements FrameworkListener, SynchronousBundleListener
 			break;
 		}
 		/*
+		 * Framework publish this event after calling BundleActivator.start
+		 * <p>
 		 * Incoming transitions with Active as the current state: 
 		 * Previous state: Starting. Possible transitions: Start
 		 */
@@ -373,19 +375,35 @@ class BundleEventManager implements FrameworkListener, SynchronousBundleListener
 			break;
 		}
 		/*
+		 * Framework publish this event before calling BundleActivator.stop
+		 * <p>
 		 * Incoming transitions with Stopping as the current state: 
 		 * Previous state: Active. Possible transitions: Stop
 		 */
 		case BundleEvent.STOPPING:
-			/*
-			 * Incoming transitions with Resolved as the current state: 
-			 * Previous state: Stopping. Possible transitions: Stop
-			 */
+
+		/*
+		 * Framework publish this event after calling BundleActivator.stop
+		 * <p>
+		 * This event is non deterministic in relation to external commands.
+		 * If the BundleActivator.start method throws an exception the framework publish a
+		 * STOPPED event but the internal transition was START (not STOP). This could also
+		 * be an external command stopping the bundle or starting the bundle throwing an exception
+		 * <p>
+		 * The solution is to assume an external command until the exception
+		 * is caught by the method that called the framework start method. If the transition 
+		 * was start the catch clause will set the transition to STOP, repealing the external
+		 * stop or external start command throwing an exception.  
+		 *  
+		 * Incoming transitions with Resolved as the current state: 
+		 * Previous state: Stopping. Possible transitions: Stop, Start
+		 */
 		case BundleEvent.STOPPED: {
 			if (transition == Transition.START) {
-				// Error starting bundle. The framework is stopping the bundle
-			} //else // Denne tuller når vi kjører en ekstern operasjon
+				// If not an external command, an exception was thrown in the start method
+			} 
 			if (!(state instanceof ResolvedState)) {
+				// Assume an external command
 				bundleNode.setCurrentState(BundleStateFactory.INSTANCE.resolvedState);
 				undefinedTransitions(event);
 			}
@@ -474,6 +492,7 @@ class BundleEventManager implements FrameworkListener, SynchronousBundleListener
 		final String location = bundle.getLocation();
 		// After the fact
 		InPlace.getDisplay().asyncExec(new Runnable() {
+			@Override
 			public void run() {
 				BundleCommandImpl bundleManager = BundleCommandImpl.INSTANCE;
 				int autoDependencyAction = 1; // Default auto dependency action

@@ -142,6 +142,7 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 	public InPlace() {
 	}
 
+	@Override
 	public void start(BundleContext context) throws Exception {
 		super.start(context);
 		plugin = this;
@@ -160,6 +161,7 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 		BundleManager.addBundleTransitionListener(getDefault());
 	}	
 	
+	@Override
 	public void stop(BundleContext context) throws Exception {
 		try {
 			// Remove resource listeners as soon as possible to prevent scheduling of new bundle jobs
@@ -429,6 +431,7 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 		}
 		workBenchWindow = null;
 		getDisplay().syncExec(new Runnable() {
+			@Override
 			public void run() {
 				workBenchWindow = workBench.getActiveWorkbenchWindow();
 			}
@@ -582,5 +585,8 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 //		Transition t = event.getTransition();
 //		IProject p = event.getProject();
 //		System.out.println("Bundle, project, transition " + b + " " + p + " " + t);
+//		if (t == Transition.START){
+//			BundleManager.getCommand().setCurrentBundle(b);
+//		}
 	}
 }

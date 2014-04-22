@@ -14,10 +14,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import no.javatime.inplace.bundlejobs.BundleJob;
-import no.javatime.inplace.bundlemanager.BundleManager;
 import no.javatime.inplace.bundlemanager.InPlaceException;
 import no.javatime.inplace.bundleproject.OpenProjectHandler;
-import no.javatime.inplace.dl.preferences.intface.CommandOptions;
 import no.javatime.inplace.ui.Activator;
 import no.javatime.inplace.ui.views.BundleProperties;
 import no.javatime.inplace.ui.views.BundleView;
@@ -49,7 +47,7 @@ public abstract class BundleCommandsContributionItems extends CompoundContributi
 	public static String menuIdPar = "no.javatime.inplace.commandParameter.menuid"; //$NON-NLS-1$
 
 	// Menu commands as parameters (some of them are also used as labels)
-	public static String busyParamId = "Busy"; //$NON-NLS-1$
+	public static String inerruptParamId = "Interrupt"; //$NON-NLS-1$
 
 	public static String activateParamId = "Activate"; //$NON-NLS-1$
 	public static String installParamId = "Install"; //$NON-NLS-1$
@@ -127,9 +125,11 @@ public abstract class BundleCommandsContributionItems extends CompoundContributi
 		return new CommandContributionItem(cmdPar);
 	}
 	protected CommandContributionItem addStopOperation(String menuId, String commandId) {
+
 		try {			
-			CommandOptions co = Activator.getDefault().getOptionsService();
-			if ((!co.isTimeOut()) && BundleManager.getCommand().isStateChanging()) {			
+			BundleJob job = OpenProjectHandler.getRunningBundleJob();
+			boolean timeOut = Activator.getDefault().getOptionsService().isTimeOut();
+			if (null != job && !timeOut && BundleJob.isStateChanging()) {			
 				return addContribution(menuId, commandId, "Stop Current Bundle Operation", stopOperationParamId,
 						CommandContributionItem.STYLE_PUSH, null);
 			}
@@ -138,15 +138,15 @@ public abstract class BundleCommandsContributionItems extends CompoundContributi
 		return null;
 	}
 
-	protected CommandContributionItem addBusy(String menuId, String commandId) {
+	protected CommandContributionItem addInterrupt(String menuId, String commandId) {
 		BundleJob job = OpenProjectHandler.getRunningBundleJob();
 		String menuLabel;
 		if (null == job) {
 			menuLabel = "About to finish job ...";
 		} else {
-			menuLabel = "Cancel job " + job.getName();
+			menuLabel = "Interrupt " + job.getName();
 		}
-		return addContribution(menuId, commandId, menuLabel, busyParamId,
+		return addContribution(menuId, commandId, menuLabel, inerruptParamId,
 				CommandContributionItem.STYLE_PUSH, null);
 	}
 

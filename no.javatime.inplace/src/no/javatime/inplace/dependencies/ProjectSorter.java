@@ -14,18 +14,18 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 
-import org.eclipse.core.resources.IProject;
-
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundlemanager.BundleManager;
 import no.javatime.inplace.bundlemanager.BundleTransition;
-import no.javatime.inplace.bundlemanager.InPlaceException;
 import no.javatime.inplace.bundlemanager.BundleTransition.TransitionError;
+import no.javatime.inplace.bundlemanager.InPlaceException;
 import no.javatime.inplace.bundleproject.BundleProject;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.statushandler.BundleStatus;
 import no.javatime.inplace.statushandler.IBundleStatus.StatusCode;
 import no.javatime.util.messages.ExceptionMessage;
+
+import org.eclipse.core.resources.IProject;
 
 /**
  * Topological sort of projects in requiring (referencing) and providing (referenced) project dependency order.
@@ -204,7 +204,6 @@ public class ProjectSorter extends BaseSorter {
 			}
 			visited.add(child); // Overlook self providing
 			Collection<IProject> providers = ProjectDependencies.getProvidingProjects(child);
-			providers.remove(child);
 			for (IProject provider : providers) {
 				visitProvidingProject(provider, child, visited);
 			}

@@ -351,6 +351,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 		pullDownMenuListener.menuAboutToShow(pullDownMenuManager);
 		pullDownMenuManager.setRemoveAllWhenShown(true);
 		pullDownMenuManager.addMenuListener(pullDownMenuListener);
+
 		// Context pop-up menus share command framework with main menu and package/project explorers context menu
 		MenuManager listContextMenuManager = new MenuManager() {
 
@@ -364,6 +365,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 		};
 
 		MenuManager detailsContextMenuManager = new MenuManager() {
+
 			/**
 			 * Remove contributions from other plug-ins
 			 */
@@ -386,6 +388,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 		restoreState(memento);
 		if (!ProjectProperties.isProjectWorkspaceActivated()) {
 			pagebook.getDisplay().asyncExec(new Runnable() {
+				@Override
 				public void run() {
 					setContentDescription("Workspace Deactivated"); //$NON-NLS-1$
 				}
@@ -396,6 +399,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 	/**
 	 * Dispose images and listeners for bundle, resource, job, menu, double click and selections
 	 */
+	@Override
 	public void dispose() {
 		pullDownMenuManager.removeMenuListener(pullDownMenuListener);
 		detailsTitleImage.dispose();
@@ -421,6 +425,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 		 * 
 		 * @param manager menu manager for pull down menu
 		 */
+		@Override
 		public void menuAboutToShow(IMenuManager manager) {
 
 			try {
@@ -446,6 +451,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 		/**
 		 * Open Plug-in Manifest editor
 		 */
+		@Override
 		public void doubleClick(DoubleClickEvent event) {
 			editManifestAction.run();
 		}
@@ -458,6 +464,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 		 * 
 		 * @param event selection event in list page
 		 */
+		@Override
 		public void selectionChanged(SelectionChangedEvent event) {
 			// Set list page as the current selection provider
 			selectionProviderIntermediate.setSelectionProviderDelegate(bundleListPage);
@@ -479,6 +486,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 		 * 
 		 * @param event selection event in details page
 		 */
+		@Override
 		public void selectionChanged(SelectionChangedEvent event) {
 			// Set details page as the current selection provider
 			selectionProviderIntermediate.setSelectionProviderDelegate(bundleDetailsPage);
@@ -545,8 +553,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 			}
 			Transition transition = bundleTransition.getTransition(project);
 			// Only consider error transitions, external commands and on demand loading of bundles
-			if (/* bundleTransition.hasTransitionError(bundle) || */ transition == Transition.EXTERNAL
-					|| (transition == Transition.LAZY_LOAD)) {
+			if (transition == Transition.EXTERNAL || (transition == Transition.LAZY_LOAD)) {
 				showProjectInfo();
 			}
 		} catch (ProjectLocationException e) {
@@ -648,6 +655,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 			}
 			showProjectInfo();
 			pagebook.getDisplay().asyncExec(new Runnable() {
+				@Override
 				public void run() {
 					setContentDescription("idle"); //$NON-NLS-1$
 				}
@@ -660,6 +668,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 		final Job job = event.getJob();
 		if (job instanceof BundleJob) {
 			pagebook.getDisplay().asyncExec(new Runnable() {
+				@Override
 				public void run() {
 					setEnablement();
 				}
@@ -677,6 +686,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 		final Job job = event.getJob();
 		if (job instanceof BundleJob) {
 			pagebook.getDisplay().asyncExec(new Runnable() {
+				@Override
 				public void run() {
 					setContentDescription("Running " + job.getName()); //$NON-NLS-1$
 				}
@@ -689,6 +699,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 		final Job job = event.getJob();
 		if (job instanceof BundleJob) {
 			pagebook.getDisplay().asyncExec(new Runnable() {
+				@Override
 				public void run() {
 					setContentDescription("Rescheduled " + job.getName()); //$NON-NLS-1$
 				}
@@ -701,6 +712,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 		final Job job = event.getJob();
 		if (job instanceof BundleJob) {
 			pagebook.getDisplay().asyncExec(new Runnable() {
+				@Override
 				public void run() {
 					setContentDescription("Scheduled " + job.getName()); //$NON-NLS-1$
 				}
@@ -713,6 +725,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 		final Job job = event.getJob();
 		if (job instanceof BundleJob) {
 			pagebook.getDisplay().asyncExec(new Runnable() {
+				@Override
 				public void run() {
 					setContentDescription("Waiting " + job.getName()); //$NON-NLS-1$
 				}
@@ -730,6 +743,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 		super.showBusy(busy);
 		if (!ProjectProperties.isProjectWorkspaceActivated()) {
 			pagebook.getDisplay().asyncExec(new Runnable() {
+				@Override
 				public void run() {
 					setContentDescription("Workspace Deactivated"); //$NON-NLS-1$
 				}
@@ -739,6 +753,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 			final Job[] bundleJob = jobMan.find(BundleJob.FAMILY_BUNDLE_LIFECYCLE);
 			if (bundleJob.length == 0 && !getContentDescription().equals("idle")) { //$NON-NLS-1$
 				pagebook.getDisplay().asyncExec(new Runnable() {
+					@Override
 					public void run() {
 						setContentDescription("idle"); //$NON-NLS-1$
 					}
@@ -758,6 +773,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 			/**
 			 * Enable/Disable linking with package and project explorer
 			 */
+			@Override
 			public void run() {
 				linkWithState = isChecked();
 				if (linkWithState) {
@@ -770,6 +786,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 			/**
 			 * Update bin class path if missing
 			 */
+			@Override
 			public void run() {
 				IProject project = getSelectedProject();
 				if (null != project) {
@@ -786,6 +803,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 			/**
 			 * Activate or deactivate bundle.
 			 */
+			@Override
 			public void run() {
 				IProject project = getSelectedProject();
 				if (null != project) {
@@ -802,6 +820,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 			/**
 			 * Refresh activated bundle
 			 */
+			@Override
 			public void run() {
 				IProject project = getSelectedProject();
 				if (null != project) {
@@ -816,6 +835,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 			/**
 			 * Reset activated bundle
 			 */
+			@Override
 			public void run() {
 				IProject project = getSelectedProject();
 				if (null != project) {
@@ -830,6 +850,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 			/**
 			 * Update activated bundle
 			 */
+			@Override
 			public void run() {
 				IProject project = getSelectedProject();
 				if (null != project) {
@@ -844,6 +865,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 			/**
 			 * Start and stop activated bundle
 			 */
+			@Override
 			public void run() {
 				IProject project = getSelectedProject();
 				if (null != project) {
@@ -866,6 +888,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 			/**
 			 * Toggle details and list page
 			 */
+			@Override
 			public void run() {
 				if (isListPageActive()) {
 					IProject project = getSelectedProject();
@@ -882,6 +905,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 			/**
 			 * Opens the Plug-in Manifest editor on the selected bundle
 			 */
+			@Override
 			public void run() {
 
 				IProject project = getSelectedProject();
@@ -924,19 +948,15 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 		if (null == project || isBundleJobRunning() || !ProjectProperties.isInstallableProject(project)) {
 			setBundleComandsAction(false, false, false, false, BundleCommandsContributionItems.startImage, false,
 					activationGeneralText, BundleCommandsContributionItems.activateImage);
-			setNonBundleCommandsAction(false, false, false, flipDetailsGeneralText, flipDetailsGeneralText,
-					BundleCommandsContributionItems.bundleListImage);
-			// TODO Should be added to SetNonBundleCommands
+			if (isBundleJobRunning()) {
+				setNonBundleCommandsAction(true, true, true, flipDetailsGeneralText, flipDetailsGeneralText,
+						BundleCommandsContributionItems.bundleListImage);
+			} else {
+				setNonBundleCommandsAction(false, false, false, flipDetailsGeneralText, flipDetailsGeneralText,
+						BundleCommandsContributionItems.bundleListImage);
+			}
 			setUIElement(updateClassPathAction, false, updateClassPathText, updateClassPathText,
 					BundleCommandsContributionItems.classPathImage);
-			Boolean uiExtensions = false;
-			try {
-				uiExtensions = ProjectProperties.contributesToTheUI(project);
-			} catch (InPlaceException e) {
-			}
-			if (!uiExtensions) {
-				editManifestAction.setEnabled(false);
-			}
 			return;
 		}
 
@@ -1078,6 +1098,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 
 		if (null != pagebook) {
 			pagebook.getDisplay().asyncExec(new Runnable() {
+				@Override
 				public void run() {
 					// Current bundle page view
 					boolean showListPage = (isDetailsPageActive()) ? false : true;

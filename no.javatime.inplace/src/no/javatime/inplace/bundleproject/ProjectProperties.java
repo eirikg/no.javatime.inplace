@@ -18,6 +18,20 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 
+import no.javatime.inplace.InPlace;
+import no.javatime.inplace.builder.JavaTimeNature;
+import no.javatime.inplace.bundlemanager.InPlaceException;
+import no.javatime.inplace.bundlemanager.ProjectLocationException;
+import no.javatime.inplace.dependencies.CircularReferenceException;
+import no.javatime.inplace.dependencies.ProjectSorter;
+import no.javatime.inplace.statushandler.BundleStatus;
+import no.javatime.inplace.statushandler.IBundleStatus.StatusCode;
+import no.javatime.util.messages.Category;
+import no.javatime.util.messages.ExceptionMessage;
+import no.javatime.util.messages.Message;
+import no.javatime.util.messages.TraceMessage;
+import no.javatime.util.messages.WarnMessage;
+
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IProject;
@@ -38,20 +52,6 @@ import org.eclipse.pde.core.project.IBundleProjectDescription;
 import org.eclipse.pde.core.project.IRequiredBundleDescription;
 import org.eclipse.ui.statushandlers.StatusManager;
 import org.osgi.framework.Bundle;
-
-import no.javatime.inplace.InPlace;
-import no.javatime.inplace.builder.JavaTimeNature;
-import no.javatime.inplace.bundlemanager.InPlaceException;
-import no.javatime.inplace.bundlemanager.ProjectLocationException;
-import no.javatime.inplace.dependencies.CircularReferenceException;
-import no.javatime.inplace.dependencies.ProjectSorter;
-import no.javatime.inplace.statushandler.BundleStatus;
-import no.javatime.inplace.statushandler.IBundleStatus.StatusCode;
-import no.javatime.util.messages.Category;
-import no.javatime.util.messages.ExceptionMessage;
-import no.javatime.util.messages.Message;
-import no.javatime.util.messages.TraceMessage;
-import no.javatime.util.messages.WarnMessage;
 
 /**
  * Utility to:
@@ -191,7 +191,8 @@ public class ProjectProperties {
 	}
 
 	/**
-	 * Return all plug-in projects that have the Java and plug-in nature enabled
+	 * Return all plug-in projects that have the Java and plug-in nature enabled. 
+	 * Closed and non-existing projects are discarded
 	 * 
 	 * @return all plug-in projects with Java and plug-in nature or an empty collection
 	 */

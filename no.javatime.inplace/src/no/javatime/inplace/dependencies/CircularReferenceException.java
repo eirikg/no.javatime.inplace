@@ -14,12 +14,12 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 
-import org.eclipse.core.resources.IProject;
-import org.osgi.framework.Bundle;
-
 import no.javatime.inplace.bundlemanager.InPlaceException;
 import no.javatime.inplace.statushandler.BundleStatus;
 import no.javatime.inplace.statushandler.IBundleStatus;
+
+import org.eclipse.core.resources.IProject;
+import org.osgi.framework.Bundle;
 
 /**
  * Circular references in projects and in bundles.

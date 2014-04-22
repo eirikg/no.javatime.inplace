@@ -16,16 +16,21 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 
+import no.javatime.inplace.InPlace;
+import no.javatime.inplace.bundlemanager.BundleManager;
+import no.javatime.inplace.bundlemanager.InPlaceException;
+import no.javatime.inplace.statushandler.BundleStatus;
+import no.javatime.inplace.statushandler.IBundleStatus.StatusCode;
+import no.javatime.util.messages.WarnMessage;
+
 import org.eclipse.core.runtime.Platform;
+import org.eclipse.ui.statushandlers.StatusManager;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.wiring.BundleCapability;
 import org.osgi.framework.wiring.BundleRequirement;
 import org.osgi.framework.wiring.BundleRevision;
 import org.osgi.framework.wiring.BundleWire;
 import org.osgi.framework.wiring.BundleWiring;
-
-import no.javatime.inplace.bundlemanager.InPlaceException;
-import no.javatime.inplace.bundlemanager.BundleManager;
 
 /**
  * A set of methods returning direct and indirect dependencies between installed bundles. For installed
@@ -446,15 +451,23 @@ public class BundleDependencies {
 	}
 
 	/**
-	 * Takes a collection of bundles and returns their current revision
+	 * Takes a collection of bundles and returns their current revision.
+	 * If a bundle does not adapt to a revision it is discarded 
 	 * 
 	 * @param bundles to get the revisions from
-	 * @return a collection of current revisions from a collection of {@code bundles}
+	 * @return a collection of current revisions from a collection of {@code bundles}. Never null.
 	 */
 	public static Collection<BundleRevision> getRevisionsFrom(Collection<Bundle> bundles) {
 		Collection<BundleRevision> bundleRevisions = new LinkedHashSet<BundleRevision>();
 		for (Bundle bundle : bundles) {
-			bundleRevisions.add(bundle.adapt(BundleRevision.class));
+			BundleRevision br = bundle.adapt(BundleRevision.class);
+			if (null != br) {
+				bundleRevisions.add(br);
+			} else {
+				String msg = WarnMessage.getInstance().formatString("failed_to_adapt_to_revision", bundle);
+				StatusManager.getManager().handle(new BundleStatus(StatusCode.WARNING, InPlace.PLUGIN_ID, msg),
+						StatusManager.LOG);
+			}
 		}
 		return bundleRevisions;
 	}

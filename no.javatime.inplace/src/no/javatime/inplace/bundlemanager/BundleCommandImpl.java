@@ -42,7 +42,6 @@ import no.javatime.util.messages.TraceMessage;
 import no.javatime.util.messages.WarnMessage;
 
 import org.eclipse.core.resources.IProject;
-import org.eclipse.osgi.framework.internal.core.BundleHost;
 import org.eclipse.ui.statushandlers.StatusManager;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -55,7 +54,6 @@ import org.osgi.framework.hooks.resolver.ResolverHookFactory;
 import org.osgi.framework.wiring.BundleRevision;
 import org.osgi.framework.wiring.BundleRevisions;
 import org.osgi.framework.wiring.FrameworkWiring;
-/* import org.eclipse.osgi.container.Module; */
 
 /**
  * Maintains workspace bundles and provides an interface to the BundleManager wiring framework (refresh,
@@ -76,6 +74,9 @@ class BundleCommandImpl implements BundleCommand {
 
 	// Used in wait loop, waiting for the refresh thread to notify that it has finished refreshing bundles
 	private boolean refreshed;
+
+	// The bundle currently in a transition (state changing)
+	private static Bundle currentBundle;
 
 	/**
 	 * Access to the wiring framework API and used internally to refresh and resolve bundles.
@@ -122,39 +123,13 @@ class BundleCommandImpl implements BundleCommand {
 		resolveHookRegistration.unregister();
 	}
 
-	/**
-	 * Installs a workspace bundle from an input stream based on the location identifier of the specified
-	 * {@code project} and records the installed bundle along with the project and activation status as a
-	 * workspace bundle in the bundle workspace region.
-	 * <p>
-	 * The activation status of a project can be obtained from
-	 * {@link no.javatime.inplace.bundleproject.ProjectProperties#isProjectActivated(IProject)
-	 * isProjectActivated(IProject)}.
-	 * <p>
-	 * The location identifier is obtained from {@link #getBundleLocationIdentifier(IProject)} .
-	 * <p>
-	 * If already installed return the existing {@code bundle} object.
-	 * 
-	 * @param project install a workspace bundle finding the bundle location identifier based on this project
-	 * @param activate true if the project is activated (nature enabled) and false if not activated
-	 * @return the installed bundle object
-	 * @throws InPlaceException if the specified project is null, the location of the specified project could
-	 *           not be found or any of the {@link BundleContext#installBundle(String, InputStream)} exceptions
-	 *           except duplicate bundles
-	 * @throws DuplicateBundleException if a bundle with the same symbolic name and version already exists
-	 * @throws ProjectLocationException if the specified project is null or the location of the specified
-	 *           project could not be found
-	 * @see #install(IProject)
-	 * @see #registerBundleNode(IProject, Bundle, Boolean)
-	 * @see BundleEventManager#bundleChanged(BundleEvent)
-	 */
 	@Override
-	public Bundle install(IProject project, Boolean activate) throws InPlaceException,
+	public Bundle install(IProject project, Boolean register) throws InPlaceException,
 			DuplicateBundleException, ProjectLocationException {
 
 		Bundle bundle = bundleRegion.get(project);
 		if (null == bundleRegion.get(project)) {
-			registerBundleNode(project, bundle, activate);
+			registerBundleNode(project, bundle, register);
 		}
 		if (null == bundle) {
 			bundle = install(project);
@@ -322,6 +297,7 @@ class BundleCommandImpl implements BundleCommand {
 	 *           {@link FrameworkWiring#refreshBundles(Collection, FrameworkListener...)} for details.
 	 * @see FrameworkWiring#refreshBundles(Collection, FrameworkListener...)
 	 */
+	@Override
 	public void refresh(final Collection<Bundle> bundles) throws InPlaceException {
 
 		if (bundles.size() == 0) {
@@ -343,6 +319,7 @@ class BundleCommandImpl implements BundleCommand {
 			}
 			try {
 				frameworkWiring.refreshBundles(bundles, new FrameworkListener() {
+					@Override
 					public void frameworkEvent(FrameworkEvent event) {
 						synchronized (thisBundleCommand) { // Notify job to proceed
 							if (Category.DEBUG && Category.getState(Category.listeners))
@@ -414,6 +391,7 @@ class BundleCommandImpl implements BundleCommand {
 	 *           {@link FrameworkWiring#refreshBundles(Collection, FrameworkListener...)} for details.
 	 * @see FrameworkWiring#refreshBundles(Collection, FrameworkListener...)
 	 */
+	@Override
 	public void refresh(Collection<Bundle> bundles, FrameworkListener listener) throws InPlaceException {
 		if (null == frameworkWiring) {
 			if (Category.DEBUG && Category.isEnabled(Category.bundleOperations))
@@ -457,6 +435,7 @@ class BundleCommandImpl implements BundleCommand {
 		}
 	}
 
+	@Override
 	public void start(Bundle bundle, int startOption, int timeOut) 
 			throws InPlaceException, InterruptedException, IllegalStateException {
 
@@ -484,9 +463,8 @@ class BundleCommandImpl implements BundleCommand {
 		} catch (CancellationException e) {			
 			throw new InPlaceException(e);
 		} catch (TimeoutException e) {			
-			stopBundleThread(bundle);
-			String msg = ExceptionMessage.getInstance().formatString("bundle_task_start_terminate", bundle);
-			throw new IllegalStateException(msg,e);
+			bundleTransition.setTransitionError(bundle, TransitionError.STATECHANGE);
+			throw new BundleStateChangeException(e, "bundle_task_start_terminate", bundle);
 		} catch (InterruptedException e) {
 			throw e;
 		} catch (ExecutionException e) {
@@ -507,90 +485,15 @@ class BundleCommandImpl implements BundleCommand {
 		}
 	}
 	
-	/** Flag to denote whether a bundle state change is in progress */
-	private volatile Thread stateChanging;
-	private static Bundle currentBundle;
 	
-	@SuppressWarnings({ "restriction", "deprecation" })
-	private boolean stopBundleThread(Bundle bundle) {
-		if (null != bundle) {
-//			Module m = bundle.adapt(Module.class);
-//			if (null != m) {
-//				stateChanging = m.getStateChangeOwner();
-//				Thread currentThread = Thread.currentThread();
-//				System.out.println("Current thread name (id) " +currentThread.getName() + "(" + currentThread.getId() + ")" + " " + currentThread.getThreadGroup());
-//				if (null != stateChanging) {
-//					System.out.println("Start/Stop thread name (id) " +stateChanging.getName() + "(" + stateChanging.getId() + ")" + " " + stateChanging.getThreadGroup());
-//					bundleTransition.setTransitionError(bundle, TransitionError.INCOMPLETE);
-//					//stateChanging.interrupt();
-//					stateChanging.stop();
-//					stateChanging = null;
-//					return true;
-//				}				
-//			}
-			
-			BundleHost bh = bundle.adapt(BundleHost.class);
-			if (bh != null) {
-				stateChanging = bh.getStateChanging();
-				// Bundle state change is in progress
-				if (null != stateChanging) {
-					bundleTransition.setTransitionError(bundle, TransitionError.INCOMPLETE);
-					stateChanging.stop();
-					stateChanging = null;
-					return true;
-				}
-			}	
-		}
-		return false;
-	}
-	
-	public void stopCurrentBundleOperation() {
-		if (null != currentBundle) {
-			stopBundleThread(currentBundle);
-			String msg = ExceptionMessage.getInstance().formatString("bundle_task_stop_terminate", currentBundle);
-			currentBundle = null;
-			throw new IllegalStateException(msg);
-		}
-	}
-	
-	@SuppressWarnings("restriction")
-	public boolean isStateChanging() {
-
-		if (null != currentBundle) {
-//			Module m = currentBundle.adapt(Module.class);
-//			if (null != m) {
-//				stateChanging = m.getStateChangeOwner();
-//				if (null != stateChanging) {
-//					return true;
-//				}
-//			}
-				
-			BundleHost bh = currentBundle.adapt(BundleHost.class);
-			if (bh != null) {
-				stateChanging = bh.getStateChanging();
-				if (null != stateChanging) {
-					return true;
-				}
-			}	
-		}
-		return false;
-	}
 		
-	/**
-	 * Start the specified bundle according to the specified activation policy.
-	 * 
-	 * @param bundle the bundle object to start
-	 * @param startOption One of {@link Bundle#START_ACTIVATION_POLICY} and {@link Bundle#START_TRANSIENT}
-	 * @throws InPlaceException if bundle is null or any of the {@link Bundle#start(int)} exceptions
-	 * @see Bundle#start(int)
-	 */
 	@Override
-	public void start(Bundle bundle, int startOption) throws InPlaceException, BundleActivatorException {
+	public void start(Bundle bundle, int startOption) 
+			throws InPlaceException, BundleActivatorException, IllegalStateException, BundleStateChangeException {
 
 		if (null == bundle) {
 			throw new InPlaceException("null_bundle_start");
 		}
-		currentBundle = bundle;
 		BundleState state = bundleRegion.getActiveState(bundle);
 		try {
 			bundleTransition.setTransition(bundle, Transition.START);
@@ -598,19 +501,20 @@ class BundleCommandImpl implements BundleCommand {
 			state.start(bundleRegion.getBundleNode(bundle));
 			if (Category.getState(Category.bundleOperations))
 				startTime = System.currentTimeMillis();
+			currentBundle = bundle;
 			bundle.start(startOption);
 			if (Category.getState(Category.bundleOperations)) {
 				 long msec = System.currentTimeMillis() - startTime;
 				 TraceMessage.getInstance().getString("start_bundle", bundle, getStateName(bundle), msec); 
 			}
 		} catch (IllegalStateException e) {
-			bundleTransition.setTransitionError(bundle);
+			bundleTransition.setTransitionError(bundle, TransitionError.EXCEPTION);
 			bundleRegion.setActiveState(bundle, state);
 			if (Category.DEBUG && Category.isEnabled(Category.bundleOperations))
 				TraceMessage.getInstance().getString("state_error_start_bundle", bundle, e.getLocalizedMessage());
 			throw new InPlaceException(e, "bundle_state_error", bundle);
 		} catch (SecurityException e) {
-			bundleTransition.setTransitionError(bundle);
+			bundleTransition.setTransitionError(bundle, TransitionError.EXCEPTION);
 			bundleRegion.setActiveState(bundle, state);
 			if (Category.DEBUG && Category.isEnabled(Category.bundleOperations))
 				TraceMessage.getInstance().getString("security_error_start_bundle", bundle, e.getLocalizedMessage());
@@ -624,16 +528,20 @@ class BundleCommandImpl implements BundleCommand {
 				bundleTransition.setTransitionError(bundle, TransitionError.INCOMPLETE);
 				String msg = ExceptionMessage.getInstance().formatString("bundle_task_start_terminate", bundle);
 				throw new IllegalStateException(msg, e);
-			} else {
-				bundleTransition.setTransitionError(bundle);
 			}
+			bundleTransition.setTransitionError(bundle, TransitionError.EXCEPTION);
 			if (e.getType() == BundleException.ACTIVATOR_ERROR) {
 				throw new BundleActivatorException(e, "bundle_activator_error", bundle);
-			} else {
+			} else if (e.getType() == BundleException.STATECHANGE_ERROR)  {
+				bundleTransition.setTransitionError(bundle, TransitionError.STATECHANGE);
+				throw new BundleStateChangeException(e, "bundle_statechange_error", bundle);							
+			}	else {
 				throw new InPlaceException(e, "bundle_start_error", bundle);
 			}
 		} finally {
-			currentBundle = null;
+			if (!(bundleTransition.getError(bundle) == TransitionError.STATECHANGE)) {
+				currentBundle = null;
+			}
 			try {
 				BundleManager.addBundleTransition(new TransitionEvent(bundle, bundleTransition
 						.getTransition(bundleRegion.getProject(bundle))));
@@ -643,6 +551,7 @@ class BundleCommandImpl implements BundleCommand {
 		}
 	}
 
+	@Override
 	public void stop(Bundle bundle, boolean stopTransient, int timeOut) 
 			throws InPlaceException, InterruptedException, IllegalStateException {
 		
@@ -674,9 +583,7 @@ class BundleCommandImpl implements BundleCommand {
 		} catch (CancellationException e) {			
 			throw new InPlaceException(e);
 		} catch (TimeoutException e) {			
-			stopBundleThread(bundle);
-			String msg = ExceptionMessage.getInstance().formatString("bundle_task_stop_terminate", bundle);
-			throw new IllegalStateException(msg, e);
+			throw new BundleStateChangeException(e, "bundle_task_stop_terminate", bundle);
 		} catch (InterruptedException e) {
 			throw e;
 		} catch (ExecutionException e) {
@@ -697,27 +604,20 @@ class BundleCommandImpl implements BundleCommand {
 		}
 	}
 
-	/**
-	 * Stops the specified bundle. The bundle is ignored if not in state STARTING or ACTIVE.
-	 * 
-	 * @param bundle the bundle to stop
-	 * @param stopTransient true to stop the bundle transient, otherwise false
-	 * @throws InPlaceException if bundle is null or any of the {@link Bundle#stop(int)} exceptions
-	 */
 	@Override
-	public void stop(Bundle bundle, Boolean stopTransient) throws InPlaceException {
+	public void stop(Bundle bundle, Boolean stopTransient) throws InPlaceException, BundleStateChangeException {
 
 		if (null == bundle) {
 			throw new InPlaceException("null_bundle_stop");
 		}
-		BundleState state = bundleRegion.getActiveState(bundle);
-		currentBundle = bundle;
 		try {
 			bundleTransition.setTransition(bundle, Transition.STOP);
+			BundleState state = bundleRegion.getActiveState(bundle);
 			state.stop(bundleRegion.getBundleNode(bundle));
 			long startTime = 0;
 			if (Category.getState(Category.bundleOperations))
 				startTime = System.currentTimeMillis();
+			currentBundle = bundle;
 			if (!stopTransient) {
 				bundle.stop();
 			} else {
@@ -728,31 +628,32 @@ class BundleCommandImpl implements BundleCommand {
 				TraceMessage.getInstance().getString("stop_bundle", bundle, getStateName(bundle), msec);
 			}
 		} catch (IllegalStateException e) {
-			bundleTransition.setTransitionError(bundle);
-			bundleRegion.setActiveState(bundle, state);
+			bundleTransition.setTransitionError(bundle, TransitionError.EXCEPTION);
 			if (Category.DEBUG && Category.isEnabled(Category.bundleOperations))
 				TraceMessage.getInstance().getString("state_error_stop_bundle", bundle, e.getLocalizedMessage());
 			throw new InPlaceException(e, "bundle_state_error", bundle);
 		} catch (SecurityException e) {
-			bundleTransition.setTransitionError(bundle);
-			bundleRegion.setActiveState(bundle, state);
+			bundleTransition.setTransitionError(bundle, TransitionError.EXCEPTION);
 			if (Category.DEBUG && Category.isEnabled(Category.bundleOperations))
 				TraceMessage.getInstance().getString("security_error_stop_bundle", bundle, e.getLocalizedMessage());
 			throw new InPlaceException(e, "bundle_security_error", bundle);
 		} catch (BundleException e) {
-			state.stop(bundleRegion.getBundleNode(bundle));
 			if (null != e.getCause() && (e.getCause() instanceof ThreadDeath)) {
 				bundleTransition.setTransitionError(bundle, TransitionError.INCOMPLETE);
-				state.stop(bundleRegion.getBundleNode(bundle));
 				String msg = ExceptionMessage.getInstance().formatString("bundle_task_stop_terminate", bundle);
 				throw new IllegalStateException(msg, e);
-			} else {
-				bundleTransition.setTransitionError(bundle);
 			}
-			throw new InPlaceException(e, "bundle_stop_error", bundle);
+			bundleTransition.setTransitionError(bundle, TransitionError.EXCEPTION);
+			if (e.getType() == BundleException.STATECHANGE_ERROR)  {
+				throw new BundleStateChangeException(e, "bundle_statechange_error", bundle);							
+			}	else {
+				throw new InPlaceException(e, "bundle_stop_error", bundle);
+			}
 		} finally {
-			currentBundle = null;
-			try {
+			if (!(bundleTransition.getError(bundle) == TransitionError.STATECHANGE)) {
+				currentBundle = null;
+			}
+		try {
 				BundleManager.addBundleTransition(new TransitionEvent(bundle, bundleTransition
 						.getTransition(bundleRegion.getProject(bundle))));
 			} catch (ProjectLocationException e) {
@@ -761,6 +662,23 @@ class BundleCommandImpl implements BundleCommand {
 		}
 	}
 
+	@Override
+	public Bundle getCurrentBundle() {
+		return currentBundle;
+	}
+
+	@Override
+	public void setCurrentBundle(Bundle bundle) {
+		currentBundle = bundle;
+		boolean stateChanging = BundleThread.isStateChanging(bundle);
+		if (null == bundle && stateChanging) {
+			System.out.println("Error finnishing state change for bundle" + bundle);
+		}
+		if (null != bundle && !stateChanging) {
+			System.out.println("Error in state change for bundle" + bundle);
+		}
+	}
+	
 	/**
 	 * Updates the specified bundle from an input stream based on the bundle location identifier. The location
 	 * identifier is the location passed to {@link #install(IProject)} or the location identifier for workspace
@@ -842,28 +760,19 @@ class BundleCommandImpl implements BundleCommand {
 	}
 
 	@Override
-	public IProject uninstall(Bundle bundle, Boolean deactivate) throws InPlaceException, ProjectLocationException {
+	public IProject uninstall(Bundle bundle, Boolean unregister) throws InPlaceException, ProjectLocationException {
 
 		IProject project = null;
 		try {
 			project = uninstall(bundle);
 		} finally {
-			if (deactivate) {
+			if (unregister) {
 				unregisterBundleProject(project);
 			}
 		}
 		return project;
 	}
 
-	/**
-	 * Uninstalls and removes the specified workspace bundle from from the bundle workspace region if it exists
-	 * as workspace bundle. The project and activation status associated with the workspace bundle is removed
-	 * along with the bundle object.
-	 * 
-	 * @param bundle the bundle object to uninstall
-	 * @return the bundle object of the uninstalled bundle
-	 * @throws InPlaceException if bundle is null or any of the {@link Bundle#uninstall()} exceptions
-	 */
 	@Override
 	public IProject uninstall(Bundle bundle) throws InPlaceException {
 
@@ -912,6 +821,7 @@ class BundleCommandImpl implements BundleCommand {
 		return project;
 	}
 
+	@Override
 	public void registerBundle(IProject project, Bundle bundle, Boolean activateBundle) {
 		registerBundleNode(project, bundle, activateBundle);
 	}
@@ -927,6 +837,7 @@ class BundleCommandImpl implements BundleCommand {
 	 * @return the new or existing bundle node or null if any of the bundle or projects parameters are null
 	 */
 	public BundleNode registerBundleNode(IProject project, Bundle bundle, Boolean activateBundle) {
+
 		BundleNode node = bundleRegion.getBundleNode(project);
 		try {
 			// Register the bundle with its project and initialize state to stateless
@@ -947,6 +858,7 @@ class BundleCommandImpl implements BundleCommand {
 	 * 
 	 * @param bundle bundle to unregister form the workspace region.
 	 */
+	@Override
 	public void unregisterBundle(Bundle bundle) {
 		BundleNode node = bundleRegion.getBundleNode(bundle);
 		if (null != node) {
@@ -960,6 +872,7 @@ class BundleCommandImpl implements BundleCommand {
 		registerBundleProjectNode(project, bundle, activateBundle);		
 	}
 	
+	@Override
 	public boolean isBundleProjectRegistered(IProject project) {
 		BundleNode node = bundleRegion.getBundleNode(project);
 		if (null != node) {
@@ -979,6 +892,7 @@ class BundleCommandImpl implements BundleCommand {
 		return node;
 	}
 
+	@Override
 	public void unregisterBundleProject(IProject project) {
 		bundleRegion.remove(project);
 	}

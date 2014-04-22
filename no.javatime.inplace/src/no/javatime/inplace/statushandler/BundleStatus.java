@@ -12,13 +12,13 @@ package no.javatime.inplace.statushandler;
 
 import java.util.Collection;
 
+import no.javatime.inplace.InPlace;
+import no.javatime.inplace.bundlemanager.BundleManager;
+
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.MultiStatus;
 import org.osgi.framework.Bundle;
-
-import no.javatime.inplace.InPlace;
-import no.javatime.inplace.bundlemanager.BundleManager;
 
 /**
  * Bundle status object containing status codes, exceptions and messages associated with a bundle project.
@@ -154,10 +154,12 @@ public class BundleStatus extends MultiStatus implements IBundleStatus {
 		return StatusCode.OK;
 	}
 
+	@Override
 	public boolean hasStatus(StatusCode statusCode) {
 		return statusCode == this.statusCode;
 	}
 	
+	@Override
 	public Enum<StatusCode> getStatusCode() {
 		return this.statusCode;
 	}
@@ -182,17 +184,20 @@ public class BundleStatus extends MultiStatus implements IBundleStatus {
 		super.setSeverity(severity);
 	}
 
+	@Override
 	public void setStatusCode(StatusCode statusCode) {
 		this.statusCode = statusCode;
 		super.setSeverity(convertToSeverity(statusCode));
 	}
 
+	@Override
 	public void add(Collection<IBundleStatus> statusList) {
 		for (IBundleStatus status : statusList) {
 			add(status);
 		}
 	}
 
+	@Override
 	public final IProject getProject() {
 		if (null == project && null != bundleId) {
 			project = BundleManager.getRegion().getProject(InPlace.getContext().getBundle(bundleId));
@@ -200,10 +205,12 @@ public class BundleStatus extends MultiStatus implements IBundleStatus {
 		return project;
 	}
 
+	@Override
 	public final void setProject(IProject project) {
 		this.project = project;
 	}
 
+	@Override
 	public Bundle getBundle() {
 		if (null != bundleId) {
 			return InPlace.getContext().getBundle(bundleId);
@@ -211,6 +218,7 @@ public class BundleStatus extends MultiStatus implements IBundleStatus {
 		return null;
 	}
 
+	@Override
 	public void setBundle(Long bundleId) {
 		this.bundleId = bundleId;
 	}

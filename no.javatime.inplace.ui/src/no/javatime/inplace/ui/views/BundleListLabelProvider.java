@@ -10,6 +10,16 @@
  *******************************************************************************/
 package no.javatime.inplace.ui.views;
 
+import no.javatime.inplace.bundlemanager.BundleCommand;
+import no.javatime.inplace.bundlemanager.BundleManager;
+import no.javatime.inplace.bundlemanager.BundleTransition;
+import no.javatime.inplace.bundlemanager.BundleTransition.Transition;
+import no.javatime.inplace.bundlemanager.BundleTransition.TransitionError;
+import no.javatime.inplace.bundlemanager.ProjectLocationException;
+import no.javatime.inplace.bundleproject.ProjectProperties;
+import no.javatime.inplace.dependencies.BundleSorter;
+import no.javatime.inplace.ui.Activator;
+
 import org.eclipse.core.resources.IProject;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.viewers.ColumnLabelProvider;
@@ -26,16 +36,6 @@ import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableColumn;
 import org.osgi.framework.Bundle;
-
-import no.javatime.inplace.bundlemanager.BundleCommand;
-import no.javatime.inplace.bundlemanager.BundleManager;
-import no.javatime.inplace.bundlemanager.BundleTransition;
-import no.javatime.inplace.bundlemanager.BundleTransition.Transition;
-import no.javatime.inplace.bundlemanager.BundleTransition.TransitionError;
-import no.javatime.inplace.bundlemanager.ProjectLocationException;
-import no.javatime.inplace.bundleproject.ProjectProperties;
-import no.javatime.inplace.dependencies.BundleSorter;
-import no.javatime.inplace.ui.Activator;
 
 public class BundleListLabelProvider extends LabelProvider implements ITableLabelProvider {
 
@@ -63,6 +63,7 @@ public class BundleListLabelProvider extends LabelProvider implements ITableLabe
 	/**
 	 * @see #createColumns(TableViewer)
 	 */
+	@Override
 	public String getColumnText(Object obj, int index) {
 		return null;
 	}
@@ -70,6 +71,7 @@ public class BundleListLabelProvider extends LabelProvider implements ITableLabe
 	/**
 	 * @see #createColumns(TableViewer)
 	 */
+	@Override
 	public Image getColumnImage(Object obj, int index) {
 		return null;
 	}
@@ -175,6 +177,7 @@ public class BundleListLabelProvider extends LabelProvider implements ITableLabe
 		});
 		final TableColumn tableColumn = viewerColumn.getColumn();
 		tableColumn.addSelectionListener(new SelectionAdapter() {
+			@Override
 			public void widgetSelected(SelectionEvent e) {
 				BUNDLE_ORDER *= -1;
 				ViewerComparator comparator = getViewerComparator(BUNDLE);
@@ -201,6 +204,7 @@ public class BundleListLabelProvider extends LabelProvider implements ITableLabe
 		});
 		final TableColumn tableColumn = viewerColumn.getColumn();
 		tableColumn.addSelectionListener(new SelectionAdapter() {
+			@Override
 			public void widgetSelected(SelectionEvent e) {
 				MODE_ORDER *= -1;
 				ViewerComparator comparator = getViewerComparator(MODE);
@@ -230,6 +234,7 @@ public class BundleListLabelProvider extends LabelProvider implements ITableLabe
 		});
 		final TableColumn tableColumn = viewerColumn.getColumn();
 		tableColumn.addSelectionListener(new SelectionAdapter() {
+			@Override
 			public void widgetSelected(SelectionEvent e) {
 				STATUS_ORDER *= -1;
 				ViewerComparator comparator = getViewerComparator(STATUS);
@@ -254,6 +259,7 @@ public class BundleListLabelProvider extends LabelProvider implements ITableLabe
 		});
 		final TableColumn tableColumn = viewerColumn.getColumn();
 		tableColumn.addSelectionListener(new SelectionAdapter() {
+			@Override
 			public void widgetSelected(SelectionEvent e) {
 				STATE_ORDER *= -1;
 				ViewerComparator comparator = getViewerComparator(STATE);
@@ -265,7 +271,7 @@ public class BundleListLabelProvider extends LabelProvider implements ITableLabe
 
 	private void createTransitionColumn() {
 
-		TableViewerColumn viewerColumn = createTableViewerColumn("Transition", 0, 4); //$NON-NLS-1$
+		TableViewerColumn viewerColumn = createTableViewerColumn("Transition", 100, 4); //$NON-NLS-1$
 		viewerColumn.setLabelProvider(new ColumnLabelProvider() {
 			@Override
 			public String getText(Object element) {
@@ -277,6 +283,7 @@ public class BundleListLabelProvider extends LabelProvider implements ITableLabe
 		});
 		final TableColumn tableColumn = viewerColumn.getColumn();
 		tableColumn.addSelectionListener(new SelectionAdapter() {
+			@Override
 			public void widgetSelected(SelectionEvent e) {
 				TRANSITION_ORDER *= -1;
 				ViewerComparator comparator = getViewerComparator(TRANSITION);
@@ -300,6 +307,7 @@ public class BundleListLabelProvider extends LabelProvider implements ITableLabe
 
 		if (sortType == MODE) {
 			return new ViewerComparator() {
+				@Override
 				@SuppressWarnings("unchecked")
 				public int compare(Viewer viewer, Object e1, Object e2) {
 					if ((e1 instanceof BundleProperties) && (e2 instanceof BundleProperties)) {
@@ -312,6 +320,7 @@ public class BundleListLabelProvider extends LabelProvider implements ITableLabe
 			};
 		} else if (sortType == STATE) {
 			return new ViewerComparator() {
+				@Override
 				@SuppressWarnings("unchecked")
 				public int compare(Viewer viewer, Object e1, Object e2) {
 					if ((e1 instanceof BundleProperties) && (e2 instanceof BundleProperties)) {
@@ -324,6 +333,7 @@ public class BundleListLabelProvider extends LabelProvider implements ITableLabe
 			};
 		} else if (sortType == TRANSITION) {
 			return new ViewerComparator() {
+				@Override
 				@SuppressWarnings("unchecked")
 				public int compare(Viewer viewer, Object e1, Object e2) {
 					if ((e1 instanceof BundleProperties) && (e2 instanceof BundleProperties)) {
@@ -336,6 +346,7 @@ public class BundleListLabelProvider extends LabelProvider implements ITableLabe
 			};
 		} else if (sortType == STATUS) {
 			return new ViewerComparator() {
+				@Override
 				@SuppressWarnings("unchecked")
 				public int compare(Viewer viewer, Object e1, Object e2) {
 					if ((e1 instanceof BundleProperties) && (e2 instanceof BundleProperties)) {
@@ -348,6 +359,7 @@ public class BundleListLabelProvider extends LabelProvider implements ITableLabe
 			};
 		} else { // sort type is BUNDLE
 			return new ViewerComparator() {
+				@Override
 				@SuppressWarnings("unchecked")
 				public int compare(Viewer viewer, Object e1, Object e2) {
 					if ((e1 instanceof BundleProperties) && (e2 instanceof BundleProperties)) {

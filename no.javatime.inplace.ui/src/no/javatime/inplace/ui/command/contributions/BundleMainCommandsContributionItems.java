@@ -13,7 +13,9 @@ package no.javatime.inplace.ui.command.contributions;
 import java.util.ArrayList;
 import java.util.Collection;
 
+import no.javatime.inplace.bundlemanager.BundleCommand;
 import no.javatime.inplace.bundlemanager.BundleManager;
+import no.javatime.inplace.bundlemanager.BundleRegion;
 import no.javatime.inplace.bundlemanager.BundleTransition.Transition;
 import no.javatime.inplace.bundleproject.ManifestUtil;
 import no.javatime.inplace.bundleproject.OpenProjectHandler;
@@ -63,7 +65,7 @@ public class BundleMainCommandsContributionItems extends BundleCommandsContribut
 			if (null != contribution) {
 				contributions.add(contribution);				
 			}
-			contributions.add(addBusy(menuId, dynamicMainCommandId));
+			contributions.add(addInterrupt(menuId, dynamicMainCommandId));
 			contributions.add(new Separator(IWorkbenchActionConstants.MB_ADDITIONS));
 
 			if (activatedProjects.size() > 0) {				
@@ -150,18 +152,22 @@ public class BundleMainCommandsContributionItems extends BundleCommandsContribut
 	}
 
 	private CommandContributionItem addStart(Collection<IProject> activatedProjects) {
+		
+		BundleRegion bundleRegion = BundleManager.getRegion();
+		BundleCommand bundleCommand = BundleManager.getCommand();
+
 		// Calculate number of projects to start
 		if (activatedProjects.size() > 0) {
 			int nStart = 0;
 			for (IProject project : activatedProjects) {
-				Bundle bundle = BundleManager.getRegion().get(project);
+				Bundle bundle = bundleRegion.get(project);
 				// Uninstalled
 				if (null == bundle) {
 					// TODO Can not start an uninstalled bundle?
 					// nStart++;
 					continue;
 				}
-				int state = BundleManager.getCommand().getState(bundle);
+				int state = bundleCommand.getState(bundle);
 				if (!ManifestUtil.isFragment(bundle)
 						&& (state & (Bundle.INSTALLED | Bundle.RESOLVED | Bundle.STOPPING)) != 0) {
 					nStart++;
@@ -178,16 +184,20 @@ public class BundleMainCommandsContributionItems extends BundleCommandsContribut
 	}
 
 	private CommandContributionItem addStop(Collection<IProject> activatedProjects) {
+		
+		BundleRegion bundleRegion = BundleManager.getRegion();
+		BundleCommand bundleCommand = BundleManager.getCommand();
+		
 		// Calculate number of projects to stop
 		if (activatedProjects.size() > 0) {
 			int nStop = 0;
 			for (IProject project : activatedProjects) {
-				Bundle bundle = BundleManager.getRegion().get(project);
+				Bundle bundle = bundleRegion.get(project);
 				// Uninstalled
 				if (null == bundle) {
 					continue;
 				}
-				int state = BundleManager.getCommand().getState(bundle);
+				int state = bundleCommand.getState(bundle);
 				if ((state & (Bundle.ACTIVE | Bundle.STARTING)) != 0) {
 					nStop++;
 					continue;
@@ -209,12 +219,15 @@ public class BundleMainCommandsContributionItems extends BundleCommandsContribut
 	}
 
 	private CommandContributionItem addUpdate(Collection<IProject> activatedProjects) {
+		
+		BundleRegion bundleRegion = BundleManager.getRegion();
+
 		// Calculate number of projects to update
 		if (activatedProjects.size() > 0) {
 			int nUpdate = 0;
 			for (IProject project : activatedProjects) {
 				// Uninstalled
-				if (null == BundleManager.getRegion().get(project)) {
+				if (null == bundleRegion.get(project)) {
 					continue;
 				}
 				if (BundleManager.getTransition().containsPending(project, Transition.UPDATE, Boolean.FALSE)) {
@@ -232,11 +245,14 @@ public class BundleMainCommandsContributionItems extends BundleCommandsContribut
 	}
 
 	private CommandContributionItem addRefreshPending(Collection<IProject> activatedProjects) {
+		
+		BundleRegion bundleRegion = BundleManager.getRegion();
+
 		// Calculate number of projects to update
 		if (activatedProjects.size() > 0) {
 			int nRefresh = 0;
 			for (IProject project : activatedProjects) {
-				Bundle bundle = BundleManager.getRegion().get(project);
+				Bundle bundle = bundleRegion.get(project);
 				// Uninstalled
 				if (null == bundle) {
 					continue;
@@ -247,9 +263,10 @@ public class BundleMainCommandsContributionItems extends BundleCommandsContribut
 				}
 			}
 			if (nRefresh > 0) {
-				if (nRefresh != BundleManager.getCommand().getRemovalPending().size()) {
+				BundleCommand bundleCommand = BundleManager.getCommand();
+				if (nRefresh != bundleCommand.getRemovalPending().size()) {
 					String msg = WarnMessage.getInstance().formatString("illegal_number_of_revisions",
-							BundleManager.getCommand().getRemovalPending().size(), nRefresh);
+							bundleCommand.getRemovalPending().size(), nRefresh);
 					StatusManager.getManager().handle(new BundleStatus(StatusCode.WARNING, Activator.PLUGIN_ID, msg),
 							StatusManager.LOG);
 				}

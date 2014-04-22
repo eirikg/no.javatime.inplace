@@ -3,7 +3,6 @@ package no.javatime.inplace.bundlemanager;
 import java.io.InputStream;
 import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.TimeoutException;
 
 import org.eclipse.core.resources.IProject;
 import org.osgi.framework.Bundle;
@@ -19,9 +18,8 @@ import org.osgi.framework.wiring.FrameworkWiring;
 public interface BundleCommand {
 
 	/**
-	 * Installs a workspace bundle from an input stream based on the location identifier of the specified
-	 * {@code project} and records the installed bundle along with the project and activation status as a
-	 * workspace bundle in the bundle workspace region.
+	 * Installs the workspace bundle project and if the register parameter is true records the installed bundle 
+	 * along with the project and activation status as a workspace bundle in the bundle workspace region.
 	 * <p>
 	 * The activation status of a project can be obtained from
 	 * {@link no.javatime.inplace.bundleproject.ProjectProperties#isProjectActivated(IProject)
@@ -32,17 +30,19 @@ public interface BundleCommand {
 	 * If already installed return the existing {@code bundle} object.
 	 * 
 	 * @param project install a workspace bundle finding the bundle location identifier based on this project
-	 * @param activate true if the project is activated (nature enabled) and false if not activated
+	 * @param register true to register the bundle as a workspace region bundle
 	 * @return the installed bundle object
 	 * @throws InPlaceException if the specified project is null, the location of the specified project could
 	 *           not be found or any of the {@link BundleContext#installBundle(String, InputStream)} exceptions
 	 *           except duplicate bundles
 	 * @throws DuplicateBundleException if a bundle with the same symbolic name and version already exists
-	 * @see #install(String)
+	 * @throws ProjectLocationException if the specified project is null or the location of the specified
+	 *           project could not be found
+	 * @see #install(IProject)
 	 * @see #registerBundleNode(IProject, Bundle, Boolean)
 	 * @see BundleEventManager#bundleChanged(BundleEvent)
 	 */
-	public Bundle install(IProject project, Boolean activate) throws InPlaceException, DuplicateBundleException;
+	public Bundle install(IProject project, Boolean register) throws InPlaceException, DuplicateBundleException;
 
 	/**
 	 * Resolves the specified set of bundles. If no bundles are specified, then the Framework will attempt to
@@ -63,11 +63,26 @@ public interface BundleCommand {
 	 * @param bundle the bundle object to start
 	 * @param startOption One of {@link Bundle#START_ACTIVATION_POLICY} and {@link Bundle#START_TRANSIENT}
 	 * @throws InPlaceException if bundle is null or any of the {@link Bundle#start(int)} exceptions
+	 * @throws IllegalStateException is thrown if the start operation terminates abnormally
+	 * @throws BundleStateChangeException failed to complete the requested lifecycle state change
 	 * @see Bundle#start(int)
 	 */
-	public void start(Bundle bundle, int startOption) throws InPlaceException;
-	
-	public void start(Bundle bundle, int startOption, int timeOut) throws InPlaceException, InterruptedException, IllegalStateException;
+	public void start(Bundle bundle, int startOption) throws InPlaceException, IllegalStateException, BundleStateChangeException;
+
+	/**
+	 * Start the specified bundle according to the specified activation policy. If the start operation timeouts
+	 * the task running the start operation is terminated unconditionally.  
+	 * 
+	 * @param bundle the bundle object to start
+	 * @param startOption One of {@link Bundle#START_ACTIVATION_POLICY} and {@link Bundle#START_TRANSIENT}
+	 * @param timeOut terminates the start operation after the specified timeout in seconds
+	 * @throws InPlaceException if bundle is null or any of the {@link Bundle#start(int)} exceptions
+	 * @throws InterruptedException if the start operation is interrupted
+	 * @throws IllegalStateException is thrown if the start operation timeouts
+	 * @throws BundleStateChangeException failed to complete the requested lifecycle state change
+	 */
+	public void start(Bundle bundle, int startOption, int timeOut) 
+			throws InPlaceException, InterruptedException, IllegalStateException, BundleStateChangeException;
 
 	/**
 	 * Stops the specified bundle. The bundle is ignored if not in state STARTING or ACTIVE.
@@ -76,9 +91,19 @@ public interface BundleCommand {
 	 * @param stopTransient true to stop the bundle transient, otherwise false
 	 * @throws InPlaceException if bundle is null or any of the {@link Bundle#stop(int)} exceptions
 	 */
-	public void stop(Bundle bundle, Boolean stopTransient) throws InPlaceException;
+	public void stop(Bundle bundle, Boolean stopTransient) throws InPlaceException, BundleStateChangeException;
+	
+	/**
+	 * Stops the specified bundle. The bundle is ignored if not in state STARTING or ACTIVE. 
+	 * If the stop operation timeouts the task running the stop operation is terminated unconditionally.  
+	 * 
+	 * @param bundle the bundle to stop
+	 * @param stopTransient true to stop the bundle transient, otherwise false
+	 * @param timeOut terminates the stop operation after the specified timeout in seconds
+	 * @throws InPlaceException if bundle is null or any of the {@link Bundle#stop(int)} exceptions
+	 */
 	public void stop(Bundle bundle, boolean stopTransient, int timeOut) 
-			throws InPlaceException, InterruptedException, IllegalStateException;
+			throws InPlaceException, InterruptedException, IllegalStateException, BundleStateChangeException;
 
 
 	/**
@@ -117,15 +142,24 @@ public interface BundleCommand {
 	 */
 	public void refresh(final Collection<Bundle> bundles) throws InPlaceException;
 
-	public IProject uninstall(Bundle bundle, Boolean deactivate) throws InPlaceException, ProjectLocationException;
-
-		/**
-	 * Uninstalls and removes the specified workspace bundle from from the bundle workspace region if it exists
-	 * as workspace bundle. The project and activation status associated with the workspace bundle is removed
+	/**
+	 * Uninstalls and ai the unregister parameter is true removes the specified workspace bundle from the bundle workspace 
+	 * region if it exists as workspace bundle. The project and activation status associated with the workspace bundle is removed
 	 * along with the bundle object.
 	 * 
 	 * @param bundle the bundle object to uninstall
-	 * @return the project associated with uninstalled bundle
+	 * @param unregister if true the bundle project will be unregistered. The bundle must be registered again when installed 
+	 * @return the bundle object of the uninstalled bundle
+	 * @throws InPlaceException if bundle is null or any of the {@link Bundle#uninstall()} exceptions
+	 */
+	public IProject uninstall(Bundle bundle, Boolean unregister) throws InPlaceException, ProjectLocationException;
+
+	/**
+	 * Uninstalls the bundle. The bundle project is not removed from the workspace region if it exists
+	 * as workspace bundle
+	 *  
+	 * @param bundle the bundle object to uninstall
+	 * @return the bundle object of the uninstalled bundle
 	 * @throws InPlaceException if bundle is null or any of the {@link Bundle#uninstall()} exceptions
 	 */
 	public IProject uninstall(Bundle bundle) throws InPlaceException;
@@ -246,9 +280,6 @@ public interface BundleCommand {
 	 */
 	public boolean isBundleProjectRegistered(IProject project);
 	
-	public boolean isStateChanging();
-	public void stopCurrentBundleOperation() throws TimeoutException;
-
-
-
+	public Bundle getCurrentBundle();
+	public void setCurrentBundle(Bundle bundle);
 }

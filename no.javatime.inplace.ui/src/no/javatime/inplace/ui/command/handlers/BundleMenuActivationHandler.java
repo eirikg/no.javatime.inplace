@@ -13,32 +13,6 @@ package no.javatime.inplace.ui.command.handlers;
 import java.util.Collection;
 import java.util.Collections;
 
-import org.eclipse.core.commands.AbstractHandler;
-import org.eclipse.core.commands.Command;
-import org.eclipse.core.commands.State;
-import org.eclipse.core.resources.IProject;
-import org.eclipse.core.resources.WorkspaceJob;
-import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.SubProgressMonitor;
-import org.eclipse.jdt.core.IJavaProject;
-import org.eclipse.jdt.core.JavaCore;
-import org.eclipse.jdt.ui.IPackagesViewPart;
-import org.eclipse.jface.viewers.ISelection;
-import org.eclipse.jface.viewers.IStructuredSelection;
-import org.eclipse.jface.wizard.IWizard;
-import org.eclipse.jface.wizard.WizardDialog;
-import org.eclipse.swt.widgets.Display;
-import org.eclipse.ui.IWorkbenchPage;
-import org.eclipse.ui.IWorkbenchPart;
-import org.eclipse.ui.PlatformUI;
-import org.eclipse.ui.commands.ICommandService;
-import org.eclipse.ui.handlers.RegistryToggleState;
-import org.eclipse.ui.navigator.CommonNavigator;
-import org.eclipse.ui.statushandlers.StatusManager;
-import org.eclipse.ui.wizards.IWizardDescriptor;
-import org.osgi.framework.Bundle;
-
 import no.javatime.inplace.bundlejobs.ActivateProjectJob;
 import no.javatime.inplace.bundlejobs.BundleJob;
 import no.javatime.inplace.bundlejobs.DeactivateJob;
@@ -70,6 +44,33 @@ import no.javatime.util.messages.UserMessage;
 import no.javatime.util.messages.WarnMessage;
 import no.javatime.util.messages.views.BundleConsoleFactory;
 import no.javatime.util.messages.views.MessageView;
+
+import org.eclipse.core.commands.AbstractHandler;
+import org.eclipse.core.commands.Command;
+import org.eclipse.core.commands.State;
+import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.WorkspaceJob;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.core.runtime.SubProgressMonitor;
+import org.eclipse.jdt.core.IJavaProject;
+import org.eclipse.jdt.core.JavaCore;
+import org.eclipse.jdt.ui.IPackagesViewPart;
+import org.eclipse.jface.viewers.ISelection;
+import org.eclipse.jface.viewers.IStructuredSelection;
+import org.eclipse.jface.wizard.IWizard;
+import org.eclipse.jface.wizard.WizardDialog;
+import org.eclipse.swt.widgets.Display;
+import org.eclipse.ui.IWorkbenchPage;
+import org.eclipse.ui.IWorkbenchPart;
+import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.commands.ICommandService;
+import org.eclipse.ui.handlers.RegistryToggleState;
+import org.eclipse.ui.navigator.CommonNavigator;
+import org.eclipse.ui.statushandlers.StatusManager;
+import org.eclipse.ui.wizards.IWizardDescriptor;
+import org.osgi.framework.Bundle;
 
 /**
  * Executes bundle menu commands for one or more projects. The bundle commands are
@@ -172,6 +173,43 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 			ResetJob resetJob = new ResetJob(projects);
 			resetJob.reset(ResetJob.resetJobName);		
 		}
+	}
+	
+	/**
+	 * Interrupts the current running bundle job
+	 */
+	protected  void interruptHandler() {
+		BundleJob job = OpenProjectHandler.getRunningBundleJob();
+		if (null != job) {
+			Thread thread = job.getThread();
+			if (null != thread) {
+				// Requires that the user code (e.g. in the start method) is aware of interrupts
+				thread.interrupt();
+			}
+		}
+	}
+	
+	/**
+	 * Stops the current thread running the start and stop operation 
+	 */
+	protected void stopOperation() {
+		Activator.getDisplay().asyncExec(new Runnable() {
+			@Override
+			public void run() {
+				try {
+					if (!Activator.getDefault().getOptionsService().isTimeOut()) {
+						BundleJob job = OpenProjectHandler.getRunningBundleJob();
+						if (null != job && BundleJob.isStateChanging()) {			
+							job.stopCurrentBundleOperation(new NullProgressMonitor());
+						}
+					}
+				} catch (IllegalStateException e) {
+					// Also caught by the bundle API
+				} catch (InPlaceException e) {
+					// Ignore
+				}
+			}
+		});
 	}
 	
 	/**
@@ -334,7 +372,7 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 		openWizard(org.eclipse.pde.internal.ui.wizards.plugin.NewPluginProjectWizard.PLUGIN_POINT);
 	}
 
-	public  static void openWizard(String id) { 
+	public static void openWizard(String id) { 
 
 		// First see if this is a "new wizard". 
 		IWizardDescriptor descriptor = PlatformUI.getWorkbench().getNewWizardRegistry().findWizard(id); 
@@ -373,6 +411,7 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 			return;
 		}
 		display.asyncExec(new Runnable() {
+			@Override
 			public void run() {
 				if (Message.isViewVisible(BundleView.ID)) {						
 					BundleView bundleView = (BundleView) Message.getView(BundleView.ID);

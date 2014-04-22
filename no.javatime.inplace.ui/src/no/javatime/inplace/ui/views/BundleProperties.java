@@ -14,14 +14,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 
-import org.eclipse.core.resources.IProject;
-import org.eclipse.core.runtime.CoreException;
-import org.eclipse.jdt.core.IJavaProject;
-import org.eclipse.jdt.core.JavaCore;
-import org.eclipse.ui.statushandlers.StatusManager;
-import org.osgi.framework.Bundle;
-import org.osgi.framework.ServiceReference;
-
 import no.javatime.inplace.bundlemanager.BundleCommand;
 import no.javatime.inplace.bundlemanager.BundleManager;
 import no.javatime.inplace.bundlemanager.BundleTransition;
@@ -40,6 +32,14 @@ import no.javatime.inplace.statushandler.IBundleStatus.StatusCode;
 import no.javatime.inplace.ui.Activator;
 import no.javatime.util.messages.ErrorMessage;
 import no.javatime.util.messages.Message;
+
+import org.eclipse.core.resources.IProject;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.jdt.core.IJavaProject;
+import org.eclipse.jdt.core.JavaCore;
+import org.eclipse.ui.statushandlers.StatusManager;
+import org.osgi.framework.Bundle;
+import org.osgi.framework.ServiceReference;
 
 /**
  * A bundle or project model object. Provides labels and attributes for bundles and projects. Typically used
@@ -260,6 +260,10 @@ public class BundleProperties {
 					return "Incomplete";
 				} else if (error == TransitionError.BUILD) {
 					return "Build Problems";
+				} else if (error == TransitionError.EXCEPTION) {
+					return "Exception";
+				} else if (error == TransitionError.STATECHANGE) {
+					return "State error";
 				} else if (isProjectActivated && (bundleCommand.getState(bundle) & (Bundle.UNINSTALLED)) != 0) {
 					return "Install Problems"; 
 				} else if (isProjectActivated && (bundleCommand.getState(bundle) & (Bundle.INSTALLED)) != 0) {

@@ -75,7 +75,7 @@ public class BundlePopUpCommandsContributionItems extends BundleCommandsContribu
 			if (null != contribution) {
 				contributions.add(contribution);				
 			}
-			contributions.add(addBusy(menuId, dynamicPopUpCommandId));
+			contributions.add(addInterrupt(menuId, dynamicPopUpCommandId));
 			contributions.add(new Separator(IWorkbenchActionConstants.MB_ADDITIONS));
 			contribution = addRefresh(activated, bundle);
 			if (null != contribution) {

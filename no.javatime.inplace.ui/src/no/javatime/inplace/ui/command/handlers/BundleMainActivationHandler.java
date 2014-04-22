@@ -12,25 +12,17 @@ package no.javatime.inplace.ui.command.handlers;
 
 import java.util.Collection;
 import java.util.LinkedHashSet;
-import java.util.concurrent.TimeoutException;
+
+import no.javatime.inplace.bundlemanager.BundleManager;
+import no.javatime.inplace.bundlemanager.BundleTransition;
+import no.javatime.inplace.bundleproject.ProjectProperties;
+import no.javatime.inplace.ui.command.contributions.BundleMainCommandsContributionItems;
+import no.javatime.inplace.ui.command.contributions.BundlePopUpCommandsContributionItems;
 
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.resources.IProject;
-import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.Status;
-import org.eclipse.ui.statushandlers.StatusManager;
 import org.osgi.framework.Bundle;
-
-import no.javatime.inplace.bundlejobs.BundleJob;
-import no.javatime.inplace.bundlemanager.BundleManager;
-import no.javatime.inplace.bundlemanager.BundleTransition;
-import no.javatime.inplace.bundleproject.OpenProjectHandler;
-import no.javatime.inplace.bundleproject.ProjectProperties;
-import no.javatime.inplace.dl.preferences.intface.CommandOptions;
-import no.javatime.inplace.ui.Activator;
-import no.javatime.inplace.ui.command.contributions.BundleMainCommandsContributionItems;
-import no.javatime.inplace.ui.command.contributions.BundlePopUpCommandsContributionItems;
 
 /**
  * Handles in-place main menu for java projects.
@@ -107,34 +99,10 @@ public class BundleMainActivationHandler extends BundleMenuActivationHandler {
 		} else if (parameterId.equals(BundlePopUpCommandsContributionItems.removeClassPathParamId)) {
 			Collection<IProject> projects = ProjectProperties.getPlugInProjects();
 			updateClassPathHandler(projects, false);
-		}	else if (parameterId.equals(BundlePopUpCommandsContributionItems.busyParamId)) {
-			BundleJob job = OpenProjectHandler.getRunningBundleJob();
-			if (null != job) {
-				job.cancel();
-				Thread thread = job.getThread();
-				if (null != thread) {
-					// Requires that the user code (e.g. in the start method) is aware of interrupts
-					thread.interrupt();
-				}
-			}
+		}	else if (parameterId.equals(BundlePopUpCommandsContributionItems.inerruptParamId)) {
+			interruptHandler();
 		}	else if (parameterId.equals(BundlePopUpCommandsContributionItems.stopOperationParamId)) {
-			Activator.getDisplay().asyncExec(new Runnable() {
-				public void run() {
-					try {
-						BundleJob job = OpenProjectHandler.getRunningBundleJob();
-						CommandOptions co = Activator.getDefault().getOptionsService();
-						if (null != job && (!co.isTimeOut()) && BundleManager.getCommand().isStateChanging()) {			
-							BundleManager.getCommand().stopCurrentBundleOperation();
-						}
-					} catch (IllegalStateException e) {
-						// Also caught by the bundle API
-					} catch (TimeoutException e) {
-						StatusManager.getManager().handle(
-								new Status(IStatus.ERROR, Activator.PLUGIN_ID, e.getMessage(), e),
-								StatusManager.LOG);
-					}
-				}
-			});
+			stopOperation();
 		}	
 		return null; 
 	}

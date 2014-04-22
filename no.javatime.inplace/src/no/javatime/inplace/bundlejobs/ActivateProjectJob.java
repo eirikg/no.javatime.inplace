@@ -13,13 +13,6 @@ package no.javatime.inplace.bundlejobs;
 import java.util.Collection;
 import java.util.EnumSet;
 
-import org.eclipse.core.resources.IProject;
-import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.OperationCanceledException;
-import org.eclipse.core.runtime.SubProgressMonitor;
-import org.osgi.framework.Bundle;
-
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundlemanager.BundleTransition.Transition;
 import no.javatime.inplace.bundlemanager.InPlaceException;
@@ -35,6 +28,13 @@ import no.javatime.util.messages.ExceptionMessage;
 import no.javatime.util.messages.Message;
 import no.javatime.util.messages.UserMessage;
 import no.javatime.util.messages.WarnMessage;
+
+import org.eclipse.core.resources.IProject;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.OperationCanceledException;
+import org.eclipse.core.runtime.SubProgressMonitor;
+import org.osgi.framework.Bundle;
 
 /**
  * Activates a project or a set of projects by adding the JavaTime nature and builder to the .project file of
@@ -160,9 +160,11 @@ public class ActivateProjectJob extends NatureJob {
 	 *         otherwise one of the failure codes are returned. If more than one bundle fails, status of the
 	 *         last failed bundle is returned. All failures are added to the job status list
 	 * @throws InPlaceException when failing to enable nature
+	 * @throws CircularReferenceException if cycles are detected in the project graph
 	 * @see #getStatusList()
 	 */
-	private IBundleStatus activate(IProgressMonitor monitor) throws InPlaceException, InterruptedException {
+	private IBundleStatus activate(IProgressMonitor monitor) 
+			throws InPlaceException, InterruptedException, CircularReferenceException {
 
 		if (pendingProjects() > 0) {
 			IBundleStatus result = initWorkspace(monitor);
@@ -218,8 +220,10 @@ public class ActivateProjectJob extends NatureJob {
 	 * @return status object with {@code StatusCode.OK}. Otherwise the last failure code is returned. All
 	 *         statuses are added to the job status list
 	 * @throws OperationCanceledException If user cancel job after uninstalling the bundles
+	 * @throws CircularReferenceException if cycles are detected in the project graph
 	 */
-	private IBundleStatus initWorkspace(IProgressMonitor monitor) throws OperationCanceledException, InterruptedException {
+	private IBundleStatus initWorkspace(IProgressMonitor monitor) 
+			throws OperationCanceledException, InterruptedException, CircularReferenceException {
 
 		// The bundles are registered in the workspace region when installed from an external source		
 		final Collection<Bundle> bundlesToActivate = bundleRegion.getBundles();
@@ -250,9 +254,12 @@ public class ActivateProjectJob extends NatureJob {
 	 * @return status object with {@code StatusCode.OK}. Otherwise the last failure code is returned. All
 	 *         statuses are added to the job status list
 	 * @throws OperationCanceledException If user cancel job after stopping and before uninstalling bundles
+	 * @throws CircularReferenceException if cycles are detected in the project graph
+	 * @throws InterruptedException Checks for and interrupts right before call to stop bundle. Stop is also interrupted
+	 *           if the task running the stop method is terminated abnormally (timeout or manually)
 	 */
 	private IBundleStatus uninstallBundles(Collection<Bundle> bundlesToUninstall, IProgressMonitor monitor)
-			throws OperationCanceledException, InterruptedException {
+			throws OperationCanceledException, InterruptedException, CircularReferenceException {
 		int entrySize = statusList();
 		IBundleStatus status = stop(bundlesToUninstall, EnumSet.of(Integrity.RESTRICT), new SubProgressMonitor(monitor, 1));
 		if (monitor.isCanceled()) {

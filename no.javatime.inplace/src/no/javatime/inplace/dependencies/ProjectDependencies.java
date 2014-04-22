@@ -3,16 +3,16 @@ package no.javatime.inplace.dependencies;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 
-import org.eclipse.core.resources.IProject;
-import org.eclipse.core.runtime.CoreException;
-import org.eclipse.jdt.core.JavaCore;
-import org.eclipse.ui.statushandlers.StatusManager;
-
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.statushandler.BundleStatus;
 import no.javatime.inplace.statushandler.IBundleStatus.StatusCode;
 import no.javatime.util.messages.ExceptionMessage;
+
+import org.eclipse.core.resources.IProject;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.jdt.core.JavaCore;
+import org.eclipse.ui.statushandlers.StatusManager;
 
 /**
  * Utility to get direct and transitive requiring (referencing) and providing (referenced) projects
@@ -26,7 +26,7 @@ public class ProjectDependencies {
 	/**
 	 * Get direct references of projects to this project. Self is not included in the providing projects.
 	 * @param project the initial project
-	 * @return providing projects. never null.
+	 * @return providing projects. Never null.
 	 */
 	public static Collection<IProject> getProvidingProjects(IProject project) {
 

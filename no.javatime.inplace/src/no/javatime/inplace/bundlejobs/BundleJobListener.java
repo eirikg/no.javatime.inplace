@@ -161,7 +161,6 @@ public class BundleJobListener extends JobChangeAdapter {
 
 		Collection<IBundleStatus> statusList = bundleJob.getStatusList();
 		Collection<IBundleStatus> modifiedStatusList = new ArrayList<IBundleStatus>(statusList);
-
 		for (IBundleStatus status : statusList) {
 			if (status.hasStatus(StatusCode.CANCEL)) {
 				StatusManager.getManager().handle(status, StatusManager.LOG);
@@ -169,7 +168,7 @@ public class BundleJobListener extends JobChangeAdapter {
 				return modifiedStatusList;
 			}
 		}
-		return modifiedStatusList;
+		return statusList;
 	}
 	
 	/**

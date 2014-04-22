@@ -44,37 +44,33 @@ import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 import org.osgi.framework.Bundle;
 
 /**
- * Activates a bundle or set of bundles by installing, resolving and starting the bundle(s). A bundle is only
- * activated if its corresponding project already has been activated. See
- * {@link no.javatime.inplace.bundlejobs.ActivateProjectJob ActivateProjectJob} for activating projects. The
- * workspace is activated if this is the first pending project or set of pending projects that have been
- * activated. If no projects have been activated the workspace is said to be deactivated and all bundles are
- * in state UNINSTALLED
+ * Activates a bundle or set of bundles by installing, resolving and starting the bundle(s). A bundle is only activated
+ * if its corresponding project already has been activated. See
+ * {@link no.javatime.inplace.bundlejobs.ActivateProjectJob ActivateProjectJob} for activating projects. The workspace
+ * is activated if this is the first pending project or set of pending projects that have been activated. If no projects
+ * have been activated the workspace is said to be deactivated and all bundles are in state UNINSTALLED
  * <p>
- * The following principles and conditions determine the states bundles are moved to when their projects are
- * activated:
+ * The following principles and conditions determine the states bundles are moved to when their projects are activated:
  * <ol>
- * <li>When the first project or set of projects in the workspace have been activated the workspace is said to
- * be activated and bundles for not activated projects are installed (state INSTALLED) and bundles for
- * activated projects are installed, resolved and started (state ACTIVE or STARTING).
- * <li>If the workspace is activated when this job is scheduled bundles of new pending activated projects are
- * resolved and started (state ACTIVE or STARTING).
- * <li>When reactivating the workspace at startup deactivated bundles are installed and activated bundles are
- * moved to the same state as at shut down. Possible states for activated bundles are RESOLVED, ACTIVE and
- * STARTING.
- * <li>If bundles to activate are dependent on other providing bundles, the independent providing bundles are
- * added to the job. The dependency is transitive.
+ * <li>When the first project or set of projects in the workspace have been activated the workspace is said to be
+ * activated and bundles for not activated projects are installed (state INSTALLED) and bundles for activated projects
+ * are installed, resolved and started (state ACTIVE or STARTING).
+ * <li>If the workspace is activated when this job is scheduled bundles of new pending activated projects are resolved
+ * and started (state ACTIVE or STARTING).
+ * <li>When reactivating the workspace at startup deactivated bundles are installed and activated bundles are moved to
+ * the same state as at shut down. Possible states for activated bundles are RESOLVED, ACTIVE and STARTING.
+ * <li>If bundles to activate are dependent on other providing bundles, the independent providing bundles are added to
+ * the job. The dependency is transitive.
  * </ol>
  * <p>
- * It is both a prerequisite and guaranteed by this package that all providing projects to the pending
- * projects of this job are activated (nature enabled) when this job is scheduled. Providing projects are
- * either activated when a requiring project is activated in
- * {@link no.javatime.inplace.bundlejobs.ActivateProjectJob ActivateProjectJob} or scheduled for project
- * activation in the {@link no.javatime.inplace.builder.PostBuildListener PostBuildListener} when a new
- * deactivated project is imported by an activated project. Lastly, if none if this holds a deactivated
- * project providing capabilities to an activated bundle is scheduled for activation in the internal resolver
- * hook and the requiring activated bundles are excluded from the resolve list and then resolved when the
- * deactivated project is activated.
+ * It is both a prerequisite and guaranteed by this package that all providing projects to the pending projects of this
+ * job are activated (nature enabled) when this job is scheduled. Providing projects are either activated when a
+ * requiring project is activated in {@link no.javatime.inplace.bundlejobs.ActivateProjectJob ActivateProjectJob} or
+ * scheduled for project activation in the {@link no.javatime.inplace.builder.PostBuildListener PostBuildListener} when
+ * a new deactivated project is imported by an activated project. Lastly, if none if this holds a deactivated project
+ * providing capabilities to an activated bundle is scheduled for activation in the internal resolver hook and the
+ * requiring activated bundles are excluded from the resolve list and then resolved when the deactivated project is
+ * activated.
  * 
  * 
  * @see ActivateProjectJob
@@ -92,8 +88,9 @@ public class ActivateBundleJob extends BundleJob {
 
 	// Activate bundles according to their state in preference store
 	private Boolean useStoredState = false;
-	final private static String duplicateMessage = ErrorMessage.getInstance().formatString("duplicate_ws_bundle_install");
-	 
+	final private static String duplicateMessage = ErrorMessage.getInstance().formatString(
+			"duplicate_ws_bundle_install");
+
 	/**
 	 * Construct an activate job with a given job name
 	 * 
@@ -132,10 +129,9 @@ public class ActivateBundleJob extends BundleJob {
 	/**
 	 * Runs the bundle(s) activation operation.
 	 * 
-	 * @return a {@code BundleStatus} object with {@code BundleStatusCode.OK} if job terminated normally and no
-	 *         status objects have been added to this job status list and {@code BundleStatusCode.ERROR} if the
-	 *         job fails or {@code BundleStatusCode.JOBINFO} if any status objects have been added to the job
-	 *         status list.
+	 * @return a {@code BundleStatus} object with {@code BundleStatusCode.OK} if job terminated normally and no status
+	 *         objects have been added to this job status list and {@code BundleStatusCode.ERROR} if the job fails or
+	 *         {@code BundleStatusCode.JOBINFO} if any status objects have been added to the job status list.
 	 */
 	@Override
 	public IBundleStatus runInWorkspace(IProgressMonitor monitor) {
@@ -143,7 +139,7 @@ public class ActivateBundleJob extends BundleJob {
 		try {
 			monitor.beginTask(activateTaskName, getTicks());
 			activate(monitor);
-		} catch(InterruptedException e) {
+		} catch (InterruptedException e) {
 			String msg = ExceptionMessage.getInstance().formatString("interrupt_job", getName());
 			addError(e, msg);
 		} catch (OperationCanceledException e) {
@@ -175,24 +171,31 @@ public class ActivateBundleJob extends BundleJob {
 	}
 
 	/**
-	 * Install, resolve and start pending bundles to activate. A bundle is marked as activated if its
-	 * corresponding project is activated (nature enabled). If the workspace is deactivated and there are
-	 * bundles to activate all deactivated bundles are installed.
+	 * Install, resolve and start pending bundles to activate. A bundle is marked as activated if its corresponding
+	 * project is activated (nature enabled). If no projects are activated the activate bundle job will terminate
+	 * silently. If the workspace is in a deactivated state and there are bundles to activate
+	 * all deactivated bundles are installed.
+	 * <p>
+	 * Closed and non-existing projects are discarded.
 	 * 
 	 * @param monitor the progress monitor to use for reporting progress and job cancellation.
-	 * @return Status of last added {@code IBundleStatus} object is returned or a {@code IBundleStatus} status
-	 *         with a {@code StatusCode.OK} if no errors. All failures are added to the job status list.
+	 * @return Status of last added {@code IBundleStatus} object is returned or a {@code IBundleStatus} status with a
+	 *         {@code StatusCode.OK} if no errors. All failures are added to the job status list.
 	 * @throws OperationCanceledException after install and resolve
+	 * @throws InterruptedException Checks for and interrupts right before call to start bundle. Start is also interrupted
+	 *           if the task running the stop method is terminated abnormally (timeout or manually)
+	 * @throws InPlaceException if encountering closed or non-existing projects after they are discarded or a bundle to
+	 *           activate becomes null
 	 */
-	private IBundleStatus activate(IProgressMonitor monitor) throws 
-			OperationCanceledException, InterruptedException, InPlaceException {
+	private IBundleStatus activate(IProgressMonitor monitor) throws OperationCanceledException,
+			InterruptedException, InPlaceException {
 
 		Collection<Bundle> activatedBundles = null;
 		ProjectSorter projectSorter = new ProjectSorter();
 		// At least one project must be activated (nature enabled) for workspace bundles to be activated
 		if (ProjectProperties.isProjectWorkspaceActivated()) {
-			// If this is the first workspace project(s) being activated no bundle(s) have been activated yet
-			// All deactivated bundles should be installed in an activated workspace (except erroneous bundles)
+			// If this is the first set of workspace project(s) that have been activated no bundle(s) have been activated yet
+			// and all deactivated bundles should be installed in an activated workspace (except erroneous bundles)
 			if (!bundleRegion.isBundleWorkspaceActivated()) {
 				addPendingProjects(ProjectProperties.getPlugInProjects());
 			} else {
@@ -217,9 +220,11 @@ public class ActivateBundleJob extends BundleJob {
 					removePendingProjects(e.getProjects());
 				}
 			}
+			// All circular references, closed and non-existing projects should have been discarded by now
 			removeErrorClosures(projectSorter, activatedBundles);
 			activatedBundles = install(getPendingProjects(), monitor);
 		}
+		// No projects are activated or no activated bundle projects have been installed
 		if (null == activatedBundles || activatedBundles.size() == 0) {
 			return getLastStatus();
 		}
@@ -235,7 +240,7 @@ public class ActivateBundleJob extends BundleJob {
 			if ((bundle.getState() & (Bundle.INSTALLED)) != 0) {
 				bundlesToResolve.add(bundle);
 			}
-		}		
+		}
 		if (bundlesToResolve.size() == 0) {
 			if (Category.getState(Category.bundleOperations))
 				TraceMessage.getInstance().getString("already_activated",
@@ -252,8 +257,7 @@ public class ActivateBundleJob extends BundleJob {
 		}
 		// Set the bundle class path on start up if settings (dev and/or update bundle class path) are changed
 		if (getName().equals(ActivateBundleJob.activateStartupJobName)
-				&& (null != BundleProject.inDevelopmentMode() || 
-				getOptionsService().isUpdateDefaultOutPutFolder())) {
+				&& (null != BundleProject.inDevelopmentMode() || getOptionsService().isUpdateDefaultOutPutFolder())) {
 			for (Bundle bundle : activatedBundles) {
 				resolveBundleClasspath(bundleRegion.getProject(bundle));
 			}
@@ -265,19 +269,21 @@ public class ActivateBundleJob extends BundleJob {
 		start(activatedBundles, EnumSet.of(Integrity.PROVIDING), new SubProgressMonitor(monitor, 1));
 		return getLastStatus();
 	}
-	
+
 	/**
-	 * Remove build error closure bundles from the set of activated projects. If there are no activated projects
-	 * left the error closures are added to the status list. Otherwise the error closures are only removed from
-	 * the set of pending projects.
+	 * Remove build error closure bundles from the set of activated projects. If there are no activated projects left the
+	 * error closures are added to the status list. Otherwise the error closures are only removed from the set of pending
+	 * projects.
 	 * 
 	 * @param projectSorter topological sort of error closure
-	 * @return {@code IBundleStatus} status with a {@code StatusCode.OK} if no errors. Return
-	 *         {@code IBundleStatus} status with a {@code StatusCode.BUILDERROR} if there are projects with
-	 *         build errors and there are no pending projects left. If there are build errors they are added to
-	 *         the job status list.
+	 * @return {@code IBundleStatus} status with a {@code StatusCode.OK} if no errors. Return {@code IBundleStatus} status
+	 *         with a {@code StatusCode.BUILDERROR} if there are projects with build errors and there are no pending
+	 *         projects left. If there are build errors they are added to the job status list.
+	 * @throws InPlaceException if one of the specified projects does not exist or is closed
+	 * @throws CircularReferenceException if cycles are detected among the specified projects
 	 */
-	private IBundleStatus removeErrorClosures(ProjectSorter projectSorter, Collection<Bundle> installedBundles) {
+	private IBundleStatus removeErrorClosures(ProjectSorter projectSorter, Collection<Bundle> installedBundles)
+			throws InPlaceException, CircularReferenceException {
 
 		IBundleStatus status = createStatus();
 		Collection<IProject> projectErrorClosures = null;
@@ -292,7 +298,7 @@ public class ActivateBundleJob extends BundleJob {
 			}
 			bundleTransition.removeTransitionError(TransitionError.DUPLICATE);
 			removeExternalDuplicates(getPendingProjects(), null, null);
-			Collection<IProject> duplicates = removeWorkspaceDuplicates(getPendingProjects(), null, null, 
+			Collection<IProject> duplicates = removeWorkspaceDuplicates(getPendingProjects(), null, null,
 					ProjectProperties.getInstallableProjects(), duplicateMessage);
 			if (null != duplicates) {
 				Collection<IProject> installedRequirers = projectSorter.sortRequiringProjects(duplicates, true);
@@ -316,8 +322,8 @@ public class ActivateBundleJob extends BundleJob {
 	}
 
 	/**
-	 * Restore bundle state from previous session. If active bundles to start has requirements on a bundle to
-	 * resolve, start the bundle to resolve if the dependency option on the bundle allows it.
+	 * Restore bundle state from previous session. If active bundles to start has requirements on a bundle to resolve,
+	 * start the bundle to resolve if the dependency option on the bundle allows it.
 	 * 
 	 * @param bundles bundles to activate
 	 * @param bs dependency sorter

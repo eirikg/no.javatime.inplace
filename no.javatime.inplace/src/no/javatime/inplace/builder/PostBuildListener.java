@@ -10,15 +10,6 @@
  *******************************************************************************/
 package no.javatime.inplace.builder;
 
-import org.eclipse.core.resources.IProject;
-import org.eclipse.core.resources.IResource;
-import org.eclipse.core.resources.IResourceChangeEvent;
-import org.eclipse.core.resources.IResourceChangeListener;
-import org.eclipse.core.resources.IResourceDelta;
-import org.eclipse.core.resources.IncrementalProjectBuilder;
-import org.eclipse.ui.statushandlers.StatusManager;
-import org.osgi.framework.Bundle;
-
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundlejobs.ActivateBundleJob;
 import no.javatime.inplace.bundlejobs.ActivateProjectJob;
@@ -43,6 +34,15 @@ import no.javatime.util.messages.Category;
 import no.javatime.util.messages.ErrorMessage;
 import no.javatime.util.messages.ExceptionMessage;
 import no.javatime.util.messages.UserMessage;
+
+import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.IResource;
+import org.eclipse.core.resources.IResourceChangeEvent;
+import org.eclipse.core.resources.IResourceChangeListener;
+import org.eclipse.core.resources.IResourceDelta;
+import org.eclipse.core.resources.IncrementalProjectBuilder;
+import org.eclipse.ui.statushandlers.StatusManager;
+import org.osgi.framework.Bundle;
 
 /**
  * Schedules bundle jobs after a project is changed. This include created (create new, import and open),
@@ -97,6 +97,7 @@ public class PostBuildListener implements IResourceChangeListener {
 	 * Schedules bundle jobs for changed projects. Removed and closed projects are handled in the
 	 * {@link PreChangeListener}
 	 */
+	@Override
 	public void resourceChanged(IResourceChangeEvent event) {
 
 		// Nothing to do in a deactivated workspace where all bundle projects are uninstalled
@@ -109,14 +110,14 @@ public class PostBuildListener implements IResourceChangeListener {
 		// projects with activate as pending transition
 		ActivateBundleJob activateBundleJob = new ActivateBundleJob(ActivateBundleJob.activateJobName);
 		// If a project to update has requirements on deactivated projects, the deactivated projects are scheduled
-		// for
-		// project activation and update
+		// for project activation and update
 		ActivateProjectJob activateProjectJob = new ActivateProjectJob(ActivateProjectJob.activateNatureJobName);
 		// Project with new requirements on UI plug-in(s), when UI plug-ins are not allowed
 		DeactivateJob deactivateJob = new DeactivateJob(DeactivateJob.deactivateJobName);
-
+		// Project probably moved or needs a reactivation for some reason
 		UninstallJob uninstallJob = new UninstallJob(UninstallJob.uninstallJobName);
-		
+		// When a project is activated and in state uninstalled or deactivated and in state 
+		// uninstalled in an activated workspace
 		InstallJob installJob = new InstallJob(InstallJob.installJobName);
 
 		int buildType = event.getBuildKind();
@@ -127,11 +128,9 @@ public class PostBuildListener implements IResourceChangeListener {
 			resourceDeltas = rootDelta.getAffectedChildren(IResourceDelta.ADDED | IResourceDelta.CHANGED,
 					IResource.NONE);
 		}
-		// A null resource delta implies an unspecified change or a full build
-		// An empty resource delta implies no change since last build, but the resource may have a pending
-		// transition
+		// A null resource delta implies an unspecified change or a full build. An empty resource delta implies 
+		// no change since last build, but the resource may have a pending transition
 		if (null == resourceDeltas || resourceDeltas.length == 0) {
-			// TODO getPluginProjects ?
 			for (IProject project : ProjectProperties.getInstallableProjects()) {
 				try {
 					removePendingBuildTransition(buildType, project);

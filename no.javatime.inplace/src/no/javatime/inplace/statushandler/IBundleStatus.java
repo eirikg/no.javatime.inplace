@@ -22,8 +22,7 @@ import org.osgi.framework.Bundle;
 public interface IBundleStatus extends IStatus {
 
 	/**
-	 * Status codes assigned to <code>BundleStatus</code> objects. Used instead of <code>IStatus</code> status
-	 * types.
+	 * Status codes assigned to <code>BundleStatus</code> objects. Used instead of <code>IStatus</code> status types.
 	 */
 	public enum StatusCode {
 		OK, CANCEL, INFO, WARNING, ERROR, EXCEPTION, BUILDERROR, JOBINFO
@@ -33,40 +32,43 @@ public interface IBundleStatus extends IStatus {
 	 * Check the status code in the <code>BundleStatus</code> object against the specified status code
 	 * 
 	 * @param statusCode the status code to check
-	 * @return true if the status code for this <code>BundleStatus</code> object is the same as the specified
-	 *         status code
+	 * @return true if the status code for this <code>BundleStatus</code> object is the same as the specified status code
 	 */
 	boolean hasStatus(StatusCode statusCode);
 
 	/**
 	 * Return the status code of this bundle status object
+	 * 
 	 * @return return the status code
 	 */
 	public Enum<StatusCode> getStatusCode();
+
+	/**
+	 * Set the status code of this bundle status object
+	 * 
+	 * @param statusCode the status code to set
+	 */
 	void setStatusCode(StatusCode statusCode);
 
 	/**
-	 * Returns the message describing the outcome.
-	 * The message is localized to the current locale.
-	 *
+	 * Returns the message describing the outcome. The message is localized to the current locale.
+	 * 
 	 * @return a localized message
 	 */
+	@Override
 	String getMessage();
-	
+
 	/**
-	 * Sets the message. If null is passed, message is set to an empty
-	 * string.
-	 *
-	 * @param message a human-readable message, localized to the
-	 *    current locale
+	 * Sets the message. If null is passed, message is set to an empty string.
+	 * 
+	 * @param message a human-readable message, localized to the current locale
 	 */
-void setMessage(String message);
+	void setMessage(String message);
 
 	/**
 	 * The project associated with status object if any
 	 * 
-	 * @return The project associated with the status object or null if no project is registered with the status
-	 *         object
+	 * @return The project associated with the status object or null if no project is registered with the status object
 	 */
 	IProject getProject();
 
@@ -80,8 +82,7 @@ void setMessage(String message);
 	/**
 	 * The bundle associated with status object if any
 	 * 
-	 * @return The bundle associated with the status object or null if no bundle is registered with the status
-	 *         object
+	 * @return The bundle associated with the status object or null if no bundle is registered with the status object
 	 */
 	Bundle getBundle();
 
@@ -91,17 +92,18 @@ void setMessage(String message);
 	 * @param bundleId the bundle id to associate with the status object
 	 */
 	void setBundle(Long bundleId);
-	
+
 	/**
 	 * Sets the severity status
-	 *
-	 * @param severity the severity; one of <code>OK</code>, <code>ERROR</code>, 
-	 * <code>INFO</code>, <code>WARNING</code>,  or <code>CANCEL</code>
+	 * 
+	 * @param severity the severity; one of <code>OK</code>, <code>ERROR</code>, <code>INFO</code>, <code>WARNING</code>,
+	 *          or <code>CANCEL</code>
 	 */
 	void setSeverity(int severity);
-	
+
 	/**
 	 * Adds a list of status objects as children to this multi status
+	 * 
 	 * @param statusList status objects to add as children to this multi status
 	 */
 	void add(Collection<IBundleStatus> statusList);
@@ -110,7 +112,7 @@ void setMessage(String message);
 	 * @see org.eclipse.core.runtime.MultiStatus#add(IStatus)
 	 */
 	void add(IStatus status);
-	
+
 	/**
 	 * @see org.eclipse.core.runtime.MultiStatus#addAll(IStatus)
 	 */

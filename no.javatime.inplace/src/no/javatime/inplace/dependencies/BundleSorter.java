@@ -16,11 +16,6 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 
-import org.osgi.framework.Bundle;
-import org.osgi.framework.wiring.BundleRevision;
-import org.osgi.framework.wiring.BundleWire;
-import org.osgi.framework.wiring.BundleWiring;
-
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundlemanager.BundleManager;
 import no.javatime.inplace.bundlemanager.BundleTransition.TransitionError;
@@ -28,6 +23,11 @@ import no.javatime.inplace.bundlemanager.InPlaceException;
 import no.javatime.inplace.statushandler.BundleStatus;
 import no.javatime.inplace.statushandler.IBundleStatus.StatusCode;
 import no.javatime.util.messages.ExceptionMessage;
+
+import org.osgi.framework.Bundle;
+import org.osgi.framework.wiring.BundleRevision;
+import org.osgi.framework.wiring.BundleWire;
+import org.osgi.framework.wiring.BundleWiring;
 
 /**
  * Topological sort of bundles in requiring and providing bundle dependency order.
@@ -74,6 +74,8 @@ public class BundleSorter extends BaseSorter {
 	/**
 	 * Topological sort in requiring bundle order where the specified scope is all workspace bundles.Installed
 	 * bundles are not included. Initial set of specified bundles are included in the result set.
+	 * <p>
+	 * If the specified bundle collection is null or empty an empty collection is returned.
 	 * 
 	 * @param bundles a collection of start bundles included in the result set
 	 * @return collection of bundles in requiring sort order
@@ -87,6 +89,8 @@ public class BundleSorter extends BaseSorter {
 	/**
 	 * Topological sort in requiring bundle order constrained to the specified scope of bundles. Installed
 	 * bundles are not included. Initial set of specified bundles are included in the result set.
+	 * <p>
+	 * If the specified bundle collection is null or empty an empty collection is returned.
 	 * 
 	 * @param bundles a collection of start bundles included in the result set
 	 * @param bundleScope of bundles to sort
@@ -95,13 +99,13 @@ public class BundleSorter extends BaseSorter {
 	 */
 	public Collection<Bundle> sortRequiringBundles(Collection<Bundle> bundles, Collection<Bundle> bundleScope)
 			throws CircularReferenceException {
+		
 		/*
 		Returns all bundles which depend on this bundle. 
 		A bundle depends on another bundle if it requires the bundle, 
 		imports a package which is exported by the bundle, 
 		is a fragment to the bundle or is the host of the bundle.
 		*/
-
 		removalPendingBundles = BundleManager.getCommand().getRemovalPending();
 		removalPendingBundles.retainAll(bundleScope);
 		if (removalPendingBundles.size() > 0) {
@@ -109,6 +113,9 @@ public class BundleSorter extends BaseSorter {
 		} else {
 			circularException = null;
 			bundleOrder = new LinkedHashSet<Bundle>();
+			if (null == bundles) {
+				return bundleOrder;
+			}
 			for (Bundle bundle : bundles) {
 				visitRequiringBundle(bundle, null, bundleScope, new LinkedHashSet<Bundle>());
 			}
@@ -122,6 +129,8 @@ public class BundleSorter extends BaseSorter {
 	/**
 	 * Topological sort in requiring bundle order constrained to the specified scope of bundles. Installed
 	 * bundles and the specified initial set of bundles are included in the result set.
+	 * <p>
+	 * If the specified bundle collection is null or empty an empty collection is returned.
 	 * 
 	 * @param bundles a collection of start bundles included in the result set
 	 * @param bundleScope of bundles to sort
@@ -132,6 +141,9 @@ public class BundleSorter extends BaseSorter {
 	public Collection<Bundle> sortDeclaredRequiringBundles(Collection<Bundle> bundles,
 			Collection<Bundle> bundleScope) throws CircularReferenceException {
 		bundleOrder = new LinkedHashSet<Bundle>();
+		if (null == bundles) {
+			return bundleOrder;
+		}
 		circularException = null;
 		Collection<BundleRevision> bundleRevisionsScope = BundleDependencies.getRevisionsFrom(bundleScope);
 		Collection<BundleRevision> bundleRevisions = BundleDependencies.getRevisionsFrom(bundles);
@@ -157,13 +169,7 @@ public class BundleSorter extends BaseSorter {
 	protected void visitRequiringBundle(BundleRevision child, BundleRevision parent,
 			Collection<BundleRevision> scope, Collection<BundleRevision> visited) {
 
-		Bundle childBundle = null; 
-		// TODO Verify that we can return if child == null
-		if (null != child) {
-			childBundle = child.getBundle();
-		} else {
-			return;
-		}
+		Bundle childBundle = child.getBundle();
 		// Has this start bundle element been visited before (not through recursion)
 		if (!bundleOrder.contains(childBundle)) {
 			// If visited before during this nested sequence of recursive calls, it's a cycle
@@ -245,6 +251,8 @@ public class BundleSorter extends BaseSorter {
 	/**
 	 * Topological sort in providing bundle order where the specified scope is all workspace bundles. Installed
 	 * bundles are not included. Initial set of specified bundles are included in the result set.
+	 * <p>
+	 * If the specified bundle collection is null or empty an empty collection is returned.
 	 * 
 	 * @param bundles a collection of start bundles
 	 * @return collection of bundles in providing sort order
@@ -258,6 +266,8 @@ public class BundleSorter extends BaseSorter {
 	/**
 	 * Topological sort in providing bundle order constrained to the specified scope of bundles. Installed
 	 * bundles are not included. Initial set of specified bundles are included in the result set.
+	 * <p>
+	 * If the specified bundle collection is null or empty an empty collection is returned.
 	 * 
 	 * @param bundles a collection of start bundles included in the result set
 	 * @param bundleScope of bundles to sort
@@ -273,6 +283,9 @@ public class BundleSorter extends BaseSorter {
 			sortDeclaredProvidingBundles(bundles, bundleScope);
 		} else {
 			bundleOrder = new LinkedHashSet<Bundle>();
+			if (null == bundles) {
+				return bundleOrder;
+			}
 			for (Bundle bundle : bundles) {
 				visitProvidingBundle(bundle, null, bundleScope, new LinkedHashSet<Bundle>());
 			}
@@ -286,6 +299,8 @@ public class BundleSorter extends BaseSorter {
 	/**
 	 * Topological sort in providing bundle order constrained to the specified scope of bundles. Installed
 	 * bundles and the specified initial set of bundles are included in the result set
+	 * <p>
+	 * If the specified bundle collection is null or empty an empty collection is returned.
 	 * 
 	 * @param bundles a collection of initial (start) bundles included in the result set
 	 * @param bundleScope of bundles to sort
@@ -297,6 +312,9 @@ public class BundleSorter extends BaseSorter {
 			throws CircularReferenceException {
 
 		bundleOrder = new LinkedHashSet<Bundle>();
+		if (null == bundles) {
+			return bundleOrder;
+		}
 		circularException = null;
 		Collection<BundleRevision> bundleRevisionsScope = BundleDependencies.getRevisionsFrom(bundleScope);
 		Collection<BundleRevision> bundleRevisions = BundleDependencies.getRevisionsFrom(bundles);

@@ -1,6 +1,7 @@
 Manifest-Version: 1.0
-Require-Bundle: org.eclipse.ui,org.eclipse.core.runtime,org.eclipse.ui
- .console,org.eclipse.osgi.services,org.eclipse.core.resources
+Require-Bundle: org.eclipse.ui,
+ org.eclipse.core.runtime,
+ org.eclipse.ui.console
 Export-Package: no.javatime.util.messages;uses:="org.osgi.service.log,
  org.eclipse.ui.console,no.javatime.util.messages.log",no.javatime.uti
  l.messages.exceptions,no.javatime.util.messages.views
