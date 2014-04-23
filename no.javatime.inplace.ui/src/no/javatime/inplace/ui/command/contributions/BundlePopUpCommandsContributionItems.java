@@ -116,14 +116,14 @@ public class BundlePopUpCommandsContributionItems extends BundleCommandsContribu
 		if (null != contribution) {
 			contributions.add(contribution);
 		}
-		contribution = addRefresh(activated, bundle);
-		if (null != contribution) {
-			contributions.add(contribution);
-		}
 		contribution = addUpdate(activated, project, bundle);
 		if (null != contribution) {
 			contributions.add(contribution);
 		}		
+		contribution = addRefresh(activated, bundle);
+		if (null != contribution) {
+			contributions.add(contribution);
+		}
 		contribution = addReset(activated, bundle);
 		if (null != contribution) {
 			contributions.add(contribution);

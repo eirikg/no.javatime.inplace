@@ -155,11 +155,6 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 	final private String activateText = Message.getInstance().formatString("activate_text"); //$NON-NLS-1$
 	final private String deactivateText = Message.getInstance().formatString("deactivate_text"); //$NON-NLS-1$
 
-	// Refresh bundle when activated
-	private Action refreshAction;
-	final private String refreshGeneralText = Message.getInstance().formatString("refresh_general_text"); //$NON-NLS-1$
-	final private String refreshText = Message.getInstance().formatString("refresh_text"); //$NON-NLS-1$
-
 	// Reset bundle when activated
 	private Action resetAction;
 	final private String resetGeneralText = Message.getInstance().formatString("reset_general_text"); //$NON-NLS-1$
@@ -167,8 +162,15 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 
 	// Update bundle when activated
 	private Action updateAction;
-	final private String updateGeneralText = Message.getInstance().formatString("update_general_text"); //$NON-NLS-1$
+	final private String updateGeneralText = Message.getInstance().formatString(
+			"update_general_text"); //$NON-NLS-1$
 	final private String updateText = Message.getInstance().formatString("update_text"); //$NON-NLS-1$
+
+	// Refresh bundle when activated
+	private Action refreshAction;
+	final private String refreshGeneralText = Message.getInstance().formatString(
+			"refrsh_general_text"); //$NON-NLS-1$
+	final private String refreshText = Message.getInstance().formatString("refresh_text"); //$NON-NLS-1$
 
 	// Stop bundle when bundle in state active/starting and start bundle when in state resolved
 	private Action startStopAction;
@@ -342,8 +344,8 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 		toolBarManager.add(new Separator(IWorkbenchActionConstants.MB_ADDITIONS));
 		toolBarManager.add(activateAction);
 		toolBarManager.add(startStopAction);
-		toolBarManager.add(refreshAction);
 		toolBarManager.add(updateAction);
+		toolBarManager.add(refreshAction);
 		toolBarManager.add(new Separator(IWorkbenchActionConstants.MB_ADDITIONS));
 		toolBarManager.add(editManifestAction);
 		toolBarManager.add(new Separator(IWorkbenchActionConstants.MB_ADDITIONS));
@@ -431,9 +433,9 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 			try {
 				pullDownMenuManager.add(activateAction);
 				pullDownMenuManager.add(startStopAction);
+				pullDownMenuManager.add(updateAction);
 				pullDownMenuManager.add(refreshAction);
 				pullDownMenuManager.add(resetAction);
-				pullDownMenuManager.add(updateAction);
 				pullDownMenuManager.add(new Separator(IWorkbenchActionConstants.MB_ADDITIONS));
 				pullDownMenuManager.add(flipPageAction);
 				pullDownMenuManager.add(editManifestAction);
@@ -816,20 +818,6 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 				}
 			}
 		};
-		refreshAction = new Action(refreshGeneralText) {
-			/**
-			 * Refresh activated bundle
-			 */
-			@Override
-			public void run() {
-				IProject project = getSelectedProject();
-				if (null != project) {
-					if (ProjectProperties.isProjectActivated(project)) {
-						BundleMenuActivationHandler.refreshHandler(Collections.singletonList(project));
-					}
-				}
-			}
-		};
 
 		resetAction = new Action(resetGeneralText) {
 			/**
@@ -848,14 +836,40 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 
 		updateAction = new Action(updateGeneralText) {
 			/**
-			 * Update activated bundle
+			 * Update activated bundle if pending
 			 */
 			@Override
 			public void run() {
 				IProject project = getSelectedProject();
 				if (null != project) {
 					if (ProjectProperties.isProjectActivated(project)) {
-						BundleMenuActivationHandler.updateHandler(Collections.singletonList(project));
+						boolean update = BundleManager.getTransition().containsPending(project, Transition.UPDATE,
+								Boolean.FALSE);
+						if (update) {
+							BundleMenuActivationHandler.updateHandler(Collections.singletonList(project));
+						}
+					}
+				}
+			}
+		};
+
+		refreshAction = new Action(refreshGeneralText) {
+			/**
+			 * Refresh an activated bundle when number of bundle revisions is greater than one.
+			 */
+			@Override
+			public void run() {
+				IProject project = getSelectedProject();
+				if (null != project) {
+					if (ProjectProperties.isProjectActivated(project)) {
+						Bundle bundle = BundleManager.getRegion().get(project);
+						if (null != bundle) {
+							boolean refresh = (null != bundle && BundleManager.getCommand().getBundleRevisions(bundle)
+									.size() > 1) ? true : false;
+							if (refresh) {
+								BundleMenuActivationHandler.refreshHandler(Collections.singletonList(project));
+							}
+						}
 					}
 				}
 			}
@@ -944,10 +958,15 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 
 		IProject project = getSelectedProject();
 		// Disable all buttons and menu entries and return when no active project is selected,
-		// not a plug-in (should not exist in bundle list) and when a bundle job is running
+		// not a plug-in or bundle (should not exist in bundle list) and when a bundle job is running
 		if (null == project || isBundleJobRunning() || !ProjectProperties.isInstallableProject(project)) {
-			setBundleComandsAction(false, false, false, false, BundleCommandsContributionItems.startImage, false,
-					activationGeneralText, BundleCommandsContributionItems.activateImage);
+			setUIElement(resetAction, false, resetGeneralText, resetGeneralText,
+					BundleCommandsContributionItems.resetImage);
+			setUIElement(startStopAction, false, startStopGeneralText, startStopGeneralText,
+					BundleCommandsContributionItems.startImage);
+			setUIElement(activateAction, false, activationGeneralText, activationGeneralText,
+					BundleCommandsContributionItems.activateImage);
+			setUpdateRefresh(false, null);
 			if (isBundleJobRunning()) {
 				setNonBundleCommandsAction(true, true, true, flipDetailsGeneralText, flipDetailsGeneralText,
 						BundleCommandsContributionItems.bundleListImage);
@@ -970,13 +989,13 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 		}
 		// Always possible to activate or deactivate a project
 		activateAction.setEnabled(true);
-		// Note that here we allow to update the class path for deactivated bundle projects
+		// Allow to update the class path for deactivated and activated bundle projects
 		setUpdateClassPathAction(project);
 		if (ProjectProperties.isProjectActivated(project)) {
 			// Bundle should be in state installed (if resolve errors), resolved or active/starting
 			Bundle bundle = BundleManager.getRegion().get(project);
-			// Start and Stop is dependent on the bundle state of the activated bundle
 			if (null != bundle) {
+				// Start and Stop is dependent on the bundle state of the activated bundle
 				if ((bundle.getState() & (Bundle.ACTIVE | Bundle.STARTING)) != 0) {
 					setUIElement(startStopAction, true, stopText, stopText, BundleCommandsContributionItems.stopImage);
 				} else { // bundle in state installed or resolved
@@ -988,50 +1007,55 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 								BundleCommandsContributionItems.startImage);
 					}
 				}
+				// Conditional enabling of update and refresh
+				setUpdateRefresh(true, bundle);
 			} else {
 				// Project is activated but bundle is not yet. Meaning that the bundle has not been installed and
-				// resolved/started yet
+				// resolved/started yet. Start, Stop, Update and Refresh are all dependent on a bundle
 				setUIElement(startStopAction, false, startText, startText, BundleCommandsContributionItems.startImage);
+				// Conditional enabling of update and refresh
+				setUpdateRefresh(false, null);
 			}
-			// Conditional enabling of refresh
-			boolean enableRefresh = (null != bundle && BundleManager.getCommand().getBundleRevisions(bundle).size() > 1) ? true
-					: false;
-			setUIElement(refreshAction, enableRefresh, refreshText, refreshText,
-					BundleCommandsContributionItems.refreshImage);
 			// Reset always possible on an activated project
 			setUIElement(resetAction, true, resetText, resetText, BundleCommandsContributionItems.resetImage);
-			// Only allow update if the project has been modified and built
-			boolean enableUpdate = BundleManager.getTransition().containsPending(project, Transition.UPDATE,
-					Boolean.FALSE);
-			setUIElement(updateAction, enableUpdate, updateText, updateText,
-					BundleCommandsContributionItems.updateImage);
 			// Always possible to deactivate an activated project
 			setUIElement(activateAction, activateAction.isEnabled(), deactivateText, deactivateText,
 					BundleCommandsContributionItems.deactivateImage);
 		} else {
 			// Enable activate and disable start/stop, refresh, reset and update when project is deactivated
-			setBundleComandsAction(false, false, false, false, BundleCommandsContributionItems.startImage,
-					activateAction.isEnabled(), activateText, BundleCommandsContributionItems.activateImage);
+			setUIElement(resetAction, false, resetGeneralText, resetGeneralText,
+					BundleCommandsContributionItems.resetImage);
+			setUIElement(startStopAction, false, startStopGeneralText, startStopGeneralText,
+					BundleCommandsContributionItems.startImage);
+			setUIElement(activateAction, activateAction.isEnabled(), activateText, activateText,
+					BundleCommandsContributionItems.activateImage);
+			setUpdateRefresh(false, null);
 		}
 	}
 
-	/**
-	 * Enable or disable all bundle commands action
-	 * 
-	 * @param startStopState true to enable the action on every bundle command and false to disable the actions
-	 */
-	private void setBundleComandsAction(boolean refreshState, boolean resetState, boolean updateState,
-			boolean startStopState, ImageDescriptor startStopImage, boolean activateState, String activateText,
-			ImageDescriptor activateImage) {
+	private void setUpdateRefresh(boolean enable, Bundle bundle) {
 
-		setUIElement(refreshAction, refreshState, refreshGeneralText, refreshGeneralText,
-				BundleCommandsContributionItems.refreshImage);
-		setUIElement(resetAction, resetState, resetGeneralText, resetGeneralText,
-				BundleCommandsContributionItems.resetImage);
-		setUIElement(updateAction, updateState, updateGeneralText, updateGeneralText,
-				BundleCommandsContributionItems.updateImage);
-		setUIElement(startStopAction, startStopState, startStopGeneralText, startStopGeneralText, startStopImage);
-		setUIElement(activateAction, activateState, activateText, activateText, activateImage);
+		if (enable && null != bundle) {
+			if (BundleManager.getTransition().containsPending(bundle, Transition.UPDATE, Boolean.FALSE)) {
+				setUIElement(updateAction, true, updateText, updateText,
+						BundleCommandsContributionItems.updateImage);
+			} else {
+				setUIElement(updateAction, false, updateGeneralText, updateGeneralText,
+						BundleCommandsContributionItems.updateImage);
+			}
+			if (BundleManager.getCommand().getBundleRevisions(bundle).size() > 1) {
+				setUIElement(refreshAction, true, refreshText, refreshText,
+						BundleCommandsContributionItems.refreshImage);
+			} else {
+				setUIElement(refreshAction, false, refreshGeneralText, refreshGeneralText,
+						BundleCommandsContributionItems.refreshImage);
+			}
+		} else {
+			setUIElement(updateAction, false, updateGeneralText, updateGeneralText,
+					BundleCommandsContributionItems.updateImage);
+			setUIElement(refreshAction, false, refreshGeneralText, refreshGeneralText,
+					BundleCommandsContributionItems.refreshImage);
+		}
 	}
 
 	private void setNonBundleCommandsAction(boolean editManifestState, boolean linkWithState,
