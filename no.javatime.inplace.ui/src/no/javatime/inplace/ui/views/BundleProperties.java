@@ -63,7 +63,7 @@ public class BundleProperties {
 			"number_of_revisions_label_name");
 	public static String activationPolicyLabelName = Message.getInstance().formatString(
 			"activation_policy_label_name");
-	public static String buildStatusLabelName = Message.getInstance().formatString("bundle_status_label_name");
+	public static String bundleStatusLabelName = Message.getInstance().formatString("bundle_status_label_name");
 	public static String locationLabelName = Message.getInstance().formatString("location_label_name");
 	public static String lastInstalledOrUpdatedLabelName = Message.getInstance().formatString(
 			"last_installed_or_updated_label_name");

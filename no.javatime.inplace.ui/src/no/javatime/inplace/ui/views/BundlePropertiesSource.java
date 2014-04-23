@@ -50,7 +50,7 @@ public class BundlePropertiesSource implements IPropertySource {
 
 	private PropertyDescriptor numberOfRevisionsDescriptor = new PropertyDescriptor(BundleProperties.numberOfRevisionsLabelName, BundleProperties.numberOfRevisionsLabelName);
 	private PropertyDescriptor activationPolicyDescriptor = new PropertyDescriptor(BundleProperties.activationPolicyLabelName, BundleProperties.activationPolicyLabelName);
-	private PropertyDescriptor buildStatusDescriptor = new PropertyDescriptor(BundleProperties.buildStatusLabelName, BundleProperties.buildStatusLabelName);
+	private PropertyDescriptor buildStatusDescriptor = new PropertyDescriptor(BundleProperties.bundleStatusLabelName, BundleProperties.bundleStatusLabelName);
 	private PropertyDescriptor UIExtensionDescriptor = new PropertyDescriptor(BundleProperties.UIExtensionsLabelName, BundleProperties.UIExtensionsLabelName);
 	private PropertyDescriptor lastInstalledOrUpdatedDescriptor = new PropertyDescriptor(BundleProperties.lastInstalledOrUpdatedLabelName, BundleProperties.lastInstalledOrUpdatedLabelName);
 
@@ -165,7 +165,7 @@ public class BundlePropertiesSource implements IPropertySource {
 			if (id.equals(BundleProperties.activationPolicyLabelName)) {
 				return bundleproperties.getActivationPolicy();
 			}
-			if (id.equals(BundleProperties.buildStatusLabelName)) {
+			if (id.equals(BundleProperties.bundleStatusLabelName)) {
 				return bundleproperties.getBundleStatus();
 			}
 			if (id.equals(BundleProperties.UIExtensionsLabelName)) {

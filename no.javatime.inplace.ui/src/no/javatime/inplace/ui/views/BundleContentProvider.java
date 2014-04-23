@@ -12,14 +12,6 @@ package no.javatime.inplace.ui.views;
 
 import java.util.Collection;
 
-import org.eclipse.core.resources.IProject;
-import org.eclipse.core.runtime.CoreException;
-import org.eclipse.jdt.core.IJavaProject;
-import org.eclipse.jdt.core.JavaCore;
-import org.eclipse.jface.viewers.IStructuredContentProvider;
-import org.eclipse.jface.viewers.Viewer;
-import org.eclipse.ui.statushandlers.StatusManager;
-
 import no.javatime.inplace.bundlemanager.InPlaceException;
 import no.javatime.inplace.bundlemanager.ProjectLocationException;
 import no.javatime.inplace.bundleproject.ProjectProperties;
@@ -30,6 +22,14 @@ import no.javatime.inplace.ui.Activator;
 import no.javatime.util.messages.ErrorMessage;
 import no.javatime.util.messages.ExceptionMessage;
 import no.javatime.util.messages.UserMessage;
+
+import org.eclipse.core.resources.IProject;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.jdt.core.IJavaProject;
+import org.eclipse.jdt.core.JavaCore;
+import org.eclipse.jface.viewers.IStructuredContentProvider;
+import org.eclipse.jface.viewers.Viewer;
+import org.eclipse.ui.statushandlers.StatusManager;
 
 /**
  * Input to the content provider is a single bundle project or a collection of bundle projects. The collection
@@ -161,23 +161,22 @@ class BundleContentProvider implements IStructuredContentProvider {
 			if (!installeable && !uiExtensions) {  // Not a plug-in project
 				return new BundleProperties[] {
 						new BundleProperties(project, BundleProperties.projectLabelName, bp.getProjectName()),
-						new BundleProperties(project, BundleProperties.buildStatusLabelName, bp.getBundleStatus()),
+						new BundleProperties(project, BundleProperties.bundleStatusLabelName, bp.getBundleStatus()),
 						new BundleProperties(project, BundleProperties.locationLabelName, locationIdentifier),
 						new BundleProperties(project, BundleProperties.lastModifiedLabelName, bp.getModifiedDate())					
 				};				
 			}
 			return new BundleProperties[] {
-					
+
 					new BundleProperties(project, BundleProperties.bundleIdLabelName, bp.getBundleId()),
 					new BundleProperties(project, BundleProperties.bundleSymbolicNameLabelName, bp.getSymbolicName()),
 					new BundleProperties(project, BundleProperties.bundleVersionLabelName, bp.getBundleVersion()),
-//					new BundleProperties(project, bp.getBundleLabelName(), bp.getBundleName()),
 					new BundleProperties(project, BundleProperties.projectLabelName, bp.getProjectName()),
 					new BundleProperties(project, BundleProperties.locationLabelName, locationIdentifier),
-
 					new BundleProperties(project, BundleProperties.activationStatusLabelName, bp.getActivationMode()),
 					new BundleProperties(project, BundleProperties.bundleStateLabelName, bp.getBundleState()),
 					new BundleProperties(project, BundleProperties.lastCmdLabelName, bp.getLastTransition()),
+					new BundleProperties(project, BundleProperties.bundleStatusLabelName, bp.getBundleStatus()),
 					new BundleProperties(project, bp.getAllRequiringLabelName(), bp.getDeclaredRequiringBundleProjects()),
 					new BundleProperties(project, bp.getAllProvidingLabelName(), bp.getAllProvidingBundleProjects()),
 					new BundleProperties(project, bp.getResolvedRequiringLabelName(), bp.getResolvedRequiringBundleProjects()),
@@ -185,7 +184,6 @@ class BundleContentProvider implements IStructuredContentProvider {
 					new BundleProperties(project, BundleProperties.servicesInUseLabelName, bp.getServicesInUse()),
 					new BundleProperties(project, BundleProperties.numberOfRevisionsLabelName, bp.getBundleRevisions()),
 					new BundleProperties(project, BundleProperties.activationPolicyLabelName, bp.getActivationPolicy()),					
-					new BundleProperties(project, BundleProperties.buildStatusLabelName, bp.getBundleStatus()),
 					new BundleProperties(project, BundleProperties.UIExtensionsLabelName, bp.getUIExtension()),
 					new BundleProperties(project, BundleProperties. lastInstalledOrUpdatedLabelName, bp.getLastInstalledOrUpdated()),					
 			};		
