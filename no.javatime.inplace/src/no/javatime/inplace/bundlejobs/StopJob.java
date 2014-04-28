@@ -14,13 +14,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 
-import org.eclipse.core.resources.IProject;
-import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.OperationCanceledException;
-import org.eclipse.core.runtime.SubProgressMonitor;
-import org.osgi.framework.Bundle;
-
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundlemanager.InPlaceException;
 import no.javatime.inplace.bundleproject.BundleProject;
@@ -35,6 +28,13 @@ import no.javatime.util.messages.ExceptionMessage;
 import no.javatime.util.messages.Message;
 import no.javatime.util.messages.UserMessage;
 import no.javatime.util.messages.WarnMessage;
+
+import org.eclipse.core.resources.IProject;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.OperationCanceledException;
+import org.eclipse.core.runtime.SubProgressMonitor;
+import org.osgi.framework.Bundle;
 
 /**
  * Stops pending bundle projects with an initial state of ACTIVE and STARTING.
@@ -151,7 +151,7 @@ public class StopJob extends BundleJob {
 		Collection<Bundle> bundlesToStop = bundleRegion.getBundles(getPendingProjects());
 		Collection<Bundle> activatedBundles = bundleRegion.getActivatedBundles();
 		BundleSorter bs = new BundleSorter();
-		Boolean singleOption = false;
+
 		// Add bundles according to dependency options
 		// If all activated bundles are selected, no dependency option is needed
 		if (bundlesToStop.size() == activatedBundles.size()) {
@@ -173,20 +173,22 @@ public class StopJob extends BundleJob {
 				bundlesToStop = bs.sortRequiringBundles(bundlesToStop, activatedBundles);
 			} else {
 				// No options set (or same as single). Just sort the bundles
-				singleOption = true;
 				bundlesToStop = bs.sortRequiringBundles(bundlesToStop, bundlesToStop);
 			}
 		}
 		stop(bundlesToStop, EnumSet.of(Integrity.RESTRICT), new SubProgressMonitor(monitor, 1));
+
 		// Warn about requiring bundles in state ACTIVE
-		if (singleOption || Category.getState(Category.providingOnStop)) {
+		if (!Category.getState(Category.partialGraphOnStop) && !Category.getState(Category.requiringOnStop)) {
 			for (Bundle bundle : bundlesToStop) {
 				Collection<Bundle> requiringBundles = bs.sortRequiringBundles(Collections.singletonList(bundle),
 						bundleRegion.getBundles(Bundle.ACTIVE | Bundle.STARTING));
 				requiringBundles.remove(bundle);
 				if (requiringBundles.size() > 0) {
-					WarnMessage.getInstance().getString("has_requiring_bundles",
-							bundleRegion.formatBundleList(requiringBundles, true), bundleRegion.getSymbolicKey(bundle, null));
+					Collection<Bundle> providingBundles = bs.sortProvidingBundles(Collections.singletonList(bundle),
+							bundleRegion.getBundles(Bundle.RESOLVED | Bundle.STOPPING));
+					WarnMessage.getInstance().getString("has_stopped_requiring_bundles",
+							bundleRegion.formatBundleList(requiringBundles, true), bundleRegion.formatBundleList(providingBundles, true)); 
 				}
 			}
 		}

@@ -11,6 +11,7 @@
 package no.javatime.inplace.bundlejobs;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.LinkedHashSet;
 
@@ -26,6 +27,7 @@ import no.javatime.util.messages.ErrorMessage;
 import no.javatime.util.messages.ExceptionMessage;
 import no.javatime.util.messages.Message;
 import no.javatime.util.messages.UserMessage;
+import no.javatime.util.messages.WarnMessage;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
@@ -202,6 +204,21 @@ public class StartJob extends BundleJob {
 		}
 		start(bundlesToStart, EnumSet.of(Integrity.RESTRICT), new SubProgressMonitor(
 				monitor, 1));
+		
+		// Warn about providing bundles in state RESOLVED
+		if (!Category.getState(Category.partialGraphOnStart) && !Category.getState(Category.providingOnStart)) {
+			for (Bundle bundle : bundlesToStart) {
+				Collection<Bundle> providingBundles = bs.sortProvidingBundles(Collections.singletonList(bundle),
+						bundleRegion.getBundles(Bundle.RESOLVED | Bundle.STOPPING));
+				providingBundles.remove(bundle);
+				if (providingBundles.size() > 0) {
+					Collection<Bundle> requiringBundles = bs.sortRequiringBundles(Collections.singletonList(bundle),
+							bundleRegion.getBundles(Bundle.ACTIVE | Bundle.STARTING));
+					WarnMessage.getInstance().getString("has_started_providing_bundles",
+							bundleRegion.formatBundleList(providingBundles, true), bundleRegion.formatBundleList(requiringBundles, true));
+				}
+			}
+		}
 		return getLastStatus();
 	}
 

@@ -372,7 +372,7 @@ public class ActivateBundleJob extends BundleJob {
 									}
 									// The activated and requiring bundle will be started
 									if ((reqState & (Bundle.UNINSTALLED)) != 0) {
-										String msg = WarnMessage.getInstance().formatString("has_requiring_bundles",
+										String msg = WarnMessage.getInstance().formatString("has_uninstalled_requiring_bundles",
 												bundleRegion.formatBundleList(reqBundles, true),
 												bundleRegion.getSymbolicKey(bundle, null));
 										addWarning(null, msg, null);
