@@ -98,7 +98,7 @@ public class InstallJob extends BundleJob {
 			}
 			ProjectSorter projectSorter = new ProjectSorter();
 			try {
-				replacePendingProjects(projectSorter.sortProvidingProjects(getPendingProjects()));
+				resetPendingProjects(projectSorter.sortProvidingProjects(getPendingProjects()));
 			} catch (CircularReferenceException e) {
 				String msg = ExceptionMessage.getInstance().formatString("circular_reference", getName());
 				BundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg);

@@ -19,6 +19,7 @@ import no.javatime.inplace.bundlemanager.InPlaceException;
 import no.javatime.inplace.bundleproject.BundleProject;
 import no.javatime.inplace.dependencies.BundleSorter;
 import no.javatime.inplace.dependencies.CircularReferenceException;
+import no.javatime.inplace.dependencies.PartialDependencies;
 import no.javatime.inplace.statushandler.BundleStatus;
 import no.javatime.inplace.statushandler.IBundleStatus;
 import no.javatime.inplace.statushandler.IBundleStatus.StatusCode;
@@ -150,36 +151,13 @@ public class StopJob extends BundleJob {
 
 		Collection<Bundle> bundlesToStop = bundleRegion.getBundles(getPendingProjects());
 		Collection<Bundle> activatedBundles = bundleRegion.getActivatedBundles();
-		BundleSorter bs = new BundleSorter();
-
 		// Add bundles according to dependency options
-		// If all activated bundles are selected, no dependency option is needed
-		if (bundlesToStop.size() == activatedBundles.size()) {
-			bundlesToStop = bs.sortRequiringBundles(bundlesToStop, bundlesToStop);
-		} else if (Category.getState(Category.partialGraphOnStop)) {
-			int count = 0;
-			do {
-				count = bundlesToStop.size();
-				bundlesToStop = bs.sortProvidingBundles(bundlesToStop, activatedBundles);
-				bundlesToStop = bs.sortRequiringBundles(bundlesToStop, activatedBundles);
-			} while (bundlesToStop.size() > count);
-		} else {
-			// When both providing and requiring on stop is enabled this is the same as
-			// the providing and requiring option
-			if (Category.getState(Category.providingOnStop)) {
-				bundlesToStop = bs.sortProvidingBundles(bundlesToStop, activatedBundles);
-			}
-			if (Category.getState(Category.requiringOnStop)) {
-				bundlesToStop = bs.sortRequiringBundles(bundlesToStop, activatedBundles);
-			} else {
-				// No options set (or same as single). Just sort the bundles
-				bundlesToStop = bs.sortRequiringBundles(bundlesToStop, bundlesToStop);
-			}
-		}
+		PartialDependencies pd = new PartialDependencies();
+		bundlesToStop = pd.bundleDeactivationDependencies(bundlesToStop, activatedBundles);
 		stop(bundlesToStop, EnumSet.of(Integrity.RESTRICT), new SubProgressMonitor(monitor, 1));
-
 		// Warn about requiring bundles in state ACTIVE
 		if (!Category.getState(Category.partialGraphOnStop) && !Category.getState(Category.requiringOnStop)) {
+			BundleSorter bs = new BundleSorter();
 			for (Bundle bundle : bundlesToStop) {
 				Collection<Bundle> requiringBundles = bs.sortRequiringBundles(Collections.singletonList(bundle),
 						bundleRegion.getBundles(Bundle.ACTIVE | Bundle.STARTING));

@@ -183,21 +183,23 @@ public abstract class BundleJob extends JobStatus {
 	}
 
 	/**
-	 * Adds a collection of pending bundle projects to process in a job
+	 * Adds a collection of pending bundle projects to process in a job. To maintain the topological
+	 * sort order use {@link #resetPendingProjects(Collection)}
 	 * 
 	 * @param projects bundle projects to process
+	 * @see BundleJob#resetPendingProjects(Collection)
 	 */
 	public void addPendingProjects(Collection<IProject> projects) {
 		pendingProjects.addAll(projects);
 	}
 
 	/**
-	 * Replace existing pending projects with the specified collection The specified collection is copied and the order is
-	 * maintained
+	 * Replace existing pending projects with the specified collection The specified collection is copied and the 
+	 * topological sort order of the projects is maintained
 	 * 
 	 * @param projects bundle projects to replace
 	 */
-	public void replacePendingProjects(Collection<IProject> projects) {
+	public void resetPendingProjects(Collection<IProject> projects) {
 		pendingProjects = new LinkedHashSet<IProject>(projects);
 	}
 

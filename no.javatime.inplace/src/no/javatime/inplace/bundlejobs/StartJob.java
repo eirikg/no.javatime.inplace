@@ -19,6 +19,7 @@ import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundlemanager.InPlaceException;
 import no.javatime.inplace.dependencies.BundleSorter;
 import no.javatime.inplace.dependencies.CircularReferenceException;
+import no.javatime.inplace.dependencies.PartialDependencies;
 import no.javatime.inplace.statushandler.BundleStatus;
 import no.javatime.inplace.statushandler.IBundleStatus;
 import no.javatime.inplace.statushandler.IBundleStatus.StatusCode;
@@ -142,35 +143,12 @@ public class StartJob extends BundleJob {
 	 */
 	private IBundleStatus start(IProgressMonitor monitor) throws OperationCanceledException, InterruptedException {
 
-		Collection<Bundle> bundlesToStart = bundleRegion.getBundles(getPendingProjects());
 		Collection<Bundle> bundlesToResolve = null;
-		BundleSorter bs = new BundleSorter();
+		Collection<Bundle> bundlesToStart = bundleRegion.getBundles(getPendingProjects());
 		Collection<Bundle> activatedBundles = bundleRegion.getActivatedBundles();
-
 		// Add bundles according to dependency options
-		// If all activated bundles are selected, no dependency option is needed
-		if (bundlesToStart.size() == activatedBundles.size()) {
-			bundlesToStart = bs.sortProvidingBundles(bundlesToStart, bundlesToStart);
-		} else if (Category.getState(Category.partialGraphOnStart)) {
-			int count = 0;
-			do {
-				count = bundlesToStart.size();
-				bundlesToStart = bs.sortRequiringBundles(bundlesToStart, activatedBundles);
-				bundlesToStart = bs.sortProvidingBundles(bundlesToStart, activatedBundles);
-			} while (bundlesToStart.size() > count);
-		} else {
-			// When both requiring and providing on start is enabled this is the same as
-			// the requiring and providing option
-			if (Category.getState(Category.requiringOnStart)) {
-				bundlesToStart = bs.sortRequiringBundles(bundlesToStart, activatedBundles);
-			}
-			if (Category.getState(Category.providingOnStart)) {
-				bundlesToStart = bs.sortProvidingBundles(bundlesToStart, activatedBundles);
-			} else {
-				// No options set (or same as single). Just sort the bundles
-				bundlesToStart = bs.sortProvidingBundles(bundlesToStart, bundlesToStart);
-			}
-		}
+		PartialDependencies pd = new PartialDependencies();
+		bundlesToStart = pd.bundleActivationDependencies(bundlesToStart, activatedBundles);
 		Collection<Bundle> notResolvedBundles = new LinkedHashSet<Bundle>();
 		for (Bundle bundle : bundlesToStart) {
 			int state = bundle.getState();
@@ -207,6 +185,7 @@ public class StartJob extends BundleJob {
 		
 		// Warn about providing bundles in state RESOLVED
 		if (!Category.getState(Category.partialGraphOnStart) && !Category.getState(Category.providingOnStart)) {
+			BundleSorter bs = new BundleSorter();
 			for (Bundle bundle : bundlesToStart) {
 				Collection<Bundle> providingBundles = bs.sortProvidingBundles(Collections.singletonList(bundle),
 						bundleRegion.getBundles(Bundle.RESOLVED | Bundle.STOPPING));

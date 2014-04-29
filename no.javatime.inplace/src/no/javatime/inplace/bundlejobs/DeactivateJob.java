@@ -16,18 +16,12 @@ import java.util.EnumSet;
 import java.util.LinkedHashSet;
 import java.util.Map;
 
-import org.eclipse.core.resources.IProject;
-import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.OperationCanceledException;
-import org.eclipse.core.runtime.SubProgressMonitor;
-import org.osgi.framework.Bundle;
-
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundlemanager.InPlaceException;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.dependencies.BundleSorter;
 import no.javatime.inplace.dependencies.CircularReferenceException;
+import no.javatime.inplace.dependencies.PartialDependencies;
 import no.javatime.inplace.dependencies.ProjectSorter;
 import no.javatime.inplace.statushandler.BundleStatus;
 import no.javatime.inplace.statushandler.IBundleStatus;
@@ -38,6 +32,13 @@ import no.javatime.util.messages.ExceptionMessage;
 import no.javatime.util.messages.Message;
 import no.javatime.util.messages.UserMessage;
 import no.javatime.util.messages.WarnMessage;
+
+import org.eclipse.core.resources.IProject;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.OperationCanceledException;
+import org.eclipse.core.runtime.SubProgressMonitor;
+import org.osgi.framework.Bundle;
 
 /**
  * Projects are deactivated by removing the JavaTime nature from the projects and moving them to state INSTALLED in an
@@ -164,7 +165,11 @@ public class DeactivateJob extends NatureJob {
 
 		BundleSorter bundleSorter = new BundleSorter();
 		bundleSorter.setAllowCycles(Boolean.TRUE);
-		Collection<Bundle> pendingBundles = calculateDependencies();
+
+		PartialDependencies pd = new PartialDependencies();
+		Collection<IProject> projects = pd.projectDeactivationDependencies(getPendingProjects(), true);
+		resetPendingProjects(projects);
+		Collection<Bundle> pendingBundles = bundleRegion.getBundles(getPendingProjects());
 
 		// Inform about build errors in projects to deactivate
 		if (Category.getState(Category.infoMessages)) {
@@ -265,26 +270,30 @@ public class DeactivateJob extends NatureJob {
 	 */
 	private Collection<Bundle> calculateDependencies() throws CircularReferenceException {
 
-		ProjectSorter ps = new ProjectSorter();
-		ps.setAllowCycles(true);
-		// If all activated bundles are selected, no dependency option is needed
-		if (pendingProjects() == ProjectProperties.getActivatedProjects().size()) {
-			replacePendingProjects(ps.sortRequiringProjects(getPendingProjects(), true));
-		} else if (Category.getState(Category.partialGraphOnDeactivate)) {
-			int count = 0;
-			do {
-				count = pendingProjects();
-				replacePendingProjects(ps.sortProvidingProjects(getPendingProjects(), true));
-				replacePendingProjects(ps.sortRequiringProjects(getPendingProjects(), true));
-			} while (pendingProjects() > count);
-			// The providing and requiring option
-		} else if (Category.getState(Category.providingOnDeactivate)) {
-			replacePendingProjects(ps.sortProvidingProjects(getPendingProjects(), true));
-			replacePendingProjects(ps.sortRequiringProjects(getPendingProjects(), true));
-		} else {
-			// Sort bundles in dependency order when requiring option is set
-			replacePendingProjects(ps.sortRequiringProjects(getPendingProjects(), true));
-		}
+		PartialDependencies pd = new PartialDependencies();
+		Collection<IProject> projects = pd.projectDeactivationDependencies(getPendingProjects(), true);
+		resetPendingProjects(projects);
+//		
+//		ProjectSorter ps = new ProjectSorter();
+//		ps.setAllowCycles(true);
+//		// If all activated bundles are selected, no dependency option is needed
+//		if (pendingProjects() == ProjectProperties.getActivatedProjects().size()) {
+//			replacePendingProjects(ps.sortRequiringProjects(getPendingProjects(), true));
+//		} else if (Category.getState(Category.partialGraphOnDeactivate)) {
+//			int count = 0;
+//			do {
+//				count = pendingProjects();
+//				replacePendingProjects(ps.sortProvidingProjects(getPendingProjects(), true));
+//				replacePendingProjects(ps.sortRequiringProjects(getPendingProjects(), true));
+//			} while (pendingProjects() > count);
+//			// The providing and requiring option
+//		} else if (Category.getState(Category.providingOnDeactivate)) {
+//			replacePendingProjects(ps.sortProvidingProjects(getPendingProjects(), true));
+//			replacePendingProjects(ps.sortRequiringProjects(getPendingProjects(), true));
+//		} else {
+//			// Sort bundles in dependency order when requiring option is set
+//			replacePendingProjects(ps.sortRequiringProjects(getPendingProjects(), true));
+//		}
 		return bundleRegion.getBundles(getPendingProjects());
 	}
 

@@ -209,7 +209,7 @@ public class ActivateBundleJob extends BundleJob {
 			// Add providing projects and remove projects with build errors, cycles, duplicates and affected
 			// dependent projects before installing
 			try {
-				replacePendingProjects(projectSorter.sortProvidingProjects(getPendingProjects()));
+				resetPendingProjects(projectSorter.sortProvidingProjects(getPendingProjects()));
 			} catch (CircularReferenceException e) {
 				String msg = ExceptionMessage.getInstance().formatString("circular_reference", getName());
 				BundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg);

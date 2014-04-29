@@ -18,6 +18,7 @@ import no.javatime.inplace.bundlemanager.BundleTransition.Transition;
 import no.javatime.inplace.bundlemanager.InPlaceException;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.dependencies.CircularReferenceException;
+import no.javatime.inplace.dependencies.PartialDependencies;
 import no.javatime.inplace.dependencies.ProjectSorter;
 import no.javatime.inplace.statushandler.BundleStatus;
 import no.javatime.inplace.statushandler.IBundleStatus;
@@ -178,7 +179,9 @@ public class ActivateProjectJob extends NatureJob {
 				String msg = WarnMessage.getInstance().formatString("terminate_with_errors", getName());
 				return createMultiStatus(new BundleStatus(StatusCode.WARNING, InPlace.PLUGIN_ID, msg));
 			}
-			calculateDependencies(projectSorter);
+			PartialDependencies pd = new PartialDependencies();
+			Collection<IProject> projects = pd.projectActivationDependencies(getPendingProjects(), false);
+			resetPendingProjects(projects);
 			activateNature(getPendingProjects(), new SubProgressMonitor(monitor, 1));
 			// An activate project job triggers an update job when the workspace is activated and
 			// an activate bundle job when the workspace is deactivated
@@ -312,36 +315,6 @@ public class ActivateProjectJob extends NatureJob {
 			}
 		}
 		return result;
-	}
-
-	/**
-	 * Adds projects to pending projects to activate based on current dependency settings for activating
-	 * bundles. Requiring dependency closure is mandatory and always calculated. The set of pending projects is
-	 * not guaranteed to be sorted in dependency order.
-	 * <p>
-	 * Dependency options are: requiring and partialGraph while providing is mandatory
-	 * 
-	 * @param projectSorter topological project sorter
-	 */
-	private void calculateDependencies(ProjectSorter projectSorter) {
-
-		if (ProjectProperties.getCandidateProjects().size() != pendingProjects()) {
-			if (Category.getState(Category.partialGraphOnActivate)) {
-				int count = 0;
-				do {
-					count = pendingProjects();
-					replacePendingProjects(projectSorter.sortRequiringProjects(getPendingProjects(), Boolean.FALSE));
-					replacePendingProjects(projectSorter.sortProvidingProjects(getPendingProjects(), Boolean.FALSE));
-				} while (pendingProjects() > count);
-
-			} else if (Category.getState(Category.requiringOnActivate)) {
-				replacePendingProjects(projectSorter.sortRequiringProjects(getPendingProjects(), Boolean.FALSE));
-				replacePendingProjects(projectSorter.sortProvidingProjects(getPendingProjects(), Boolean.FALSE));
-			} else {
-				// Mandatory if no dependency option is set
-				replacePendingProjects(projectSorter.sortProvidingProjects(getPendingProjects(), Boolean.FALSE));
-			}
-		}
 	}
 
 	/**

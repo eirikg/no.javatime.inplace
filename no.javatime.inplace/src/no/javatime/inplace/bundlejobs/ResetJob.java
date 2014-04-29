@@ -299,8 +299,8 @@ public class ResetJob {
 					// TODO Consider if it is necessary to include a partial graph
 					do {
 						count = pendingProjects();
-						replacePendingProjects(ps.sortRequiringProjects(getPendingProjects()));
-						replacePendingProjects(ps.sortProvidingProjects(getPendingProjects()));
+						resetPendingProjects(ps.sortRequiringProjects(getPendingProjects()));
+						resetPendingProjects(ps.sortProvidingProjects(getPendingProjects()));
 					} while (pendingProjects() > count);
 					Collection<IProject> projectsToReset = getPendingProjects();
 					Collection<IProject> errorProjects = null;

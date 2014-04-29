@@ -37,7 +37,7 @@ import org.osgi.framework.wiring.BundleWiring;
  * bundles there is one set of methods accepting {@code Bundle} as parameters and one accepting
  * {@code BundleRevision}.
  * <p>
- * Only a subset of methods includes installed (sate INSTALLED) bundles. Also note the difference between
+ * Only a subset of methods includes installed (state INSTALLED) bundles. Also note the difference between
  * direct and transitive dependencies.
  */
 public class BundleDependencies {
