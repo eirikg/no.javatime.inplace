@@ -20,14 +20,6 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
-import org.eclipse.core.resources.IProject;
-import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.OperationCanceledException;
-import org.eclipse.core.runtime.SubMonitor;
-import org.eclipse.core.runtime.SubProgressMonitor;
-import org.osgi.framework.Bundle;
-
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundlemanager.BundleTransition.Transition;
 import no.javatime.inplace.bundlemanager.BundleTransition.TransitionError;
@@ -37,6 +29,7 @@ import no.javatime.inplace.bundlemanager.ProjectLocationException;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.dependencies.BundleSorter;
 import no.javatime.inplace.dependencies.CircularReferenceException;
+import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.statushandler.BundleStatus;
 import no.javatime.inplace.statushandler.IBundleStatus;
 import no.javatime.inplace.statushandler.IBundleStatus.StatusCode;
@@ -46,6 +39,14 @@ import no.javatime.util.messages.ExceptionMessage;
 import no.javatime.util.messages.Message;
 import no.javatime.util.messages.TraceMessage;
 import no.javatime.util.messages.UserMessage;
+
+import org.eclipse.core.resources.IProject;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.OperationCanceledException;
+import org.eclipse.core.runtime.SubMonitor;
+import org.eclipse.core.runtime.SubProgressMonitor;
+import org.osgi.framework.Bundle;
 
 /**
  * Job to update modified bundles after a build of activated projects. The job is automatically scheduled
@@ -138,7 +139,7 @@ public class UpdateJob extends BundleJob {
 			monitor.done();
 		}
 		try {
-			return (IBundleStatus) super.runInWorkspace(monitor);
+			return super.runInWorkspace(monitor);
 		} catch (CoreException e) {
 			String msg = ErrorMessage.getInstance().formatString("error_end_job", getName());
 			return new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID, msg);
@@ -212,7 +213,7 @@ public class UpdateJob extends BundleJob {
 			}
 		}
 		// (5) Stop bundles collected in (4)
-		stop(bundlesToRestart, EnumSet.of(Integrity.RESTRICT), new SubProgressMonitor(monitor, 1));
+		stop(bundlesToRestart, EnumSet.of(Closure.SINGLE), new SubProgressMonitor(monitor, 1));
 		if (monitor.isCanceled()) {
 			throw new OperationCanceledException();
 		}
@@ -253,7 +254,7 @@ public class UpdateJob extends BundleJob {
 			throw new OperationCanceledException();
 		}
 		// (9) Start all bundles stopped in (4)
-		start(bundlesToRestart, EnumSet.of(Integrity.PROVIDING), new SubProgressMonitor(monitor, 1));
+		start(bundlesToRestart, EnumSet.of(Closure.PROVIDING), new SubProgressMonitor(monitor, 1));
 
 		// (10) Restore any transition errors from before update
 		// Successful start operations removes the error transition added when updated.

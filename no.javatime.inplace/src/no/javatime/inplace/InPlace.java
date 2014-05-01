@@ -30,6 +30,7 @@ import no.javatime.inplace.bundlemanager.events.BundleTransitionEvent;
 import no.javatime.inplace.bundlemanager.events.BundleTransitionEventListener;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.dl.preferences.intface.CommandOptions;
+import no.javatime.inplace.dl.preferences.intface.DependencyOptions;
 import no.javatime.inplace.statushandler.ActionSetContexts;
 import no.javatime.inplace.statushandler.BundleStatus;
 import no.javatime.inplace.statushandler.DynamicExtensionContribution;
@@ -88,7 +89,8 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 	private static InPlace plugin;
 	private static BundleContext context;
 	private ServiceTracker<IBundleProjectService, IBundleProjectService> bundleProjectTracker;
-	private ServiceTracker<CommandOptions, CommandOptions> optionsStoretracker;
+	private ServiceTracker<CommandOptions, CommandOptions> optionsStoreTracker;
+	private ServiceTracker<DependencyOptions, DependencyOptions> dependencyOptionsTracker;
 
 	/**
 	 * Framework launching property specifying whether Equinox's FrameworkWiring
@@ -153,9 +155,12 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 		bundleProjectTracker =  new ServiceTracker<IBundleProjectService, IBundleProjectService>
 				(context, IBundleProjectService.class.getName(), null);
 		bundleProjectTracker.open();
-		optionsStoretracker = new ServiceTracker<CommandOptions, CommandOptions>
+		optionsStoreTracker = new ServiceTracker<CommandOptions, CommandOptions>
 				(context, CommandOptions.class.getName(), null);
-		optionsStoretracker.open();
+		optionsStoreTracker.open();
+		dependencyOptionsTracker = new ServiceTracker<DependencyOptions, DependencyOptions>
+		(context, DependencyOptions.class.getName(), null);
+		dependencyOptionsTracker.open();
 		BundleManager.addBundleJobListener(getDefault());
 		bundleRegion = BundleManager.getRegion();
 		BundleManager.addBundleTransitionListener(getDefault());
@@ -173,8 +178,10 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 			bundleProjectTracker = null;		
 			BundleManager.removeBundleJobListener(getDefault());
 			BundleManager.removeBundleTransitionListener(getDefault());
-			optionsStoretracker.close();
-			optionsStoretracker = null;
+			optionsStoreTracker.close();
+			optionsStoreTracker = null;
+			dependencyOptionsTracker.close();
+			dependencyOptionsTracker = null;
 			super.stop(context);
 			plugin = null;
 			InPlace.context = null;
@@ -347,11 +354,19 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 	}
 
 	public CommandOptions getOptionsService() throws InPlaceException {
-		CommandOptions cmdOpt = optionsStoretracker.getService();
+		CommandOptions cmdOpt = optionsStoreTracker.getService();
 		if (null == cmdOpt) {
 			throw new InPlaceException("invalid_service", CommandOptions.class.getName());			
 		}
 		return cmdOpt;
+	}
+
+	public DependencyOptions getDependencyOptionsService() throws InPlaceException {
+		DependencyOptions dpOpt = dependencyOptionsTracker.getService();
+		if (null == dpOpt) {
+			throw new InPlaceException("invalid_service", DependencyOptions.class.getName());			
+		}
+		return dpOpt;
 	}
 
 	/**

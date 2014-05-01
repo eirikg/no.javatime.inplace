@@ -36,6 +36,7 @@ import no.javatime.inplace.dependencies.BundleSorter;
 import no.javatime.inplace.dependencies.CircularReferenceException;
 import no.javatime.inplace.dependencies.ProjectSorter;
 import no.javatime.inplace.dl.preferences.intface.CommandOptions;
+import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.statushandler.BundleStatus;
 import no.javatime.inplace.statushandler.IBundleStatus;
 import no.javatime.inplace.statushandler.IBundleStatus.StatusCode;
@@ -88,24 +89,6 @@ public abstract class BundleJob extends JobStatus {
 	public static final String FAMILY_BUNDLE_LIFECYCLE = "BundleFamily";
 	/** Use the same rules as the build system */
 	public static final ISchedulingRule buildRule = ResourcesPlugin.getWorkspace().getRuleFactory().buildRule();
-
-	/**
-	 * An enumeration of all dependency rules that may be applied to bundles that are associated with a bundle operation.
-	 */
-	public enum Integrity {
-		/** No dependency rule is applied */
-		RESTRICT,
-		/** Include all providing bundles from an initial set of bundles in the dependency set */
-		PROVIDING,
-		/** Include all requiring bundles from an initial set of bundles in the dependency set */
-		REQUIRING,
-		/** Include all requiring and providing bundles from an initial set of bundles in the dependency set */
-		REQUIRINGANDPROVIDING,
-		/** Include all providing and requiring bundles from an initial set of bundles in the dependency set */
-		PROVIDINGANDREQURING,
-		/** Include the partial graph from an initial set of bundles in the dependency set */
-		PARTIALGRAPH
-	}
 
 	/**
 	 * Unsorted list of unique pending projects to process in a job
@@ -286,7 +269,7 @@ public abstract class BundleJob extends JobStatus {
 					if (Category.getState(Category.progressBar))
 						sleep(sleepTime);
 					progress.subTask(reInstallSubtaskName + project.getName());
-					IBundleStatus result = uninstall(Collections.singletonList(bundle), EnumSet.of(Integrity.RESTRICT),
+					IBundleStatus result = uninstall(Collections.singletonList(bundle), EnumSet.of(Closure.SINGLE),
 							new SubProgressMonitor(monitor, 1), false);
 					if (result.hasStatus(StatusCode.OK)) {
 						install(Collections.singletonList(project), new SubProgressMonitor(monitor, 1));
@@ -358,19 +341,19 @@ public abstract class BundleJob extends JobStatus {
 	 * to stop are allowed.
 	 * 
 	 * @param bundles to uninstall
-	 * @param integrityRules if rule is {@code Integrity.REQUIRING} include requiring bundles to uninstall
+	 * @param integrityRules if rule is {@code Closure.REQUIRING} include requiring bundles to uninstall
 	 * @param monitor monitor the progress monitor to use for reporting progress to the user.
 	 * @param deactivate TODO
 	 * @return status object describing the result of uninstalling with {@code StatusCode.OK} if no failure, otherwise one
 	 *         of the failure codes are returned. If more than one bundle fails, status of the last failed bundle is
 	 *         returned. All failures are added to the job status list
 	 */
-	protected IBundleStatus uninstall(Collection<Bundle> bundles, EnumSet<Integrity> integrityRules,
+	protected IBundleStatus uninstall(Collection<Bundle> bundles, EnumSet<Closure> integrityRules,
 			IProgressMonitor monitor, boolean deactivate) {
 
 		IBundleStatus result = createStatus();
 
-		if (integrityRules.contains(Integrity.REQUIRING)) {
+		if (integrityRules.contains(Closure.REQUIRING)) {
 			BundleSorter bs = new BundleSorter();
 			bs.setAllowCycles(Boolean.TRUE);
 			bundles = bs.sortDeclaredRequiringBundles(bundles, bundleRegion.getBundles());
@@ -407,7 +390,7 @@ public abstract class BundleJob extends JobStatus {
 	 * deactivate on terminate option is switched on.
 	 * 
 	 * @param bundles the set of bundles to start
-	 * @param integrityRules if rule is {@code Integrity.PROVIDING} include providing bundles to start
+	 * @param integrityRules if rule is {@code Closure.PROVIDING} include providing bundles to start
 	 * @param monitor the progress monitor to use for reporting progress to the user.
 	 * @return status object describing the result of starting with {@code StatusCode.OK} if no failure, otherwise one of
 	 *         the failure codes are returned. If more than one bundle fails, status of the last failed bundle is
@@ -417,14 +400,14 @@ public abstract class BundleJob extends JobStatus {
 	 * @throws InterruptedException Checks for and interrupts right before call to start bundle. Start is also interrupted
 	 *           if the task running the stop method is terminated abnormally (timeout or manually)
 	 */
-	public IBundleStatus start(Collection<Bundle> bundles, EnumSet<Integrity> integrityRules,
+	public IBundleStatus start(Collection<Bundle> bundles, EnumSet<Closure> integrityRules,
 			IProgressMonitor monitor) throws InterruptedException {
 
 		IBundleStatus result = new BundleStatus(StatusCode.OK, InPlace.PLUGIN_ID, "");
 		Collection<Bundle> exceptionBundles = null;
 
 		if (null != bundles && bundles.size() > 0) {
-			if (integrityRules.contains(Integrity.PROVIDING)) {
+			if (integrityRules.contains(Closure.PROVIDING)) {
 				BundleSorter bs = new BundleSorter();
 				// Add providing bundles to bundles to start
 				bundles = bs.sortProvidingBundles(bundles, bundleRegion.getActivatedBundles());
@@ -547,13 +530,13 @@ public abstract class BundleJob extends JobStatus {
 	 * @throws InterruptedException Checks for and interrupts right before call to stop bundle. Stop is also interrupted
 	 *           if the task running the stop method is terminated abnormally (timeout or manually)
 	 */
-	public IBundleStatus stop(Collection<Bundle> bundles, EnumSet<Integrity> integrityRules,
+	public IBundleStatus stop(Collection<Bundle> bundles, EnumSet<Closure> integrityRules,
 			SubProgressMonitor monitor) throws CircularReferenceException, InterruptedException {
 
 		IBundleStatus result = createStatus();
 
 		if (null != bundles && bundles.size() > 0) {
-			if (integrityRules.contains(Integrity.REQUIRING)) {
+			if (integrityRules.contains(Closure.REQUIRING)) {
 				BundleSorter bs = new BundleSorter();
 				bs.setAllowCycles(Boolean.TRUE);
 				bundles = bs.sortRequiringBundles(bundles);

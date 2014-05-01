@@ -24,6 +24,7 @@ import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.dependencies.BundleSorter;
 import no.javatime.inplace.dependencies.CircularReferenceException;
 import no.javatime.inplace.dependencies.ProjectSorter;
+import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.statushandler.BundleStatus;
 import no.javatime.inplace.statushandler.IBundleStatus;
 import no.javatime.inplace.statushandler.IBundleStatus.StatusCode;
@@ -266,7 +267,7 @@ public class ActivateBundleJob extends BundleJob {
 			throw new OperationCanceledException();
 		}
 		restoreSessionStates(activatedBundles);
-		start(activatedBundles, EnumSet.of(Integrity.PROVIDING), new SubProgressMonitor(monitor, 1));
+		start(activatedBundles, EnumSet.of(Closure.PROVIDING), new SubProgressMonitor(monitor, 1));
 		return getLastStatus();
 	}
 

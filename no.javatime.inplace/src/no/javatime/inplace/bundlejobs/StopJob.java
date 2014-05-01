@@ -20,6 +20,7 @@ import no.javatime.inplace.bundleproject.BundleProject;
 import no.javatime.inplace.dependencies.BundleSorter;
 import no.javatime.inplace.dependencies.CircularReferenceException;
 import no.javatime.inplace.dependencies.PartialDependencies;
+import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.statushandler.BundleStatus;
 import no.javatime.inplace.statushandler.IBundleStatus;
 import no.javatime.inplace.statushandler.IBundleStatus.StatusCode;
@@ -154,7 +155,7 @@ public class StopJob extends BundleJob {
 		// Add bundles according to dependency options
 		PartialDependencies pd = new PartialDependencies();
 		bundlesToStop = pd.bundleDeactivationDependencies(bundlesToStop, activatedBundles);
-		stop(bundlesToStop, EnumSet.of(Integrity.RESTRICT), new SubProgressMonitor(monitor, 1));
+		stop(bundlesToStop, EnumSet.of(Closure.SINGLE), new SubProgressMonitor(monitor, 1));
 		// Warn about requiring bundles in state ACTIVE
 		if (!Category.getState(Category.partialGraphOnStop) && !Category.getState(Category.requiringOnStop)) {
 			BundleSorter bs = new BundleSorter();

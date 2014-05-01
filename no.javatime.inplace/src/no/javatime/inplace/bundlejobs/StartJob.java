@@ -20,6 +20,7 @@ import no.javatime.inplace.bundlemanager.InPlaceException;
 import no.javatime.inplace.dependencies.BundleSorter;
 import no.javatime.inplace.dependencies.CircularReferenceException;
 import no.javatime.inplace.dependencies.PartialDependencies;
+import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.statushandler.BundleStatus;
 import no.javatime.inplace.statushandler.IBundleStatus;
 import no.javatime.inplace.statushandler.IBundleStatus.StatusCode;
@@ -180,7 +181,7 @@ public class StartJob extends BundleJob {
 		if (monitor.isCanceled()) {
 			throw new OperationCanceledException();
 		}
-		start(bundlesToStart, EnumSet.of(Integrity.RESTRICT), new SubProgressMonitor(
+		start(bundlesToStart, EnumSet.of(Closure.SINGLE), new SubProgressMonitor(
 				monitor, 1));
 		
 		// Warn about providing bundles in state RESOLVED

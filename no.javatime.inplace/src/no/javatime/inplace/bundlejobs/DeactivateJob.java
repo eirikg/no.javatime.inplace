@@ -23,6 +23,7 @@ import no.javatime.inplace.dependencies.BundleSorter;
 import no.javatime.inplace.dependencies.CircularReferenceException;
 import no.javatime.inplace.dependencies.PartialDependencies;
 import no.javatime.inplace.dependencies.ProjectSorter;
+import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.statushandler.BundleStatus;
 import no.javatime.inplace.statushandler.IBundleStatus;
 import no.javatime.inplace.statushandler.IBundleStatus.StatusCode;
@@ -191,8 +192,8 @@ public class DeactivateJob extends NatureJob {
 			Collection<Bundle> bundles = bundleSorter.sortDeclaredRequiringBundles(allWorkspaceBundles,
 					allWorkspaceBundles);
 			try {
-				stop(pendingBundles, EnumSet.of(Integrity.RESTRICT), new SubProgressMonitor(monitor, 1));
-				uninstall(bundles, EnumSet.of(Integrity.RESTRICT), new SubProgressMonitor(monitor, 1), false);
+				stop(pendingBundles, EnumSet.of(Closure.SINGLE), new SubProgressMonitor(monitor, 1));
+				uninstall(bundles, EnumSet.of(Closure.SINGLE), new SubProgressMonitor(monitor, 1), false);
 				if (monitor.isCanceled()) {
 					throw new OperationCanceledException();
 				}
@@ -226,13 +227,13 @@ public class DeactivateJob extends NatureJob {
 							bundlesToResolve.addAll(getBundlesToResolve(Collections.singletonList(bundle)));
 						}
 					}
-					stop(bundlesToRestart, EnumSet.of(Integrity.REQUIRING), new SubProgressMonitor(monitor, 1));
+					stop(bundlesToRestart, EnumSet.of(Closure.REQUIRING), new SubProgressMonitor(monitor, 1));
 				}
 
 				// Do not refresh bundles already in state installed
 				Collection<Bundle> installedBundles = bundleRegion.getBundles(Bundle.INSTALLED);
 				pendingBundles.removeAll(installedBundles);
-				stop(pendingBundles, EnumSet.of(Integrity.RESTRICT), new SubProgressMonitor(monitor, 1));
+				stop(pendingBundles, EnumSet.of(Closure.SINGLE), new SubProgressMonitor(monitor, 1));
 				deactivateNature(getPendingProjects(), new SubProgressMonitor(monitor, 1));
 				// Nature removed from projects, set all bundles to a deactivated status
 				for (Bundle bundle : pendingBundles) {
@@ -248,7 +249,7 @@ public class DeactivateJob extends NatureJob {
 					throw new OperationCanceledException();
 				}
 				if (null != bundlesToRestart) {
-					start(bundlesToRestart, EnumSet.of(Integrity.PROVIDING), new SubProgressMonitor(monitor, 1));
+					start(bundlesToRestart, EnumSet.of(Closure.PROVIDING), new SubProgressMonitor(monitor, 1));
 				}
 			} catch (InPlaceException e) {
 				String msg = ExceptionMessage.getInstance().formatString("deactivate_job_installed_state", getName(),

@@ -13,17 +13,11 @@ package no.javatime.inplace.bundlejobs;
 import java.util.Collection;
 import java.util.EnumSet;
 
-import org.eclipse.core.resources.IProject;
-import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.OperationCanceledException;
-import org.eclipse.core.runtime.SubProgressMonitor;
-import org.osgi.framework.Bundle;
-
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundlemanager.InPlaceException;
 import no.javatime.inplace.dependencies.BundleSorter;
 import no.javatime.inplace.dependencies.CircularReferenceException;
+import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.statushandler.BundleStatus;
 import no.javatime.inplace.statushandler.IBundleStatus;
 import no.javatime.inplace.statushandler.IBundleStatus.StatusCode;
@@ -31,6 +25,13 @@ import no.javatime.util.messages.ErrorMessage;
 import no.javatime.util.messages.ExceptionMessage;
 import no.javatime.util.messages.Message;
 import no.javatime.util.messages.UserMessage;
+
+import org.eclipse.core.resources.IProject;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.OperationCanceledException;
+import org.eclipse.core.runtime.SubProgressMonitor;
+import org.osgi.framework.Bundle;
 
 /**
  * Uninstalls pending bundle projects and all requiring bundles of the pending bundle projects from any state
@@ -149,11 +150,11 @@ public class UninstallJob extends NatureJob {
 		bs.setAllowCycles(Boolean.TRUE);
 		Collection<Bundle> bundlesToUninstall = null;
 		bundlesToUninstall = bs.sortDeclaredRequiringBundles(pendingBundles, bundleRegion.getBundles());
-		stop(bundlesToUninstall, EnumSet.of(Integrity.RESTRICT), new SubProgressMonitor(monitor, 1));
+		stop(bundlesToUninstall, EnumSet.of(Closure.SINGLE), new SubProgressMonitor(monitor, 1));
 		if (monitor.isCanceled()) {
 			throw new OperationCanceledException();
 		}
-		uninstall(bundlesToUninstall, EnumSet.of(Integrity.RESTRICT), new SubProgressMonitor(monitor, 1), unregisterBundleProject);
+		uninstall(bundlesToUninstall, EnumSet.of(Closure.SINGLE), new SubProgressMonitor(monitor, 1), unregisterBundleProject);
 		if (monitor.isCanceled()) {
 			throw new OperationCanceledException();
 		}

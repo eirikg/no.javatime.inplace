@@ -20,6 +20,7 @@ import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.dependencies.CircularReferenceException;
 import no.javatime.inplace.dependencies.PartialDependencies;
 import no.javatime.inplace.dependencies.ProjectSorter;
+import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.statushandler.BundleStatus;
 import no.javatime.inplace.statushandler.IBundleStatus;
 import no.javatime.inplace.statushandler.IBundleStatus.StatusCode;
@@ -264,11 +265,11 @@ public class ActivateProjectJob extends NatureJob {
 	private IBundleStatus uninstallBundles(Collection<Bundle> bundlesToUninstall, IProgressMonitor monitor)
 			throws OperationCanceledException, InterruptedException, CircularReferenceException {
 		int entrySize = statusList();
-		IBundleStatus status = stop(bundlesToUninstall, EnumSet.of(Integrity.RESTRICT), new SubProgressMonitor(monitor, 1));
+		IBundleStatus status = stop(bundlesToUninstall, EnumSet.of(Closure.SINGLE), new SubProgressMonitor(monitor, 1));
 		if (monitor.isCanceled()) {
 			throw new OperationCanceledException();
 		}
-		status = uninstall(bundlesToUninstall, EnumSet.of(Integrity.RESTRICT), new SubProgressMonitor(monitor, 1), false);
+		status = uninstall(bundlesToUninstall, EnumSet.of(Closure.SINGLE), new SubProgressMonitor(monitor, 1), false);
 		if (!status.hasStatus(StatusCode.OK)) {
 			String msg = ErrorMessage.getInstance().formatString("failed_uninstall_before_activate");
 			IBundleStatus multiStatus = new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID, msg);

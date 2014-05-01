@@ -17,6 +17,7 @@ import java.util.LinkedHashSet;
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundlemanager.InPlaceException;
 import no.javatime.inplace.dependencies.CircularReferenceException;
+import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.statushandler.BundleStatus;
 import no.javatime.inplace.statushandler.IBundleStatus;
 import no.javatime.inplace.statushandler.IBundleStatus.StatusCode;
@@ -150,7 +151,7 @@ public class RefreshJob extends BundleJob {
 				bundlesToRestart.add(bundle);
 			}
 		}
-		stop(bundlesToRestart, EnumSet.of(Integrity.RESTRICT), new SubProgressMonitor(monitor, 1));
+		stop(bundlesToRestart, EnumSet.of(Closure.SINGLE), new SubProgressMonitor(monitor, 1));
 		if (monitor.isCanceled()) {
 			throw new OperationCanceledException();
 		}
@@ -158,7 +159,7 @@ public class RefreshJob extends BundleJob {
 		if (monitor.isCanceled()) {
 			throw new OperationCanceledException();
 		}
-		start(bundlesToRestart, EnumSet.of(Integrity.PROVIDING),
+		start(bundlesToRestart, EnumSet.of(Closure.PROVIDING),
 				new SubProgressMonitor(monitor, 1));
 		return getLastStatus();
 	}

@@ -16,6 +16,13 @@
    </service>
 </scr:component>
 
+<scr:component name="no.javatime.inplace.dl.prefrences.intface.options.dependencies">
+   <implementation class="no.javatime.inplace.dl.preferences.impl.DependencyOptionsImpl"/>
+   <service>
+      <provide interface="no.javatime.inplace.dl.preferences.intface.DependencyOptions"/>
+   </service>
+</scr:component>
+
 <scr:component name="no.javatime.inplace.dl.prefrences.intface.options.preferencestore">
    <implementation class="no.javatime.inplace.dl.preferences.impl.PreferencesStoreImpl"/>
    <service>
