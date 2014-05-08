@@ -12,16 +12,15 @@ package no.javatime.inplace.bundlejobs;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.EnumSet;
 import java.util.LinkedHashSet;
 import java.util.Map;
 
 import no.javatime.inplace.InPlace;
-import no.javatime.inplace.bundlemanager.InPlaceException;
+import no.javatime.inplace.bundlemanager.ExtenderException;
 import no.javatime.inplace.bundleproject.ProjectProperties;
+import no.javatime.inplace.dependencies.BundleClosures;
 import no.javatime.inplace.dependencies.BundleSorter;
 import no.javatime.inplace.dependencies.CircularReferenceException;
-import no.javatime.inplace.dependencies.PartialDependencies;
 import no.javatime.inplace.dependencies.ProjectSorter;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.statushandler.BundleStatus;
@@ -120,7 +119,7 @@ public class DeactivateJob extends NatureJob {
 		} catch (OperationCanceledException e) {
 			String msg = UserMessage.getInstance().formatString("cancel_job", getName());
 			addCancelMessage(e, msg);
-		} catch (InPlaceException e) {
+		} catch (ExtenderException e) {
 			String msg = ExceptionMessage.getInstance().formatString("terminate_job_with_errors", getName());
 			addError(e, msg);
 		} catch (NullPointerException e) {
@@ -153,7 +152,7 @@ public class DeactivateJob extends NatureJob {
 	 * @return status object describing the result of deactivating with {@code StatusCode.OK} if no failure, otherwise one
 	 *         of the failure codes are returned. If more than one bundle fails, status of the last failed bundle is
 	 *         returned. All failures are added to the job status list
-	 * @throws InPlaceException if one of the projects to deactivate does not exist or is closed
+	 * @throws ExtenderException if one of the projects to deactivate does not exist or is closed
 	 * @throws InterruptedException if the deactivate process is interrupted internally or from an external source.
 	 *           Deactivate is also interrupted if a task running the stop method is terminated abnormally
 	 * @throws CircularReferenceException if cycles are detected among the specified projects
@@ -161,14 +160,14 @@ public class DeactivateJob extends NatureJob {
 	 * @see #addPendingProject(IProject)
 	 * @see #getStatusList()
 	 */
-	public IBundleStatus deactivate(IProgressMonitor monitor) throws InPlaceException, InterruptedException,
+	public IBundleStatus deactivate(IProgressMonitor monitor) throws ExtenderException, InterruptedException,
 			CircularReferenceException, OperationCanceledException {
 
 		BundleSorter bundleSorter = new BundleSorter();
 		bundleSorter.setAllowCycles(Boolean.TRUE);
 
-		PartialDependencies pd = new PartialDependencies();
-		Collection<IProject> projects = pd.projectDeactivationDependencies(getPendingProjects(), true);
+		BundleClosures pd = new BundleClosures();
+		Collection<IProject> projects = pd.projectDeactivation(getPendingProjects(), true);
 		resetPendingProjects(projects);
 		Collection<Bundle> pendingBundles = bundleRegion.getBundles(getPendingProjects());
 
@@ -192,14 +191,14 @@ public class DeactivateJob extends NatureJob {
 			Collection<Bundle> bundles = bundleSorter.sortDeclaredRequiringBundles(allWorkspaceBundles,
 					allWorkspaceBundles);
 			try {
-				stop(pendingBundles, EnumSet.of(Closure.SINGLE), new SubProgressMonitor(monitor, 1));
-				uninstall(bundles, EnumSet.of(Closure.SINGLE), new SubProgressMonitor(monitor, 1), false);
+				stop(pendingBundles, null, new SubProgressMonitor(monitor, 1));
+				uninstall(bundles, new SubProgressMonitor(monitor, 1), false);
 				if (monitor.isCanceled()) {
 					throw new OperationCanceledException();
 				}
 				deactivateNature(getPendingProjects(), new SubProgressMonitor(monitor, 1));
 				refresh(bundles, new SubProgressMonitor(monitor, 1));
-			} catch (InPlaceException e) {
+			} catch (ExtenderException e) {
 				String msg = ExceptionMessage.getInstance().formatString("deactivate_job_uninstalled_state",
 						getName(), bundleRegion.formatBundleList(bundles, true));
 				addError(e, msg);
@@ -227,13 +226,13 @@ public class DeactivateJob extends NatureJob {
 							bundlesToResolve.addAll(getBundlesToResolve(Collections.singletonList(bundle)));
 						}
 					}
-					stop(bundlesToRestart, EnumSet.of(Closure.REQUIRING), new SubProgressMonitor(monitor, 1));
+					stop(bundlesToRestart,Closure.REQUIRING, new SubProgressMonitor(monitor, 1));
 				}
 
 				// Do not refresh bundles already in state installed
 				Collection<Bundle> installedBundles = bundleRegion.getBundles(Bundle.INSTALLED);
 				pendingBundles.removeAll(installedBundles);
-				stop(pendingBundles, EnumSet.of(Closure.SINGLE), new SubProgressMonitor(monitor, 1));
+				stop(pendingBundles, null, new SubProgressMonitor(monitor, 1));
 				deactivateNature(getPendingProjects(), new SubProgressMonitor(monitor, 1));
 				// Nature removed from projects, set all bundles to a deactivated status
 				for (Bundle bundle : pendingBundles) {
@@ -249,9 +248,9 @@ public class DeactivateJob extends NatureJob {
 					throw new OperationCanceledException();
 				}
 				if (null != bundlesToRestart) {
-					start(bundlesToRestart, EnumSet.of(Closure.PROVIDING), new SubProgressMonitor(monitor, 1));
+					start(bundlesToRestart, Closure.PROVIDING, new SubProgressMonitor(monitor, 1));
 				}
-			} catch (InPlaceException e) {
+			} catch (ExtenderException e) {
 				String msg = ExceptionMessage.getInstance().formatString("deactivate_job_installed_state", getName(),
 						bundleRegion.formatBundleList(pendingBundles, true));
 				addError(e, msg);
@@ -269,32 +268,12 @@ public class DeactivateJob extends NatureJob {
 	 * @return pending bundles and their requiring bundles. Pending projects are updated accordingly
 	 * @throws CircularReferenceException if cycles between projects to sort are detected
 	 */
+	@SuppressWarnings("unused")
 	private Collection<Bundle> calculateDependencies() throws CircularReferenceException {
 
-		PartialDependencies pd = new PartialDependencies();
-		Collection<IProject> projects = pd.projectDeactivationDependencies(getPendingProjects(), true);
+		BundleClosures pd = new BundleClosures();
+		Collection<IProject> projects = pd.projectDeactivation(getPendingProjects(), true);
 		resetPendingProjects(projects);
-//		
-//		ProjectSorter ps = new ProjectSorter();
-//		ps.setAllowCycles(true);
-//		// If all activated bundles are selected, no dependency option is needed
-//		if (pendingProjects() == ProjectProperties.getActivatedProjects().size()) {
-//			replacePendingProjects(ps.sortRequiringProjects(getPendingProjects(), true));
-//		} else if (Category.getState(Category.partialGraphOnDeactivate)) {
-//			int count = 0;
-//			do {
-//				count = pendingProjects();
-//				replacePendingProjects(ps.sortProvidingProjects(getPendingProjects(), true));
-//				replacePendingProjects(ps.sortRequiringProjects(getPendingProjects(), true));
-//			} while (pendingProjects() > count);
-//			// The providing and requiring option
-//		} else if (Category.getState(Category.providingOnDeactivate)) {
-//			replacePendingProjects(ps.sortProvidingProjects(getPendingProjects(), true));
-//			replacePendingProjects(ps.sortRequiringProjects(getPendingProjects(), true));
-//		} else {
-//			// Sort bundles in dependency order when requiring option is set
-//			replacePendingProjects(ps.sortRequiringProjects(getPendingProjects(), true));
-//		}
 		return bundleRegion.getBundles(getPendingProjects());
 	}
 

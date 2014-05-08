@@ -18,7 +18,7 @@ import org.eclipse.ui.statushandlers.StatusManager;
 
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundlejobs.UninstallJob;
-import no.javatime.inplace.bundlemanager.InPlaceException;
+import no.javatime.inplace.bundlemanager.ExtenderException;
 import no.javatime.inplace.bundlemanager.BundleManager;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.statushandler.BundleStatus;
@@ -59,7 +59,7 @@ public class PreChangeListener implements IResourceChangeListener {
 				}
 				uninstallJob.unregisterBundleProject(true);
 				BundleManager.addBundleJob(uninstallJob, 0);
-			} catch (InPlaceException e) {
+			} catch (ExtenderException e) {
 				String hint = ExceptionMessage.getInstance().formatString("project_uninstall_error",
 						project.getName());
 				StatusManager.getManager().handle(new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, hint, e),

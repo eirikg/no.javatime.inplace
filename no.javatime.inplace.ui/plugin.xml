@@ -35,13 +35,6 @@
          </command>
          <command
                categoryId="no.javatime.inplace.command.category"
-               defaultHandler="no.javatime.inplace.ui.command.handlers.DependencyHandler"
-               description="Set bundle dependencies"
-               id="no.javatime.inplace.command.dependencies"
-               name="no.javatime.inplace.command.dependencies">
-         </command>
-         <command
-               categoryId="no.javatime.inplace.command.category"
                defaultHandler="no.javatime.inplace.ui.command.handlers.AutoExternalCommandHandler"
                description="Handle external bundle operations automatically or not"
                id="no.javatime.inplace.command.autoexternalcommands"
@@ -183,12 +176,10 @@
                         style="toggle">
                   </command>
                </menu>
-               <command
-                     commandId="no.javatime.inplace.command.dependencies"
-                     icon="icons/dependencies.gif"
-                     label="Partial Dependencies..."
-                     style="push">
-               </command>
+               <dynamic
+                     class="no.javatime.inplace.ui.command.contributions.BundleDependenciesCommandContribution"
+                     id="no.javatime.inplace.command.contributions.dynamicitems.main.dependencies">
+               </dynamic>
                <separator
                      name="no.javatime.inplace.separator.main2"
                      visible="true">

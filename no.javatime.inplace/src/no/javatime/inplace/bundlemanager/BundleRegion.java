@@ -39,10 +39,10 @@ public interface BundleRegion {
 	 * @throws ProjectLocationException if the specified project is null or the location of the specified
 	 *           project could not be found. This exception can only occur for uninstalled bundles as long as
 	 *           the specified project is valid.
-	 * @throws InPlaceException If the caller does not have the appropriate AdminPermission[this,METADATA], 
+	 * @throws ExtenderException If the caller does not have the appropriate AdminPermission[this,METADATA], 
 	 *           and the Java Runtime Environment supports permissions.
 	 */
-	public String getBundleLocationIdentifier(IProject project) throws ProjectLocationException, InPlaceException;
+	public String getBundleLocationIdentifier(IProject project) throws ProjectLocationException, ExtenderException;
 
 	/**
 	 * Check if the workspace is activated. The condition is satisfied if one project is JavaTime nature enabled

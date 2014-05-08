@@ -19,7 +19,7 @@ import java.util.List;
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundlemanager.BundleManager;
 import no.javatime.inplace.bundlemanager.BundleTransition.TransitionError;
-import no.javatime.inplace.bundlemanager.InPlaceException;
+import no.javatime.inplace.bundlemanager.ExtenderException;
 import no.javatime.inplace.statushandler.BundleStatus;
 import no.javatime.inplace.statushandler.IBundleStatus.StatusCode;
 import no.javatime.util.messages.ExceptionMessage;
@@ -531,9 +531,9 @@ public class BundleSorter extends BaseSorter {
 	 * @param bundle that is either a fragment or not
 	 * @return true if the bundle is a fragment and false if the bundles is not a fragment or the bundle could
 	 *         not be adapted to a bundle revision
-	 * @throws InPlaceException
+	 * @throws ExtenderException
 	 */
-	public static Boolean isFragment(Bundle bundle) throws InPlaceException {
+	public static Boolean isFragment(Bundle bundle) throws ExtenderException {
 		if (null != bundle) {
 			BundleRevision rev = bundle.adapt(BundleRevision.class);
 			if (rev != null && (rev.getTypes() & BundleRevision.TYPE_FRAGMENT) != 0) {

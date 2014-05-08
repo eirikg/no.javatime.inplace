@@ -25,7 +25,7 @@ import no.javatime.inplace.bundlejobs.UpdateScheduler;
 import no.javatime.inplace.bundlemanager.BundleManager;
 import no.javatime.inplace.bundlemanager.BundleRegion;
 import no.javatime.inplace.bundlemanager.BundleTransition.Transition;
-import no.javatime.inplace.bundlemanager.InPlaceException;
+import no.javatime.inplace.bundlemanager.ExtenderException;
 import no.javatime.inplace.bundleproject.BundleProject;
 import no.javatime.inplace.bundleproject.OpenProjectHandler;
 import no.javatime.inplace.bundleproject.ProjectProperties;
@@ -34,6 +34,8 @@ import no.javatime.inplace.statushandler.IBundleStatus;
 import no.javatime.inplace.statushandler.IBundleStatus.StatusCode;
 import no.javatime.inplace.ui.Activator;
 import no.javatime.inplace.ui.command.contributions.BundleCommandsContributionItems;
+import no.javatime.inplace.ui.extender.DependencyDialogProxy;
+import no.javatime.inplace.ui.service.DependencyDialog;
 import no.javatime.inplace.ui.views.BundleProperties;
 import no.javatime.inplace.ui.views.BundleView;
 import no.javatime.util.messages.Category;
@@ -71,6 +73,7 @@ import org.eclipse.ui.navigator.CommonNavigator;
 import org.eclipse.ui.statushandlers.StatusManager;
 import org.eclipse.ui.wizards.IWizardDescriptor;
 import org.osgi.framework.Bundle;
+import org.osgi.util.tracker.ServiceTracker;
 
 /**
  * Executes bundle menu commands for one or more projects. The bundle commands are
@@ -197,7 +200,7 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 			@Override
 			public void run() {
 				try {
-					if (!Activator.getDefault().getOptionsService().isTimeOut()) {
+					if (!Activator.getDefault().getCommandOptionsService().isTimeOut()) {
 						BundleJob job = OpenProjectHandler.getRunningBundleJob();
 						if (null != job && BundleJob.isStateChanging()) {			
 							job.stopCurrentBundleOperation(new NullProgressMonitor());
@@ -205,7 +208,7 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 					}
 				} catch (IllegalStateException e) {
 					// Also caught by the bundle API
-				} catch (InPlaceException e) {
+				} catch (ExtenderException e) {
 					// Ignore
 				}
 			}
@@ -238,12 +241,12 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 									} 
 								}
 								try {
-									if (Category.getState(Category.infoMessages) && !Activator.getDefault().getOptionsService().isUpdateOnBuild()) {
+									if (Category.getState(Category.infoMessages) && !Activator.getDefault().getCommandOptionsService().isUpdateOnBuild()) {
 										if (bundleRegion.isActivated(bundle)) {
 											UserMessage.getInstance().getString("autoupdate_off", project.getName());
 										}
 									}
-								} catch (InPlaceException e) {
+								} catch (ExtenderException e) {
 									addError(e, project);
 								}
 								if (null != bundle) {
@@ -254,7 +257,7 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 										BundleManager.getTransition().addPending(bundle, Transition.RESOLVE);
 									}
 								}
-							} catch (InPlaceException e) {
+							} catch (ExtenderException e) {
 								String msg = ExceptionMessage.getInstance().formatString("error_set_policy", project.getName());
 								addError(e, msg, project);
 							}
@@ -303,7 +306,7 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 									}
 								}
 							}
-						} catch (InPlaceException e) {
+						} catch (ExtenderException e) {
 							String msg = ErrorMessage.getInstance().formatString("error_set_classpath", project.getName());
 							addError(e, msg, project);
 						}
@@ -326,7 +329,23 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 		}
 	}
 
-
+	/**
+	 * Displays the closure options dependency dialog
+	 */
+	protected void dependencyHandler() {
+		
+		try {
+			DependencyDialogProxy dl = DependencyDialogProxy.getInstance();
+			if (null != dl) {
+				dl.openDlg();
+			}
+		} catch (ExtenderException e){
+			StatusManager.getManager().handle(
+					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),
+					StatusManager.LOG);						
+		}
+	}
+	
 	/**
 	 * Shows the bundle view if it is hidden and hides it if it is open and there is no 
 	 * selected project (in list page or a details page) in the view. 

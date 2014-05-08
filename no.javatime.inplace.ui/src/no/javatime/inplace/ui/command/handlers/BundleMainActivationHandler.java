@@ -16,8 +16,8 @@ import java.util.LinkedHashSet;
 import no.javatime.inplace.bundlemanager.BundleManager;
 import no.javatime.inplace.bundlemanager.BundleTransition;
 import no.javatime.inplace.bundleproject.ProjectProperties;
+import no.javatime.inplace.ui.command.contributions.BundleCommandsContributionItems;
 import no.javatime.inplace.ui.command.contributions.BundleMainCommandsContributionItems;
-import no.javatime.inplace.ui.command.contributions.BundlePopUpCommandsContributionItems;
 
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
@@ -93,15 +93,17 @@ public class BundleMainActivationHandler extends BundleMenuActivationHandler {
 			consoleHandler(ProjectProperties.getInstallableProjects());
 		} else if (parameterId.equals(BundleMainCommandsContributionItems.messageViewParamId)) {
 			messageViewHandler();
-		} else if (parameterId.equals(BundlePopUpCommandsContributionItems.addClassPathParamId)) {
+		} else if (parameterId.equals(BundleCommandsContributionItems.addClassPathParamId)) {
 			Collection<IProject> projects = ProjectProperties.getPlugInProjects();
 			updateClassPathHandler(projects, true);
-		} else if (parameterId.equals(BundlePopUpCommandsContributionItems.removeClassPathParamId)) {
+		} else if (parameterId.equals(BundleCommandsContributionItems.removeClassPathParamId)) {
 			Collection<IProject> projects = ProjectProperties.getPlugInProjects();
 			updateClassPathHandler(projects, false);
-		}	else if (parameterId.equals(BundlePopUpCommandsContributionItems.inerruptParamId)) {
+		} else if (parameterId.equals(BundleCommandsContributionItems.partialDependenciesParamId)) {
+			dependencyHandler();
+		}	else if (parameterId.equals(BundleCommandsContributionItems.inerruptParamId)) {
 			interruptHandler();
-		}	else if (parameterId.equals(BundlePopUpCommandsContributionItems.stopOperationParamId)) {
+		}	else if (parameterId.equals(BundleCommandsContributionItems.stopOperationParamId)) {
 			stopOperation();
 		}	
 		return null; 

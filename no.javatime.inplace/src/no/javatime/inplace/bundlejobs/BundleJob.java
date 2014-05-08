@@ -14,7 +14,6 @@ import java.lang.Thread.State;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.EnumSet;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
@@ -27,15 +26,17 @@ import no.javatime.inplace.bundlemanager.BundleThread;
 import no.javatime.inplace.bundlemanager.BundleTransition.Transition;
 import no.javatime.inplace.bundlemanager.BundleTransition.TransitionError;
 import no.javatime.inplace.bundlemanager.DuplicateBundleException;
-import no.javatime.inplace.bundlemanager.InPlaceException;
+import no.javatime.inplace.bundlemanager.ExtenderException;
 import no.javatime.inplace.bundlemanager.ProjectLocationException;
 import no.javatime.inplace.bundleproject.BundleProject;
 import no.javatime.inplace.bundleproject.ManifestUtil;
 import no.javatime.inplace.bundleproject.ProjectProperties;
+import no.javatime.inplace.dependencies.BundleClosures;
 import no.javatime.inplace.dependencies.BundleSorter;
 import no.javatime.inplace.dependencies.CircularReferenceException;
 import no.javatime.inplace.dependencies.ProjectSorter;
 import no.javatime.inplace.dl.preferences.intface.CommandOptions;
+import no.javatime.inplace.dl.preferences.intface.DependencyOptions;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.statushandler.BundleStatus;
 import no.javatime.inplace.statushandler.IBundleStatus;
@@ -94,7 +95,8 @@ public abstract class BundleJob extends JobStatus {
 	 * Unsorted list of unique pending projects to process in a job
 	 */
 	private Collection<IProject> pendingProjects = new LinkedHashSet<IProject>();
-
+	
+	private DependencyOptions dependencyOptions; 
 	/**
 	 * Construct a bundle job with a bundle name. Sets job priority and scheduling rule.
 	 * 
@@ -247,7 +249,13 @@ public abstract class BundleJob extends JobStatus {
 	public int pendingProjects() {
 		return pendingProjects.size();
 	}
-
+	
+	public DependencyOptions getDepOpt() {
+		if (null == dependencyOptions) {
+			dependencyOptions =InPlace.getDefault().getDependencyOptionsService();
+		}
+		return dependencyOptions;
+	}
 	/**
 	 * Reinstalls the specified bundle projects. Failures to reinstall are added to the job status list. Only specified
 	 * bundle projects in state INSTALLED are re-installed.
@@ -269,14 +277,14 @@ public abstract class BundleJob extends JobStatus {
 					if (Category.getState(Category.progressBar))
 						sleep(sleepTime);
 					progress.subTask(reInstallSubtaskName + project.getName());
-					IBundleStatus result = uninstall(Collections.singletonList(bundle), EnumSet.of(Closure.SINGLE),
-							new SubProgressMonitor(monitor, 1), false);
+					IBundleStatus result = uninstall(Collections.singletonList(bundle), new SubProgressMonitor(monitor, 1),
+							false);
 					if (result.hasStatus(StatusCode.OK)) {
 						install(Collections.singletonList(project), new SubProgressMonitor(monitor, 1));
 					}
 				} catch (DuplicateBundleException e) {
 					addError(e, e.getLocalizedMessage(), project);
-				} catch (InPlaceException e) {
+				} catch (ExtenderException e) {
 					addError(e, e.getLocalizedMessage(), project);
 				} finally {
 					progress.worked(1);
@@ -316,7 +324,7 @@ public abstract class BundleJob extends JobStatus {
 				String msg = null;
 				try {
 					handleDuplicateException(project, e, null);
-				} catch (InPlaceException e1) {
+				} catch (ExtenderException e1) {
 					msg = e1.getLocalizedMessage();
 					addError(e, msg, project);
 				}
@@ -326,7 +334,7 @@ public abstract class BundleJob extends JobStatus {
 				status.add(new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID, project, msg, null));
 				msg = UserMessage.getInstance().formatString("refresh_hint", project.getName());
 				status.add(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, project, msg, null));
-			} catch (InPlaceException e) {
+			} catch (ExtenderException e) {
 				String msg = ErrorMessage.getInstance().formatString("install_error_project", project.getName());
 				addError(e, msg, project);
 			} finally {
@@ -341,23 +349,18 @@ public abstract class BundleJob extends JobStatus {
 	 * to stop are allowed.
 	 * 
 	 * @param bundles to uninstall
-	 * @param integrityRules if rule is {@code Closure.REQUIRING} include requiring bundles to uninstall
 	 * @param monitor monitor the progress monitor to use for reporting progress to the user.
-	 * @param deactivate TODO
+	 * @param unregister If true the bundle is removed from the internal workspace region. Will be registered again
+	 * automatically when installed
 	 * @return status object describing the result of uninstalling with {@code StatusCode.OK} if no failure, otherwise one
 	 *         of the failure codes are returned. If more than one bundle fails, status of the last failed bundle is
 	 *         returned. All failures are added to the job status list
 	 */
-	protected IBundleStatus uninstall(Collection<Bundle> bundles, EnumSet<Closure> integrityRules,
-			IProgressMonitor monitor, boolean deactivate) {
+	protected IBundleStatus uninstall(Collection<Bundle> bundles, IProgressMonitor monitor,
+			boolean unregister) {
 
 		IBundleStatus result = createStatus();
 
-		if (integrityRules.contains(Closure.REQUIRING)) {
-			BundleSorter bs = new BundleSorter();
-			bs.setAllowCycles(Boolean.TRUE);
-			bundles = bs.sortDeclaredRequiringBundles(bundles, bundleRegion.getBundles());
-		}
 		if (null != bundles && bundles.size() > 0) {
 			SubMonitor localMonitor = SubMonitor.convert(monitor, bundles.size());
 			for (Bundle bundle : bundles) {
@@ -365,8 +368,8 @@ public abstract class BundleJob extends JobStatus {
 					sleep(sleepTime);
 				localMonitor.subTask(UninstallJob.uninstallSubtaskName + bundle.getSymbolicName());
 				try {
-					bundleCommand.uninstall(bundle, deactivate);
-				} catch (InPlaceException e) {
+					bundleCommand.uninstall(bundle, unregister);
+				} catch (ExtenderException e) {
 					result = addError(e, e.getLocalizedMessage(), bundle.getBundleId());
 				} finally {
 					localMonitor.worked(1);
@@ -390,7 +393,7 @@ public abstract class BundleJob extends JobStatus {
 	 * deactivate on terminate option is switched on.
 	 * 
 	 * @param bundles the set of bundles to start
-	 * @param integrityRules if rule is {@code Closure.PROVIDING} include providing bundles to start
+	 * @param closure if rule is {@code Closure.PROVIDING} include providing bundles to start
 	 * @param monitor the progress monitor to use for reporting progress to the user.
 	 * @return status object describing the result of starting with {@code StatusCode.OK} if no failure, otherwise one of
 	 *         the failure codes are returned. If more than one bundle fails, status of the last failed bundle is
@@ -399,18 +402,18 @@ public abstract class BundleJob extends JobStatus {
 	 *           project graph
 	 * @throws InterruptedException Checks for and interrupts right before call to start bundle. Start is also interrupted
 	 *           if the task running the stop method is terminated abnormally (timeout or manually)
+	 * @throws ExtenderException illegal closure for activate bundle operation
 	 */
-	public IBundleStatus start(Collection<Bundle> bundles, EnumSet<Closure> integrityRules,
-			IProgressMonitor monitor) throws InterruptedException {
+	public IBundleStatus start(Collection<Bundle> bundles, Closure closure,
+			IProgressMonitor monitor) throws InterruptedException, ExtenderException {
 
 		IBundleStatus result = new BundleStatus(StatusCode.OK, InPlace.PLUGIN_ID, "");
 		Collection<Bundle> exceptionBundles = null;
 
 		if (null != bundles && bundles.size() > 0) {
-			if (integrityRules.contains(Closure.PROVIDING)) {
-				BundleSorter bs = new BundleSorter();
-				// Add providing bundles to bundles to start
-				bundles = bs.sortProvidingBundles(bundles, bundleRegion.getActivatedBundles());
+			if (null != closure) {
+				BundleClosures bc = new BundleClosures();
+				bundles = bc.bundleActivation(closure, bundles, bundleRegion.getActivatedBundles());
 			}
 			SubMonitor localMonitor = SubMonitor.convert(monitor, bundles.size());
 			boolean timeout = true;
@@ -420,7 +423,7 @@ public abstract class BundleJob extends JobStatus {
 				if (timeout) {
 					timeoutVal = getTimeout(timeout);
 				}
-			} catch (InPlaceException e) {
+			} catch (ExtenderException e) {
 				addStatus(new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, e.getMessage(), e));
 			}
 			for (Bundle bundle : bundles) {
@@ -495,7 +498,7 @@ public abstract class BundleJob extends JobStatus {
 					} else if (null != cause && cause instanceof BundleException) {
 						stopCurrentBundleOperation(monitor);						
 					}
-				} catch (InPlaceException e) {
+				} catch (ExtenderException e) {
 					result = addError(e, e.getLocalizedMessage(), bundle.getBundleId());
 					if (null == exceptionBundles) {
 						exceptionBundles = new LinkedHashSet<Bundle>();
@@ -520,7 +523,7 @@ public abstract class BundleJob extends JobStatus {
 	 * deactivate on terminate option is switched on.
 	 * 
 	 * @param bundles the set of bundles to stop
-	 * @param integrityRules if rule is restrict, do not include requiring bundles
+	 * @param closure if rule is restrict, do not include requiring bundles
 	 * @param monitor monitor the progress monitor to use for reporting progress to the user.
 	 * @return status object describing the result of stopping with {@code StatusCode.OK} if no failure, otherwise one of
 	 *         the failure codes are returned. If more than one bundle fails, status of the last failed bundle is
@@ -530,16 +533,15 @@ public abstract class BundleJob extends JobStatus {
 	 * @throws InterruptedException Checks for and interrupts right before call to stop bundle. Stop is also interrupted
 	 *           if the task running the stop method is terminated abnormally (timeout or manually)
 	 */
-	public IBundleStatus stop(Collection<Bundle> bundles, EnumSet<Closure> integrityRules,
+	public IBundleStatus stop(Collection<Bundle> bundles, Closure closure,
 			SubProgressMonitor monitor) throws CircularReferenceException, InterruptedException {
 
 		IBundleStatus result = createStatus();
 
 		if (null != bundles && bundles.size() > 0) {
-			if (integrityRules.contains(Closure.REQUIRING)) {
-				BundleSorter bs = new BundleSorter();
-				bs.setAllowCycles(Boolean.TRUE);
-				bundles = bs.sortRequiringBundles(bundles);
+			if (null != closure) {
+				BundleClosures bc = new BundleClosures();
+				bundles = bc.bundleDeactivation(closure, bundles, bundleRegion.getActivatedBundles());
 			}
 			SubMonitor localMonitor = SubMonitor.convert(monitor, bundles.size());
 			boolean timeout = true;
@@ -549,7 +551,7 @@ public abstract class BundleJob extends JobStatus {
 				if (timeout) {
 					timeoutVal = getTimeout(timeout);
 				}
-			} catch (InPlaceException e) {
+			} catch (ExtenderException e) {
 				addStatus(new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, e.getMessage(), e));
 			}
 			for (Bundle bundle : bundles) {
@@ -579,7 +581,7 @@ public abstract class BundleJob extends JobStatus {
 					} else if (null != cause && cause instanceof BundleException) {
 						stopCurrentBundleOperation(monitor);						
 					}
-				} catch (InPlaceException e) {
+				} catch (ExtenderException e) {
 					result = addError(e, e.getLocalizedMessage(), bundle.getBundleId());
 				}
 				finally {
@@ -601,9 +603,9 @@ public abstract class BundleJob extends JobStatus {
 	/**
 	 * Stop the current start or stop bundle operation 
 	 * 
-	 * @throws InPlaceException if the options service not could be acquired
+	 * @throws ExtenderException if the options service not could be acquired
 	 */
-	public void stopCurrentBundleOperation(IProgressMonitor monitor) throws InPlaceException {
+	public void stopCurrentBundleOperation(IProgressMonitor monitor) throws ExtenderException {
 
 		DeactivateJob deactivateTask = null;
 		
@@ -670,7 +672,7 @@ public abstract class BundleJob extends JobStatus {
 									StatusManager.LOG);						
 						}
 					}
-				} catch (InPlaceException e) {
+				} catch (ExtenderException e) {
 					IBundleStatus status = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, e.getMessage(), e);
 					if (getOptionsService().isTimeOut()) {
 						addStatus(status);
@@ -725,7 +727,7 @@ public abstract class BundleJob extends JobStatus {
 				}
 				return defaultTimeout * 1000;
 			}
-		} catch (InPlaceException e) {
+		} catch (ExtenderException e) {
 			addStatus(new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, e.getMessage(), e));
 		}
 		return seconds * 1000;
@@ -739,12 +741,12 @@ public abstract class BundleJob extends JobStatus {
 	 * 
 	 * @param bundlesToRefresh the set of bundles to refresh
 	 * @param subMonitor monitor the progress monitor to use for reporting progress to the user.
-	 * @throws InPlaceException if this thread is interrupted, security violation, illegal argument (not same framework)
+	 * @throws ExtenderException if this thread is interrupted, security violation, illegal argument (not same framework)
 	 *           or illegal monitor (current thread not owner of monitor)
 	 * @see BundleCommandImpl#refresh(Collection)
 	 */
 	protected void refresh(final Collection<Bundle> bundlesToRefresh, IProgressMonitor subMonitor)
-			throws InPlaceException {
+			throws ExtenderException {
 
 		SubMonitor localMonitor = SubMonitor.convert(subMonitor, bundlesToRefresh.size());
 		if (Category.getState(Category.progressBar))
@@ -869,7 +871,7 @@ public abstract class BundleJob extends JobStatus {
 			if (monitor.isCanceled()) {
 				throw new OperationCanceledException();
 			}
-		} catch (InPlaceException e) {
+		} catch (ExtenderException e) {
 			String msg = ExceptionMessage.getInstance().formatString("resolve_job", getName(),
 					bundleRegion.formatBundleList(bundlesToResolve, true));
 			addError(e, msg);
@@ -930,7 +932,7 @@ public abstract class BundleJob extends JobStatus {
 						result.add(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, msg));
 					}
 				}
-			} catch (InPlaceException e) {
+			} catch (ExtenderException e) {
 				addError(e, bundleRegion.getProject(bundle));
 			} finally {
 				if (null != errorBundles) {
@@ -965,7 +967,7 @@ public abstract class BundleJob extends JobStatus {
 			if (getOptionsService().isUpdateDefaultOutPutFolder()) {
 				BundleProject.addOutputLocationToBundleClassPath(project);
 			}
-		} catch (InPlaceException e) {
+		} catch (ExtenderException e) {
 			String msg = ExceptionMessage.getInstance().formatString("error_resolve_class_path", project);
 			result = addError(e, msg);
 		}
@@ -1274,14 +1276,14 @@ public abstract class BundleJob extends JobStatus {
 					}
 					String rootMsg = ExceptionMessage.getInstance().formatString("root_duplicate_exception");
 					createMultiStatus(new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID, rootMsg), startStatus);
-				} catch (InPlaceException e1) {
+				} catch (ExtenderException e1) {
 					addError(e1, e1.getLocalizedMessage());
 				} finally {
 					duplicates.add(duplicateProjectCandidate);
 				}
 			} catch (ProjectLocationException e) {
 				addError(e, e.getLocalizedMessage(), duplicateProject);
-			} catch (InPlaceException e) {
+			} catch (ExtenderException e) {
 				addError(e, e.getLocalizedMessage(), duplicateProject);
 			}
 		}
@@ -1293,8 +1295,8 @@ public abstract class BundleJob extends JobStatus {
 		return duplicates;
 	}
 
-	protected CommandOptions getOptionsService() throws InPlaceException {
-		return InPlace.getDefault().getOptionsService();
+	protected CommandOptions getOptionsService() throws ExtenderException {
+		return InPlace.getDefault().getCommandOptionsService();
 	}
 
 	/**

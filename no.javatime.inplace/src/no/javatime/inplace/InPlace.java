@@ -24,7 +24,7 @@ import no.javatime.inplace.bundlejobs.events.BundleJobEventListener;
 import no.javatime.inplace.bundlemanager.BundleManager;
 import no.javatime.inplace.bundlemanager.BundleRegion;
 import no.javatime.inplace.bundlemanager.BundleTransition.Transition;
-import no.javatime.inplace.bundlemanager.InPlaceException;
+import no.javatime.inplace.bundlemanager.ExtenderException;
 import no.javatime.inplace.bundlemanager.ProjectLocationException;
 import no.javatime.inplace.bundlemanager.events.BundleTransitionEvent;
 import no.javatime.inplace.bundlemanager.events.BundleTransitionEventListener;
@@ -89,7 +89,7 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 	private static InPlace plugin;
 	private static BundleContext context;
 	private ServiceTracker<IBundleProjectService, IBundleProjectService> bundleProjectTracker;
-	private ServiceTracker<CommandOptions, CommandOptions> optionsStoreTracker;
+	private ServiceTracker<CommandOptions, CommandOptions> commandOptionsTracker;
 	private ServiceTracker<DependencyOptions, DependencyOptions> dependencyOptionsTracker;
 
 	/**
@@ -155,9 +155,9 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 		bundleProjectTracker =  new ServiceTracker<IBundleProjectService, IBundleProjectService>
 				(context, IBundleProjectService.class.getName(), null);
 		bundleProjectTracker.open();
-		optionsStoreTracker = new ServiceTracker<CommandOptions, CommandOptions>
+		commandOptionsTracker = new ServiceTracker<CommandOptions, CommandOptions>
 				(context, CommandOptions.class.getName(), null);
-		optionsStoreTracker.open();
+		commandOptionsTracker.open();
 		dependencyOptionsTracker = new ServiceTracker<DependencyOptions, DependencyOptions>
 		(context, DependencyOptions.class.getName(), null);
 		dependencyOptionsTracker.open();
@@ -178,8 +178,8 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 			bundleProjectTracker = null;		
 			BundleManager.removeBundleJobListener(getDefault());
 			BundleManager.removeBundleTransitionListener(getDefault());
-			optionsStoreTracker.close();
-			optionsStoreTracker = null;
+			commandOptionsTracker.close();
+			commandOptionsTracker = null;
 			dependencyOptionsTracker.close();
 			dependencyOptionsTracker = null;
 			super.stop(context);
@@ -209,7 +209,7 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 			if (ProjectProperties.isProjectWorkspaceActivated()) {
 				BundleJob shutdDownJob = null;
 				Collection<IProject> projects = ProjectProperties.getActivatedProjects();
-				if (getOptionsService().isDeactivateOnExit()) {
+				if (getCommandOptionsService().isDeactivateOnExit()) {
 					shutdDownJob = new DeactivateJob(DeactivateJob.deactivateOnshutDownJobName);
 				} else if (bundles.size() > 0) {
 					shutdDownJob = new UninstallJob(UninstallJob.shutDownJobName);
@@ -249,7 +249,7 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 					System.err.println(msg);
 				}
 			}				
-		} catch (InPlaceException e) {
+		} catch (ExtenderException e) {
 			ExceptionMessage.getInstance().handleMessage(e, e.getMessage());
 		} catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
@@ -299,6 +299,7 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 				DynamicExtensionContribution.statusHandlerExtensionPointId, 
 				DynamicExtensionContribution.statusHandlerExtensionId);
 	}
+	
 	/**
 	 * Returns the shared instance
 	 * 
@@ -321,15 +322,15 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 	 * Finds and return the bundle description for a given project.
 	 * @param project to get the bundle description for
 	 * @return the bundle description for the specified project
-	 * @throws InPlaceException if the description could not be obtained or is invalid
+	 * @throws ExtenderException if the description could not be obtained or is invalid
 	 */
-	public IBundleProjectDescription getBundleDescription(IProject project) throws InPlaceException {
+	public IBundleProjectDescription getBundleDescription(IProject project) throws ExtenderException {
 
 		IBundleProjectService bundleProjectService = null;
 
 		bundleProjectService = bundleProjectTracker.getService();
 			if (null == bundleProjectService) {
-				throw new InPlaceException("invalid_project_description_service", project.getName());	
+				throw new ExtenderException("invalid_project_description_service", project.getName());	
 			}
 		try {
 			return bundleProjectService.getDescription(project);
@@ -339,32 +340,32 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 			if (null == cause || !(cause.getMessage().equals(e.getMessage()))) {
 				cause = e;
 			}
-			throw new InPlaceException(cause, "invalid_project_description", project.getName());
+			throw new ExtenderException(cause, "invalid_project_description", project.getName());
 		}
 	}
 
-	public IBundleProjectService getBundleProjectService(IProject project) throws InPlaceException {
+	public IBundleProjectService getBundleProjectService(IProject project) throws ExtenderException {
 
 		IBundleProjectService bundleProjectService = null;
 		bundleProjectService = bundleProjectTracker.getService();
 		if (null == bundleProjectService) {
-			throw new InPlaceException("invalid_project_description_service", project.getName());	
+			throw new ExtenderException("invalid_project_description_service", project.getName());	
 		}
 		return bundleProjectService;
 	}
 
-	public CommandOptions getOptionsService() throws InPlaceException {
-		CommandOptions cmdOpt = optionsStoreTracker.getService();
+	public CommandOptions getCommandOptionsService() throws ExtenderException {
+		CommandOptions cmdOpt = commandOptionsTracker.getService();
 		if (null == cmdOpt) {
-			throw new InPlaceException("invalid_service", CommandOptions.class.getName());			
+			throw new ExtenderException("invalid_service", CommandOptions.class.getName());			
 		}
 		return cmdOpt;
 	}
 
-	public DependencyOptions getDependencyOptionsService() throws InPlaceException {
+	public DependencyOptions getDependencyOptionsService() throws ExtenderException {
 		DependencyOptions dpOpt = dependencyOptionsTracker.getService();
 		if (null == dpOpt) {
-			throw new InPlaceException("invalid_service", DependencyOptions.class.getName());			
+			throw new ExtenderException("invalid_service", DependencyOptions.class.getName());			
 		}
 		return dpOpt;
 	}

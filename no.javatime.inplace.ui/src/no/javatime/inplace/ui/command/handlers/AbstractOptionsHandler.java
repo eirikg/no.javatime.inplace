@@ -12,7 +12,7 @@ package no.javatime.inplace.ui.command.handlers;
 
 import java.util.Map;
 
-import no.javatime.inplace.bundlemanager.InPlaceException;
+import no.javatime.inplace.bundlemanager.ExtenderException;
 import no.javatime.inplace.dl.preferences.intface.CommandOptions;
 import no.javatime.inplace.statushandler.BundleStatus;
 import no.javatime.inplace.statushandler.IBundleStatus.StatusCode;
@@ -38,17 +38,17 @@ public abstract class AbstractOptionsHandler extends AbstractHandler implements 
 	/**
 	 * Store the specified value in options store
 	 * @param value saved in options store  
-	 * @throws InPlaceException if the options store service could not be obtained
+	 * @throws ExtenderException if the options store service could not be obtained
 	 */
-	abstract protected void storeValue(Boolean value) throws InPlaceException;
+	abstract protected void storeValue(Boolean value) throws ExtenderException;
 
 	/**
 	 * Retrieves the stored value from the options store
 	 * @return the stored value
-	 * @throws InPlaceException if the options store service could not be obtained
+	 * @throws ExtenderException if the options store service could not be obtained
 	 */
 	
-	abstract protected boolean getStoredValue() throws InPlaceException;
+	abstract protected boolean getStoredValue() throws ExtenderException;
 
 	
 	/**
@@ -68,10 +68,10 @@ public abstract class AbstractOptionsHandler extends AbstractHandler implements 
 	/**
 	 * The options command service
 	 * @return the options command service
-	 * @throws InPlaceException if the options store service could not be obtained
+	 * @throws ExtenderException if the options store service could not be obtained
 	 */
-	protected CommandOptions getOptionsService() throws InPlaceException{
-		return Activator.getDefault().getOptionsService();
+	protected CommandOptions getOptionsService() throws ExtenderException{
+		return Activator.getDefault().getCommandOptionsService();
 	}
 	
 	@Override
@@ -88,7 +88,7 @@ public abstract class AbstractOptionsHandler extends AbstractHandler implements 
 			StatusManager.getManager().handle(
 					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, Msg.PREFERENCE_FLUSH_EXCEPTION, e),
 					StatusManager.LOG);
-		} catch (InPlaceException e) {
+		} catch (ExtenderException e) {
 			StatusManager.getManager().handle(
 					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),
 					StatusManager.LOG);			
@@ -107,7 +107,7 @@ public abstract class AbstractOptionsHandler extends AbstractHandler implements 
 		try {
 			boolean storedValue = getStoredValue();
 			element.setChecked(storedValue);
-		} catch (InPlaceException e) {
+		} catch (ExtenderException e) {
 			StatusManager.getManager().handle(
 					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),
 					StatusManager.LOG);			

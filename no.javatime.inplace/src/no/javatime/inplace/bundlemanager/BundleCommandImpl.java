@@ -124,7 +124,7 @@ class BundleCommandImpl implements BundleCommand {
 	}
 
 	@Override
-	public Bundle install(IProject project, Boolean register) throws InPlaceException,
+	public Bundle install(IProject project, Boolean register) throws ExtenderException,
 			DuplicateBundleException, ProjectLocationException {
 
 		Bundle bundle = bundleRegion.get(project);
@@ -148,7 +148,7 @@ class BundleCommandImpl implements BundleCommand {
 	 * @param project TODO
 	 * 
 	 * @return the installed bundle object
-	 * @throws InPlaceException for any of the {@link BundleContext#installBundle(String, InputStream)}
+	 * @throws ExtenderException for any of the {@link BundleContext#installBundle(String, InputStream)}
 	 *           exceptions except duplicate bundles
 	 * @throws DuplicateBundleException if a bundle with the same symbolic name and version already exists
 	 * @throws ProjectLocationException if the specified project is null or the location of the specified
@@ -156,7 +156,7 @@ class BundleCommandImpl implements BundleCommand {
 	 * @see BundleContext#installBundle(String, InputStream)
 	 * @see #install(IProject, Boolean)
 	 */
-	protected Bundle install(IProject project) throws InPlaceException, DuplicateBundleException,
+	protected Bundle install(IProject project) throws ExtenderException, DuplicateBundleException,
 			ProjectLocationException {
 
 		String locationIdentifier = bundleRegion.getBundleLocationIdentifier(project);
@@ -172,28 +172,28 @@ class BundleCommandImpl implements BundleCommand {
 						getStateName(bundle), bundle.getLocation());
 		} catch (MalformedURLException e) {
 			bundleTransition.setTransitionError(project);
-			throw new InPlaceException(e, "bundle_install_malformed_error", locationIdentifier);
+			throw new ExtenderException(e, "bundle_install_malformed_error", locationIdentifier);
 		} catch (IOException e) {
 			bundleTransition.setTransitionError(project);
-			throw new InPlaceException(e, "bundle_install_error", locationIdentifier);
+			throw new ExtenderException(e, "bundle_install_error", locationIdentifier);
 		} catch (NullPointerException npe) {
 			bundleTransition.setTransitionError(project);
 			if (Category.DEBUG && Category.isEnabled(Category.bundleOperations))
 				TraceMessage.getInstance().getString("npe_error_install_bundle", locationIdentifier,
 						npe.getLocalizedMessage());
-			throw new InPlaceException(npe, "bundle_install_npe_error", locationIdentifier);
+			throw new ExtenderException(npe, "bundle_install_npe_error", locationIdentifier);
 		} catch (IllegalStateException e) {
 			bundleTransition.setTransitionError(project);
 			if (Category.DEBUG && Category.isEnabled(Category.bundleOperations))
 				TraceMessage.getInstance().getString("error_install_bundle", locationIdentifier,
 						e.getLocalizedMessage());
-			throw new InPlaceException(e, "bundle_state_error", locationIdentifier);
+			throw new ExtenderException(e, "bundle_state_error", locationIdentifier);
 		} catch (SecurityException e) {
 			bundleTransition.setTransitionError(project);
 			if (Category.DEBUG && Category.isEnabled(Category.bundleOperations))
 				TraceMessage.getInstance().getString("error_install_bundle", locationIdentifier,
 						e.getLocalizedMessage());
-			throw new InPlaceException(e, "bundle_security_error", locationIdentifier);
+			throw new ExtenderException(e, "bundle_security_error", locationIdentifier);
 		} catch (BundleException e) {
 			if (Category.DEBUG && Category.isEnabled(Category.bundleOperations))
 				TraceMessage.getInstance().getString("error_install_bundle", locationIdentifier,
@@ -203,7 +203,7 @@ class BundleCommandImpl implements BundleCommand {
 				throw new DuplicateBundleException(e, "duplicate_bundle_install_error", locationIdentifier);
 			} else {
 				bundleTransition.setTransitionError(project);
-				throw new InPlaceException(e, "bundle_install_error", locationIdentifier);
+				throw new ExtenderException(e, "bundle_install_error", locationIdentifier);
 			}
 		} finally {
 			try {
@@ -211,7 +211,7 @@ class BundleCommandImpl implements BundleCommand {
 					is.close();
 				}
 			} catch (IOException e) {
-				throw new InPlaceException(e, "io_exception_install", locationIdentifier);
+				throw new ExtenderException(e, "io_exception_install", locationIdentifier);
 			} finally {
 				BundleManager.addBundleTransition(new TransitionEvent(bundle, bundleTransition
 						.getTransition(project)));
@@ -226,17 +226,17 @@ class BundleCommandImpl implements BundleCommand {
 	 * 
 	 * @param bundles bundles to resolve.
 	 * @return true if all specified bundles are resolved; false otherwise.
-	 * @throws InPlaceException if the framework is null, a bundle is created with another framework or a
+	 * @throws ExtenderException if the framework is null, a bundle is created with another framework or a
 	 *           security permission is missing. See {@link FrameworkWiring#resolveBundles(Collection)} for
 	 *           details.
 	 * @see FrameworkWiring#resolveBundles(Collection)
 	 */
 	@Override
-	public Boolean resolve(Collection<Bundle> bundles) throws InPlaceException {
+	public Boolean resolve(Collection<Bundle> bundles) throws ExtenderException {
 		if (null == frameworkWiring) {
 			if (Category.DEBUG && Category.isEnabled(Category.bundleOperations))
 				TraceMessage.getInstance().getString("null_admin_bundle");
-			throw new InPlaceException("null_framework");
+			throw new ExtenderException("null_framework");
 		}
 		try {
 			for (Bundle bundle : bundles) {
@@ -263,7 +263,7 @@ class BundleCommandImpl implements BundleCommand {
 			if (Category.DEBUG && Category.isEnabled(Category.bundleOperations))
 				TraceMessage.getInstance().getString("security_error_resolve_bundles",
 						bundleRegion.formatBundleList(bundles, true));
-			throw new InPlaceException(e, "bundles_security_error", bundleRegion.formatBundleList(bundles, true));
+			throw new ExtenderException(e, "bundles_security_error", bundleRegion.formatBundleList(bundles, true));
 		} catch (IllegalArgumentException e) {
 			for (Bundle bundle : bundles) {
 				if ((getState(bundle) & (Bundle.INSTALLED)) != 0) {
@@ -274,7 +274,7 @@ class BundleCommandImpl implements BundleCommand {
 			if (Category.DEBUG && Category.isEnabled(Category.bundleOperations))
 				TraceMessage.getInstance().getString("argument_error_resolve_bundles",
 						bundleRegion.formatBundleList(bundles, true));
-			throw new InPlaceException(e, "bundles_argument_resolve_bundle", bundleRegion.formatBundleList(bundles,
+			throw new ExtenderException(e, "bundles_argument_resolve_bundle", bundleRegion.formatBundleList(bundles,
 					true));
 		} finally {
 			for (Bundle bundle : bundles) {
@@ -282,7 +282,7 @@ class BundleCommandImpl implements BundleCommand {
 					BundleManager.addBundleTransition(new TransitionEvent(bundle, bundleTransition
 							.getTransition(bundleRegion.getProject(bundle))));
 				} catch (ProjectLocationException e) {
-					throw new InPlaceException(e, "bundle_resolve_error", bundle);
+					throw new ExtenderException(e, "bundle_resolve_error", bundle);
 				}
 			}
 		}
@@ -292,13 +292,13 @@ class BundleCommandImpl implements BundleCommand {
 	 * Refresh the specified set of bundles synchronously.
 	 * 
 	 * @param bundles to refresh. Must not be null.
-	 * @throws InPlaceException when the framework wiring object is null, the bundle was created with another
+	 * @throws ExtenderException when the framework wiring object is null, the bundle was created with another
 	 *           framework wiring object than the current or if a security permission is missing. See
 	 *           {@link FrameworkWiring#refreshBundles(Collection, FrameworkListener...)} for details.
 	 * @see FrameworkWiring#refreshBundles(Collection, FrameworkListener...)
 	 */
 	@Override
-	public void refresh(final Collection<Bundle> bundles) throws InPlaceException {
+	public void refresh(final Collection<Bundle> bundles) throws ExtenderException {
 
 		if (bundles.size() == 0) {
 			return;
@@ -340,7 +340,7 @@ class BundleCommandImpl implements BundleCommand {
 				if (Category.DEBUG && Category.getState(Category.bundleOperations))
 					TraceMessage.getInstance().getString("security_error_refresh_bundles",
 							bundleRegion.formatBundleList(bundles, true));
-				throw new InPlaceException(e, "framework_bundle_security_error", bundleRegion.formatBundleList(bundles,
+				throw new ExtenderException(e, "framework_bundle_security_error", bundleRegion.formatBundleList(bundles,
 						true));
 			} catch (IllegalArgumentException e) {
 				for (Bundle bundle : bundles) {
@@ -352,7 +352,7 @@ class BundleCommandImpl implements BundleCommand {
 				if (Category.DEBUG && Category.getState(Category.bundleOperations))
 					TraceMessage.getInstance().getString("argument_error_refresh_bundles",
 							bundleRegion.formatBundleList(bundles, true));
-				throw new InPlaceException(e, "bundles_argument_refresh_bundle", bundleRegion.formatBundleList(bundles,
+				throw new ExtenderException(e, "bundles_argument_refresh_bundle", bundleRegion.formatBundleList(bundles,
 						true));
 			}
 			
@@ -365,7 +365,7 @@ class BundleCommandImpl implements BundleCommand {
 				}
 			}
 		} catch (InterruptedException e) {
-			throw new InPlaceException(e, "interrupt_exception_refresh", BundleCommandImpl.class.getSimpleName());
+			throw new ExtenderException(e, "interrupt_exception_refresh", BundleCommandImpl.class.getSimpleName());
 		} finally {
 			if (Category.DEBUG && Category.getState(Category.listeners))
 				TraceMessage.getInstance().getString("continuing_after_refresh",
@@ -375,7 +375,7 @@ class BundleCommandImpl implements BundleCommand {
 					BundleManager.addBundleTransition(new TransitionEvent(bundle, bundleTransition
 							.getTransition(bundleRegion.getProject(bundle))));
 				} catch (ProjectLocationException e) {
-					throw new InPlaceException(e, "bundle_refresh_error", bundle);
+					throw new ExtenderException(e, "bundle_refresh_error", bundle);
 				}
 			}
 		}
@@ -386,17 +386,17 @@ class BundleCommandImpl implements BundleCommand {
 	 * 
 	 * @param bundles to refresh. Must not be null.
 	 * @param listener to be notified when refresh has been completed
-	 * @throws InPlaceException when the framework wiring object is null, the bundle was created with another
+	 * @throws ExtenderException when the framework wiring object is null, the bundle was created with another
 	 *           framework wiring object than the current or if a security permission is missing. See
 	 *           {@link FrameworkWiring#refreshBundles(Collection, FrameworkListener...)} for details.
 	 * @see FrameworkWiring#refreshBundles(Collection, FrameworkListener...)
 	 */
 	@Override
-	public void refresh(Collection<Bundle> bundles, FrameworkListener listener) throws InPlaceException {
+	public void refresh(Collection<Bundle> bundles, FrameworkListener listener) throws ExtenderException {
 		if (null == frameworkWiring) {
 			if (Category.DEBUG && Category.isEnabled(Category.bundleOperations))
 				TraceMessage.getInstance().getString("null_admin_bundle");
-			throw new InPlaceException("null_framework");
+			throw new ExtenderException("null_framework");
 		}
 		try {
 			for (Bundle bundle : bundles) {
@@ -418,7 +418,7 @@ class BundleCommandImpl implements BundleCommand {
 			if (Category.DEBUG && Category.getState(Category.bundleOperations))
 				TraceMessage.getInstance().getString("security_error_refresh_bundles",
 						bundleRegion.formatBundleList(bundles, true));
-			throw new InPlaceException(e, "framework_bundle_security_error", bundleRegion.formatBundleList(bundles,
+			throw new ExtenderException(e, "framework_bundle_security_error", bundleRegion.formatBundleList(bundles,
 					true));
 		} catch (IllegalArgumentException e) {
 			for (Bundle bundle : bundles) {
@@ -430,14 +430,14 @@ class BundleCommandImpl implements BundleCommand {
 			if (Category.DEBUG && Category.getState(Category.bundleOperations))
 				TraceMessage.getInstance().getString("argument_error_refresh_bundles",
 						bundleRegion.formatBundleList(bundles, true));
-			throw new InPlaceException(e, "bundles_argument_refresh_bundle", bundleRegion.formatBundleList(bundles,
+			throw new ExtenderException(e, "bundles_argument_refresh_bundle", bundleRegion.formatBundleList(bundles,
 					true));
 		}
 	}
 
 	@Override
 	public void start(Bundle bundle, int startOption, int timeOut) 
-			throws InPlaceException, InterruptedException, IllegalStateException {
+			throws ExtenderException, InterruptedException, IllegalStateException {
 
 		class StartTask implements Callable<String> {
 			Bundle bundle;
@@ -461,7 +461,7 @@ class BundleCommandImpl implements BundleCommand {
 			future = executor.submit(new StartTask(bundle, startOption));
 			future.get(timeOut, TimeUnit.MILLISECONDS);
 		} catch (CancellationException e) {			
-			throw new InPlaceException(e);
+			throw new ExtenderException(e);
 		} catch (TimeoutException e) {			
 			bundleTransition.setTransitionError(bundle, TransitionError.STATECHANGE);
 			throw new BundleStateChangeException(e, "bundle_task_start_terminate", bundle);
@@ -469,18 +469,18 @@ class BundleCommandImpl implements BundleCommand {
 			throw e;
 		} catch (ExecutionException e) {
 			Throwable cause = e.getCause();
-			if (cause instanceof InPlaceException) {
-				throw (InPlaceException) cause;
+			if (cause instanceof ExtenderException) {
+				throw (ExtenderException) cause;
 			} else if (cause instanceof BundleActivatorException) {
 				throw (BundleActivatorException) cause;				
 			} else {
-				throw new InPlaceException(e);
+				throw new ExtenderException(e);
 			}
 		} finally {
 			try {
 				executor.shutdownNow();				
 			} catch (Exception ex) {
-				throw new InPlaceException(ex, "bundle_security_error", bundle);
+				throw new ExtenderException(ex, "bundle_security_error", bundle);
 			}
 		}
 	}
@@ -489,10 +489,10 @@ class BundleCommandImpl implements BundleCommand {
 		
 	@Override
 	public void start(Bundle bundle, int startOption) 
-			throws InPlaceException, BundleActivatorException, IllegalStateException, BundleStateChangeException {
+			throws ExtenderException, BundleActivatorException, IllegalStateException, BundleStateChangeException {
 
 		if (null == bundle) {
-			throw new InPlaceException("null_bundle_start");
+			throw new ExtenderException("null_bundle_start");
 		}
 		BundleState state = bundleRegion.getActiveState(bundle);
 		try {
@@ -512,13 +512,13 @@ class BundleCommandImpl implements BundleCommand {
 			bundleRegion.setActiveState(bundle, state);
 			if (Category.DEBUG && Category.isEnabled(Category.bundleOperations))
 				TraceMessage.getInstance().getString("state_error_start_bundle", bundle, e.getLocalizedMessage());
-			throw new InPlaceException(e, "bundle_state_error", bundle);
+			throw new ExtenderException(e, "bundle_state_error", bundle);
 		} catch (SecurityException e) {
 			bundleTransition.setTransitionError(bundle, TransitionError.EXCEPTION);
 			bundleRegion.setActiveState(bundle, state);
 			if (Category.DEBUG && Category.isEnabled(Category.bundleOperations))
 				TraceMessage.getInstance().getString("security_error_start_bundle", bundle, e.getLocalizedMessage());
-			throw new InPlaceException(e, "bundle_security_error", bundle);
+			throw new ExtenderException(e, "bundle_security_error", bundle);
 		} catch (BundleException e) {
 			if (Category.DEBUG && Category.isEnabled(Category.bundleOperations))
 				TraceMessage.getInstance().getString("error_start_bundle", bundle, e.getLocalizedMessage());
@@ -536,7 +536,7 @@ class BundleCommandImpl implements BundleCommand {
 				bundleTransition.setTransitionError(bundle, TransitionError.STATECHANGE);
 				throw new BundleStateChangeException(e, "bundle_statechange_error", bundle);							
 			}	else {
-				throw new InPlaceException(e, "bundle_start_error", bundle);
+				throw new ExtenderException(e, "bundle_start_error", bundle);
 			}
 		} finally {
 			if (!(bundleTransition.getError(bundle) == TransitionError.STATECHANGE)) {
@@ -546,14 +546,14 @@ class BundleCommandImpl implements BundleCommand {
 				BundleManager.addBundleTransition(new TransitionEvent(bundle, bundleTransition
 						.getTransition(bundleRegion.getProject(bundle))));
 			} catch (ProjectLocationException e) {
-				throw new InPlaceException(e, "bundle_start_error", bundle);
+				throw new ExtenderException(e, "bundle_start_error", bundle);
 			}
 		}
 	}
 
 	@Override
 	public void stop(Bundle bundle, boolean stopTransient, int timeOut) 
-			throws InPlaceException, InterruptedException, IllegalStateException {
+			throws ExtenderException, InterruptedException, IllegalStateException {
 		
 		class StopTask implements Callable<String> {
 			Bundle bundle;
@@ -581,34 +581,34 @@ class BundleCommandImpl implements BundleCommand {
 			future = executor.submit(new StopTask(bundle, stopTransient));
 			future.get(timeOut, TimeUnit.MILLISECONDS);
 		} catch (CancellationException e) {			
-			throw new InPlaceException(e);
+			throw new ExtenderException(e);
 		} catch (TimeoutException e) {			
 			throw new BundleStateChangeException(e, "bundle_task_stop_terminate", bundle);
 		} catch (InterruptedException e) {
 			throw e;
 		} catch (ExecutionException e) {
 			Throwable cause = e.getCause();
-			if (cause instanceof InPlaceException) {
-				throw (InPlaceException) cause;
+			if (cause instanceof ExtenderException) {
+				throw (ExtenderException) cause;
 			} else if (cause instanceof BundleActivatorException) {
 				throw (BundleActivatorException) cause;				
 			} else {
-				throw new InPlaceException(e);
+				throw new ExtenderException(e);
 			}
 		} finally {
 			try {
 				executor.shutdownNow();				
 			} catch (Exception ex) {
-				throw new InPlaceException(ex, "bundle_security_error", bundle);
+				throw new ExtenderException(ex, "bundle_security_error", bundle);
 			}
 		}
 	}
 
 	@Override
-	public void stop(Bundle bundle, Boolean stopTransient) throws InPlaceException, BundleStateChangeException {
+	public void stop(Bundle bundle, Boolean stopTransient) throws ExtenderException, BundleStateChangeException {
 
 		if (null == bundle) {
-			throw new InPlaceException("null_bundle_stop");
+			throw new ExtenderException("null_bundle_stop");
 		}
 		try {
 			bundleTransition.setTransition(bundle, Transition.STOP);
@@ -631,12 +631,12 @@ class BundleCommandImpl implements BundleCommand {
 			bundleTransition.setTransitionError(bundle, TransitionError.EXCEPTION);
 			if (Category.DEBUG && Category.isEnabled(Category.bundleOperations))
 				TraceMessage.getInstance().getString("state_error_stop_bundle", bundle, e.getLocalizedMessage());
-			throw new InPlaceException(e, "bundle_state_error", bundle);
+			throw new ExtenderException(e, "bundle_state_error", bundle);
 		} catch (SecurityException e) {
 			bundleTransition.setTransitionError(bundle, TransitionError.EXCEPTION);
 			if (Category.DEBUG && Category.isEnabled(Category.bundleOperations))
 				TraceMessage.getInstance().getString("security_error_stop_bundle", bundle, e.getLocalizedMessage());
-			throw new InPlaceException(e, "bundle_security_error", bundle);
+			throw new ExtenderException(e, "bundle_security_error", bundle);
 		} catch (BundleException e) {
 			if (null != e.getCause() && (e.getCause() instanceof ThreadDeath)) {
 				bundleTransition.setTransitionError(bundle, TransitionError.INCOMPLETE);
@@ -647,7 +647,7 @@ class BundleCommandImpl implements BundleCommand {
 			if (e.getType() == BundleException.STATECHANGE_ERROR)  {
 				throw new BundleStateChangeException(e, "bundle_statechange_error", bundle);							
 			}	else {
-				throw new InPlaceException(e, "bundle_stop_error", bundle);
+				throw new ExtenderException(e, "bundle_stop_error", bundle);
 			}
 		} finally {
 			if (!(bundleTransition.getError(bundle) == TransitionError.STATECHANGE)) {
@@ -657,7 +657,7 @@ class BundleCommandImpl implements BundleCommand {
 				BundleManager.addBundleTransition(new TransitionEvent(bundle, bundleTransition
 						.getTransition(bundleRegion.getProject(bundle))));
 			} catch (ProjectLocationException e) {
-				throw new InPlaceException(e, "bundle_stop_error", bundle);
+				throw new ExtenderException(e, "bundle_stop_error", bundle);
 			}
 		}
 	}
@@ -686,16 +686,16 @@ class BundleCommandImpl implements BundleCommand {
 	 * 
 	 * @param bundle the bundle object to update
 	 * @return the object of the updated bundle
-	 * @throws InPlaceException if bundle is null or any of the {@link Bundle#update(InputStream)} exceptions
+	 * @throws ExtenderException if bundle is null or any of the {@link Bundle#update(InputStream)} exceptions
 	 * @throws DuplicateBundleException if this bundle is a duplicate - same symbolic name and version - of an
 	 *           already installed bundle with a different location identifier.
 	 */
 	@Override
-	public Bundle update(Bundle bundle) throws InPlaceException, DuplicateBundleException {
+	public Bundle update(Bundle bundle) throws ExtenderException, DuplicateBundleException {
 
 		InputStream is = null;
 		if (bundle == null) {
-			throw new InPlaceException("null_bundle_update");
+			throw new ExtenderException("null_bundle_update");
 		}
 		String location = null;
 		BundleState state = bundleRegion.getActiveState(bundle);
@@ -711,23 +711,23 @@ class BundleCommandImpl implements BundleCommand {
 		} catch (MalformedURLException e) {
 			bundleTransition.setTransitionError(bundle);
 			bundleRegion.setActiveState(bundle, state);
-			throw new InPlaceException(e, "bundle_update_malformed_error", location);
+			throw new ExtenderException(e, "bundle_update_malformed_error", location);
 		} catch (IOException e) {
 			bundleTransition.setTransitionError(bundle);
 			bundleRegion.setActiveState(bundle, state);
-			throw new InPlaceException(e, "io_exception_update", bundle, location);
+			throw new ExtenderException(e, "io_exception_update", bundle, location);
 		} catch (IllegalStateException e) {
 			bundleTransition.setTransitionError(bundle);
 			bundleRegion.setActiveState(bundle, state);
 			if (Category.DEBUG && Category.isEnabled(Category.bundleOperations))
 				TraceMessage.getInstance().getString("state_error_update_bundle", bundle, e.getLocalizedMessage());
-			throw new InPlaceException(e, "bundle_state_error", bundle);
+			throw new ExtenderException(e, "bundle_state_error", bundle);
 		} catch (SecurityException e) {
 			bundleTransition.setTransitionError(bundle);
 			bundleRegion.setActiveState(bundle, state);
 			if (Category.DEBUG && Category.isEnabled(Category.bundleOperations))
 				TraceMessage.getInstance().getString("security_error_update_bundle", bundle, e.getLocalizedMessage());
-			throw new InPlaceException(e, "bundle_security_error", bundle);
+			throw new ExtenderException(e, "bundle_security_error", bundle);
 		} catch (BundleException e) {
 			bundleRegion.setActiveState(bundle, state);
 			if (Category.DEBUG && Category.isEnabled(Category.bundleOperations))
@@ -738,7 +738,7 @@ class BundleCommandImpl implements BundleCommand {
 				throw new DuplicateBundleException(e, "duplicate_bundle_update_error", location, bundle);
 			} else {
 				bundleTransition.setTransitionError(bundle);
-				throw new InPlaceException(e, "bundle_update_error", bundle);
+				throw new ExtenderException(e, "bundle_update_error", bundle);
 			}
 		} finally {
 			try {
@@ -746,13 +746,13 @@ class BundleCommandImpl implements BundleCommand {
 					is.close();
 				}
 			} catch (IOException e) {
-				throw new InPlaceException(e, "io_exception_update", bundle, location);
+				throw new ExtenderException(e, "io_exception_update", bundle, location);
 			} finally {
 				try {
 					BundleManager.addBundleTransition(new TransitionEvent(bundle, bundleTransition
 							.getTransition(bundleRegion.getProject(bundle))));
 				} catch (ProjectLocationException e) {
-					throw new InPlaceException(e, "bundle_update_error", bundle);
+					throw new ExtenderException(e, "bundle_update_error", bundle);
 				}
 			}
 		}
@@ -760,7 +760,7 @@ class BundleCommandImpl implements BundleCommand {
 	}
 
 	@Override
-	public IProject uninstall(Bundle bundle, Boolean unregister) throws InPlaceException, ProjectLocationException {
+	public IProject uninstall(Bundle bundle, Boolean unregister) throws ExtenderException, ProjectLocationException {
 
 		IProject project = null;
 		try {
@@ -774,10 +774,10 @@ class BundleCommandImpl implements BundleCommand {
 	}
 
 	@Override
-	public IProject uninstall(Bundle bundle) throws InPlaceException {
+	public IProject uninstall(Bundle bundle) throws ExtenderException {
 
 		if (bundle == null) {
-			throw new InPlaceException("null_bundle_uninstall");
+			throw new ExtenderException("null_bundle_uninstall");
 		}
 		BundleState state = bundleRegion.getActiveState(bundle);
 		IProject project = null;
@@ -794,20 +794,20 @@ class BundleCommandImpl implements BundleCommand {
 			bundleRegion.setActiveState(bundle, state);
 			if (Category.DEBUG && Category.isEnabled(Category.bundleOperations))
 				TraceMessage.getInstance().getString("state_error_uninstall_bundle", bundle, e.getLocalizedMessage());
-			throw new InPlaceException(e, "bundle_state_error", bundle);
+			throw new ExtenderException(e, "bundle_state_error", bundle);
 		} catch (SecurityException e) {
 			bundleTransition.setTransitionError(bundle);
 			bundleRegion.setActiveState(bundle, state);
 			if (Category.DEBUG && Category.isEnabled(Category.bundleOperations))
 				TraceMessage.getInstance().getString("security_error_uninstall_bundle", bundle,
 						e.getLocalizedMessage());
-			throw new InPlaceException(e, "bundle_security_error", bundle);
+			throw new ExtenderException(e, "bundle_security_error", bundle);
 		} catch (BundleException e) {
 			bundleTransition.setTransitionError(bundle);
 			bundleRegion.setActiveState(bundle, state);
 			if (Category.DEBUG && Category.isEnabled(Category.bundleOperations))
 				TraceMessage.getInstance().getString("error_uninstall_bundle", bundle, e.getLocalizedMessage());
-			throw new InPlaceException(e, "bundle_uninstall_error", bundle);
+			throw new ExtenderException(e, "bundle_uninstall_error", bundle);
 		} finally {
 			try {
 				if (null != project) {
@@ -815,7 +815,7 @@ class BundleCommandImpl implements BundleCommand {
 							.getTransition(project)));
 				}
 			} catch (ProjectLocationException e) {
-				throw new InPlaceException(e, "bundle_uninstall_error", bundle);
+				throw new ExtenderException(e, "bundle_uninstall_error", bundle);
 			}
 		}
 		return project;
@@ -847,7 +847,7 @@ class BundleCommandImpl implements BundleCommand {
 			if (state instanceof StateLess || state instanceof UninstalledState) {
 				state.install(node);
 			}
-		} catch (InPlaceException e) {
+		} catch (ExtenderException e) {
 		}
 		return node;
 	}
@@ -887,7 +887,7 @@ class BundleCommandImpl implements BundleCommand {
 		try {
 			// Register the bundle with its project and initialize state to stateless
 			node = bundleRegion.put(project, bundle, activateBundle);
-		} catch (InPlaceException e) {
+		} catch (ExtenderException e) {
 		}
 		return node;
 	}
@@ -909,7 +909,7 @@ class BundleCommandImpl implements BundleCommand {
 		if (null == frameworkWiring) {
 			if (Category.DEBUG && Category.isEnabled(Category.bundleOperations))
 				TraceMessage.getInstance().getString("null_admin_bundle");
-			throw new InPlaceException("null_framework");
+			throw new ExtenderException("null_framework");
 		}
 		try {
 			return frameworkWiring.getDependencyClosure(bundles);
@@ -932,14 +932,14 @@ class BundleCommandImpl implements BundleCommand {
 	 * Access to in use non current wirings after update and uninstall and before refresh.
 	 * 
 	 * @return bundles with in use non current wirings or an empty collection
-	 * @throws InPlaceException if the framework wiring is null
+	 * @throws ExtenderException if the framework wiring is null
 	 */
 	@Override
-	public Collection<Bundle> getRemovalPending() throws InPlaceException {
+	public Collection<Bundle> getRemovalPending() throws ExtenderException {
 		if (null == frameworkWiring) {
 			if (Category.DEBUG && Category.isEnabled(Category.bundleOperations))
 				TraceMessage.getInstance().getString("null_admin_bundle");
-			throw new InPlaceException("null_framework");
+			throw new ExtenderException("null_framework");
 		}
 		return frameworkWiring.getRemovalPendingBundles();
 	}
@@ -1011,6 +1011,9 @@ class BundleCommandImpl implements BundleCommand {
 	public String getStateName(BundleEvent event) {
 
 		String typeName = null;
+		if (null == event) {
+			return "UNKNOWN_STATE";			
+		}
 		switch (event.getType()) {
 		case BundleEvent.INSTALLED:
 			typeName = "INSTALLED";
@@ -1058,6 +1061,9 @@ class BundleCommandImpl implements BundleCommand {
 	public String getStateName(FrameworkEvent event) {
 
 		String typeName = null;
+		if (null == event) {
+			return "UNKNOWN_STATE";			
+		}
 		int type = event.getType();
 		switch (type) {
 		case FrameworkEvent.STARTED:
@@ -1122,18 +1128,18 @@ class BundleCommandImpl implements BundleCommand {
 	 * 
 	 * @param bundle object of an installed bundle
 	 * @return the current revision of the bundle
-	 * @throws InPlaceException if bundle is null or a proper adapt permission is missing
+	 * @throws ExtenderException if bundle is null or a proper adapt permission is missing
 	 * @see Bundle#adapt(Class)
 	 */
 	@Override
-	public BundleRevision getCurrentRevision(Bundle bundle) throws InPlaceException {
+	public BundleRevision getCurrentRevision(Bundle bundle) throws ExtenderException {
 		if (null == bundle) {
-			throw new InPlaceException("null_bundle_adapt");
+			throw new ExtenderException("null_bundle_adapt");
 		}
 		try {
 			return bundle.adapt(BundleRevision.class);
 		} catch (SecurityException e) {
-			throw new InPlaceException(e, "bundle_security_error", bundle.getLocation());
+			throw new ExtenderException(e, "bundle_security_error", bundle.getLocation());
 		}
 	}
 
@@ -1143,20 +1149,20 @@ class BundleCommandImpl implements BundleCommand {
 	 * @param bundle the bundle with one or more revisions
 	 * @return the set of revisions for the bundle as a list. The list should at least contain the current
 	 *         revision of the bundle.
-	 * @throws InPlaceException if the bundle is null or a proper adapt permission is missing
+	 * @throws ExtenderException if the bundle is null or a proper adapt permission is missing
 	 * @see Bundle#adapt(Class)
 	 */
 	@Override
-	public List<BundleRevision> getBundleRevisions(Bundle bundle) throws InPlaceException {
+	public List<BundleRevision> getBundleRevisions(Bundle bundle) throws ExtenderException {
 		if (null == bundle) {
-			throw new InPlaceException("null_bundle_adapt");
+			throw new ExtenderException("null_bundle_adapt");
 		}
 		try {
 			BundleRevisions br = bundle.adapt(BundleRevisions.class);
 			List<BundleRevision> brs = br.getRevisions();
 			return brs;
 		} catch (SecurityException e) {
-			throw new InPlaceException(e, "bundle_security_error", bundle.getLocation());
+			throw new ExtenderException(e, "bundle_security_error", bundle.getLocation());
 		}
 	}
 }

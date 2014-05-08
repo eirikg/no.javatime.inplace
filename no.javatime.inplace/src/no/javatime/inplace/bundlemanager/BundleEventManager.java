@@ -148,7 +148,7 @@ class BundleEventManager implements FrameworkListener, SynchronousBundleListener
 		Command autoBuildCmd = commandEvent.getCommand();
 		try {
 			if (autoBuildCmd.isDefined() && !ProjectProperties.isAutoBuilding()) {
-				if (InPlace.getDefault().getOptionsService().isUpdateOnBuild()) {
+				if (InPlace.getDefault().getCommandOptionsService().isUpdateOnBuild()) {
 					BundleManager.getRegion().setAutoBuild(true);
 					Collection<IProject> activatedProjects = ProjectProperties.getActivatedProjects();
 					Collection<IProject> pendingProjects = bundleTransition.getPendingProjects(
@@ -165,7 +165,7 @@ class BundleEventManager implements FrameworkListener, SynchronousBundleListener
 			} else {
 				BundleManager.getRegion().setAutoBuild(false);			
 			}
-		} catch (InPlaceException e) {
+		} catch (ExtenderException e) {
 			StatusManager.getManager().handle(
 					new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, e.getMessage(), e),
 					StatusManager.LOG);			
@@ -515,7 +515,7 @@ class BundleEventManager implements FrameworkListener, SynchronousBundleListener
 				}
 				// User choice to deactivate workspace or restore uninstalled bundle
 				try {
-					if (!InPlace.getDefault().getOptionsService().isAutoHandleExternalCommands()) {
+					if (!InPlace.getDefault().getCommandOptionsService().isAutoHandleExternalCommands()) {
 						String question = null;
 						int index = 0;
 						if (dependencies) {
@@ -529,7 +529,7 @@ class BundleEventManager implements FrameworkListener, SynchronousBundleListener
 								MessageDialog.QUESTION, new String[] { "Yes", "No" }, index);
 						autoDependencyAction = dialog.open();
 					}
-				} catch (InPlaceException e) {
+				} catch (ExtenderException e) {
 					StatusManager.getManager().handle(
 							new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, e.getMessage(), e),
 							StatusManager.LOG);			

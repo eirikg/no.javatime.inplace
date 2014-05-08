@@ -61,7 +61,8 @@ public interface DependencyOptions {
 	 */
 	public enum Operation {
 		
-		/** Used when bundle projects are activated, installed, resolved and started. Closures are providing (default),
+		/**
+		 * Used when bundle projects are activated, installed, resolved and started. Closures are providing (default),
 		 * requiring and providing and partial graph
 		*/
 		ACTIVATE_PROJECT,
@@ -85,7 +86,9 @@ public interface DependencyOptions {
 	}
 	
 	/**
-	 * Get the present dependency option for the specified operation
+	 * Get the present dependency option for the specified operation. 
+	 * Only one closure of the set of closures bound to an operation 
+	 * may be the current closure at a specific point in time
 	 * 
 	 * @param operation to obtain the current dependency option for
 	 * @return the current dependency option.If failed to get the option the default
@@ -94,9 +97,11 @@ public interface DependencyOptions {
 	public Closure get(Operation operation);
 
 	/**
-	 * Get the state of the specified dependency option for the specified operation
+	 * Get the state of the specified dependency option bound to the specified operation
 	 * 
-	 * @param operation to obtain the current dependency option state for
+	 * @param operation associated with a closure to obtain the state for
+	 * @param closure to get state of. Only one closure of the set of closures bound to an 
+	 * operation may be true at a specific point in time 
 	 * @return the state of current dependency option. True if this is the current dependency option and
 	 * false if not
 	 * @throws IllegalStateException if not a valid closure/operation combination
@@ -139,8 +144,9 @@ public interface DependencyOptions {
 	public EnumSet<Closure> getvalidClosures(Operation operation);
 	
 	/**
-	 * Set the current dependency option for the specified operation represented by 
-	 * the specified closure
+	 * Set the current dependency option for the specified operation.
+	 * There is only one closure that can be the current
+	 * closure at one point in time
 	 * @param operation on of {@link Operation}
 	 * @param closure on of the allowed {@link Closure} for the specified operation 
 	 * @return true if the closure was set for the operation. False if setting the closure fails

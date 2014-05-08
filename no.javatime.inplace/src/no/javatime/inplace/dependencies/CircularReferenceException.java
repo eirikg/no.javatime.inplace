@@ -14,7 +14,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 
-import no.javatime.inplace.bundlemanager.InPlaceException;
+import no.javatime.inplace.bundlemanager.ExtenderException;
 import no.javatime.inplace.statushandler.BundleStatus;
 import no.javatime.inplace.statushandler.IBundleStatus;
 
@@ -27,7 +27,7 @@ import org.osgi.framework.Bundle;
  * All elements (projects or bundles) included in cycles and a list of status objects, one for each cycle, is
  * registered and can be obtained from the exception.
  */
-public class CircularReferenceException extends InPlaceException {
+public class CircularReferenceException extends ExtenderException {
 
 	private static final long serialVersionUID = -6180458290568463709L;
 	private transient Collection<Bundle> bundles;

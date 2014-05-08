@@ -11,7 +11,7 @@
 package no.javatime.inplace.bundlemanager;
 
 
-public class BundleStateChangeException extends InPlaceException {
+public class BundleStateChangeException extends ExtenderException {
 
 	private static final long serialVersionUID = 4698034779808044676L;
 

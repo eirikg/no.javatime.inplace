@@ -1,6 +1,6 @@
 package no.javatime.inplace.bundlemanager.state;
 
-import no.javatime.inplace.bundlemanager.InPlaceException;
+import no.javatime.inplace.bundlemanager.ExtenderException;
 import no.javatime.inplace.bundleproject.ManifestUtil;
 
 public class ResolvedState extends BundleState {
@@ -18,14 +18,14 @@ public class ResolvedState extends BundleState {
 	 * 
 	 * @see #refresh()
 	 */
-	public void uninstall(BundleNode bundleNode) throws InPlaceException {
+	public void uninstall(BundleNode bundleNode) throws ExtenderException {
 		bundleNode.setCurrentState(BundleStateFactory.INSTANCE.installedState);
 	}
 
 	// Is there any point in resolving a bundle in state resolved
 	// Never called but shows that resolving bundles with an initial state of resolved always
 	// moves the bundle to state resolve independent of the activation policy of the bundle 
-	public void resolve(BundleNode bundleNode) throws InPlaceException {
+	public void resolve(BundleNode bundleNode) throws ExtenderException {
 		bundleNode.setCurrentState(BundleStateFactory.INSTANCE.resolvedState);
 	}
 
@@ -35,7 +35,7 @@ public class ResolvedState extends BundleState {
 	 * during refresh (refresh tries to resolve the bundle) and thus enter state INSTALLED. For activated
 	 * projects the bundle will be unresolved and then resolved again during refresh reentering state RESOLVED.
 	 */
-	public void refresh(BundleNode bundleNode) throws InPlaceException {
+	public void refresh(BundleNode bundleNode) throws ExtenderException {
 //		if (InPlace.bm().isActivated(getBundle(bundleNode))) {
 //			bundleNode.setCurrentState(StateFactory.resolvedState);
 //		} else {
@@ -47,11 +47,11 @@ public class ResolvedState extends BundleState {
 	/**
 	 * (1) Unresolve and uninstall bundle. (2) Read input. (3) Install bundle.
 	 */
-	public void update(BundleNode bundleNode) throws InPlaceException {
+	public void update(BundleNode bundleNode) throws ExtenderException {
 		bundleNode.setCurrentState(BundleStateFactory.INSTANCE.installedState);
 	}
 
-	public void start(BundleNode bundleNode) throws InPlaceException {
+	public void start(BundleNode bundleNode) throws ExtenderException {
 		if (ManifestUtil.getlazyActivationPolicy(getBundle(bundleNode))) {
 			bundleNode.setCurrentState(BundleStateFactory.INSTANCE.lazyState);
 		} else {

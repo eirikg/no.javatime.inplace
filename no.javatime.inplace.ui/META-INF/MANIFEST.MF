@@ -13,6 +13,7 @@ Bundle-Version: 0.1.8.qualifier
 Bundle-Name: InPlace Activator Bundle UI
 Bundle-Activator: no.javatime.inplace.ui.Activator
 Bundle-ManifestVersion: 2
+Activate-Broker: true
 Import-Package: no.javatime.inplace.bundlejobs,
  no.javatime.inplace.bundlejobs.events,
  no.javatime.inplace.bundlemanager,
@@ -24,4 +25,5 @@ Import-Package: no.javatime.inplace.bundlejobs,
  no.javatime.util.messages.views
 Bundle-SymbolicName: no.javatime.inplace.ui;singleton:=true
 Bundle-RequiredExecutionEnvironment: JavaSE-1.7
+Export-Package: no.javatime.inplace.ui.service
 

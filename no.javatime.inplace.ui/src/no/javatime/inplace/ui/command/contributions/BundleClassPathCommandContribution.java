@@ -3,7 +3,7 @@ package no.javatime.inplace.ui.command.contributions;
 import java.util.ArrayList;
 import java.util.Collection;
 
-import no.javatime.inplace.bundlemanager.InPlaceException;
+import no.javatime.inplace.bundlemanager.ExtenderException;
 import no.javatime.inplace.bundleproject.BundleProject;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.util.messages.Category;
@@ -66,7 +66,7 @@ public class BundleClassPathCommandContribution extends BundleCommandsContributi
 						}
 						errProjects.add(project);
 					}
-				} catch (InPlaceException e) {
+				} catch (ExtenderException e) {
 				}
 			}
 			if (null != errProjects) {

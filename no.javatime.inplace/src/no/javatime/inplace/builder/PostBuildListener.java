@@ -24,7 +24,7 @@ import no.javatime.inplace.bundlemanager.BundleManager;
 import no.javatime.inplace.bundlemanager.BundleRegion;
 import no.javatime.inplace.bundlemanager.BundleTransition;
 import no.javatime.inplace.bundlemanager.BundleTransition.Transition;
-import no.javatime.inplace.bundlemanager.InPlaceException;
+import no.javatime.inplace.bundlemanager.ExtenderException;
 import no.javatime.inplace.bundlemanager.ProjectLocationException;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.statushandler.BundleStatus;
@@ -137,7 +137,7 @@ public class PostBuildListener implements IResourceChangeListener {
 					if (null != bundleTransition.getPendingTransitions(project)) {
 						handlePendingTransition(project, activateProjectJob, activateBundleJob, updateJob, deactivateJob, uninstallJob, installJob);
 					}
-				} catch (InPlaceException e) {
+				} catch (ExtenderException e) {
 					String msg = ExceptionMessage.getInstance().formatString("schedule_bundle_jobs", project.getName());
 					StatusManager.getManager().handle(
 							new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg, e), StatusManager.LOG);
@@ -158,7 +158,7 @@ public class PostBuildListener implements IResourceChangeListener {
 								deactivateJob, uninstallJob, installJob)) {
 							handleCRUDOperation(projectDelta, project, activateBundleJob);
 						}
-					} catch (InPlaceException e) {
+					} catch (ExtenderException e) {
 						String msg = ExceptionMessage.getInstance().formatString("schedule_bundle_jobs",
 								project.getName());
 						StatusManager.getManager().handle(
@@ -170,11 +170,11 @@ public class PostBuildListener implements IResourceChangeListener {
 		// Include bundles that are no longer duplicates
 		ActivateBundleJob postActivateBundleJob = null;
 		try {
-			if (InPlace.getDefault().getOptionsService().isUpdateOnBuild() && updateJob.pendingProjects() > 0) {
+			if (InPlace.getDefault().getCommandOptionsService().isUpdateOnBuild() && updateJob.pendingProjects() > 0) {
 				postActivateBundleJob = UpdateScheduler.resolveduplicates(activateProjectJob, activateBundleJob,
 						updateJob);
 			}
-		} catch (InPlaceException e) {
+		} catch (ExtenderException e) {
 			StatusManager.getManager().handle(
 					new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, e.getMessage(), e),
 					StatusManager.LOG);			
@@ -249,12 +249,12 @@ public class PostBuildListener implements IResourceChangeListener {
 			// If this project is part of an activate process and auto update is off, the project is tagged
 			// with an update on activate transition and should be updated
 			try {
-				if (InPlace.getDefault().getOptionsService().isUpdateOnBuild()
+				if (InPlace.getDefault().getCommandOptionsService().isUpdateOnBuild()
 						|| bundleTransition.containsPending(project, Transition.UPDATE_ON_ACTIVATE, Boolean.FALSE)) {
 					UpdateScheduler.addChangedProject(project, updateJob, activateProjectJob);
 					isPending = true;
 				}
-			} catch (InPlaceException e) {
+			} catch (ExtenderException e) {
 				StatusManager.getManager().handle(
 						new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, e.getMessage(), e),
 						StatusManager.LOG);			

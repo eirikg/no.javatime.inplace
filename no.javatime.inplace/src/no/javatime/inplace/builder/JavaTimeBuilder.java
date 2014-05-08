@@ -20,7 +20,7 @@ import no.javatime.inplace.bundlemanager.BundleManager;
 import no.javatime.inplace.bundlemanager.BundleRegion;
 import no.javatime.inplace.bundlemanager.BundleTransition;
 import no.javatime.inplace.bundlemanager.BundleTransition.Transition;
-import no.javatime.inplace.bundlemanager.InPlaceException;
+import no.javatime.inplace.bundlemanager.ExtenderException;
 import no.javatime.inplace.bundlemanager.ProjectLocationException;
 import no.javatime.inplace.bundleproject.BundleProject;
 import no.javatime.inplace.bundleproject.ProjectProperties;
@@ -160,7 +160,7 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 
 			// Activated project is imported, opened or has new requirements on UI plug-in(s), when UI plug-ins are
 			// not allowed
-			if (!InPlace.getDefault().getOptionsService().isAllowUIContributions()
+			if (!InPlace.getDefault().getCommandOptionsService().isAllowUIContributions()
 					&& ProjectProperties.getUIContributors().contains(project)) {
 				if (null == bundle) {
 					bundleCommand.registerBundleProject(project, bundle, null != bundle ? true : false);
@@ -208,7 +208,7 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 			}
 			if (Category.DEBUG && Category.getState(Category.build))
 				TraceMessage.getInstance().getString("end_build");
-		} catch (InPlaceException e) {
+		} catch (ExtenderException e) {
 			ExceptionMessage.getInstance().handleMessage(e, e.getMessage());
 		}
 		return null; // ok to return null;
@@ -261,7 +261,7 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 		}
 		try {
 			String msg = null;
-			if (InPlace.getDefault().getOptionsService().isUpdateOnBuild()) {
+			if (InPlace.getDefault().getCommandOptionsService().isUpdateOnBuild()) {
 				msg = WarnMessage.getInstance().formatString("build_error_in_project_to_update", project.getName());
 			} else {
 				msg = WarnMessage.getInstance().formatString("build_error_in_project", project.getName());
@@ -284,7 +284,7 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 				}
 			}
 			StatusManager.getManager().handle(buildStatus, StatusManager.LOG);
-		} catch (InPlaceException e) {
+		} catch (ExtenderException e) {
 			StatusManager.getManager().handle(
 					new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, e.getMessage(), e),
 					StatusManager.LOG);			
@@ -331,7 +331,7 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 			IBundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg);
 			multiStatus.add(e.getStatusList());
 			StatusManager.getManager().handle(multiStatus, StatusManager.LOG);
-		} catch (InPlaceException e) {
+		} catch (ExtenderException e) {
 			String msg = WarnMessage.getInstance().formatString("uicontributors_fail_get", project.getName());
 			IBundleStatus status = new BundleStatus(StatusCode.WARNING, InPlace.PLUGIN_ID, msg);
 			StatusManager.getManager().handle(status, StatusManager.LOG);

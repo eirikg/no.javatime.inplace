@@ -14,7 +14,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 
-import no.javatime.inplace.bundlemanager.InPlaceException;
+import no.javatime.inplace.bundlemanager.ExtenderException;
 import no.javatime.inplace.bundleproject.BundleProject;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.statushandler.BundleStatus;
@@ -128,7 +128,7 @@ public class BundlePopUpActivationHandler extends BundleMenuActivationHandler im
 				// Set current activation policy from manifest
 				boolean isLazy = BundleProject.getLazyActivationPolicyFromManifest(project);
 				element.setChecked(!isLazy);
-			} catch (InPlaceException e) {
+			} catch (ExtenderException e) {
 				// Don't spam this meassage.
 				if (!ProjectProperties.hasManifestBuildErrors(project) && ProjectProperties.hasBuildState(project)) {	
 					String msg = ExceptionMessage.getInstance().formatString("error_set_policy", javaProject.getProject().getName());

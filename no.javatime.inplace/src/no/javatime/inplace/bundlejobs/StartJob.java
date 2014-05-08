@@ -12,19 +12,18 @@ package no.javatime.inplace.bundlejobs;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.EnumSet;
 import java.util.LinkedHashSet;
 
 import no.javatime.inplace.InPlace;
-import no.javatime.inplace.bundlemanager.InPlaceException;
+import no.javatime.inplace.bundlemanager.ExtenderException;
+import no.javatime.inplace.dependencies.BundleClosures;
 import no.javatime.inplace.dependencies.BundleSorter;
 import no.javatime.inplace.dependencies.CircularReferenceException;
-import no.javatime.inplace.dependencies.PartialDependencies;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
+import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Operation;
 import no.javatime.inplace.statushandler.BundleStatus;
 import no.javatime.inplace.statushandler.IBundleStatus;
 import no.javatime.inplace.statushandler.IBundleStatus.StatusCode;
-import no.javatime.util.messages.Category;
 import no.javatime.util.messages.ErrorMessage;
 import no.javatime.util.messages.ExceptionMessage;
 import no.javatime.util.messages.Message;
@@ -111,7 +110,7 @@ public class StartJob extends BundleJob {
 			BundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg);
 			multiStatus.add(e.getStatusList());
 			addStatus(multiStatus);
-		} catch (InPlaceException e) {
+		} catch (ExtenderException e) {
 			String msg = ExceptionMessage.getInstance().formatString("terminate_job_with_errors", getName());
 			addError(e, msg);
 		} catch (NullPointerException e) {
@@ -141,15 +140,17 @@ public class StartJob extends BundleJob {
 	 *         last failed bundle is returned. All failures are added to the job status list
 	 * @throws OperationCanceledException after resolve
 	 * @throws InterruptedException typically thrown in user start method of the bundle to start
+	 * @throws CircularReferenceException if cycles are detected in the project graph
 	 */
-	private IBundleStatus start(IProgressMonitor monitor) throws OperationCanceledException, InterruptedException {
+	private IBundleStatus start(IProgressMonitor monitor) throws 
+			OperationCanceledException, InterruptedException, CircularReferenceException {
 
 		Collection<Bundle> bundlesToResolve = null;
 		Collection<Bundle> bundlesToStart = bundleRegion.getBundles(getPendingProjects());
 		Collection<Bundle> activatedBundles = bundleRegion.getActivatedBundles();
 		// Add bundles according to dependency options
-		PartialDependencies pd = new PartialDependencies();
-		bundlesToStart = pd.bundleActivationDependencies(bundlesToStart, activatedBundles);
+		BundleClosures pd = new BundleClosures();
+		bundlesToStart = pd.bundleActivation(bundlesToStart, activatedBundles);
 		Collection<Bundle> notResolvedBundles = new LinkedHashSet<Bundle>();
 		for (Bundle bundle : bundlesToStart) {
 			int state = bundle.getState();
@@ -181,11 +182,11 @@ public class StartJob extends BundleJob {
 		if (monitor.isCanceled()) {
 			throw new OperationCanceledException();
 		}
-		start(bundlesToStart, EnumSet.of(Closure.SINGLE), new SubProgressMonitor(
+		start(bundlesToStart, null, new SubProgressMonitor(
 				monitor, 1));
-		
-		// Warn about providing bundles in state RESOLVED
-		if (!Category.getState(Category.partialGraphOnStart) && !Category.getState(Category.providingOnStart)) {
+		// Warn about missing providing closures in state RESOLVED
+		if (getDepOpt().get(Operation.ACTIVATE_BUNDLE, Closure.REQUIRING) 
+				|| getDepOpt().get(Operation.ACTIVATE_BUNDLE, Closure.SINGLE)) {
 			BundleSorter bs = new BundleSorter();
 			for (Bundle bundle : bundlesToStart) {
 				Collection<Bundle> providingBundles = bs.sortProvidingBundles(Collections.singletonList(bundle),

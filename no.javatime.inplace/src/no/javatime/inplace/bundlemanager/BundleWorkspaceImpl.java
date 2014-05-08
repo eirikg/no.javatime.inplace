@@ -120,14 +120,14 @@ class BundleWorkspaceImpl implements BundleRegion {
 	 *           not be found
 	 */
 	@Override
-	public String getBundleLocationIdentifier(IProject project) throws ProjectLocationException, InPlaceException {
+	public String getBundleLocationIdentifier(IProject project) throws ProjectLocationException, ExtenderException {
 
 		Bundle bundle = get(project);
 		if (null != bundle) {
 			try {
 				return bundle.getLocation();				
 			} catch (SecurityException e) {
-				throw new InPlaceException(e, "project_security_error", project.getName());
+				throw new ExtenderException(e, "project_security_error", project.getName());
 			}
 		} else {
 			return ProjectProperties.getProjectLocationIdentifier(project, true);
@@ -371,7 +371,7 @@ class BundleWorkspaceImpl implements BundleRegion {
 			try {
 				String symbolicName = BundleProject.getSymbolicNameFromManifest(project);
 				newSymbolicNameMap.put(symbolicName, project);
-			} catch (InPlaceException e) {
+			} catch (ExtenderException e) {
 			}
 		}
 		if (disjoint) {
@@ -611,13 +611,13 @@ class BundleWorkspaceImpl implements BundleRegion {
 	 * @param bundle to record. The bundle id. is the key and must not be null.
 	 * @param activate true if project is activated and false if not
 	 * @return the new or updated bundle node
-	 * @throws InPlaceException if the specified project or bundle parameter is null
+	 * @throws ExtenderException if the specified project or bundle parameter is null
 	 */
-	protected BundleNode put(IProject project, Bundle bundle, Boolean activate) throws InPlaceException {
+	protected BundleNode put(IProject project, Bundle bundle, Boolean activate) throws ExtenderException {
 		if (null == project) {
 			if (Category.DEBUG && Category.getState(Category.dag))
 				TraceMessage.getInstance().getString("npe_project_cache");
-			throw new InPlaceException("project_null_location");
+			throw new ExtenderException("project_null_location");
 		}
 //		if (null == bundle) {
 //			if (Category.DEBUG && Category.getState(Category.dag))

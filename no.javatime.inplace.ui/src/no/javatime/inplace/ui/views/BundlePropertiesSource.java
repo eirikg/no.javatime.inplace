@@ -15,7 +15,7 @@ import org.eclipse.ui.views.properties.IPropertyDescriptor;
 import org.eclipse.ui.views.properties.IPropertySource;
 import org.eclipse.ui.views.properties.PropertyDescriptor;
 
-import no.javatime.inplace.bundlemanager.InPlaceException;
+import no.javatime.inplace.bundlemanager.ExtenderException;
 import no.javatime.inplace.bundlemanager.ProjectLocationException;
 import no.javatime.inplace.statushandler.BundleStatus;
 import no.javatime.inplace.statushandler.IBundleStatus;
@@ -193,7 +193,7 @@ public class BundlePropertiesSource implements IPropertySource {
 			if (id.equals(BundleProperties.lastInstalledOrUpdatedLabelName)) {
 				return bundleproperties.getLastInstalledOrUpdated();
 			}
-		} catch (InPlaceException e) {
+		} catch (ExtenderException e) {
 			StatusManager.getManager().handle(new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, null, e),
 					StatusManager.LOG);
 		}

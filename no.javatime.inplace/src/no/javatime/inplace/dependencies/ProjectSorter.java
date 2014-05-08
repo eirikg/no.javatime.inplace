@@ -18,7 +18,7 @@ import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundlemanager.BundleManager;
 import no.javatime.inplace.bundlemanager.BundleTransition;
 import no.javatime.inplace.bundlemanager.BundleTransition.TransitionError;
-import no.javatime.inplace.bundlemanager.InPlaceException;
+import no.javatime.inplace.bundlemanager.ExtenderException;
 import no.javatime.inplace.bundleproject.BundleProject;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.statushandler.BundleStatus;
@@ -321,11 +321,11 @@ public class ProjectSorter extends BaseSorter {
 	 * @param activated if true only consider activated projects. If false only consider deactivated projects
 	 * @return projects and their requiring projects or an empty set if no errors where found
 	 * @throws CircularReferenceException if cycles are detected among the specified projects
-	 * @throws InPlaceException if one of the specified projects does not exist or is closed
+	 * @throws ExtenderException if one of the specified projects does not exist or is closed
 	 * @see #sortRequiringProjects(Collection)
 	 */
 	public Collection<IProject> getRequiringBuildErrorClosure(Collection<IProject> projectScope,
-			Boolean activated) throws CircularReferenceException, InPlaceException {
+			Boolean activated) throws CircularReferenceException, ExtenderException {
 		Collection<IProject> projects = new LinkedHashSet<IProject>(projectScope);
 		if (activated) {
 			projects.retainAll(BundleManager.getRegion().getProjects(true));
@@ -341,12 +341,12 @@ public class ProjectSorter extends BaseSorter {
 	 * 
 	 * @param projectScope of projects to check for build errors
 	 * @return projects with build errors and their requiring projects or an empty set if no errors where found
-	 * @throws InPlaceException if one of the specified projects does not exist or is closed
+	 * @throws ExtenderException if one of the specified projects does not exist or is closed
 	 * @throws CircularReferenceException if cycles are detected among the specified projects
 	 * @see #sortRequiringProjects(Collection)
 	 */
 	public Collection<IProject> getRequiringBuildErrorClosure(Collection<IProject> projectScope)
-			throws InPlaceException, CircularReferenceException {
+			throws ExtenderException, CircularReferenceException {
 
 		projectOrder = new LinkedHashSet<IProject>();
 		circularException = null;

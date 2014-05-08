@@ -32,7 +32,7 @@ public interface BundleCommand {
 	 * @param project install a workspace bundle finding the bundle location identifier based on this project
 	 * @param register true to register the bundle as a workspace region bundle
 	 * @return the installed bundle object
-	 * @throws InPlaceException if the specified project is null, the location of the specified project could
+	 * @throws ExtenderException if the specified project is null, the location of the specified project could
 	 *           not be found or any of the {@link BundleContext#installBundle(String, InputStream)} exceptions
 	 *           except duplicate bundles
 	 * @throws DuplicateBundleException if a bundle with the same symbolic name and version already exists
@@ -42,7 +42,7 @@ public interface BundleCommand {
 	 * @see #registerBundleNode(IProject, Bundle, Boolean)
 	 * @see BundleEventManager#bundleChanged(BundleEvent)
 	 */
-	public Bundle install(IProject project, Boolean register) throws InPlaceException, DuplicateBundleException;
+	public Bundle install(IProject project, Boolean register) throws ExtenderException, DuplicateBundleException;
 
 	/**
 	 * Resolves the specified set of bundles. If no bundles are specified, then the Framework will attempt to
@@ -50,24 +50,24 @@ public interface BundleCommand {
 	 * 
 	 * @param bundles bundles to resolve.
 	 * @return true if all specified bundles are resolved; false otherwise.
-	 * @throws InPlaceException if the framework is null, a bundle is created with another framework or a
+	 * @throws ExtenderException if the framework is null, a bundle is created with another framework or a
 	 *           security permission is missing. See {@link FrameworkWiring#resolveBundles(Collection)} for
 	 *           details.
 	 * @see FrameworkWiring#resolveBundles(Collection)
 	 */
-	public Boolean resolve(Collection<Bundle> bundles) throws InPlaceException;
+	public Boolean resolve(Collection<Bundle> bundles) throws ExtenderException;
 
 	/**
 	 * Start the specified bundle according to the specified activation policy.
 	 * 
 	 * @param bundle the bundle object to start
 	 * @param startOption One of {@link Bundle#START_ACTIVATION_POLICY} and {@link Bundle#START_TRANSIENT}
-	 * @throws InPlaceException if bundle is null or any of the {@link Bundle#start(int)} exceptions
+	 * @throws ExtenderException if bundle is null or any of the {@link Bundle#start(int)} exceptions
 	 * @throws IllegalStateException is thrown if the start operation terminates abnormally
 	 * @throws BundleStateChangeException failed to complete the requested lifecycle state change
 	 * @see Bundle#start(int)
 	 */
-	public void start(Bundle bundle, int startOption) throws InPlaceException, IllegalStateException, BundleStateChangeException;
+	public void start(Bundle bundle, int startOption) throws ExtenderException, IllegalStateException, BundleStateChangeException;
 
 	/**
 	 * Start the specified bundle according to the specified activation policy. If the start operation timeouts
@@ -76,22 +76,22 @@ public interface BundleCommand {
 	 * @param bundle the bundle object to start
 	 * @param startOption One of {@link Bundle#START_ACTIVATION_POLICY} and {@link Bundle#START_TRANSIENT}
 	 * @param timeOut terminates the start operation after the specified timeout in seconds
-	 * @throws InPlaceException if bundle is null or any of the {@link Bundle#start(int)} exceptions
+	 * @throws ExtenderException if bundle is null or any of the {@link Bundle#start(int)} exceptions
 	 * @throws InterruptedException if the start operation is interrupted
 	 * @throws IllegalStateException is thrown if the start operation timeouts
 	 * @throws BundleStateChangeException failed to complete the requested lifecycle state change
 	 */
 	public void start(Bundle bundle, int startOption, int timeOut) 
-			throws InPlaceException, InterruptedException, IllegalStateException, BundleStateChangeException;
+			throws ExtenderException, InterruptedException, IllegalStateException, BundleStateChangeException;
 
 	/**
 	 * Stops the specified bundle. The bundle is ignored if not in state STARTING or ACTIVE.
 	 * 
 	 * @param bundle the bundle to stop
 	 * @param stopTransient true to stop the bundle transient, otherwise false
-	 * @throws InPlaceException if bundle is null or any of the {@link Bundle#stop(int)} exceptions
+	 * @throws ExtenderException if bundle is null or any of the {@link Bundle#stop(int)} exceptions
 	 */
-	public void stop(Bundle bundle, Boolean stopTransient) throws InPlaceException, BundleStateChangeException;
+	public void stop(Bundle bundle, Boolean stopTransient) throws ExtenderException, BundleStateChangeException;
 	
 	/**
 	 * Stops the specified bundle. The bundle is ignored if not in state STARTING or ACTIVE. 
@@ -100,10 +100,10 @@ public interface BundleCommand {
 	 * @param bundle the bundle to stop
 	 * @param stopTransient true to stop the bundle transient, otherwise false
 	 * @param timeOut terminates the stop operation after the specified timeout in seconds
-	 * @throws InPlaceException if bundle is null or any of the {@link Bundle#stop(int)} exceptions
+	 * @throws ExtenderException if bundle is null or any of the {@link Bundle#stop(int)} exceptions
 	 */
 	public void stop(Bundle bundle, boolean stopTransient, int timeOut) 
-			throws InPlaceException, InterruptedException, IllegalStateException, BundleStateChangeException;
+			throws ExtenderException, InterruptedException, IllegalStateException, BundleStateChangeException;
 
 
 	/**
@@ -113,34 +113,34 @@ public interface BundleCommand {
 	 * 
 	 * @param bundle the bundle object to update
 	 * @return the object of the updated bundle
-	 * @throws InPlaceException if bundle is null or any of the {@link Bundle#update(InputStream)} exceptions
+	 * @throws ExtenderException if bundle is null or any of the {@link Bundle#update(InputStream)} exceptions
 	 * @throws DuplicateBundleException if this bundle is a duplicate - same symbolic name and version - of an
 	 *           already installed bundle with a different location identifier.
 	 */
-	public Bundle update(Bundle bundle) throws InPlaceException, DuplicateBundleException;
+	public Bundle update(Bundle bundle) throws ExtenderException, DuplicateBundleException;
 
 	/**
 	 * Refresh the specified set of bundles asynchronously.
 	 * 
 	 * @param bundles to refresh. Must not be null.
 	 * @param listener to be notified when refresh has been completed
-	 * @throws InPlaceException when the framework wiring object is null, the bundle was created with another
+	 * @throws ExtenderException when the framework wiring object is null, the bundle was created with another
 	 *           framework wiring object than the current or if a security permission is missing. See
 	 *           {@link FrameworkWiring#refreshBundles(Collection, FrameworkListener...)} for details.
 	 * @see FrameworkWiring#refreshBundles(Collection, FrameworkListener...)
 	 */
-	public void refresh(Collection<Bundle> bundles, FrameworkListener listener) throws InPlaceException;
+	public void refresh(Collection<Bundle> bundles, FrameworkListener listener) throws ExtenderException;
 
 	/**
 	 * Refresh the specified set of bundles synchronously.
 	 * 
 	 * @param bundles to refresh. Must not be null.
-	 * @throws InPlaceException when the framework wiring object is null, the bundle was created with another
+	 * @throws ExtenderException when the framework wiring object is null, the bundle was created with another
 	 *           framework wiring object than the current or if a security permission is missing. See
 	 *           {@link FrameworkWiring#refreshBundles(Collection, FrameworkListener...)} for details.
 	 * @see FrameworkWiring#refreshBundles(Collection, FrameworkListener...)
 	 */
-	public void refresh(final Collection<Bundle> bundles) throws InPlaceException;
+	public void refresh(final Collection<Bundle> bundles) throws ExtenderException;
 
 	/**
 	 * Uninstalls and ai the unregister parameter is true removes the specified workspace bundle from the bundle workspace 
@@ -150,9 +150,9 @@ public interface BundleCommand {
 	 * @param bundle the bundle object to uninstall
 	 * @param unregister if true the bundle project will be unregistered. The bundle must be registered again when installed 
 	 * @return the bundle object of the uninstalled bundle
-	 * @throws InPlaceException if bundle is null or any of the {@link Bundle#uninstall()} exceptions
+	 * @throws ExtenderException if bundle is null or any of the {@link Bundle#uninstall()} exceptions
 	 */
-	public IProject uninstall(Bundle bundle, Boolean unregister) throws InPlaceException, ProjectLocationException;
+	public IProject uninstall(Bundle bundle, Boolean unregister) throws ExtenderException, ProjectLocationException;
 
 	/**
 	 * Uninstalls the bundle. The bundle project is not removed from the workspace region if it exists
@@ -160,9 +160,9 @@ public interface BundleCommand {
 	 *  
 	 * @param bundle the bundle object to uninstall
 	 * @return the bundle object of the uninstalled bundle
-	 * @throws InPlaceException if bundle is null or any of the {@link Bundle#uninstall()} exceptions
+	 * @throws ExtenderException if bundle is null or any of the {@link Bundle#uninstall()} exceptions
 	 */
-	public IProject uninstall(Bundle bundle) throws InPlaceException;
+	public IProject uninstall(Bundle bundle) throws ExtenderException;
 
 	/**
 	 * The framework standard dependency walker finding all requiring bundles to the specified initial set of
@@ -184,9 +184,9 @@ public interface BundleCommand {
 	 * Access to in use non current wirings after update and uninstall and before refresh.
 	 * 
 	 * @return bundles with in use non current wirings or an empty collection
-	 * @throws InPlaceException if the framework wiring is null
+	 * @throws ExtenderException if the framework wiring is null
 	 */
-	public Collection<Bundle> getRemovalPending() throws InPlaceException;
+	public Collection<Bundle> getRemovalPending() throws ExtenderException;
 
 	/**
 	 * Get state constant of the specified bundle. If {@code Bundle} is {@code null} return
@@ -241,10 +241,10 @@ public interface BundleCommand {
 	 * 
 	 * @param bundle object of an installed bundle
 	 * @return the current revision of the bundle
-	 * @throws InPlaceException if bundle is null or a proper adapt permission is missing
+	 * @throws ExtenderException if bundle is null or a proper adapt permission is missing
 	 * @see Bundle#adapt(Class)
 	 */
-	public BundleRevision getCurrentRevision(Bundle bundle) throws InPlaceException;
+	public BundleRevision getCurrentRevision(Bundle bundle) throws ExtenderException;
 
 	/**
 	 * Gets all bundle revisions for the specified bundle.
@@ -252,10 +252,10 @@ public interface BundleCommand {
 	 * @param bundle the bundle with one or more revisions
 	 * @return the set of revisions for the bundle as a list. The list should at least contain the current
 	 *         revision of the bundle.
-	 * @throws InPlaceException if the bundle is null or a proper adapt permission is missing
+	 * @throws ExtenderException if the bundle is null or a proper adapt permission is missing
 	 * @see Bundle#adapt(Class)
 	 */
-	public List<BundleRevision> getBundleRevisions(Bundle bundle) throws InPlaceException;
+	public List<BundleRevision> getBundleRevisions(Bundle bundle) throws ExtenderException;
 	
 	public void registerBundle(IProject project, Bundle bundle, Boolean activateBundle);
 

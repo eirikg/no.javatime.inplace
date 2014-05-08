@@ -31,7 +31,7 @@ import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Constants;
 
-import no.javatime.inplace.bundlemanager.InPlaceException;
+import no.javatime.inplace.bundlemanager.ExtenderException;
 import no.javatime.inplace.bundlemanager.ProjectLocationException;
 import no.javatime.util.messages.Category;
 import no.javatime.util.messages.Message;
@@ -70,9 +70,9 @@ public class ManifestUtil {
 					}
 				}
 			} catch (ProjectLocationException e) {
-				throw new InPlaceException(e, "parsing_manifest", project.getName());				
+				throw new ExtenderException(e, "parsing_manifest", project.getName());				
 			} catch (Exception e) {
-				throw new InPlaceException(e, "parsing_manifest", project.getName());
+				throw new ExtenderException(e, "parsing_manifest", project.getName());
 			}
 		}
 	}
@@ -98,9 +98,9 @@ public class ManifestUtil {
 			}
 			saveManifest(project, manifest);
 		} catch (ProjectLocationException e) {
-			throw new InPlaceException(e, "parsing_manifest", project.getName());				
+			throw new ExtenderException(e, "parsing_manifest", project.getName());				
 		} catch (Exception e) {
-			throw new InPlaceException(e, "parsing_manifest", project.getName());
+			throw new ExtenderException(e, "parsing_manifest", project.getName());
 		}
 	}
 
@@ -110,9 +110,9 @@ public class ManifestUtil {
 	 * @param bundle containing the meta information
 	 * @return true if lazy activation or false if not
 	 */
-	public static Boolean getlazyActivationPolicy(Bundle bundle) throws InPlaceException {
+	public static Boolean getlazyActivationPolicy(Bundle bundle) throws ExtenderException {
 		if (null == bundle) {
-			throw new InPlaceException("null_bundle_activation_policy");
+			throw new ExtenderException("null_bundle_activation_policy");
 		}
 		Dictionary<String, String> headers = bundle.getHeaders();
 		String policy = headers.get(Constants.BUNDLE_ACTIVATIONPOLICY);
@@ -127,9 +127,9 @@ public class ManifestUtil {
 	 * 
 	 * @param bundle bundle to check
 	 * @return true if the bundle is a fragment. Otherwise false
-	 * @throws InPlaceException
+	 * @throws ExtenderException
 	 */
-	public static Boolean isFragment(Bundle bundle) throws InPlaceException {
+	public static Boolean isFragment(Bundle bundle) throws ExtenderException {
 		Dictionary<String, String> headers = bundle.getHeaders();
 		// Key is always not null
 		String fragment = headers.get(Constants.FRAGMENT_HOST);
@@ -145,9 +145,9 @@ public class ManifestUtil {
 	 * @param bundle containing class path
 	 * @param path a single path that is checked for existence within the specified class path
 	 * @return true if the specified path is contained in the class path of the specified bundle
-	 * @exception InPlaceException if paring error or an i/o error occurs reading the manifest
+	 * @exception ExtenderException if paring error or an i/o error occurs reading the manifest
 	 */
-	public static Boolean verifyPathInClassPath(Bundle bundle, IPath path) throws InPlaceException {
+	public static Boolean verifyPathInClassPath(Bundle bundle, IPath path) throws ExtenderException {
 		if (null == bundle) {
 			return false;
 		}
@@ -162,9 +162,9 @@ public class ManifestUtil {
 	 * @param path a single path that is checked for existence within the specified class path
 	 * @param classPath containing class path
 	 * @return true if the specified path is contained in the class path of the specified class path string
-	 * @exception InPlaceException if parsing error or an i/o error occurs reading the manifest
+	 * @exception ExtenderException if parsing error or an i/o error occurs reading the manifest
 	 */
-	public static Boolean verifyPathInClassPath(IPath path, String classPath, String name) throws InPlaceException {
+	public static Boolean verifyPathInClassPath(IPath path, String classPath, String name) throws ExtenderException {
 		try {
 
 			// Class path header does not exist
@@ -184,7 +184,7 @@ public class ManifestUtil {
 				try {
 					elements = ManifestElement.parseHeader(Constants.BUNDLE_CLASSPATH, classPath);
 				} catch (BundleException e) {
-					throw new InPlaceException(e, "parsing_manifest", name);
+					throw new ExtenderException(e, "parsing_manifest", name);
 				}
 				if (null != elements && elements.length > 0) {
 					for (int i = 0; i < elements.length; i++) {
@@ -195,8 +195,8 @@ public class ManifestUtil {
 					}
 				}
 			}
-		} catch (InPlaceException e) {
-			throw new InPlaceException(e, "manifest_io_project", name);
+		} catch (ExtenderException e) {
+			throw new ExtenderException(e, "manifest_io_project", name);
 		}
 		return false;
 	}
@@ -206,18 +206,18 @@ public class ManifestUtil {
 	 * 
 	 * @param bundle to which the manifest is associated with
 	 * @return the manifest file
-	 * @exception InPlaceException if {@code Bundle#getEntry(String)} return null or an i/o error occurs reading
+	 * @exception ExtenderException if {@code Bundle#getEntry(String)} return null or an i/o error occurs reading
 	 *              the manifest
 	 */
-	public static Manifest loadManifest(Bundle bundle) throws InPlaceException {
+	public static Manifest loadManifest(Bundle bundle) throws ExtenderException {
 
 		URL url = null;
 		try {
 			url = bundle.getEntry(MANIFEST_FILE_NAME);
 		} catch (IllegalStateException e) {
-			throw new InPlaceException(e, "bundle_state_error", bundle.getSymbolicName());
+			throw new ExtenderException(e, "bundle_state_error", bundle.getSymbolicName());
 		} catch (NullPointerException e) {
-			throw new InPlaceException(e, "no_manifest_found", bundle.getSymbolicName());
+			throw new ExtenderException(e, "no_manifest_found", bundle.getSymbolicName());
 		}
 		try {
 			InputStream is = null;
@@ -225,13 +225,13 @@ public class ManifestUtil {
 				is = url.openStream();
 				return new Manifest(is);
 			} catch (NullPointerException e) {
-				throw new InPlaceException(e, "no_manifest_found", bundle.getSymbolicName());
+				throw new ExtenderException(e, "no_manifest_found", bundle.getSymbolicName());
 			} finally {
 				if (null != is)
 					is.close();
 			}
 		} catch (IOException e) {
-			throw new InPlaceException(e, "manifest_io", bundle.getSymbolicName());
+			throw new ExtenderException(e, "manifest_io", bundle.getSymbolicName());
 		}
 	}
 
@@ -267,9 +267,9 @@ public class ManifestUtil {
 					is.close();
 			}
 		} catch (CoreException e) {
-			throw new InPlaceException(e, "no_manifest_found_project", project.getName());
+			throw new ExtenderException(e, "no_manifest_found_project", project.getName());
 		} catch (IOException e) {
-			throw new InPlaceException(e, "manifest_io_project", project.getName());
+			throw new ExtenderException(e, "manifest_io_project", project.getName());
 		}
 	}
 
@@ -278,11 +278,11 @@ public class ManifestUtil {
 	 * 
 	 * @param project containing the manifest file
 	 * @param manifest file
-	 * @throws InPlaceException if the specified project is null, the location identifier for the specified
+	 * @throws ExtenderException if the specified project is null, the location identifier for the specified
 	 *           project could not be found, manifest file not found, write error or any other IO error updating
 	 *           the manifest file.
 	 */
-	public static void saveManifest(IProject project, Manifest manifest) throws InPlaceException, ProjectLocationException {
+	public static void saveManifest(IProject project, Manifest manifest) throws ExtenderException, ProjectLocationException {
 		String location = null;
 		location = ProjectProperties.getProjectLocationIdentifier(project, Boolean.FALSE);
 		URL urlLoc;
@@ -300,11 +300,11 @@ public class ManifestUtil {
 			}
 			project.refreshLocal(IProject.DEPTH_INFINITE, null);
 		} catch (FileNotFoundException e) {
-			throw new InPlaceException(e, "classpath_file_not_found_error", project.getName());
+			throw new ExtenderException(e, "classpath_file_not_found_error", project.getName());
 		} catch (IOException e) {
-			throw new InPlaceException(e, "classpath_write_error", project.getName());
+			throw new ExtenderException(e, "classpath_write_error", project.getName());
 		} catch (CoreException e) {
-			throw new InPlaceException(e, "manifest_io_project", project.getName());
+			throw new ExtenderException(e, "manifest_io_project", project.getName());
 		}
 	}
 }

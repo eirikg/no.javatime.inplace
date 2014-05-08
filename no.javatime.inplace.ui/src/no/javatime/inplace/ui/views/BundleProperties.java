@@ -19,7 +19,7 @@ import no.javatime.inplace.bundlemanager.BundleManager;
 import no.javatime.inplace.bundlemanager.BundleTransition;
 import no.javatime.inplace.bundlemanager.BundleTransition.Transition;
 import no.javatime.inplace.bundlemanager.BundleTransition.TransitionError;
-import no.javatime.inplace.bundlemanager.InPlaceException;
+import no.javatime.inplace.bundlemanager.ExtenderException;
 import no.javatime.inplace.bundlemanager.ProjectLocationException;
 import no.javatime.inplace.bundleproject.BundleProject;
 import no.javatime.inplace.bundleproject.ManifestUtil;
@@ -142,7 +142,7 @@ public class BundleProperties {
 			try {
 				symbolicName = BundleProject.getSymbolicNameFromManifest(project);
 				version = BundleProject.getBundleVersionFromManifest(project);
-			} catch (InPlaceException e) {
+			} catch (ExtenderException e) {
 			}
 			if (null == symbolicName || null == version) {
 				bundleProjectLabelName = BundleProperties.projectLabelName;
@@ -344,7 +344,7 @@ public class BundleProperties {
 		} else {
 			try {
 				noOfRevisions = BundleManager.getCommand().getBundleRevisions(bundle).size();
-			} catch (InPlaceException e) {
+			} catch (ExtenderException e) {
 				// Ignore and return zero revisions
 			}
 			return String.valueOf(noOfRevisions);
@@ -362,7 +362,7 @@ public class BundleProperties {
 			} else {
 				return (ManifestUtil.getlazyActivationPolicy(bundle)) ? lazyyValueName : eagerValueName;
 			}
-		} catch (InPlaceException e) {
+		} catch (ExtenderException e) {
 			// Don't spam this meassage.
 			if (!ProjectProperties.hasManifestBuildErrors(project) && ProjectProperties.hasBuildState(project)) {
 				String msg = ErrorMessage.getInstance().formatString("error_get_policy", project.getName());
@@ -522,7 +522,7 @@ public class BundleProperties {
 		Boolean uiExtensions = false;
 		try {
 			uiExtensions = ProjectProperties.contributesToTheUI(project);
-		} catch (InPlaceException e) {
+		} catch (ExtenderException e) {
 		}
 		return uiExtensions.toString();
 	}

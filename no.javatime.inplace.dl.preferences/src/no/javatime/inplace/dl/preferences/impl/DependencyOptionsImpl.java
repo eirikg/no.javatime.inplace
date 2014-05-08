@@ -12,7 +12,7 @@ import org.osgi.service.prefs.Preferences;
 
 /**
  * Load/save dependency options to and from preference store and maintains the integrity
- * of closures bound to operations. An operation can only have one current closure (true) 
+ * of closures bound to operations. An operation can only have one current closure 
  * among the set of closures defined for the operation.
  * <p>
  * The project activation and deactivation operations have three closures each. Only partial
@@ -99,6 +99,7 @@ public class DependencyOptionsImpl implements DependencyOptions {
 			if (closure.equals(Closure.PROVIDING)) {
 				return true;
 			}
+			return false;
 		case DEACTIVATE_PROJECT:
 		case DEACTIVATE_BUNDLE:
 			if (closure.equals(Closure.REQUIRING)) {

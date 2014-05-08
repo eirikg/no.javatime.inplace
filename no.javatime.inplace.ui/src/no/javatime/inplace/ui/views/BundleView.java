@@ -20,7 +20,7 @@ import no.javatime.inplace.bundlemanager.BundleManager;
 import no.javatime.inplace.bundlemanager.BundleRegion;
 import no.javatime.inplace.bundlemanager.BundleTransition;
 import no.javatime.inplace.bundlemanager.BundleTransition.Transition;
-import no.javatime.inplace.bundlemanager.InPlaceException;
+import no.javatime.inplace.bundlemanager.ExtenderException;
 import no.javatime.inplace.bundlemanager.ProjectLocationException;
 import no.javatime.inplace.bundleproject.BundleProject;
 import no.javatime.inplace.bundleproject.ManifestUtil;
@@ -269,7 +269,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 				if (null != projectName) {
 					selectProject(ProjectProperties.getProject(projectName), true);
 				}
-			} catch (InPlaceException e) {
+			} catch (ExtenderException e) {
 				// Project not accessible. Ignore set selection
 			}
 		}
@@ -442,7 +442,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 				pullDownMenuManager.add(linkWithAction);
 				pullDownMenuManager.add(updateClassPathAction);
 				pullDownMenuManager.add(new Separator(IWorkbenchActionConstants.MB_ADDITIONS));
-			} catch (InPlaceException e) {
+			} catch (ExtenderException e) {
 				// Menu item not displayed
 			}
 		}
@@ -602,7 +602,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 							isBuildingPending = true;
 						}
 					}
-				} catch (InPlaceException e) {
+				} catch (ExtenderException e) {
 					StatusManager.getManager().handle(
 							new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getLocalizedMessage(), e),
 							StatusManager.LOG);
@@ -639,11 +639,11 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 				return;
 			}
 			try {
-				if (!Activator.getDefault().getOptionsService().isUpdateOnBuild()
+				if (!Activator.getDefault().getCommandOptionsService().isUpdateOnBuild()
 						&& BundleManager.getTransition().containsPending(Transition.UPDATE)) {
 					showProjectInfo();
 				}
-			} catch (InPlaceException e) {
+			} catch (ExtenderException e) {
 				StatusManager.getManager()
 						.handle(new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),
 								StatusManager.LOG);
@@ -1085,7 +1085,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 						removeClassPathLabel /* updateClassPathText */, removeClassPathLabel /* updateClassPathText */,
 						BundleCommandsContributionItems.classPathImage);
 			}
-		} catch (InPlaceException e) {
+		} catch (ExtenderException e) {
 			updateClassPathAction.setEnabled(false);
 		}
 	}
@@ -1419,7 +1419,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 						selProvider.setSelection(pSelection);
 					}
 				}
-			} catch (InPlaceException e) {
+			} catch (ExtenderException e) {
 				// Explorer not updated
 			}
 		}

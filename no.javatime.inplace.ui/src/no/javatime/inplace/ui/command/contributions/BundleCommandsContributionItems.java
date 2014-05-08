@@ -14,7 +14,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import no.javatime.inplace.bundlejobs.BundleJob;
-import no.javatime.inplace.bundlemanager.InPlaceException;
+import no.javatime.inplace.bundlemanager.ExtenderException;
 import no.javatime.inplace.bundleproject.OpenProjectHandler;
 import no.javatime.inplace.ui.Activator;
 import no.javatime.inplace.ui.views.BundleProperties;
@@ -64,7 +64,8 @@ public abstract class BundleCommandsContributionItems extends CompoundContributi
 	public static String addClassPathParamId = Message.getInstance().formatString("add_classpath_menu_parameter"); //$NON-NLS-1$
 	public static String removeClassPathParamId = Message.getInstance().formatString("remove_classpath_menu_parameter"); //$NON-NLS-1$
 	public static String stopOperationParamId = "Stop Bundle Operation"; //$NON-NLS-1$
-
+	public static String partialDependenciesParamId = Message.getInstance().formatString("partial_dependencies_parameter"); //$NON-NLS-1$
+	
 	// Menu icons
 	public static ImageDescriptor activateImage = Activator.getImageDescriptor("icons/activate.gif"); //$NON-NLS-1$
 	public static ImageDescriptor deactivateImage = Activator.getImageDescriptor("icons/deactivate.gif"); //$NON-NLS-1$
@@ -76,8 +77,8 @@ public abstract class BundleCommandsContributionItems extends CompoundContributi
 	public static ImageDescriptor bundleDetailsImage = Activator
 			.getImageDescriptor("icons/gear_details_title.png"); //$NON-NLS-1$
 	public static ImageDescriptor bundleListImage = Activator.getImageDescriptor("icons/gear_list_title.png"); //$NON-NLS-1$
-
 	public static ImageDescriptor classPathImage = Activator.getImageDescriptor("icons/classpath.gif"); //$NON-NLS-1$
+	public static ImageDescriptor dependenciesImage = Activator.getImageDescriptor("icons/dependencies.gif"); //$NON-NLS-1$
 
 	// Menu Labels
 	protected static String showBundleView = "Show Bundle View"; //$NON-NLS-1$
@@ -128,12 +129,12 @@ public abstract class BundleCommandsContributionItems extends CompoundContributi
 
 		try {			
 			BundleJob job = OpenProjectHandler.getRunningBundleJob();
-			boolean timeOut = Activator.getDefault().getOptionsService().isTimeOut();
+			boolean timeOut = Activator.getDefault().getCommandOptionsService().isTimeOut();
 			if (null != job && !timeOut && BundleJob.isStateChanging()) {			
 				return addContribution(menuId, commandId, "Stop Current Bundle Operation", stopOperationParamId,
 						CommandContributionItem.STYLE_PUSH, null);
 			}
-		} catch (InPlaceException e) {
+		} catch (ExtenderException e) {
 		}
 		return null;
 	}

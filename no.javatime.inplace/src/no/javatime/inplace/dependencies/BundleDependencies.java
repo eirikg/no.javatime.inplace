@@ -18,7 +18,7 @@ import java.util.List;
 
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundlemanager.BundleManager;
-import no.javatime.inplace.bundlemanager.InPlaceException;
+import no.javatime.inplace.bundlemanager.ExtenderException;
 import no.javatime.inplace.statushandler.BundleStatus;
 import no.javatime.inplace.statushandler.IBundleStatus.StatusCode;
 import no.javatime.util.messages.WarnMessage;
@@ -373,12 +373,12 @@ public class BundleDependencies {
 	 * @param requirer the bundle to check for requirement on the UI plug-in
 	 * @return true if the specified bundle requires capabilities from the UI plug-in or null if the UI plug-in
 	 *         does not exist or the specified bundle does not require capabilities from the UI plug-in
-	 * @throws InPlaceException if the specified requirer is null
+	 * @throws ExtenderException if the specified requirer is null
 	 */
-	public static Boolean contributesToTheUI(Bundle requirer) throws InPlaceException {
+	public static Boolean contributesToTheUI(Bundle requirer) throws ExtenderException {
 
 		if (null == requirer) {
-			throw new InPlaceException("bundle_null_location");
+			throw new ExtenderException("bundle_null_location");
 		}
 		Bundle provider = Platform.getBundle("org.eclipse.ui");
 		if (null == provider) {

@@ -11,16 +11,14 @@
 package no.javatime.inplace.bundlejobs;
 
 import java.util.Collection;
-import java.util.EnumSet;
 
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundlemanager.BundleTransition.Transition;
-import no.javatime.inplace.bundlemanager.InPlaceException;
+import no.javatime.inplace.bundlemanager.ExtenderException;
 import no.javatime.inplace.bundleproject.ProjectProperties;
+import no.javatime.inplace.dependencies.BundleClosures;
 import no.javatime.inplace.dependencies.CircularReferenceException;
-import no.javatime.inplace.dependencies.PartialDependencies;
 import no.javatime.inplace.dependencies.ProjectSorter;
-import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.statushandler.BundleStatus;
 import no.javatime.inplace.statushandler.IBundleStatus;
 import no.javatime.inplace.statushandler.IBundleStatus.StatusCode;
@@ -128,7 +126,7 @@ public class ActivateProjectJob extends NatureJob {
 			BundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg);
 			multiStatus.add(e.getStatusList());
 			addStatus(multiStatus);
-		} catch (InPlaceException e) {
+		} catch (ExtenderException e) {
 			String msg = ExceptionMessage.getInstance().formatString("terminate_job_with_errors", getName());
 			addError(e, msg);
 		} catch (NullPointerException e) {
@@ -161,12 +159,12 @@ public class ActivateProjectJob extends NatureJob {
 	 * @return status object describing the result of activating with {@code StatusCode.OK} if no failure,
 	 *         otherwise one of the failure codes are returned. If more than one bundle fails, status of the
 	 *         last failed bundle is returned. All failures are added to the job status list
-	 * @throws InPlaceException when failing to enable nature
+	 * @throws ExtenderException when failing to enable nature
 	 * @throws CircularReferenceException if cycles are detected in the project graph
 	 * @see #getStatusList()
 	 */
 	private IBundleStatus activate(IProgressMonitor monitor) 
-			throws InPlaceException, InterruptedException, CircularReferenceException {
+			throws ExtenderException, InterruptedException, CircularReferenceException {
 
 		if (pendingProjects() > 0) {
 			IBundleStatus result = initWorkspace(monitor);
@@ -180,8 +178,8 @@ public class ActivateProjectJob extends NatureJob {
 				String msg = WarnMessage.getInstance().formatString("terminate_with_errors", getName());
 				return createMultiStatus(new BundleStatus(StatusCode.WARNING, InPlace.PLUGIN_ID, msg));
 			}
-			PartialDependencies pd = new PartialDependencies();
-			Collection<IProject> projects = pd.projectActivationDependencies(getPendingProjects(), false);
+			BundleClosures pd = new BundleClosures();
+			Collection<IProject> projects = pd.projectActivation(getPendingProjects(), false);
 			resetPendingProjects(projects);
 			activateNature(getPendingProjects(), new SubProgressMonitor(monitor, 1));
 			// An activate project job triggers an update job when the workspace is activated and
@@ -265,11 +263,11 @@ public class ActivateProjectJob extends NatureJob {
 	private IBundleStatus uninstallBundles(Collection<Bundle> bundlesToUninstall, IProgressMonitor monitor)
 			throws OperationCanceledException, InterruptedException, CircularReferenceException {
 		int entrySize = statusList();
-		IBundleStatus status = stop(bundlesToUninstall, EnumSet.of(Closure.SINGLE), new SubProgressMonitor(monitor, 1));
+		IBundleStatus status = stop(bundlesToUninstall, null, new SubProgressMonitor(monitor, 1));
 		if (monitor.isCanceled()) {
 			throw new OperationCanceledException();
 		}
-		status = uninstall(bundlesToUninstall, EnumSet.of(Closure.SINGLE), new SubProgressMonitor(monitor, 1), false);
+		status = uninstall(bundlesToUninstall, new SubProgressMonitor(monitor, 1), false);
 		if (!status.hasStatus(StatusCode.OK)) {
 			String msg = ErrorMessage.getInstance().formatString("failed_uninstall_before_activate");
 			IBundleStatus multiStatus = new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID, msg);

@@ -93,18 +93,6 @@ public class Category extends Message {
 	public static final String contexts = "contexts";	
 	public static final String fsm = "fsm";	
 
-	// Dependency dialog
-	public static final String partialGraphOnActivate = "partialGraphOnActivate";
-	public static final String partialGraphOnStart = "partialGraphOnStart";
-	public static final String partialGraphOnDeactivate = "partialGraphOnDeactivate";
-	public static final String partialGraphOnStop = "partialGraphOnStop";
-	public static final String requiringOnActivate = "requiringOnActivate";
-	public static final String requiringOnStart = "requiringOnStart";
-	public static final String providingOnStart = "providingOnStart";
-	public static final String requiringOnStop = "requiringOnStop";
-	public static final String providingOnStop = "providingOnStop";
-	public static final String providingOnDeactivate = "providingOnDeactivate";
-	
 	// InPlace Console tool bar items
 	public static final String bundleEvents = "bundleEvents";
 	public static final String bundleOperations = "bundleOperations";
@@ -136,17 +124,7 @@ public class Category extends Message {
 		categories.put(fsm, (get(fsm, categoryBundle).startsWith(enable.toString()) ? enable : disable));		
 		// Use OSGI log service for tracing
 		categories.put(logService, (get(logService, categoryBundle).startsWith(enable.toString()) ? enable : disable));
-		// Dependency dialog
-		categories.put(partialGraphOnActivate, (get(partialGraphOnActivate, categoryBundle).startsWith(enable.toString()) ? enable : disable));
-		categories.put(partialGraphOnStart, (get(partialGraphOnStart, categoryBundle).startsWith(enable.toString()) ? enable : disable));
-		categories.put(partialGraphOnDeactivate, (get(partialGraphOnDeactivate, categoryBundle).startsWith(enable.toString()) ? enable : disable));
-		categories.put(partialGraphOnStop, (get(partialGraphOnStop, categoryBundle).startsWith(enable.toString()) ? enable : disable));
-		categories.put(requiringOnActivate, (get(requiringOnActivate, categoryBundle).startsWith(enable.toString()) ? enable : disable));
-		categories.put(requiringOnStart, (get(requiringOnStart, categoryBundle).startsWith(enable.toString()) ? enable : disable));
-		categories.put(providingOnStart, (get(providingOnStart, categoryBundle).startsWith(enable.toString()) ? enable : disable));
-		categories.put(requiringOnStop, (get(requiringOnStop, categoryBundle).startsWith(enable.toString()) ? enable : disable));
-		categories.put(providingOnStop, (get(providingOnStop, categoryBundle).startsWith(enable.toString()) ? enable : disable));
-		categories.put(providingOnDeactivate, (get(providingOnDeactivate, categoryBundle).startsWith(enable.toString()) ? enable : disable));
+
 		// InPlace Console context menu tool bar items
 		categories.put(bundleEvents, (get(bundleEvents, categoryBundle).startsWith(enable.toString()) ? enable : disable));
 		categories.put(bundleOperations, (get(bundleOperations, categoryBundle).startsWith(enable.toString()) ? enable : disable));
@@ -301,6 +279,7 @@ public class Category extends Message {
 	/**
 	 * {@inheritDoc}
 	 */
+	@Override
 	protected String getString(final String key) {
 		return getString(key, categoryBundle, CATEGORY_PROPERTIES_FILE_NAME);
 	}

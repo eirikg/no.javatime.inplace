@@ -14,7 +14,6 @@ import java.io.InterruptedIOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
@@ -24,7 +23,7 @@ import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundlemanager.BundleTransition.Transition;
 import no.javatime.inplace.bundlemanager.BundleTransition.TransitionError;
 import no.javatime.inplace.bundlemanager.DuplicateBundleException;
-import no.javatime.inplace.bundlemanager.InPlaceException;
+import no.javatime.inplace.bundlemanager.ExtenderException;
 import no.javatime.inplace.bundlemanager.ProjectLocationException;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.dependencies.BundleSorter;
@@ -123,7 +122,7 @@ public class UpdateJob extends BundleJob {
 			BundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg);
 			multiStatus.add(e.getStatusList());
 			addStatus(multiStatus);
-		} catch (InPlaceException e) {
+		} catch (ExtenderException e) {
 			String msg = ExceptionMessage.getInstance().formatString("terminate_job_with_errors", getName());
 			addError(e, msg);
 		} catch (NullPointerException e) {
@@ -169,7 +168,7 @@ public class UpdateJob extends BundleJob {
 	 *         last failed bundle is returned. All failures are added to the job status list
 	 * @throws InterruptedIOException 
 	 */
-	private IBundleStatus update(IProgressMonitor monitor) throws InPlaceException, InterruptedException, CoreException {
+	private IBundleStatus update(IProgressMonitor monitor) throws ExtenderException, InterruptedException, CoreException {
 
 		// (1) Collect any additional bundles to update
 		// Update all bundles that are part of an activation process when the update on build option is switched
@@ -213,7 +212,7 @@ public class UpdateJob extends BundleJob {
 			}
 		}
 		// (5) Stop bundles collected in (4)
-		stop(bundlesToRestart, EnumSet.of(Closure.SINGLE), new SubProgressMonitor(monitor, 1));
+		stop(bundlesToRestart, null, new SubProgressMonitor(monitor, 1));
 		if (monitor.isCanceled()) {
 			throw new OperationCanceledException();
 		}
@@ -254,7 +253,7 @@ public class UpdateJob extends BundleJob {
 			throw new OperationCanceledException();
 		}
 		// (9) Start all bundles stopped in (4)
-		start(bundlesToRestart, EnumSet.of(Closure.PROVIDING), new SubProgressMonitor(monitor, 1));
+		start(bundlesToRestart, Closure.PROVIDING, new SubProgressMonitor(monitor, 1));
 
 		// (10) Restore any transition errors from before update
 		// Successful start operations removes the error transition added when updated.
@@ -329,7 +328,7 @@ public class UpdateJob extends BundleJob {
 						statusList = new LinkedHashSet<IBundleStatus>();
 					}
 					statusList.add(result);
-				} catch (InPlaceException e) {
+				} catch (ExtenderException e) {
 					IBundleStatus result = addError(e, e.getLocalizedMessage(), bundle.getBundleId());
 					if (null == statusList) {
 						statusList = new LinkedHashSet<IBundleStatus>();

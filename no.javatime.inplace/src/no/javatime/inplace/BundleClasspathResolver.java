@@ -11,7 +11,7 @@ import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.pde.core.IBundleClasspathResolver;
 
-import no.javatime.inplace.bundlemanager.InPlaceException;
+import no.javatime.inplace.bundlemanager.ExtenderException;
 import no.javatime.inplace.bundleproject.BundleProject;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 
@@ -39,7 +39,7 @@ public class BundleClasspathResolver implements IBundleClasspathResolver {
 				additionalEntries.put(path, Collections.singletonList(defaultOutputlocation)); 
 			}
 		} catch (JavaModelException e) {
-		} catch (InPlaceException e) {
+		} catch (ExtenderException e) {
 		}
 		return (Map) additionalEntries;
 	}

@@ -11,13 +11,11 @@
 package no.javatime.inplace.bundlejobs;
 
 import java.util.Collection;
-import java.util.EnumSet;
 
 import no.javatime.inplace.InPlace;
-import no.javatime.inplace.bundlemanager.InPlaceException;
+import no.javatime.inplace.bundlemanager.ExtenderException;
 import no.javatime.inplace.dependencies.BundleSorter;
 import no.javatime.inplace.dependencies.CircularReferenceException;
-import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.statushandler.BundleStatus;
 import no.javatime.inplace.statushandler.IBundleStatus;
 import no.javatime.inplace.statushandler.IBundleStatus.StatusCode;
@@ -113,7 +111,7 @@ public class UninstallJob extends NatureJob {
 			BundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg);
 			multiStatus.add(e.getStatusList());
 			addStatus(multiStatus);
-		} catch (InPlaceException e) {
+		} catch (ExtenderException e) {
 			String msg = ExceptionMessage.getInstance().formatString("terminate_job_with_errors", getName());
 			addError(e, msg);
 		} catch (NullPointerException e) {
@@ -150,11 +148,11 @@ public class UninstallJob extends NatureJob {
 		bs.setAllowCycles(Boolean.TRUE);
 		Collection<Bundle> bundlesToUninstall = null;
 		bundlesToUninstall = bs.sortDeclaredRequiringBundles(pendingBundles, bundleRegion.getBundles());
-		stop(bundlesToUninstall, EnumSet.of(Closure.SINGLE), new SubProgressMonitor(monitor, 1));
+		stop(bundlesToUninstall, null, new SubProgressMonitor(monitor, 1));
 		if (monitor.isCanceled()) {
 			throw new OperationCanceledException();
 		}
-		uninstall(bundlesToUninstall, EnumSet.of(Closure.SINGLE), new SubProgressMonitor(monitor, 1), unregisterBundleProject);
+		uninstall(bundlesToUninstall, new SubProgressMonitor(monitor, 1), unregisterBundleProject);
 		if (monitor.isCanceled()) {
 			throw new OperationCanceledException();
 		}

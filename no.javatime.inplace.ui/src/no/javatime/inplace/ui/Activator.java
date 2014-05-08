@@ -10,11 +10,13 @@
  *******************************************************************************/
 package no.javatime.inplace.ui;
 
+import java.util.Collection;
+
 import no.javatime.inplace.bundlejobs.BundleJob;
 import no.javatime.inplace.bundlejobs.events.BundleJobEvent;
 import no.javatime.inplace.bundlejobs.events.BundleJobEventListener;
 import no.javatime.inplace.bundlemanager.BundleManager;
-import no.javatime.inplace.bundlemanager.InPlaceException;
+import no.javatime.inplace.bundlemanager.ExtenderException;
 import no.javatime.inplace.dl.preferences.intface.CommandOptions;
 import no.javatime.inplace.statushandler.BundleStatus;
 import no.javatime.inplace.statushandler.IBundleStatus.StatusCode;
@@ -25,10 +27,10 @@ import no.javatime.inplace.ui.command.handlers.DeactivateOnExitHandler;
 import no.javatime.inplace.ui.command.handlers.EagerActivationHandler;
 import no.javatime.inplace.ui.command.handlers.UIContributorsHandler;
 import no.javatime.inplace.ui.command.handlers.UpdateClassPathOnActivateHandler;
+import no.javatime.inplace.ui.extender.ExtenderBundleTracker;
+import no.javatime.inplace.ui.extender.Extender;
 import no.javatime.inplace.ui.views.BundleView;
-import no.javatime.util.messages.Category;
 import no.javatime.util.messages.Message;
-import no.javatime.util.messages.WarnMessage;
 
 import org.eclipse.core.commands.Command;
 import org.eclipse.core.commands.State;
@@ -48,7 +50,8 @@ import org.eclipse.ui.progress.IWorkbenchSiteProgressService;
 import org.eclipse.ui.statushandlers.StatusManager;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
-import org.osgi.service.prefs.BackingStoreException;
+import org.osgi.framework.BundleException;
+import org.osgi.util.tracker.BundleTracker;
 import org.osgi.util.tracker.ServiceTracker;
 
 
@@ -64,8 +67,9 @@ public class Activator extends AbstractUIPlugin implements BundleJobEventListene
 	
 	// Get the workbench window from UI thread
 	private IWorkbenchWindow workBenchWindow = null;
-	private ServiceTracker<CommandOptions, CommandOptions> optionsStoretracker;
-
+	private ServiceTracker<CommandOptions, CommandOptions> commandOptionsTracker;
+	private BundleTracker<Extender> extenderBundleTracker;
+	private ExtenderBundleTracker extenderBundleTrackerCustomizer;
 	/**
 	 * The constructor
 	 */
@@ -76,15 +80,19 @@ public class Activator extends AbstractUIPlugin implements BundleJobEventListene
 	 * (non-Javadoc)
 	 * @see org.eclipse.ui.plugin.AbstractUIPlugin#start(org.osgi.framework.BundleContext)
 	 */
+	@Override
 	public void start(BundleContext context) throws Exception {
 		super.start(context);
 		plugin = this;
 		Activator.context = context;
+		extenderBundleTrackerCustomizer = new ExtenderBundleTracker();
+		int trackStates = Bundle.ACTIVE | Bundle.STARTING | Bundle.STOPPING | Bundle.RESOLVED | Bundle.INSTALLED | Bundle.UNINSTALLED;
+		extenderBundleTracker = new BundleTracker<Extender>(context, trackStates, extenderBundleTrackerCustomizer);
+		extenderBundleTracker.open();
 		BundleManager.addBundleJobListener(Activator.getDefault());
-		loadPluginSettings(true);
-		optionsStoretracker = new ServiceTracker<CommandOptions, CommandOptions>
+		commandOptionsTracker = new ServiceTracker<CommandOptions, CommandOptions>
 				(context, CommandOptions.class.getName(), null);
-		optionsStoretracker.open();
+		commandOptionsTracker.open();
 		try {			
 			loadCheckedMenus();
 		} catch (IllegalStateException e) {
@@ -92,7 +100,7 @@ public class Activator extends AbstractUIPlugin implements BundleJobEventListene
 					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),
 					StatusManager.LOG);			
 			throw e;
-		} catch (InPlaceException e) {
+		} catch (ExtenderException e) {
 			StatusManager.getManager().handle(
 					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),
 					StatusManager.LOG);			
@@ -104,20 +112,27 @@ public class Activator extends AbstractUIPlugin implements BundleJobEventListene
 	 * (non-Javadoc)
 	 * @see org.eclipse.ui.plugin.AbstractUIPlugin#stop(org.osgi.framework.BundleContext)
 	 */
+	@Override
 	public void stop(BundleContext context) throws Exception {
-		savePluginSettings(true);
+
 		BundleManager.removeBundleJobListener(this);
-		optionsStoretracker.close();
-		optionsStoretracker = null;
+		commandOptionsTracker.close();
+		commandOptionsTracker = null;
+		extenderBundleTracker.close();
+		extenderBundleTracker = null;
 		super.stop(context);
 		plugin = null;
 	}
 	
-	public CommandOptions getOptionsService() throws InPlaceException {
+	public BundleTracker<Extender> getExtenderBundleTracker() {
+		return extenderBundleTracker;
+	}
 
-		CommandOptions cmdOpt = optionsStoretracker.getService();
+	public CommandOptions getCommandOptionsService() throws ExtenderException {
+
+		CommandOptions cmdOpt = commandOptionsTracker.getService();
 		if (null == cmdOpt) {
-			throw new InPlaceException("invalid_service", CommandOptions.class.getName());			
+			throw new ExtenderException("invalid_service", CommandOptions.class.getName());			
 		}
 		return cmdOpt;
 	}
@@ -139,6 +154,7 @@ public class Activator extends AbstractUIPlugin implements BundleJobEventListene
 
 		bundleJob.setUser(setUser);
 		Activator.getDisplay().asyncExec(new Runnable() {
+			@Override
 			public void run() {
 				BundleView bv = (BundleView) Message.getView(BundleView.ID);
 				if (null != bv) {
@@ -173,25 +189,23 @@ public class Activator extends AbstractUIPlugin implements BundleJobEventListene
 	 * Restore state of checked menu entries
 	 * <p>
 	 * Only necessary on startup
-	 * @throws InPlaceException - if the command service or the option store is unavailable
+	 * @throws ExtenderException - if the command service or the option store is unavailable
 	 */
-	public void loadCheckedMenus() throws InPlaceException {
+	public void loadCheckedMenus() throws ExtenderException {
 
 		ICommandService service =
 				(ICommandService) PlatformUI.getWorkbench().getService(ICommandService.class);
 		if (null == service) {
-			throw new InPlaceException("invalid_service", ICommandService.class.getName());
+			throw new ExtenderException("invalid_service", ICommandService.class.getName());
 		}
-		CommandOptions cmdOpt = getOptionsService();
+		CommandOptions cmdOpt = getCommandOptionsService();
 		Command command = service.getCommand(EagerActivationHandler.commandId);
 		State state = command.getState(EagerActivationHandler.stateId);
 		state.setValue(cmdOpt.isEagerOnActivate());
-//		service.refreshElements(command.getId(), null);
 
 		command = service.getCommand(AutoExternalCommandHandler.commandId);
 		state = command.getState(AutoExternalCommandHandler.stateId);
 		state.setValue(cmdOpt.isAutoHandleExternalCommands());
-//		service.refreshElements(command.getId(), null);
 
 		command = service.getCommand(AutoRefreshHandler.commandId);
 		state = command.getState(AutoRefreshHandler.stateId);
@@ -201,110 +215,18 @@ public class Activator extends AbstractUIPlugin implements BundleJobEventListene
 		command = service.getCommand(AutoUpdateHandler.commandId);
 		state = command.getState(AutoUpdateHandler.stateId);
 		state.setValue(cmdOpt.isUpdateOnBuild());
-//		service.refreshElements(command.getId(), null);
 
 		command = service.getCommand(DeactivateOnExitHandler.commandId);
 		state = command.getState(DeactivateOnExitHandler.stateId);
 		state.setValue(cmdOpt.isDeactivateOnExit());
-//		service.refreshElements(command.getId(), null);
 
 		command = service.getCommand(UpdateClassPathOnActivateHandler.commandId);
 		state = command.getState(UpdateClassPathOnActivateHandler.stateId);
 		state.setValue(cmdOpt.isUpdateDefaultOutPutFolder());
-//		service.refreshElements(command.getId(), null);
 
 		command = service.getCommand(UIContributorsHandler.commandId);
 		state = command.getState(UIContributorsHandler.stateId);
 		state.setValue(cmdOpt.isAllowUIContributions());
-//		service.refreshElements(command.getId(), null);
-	}
-
-	public void loadPluginSettings(Boolean sync) {
-
-		IEclipsePreferences prefs = getEclipsePreferenceStore();
-		if (null == prefs) {
-			return;
-		}
-		// Activate
-		Category.setState(Category.partialGraphOnActivate, prefs.getBoolean(Category.partialGraphOnActivate, 
-				Category.getState(Category.partialGraphOnActivate)));
-		Category.setState(Category.requiringOnActivate, prefs.getBoolean(Category.requiringOnActivate, 
-				Category.getState(Category.requiringOnActivate)));	
-		// Start
-		Category.setState(Category.partialGraphOnStart, prefs.getBoolean(Category.partialGraphOnStart, 
-				Category.getState(Category.partialGraphOnStart)));		
-		Category.setState(Category.requiringOnStart, prefs.getBoolean(Category.requiringOnStart, 
-				Category.getState(Category.requiringOnStart)));		
-		Category.setState(Category.providingOnStart, prefs.getBoolean(Category.providingOnStart, 
-				Category.getState(Category.providingOnStart)));		
-		// Deactivate
-		Category.setState(Category.partialGraphOnDeactivate, prefs.getBoolean(Category.partialGraphOnDeactivate, 
-				Category.getState(Category.partialGraphOnDeactivate)));		
-		Category.setState(Category.providingOnDeactivate, prefs.getBoolean(Category.providingOnDeactivate, 
-				Category.getState(Category.providingOnDeactivate)));		
-		// Stop
-		Category.setState(Category.partialGraphOnStop, prefs.getBoolean(Category.partialGraphOnStop, 
-				Category.getState(Category.partialGraphOnStop)));		
-		Category.setState(Category.requiringOnStop, prefs.getBoolean(Category.requiringOnStop, 
-				Category.getState(Category.requiringOnStop)));		
-		Category.setState(Category.providingOnStop, prefs.getBoolean(Category.providingOnStop, 
-				Category.getState(Category.providingOnStop)));		
-	}
-	/**
-	 * Save various settings through the preference service at the workspace level
-	 * 
-	 * @param flush true to save settings to storage
-	 */
-	public void savePluginSettings(Boolean flush) {
-
-		IEclipsePreferences prefs = getEclipsePreferenceStore();
-		if (null == prefs) {
-			String msg = WarnMessage.getInstance().formatString("failed_getting_preference_store");
-			StatusManager.getManager().handle(new BundleStatus(StatusCode.WARNING, Activator.PLUGIN_ID, msg),
-					StatusManager.LOG);
-			return;
-		}
-		try {
-			prefs.clear();
-		} catch (BackingStoreException e) {
-			String msg = WarnMessage.getInstance().formatString("failed_clearing_preference_store");
-			StatusManager.getManager().handle(new BundleStatus(StatusCode.WARNING, Activator.PLUGIN_ID, msg, e),
-					StatusManager.LOG);
-			return; // Use existing values
-		}
-		if (BundleManager.getRegion().isBundleWorkspaceActivated()) {
-			for (Bundle bundle : BundleManager.getRegion().getBundles()) {
-				String symbolicKey = BundleManager.getRegion().getSymbolicKey(bundle, null);
-				if ((bundle.getState() & (Bundle.RESOLVED)) != 0) {
-					prefs.putInt(symbolicKey, bundle.getState());
-				}
-			}
-		}
-		// Activate
-		prefs.putBoolean(Category.partialGraphOnActivate, Category.getState(Category.partialGraphOnActivate));
-		prefs.putBoolean(Category.requiringOnActivate, Category.getState(Category.requiringOnActivate));
-		// Start
-		prefs.putBoolean(Category.requiringOnStart, Category.getState(Category.requiringOnStart));
-		prefs.putBoolean(Category.providingOnStart, Category.getState(Category.providingOnStart));
-		prefs.putBoolean(Category.partialGraphOnStart, Category.getState(Category.partialGraphOnStart));
-		// Deactivate
-		prefs.putBoolean(Category.partialGraphOnDeactivate, Category.getState(Category.partialGraphOnDeactivate));
-		prefs.putBoolean(Category.providingOnDeactivate, Category.getState(Category.providingOnDeactivate));
-		// Stop
-		prefs.putBoolean(Category.partialGraphOnStop, Category.getState(Category.partialGraphOnStop));		
-		prefs.putBoolean(Category.requiringOnStop, Category.getState(Category.requiringOnStop));
-		prefs.putBoolean(Category.providingOnStop, Category.getState(Category.providingOnStop));
-		
-		
-		try {
-			if (flush) {
-				prefs.flush();
-			}
-		} catch (BackingStoreException e) {
-			String msg = WarnMessage.getInstance().formatString("failed_flushing_preference_store");
-			StatusManager.getManager().handle(new BundleStatus(StatusCode.WARNING, Activator.PLUGIN_ID, msg),
-					StatusManager.LOG);
-		}
 	}
 
 	/**
@@ -347,6 +269,7 @@ public class Activator extends AbstractUIPlugin implements BundleJobEventListene
 		}
 		workBenchWindow = null;
 		getDisplay().syncExec(new Runnable() {
+			@Override
 			public void run() {
 				workBenchWindow = workBench.getActiveWorkbenchWindow();
 			}

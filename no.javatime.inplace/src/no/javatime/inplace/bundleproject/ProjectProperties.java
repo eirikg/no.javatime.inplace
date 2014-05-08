@@ -20,7 +20,7 @@ import java.util.LinkedHashSet;
 
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.builder.JavaTimeNature;
-import no.javatime.inplace.bundlemanager.InPlaceException;
+import no.javatime.inplace.bundlemanager.ExtenderException;
 import no.javatime.inplace.bundlemanager.ProjectLocationException;
 import no.javatime.inplace.dependencies.CircularReferenceException;
 import no.javatime.inplace.dependencies.ProjectSorter;
@@ -142,12 +142,12 @@ public class ProjectProperties {
 				// Ignore closed or non-existing project
 			}
 			try {
-				if (!InPlace.getDefault().getOptionsService().isAllowUIContributions()) {
+				if (!InPlace.getDefault().getCommandOptionsService().isAllowUIContributions()) {
 					projects.removeAll(getUIContributors());
 				}
 			} catch (CircularReferenceException e) {
 				// Ignore. Cycles are detected in any bundle job
-			}	catch (InPlaceException e) {
+			}	catch (ExtenderException e) {
 				StatusManager.getManager().handle(
 						new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, e.getMessage(), e),
 						StatusManager.LOG);
@@ -175,12 +175,12 @@ public class ProjectProperties {
 				// Ignore closed or non-existing project
 			}
 			try {
-				if (!InPlace.getDefault().getOptionsService().isAllowUIContributions()) {
+				if (!InPlace.getDefault().getCommandOptionsService().isAllowUIContributions()) {
 					projects.removeAll(getUIContributors());
 				}
 			} catch (CircularReferenceException e) {
 				// Ignore. Cycles are detected in any bundle job
-			}	catch (InPlaceException e) {
+			}	catch (ExtenderException e) {
 				StatusManager.getManager().handle(
 						new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, e.getMessage(), e),
 						StatusManager.LOG);
@@ -271,7 +271,7 @@ public class ProjectProperties {
 		try {
 			if (project.hasNature(JavaCore.NATURE_ID) && project.isNatureEnabled(PLUGIN_NATURE_ID)
 					&& !isProjectActivated(project)) {
-				if (InPlace.getDefault().getOptionsService().isAllowUIContributions()) {
+				if (InPlace.getDefault().getCommandOptionsService().isAllowUIContributions()) {
 					return true;
 				} else {
 					Collection<IProject> uiContributors = getUIContributors();
@@ -286,7 +286,7 @@ public class ProjectProperties {
 			// Ignore closed or non-existing project
 		} catch (CircularReferenceException e) {
 			// Ignore. Cycles are detected in any bundle job
-		}	catch (InPlaceException e) {
+		}	catch (ExtenderException e) {
 			StatusManager.getManager().handle(
 					new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, e.getMessage(), e),
 					StatusManager.LOG);
@@ -312,7 +312,7 @@ public class ProjectProperties {
 				}
 			} catch (CoreException e) {
 				// Ignore closed or non-existing project
-			} catch (InPlaceException e) {
+			} catch (ExtenderException e) {
 				// Ignore problems getting project description
 			}
 		}
@@ -330,12 +330,12 @@ public class ProjectProperties {
 	 * 
 	 * @param project to check for dependency on the UI plug-in
 	 * @return true if this project is dependent on the UI plug-in, otherwise false
-	 * @throws InPlaceException if project is null or failed to get the bundle project description
+	 * @throws ExtenderException if project is null or failed to get the bundle project description
 	 */
-	public static Boolean contributesToTheUI(IProject project) throws InPlaceException {
+	public static Boolean contributesToTheUI(IProject project) throws ExtenderException {
 
 		if (null == project) {
-			throw new InPlaceException("project_null_location");
+			throw new ExtenderException("project_null_location");
 		}
 		IBundleProjectDescription bundleProjDesc = InPlace.getDefault().getBundleDescription(project);
 		if (null == bundleProjDesc) {
@@ -358,10 +358,10 @@ public class ProjectProperties {
 	 * 
 	 * @param projectName name of a given project
 	 * @return the java project or null if the given project is null
-	 * @throws InPlaceException
-	 * @throws InPlaceException if the project does not exist or is not open
+	 * @throws ExtenderException
+	 * @throws ExtenderException if the project does not exist or is not open
 	 */
-	public static IJavaProject getJavaProject(String projectName) throws InPlaceException{
+	public static IJavaProject getJavaProject(String projectName) throws ExtenderException{
 		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
 		IProject project = root.getProject(projectName);
 		if (null == project) {
@@ -375,16 +375,16 @@ public class ProjectProperties {
 	 * 
 	 * @param project a given project
 	 * @return the java project or null if the given project is null
-	 * @throws InPlaceException if the project does not exist or is not open
+	 * @throws ExtenderException if the project does not exist or is not open
 	 */
-	public static IJavaProject getJavaProject(IProject project) throws InPlaceException {
+	public static IJavaProject getJavaProject(IProject project) throws ExtenderException {
 		IJavaProject javaProject = null;
 		try {
 			if (project.hasNature(JavaCore.NATURE_ID)) {
 				javaProject = JavaCore.create(project);
 			}
 		} catch (CoreException e) {
-			throw new InPlaceException("project_not_accessible", e);
+			throw new ExtenderException("project_not_accessible", e);
 		}
 		return javaProject;
 	}
@@ -415,7 +415,7 @@ public class ProjectProperties {
 	 */
 	public static IProject getProject(String name) {
 		if (null == name) {
-			throw new InPlaceException("project_null");
+			throw new ExtenderException("project_null");
 		}
 		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
 		IProject p = root.getProject(name);
@@ -509,10 +509,10 @@ public class ProjectProperties {
 	 * @param project with source folders
 	 * @return source folders or an empty collection
 	 * @throws JavaModelException when accessing the project resource or the class path element does not exist
-	 * @throws InPlaceException if the project could not be accessed
+	 * @throws ExtenderException if the project could not be accessed
 	 */
 	public static Collection<IPath> getJavaProjectSourceFolders(IProject project) throws JavaModelException,
-			InPlaceException {
+			ExtenderException {
 		ArrayList<IPath> paths = new ArrayList<IPath>();
 		IJavaProject javaProject = getJavaProject(project);
 		IClasspathEntry[] classpathEntries = javaProject.getResolvedClasspath(true);
@@ -551,9 +551,9 @@ public class ProjectProperties {
 	 * Check if there are build errors from the most recent build.
 	 * 
 	 * @return cancel list of projects with errors or an empty list
-	 * @throws InPlaceException if one of the specified projects does not exist or is closed
+	 * @throws ExtenderException if one of the specified projects does not exist or is closed
 	 */
-	public static Collection<IProject> getBuildErrors(Collection<IProject> projects) throws InPlaceException {
+	public static Collection<IProject> getBuildErrors(Collection<IProject> projects) throws ExtenderException {
 		Collection<IProject> errors = new LinkedHashSet<IProject>();
 		for (IProject project : projects) {
 			if (hasBuildErrors(project)) {
@@ -569,9 +569,9 @@ public class ProjectProperties {
 	 * @param project the {@link IJavaProject} to check for errors
 	 * @return <code>true</code> if the project has compilation errors (or has never been built),
 	 *         <code>false</code> otherwise
-	 * @throws InPlaceException if project does not exist or is closed
+	 * @throws ExtenderException if project does not exist or is closed
 	 */
-	public static boolean hasBuildErrors(IProject project) throws InPlaceException {
+	public static boolean hasBuildErrors(IProject project) throws ExtenderException {
 
 		try {
 			if (null != project && project.isAccessible()) {
@@ -585,12 +585,12 @@ public class ProjectProperties {
 				}
 			}
 		} catch (CoreException e) {
-			throw new InPlaceException(e, "has_build_errors", project);
+			throw new ExtenderException(e, "has_build_errors", project);
 		}
 		return false;
 	}
 
-	public static boolean hasManifestBuildErrors(IProject project) throws InPlaceException {
+	public static boolean hasManifestBuildErrors(IProject project) throws ExtenderException {
 
 		try {
 			if (!BundleProject.hasManifest(project)) {
@@ -608,7 +608,7 @@ public class ProjectProperties {
 				}
 			}
 		} catch (CoreException e) {
-			throw new InPlaceException(e, "manifest_has_errors", project);
+			throw new ExtenderException(e, "manifest_has_errors", project);
 		}
 		return false;
 	}
@@ -635,10 +635,10 @@ public class ProjectProperties {
 	 * @param project to check for build state
 	 * @return true if the project has build state, otherwise false
 	 */
-	public static boolean hasBuildState(IProject project) throws InPlaceException {
+	public static boolean hasBuildState(IProject project) throws ExtenderException {
 
 		if (null == project) {
-			throw new InPlaceException("null_project_build_state");
+			throw new ExtenderException("null_project_build_state");
 		}
 		if (project.isAccessible()) {
 			IJavaProject javaProject = getJavaProject(project.getName());
@@ -750,7 +750,7 @@ public class ProjectProperties {
 			desc.setAutoBuilding(autoBuild);
 			workspace.setDescription(desc);
 		} catch (CoreException e) {
-			throw new InPlaceException(e, "error_set_autobuild");
+			throw new ExtenderException(e, "error_set_autobuild");
 		}
 		return autoBuilding;
 	}

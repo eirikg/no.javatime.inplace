@@ -18,11 +18,11 @@ import no.javatime.util.messages.ExceptionMessage;
  * and sent to devices defined by {@code ExceptionMessage}   
  *
  */
-public class InPlaceException extends RuntimeException {
+public class ExtenderException extends RuntimeException {
 
 	private static final long serialVersionUID = -6632902141188744336L;
 	
-	public InPlaceException () {
+	public ExtenderException () {
 		super();	
 	}
 
@@ -31,7 +31,7 @@ public class InPlaceException extends RuntimeException {
 	 * 
 	 * @param tex the current thrown exception
 	 */
-	public InPlaceException (Throwable tex) {
+	public ExtenderException (Throwable tex) {
 		super(tex);	
 		ExceptionMessage.getInstance().handleMessage(tex, null);
 	}
@@ -43,7 +43,7 @@ public class InPlaceException extends RuntimeException {
 	 * @param key to access message from resource bundle
 	 * @param substitutions message strings to insert into the retrieved message
 	 */
-	public InPlaceException(Throwable tex, String key, Object ... substitutions) {
+	public ExtenderException(Throwable tex, String key, Object ... substitutions) {
 		super(ExceptionMessage.getInstance().formatString(key, substitutions), tex);
 	}
 	
@@ -53,7 +53,7 @@ public class InPlaceException extends RuntimeException {
 	 * @param key to access message from resource bundle
 	 * @param substitutions message strings to insert into the retrieved message
 	 */
-	public InPlaceException(String key, Object ... substitutions) {
+	public ExtenderException(String key, Object ... substitutions) {
 		super(ExceptionMessage.getInstance().formatString(key, substitutions));
 	}
 }
