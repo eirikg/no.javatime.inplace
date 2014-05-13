@@ -11,7 +11,7 @@
 package no.javatime.inplace.bundlemanager;
 
 
-public class DuplicateBundleException extends ExtenderException {
+public class DuplicateBundleException extends InPlaceException {
 
 	private static final long serialVersionUID = -6632902141188744336L;
 	

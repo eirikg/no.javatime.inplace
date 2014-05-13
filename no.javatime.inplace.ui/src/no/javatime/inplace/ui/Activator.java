@@ -10,13 +10,11 @@
  *******************************************************************************/
 package no.javatime.inplace.ui;
 
-import java.util.Collection;
-
 import no.javatime.inplace.bundlejobs.BundleJob;
 import no.javatime.inplace.bundlejobs.events.BundleJobEvent;
 import no.javatime.inplace.bundlejobs.events.BundleJobEventListener;
 import no.javatime.inplace.bundlemanager.BundleManager;
-import no.javatime.inplace.bundlemanager.ExtenderException;
+import no.javatime.inplace.bundlemanager.InPlaceException;
 import no.javatime.inplace.dl.preferences.intface.CommandOptions;
 import no.javatime.inplace.statushandler.BundleStatus;
 import no.javatime.inplace.statushandler.IBundleStatus.StatusCode;
@@ -27,8 +25,9 @@ import no.javatime.inplace.ui.command.handlers.DeactivateOnExitHandler;
 import no.javatime.inplace.ui.command.handlers.EagerActivationHandler;
 import no.javatime.inplace.ui.command.handlers.UIContributorsHandler;
 import no.javatime.inplace.ui.command.handlers.UpdateClassPathOnActivateHandler;
-import no.javatime.inplace.ui.extender.ExtenderBundleTracker;
 import no.javatime.inplace.ui.extender.Extender;
+import no.javatime.inplace.ui.extender.ExtenderBundleTracker;
+import no.javatime.inplace.ui.extender.Extension;
 import no.javatime.inplace.ui.views.BundleView;
 import no.javatime.util.messages.Message;
 
@@ -50,9 +49,8 @@ import org.eclipse.ui.progress.IWorkbenchSiteProgressService;
 import org.eclipse.ui.statushandlers.StatusManager;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
-import org.osgi.framework.BundleException;
 import org.osgi.util.tracker.BundleTracker;
-import org.osgi.util.tracker.ServiceTracker;
+import org.osgi.util.tracker.BundleTrackerCustomizer;
 
 
 /**
@@ -67,12 +65,13 @@ public class Activator extends AbstractUIPlugin implements BundleJobEventListene
 	
 	// Get the workbench window from UI thread
 	private IWorkbenchWindow workBenchWindow = null;
-	private ServiceTracker<CommandOptions, CommandOptions> commandOptionsTracker;
-	private BundleTracker<Extender> extenderBundleTracker;
-	private ExtenderBundleTracker extenderBundleTrackerCustomizer;
-	/**
-	 * The constructor
-	 */
+	
+	private Extension<CommandOptions> commandOptions;
+
+	// Don't know the interface to extend yet. Can be any interface 
+	private BundleTracker<Extender<?>> extenderBundleTracker;
+	private BundleTrackerCustomizer<Extender<?>> extenderBundleTrackerCustomizer;
+
 	public Activator() {
 	}
 
@@ -85,22 +84,15 @@ public class Activator extends AbstractUIPlugin implements BundleJobEventListene
 		super.start(context);
 		plugin = this;
 		Activator.context = context;
-		extenderBundleTrackerCustomizer = new ExtenderBundleTracker();
-		int trackStates = Bundle.ACTIVE | Bundle.STARTING | Bundle.STOPPING | Bundle.RESOLVED | Bundle.INSTALLED | Bundle.UNINSTALLED;
-		extenderBundleTracker = new BundleTracker<Extender>(context, trackStates, extenderBundleTrackerCustomizer);
-		extenderBundleTracker.open();
-		BundleManager.addBundleJobListener(Activator.getDefault());
-		commandOptionsTracker = new ServiceTracker<CommandOptions, CommandOptions>
-				(context, CommandOptions.class.getName(), null);
-		commandOptionsTracker.open();
 		try {			
+			extenderBundleTrackerCustomizer = new ExtenderBundleTracker();
+			int trackStates = Bundle.ACTIVE | Bundle.STARTING | Bundle.STOPPING | Bundle.RESOLVED | Bundle.INSTALLED | Bundle.UNINSTALLED;
+			extenderBundleTracker = new BundleTracker<Extender<?>>(context, trackStates, extenderBundleTrackerCustomizer);
+			extenderBundleTracker.open();
+			BundleManager.addBundleJobListener(Activator.getDefault());
+			commandOptions = new Extension<>(CommandOptions.class);
 			loadCheckedMenus();
-		} catch (IllegalStateException e) {
-			StatusManager.getManager().handle(
-					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),
-					StatusManager.LOG);			
-			throw e;
-		} catch (ExtenderException e) {
+		} catch (IllegalStateException | InPlaceException e) {
 			StatusManager.getManager().handle(
 					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),
 					StatusManager.LOG);			
@@ -116,23 +108,21 @@ public class Activator extends AbstractUIPlugin implements BundleJobEventListene
 	public void stop(BundleContext context) throws Exception {
 
 		BundleManager.removeBundleJobListener(this);
-		commandOptionsTracker.close();
-		commandOptionsTracker = null;
 		extenderBundleTracker.close();
 		extenderBundleTracker = null;
 		super.stop(context);
 		plugin = null;
 	}
 	
-	public BundleTracker<Extender> getExtenderBundleTracker() {
+	public BundleTracker<Extender<?>> getExtenderBundleTracker() {
 		return extenderBundleTracker;
 	}
-
-	public CommandOptions getCommandOptionsService() throws ExtenderException {
-
-		CommandOptions cmdOpt = commandOptionsTracker.getService();
+	
+	public CommandOptions getCommandOptionsService() throws InPlaceException {
+		
+		CommandOptions cmdOpt = commandOptions.getService();
 		if (null == cmdOpt) {
-			throw new ExtenderException("invalid_service", CommandOptions.class.getName());			
+			throw new InPlaceException("invalid_service", CommandOptions.class.getName());			
 		}
 		return cmdOpt;
 	}
@@ -189,14 +179,14 @@ public class Activator extends AbstractUIPlugin implements BundleJobEventListene
 	 * Restore state of checked menu entries
 	 * <p>
 	 * Only necessary on startup
-	 * @throws ExtenderException - if the command service or the option store is unavailable
+	 * @throws InPlaceException - if the command service or the option store is unavailable
 	 */
-	public void loadCheckedMenus() throws ExtenderException {
+	public void loadCheckedMenus() throws InPlaceException {
 
 		ICommandService service =
 				(ICommandService) PlatformUI.getWorkbench().getService(ICommandService.class);
 		if (null == service) {
-			throw new ExtenderException("invalid_service", ICommandService.class.getName());
+			throw new InPlaceException("invalid_service", ICommandService.class.getName());
 		}
 		CommandOptions cmdOpt = getCommandOptionsService();
 		Command command = service.getCommand(EagerActivationHandler.commandId);

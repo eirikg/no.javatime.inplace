@@ -20,7 +20,7 @@ import org.eclipse.ui.statushandlers.StatusManager;
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundlemanager.BundleManager;
 import no.javatime.inplace.bundlemanager.BundleTransition.Transition;
-import no.javatime.inplace.bundlemanager.ExtenderException;
+import no.javatime.inplace.bundlemanager.InPlaceException;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.statushandler.BundleStatus;
 import no.javatime.inplace.statushandler.IBundleStatus.StatusCode;
@@ -60,7 +60,7 @@ public class PreBuildListener implements IResourceChangeListener {
 							// && buildType == IncrementalProjectBuilder.AUTO_BUILD) {
 							BundleManager.getTransition().addPending(project, Transition.BUILD);
 					}
-				} catch (ExtenderException e) {
+				} catch (InPlaceException e) {
 					String msg = ExceptionMessage.getInstance().formatString("preparing_osgi_command", project.getName());
 					StatusManager.getManager().handle(new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg, e),
 							StatusManager.LOG);

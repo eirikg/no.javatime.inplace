@@ -8,7 +8,7 @@
  * Contributors:
  * 	JavaTime project, Eirik Gronsund - initial implementation
  *******************************************************************************/
-package no.javatime.inplace.bundlemanager;
+package no.javatime.inplace.extender.provider;
 
 import no.javatime.util.messages.ExceptionMessage;
 
@@ -18,11 +18,11 @@ import no.javatime.util.messages.ExceptionMessage;
  * and sent to devices defined by {@code ExceptionMessage}   
  *
  */
-public class ExtenderException extends RuntimeException {
+public class InPlaceException extends RuntimeException {
 
 	private static final long serialVersionUID = -6632902141188744336L;
 	
-	public ExtenderException () {
+	public InPlaceException () {
 		super();	
 	}
 
@@ -31,7 +31,7 @@ public class ExtenderException extends RuntimeException {
 	 * 
 	 * @param tex the current thrown exception
 	 */
-	public ExtenderException (Throwable tex) {
+	public InPlaceException (Throwable tex) {
 		super(tex);	
 		ExceptionMessage.getInstance().handleMessage(tex, null);
 	}
@@ -43,7 +43,7 @@ public class ExtenderException extends RuntimeException {
 	 * @param key to access message from resource bundle
 	 * @param substitutions message strings to insert into the retrieved message
 	 */
-	public ExtenderException(Throwable tex, String key, Object ... substitutions) {
+	public InPlaceException(Throwable tex, String key, Object ... substitutions) {
 		super(ExceptionMessage.getInstance().formatString(key, substitutions), tex);
 	}
 	
@@ -53,7 +53,7 @@ public class ExtenderException extends RuntimeException {
 	 * @param key to access message from resource bundle
 	 * @param substitutions message strings to insert into the retrieved message
 	 */
-	public ExtenderException(String key, Object ... substitutions) {
+	public InPlaceException(String key, Object ... substitutions) {
 		super(ExceptionMessage.getInstance().formatString(key, substitutions));
 	}
 }

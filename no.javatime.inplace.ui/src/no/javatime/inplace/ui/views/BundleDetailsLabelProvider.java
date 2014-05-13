@@ -10,7 +10,7 @@
  *******************************************************************************/
 package no.javatime.inplace.ui.views;
 
-import no.javatime.inplace.bundlemanager.ExtenderException;
+import no.javatime.inplace.bundlemanager.InPlaceException;
 
 import org.eclipse.jface.viewers.ITableLabelProvider;
 import org.eclipse.jface.viewers.LabelProvider;
@@ -41,7 +41,7 @@ class BundleDetailsLabelProvider extends LabelProvider implements ITableLabelPro
 			if (index == 1) {
 				value = bundleProp.getValue();
 			}
-		} catch (ExtenderException e) {
+		} catch (InPlaceException e) {
 			// Workaround forcing auto fit of column width, when adding the last row
 			for (int i = 0, n = viewer.getTable().getColumnCount(); i < n; i++) {
 				viewer.getTable().getColumn(i).pack();

@@ -14,18 +14,18 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 
+import org.eclipse.core.resources.IProject;
+
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundlemanager.BundleManager;
 import no.javatime.inplace.bundlemanager.BundleTransition;
 import no.javatime.inplace.bundlemanager.BundleTransition.TransitionError;
-import no.javatime.inplace.bundlemanager.ExtenderException;
+import no.javatime.inplace.bundlemanager.InPlaceException;
 import no.javatime.inplace.bundleproject.BundleProject;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.statushandler.BundleStatus;
 import no.javatime.inplace.statushandler.IBundleStatus.StatusCode;
 import no.javatime.util.messages.ExceptionMessage;
-
-import org.eclipse.core.resources.IProject;
 
 /**
  * Topological sort of projects in requiring (referencing) and providing (referenced) project dependency order.
@@ -56,7 +56,7 @@ public class ProjectSorter extends BaseSorter {
 	 */
 	public Collection<IProject> getProjectOrder() {
 		if (null == projectOrder) {
-			return Collections.emptySet();
+			return Collections.<IProject>emptySet();
 		}
 		return projectOrder;
 	}
@@ -291,8 +291,8 @@ public class ProjectSorter extends BaseSorter {
 		if (!getAllowCycles() && (!BundleProject.isFragment(child) && !BundleProject.isFragment(parent))) {
 			ProjectSorter ps = new ProjectSorter();
 			ps.setAllowCycles(true);
-			Collection<IProject> projects = ps.sortRequiringProjects(Collections.singletonList(parent));
-			projects.addAll(ps.sortRequiringProjects(Collections.singletonList(child)));
+			Collection<IProject> projects = ps.sortRequiringProjects(Collections.<IProject>singletonList(parent));
+			projects.addAll(ps.sortRequiringProjects(Collections.<IProject>singletonList(child)));
 			BundleManager.getTransition().setTransitionError(parent, TransitionError.CYCLE);
 			BundleManager.getTransition().setTransitionError(child, TransitionError.CYCLE);
 			if (null == circularException) {
@@ -321,11 +321,11 @@ public class ProjectSorter extends BaseSorter {
 	 * @param activated if true only consider activated projects. If false only consider deactivated projects
 	 * @return projects and their requiring projects or an empty set if no errors where found
 	 * @throws CircularReferenceException if cycles are detected among the specified projects
-	 * @throws ExtenderException if one of the specified projects does not exist or is closed
+	 * @throws InPlaceException if one of the specified projects does not exist or is closed
 	 * @see #sortRequiringProjects(Collection)
 	 */
 	public Collection<IProject> getRequiringBuildErrorClosure(Collection<IProject> projectScope,
-			Boolean activated) throws CircularReferenceException, ExtenderException {
+			Boolean activated) throws CircularReferenceException, InPlaceException {
 		Collection<IProject> projects = new LinkedHashSet<IProject>(projectScope);
 		if (activated) {
 			projects.retainAll(BundleManager.getRegion().getProjects(true));
@@ -341,12 +341,12 @@ public class ProjectSorter extends BaseSorter {
 	 * 
 	 * @param projectScope of projects to check for build errors
 	 * @return projects with build errors and their requiring projects or an empty set if no errors where found
-	 * @throws ExtenderException if one of the specified projects does not exist or is closed
+	 * @throws InPlaceException if one of the specified projects does not exist or is closed
 	 * @throws CircularReferenceException if cycles are detected among the specified projects
 	 * @see #sortRequiringProjects(Collection)
 	 */
 	public Collection<IProject> getRequiringBuildErrorClosure(Collection<IProject> projectScope)
-			throws ExtenderException, CircularReferenceException {
+			throws InPlaceException, CircularReferenceException {
 
 		projectOrder = new LinkedHashSet<IProject>();
 		circularException = null;
@@ -371,7 +371,7 @@ public class ProjectSorter extends BaseSorter {
 			}
 			return projectOrder;
 		}
-		return Collections.emptySet();
+		return Collections.<IProject>emptySet();
 	}
 
 	/**

@@ -2,7 +2,7 @@ package no.javatime.inplace.pl.dependencies.dialogs;
 
 import java.util.EnumSet;
 
-import no.javatime.inplace.bundlemanager.ExtenderException;
+import no.javatime.inplace.bundlemanager.InPlaceException;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Operation;
@@ -694,7 +694,7 @@ private Group createGroup(String groupName, final String groupText) {
 			}		
 		} catch (IllegalStateException e) {
 			setMessage(Msg.ILLEGAL_STATE_ON_SAVE_EXCEPTION, IMessageProvider.ERROR);
-		} catch (ExtenderException e) {
+		} catch (InPlaceException e) {
 			setMessage(Msg.INVALID_OPTIONS_SERVICE_EXCEPTION, IMessageProvider.ERROR);
 		}
 	}
@@ -706,7 +706,7 @@ private Group createGroup(String groupName, final String groupText) {
 			}
 		} catch (IllegalStateException e) {
 			setMessage(Msg.ILLEGAL_STATE_ON_SAVE_EXCEPTION, IMessageProvider.ERROR);
-		} catch (ExtenderException e) {
+		} catch (InPlaceException e) {
 			setMessage(Msg.INVALID_OPTIONS_SERVICE_EXCEPTION, IMessageProvider.ERROR);
 		}
 	}
@@ -716,7 +716,7 @@ private Group createGroup(String groupName, final String groupText) {
 			return getOpt().get(op, cl);			
 		} catch (IllegalStateException e) {
 			setMessage(Msg.ILLEGAL_STATE_ON_READ_EXCEPTION, IMessageProvider.ERROR);
-		} catch (ExtenderException e) {
+		} catch (InPlaceException e) {
 			setMessage(Msg.INVALID_OPTIONS_SERVICE_EXCEPTION, IMessageProvider.ERROR);
 		}
 		return false;

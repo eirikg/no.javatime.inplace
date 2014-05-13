@@ -24,7 +24,7 @@ import no.javatime.inplace.bundlemanager.BundleManager;
 import no.javatime.inplace.bundlemanager.BundleRegion;
 import no.javatime.inplace.bundlemanager.BundleTransition;
 import no.javatime.inplace.bundlemanager.BundleTransition.Transition;
-import no.javatime.inplace.bundlemanager.ExtenderException;
+import no.javatime.inplace.bundlemanager.InPlaceException;
 import no.javatime.inplace.bundlemanager.ProjectLocationException;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.statushandler.BundleStatus;
@@ -137,7 +137,7 @@ public class PostBuildListener implements IResourceChangeListener {
 					if (null != bundleTransition.getPendingTransitions(project)) {
 						handlePendingTransition(project, activateProjectJob, activateBundleJob, updateJob, deactivateJob, uninstallJob, installJob);
 					}
-				} catch (ExtenderException e) {
+				} catch (InPlaceException e) {
 					String msg = ExceptionMessage.getInstance().formatString("schedule_bundle_jobs", project.getName());
 					StatusManager.getManager().handle(
 							new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg, e), StatusManager.LOG);
@@ -158,7 +158,7 @@ public class PostBuildListener implements IResourceChangeListener {
 								deactivateJob, uninstallJob, installJob)) {
 							handleCRUDOperation(projectDelta, project, activateBundleJob);
 						}
-					} catch (ExtenderException e) {
+					} catch (InPlaceException e) {
 						String msg = ExceptionMessage.getInstance().formatString("schedule_bundle_jobs",
 								project.getName());
 						StatusManager.getManager().handle(
@@ -174,7 +174,7 @@ public class PostBuildListener implements IResourceChangeListener {
 				postActivateBundleJob = UpdateScheduler.resolveduplicates(activateProjectJob, activateBundleJob,
 						updateJob);
 			}
-		} catch (ExtenderException e) {
+		} catch (InPlaceException e) {
 			StatusManager.getManager().handle(
 					new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, e.getMessage(), e),
 					StatusManager.LOG);			
@@ -254,7 +254,7 @@ public class PostBuildListener implements IResourceChangeListener {
 					UpdateScheduler.addChangedProject(project, updateJob, activateProjectJob);
 					isPending = true;
 				}
-			} catch (ExtenderException e) {
+			} catch (InPlaceException e) {
 				StatusManager.getManager().handle(
 						new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, e.getMessage(), e),
 						StatusManager.LOG);			

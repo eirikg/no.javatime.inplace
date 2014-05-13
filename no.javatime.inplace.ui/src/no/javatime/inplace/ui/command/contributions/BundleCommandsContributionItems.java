@@ -14,7 +14,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import no.javatime.inplace.bundlejobs.BundleJob;
-import no.javatime.inplace.bundlemanager.ExtenderException;
+import no.javatime.inplace.bundlemanager.InPlaceException;
 import no.javatime.inplace.bundleproject.OpenProjectHandler;
 import no.javatime.inplace.ui.Activator;
 import no.javatime.inplace.ui.views.BundleProperties;
@@ -134,7 +134,7 @@ public abstract class BundleCommandsContributionItems extends CompoundContributi
 				return addContribution(menuId, commandId, "Stop Current Bundle Operation", stopOperationParamId,
 						CommandContributionItem.STYLE_PUSH, null);
 			}
-		} catch (ExtenderException e) {
+		} catch (InPlaceException e) {
 		}
 		return null;
 	}

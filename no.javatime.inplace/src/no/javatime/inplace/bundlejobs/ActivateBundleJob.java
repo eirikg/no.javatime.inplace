@@ -14,9 +14,17 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 
+import org.eclipse.core.resources.IProject;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.OperationCanceledException;
+import org.eclipse.core.runtime.SubProgressMonitor;
+import org.eclipse.core.runtime.preferences.IEclipsePreferences;
+import org.osgi.framework.Bundle;
+
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundlemanager.BundleTransition.TransitionError;
-import no.javatime.inplace.bundlemanager.ExtenderException;
+import no.javatime.inplace.bundlemanager.InPlaceException;
 import no.javatime.inplace.bundleproject.BundleProject;
 import no.javatime.inplace.bundleproject.ManifestUtil;
 import no.javatime.inplace.bundleproject.ProjectProperties;
@@ -35,14 +43,6 @@ import no.javatime.util.messages.Message;
 import no.javatime.util.messages.TraceMessage;
 import no.javatime.util.messages.UserMessage;
 import no.javatime.util.messages.WarnMessage;
-
-import org.eclipse.core.resources.IProject;
-import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.OperationCanceledException;
-import org.eclipse.core.runtime.SubProgressMonitor;
-import org.eclipse.core.runtime.preferences.IEclipsePreferences;
-import org.osgi.framework.Bundle;
 
 /**
  * Activates a bundle or set of bundles by installing, resolving and starting the bundle(s). A bundle is only activated
@@ -151,7 +151,7 @@ public class ActivateBundleJob extends BundleJob {
 			BundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg);
 			multiStatus.add(e.getStatusList());
 			addStatus(multiStatus);
-		} catch (ExtenderException e) {
+		} catch (InPlaceException e) {
 			String msg = ExceptionMessage.getInstance().formatString("terminate_job_with_errors", getName());
 			addError(e, msg);
 		} catch (NullPointerException e) {
@@ -185,11 +185,11 @@ public class ActivateBundleJob extends BundleJob {
 	 * @throws OperationCanceledException after install and resolve
 	 * @throws InterruptedException Checks for and interrupts right before call to start bundle. Start is also interrupted
 	 *           if the task running the stop method is terminated abnormally (timeout or manually)
-	 * @throws ExtenderException if encountering closed or non-existing projects after they are discarded or a bundle to
+	 * @throws InPlaceException if encountering closed or non-existing projects after they are discarded or a bundle to
 	 *           activate becomes null
 	 */
 	private IBundleStatus activate(IProgressMonitor monitor) throws OperationCanceledException,
-			InterruptedException, ExtenderException {
+			InterruptedException, InPlaceException {
 
 		Collection<Bundle> activatedBundles = null;
 		ProjectSorter projectSorter = new ProjectSorter();
@@ -280,11 +280,11 @@ public class ActivateBundleJob extends BundleJob {
 	 * @return {@code IBundleStatus} status with a {@code StatusCode.OK} if no errors. Return {@code IBundleStatus} status
 	 *         with a {@code StatusCode.BUILDERROR} if there are projects with build errors and there are no pending
 	 *         projects left. If there are build errors they are added to the job status list.
-	 * @throws ExtenderException if one of the specified projects does not exist or is closed
+	 * @throws InPlaceException if one of the specified projects does not exist or is closed
 	 * @throws CircularReferenceException if cycles are detected among the specified projects
 	 */
 	private IBundleStatus removeErrorClosures(ProjectSorter projectSorter, Collection<Bundle> installedBundles)
-			throws ExtenderException, CircularReferenceException {
+			throws InPlaceException, CircularReferenceException {
 
 		IBundleStatus status = createStatus();
 		Collection<IProject> projectErrorClosures = null;
@@ -328,9 +328,9 @@ public class ActivateBundleJob extends BundleJob {
 	 * 
 	 * @param bundles bundles to activate
 	 * @param bs dependency sorter
-	 * @throws ExtenderException if one of the specified bundles is null
+	 * @throws InPlaceException if one of the specified bundles is null
 	 */
-	private void restoreSessionStates(Collection<Bundle> bundles) throws ExtenderException {
+	private void restoreSessionStates(Collection<Bundle> bundles) throws InPlaceException {
 		BundleSorter bundleSorter = new BundleSorter();
 		if (getUseStoredState() && bundles.size() > 0) {
 			IEclipsePreferences store = InPlace.getEclipsePreferenceStore();
@@ -352,7 +352,7 @@ public class ActivateBundleJob extends BundleJob {
 							// If active bundles to start have requirements on this bundle,
 							// start the bundle if the dependency option allow it
 							Collection<Bundle> reqBundles = bundleSorter.sortRequiringBundles(
-									Collections.singletonList(bundle), bundleRegion.getActivatedBundles());
+									Collections.<Bundle>singletonList(bundle), bundleRegion.getActivatedBundles());
 							reqBundles.remove(bundle);
 							Boolean startBundle = false;
 							if (reqBundles.size() > 0) {

@@ -66,7 +66,7 @@ public class BundleThread {
 				}
 			}
 			// Just return null when failing
-		} catch (ExtenderException e) {
+		} catch (InPlaceException e) {
 		} catch (SecurityException e) {
 		} catch (IllegalStateException e) {
 		}
@@ -202,11 +202,11 @@ public class BundleThread {
 	 * @param obj the object the underlying method is invoked from
 	 * @param paramVal the actual parameter values used in the method call
 	 * @return the return value of the invoked method or null if the signature of the method return value is void
-	 * @exception ExtenderException exception bounded to the underlying reflection exceptions. Does not add any additional
+	 * @exception InPlaceException exception bounded to the underlying reflection exceptions. Does not add any additional
 	 *              information about the cause in context of this method
 	 */
 	public static Object invoke(String methodName, Class<?> cls, Class<?>[] paramDef, Object obj,
-			Object[] paramVal) throws ExtenderException {
+			Object[] paramVal) throws InPlaceException {
 		
 		// Class<?>[] doubleParDef = new Class<?>[] {Double.class};
 		// Object[] doubleParVal = new Object[1];
@@ -222,23 +222,23 @@ public class BundleThread {
 			try {
 				method = cls.getMethod(methodName, paramDef);
 			} catch (SecurityException e) {
-		    throw new ExtenderException(e, "security_violation", methodName, cls.getSimpleName());
+		    throw new InPlaceException(e, "security_violation", methodName, cls.getSimpleName());
 			} catch (NoSuchMethodException e) {
-		    throw new ExtenderException(e, "no_such_method", methodName, cls.getSimpleName());
+		    throw new InPlaceException(e, "no_such_method", methodName, cls.getSimpleName());
 			}
 			try {
 				returnValue = method.invoke(obj, paramVal);
 			} catch (IllegalArgumentException e) {
-		    throw new ExtenderException(e, "illegal_argument_method", methodName, cls.getSimpleName());
+		    throw new InPlaceException(e, "illegal_argument_method", methodName, cls.getSimpleName());
 			} catch (IllegalAccessException e) {
-				throw new ExtenderException(e, "illegal_access_method", methodName, cls.getSimpleName());
+				throw new InPlaceException(e, "illegal_access_method", methodName, cls.getSimpleName());
 			} catch (InvocationTargetException e) {
-				throw new ExtenderException(e, "method_invocation_target", cls.getSimpleName(), methodName);
+				throw new InPlaceException(e, "method_invocation_target", cls.getSimpleName(), methodName);
 			} catch (ExceptionInInitializerError e) {
-				throw new ExtenderException(e, "initializer_error", cls.getSimpleName(), methodName);
+				throw new InPlaceException(e, "initializer_error", cls.getSimpleName(), methodName);
 			}
 		} catch (NullPointerException e) {
-			throw new ExtenderException(e);
+			throw new InPlaceException(e);
 		}
 		return returnValue;
 	}

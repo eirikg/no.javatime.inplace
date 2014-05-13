@@ -13,10 +13,19 @@ package no.javatime.inplace.bundlejobs;
 import java.util.Collection;
 import java.util.Collections;
 
+import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.IProjectDescription;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.OperationCanceledException;
+import org.eclipse.core.runtime.SubMonitor;
+import org.eclipse.core.runtime.SubProgressMonitor;
+import org.osgi.framework.Bundle;
+
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.builder.JavaTimeNature;
 import no.javatime.inplace.bundlemanager.BundleTransition.Transition;
-import no.javatime.inplace.bundlemanager.ExtenderException;
+import no.javatime.inplace.bundlemanager.InPlaceException;
 import no.javatime.inplace.bundleproject.BundleProject;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.statushandler.BundleStatus;
@@ -26,15 +35,6 @@ import no.javatime.util.messages.Category;
 import no.javatime.util.messages.Message;
 import no.javatime.util.messages.TraceMessage;
 import no.javatime.util.messages.WarnMessage;
-
-import org.eclipse.core.resources.IProject;
-import org.eclipse.core.resources.IProjectDescription;
-import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.OperationCanceledException;
-import org.eclipse.core.runtime.SubMonitor;
-import org.eclipse.core.runtime.SubProgressMonitor;
-import org.osgi.framework.Bundle;
 
 /**
  * Enabling and disabling the JavaTime nature of projects. Checks and reports on duplicate bundles.
@@ -99,10 +99,10 @@ public abstract class NatureJob extends BundleJob {
 	 * @return status object describing the result of deactivating nature with {@code StatusCode.OK} if no
 	 *         failure, otherwise one of the failure codes are returned. If more than one bundle fails, status
 	 *         of the last failed bundle is returned. All failures are added to the job status list
-	 * @throws ExtenderException failed to remove nature or the default output folder
+	 * @throws InPlaceException failed to remove nature or the default output folder
 	 */
 	protected IBundleStatus deactivateNature(Collection<IProject> projectsToDeactivate,
-			SubProgressMonitor monitor) throws ExtenderException{
+			SubProgressMonitor monitor) throws InPlaceException{
 
 		SubMonitor localMonitor = SubMonitor.convert(monitor, projectsToDeactivate.size());
 
@@ -118,7 +118,7 @@ public abstract class NatureJob extends BundleJob {
 						BundleProject.removeOutputLocationFromClassPath(project);
 					}
 				}
-			} catch (ExtenderException e) {
+			} catch (InPlaceException e) {
 				addError(e, e.getLocalizedMessage(), project);
 				throw e;
 			} finally {
@@ -161,12 +161,12 @@ public abstract class NatureJob extends BundleJob {
 								BundleProject.toggleActivationPolicy(project);
 								// Uninstall and install bundles when toggling from lazy to eager activation policy
 								if (null != bundle) {
-									reInstall(Collections.singletonList(project), new SubProgressMonitor(monitor, 1));
+									reInstall(Collections.<IProject>singletonList(project), new SubProgressMonitor(monitor, 1));
 									bundle = bundleRegion.get(project);
 								}
 							}
 						}
-					} catch (ExtenderException e) {
+					} catch (InPlaceException e) {
 						result = addError(e, e.getLocalizedMessage(), project);
 					}
 					boolean isInstalled = null != bundle ? true : false;
@@ -187,7 +187,7 @@ public abstract class NatureJob extends BundleJob {
 						}
 					}
 				}
-			} catch (ExtenderException e) {
+			} catch (InPlaceException e) {
 				result = addError(e, e.getLocalizedMessage(), project);
 			} finally {
 				localMonitor.worked(1);
@@ -202,9 +202,9 @@ public abstract class NatureJob extends BundleJob {
 	 * 
 	 * @param project the project to add or remove JavaTime nature on
 	 * @param monitor the progress monitor to use for reporting progress.
-	 * @throws ExtenderException Fails to remove or add the nature from/to the project.
+	 * @throws InPlaceException Fails to remove or add the nature from/to the project.
 	 */
-	public void toggleNatureActivation(IProject project, IProgressMonitor monitor) throws ExtenderException {
+	public void toggleNatureActivation(IProject project, IProgressMonitor monitor) throws InPlaceException {
 
 		if (project.exists() && project.isOpen()) {
 			try {
@@ -237,7 +237,7 @@ public abstract class NatureJob extends BundleJob {
 					TraceMessage.getInstance().getString("projects_nature_enabled", project.getName());
 				localMonitor.worked(1);
 			} catch (CoreException e) {
-				throw new ExtenderException(e, "error_changing_nature", project.getName());
+				throw new InPlaceException(e, "error_changing_nature", project.getName());
 			}
 		} else {
 			String msg = WarnMessage.getInstance().formatString("add_nature_project_invalid", project.getName());

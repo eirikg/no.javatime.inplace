@@ -16,18 +16,18 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 
-import no.javatime.inplace.InPlace;
-import no.javatime.inplace.bundlemanager.BundleManager;
-import no.javatime.inplace.bundlemanager.BundleTransition.TransitionError;
-import no.javatime.inplace.bundlemanager.ExtenderException;
-import no.javatime.inplace.statushandler.BundleStatus;
-import no.javatime.inplace.statushandler.IBundleStatus.StatusCode;
-import no.javatime.util.messages.ExceptionMessage;
-
 import org.osgi.framework.Bundle;
 import org.osgi.framework.wiring.BundleRevision;
 import org.osgi.framework.wiring.BundleWire;
 import org.osgi.framework.wiring.BundleWiring;
+
+import no.javatime.inplace.InPlace;
+import no.javatime.inplace.bundlemanager.BundleManager;
+import no.javatime.inplace.bundlemanager.BundleTransition.TransitionError;
+import no.javatime.inplace.bundlemanager.InPlaceException;
+import no.javatime.inplace.statushandler.BundleStatus;
+import no.javatime.inplace.statushandler.IBundleStatus.StatusCode;
+import no.javatime.util.messages.ExceptionMessage;
 
 /**
  * Topological sort of bundles in requiring and providing bundle dependency order.
@@ -66,7 +66,7 @@ public class BundleSorter extends BaseSorter {
 	 */
 	public Collection<Bundle> getBundleOrder() {
 		if (null == bundleOrder) {
-			return Collections.emptySet();
+			return Collections.<Bundle>emptySet();
 		}
 		return bundleOrder;
 	}
@@ -447,9 +447,9 @@ public class BundleSorter extends BaseSorter {
 		if (!getAllowCycles() && (!isFragment(child) && !isFragment(parent))) {
 			BundleSorter bs = new BundleSorter();
 			bs.setAllowCycles(true);
-			Collection<Bundle> bundles = bs.sortDeclaredRequiringBundles(Collections.singletonList(parent), BundleManager.getRegion().getBundles());
+			Collection<Bundle> bundles = bs.sortDeclaredRequiringBundles(Collections.<Bundle>singletonList(parent), BundleManager.getRegion().getBundles());
 			BundleManager.getTransition().setTransitionError(parent, TransitionError.CYCLE);
-			bundles.addAll(bs.sortDeclaredRequiringBundles(Collections.singletonList(child), BundleManager.getRegion().getBundles()));
+			bundles.addAll(bs.sortDeclaredRequiringBundles(Collections.<Bundle>singletonList(child), BundleManager.getRegion().getBundles()));
 			BundleManager.getTransition().setTransitionError(child, TransitionError.CYCLE);
 			if (null == circularException) {
 				circularException = new CircularReferenceException();
@@ -482,7 +482,7 @@ public class BundleSorter extends BaseSorter {
 			BundleRevision br = fragmentBundle.adapt(BundleRevision.class);
 			BundleWiring bWiring = br.getWiring();
 			if (null == bWiring) {
-				return Collections.emptySet();
+				return Collections.<Bundle>emptySet();
 			}
 			Collection<BundleWire> wires = bWiring.getRequiredWires(BundleRevision.HOST_NAMESPACE);
 			if (null != wires) {
@@ -495,7 +495,7 @@ public class BundleSorter extends BaseSorter {
 				return hosts;
 			}
 		}
-		return Collections.emptySet();
+		return Collections.<Bundle>emptySet();
 	}
 
 	/**
@@ -510,7 +510,7 @@ public class BundleSorter extends BaseSorter {
 		BundleRevision br = bundle.adapt(BundleRevision.class);
 		BundleWiring bWiring = br.getWiring();
 		if (null == bWiring) {
-			return Collections.emptySet();
+			return Collections.<Bundle>emptySet();
 		}
 		Collection<BundleWire> wires = bWiring.getProvidedWires(BundleRevision.HOST_NAMESPACE);
 		if (null != wires) {
@@ -522,7 +522,7 @@ public class BundleSorter extends BaseSorter {
 				return fragments;
 			}
 		}
-		return Collections.emptySet();
+		return Collections.<Bundle>emptySet();
 	}
 
 	/**
@@ -531,9 +531,9 @@ public class BundleSorter extends BaseSorter {
 	 * @param bundle that is either a fragment or not
 	 * @return true if the bundle is a fragment and false if the bundles is not a fragment or the bundle could
 	 *         not be adapted to a bundle revision
-	 * @throws ExtenderException
+	 * @throws InPlaceException
 	 */
-	public static Boolean isFragment(Bundle bundle) throws ExtenderException {
+	public static Boolean isFragment(Bundle bundle) throws InPlaceException {
 		if (null != bundle) {
 			BundleRevision rev = bundle.adapt(BundleRevision.class);
 			if (rev != null && (rev.getTypes() & BundleRevision.TYPE_FRAGMENT) != 0) {

@@ -13,6 +13,22 @@ package no.javatime.inplace.bundlemanager;
 import java.util.Collection;
 import java.util.Collections;
 
+import org.eclipse.core.commands.Command;
+import org.eclipse.core.commands.CommandEvent;
+import org.eclipse.core.commands.ICommandListener;
+import org.eclipse.core.resources.IProject;
+import org.eclipse.core.runtime.jobs.Job;
+import org.eclipse.jface.dialogs.MessageDialog;
+import org.eclipse.ui.IWorkbench;
+import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.commands.ICommandService;
+import org.eclipse.ui.statushandlers.StatusManager;
+import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleEvent;
+import org.osgi.framework.FrameworkEvent;
+import org.osgi.framework.FrameworkListener;
+import org.osgi.framework.SynchronousBundleListener;
+
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundlejobs.ActivateBundleJob;
 import no.javatime.inplace.bundlejobs.BundleJobListener;
@@ -41,22 +57,6 @@ import no.javatime.util.messages.Message;
 import no.javatime.util.messages.TraceMessage;
 import no.javatime.util.messages.UserMessage;
 import no.javatime.util.messages.WarnMessage;
-
-import org.eclipse.core.commands.Command;
-import org.eclipse.core.commands.CommandEvent;
-import org.eclipse.core.commands.ICommandListener;
-import org.eclipse.core.resources.IProject;
-import org.eclipse.core.runtime.jobs.Job;
-import org.eclipse.jface.dialogs.MessageDialog;
-import org.eclipse.ui.IWorkbench;
-import org.eclipse.ui.PlatformUI;
-import org.eclipse.ui.commands.ICommandService;
-import org.eclipse.ui.statushandlers.StatusManager;
-import org.osgi.framework.Bundle;
-import org.osgi.framework.BundleEvent;
-import org.osgi.framework.FrameworkEvent;
-import org.osgi.framework.FrameworkListener;
-import org.osgi.framework.SynchronousBundleListener;
 
 /**
  * Registers a bundle job listener and acts on events received from the OSGI framework, bundles and the log
@@ -165,7 +165,7 @@ class BundleEventManager implements FrameworkListener, SynchronousBundleListener
 			} else {
 				BundleManager.getRegion().setAutoBuild(false);			
 			}
-		} catch (ExtenderException e) {
+		} catch (InPlaceException e) {
 			StatusManager.getManager().handle(
 					new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, e.getMessage(), e),
 					StatusManager.LOG);			
@@ -498,10 +498,10 @@ class BundleEventManager implements FrameworkListener, SynchronousBundleListener
 				int autoDependencyAction = 1; // Default auto dependency action
 				new OpenProjectHandler().saveModifiedFiles();
 				Boolean dependencies = false;
-				Collection<IProject> reqProjects = Collections.emptySet();
+				Collection<IProject> reqProjects = Collections.<IProject>emptySet();
 				if (bundleRegion.isActivated(bundle)) {
 					ProjectSorter bs = new ProjectSorter();
-					reqProjects = bs.sortRequiringProjects(Collections.singletonList(project), Boolean.TRUE);
+					reqProjects = bs.sortRequiringProjects(Collections.<IProject>singletonList(project), Boolean.TRUE);
 					// Remove initial project from result set
 					reqProjects.remove(project);
 					dependencies = reqProjects.size() > 0;
@@ -529,7 +529,7 @@ class BundleEventManager implements FrameworkListener, SynchronousBundleListener
 								MessageDialog.QUESTION, new String[] { "Yes", "No" }, index);
 						autoDependencyAction = dialog.open();
 					}
-				} catch (ExtenderException e) {
+				} catch (InPlaceException e) {
 					StatusManager.getManager().handle(
 							new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, e.getMessage(), e),
 							StatusManager.LOG);			

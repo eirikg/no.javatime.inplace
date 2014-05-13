@@ -10,7 +10,7 @@
  *******************************************************************************/
 package no.javatime.inplace.ui.command.handlers;
 
-import no.javatime.inplace.bundlemanager.ExtenderException;
+import no.javatime.inplace.bundlemanager.InPlaceException;
 import no.javatime.inplace.dl.preferences.intface.CommandOptions;
 
 public class UpdateClassPathOnActivateHandler extends AbstractOptionsHandler {
@@ -18,13 +18,13 @@ public class UpdateClassPathOnActivateHandler extends AbstractOptionsHandler {
 	public static String commandId = "no.javatime.inplace.command.activateclasspath";
 
 	@Override
-	protected void storeValue(Boolean value) throws ExtenderException {
+	protected void storeValue(Boolean value) throws InPlaceException {
 		CommandOptions cmdStore = getOptionsService();
 		cmdStore.setIsUpdateDefaultOutPutFolder(value);
 	}
 
 	@Override
-	protected boolean getStoredValue() throws ExtenderException {
+	protected boolean getStoredValue() throws InPlaceException {
 		CommandOptions cmdStore = getOptionsService();
 		return cmdStore.isUpdateDefaultOutPutFolder();
 	}

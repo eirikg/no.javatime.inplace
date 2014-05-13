@@ -3,7 +3,13 @@ package no.javatime.inplace.bundlejobs;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
+
+import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.WorkspaceJob;
+import org.eclipse.ui.statushandlers.StatusManager;
+import org.osgi.framework.Bundle;
 
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundlemanager.BundleManager;
@@ -11,7 +17,7 @@ import no.javatime.inplace.bundlemanager.BundleRegion;
 import no.javatime.inplace.bundlemanager.BundleTransition;
 import no.javatime.inplace.bundlemanager.BundleTransition.Transition;
 import no.javatime.inplace.bundlemanager.BundleTransition.TransitionError;
-import no.javatime.inplace.bundlemanager.ExtenderException;
+import no.javatime.inplace.bundlemanager.InPlaceException;
 import no.javatime.inplace.bundleproject.OpenProjectHandler;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.dependencies.BundleClosures;
@@ -23,22 +29,17 @@ import no.javatime.inplace.statushandler.IBundleStatus.StatusCode;
 import no.javatime.util.messages.Category;
 import no.javatime.util.messages.UserMessage;
 
-import org.eclipse.core.resources.IProject;
-import org.eclipse.core.resources.WorkspaceJob;
-import org.eclipse.ui.statushandlers.StatusManager;
-import org.osgi.framework.Bundle;
-
 public class UpdateScheduler {
 
 	static public void scheduleUpdateJob(Collection<IProject> projects, long delay) {
 		if (projects.size() > 0) {
 			UpdateJob updateJob = new UpdateJob(UpdateJob.updateJobName);;
 			ActivateProjectJob activateProjectJob = new ActivateProjectJob(ActivateProjectJob.activateNatureJobName);
-
+			Collection<IProject> initialSet = new LinkedHashSet<>();
 			// Include pending projects to update in partial graph of projects to update  
-			projects.addAll(BundleManager.getTransition().getPendingProjects(projects, Transition.UPDATE));			
+			initialSet.addAll(BundleManager.getTransition().getPendingProjects(projects, Transition.UPDATE));			
 			BundleClosures bc = new BundleClosures();
-			Collection<IProject> projectsToUpdate = bc.projectActivation(Closure.PARTIAL_GRAPH, projects, true);
+			Collection<IProject> projectsToUpdate = bc.projectActivation(Closure.PARTIAL_GRAPH, initialSet, true);
 
 			for (IProject project : projectsToUpdate) {
 				if (ProjectProperties.isProjectActivated(project)) {
@@ -54,16 +55,16 @@ public class UpdateScheduler {
 				// Update all projects together with the deactivated providers to activate
 				try {
 					if (!InPlace.getDefault().getCommandOptionsService().isUpdateOnBuild()) {
-						for (IProject project : projects) {
+						for (IProject project : projectsToUpdate) {
 							BundleManager.getTransition().addPending(project, Transition.UPDATE_ON_ACTIVATE);					
 						}
 					}
-				} catch (ExtenderException e) {
+				} catch (InPlaceException e) {
 					StatusManager.getManager().handle(
 							new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, e.getMessage(), e),
 							StatusManager.LOG);			
 				}
-			jobHandler(activateProjectJob, delay);			
+				jobHandler(activateProjectJob, delay);			
 			}	 else {
 				// No deactivated providers to activate
 				jobHandler(updateJob, delay);
@@ -118,10 +119,10 @@ public class UpdateScheduler {
 		Collection<IProject> providingProjects = null;
 		try {
 			ProjectSorter projectSorter = new ProjectSorter();
-			providingProjects = projectSorter.sortProvidingProjects(Collections.singletonList(project), false);
+			providingProjects = projectSorter.sortProvidingProjects(Collections.<IProject>singletonList(project), false);
 			providingProjects.remove(project);
 		} catch (CircularReferenceException e) {
-			return Collections.emptySet();
+			return Collections.<IProject>emptySet();
 		}
 		return providingProjects;
 	}

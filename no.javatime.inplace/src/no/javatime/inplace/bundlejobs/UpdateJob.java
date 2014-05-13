@@ -23,7 +23,7 @@ import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundlemanager.BundleTransition.Transition;
 import no.javatime.inplace.bundlemanager.BundleTransition.TransitionError;
 import no.javatime.inplace.bundlemanager.DuplicateBundleException;
-import no.javatime.inplace.bundlemanager.ExtenderException;
+import no.javatime.inplace.bundlemanager.InPlaceException;
 import no.javatime.inplace.bundlemanager.ProjectLocationException;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.dependencies.BundleSorter;
@@ -122,7 +122,7 @@ public class UpdateJob extends BundleJob {
 			BundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg);
 			multiStatus.add(e.getStatusList());
 			addStatus(multiStatus);
-		} catch (ExtenderException e) {
+		} catch (InPlaceException e) {
 			String msg = ExceptionMessage.getInstance().formatString("terminate_job_with_errors", getName());
 			addError(e, msg);
 		} catch (NullPointerException e) {
@@ -168,7 +168,7 @@ public class UpdateJob extends BundleJob {
 	 *         last failed bundle is returned. All failures are added to the job status list
 	 * @throws InterruptedIOException 
 	 */
-	private IBundleStatus update(IProgressMonitor monitor) throws ExtenderException, InterruptedException, CoreException {
+	private IBundleStatus update(IProgressMonitor monitor) throws InPlaceException, InterruptedException, CoreException {
 
 		// (1) Collect any additional bundles to update
 		// Update all bundles that are part of an activation process when the update on build option is switched
@@ -328,7 +328,7 @@ public class UpdateJob extends BundleJob {
 						statusList = new LinkedHashSet<IBundleStatus>();
 					}
 					statusList.add(result);
-				} catch (ExtenderException e) {
+				} catch (InPlaceException e) {
 					IBundleStatus result = addError(e, e.getLocalizedMessage(), bundle.getBundleId());
 					if (null == statusList) {
 						statusList = new LinkedHashSet<IBundleStatus>();
@@ -343,7 +343,7 @@ public class UpdateJob extends BundleJob {
 			}
 		}
 		if (null == statusList) {
-			return Collections.emptySet();
+			return Collections.<IBundleStatus>emptySet();
 		} else {
 			return statusList;
 		}

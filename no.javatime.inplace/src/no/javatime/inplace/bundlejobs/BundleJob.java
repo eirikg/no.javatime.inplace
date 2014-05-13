@@ -18,6 +18,20 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
 
+import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IPath;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.OperationCanceledException;
+import org.eclipse.core.runtime.SubMonitor;
+import org.eclipse.core.runtime.SubProgressMonitor;
+import org.eclipse.core.runtime.jobs.ISchedulingRule;
+import org.eclipse.core.runtime.jobs.Job;
+import org.eclipse.ui.statushandlers.StatusManager;
+import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleException;
+
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundlemanager.BundleActivatorException;
 import no.javatime.inplace.bundlemanager.BundleManager;
@@ -26,7 +40,7 @@ import no.javatime.inplace.bundlemanager.BundleThread;
 import no.javatime.inplace.bundlemanager.BundleTransition.Transition;
 import no.javatime.inplace.bundlemanager.BundleTransition.TransitionError;
 import no.javatime.inplace.bundlemanager.DuplicateBundleException;
-import no.javatime.inplace.bundlemanager.ExtenderException;
+import no.javatime.inplace.bundlemanager.InPlaceException;
 import no.javatime.inplace.bundlemanager.ProjectLocationException;
 import no.javatime.inplace.bundleproject.BundleProject;
 import no.javatime.inplace.bundleproject.ManifestUtil;
@@ -47,20 +61,6 @@ import no.javatime.util.messages.ExceptionMessage;
 import no.javatime.util.messages.Message;
 import no.javatime.util.messages.UserMessage;
 import no.javatime.util.messages.WarnMessage;
-
-import org.eclipse.core.resources.IProject;
-import org.eclipse.core.resources.ResourcesPlugin;
-import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IPath;
-import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.OperationCanceledException;
-import org.eclipse.core.runtime.SubMonitor;
-import org.eclipse.core.runtime.SubProgressMonitor;
-import org.eclipse.core.runtime.jobs.ISchedulingRule;
-import org.eclipse.core.runtime.jobs.Job;
-import org.eclipse.ui.statushandlers.StatusManager;
-import org.osgi.framework.Bundle;
-import org.osgi.framework.BundleException;
 
 /**
  * Support processing of bundle operations on bundles added as pending projects to bundle jobs.
@@ -277,14 +277,14 @@ public abstract class BundleJob extends JobStatus {
 					if (Category.getState(Category.progressBar))
 						sleep(sleepTime);
 					progress.subTask(reInstallSubtaskName + project.getName());
-					IBundleStatus result = uninstall(Collections.singletonList(bundle), new SubProgressMonitor(monitor, 1),
+					IBundleStatus result = uninstall(Collections.<Bundle>singletonList(bundle), new SubProgressMonitor(monitor, 1),
 							false);
 					if (result.hasStatus(StatusCode.OK)) {
-						install(Collections.singletonList(project), new SubProgressMonitor(monitor, 1));
+						install(Collections.<IProject>singletonList(project), new SubProgressMonitor(monitor, 1));
 					}
 				} catch (DuplicateBundleException e) {
 					addError(e, e.getLocalizedMessage(), project);
-				} catch (ExtenderException e) {
+				} catch (InPlaceException e) {
 					addError(e, e.getLocalizedMessage(), project);
 				} finally {
 					progress.worked(1);
@@ -324,7 +324,7 @@ public abstract class BundleJob extends JobStatus {
 				String msg = null;
 				try {
 					handleDuplicateException(project, e, null);
-				} catch (ExtenderException e1) {
+				} catch (InPlaceException e1) {
 					msg = e1.getLocalizedMessage();
 					addError(e, msg, project);
 				}
@@ -334,7 +334,7 @@ public abstract class BundleJob extends JobStatus {
 				status.add(new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID, project, msg, null));
 				msg = UserMessage.getInstance().formatString("refresh_hint", project.getName());
 				status.add(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, project, msg, null));
-			} catch (ExtenderException e) {
+			} catch (InPlaceException e) {
 				String msg = ErrorMessage.getInstance().formatString("install_error_project", project.getName());
 				addError(e, msg, project);
 			} finally {
@@ -369,7 +369,7 @@ public abstract class BundleJob extends JobStatus {
 				localMonitor.subTask(UninstallJob.uninstallSubtaskName + bundle.getSymbolicName());
 				try {
 					bundleCommand.uninstall(bundle, unregister);
-				} catch (ExtenderException e) {
+				} catch (InPlaceException e) {
 					result = addError(e, e.getLocalizedMessage(), bundle.getBundleId());
 				} finally {
 					localMonitor.worked(1);
@@ -402,10 +402,10 @@ public abstract class BundleJob extends JobStatus {
 	 *           project graph
 	 * @throws InterruptedException Checks for and interrupts right before call to start bundle. Start is also interrupted
 	 *           if the task running the stop method is terminated abnormally (timeout or manually)
-	 * @throws ExtenderException illegal closure for activate bundle operation
+	 * @throws InPlaceException illegal closure for activate bundle operation
 	 */
 	public IBundleStatus start(Collection<Bundle> bundles, Closure closure,
-			IProgressMonitor monitor) throws InterruptedException, ExtenderException {
+			IProgressMonitor monitor) throws InterruptedException, InPlaceException {
 
 		IBundleStatus result = new BundleStatus(StatusCode.OK, InPlace.PLUGIN_ID, "");
 		Collection<Bundle> exceptionBundles = null;
@@ -423,7 +423,7 @@ public abstract class BundleJob extends JobStatus {
 				if (timeout) {
 					timeoutVal = getTimeout(timeout);
 				}
-			} catch (ExtenderException e) {
+			} catch (InPlaceException e) {
 				addStatus(new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, e.getMessage(), e));
 			}
 			for (Bundle bundle : bundles) {
@@ -438,7 +438,7 @@ public abstract class BundleJob extends JobStatus {
 						try {
 							// Do not start this bundle if it has requirements on bundles that are not started
 							BundleSorter bs = new BundleSorter();
-							Collection<Bundle> provBundles = bs.sortProvidingBundles(Collections.singleton(bundle),
+							Collection<Bundle> provBundles = bs.sortProvidingBundles(Collections.<Bundle>singleton(bundle),
 									exceptionBundles);
 							if (provBundles.size() > 1) {
 								exceptionBundles.add(bundle);
@@ -466,7 +466,7 @@ public abstract class BundleJob extends JobStatus {
 					result = addError(e, e.getLocalizedMessage(), bundle.getBundleId());
 					// Only check for output folder in class path if class path is set to be updated on activation
 					// If missing instruct the bundle and its requiring bundles to resolve, but not start.
-					IBundleStatus classPathStatus = checkClassPath(Collections.singletonList(bundle));
+					IBundleStatus classPathStatus = checkClassPath(Collections.<Bundle>singletonList(bundle));
 					// Add class path messages into the activation exception
 					if (!classPathStatus.hasStatus(StatusCode.OK)) {
 						result.add(classPathStatus);
@@ -498,7 +498,7 @@ public abstract class BundleJob extends JobStatus {
 					} else if (null != cause && cause instanceof BundleException) {
 						stopCurrentBundleOperation(monitor);						
 					}
-				} catch (ExtenderException e) {
+				} catch (InPlaceException e) {
 					result = addError(e, e.getLocalizedMessage(), bundle.getBundleId());
 					if (null == exceptionBundles) {
 						exceptionBundles = new LinkedHashSet<Bundle>();
@@ -551,7 +551,7 @@ public abstract class BundleJob extends JobStatus {
 				if (timeout) {
 					timeoutVal = getTimeout(timeout);
 				}
-			} catch (ExtenderException e) {
+			} catch (InPlaceException e) {
 				addStatus(new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, e.getMessage(), e));
 			}
 			for (Bundle bundle : bundles) {
@@ -581,7 +581,7 @@ public abstract class BundleJob extends JobStatus {
 					} else if (null != cause && cause instanceof BundleException) {
 						stopCurrentBundleOperation(monitor);						
 					}
-				} catch (ExtenderException e) {
+				} catch (InPlaceException e) {
 					result = addError(e, e.getLocalizedMessage(), bundle.getBundleId());
 				}
 				finally {
@@ -603,9 +603,9 @@ public abstract class BundleJob extends JobStatus {
 	/**
 	 * Stop the current start or stop bundle operation 
 	 * 
-	 * @throws ExtenderException if the options service not could be acquired
+	 * @throws InPlaceException if the options service not could be acquired
 	 */
-	public void stopCurrentBundleOperation(IProgressMonitor monitor) throws ExtenderException {
+	public void stopCurrentBundleOperation(IProgressMonitor monitor) throws InPlaceException {
 
 		DeactivateJob deactivateTask = null;
 		
@@ -672,7 +672,7 @@ public abstract class BundleJob extends JobStatus {
 									StatusManager.LOG);						
 						}
 					}
-				} catch (ExtenderException e) {
+				} catch (InPlaceException e) {
 					IBundleStatus status = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, e.getMessage(), e);
 					if (getOptionsService().isTimeOut()) {
 						addStatus(status);
@@ -727,7 +727,7 @@ public abstract class BundleJob extends JobStatus {
 				}
 				return defaultTimeout * 1000;
 			}
-		} catch (ExtenderException e) {
+		} catch (InPlaceException e) {
 			addStatus(new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, e.getMessage(), e));
 		}
 		return seconds * 1000;
@@ -741,12 +741,12 @@ public abstract class BundleJob extends JobStatus {
 	 * 
 	 * @param bundlesToRefresh the set of bundles to refresh
 	 * @param subMonitor monitor the progress monitor to use for reporting progress to the user.
-	 * @throws ExtenderException if this thread is interrupted, security violation, illegal argument (not same framework)
+	 * @throws InPlaceException if this thread is interrupted, security violation, illegal argument (not same framework)
 	 *           or illegal monitor (current thread not owner of monitor)
 	 * @see BundleCommandImpl#refresh(Collection)
 	 */
 	protected void refresh(final Collection<Bundle> bundlesToRefresh, IProgressMonitor subMonitor)
-			throws ExtenderException {
+			throws InPlaceException {
 
 		SubMonitor localMonitor = SubMonitor.convert(subMonitor, bundlesToRefresh.size());
 		if (Category.getState(Category.progressBar))
@@ -838,7 +838,7 @@ public abstract class BundleJob extends JobStatus {
 							}
 							ProjectSorter ps = new ProjectSorter();
 							Collection<IProject> providingProjects = ps.sortProvidingProjects(Collections
-									.singletonList(project));
+									.<IProject>singletonList(project));
 							Collection<IProject> providingAndNotRsolvedProjects = new ArrayList<IProject>();
 							for (IProject providingProject : providingProjects) {
 								Bundle providingBundle = bundleRegion.get(providingProject);
@@ -871,7 +871,7 @@ public abstract class BundleJob extends JobStatus {
 			if (monitor.isCanceled()) {
 				throw new OperationCanceledException();
 			}
-		} catch (ExtenderException e) {
+		} catch (InPlaceException e) {
 			String msg = ExceptionMessage.getInstance().formatString("resolve_job", getName(),
 					bundleRegion.formatBundleList(bundlesToResolve, true));
 			addError(e, msg);
@@ -932,7 +932,7 @@ public abstract class BundleJob extends JobStatus {
 						result.add(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, msg));
 					}
 				}
-			} catch (ExtenderException e) {
+			} catch (InPlaceException e) {
 				addError(e, bundleRegion.getProject(bundle));
 			} finally {
 				if (null != errorBundles) {
@@ -967,7 +967,7 @@ public abstract class BundleJob extends JobStatus {
 			if (getOptionsService().isUpdateDefaultOutPutFolder()) {
 				BundleProject.addOutputLocationToBundleClassPath(project);
 			}
-		} catch (ExtenderException e) {
+		} catch (InPlaceException e) {
 			String msg = ExceptionMessage.getInstance().formatString("error_resolve_class_path", project);
 			result = addError(e, msg);
 		}
@@ -1048,7 +1048,7 @@ public abstract class BundleJob extends JobStatus {
 				if (null == bundles) {
 					bundles = new LinkedHashSet<Bundle>();
 				}
-				bundles.addAll(bs.sortDeclaredRequiringBundles(Collections.singletonList(errorBundle),
+				bundles.addAll(bs.sortDeclaredRequiringBundles(Collections.<Bundle>singletonList(errorBundle),
 						workspaceBundles));
 			}
 		}
@@ -1100,7 +1100,7 @@ public abstract class BundleJob extends JobStatus {
 							BundleProject.getSymbolicNameFromManifest(duplicateProject1), duplicateProject1.getLocation());
 					handleDuplicateException(duplicateProject, duplicateBundleException, message);
 					Collection<IProject> requiringProjects = ps.sortRequiringProjects(Collections
-							.singletonList(duplicateProject));
+							.<IProject>singletonList(duplicateProject));
 					if (requiringProjects.size() > 0) {
 						for (IProject reqProject : requiringProjects) {
 							bundleTransition.removePending(reqProject, Transition.UPDATE);
@@ -1166,7 +1166,7 @@ public abstract class BundleJob extends JobStatus {
 							duplicate.getName(), key.getValue().getSymbolicName(), key.getValue().getLocation());
 					startStatus = addError(null, msg);
 					Collection<IProject> requiringProjects = ps.sortRequiringProjects(Collections
-							.singletonList(duplicate));
+							.<IProject>singletonList(duplicate));
 					if (requiringProjects.size() > 0) {
 						String affectedBundlesMsg = ErrorMessage.getInstance().formatString("duplicate_affected_bundles",
 								duplicate.getName(), ProjectProperties.formatProjectList(requiringProjects));
@@ -1264,7 +1264,7 @@ public abstract class BundleJob extends JobStatus {
 					addError(duplicateException, duplicateException.getLocalizedMessage(), duplicateProject);
 					// Inform about the requiring projects of the duplicate project
 					Collection<IProject> duplicateClosureSet = ps.sortRequiringProjects(Collections
-							.singleton(duplicateProject));
+							.<IProject>singleton(duplicateProject));
 					duplicateClosureSet.remove(duplicateProject);
 					if (duplicateClosureSet.size() > 0) {
 						String affectedBundlesMsg = ErrorMessage.getInstance().formatString("duplicate_affected_bundles",
@@ -1276,14 +1276,14 @@ public abstract class BundleJob extends JobStatus {
 					}
 					String rootMsg = ExceptionMessage.getInstance().formatString("root_duplicate_exception");
 					createMultiStatus(new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID, rootMsg), startStatus);
-				} catch (ExtenderException e1) {
+				} catch (InPlaceException e1) {
 					addError(e1, e1.getLocalizedMessage());
 				} finally {
 					duplicates.add(duplicateProjectCandidate);
 				}
 			} catch (ProjectLocationException e) {
 				addError(e, e.getLocalizedMessage(), duplicateProject);
-			} catch (ExtenderException e) {
+			} catch (InPlaceException e) {
 				addError(e, e.getLocalizedMessage(), duplicateProject);
 			}
 		}
@@ -1295,7 +1295,7 @@ public abstract class BundleJob extends JobStatus {
 		return duplicates;
 	}
 
-	protected CommandOptions getOptionsService() throws ExtenderException {
+	protected CommandOptions getOptionsService() throws InPlaceException {
 		return InPlace.getDefault().getCommandOptionsService();
 	}
 

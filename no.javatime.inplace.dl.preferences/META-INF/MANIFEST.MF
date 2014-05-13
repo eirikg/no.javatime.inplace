@@ -12,4 +12,5 @@ Import-Package: org.osgi.framework,
  org.osgi.service.prefs,
  org.osgi.util.tracker
 Bundle-ActivationPolicy: lazy
+Command-Options: no.javatime.inplace.dl.preferences.impl.CommandOptionsImpl
 Service-Component: OSGI-INF/preferences.xml

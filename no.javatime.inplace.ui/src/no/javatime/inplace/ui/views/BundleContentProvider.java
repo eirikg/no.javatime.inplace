@@ -12,7 +12,7 @@ package no.javatime.inplace.ui.views;
 
 import java.util.Collection;
 
-import no.javatime.inplace.bundlemanager.ExtenderException;
+import no.javatime.inplace.bundlemanager.InPlaceException;
 import no.javatime.inplace.bundlemanager.ProjectLocationException;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.statushandler.BundleStatus;
@@ -85,7 +85,7 @@ class BundleContentProvider implements IStructuredContentProvider {
 				Collection<IJavaProject> projects = (Collection<IJavaProject>) parent;
 				return getBundleProperties(projects);
 			}
-		} catch (ExtenderException e) {
+		} catch (InPlaceException e) {
 			StatusManager.getManager().handle(new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, null, e),
 					StatusManager.LOG);
 		} catch (CoreException e) {					
@@ -138,7 +138,7 @@ class BundleContentProvider implements IStructuredContentProvider {
 		String locationIdentifier = null;
 		try {
 			uiExtensions = ProjectProperties.contributesToTheUI(project);
-		} catch (ExtenderException e) {
+		} catch (InPlaceException e) {
 		}
 
 		try {
@@ -187,7 +187,7 @@ class BundleContentProvider implements IStructuredContentProvider {
 					new BundleProperties(project, BundleProperties.UIExtensionsLabelName, bp.getUIExtension()),
 					new BundleProperties(project, BundleProperties. lastInstalledOrUpdatedLabelName, bp.getLastInstalledOrUpdated()),					
 			};		
-		} catch (ExtenderException e) {
+		} catch (InPlaceException e) {
 			StatusManager.getManager().handle(new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getLocalizedMessage(),e),
 					StatusManager.LOG);
 			ExceptionMessage.getInstance().handleMessage(e, null);

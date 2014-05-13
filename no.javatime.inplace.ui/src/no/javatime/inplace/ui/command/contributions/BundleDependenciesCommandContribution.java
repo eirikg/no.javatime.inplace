@@ -2,7 +2,8 @@ package no.javatime.inplace.ui.command.contributions;
 
 import java.util.ArrayList;
 
-import no.javatime.inplace.ui.extender.DependencyDialogProxy;
+import no.javatime.inplace.ui.extender.Extender;
+import no.javatime.inplace.ui.service.DependencyDialog;
 import no.javatime.util.messages.Message;
 
 import org.eclipse.jface.action.ContributionItem;
@@ -20,7 +21,7 @@ public class BundleDependenciesCommandContribution extends BundleCommandsContrib
 		
 		ArrayList<ContributionItem> contributions = new ArrayList<ContributionItem>();
 
-		if (null != DependencyDialogProxy.getInstance()) {
+		if (null != Extender.getInstance(DependencyDialog.class)) {
 			contributions.add(addContribution(menuIddependencies, dynamicMainCommandId, partialDependenciesLabel, partialDependenciesParamId,
 					CommandContributionItem.STYLE_PUSH, dependenciesImage));
 		}

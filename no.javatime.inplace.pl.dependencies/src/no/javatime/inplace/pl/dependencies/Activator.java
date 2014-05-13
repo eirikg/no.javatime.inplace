@@ -1,6 +1,6 @@
 package no.javatime.inplace.pl.dependencies;
 
-import no.javatime.inplace.bundlemanager.ExtenderException;
+import no.javatime.inplace.bundlemanager.InPlaceException;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions;
 import no.javatime.inplace.pl.dependencies.msg.Msg;
 
@@ -59,10 +59,10 @@ public class Activator extends AbstractUIPlugin {
 		super.stop(context);
 	}
 	
-	public DependencyOptions getDependencyOptionsService() throws ExtenderException {
+	public DependencyOptions getDependencyOptionsService() throws InPlaceException {
 		DependencyOptions dpOpt = dependencyOptionsTracker.getService();
 		if (null == dpOpt) {
-			throw new ExtenderException(Msg.INVALID_OPTIONS_SERVICE_EXCEPTION, DependencyOptions.class.getName());			
+			throw new InPlaceException(Msg.INVALID_OPTIONS_SERVICE_EXCEPTION, DependencyOptions.class.getName());			
 		}
 		return dpOpt;
 	}

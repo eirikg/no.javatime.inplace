@@ -1,6 +1,6 @@
 package no.javatime.inplace.bundlemanager.state;
 
-import no.javatime.inplace.bundlemanager.ExtenderException;
+import no.javatime.inplace.bundlemanager.InPlaceException;
 
 /**
  * Uninstalled is the initial state for a specified bundle. The only atomic transition is install, which may be initiated by
@@ -12,7 +12,7 @@ public class UninstalledState extends BundleState {
 		super();
 	}
 
-	public void install(BundleNode bundleNode) throws ExtenderException {
+	public void install(BundleNode bundleNode) throws InPlaceException {
 		bundleNode.setCurrentState(BundleStateFactory.INSTANCE.installedState);
 	}
 }

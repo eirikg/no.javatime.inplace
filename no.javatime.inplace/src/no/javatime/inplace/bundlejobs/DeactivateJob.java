@@ -15,8 +15,15 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Map;
 
+import org.eclipse.core.resources.IProject;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.OperationCanceledException;
+import org.eclipse.core.runtime.SubProgressMonitor;
+import org.osgi.framework.Bundle;
+
 import no.javatime.inplace.InPlace;
-import no.javatime.inplace.bundlemanager.ExtenderException;
+import no.javatime.inplace.bundlemanager.InPlaceException;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.dependencies.BundleClosures;
 import no.javatime.inplace.dependencies.BundleSorter;
@@ -32,13 +39,6 @@ import no.javatime.util.messages.ExceptionMessage;
 import no.javatime.util.messages.Message;
 import no.javatime.util.messages.UserMessage;
 import no.javatime.util.messages.WarnMessage;
-
-import org.eclipse.core.resources.IProject;
-import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.OperationCanceledException;
-import org.eclipse.core.runtime.SubProgressMonitor;
-import org.osgi.framework.Bundle;
 
 /**
  * Projects are deactivated by removing the JavaTime nature from the projects and moving them to state INSTALLED in an
@@ -119,7 +119,7 @@ public class DeactivateJob extends NatureJob {
 		} catch (OperationCanceledException e) {
 			String msg = UserMessage.getInstance().formatString("cancel_job", getName());
 			addCancelMessage(e, msg);
-		} catch (ExtenderException e) {
+		} catch (InPlaceException e) {
 			String msg = ExceptionMessage.getInstance().formatString("terminate_job_with_errors", getName());
 			addError(e, msg);
 		} catch (NullPointerException e) {
@@ -152,7 +152,7 @@ public class DeactivateJob extends NatureJob {
 	 * @return status object describing the result of deactivating with {@code StatusCode.OK} if no failure, otherwise one
 	 *         of the failure codes are returned. If more than one bundle fails, status of the last failed bundle is
 	 *         returned. All failures are added to the job status list
-	 * @throws ExtenderException if one of the projects to deactivate does not exist or is closed
+	 * @throws InPlaceException if one of the projects to deactivate does not exist or is closed
 	 * @throws InterruptedException if the deactivate process is interrupted internally or from an external source.
 	 *           Deactivate is also interrupted if a task running the stop method is terminated abnormally
 	 * @throws CircularReferenceException if cycles are detected among the specified projects
@@ -160,7 +160,7 @@ public class DeactivateJob extends NatureJob {
 	 * @see #addPendingProject(IProject)
 	 * @see #getStatusList()
 	 */
-	public IBundleStatus deactivate(IProgressMonitor monitor) throws ExtenderException, InterruptedException,
+	public IBundleStatus deactivate(IProgressMonitor monitor) throws InPlaceException, InterruptedException,
 			CircularReferenceException, OperationCanceledException {
 
 		BundleSorter bundleSorter = new BundleSorter();
@@ -198,7 +198,7 @@ public class DeactivateJob extends NatureJob {
 				}
 				deactivateNature(getPendingProjects(), new SubProgressMonitor(monitor, 1));
 				refresh(bundles, new SubProgressMonitor(monitor, 1));
-			} catch (ExtenderException e) {
+			} catch (InPlaceException e) {
 				String msg = ExceptionMessage.getInstance().formatString("deactivate_job_uninstalled_state",
 						getName(), bundleRegion.formatBundleList(bundles, true));
 				addError(e, msg);
@@ -223,7 +223,7 @@ public class DeactivateJob extends NatureJob {
 							if (null != bundlesToResolve) {
 								bundlesToResolve = new LinkedHashSet<Bundle>();
 							}
-							bundlesToResolve.addAll(getBundlesToResolve(Collections.singletonList(bundle)));
+							bundlesToResolve.addAll(getBundlesToResolve(Collections.<Bundle>singletonList(bundle)));
 						}
 					}
 					stop(bundlesToRestart,Closure.REQUIRING, new SubProgressMonitor(monitor, 1));
@@ -250,7 +250,7 @@ public class DeactivateJob extends NatureJob {
 				if (null != bundlesToRestart) {
 					start(bundlesToRestart, Closure.PROVIDING, new SubProgressMonitor(monitor, 1));
 				}
-			} catch (ExtenderException e) {
+			} catch (InPlaceException e) {
 				String msg = ExceptionMessage.getInstance().formatString("deactivate_job_installed_state", getName(),
 						bundleRegion.formatBundleList(pendingBundles, true));
 				addError(e, msg);

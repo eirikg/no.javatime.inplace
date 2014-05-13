@@ -19,7 +19,7 @@ import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundlemanager.BundleTransition;
 import no.javatime.inplace.bundlemanager.BundleTransition.Transition;
 import no.javatime.inplace.bundlemanager.BundleTransition.TransitionError;
-import no.javatime.inplace.bundlemanager.ExtenderException;
+import no.javatime.inplace.bundlemanager.InPlaceException;
 import no.javatime.inplace.bundleproject.BundleProject;
 import no.javatime.util.messages.Category;
 import no.javatime.util.messages.TraceMessage;
@@ -142,15 +142,15 @@ public class BundleNode {
 	 * 
 	 * @return the key of the bundle as a concatenation of the symbolic name and the bundle version or null
 	 * if the bundle is missing
-	 * @throws ExtenderException if there exists a bundle id and the bundle could not be retrieved
+	 * @throws InPlaceException if there exists a bundle id and the bundle could not be retrieved
 	 */
-	public final String getSymbolicKey() throws ExtenderException {
+	public final String getSymbolicKey() throws InPlaceException {
 		if (null == bundleId) {
 			return null;
 		}
 		Bundle bundle = InPlace.getContext().getBundle(bundleId);
 		if (null == bundle) {
-			throw new ExtenderException("illegal_bundle_id", project.getName());
+			throw new InPlaceException("illegal_bundle_id", project.getName());
 		}
 		return bundle.getSymbolicName() + bundle.getVersion();
 	}
@@ -175,7 +175,7 @@ public class BundleNode {
 			try {
 				symbolicName = BundleProject.getSymbolicNameFromManifest(project);
 				version = BundleProject.getBundleVersionFromManifest(project);
-			} catch (ExtenderException e) {
+			} catch (InPlaceException e) {
 			}
 			if (null != symbolicName && null != version) {
 				key.append(symbolicName);

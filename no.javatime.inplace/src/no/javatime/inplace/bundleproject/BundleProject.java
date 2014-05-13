@@ -42,7 +42,7 @@ import org.osgi.framework.Constants;
 import org.osgi.framework.Version;
 
 import no.javatime.inplace.InPlace;
-import no.javatime.inplace.bundlemanager.ExtenderException;
+import no.javatime.inplace.bundlemanager.InPlaceException;
 import no.javatime.inplace.statushandler.BundleStatus;
 import no.javatime.inplace.statushandler.IBundleStatus.StatusCode;
 import no.javatime.util.messages.Category;
@@ -79,9 +79,9 @@ public class BundleProject {
 	 * @param project containing the class path
 	 * @return true if the default output folder is contained in the class path for the specified project
 	 */
-	public static Boolean isOutputFolderInBundleClassPath(IProject project) throws ExtenderException {
+	public static Boolean isOutputFolderInBundleClassPath(IProject project) throws InPlaceException {
 		if (!hasManifest(project)) {
-			throw new ExtenderException("no_manifest_found_project", project.getName());
+			throw new InPlaceException("no_manifest_found_project", project.getName());
 		}
 
 		IBundleProjectDescription bundleProjDesc = InPlace.getDefault().getBundleDescription(project);
@@ -131,7 +131,7 @@ public class BundleProject {
 				bundleProjDesc.apply(null);
 				outputLocationAdded = true;
 			}
-		} catch (ExtenderException e) {
+		} catch (InPlaceException e) {
 			outputLocationAdded = false;
 		} catch (JavaModelException e) {
 			outputLocationAdded = false;
@@ -146,12 +146,12 @@ public class BundleProject {
 	 * 
 	 * @param project to set the bundle class path header on
 	 * @return true if the bundle class path is modified, otherwise false (already in path)
-	 * @throws ExtenderException if failed to get bundle project description
+	 * @throws InPlaceException if failed to get bundle project description
 	 */
-	public static Boolean addOutputLocationToBundleClassPath(IProject project) throws ExtenderException {
+	public static Boolean addOutputLocationToBundleClassPath(IProject project) throws InPlaceException {
 		try {
 			if (!hasManifest(project)) {
-				throw new ExtenderException("no_manifest_found_project", project.getName());
+				throw new InPlaceException("no_manifest_found_project", project.getName());
 			}
 			IBundleProjectDescription bundleProjDesc = InPlace.getDefault().getBundleDescription(project);
 			IPath defaultOutputPath = bundleProjDesc.getDefaultOutputFolder();
@@ -170,16 +170,16 @@ public class BundleProject {
 			}
 			// Search for the output class path entry in the class path header
 			if (storedClassPath.isEmpty()) {
-				throw new ExtenderException("empty_classpath", project.getName());
+				throw new InPlaceException("empty_classpath", project.getName());
 			} else if (storedClassPath.equals(" ")) {
-				throw new ExtenderException("space_classpath", project.getName());
+				throw new InPlaceException("space_classpath", project.getName());
 			} else {
 				// Identify output folder in class path
 				ManifestElement[] elements = null;
 				try {
 					elements = ManifestElement.parseHeader(Constants.BUNDLE_CLASSPATH, storedClassPath);
 				} catch (BundleException e) {
-					throw new ExtenderException(e, "parsing_manifest", project.getName());
+					throw new InPlaceException(e, "parsing_manifest", project.getName());
 				}
 				if (elements != null && elements.length > 0) {
 					for (int i = 0; i < elements.length; i++) {
@@ -207,7 +207,7 @@ public class BundleProject {
 							project.getName());
 			}
 		} catch (CoreException e) {
-			throw new ExtenderException(e, "manifest_io_project", project.getName());
+			throw new InPlaceException(e, "manifest_io_project", project.getName());
 		}
 		return true;
 	}
@@ -217,17 +217,17 @@ public class BundleProject {
 	 * 
 	 * @param project to remove the bundle class path header from
 	 * @return true if the bundle class path is removed, otherwise false (not in path)
-	 * @throws ExtenderException if failed to get bundle project description, failed to read or parse manifest and when
+	 * @throws InPlaceException if failed to get bundle project description, failed to read or parse manifest and when
 	 *           the header is empty or contains space(s) only
 	 */
-	public static Boolean removeOutputLocationFromClassPath(IProject project) throws ExtenderException {
+	public static Boolean removeOutputLocationFromClassPath(IProject project) throws InPlaceException {
 
 		// Output folder initially not removed
 		boolean removed = false;
 
 		try {
 			if (!hasManifest(project)) {
-				throw new ExtenderException("no_manifest_found_project", project.getName());
+				throw new InPlaceException("no_manifest_found_project", project.getName());
 			}
 			IBundleProjectDescription bundleProjDesc = InPlace.getDefault().getBundleDescription(project);
 			IPath defaultOutpUtPath = bundleProjDesc.getDefaultOutputFolder();
@@ -242,16 +242,16 @@ public class BundleProject {
 			}
 			// Search for the output class path entry in the class path header
 			if (storedClassPath.isEmpty()) {
-				throw new ExtenderException("empty_classpath", project.getName());
+				throw new InPlaceException("empty_classpath", project.getName());
 			} else if (storedClassPath.equals(" ")) {
-				throw new ExtenderException("space_classpath", project.getName());
+				throw new InPlaceException("space_classpath", project.getName());
 			} else {
 				// Identify output in class path
 				ManifestElement[] elements = null;
 				try {
 					elements = ManifestElement.parseHeader(Constants.BUNDLE_CLASSPATH, storedClassPath);
 				} catch (BundleException e) {
-					throw new ExtenderException(e, "parsing_manifest", project.getName());
+					throw new InPlaceException(e, "parsing_manifest", project.getName());
 				}
 				StringBuffer updatedClassPath = new StringBuffer();
 				if (elements != null && elements.length > 0) {
@@ -287,7 +287,7 @@ public class BundleProject {
 				}
 			}
 		} catch (CoreException e) {
-			throw new ExtenderException(e, "manifest_io_project", project.getName());
+			throw new InPlaceException(e, "manifest_io_project", project.getName());
 		}
 		return removed;
 	}
@@ -296,10 +296,10 @@ public class BundleProject {
 	 * Toggles between lazy and eager activation
 	 * 
 	 * @param project of bundle containing the activation policy
-	 * @throws ExtenderException if failed to get bundle project description or saving activation policy to
+	 * @throws InPlaceException if failed to get bundle project description or saving activation policy to
 	 *           manifest
 	 */
-	public static void toggleActivationPolicy(IProject project) throws ExtenderException {
+	public static void toggleActivationPolicy(IProject project) throws InPlaceException {
 		if (null == project) {
 			return;
 		}
@@ -317,11 +317,11 @@ public class BundleProject {
 		try {
 			bundleProjDesc.apply(null);
 		} catch (CoreException e) {
-			throw new ExtenderException(e, "manifest_io_project", project.getName());
+			throw new InPlaceException(e, "manifest_io_project", project.getName());
 		}
 	}
 
-	public static Boolean isFragment(IProject project) throws ExtenderException {
+	public static Boolean isFragment(IProject project) throws InPlaceException {
 		IBundleProjectDescription bundleProjDesc = InPlace.getDefault().getBundleDescription(project);
 		IHostDescription host = bundleProjDesc.getHost();
 		if (null != host) {
@@ -336,15 +336,15 @@ public class BundleProject {
 	 * 
 	 * @param project containing the meta information
 	 * @return true if lazy activation and false if not.
-	 * @throws ExtenderException if project is null or failed to obtain the project description
+	 * @throws InPlaceException if project is null or failed to obtain the project description
 	 */
-	public static Boolean getLazyActivationPolicyFromManifest(IProject project) throws ExtenderException {
+	public static Boolean getLazyActivationPolicyFromManifest(IProject project) throws InPlaceException {
 		if (null == project) {
-			throw new ExtenderException("project_null");
+			throw new InPlaceException("project_null");
 		}
 		IBundleProjectDescription bundleProjDesc = InPlace.getDefault().getBundleDescription(project);
 		if (null == bundleProjDesc) {
-			throw new ExtenderException("project_description_null");
+			throw new InPlaceException("project_description_null");
 		}
 		String policy = bundleProjDesc.getActivationPolicy();
 		if (null != policy && policy.equals(Constants.ACTIVATION_LAZY)) {
@@ -358,9 +358,9 @@ public class BundleProject {
 	 * 
 	 * @param project containing the meta information
 	 * @return current symbolic name in manifest file or null
-	 * @throws ExtenderException if the project description could not be obtained
+	 * @throws InPlaceException if the project description could not be obtained
 	 */
-	public static String getSymbolicNameFromManifest(IProject project) throws ExtenderException {
+	public static String getSymbolicNameFromManifest(IProject project) throws InPlaceException {
 
 		IBundleProjectDescription bundleProjDesc = InPlace.getDefault().getBundleDescription(project);
 		if (null == bundleProjDesc) {
@@ -374,9 +374,9 @@ public class BundleProject {
 	 * 
 	 * @param project containing the meta information
 	 * @return current version from manifest file as a string or null
-	 * @throws ExtenderException if the bundle project description could not be obtained
+	 * @throws InPlaceException if the bundle project description could not be obtained
 	 */
-	public static String getBundleVersionFromManifest(IProject project) throws ExtenderException {
+	public static String getBundleVersionFromManifest(IProject project) throws InPlaceException {
 		if (null == project) {
 			return null;
 		}
@@ -410,7 +410,7 @@ public class BundleProject {
 						return project;
 					}
 				}
-			} catch (ExtenderException e) {
+			} catch (InPlaceException e) {
 				StatusManager.getManager().handle(new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, null, e),
 						StatusManager.LOG);
 			}
@@ -436,9 +436,9 @@ public class BundleProject {
 	 * 
 	 * @param symbolicName of an installed bundle
 	 * @param classPath a valid path (e.g. "bin")
-	 * @throws ExtenderException if an IO or property error occurs updating build properties file
+	 * @throws InPlaceException if an IO or property error occurs updating build properties file
 	 */
-	public static boolean setDevClasspath(String symbolicName, String classPath) throws ExtenderException {
+	public static boolean setDevClasspath(String symbolicName, String classPath) throws InPlaceException {
 
 		String osgiDev = inDevelopmentMode();
 		if (null == osgiDev) {
@@ -484,7 +484,7 @@ public class BundleProject {
 					is.close();
 			}
 		} catch (IOException e) {
-			throw new ExtenderException(e, "classpath_read_error", symbolicName);
+			throw new InPlaceException(e, "classpath_read_error", symbolicName);
 		}
 		props.setProperty(symbolicName, classPath);
 		FileOutputStream os = null;
@@ -496,16 +496,16 @@ public class BundleProject {
 				UserMessage.getInstance().getString("class_path_per_bundle", classPath, symbolicName);
 			}
 		} catch (FileNotFoundException e) {
-			throw new ExtenderException(e, "classpath_file_not_found_error", symbolicName);
+			throw new InPlaceException(e, "classpath_file_not_found_error", symbolicName);
 		} catch (IOException e) {
-			throw new ExtenderException(e, "classpath_write_error_bundle", symbolicName);
+			throw new InPlaceException(e, "classpath_write_error_bundle", symbolicName);
 		} finally {
 			try {
 				if (null != os) {
 					os.close();
 				}
 			} catch (IOException e) {
-				throw new ExtenderException(e, "io_exception_set_classpath", symbolicName);
+				throw new InPlaceException(e, "io_exception_set_classpath", symbolicName);
 			}
 		}
 		return true;

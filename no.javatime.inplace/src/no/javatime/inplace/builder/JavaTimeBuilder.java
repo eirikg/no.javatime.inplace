@@ -14,13 +14,25 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 
+import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.IResource;
+import org.eclipse.core.resources.IResourceDelta;
+import org.eclipse.core.resources.IResourceDeltaVisitor;
+import org.eclipse.core.resources.IResourceVisitor;
+import org.eclipse.core.resources.IncrementalProjectBuilder;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.ui.statushandlers.StatusManager;
+import org.osgi.framework.Bundle;
+
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundlemanager.BundleCommand;
 import no.javatime.inplace.bundlemanager.BundleManager;
 import no.javatime.inplace.bundlemanager.BundleRegion;
 import no.javatime.inplace.bundlemanager.BundleTransition;
 import no.javatime.inplace.bundlemanager.BundleTransition.Transition;
-import no.javatime.inplace.bundlemanager.ExtenderException;
+import no.javatime.inplace.bundlemanager.InPlaceException;
 import no.javatime.inplace.bundlemanager.ProjectLocationException;
 import no.javatime.inplace.bundleproject.BundleProject;
 import no.javatime.inplace.bundleproject.ProjectProperties;
@@ -33,18 +45,6 @@ import no.javatime.util.messages.Category;
 import no.javatime.util.messages.ExceptionMessage;
 import no.javatime.util.messages.TraceMessage;
 import no.javatime.util.messages.WarnMessage;
-
-import org.eclipse.core.resources.IFile;
-import org.eclipse.core.resources.IProject;
-import org.eclipse.core.resources.IResource;
-import org.eclipse.core.resources.IResourceDelta;
-import org.eclipse.core.resources.IResourceDeltaVisitor;
-import org.eclipse.core.resources.IResourceVisitor;
-import org.eclipse.core.resources.IncrementalProjectBuilder;
-import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.ui.statushandlers.StatusManager;
-import org.osgi.framework.Bundle;
 
 /**
  * Checks and tags bundle projects that are JavaTime nature enabled with pending bundle operations. What kind
@@ -208,7 +208,7 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 			}
 			if (Category.DEBUG && Category.getState(Category.build))
 				TraceMessage.getInstance().getString("end_build");
-		} catch (ExtenderException e) {
+		} catch (InPlaceException e) {
 			ExceptionMessage.getInstance().handleMessage(e, e.getMessage());
 		}
 		return null; // ok to return null;
@@ -251,7 +251,7 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 		boolean cycle = false;
 		try {
 			ProjectSorter ps = new ProjectSorter();
-			projectErrorClosures = ps.getRequiringBuildErrorClosure(Collections.singletonList(project));
+			projectErrorClosures = ps.getRequiringBuildErrorClosure(Collections.<IProject>singletonList(project));
 		} catch (CircularReferenceException e) {
 			String msg = ExceptionMessage.getInstance().formatString("circular_reference_termination");
 			IBundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg);
@@ -284,7 +284,7 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 				}
 			}
 			StatusManager.getManager().handle(buildStatus, StatusManager.LOG);
-		} catch (ExtenderException e) {
+		} catch (InPlaceException e) {
 			StatusManager.getManager().handle(
 					new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, e.getMessage(), e),
 					StatusManager.LOG);			
@@ -331,7 +331,7 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 			IBundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg);
 			multiStatus.add(e.getStatusList());
 			StatusManager.getManager().handle(multiStatus, StatusManager.LOG);
-		} catch (ExtenderException e) {
+		} catch (InPlaceException e) {
 			String msg = WarnMessage.getInstance().formatString("uicontributors_fail_get", project.getName());
 			IBundleStatus status = new BundleStatus(StatusCode.WARNING, InPlace.PLUGIN_ID, msg);
 			StatusManager.getManager().handle(status, StatusManager.LOG);

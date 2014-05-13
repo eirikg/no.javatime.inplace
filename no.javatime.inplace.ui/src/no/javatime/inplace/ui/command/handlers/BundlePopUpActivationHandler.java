@@ -14,17 +14,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 
-import no.javatime.inplace.bundlemanager.ExtenderException;
-import no.javatime.inplace.bundleproject.BundleProject;
-import no.javatime.inplace.bundleproject.ProjectProperties;
-import no.javatime.inplace.statushandler.BundleStatus;
-import no.javatime.inplace.statushandler.IBundleStatus.StatusCode;
-import no.javatime.inplace.ui.Activator;
-import no.javatime.inplace.ui.command.contributions.BundleMainCommandsContributionItems;
-import no.javatime.inplace.ui.command.contributions.BundlePopUpCommandsContributionItems;
-import no.javatime.util.messages.ExceptionMessage;
-import no.javatime.util.messages.WarnMessage;
-
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.resources.IProject;
@@ -35,6 +24,17 @@ import org.eclipse.ui.commands.IElementUpdater;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.menus.UIElement;
 import org.eclipse.ui.statushandlers.StatusManager;
+
+import no.javatime.inplace.bundlemanager.InPlaceException;
+import no.javatime.inplace.bundleproject.BundleProject;
+import no.javatime.inplace.bundleproject.ProjectProperties;
+import no.javatime.inplace.statushandler.BundleStatus;
+import no.javatime.inplace.statushandler.IBundleStatus.StatusCode;
+import no.javatime.inplace.ui.Activator;
+import no.javatime.inplace.ui.command.contributions.BundleMainCommandsContributionItems;
+import no.javatime.inplace.ui.command.contributions.BundlePopUpCommandsContributionItems;
+import no.javatime.util.messages.ExceptionMessage;
+import no.javatime.util.messages.WarnMessage;
 
 /**
  * Handles pop-up menu from java project in package explorer and bundle view.
@@ -75,7 +75,7 @@ public class BundlePopUpActivationHandler extends BundleMenuActivationHandler im
 				project = jProject.getProject();
 			}
 		}
-		Collection<IProject> projects = Collections.singletonList(project);		
+		Collection<IProject> projects = Collections.<IProject>singletonList(project);		
 		if (parameterId.equals(BundlePopUpCommandsContributionItems.installParamId)) {
 			installHandler(ProjectProperties.getPlugInProjects());
 		} else if (parameterId.equals(BundleMainCommandsContributionItems.activateParamId)) {
@@ -128,7 +128,7 @@ public class BundlePopUpActivationHandler extends BundleMenuActivationHandler im
 				// Set current activation policy from manifest
 				boolean isLazy = BundleProject.getLazyActivationPolicyFromManifest(project);
 				element.setChecked(!isLazy);
-			} catch (ExtenderException e) {
+			} catch (InPlaceException e) {
 				// Don't spam this meassage.
 				if (!ProjectProperties.hasManifestBuildErrors(project) && ProjectProperties.hasBuildState(project)) {	
 					String msg = ExceptionMessage.getInstance().formatString("error_set_policy", javaProject.getProject().getName());

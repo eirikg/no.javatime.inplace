@@ -5,7 +5,7 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 
 import no.javatime.inplace.InPlace;
-import no.javatime.inplace.bundlemanager.ExtenderException;
+import no.javatime.inplace.bundlemanager.InPlaceException;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Operation;
@@ -46,10 +46,10 @@ public class BundleClosures {
 	 * @param activated if true only consider activated projects and only deactivated projects if false
 	 * @return set of sorted projects according to dependency option or an empty set.
 	 * @throws CircularReferenceException if cycles are detected in the project graph
-	 * @throws ExtenderException if failing to get the dependency options service or illegal operation/closure combination
+	 * @throws InPlaceException if failing to get the dependency options service or illegal operation/closure combination
 	 */
 	public Collection<IProject> projectActivation(Collection<IProject> initialSet, boolean activated) 
-			throws CircularReferenceException, ExtenderException {
+			throws CircularReferenceException, InPlaceException {
 		
 		DependencyOptions opt = InPlace.getDefault().getDependencyOptionsService();
 		Closure closure = opt.get(Operation.ACTIVATE_PROJECT);
@@ -66,10 +66,10 @@ public class BundleClosures {
 	 * @param activated if true only consider activated projects and only deactivated projects if false
 	 * @return set of sorted projects according to dependency option or an empty set.
 	 * @throws CircularReferenceException if cycles are detected in the project graph
-	 * @throws ExtenderException if failing to get the dependency options service or illegal operation/closure combination
+	 * @throws InPlaceException if failing to get the dependency options service or illegal operation/closure combination
 	 */
 	public Collection<IProject> projectActivation(Closure closure, Collection<IProject> initialSet, boolean activated) 
-			throws CircularReferenceException, ExtenderException {
+			throws CircularReferenceException, InPlaceException {
 		
 		ProjectSorter ps = new ProjectSorter();
 		Collection<IProject> resultSet = null;		
@@ -77,7 +77,7 @@ public class BundleClosures {
 		
 		if (null != initialSet && initialSet.size() > 0) { 
 			if (!opt.isAllowed(Operation.ACTIVATE_PROJECT, closure) ) {
-				throw new ExtenderException("illegal_closure_exception", closure.name(), Operation.ACTIVATE_PROJECT.name());
+				throw new InPlaceException("illegal_closure_exception", closure.name(), Operation.ACTIVATE_PROJECT.name());
 			}
 			switch (closure) {
 			case PROVIDING:
@@ -92,11 +92,11 @@ public class BundleClosures {
 				resultSet = partialGraph(initialSet, activated, true);
 				break;
 			default:
-				resultSet = Collections.emptySet();
+				resultSet = Collections.<IProject>emptySet();
 				break;
 			}
 		} else {
-			resultSet = Collections.emptySet();			
+			resultSet = Collections.<IProject>emptySet();			
 		}
 		return resultSet;
 	}
@@ -110,10 +110,10 @@ public class BundleClosures {
 	 * @param activated if true only consider activated projects and only deactivated projects if false
 	 * @return set of sorted projects according to dependency option or an empty set.
 	 * @throws CircularReferenceException if cycles are detected in the project graph
-	 * @throws ExtenderException if failing to get the dependency options service or illegal operation/closure combination
+	 * @throws InPlaceException if failing to get the dependency options service or illegal operation/closure combination
 	 */
 	public Collection<IProject> projectDeactivation(Collection<IProject> initialSet, boolean activated) 
-			throws CircularReferenceException, ExtenderException {
+			throws CircularReferenceException, InPlaceException {
 		DependencyOptions opt = InPlace.getDefault().getDependencyOptionsService();
 		Closure closure = opt.get(Operation.DEACTIVATE_PROJECT);
 		return projectDeactivation(closure, initialSet, activated);
@@ -129,10 +129,10 @@ public class BundleClosures {
 	 * @param activated if true only consider activated projects and only deactivated projects if false
 	 * @return set of sorted projects according to dependency option or an empty set.
 	 * @throws CircularReferenceException if cycles are detected in the project graph
-	 * @throws ExtenderException if failing to get the dependency options service or illegal operation/closure combination
+	 * @throws InPlaceException if failing to get the dependency options service or illegal operation/closure combination
 	 */
 	public Collection<IProject> projectDeactivation(Closure closure, Collection<IProject> initialSet, boolean activated) 
-			throws CircularReferenceException, ExtenderException {
+			throws CircularReferenceException, InPlaceException {
 		
 		ProjectSorter ps = new ProjectSorter();
 		Collection<IProject> resultSet = null;		
@@ -140,7 +140,7 @@ public class BundleClosures {
 		
 		if (null != initialSet && initialSet.size() > 0) { 
 			if (!opt.isAllowed(Operation.DEACTIVATE_PROJECT, closure) ) {
-				throw new ExtenderException("illegal_closure_exception", closure.name(), Operation.DEACTIVATE_PROJECT.name());
+				throw new InPlaceException("illegal_closure_exception", closure.name(), Operation.DEACTIVATE_PROJECT.name());
 			}
 			switch (closure) {
 			case REQUIRING:
@@ -155,11 +155,11 @@ public class BundleClosures {
 				resultSet = partialGraph(initialSet, activated, false);
 				break;
 			default:
-				resultSet = Collections.emptySet();
+				resultSet = Collections.<IProject>emptySet();
 				break;
 			}
 		} else {
-			resultSet = Collections.emptySet();			
+			resultSet = Collections.<IProject>emptySet();			
 		}
 		return resultSet;
 	}
@@ -171,10 +171,10 @@ public class BundleClosures {
 	 * @param scope limit the set of bundles to search for dependencies in relative to the workspace
 	 * @return set of sorted bundles according to dependency option or an empty set.
 	 * @throws CircularReferenceException if cycles are detected in the bundle graph
-	 * @throws ExtenderException if failing to get the dependency options service or illegal operation/closure combination
+	 * @throws InPlaceException if failing to get the dependency options service or illegal operation/closure combination
 	 */
 	public Collection<Bundle> bundleActivation(Collection<Bundle> initialSet, Collection<Bundle> scope) 
-			throws CircularReferenceException, ExtenderException {
+			throws CircularReferenceException, InPlaceException {
 		DependencyOptions opt = InPlace.getDefault().getDependencyOptionsService();
 		Closure closure = opt.get(Operation.ACTIVATE_BUNDLE);
 		return bundleActivation(closure, initialSet, scope);
@@ -189,10 +189,10 @@ public class BundleClosures {
 	 * @param scope limit the set of bundles to search for dependencies in relative to the workspace
 	 * @return set of sorted bundles according to dependency option or an empty set.
 	 * @throws CircularReferenceException if cycles are detected in the bundle graph
-	 * @throws ExtenderException if failing to get the dependency options service or illegal operation/closure combination
+	 * @throws InPlaceException if failing to get the dependency options service or illegal operation/closure combination
 	 */
 	public Collection<Bundle> bundleActivation(Closure closure, Collection<Bundle> initialSet, Collection<Bundle> scope) 
-			throws CircularReferenceException, ExtenderException {
+			throws CircularReferenceException, InPlaceException {
 
 		BundleSorter bs = new BundleSorter();
 		DependencyOptions opt = InPlace.getDefault().getDependencyOptionsService();
@@ -200,7 +200,7 @@ public class BundleClosures {
 		
 		if (null != initialSet && initialSet.size() > 0 && null != scope) {
 			if (!opt.isAllowed(Operation.ACTIVATE_BUNDLE, closure) ) {
-				throw new ExtenderException("illegal_closure_exception", closure.name(), Operation.ACTIVATE_BUNDLE.name());
+				throw new InPlaceException("illegal_closure_exception", closure.name(), Operation.ACTIVATE_BUNDLE.name());
 			}
 			switch (closure) {
 			case PROVIDING:
@@ -220,11 +220,11 @@ public class BundleClosures {
 				resultSet = bs.sortProvidingBundles(initialSet, initialSet);
 				break;
 			default:
-				resultSet = Collections.emptySet();
+				resultSet = Collections.<Bundle>emptySet();
 				break;
 			}
 		} else {
-			resultSet = Collections.emptySet();			
+			resultSet = Collections.<Bundle>emptySet();			
 		}
 		return resultSet;
 	}
@@ -237,10 +237,10 @@ public class BundleClosures {
 	 * @param scope limit the set of bundles to search for dependencies in relative to the workspace
 	 * @return set of sorted bundles according to dependency option or an empty set.
 	 * @throws CircularReferenceException if cycles are detected in the bundle graph
-	 * @throws ExtenderException if failing to get the dependency options service or illegal operation/closure combination
+	 * @throws InPlaceException if failing to get the dependency options service or illegal operation/closure combination
 	 */
 	public Collection<Bundle> bundleDeactivation(Collection<Bundle> initialSet, Collection<Bundle> scope) 
-			throws CircularReferenceException, ExtenderException {
+			throws CircularReferenceException, InPlaceException {
 		DependencyOptions opt = InPlace.getDefault().getDependencyOptionsService();
 		Closure closure = opt.get(Operation.DEACTIVATE_BUNDLE);
 		return bundleDeactivation(closure, initialSet, scope);
@@ -256,10 +256,10 @@ public class BundleClosures {
 	 * @param scope limit the set of bundles to search for dependencies in relative to the workspace
 	 * @return set of sorted bundles according to dependency option or an empty set.
 	 * @throws CircularReferenceException if cycles are detected in the bundle graph
-	 * @throws ExtenderException if failing to get the dependency options service or illegal operation/closure combination
+	 * @throws InPlaceException if failing to get the dependency options service or illegal operation/closure combination
 	 */
 	public Collection<Bundle> bundleDeactivation(Closure closure, Collection<Bundle> initialSet, Collection<Bundle> scope) 
-			throws CircularReferenceException, ExtenderException {
+			throws CircularReferenceException, InPlaceException {
 
 		BundleSorter bs = new BundleSorter();
 		bs.setAllowCycles(true);
@@ -268,7 +268,7 @@ public class BundleClosures {
 
 		if (null != initialSet && initialSet.size() > 0 && null != scope) {
 			if (!opt.isAllowed(Operation.DEACTIVATE_BUNDLE, closure) ) {
-				throw new ExtenderException("illegal_closure_exception", closure.name(), Operation.DEACTIVATE_BUNDLE.name());
+				throw new InPlaceException("illegal_closure_exception", closure.name(), Operation.DEACTIVATE_BUNDLE.name());
 			}
 			switch (closure) {
 			case PROVIDING:
@@ -288,11 +288,11 @@ public class BundleClosures {
 				resultSet = bs.sortRequiringBundles(initialSet, initialSet);
 				break;
 			default:
-				resultSet = Collections.emptySet();
+				resultSet = Collections.<Bundle>emptySet();
 				break;
 			}
 		} else {
-			return Collections.emptySet();
+			return Collections.<Bundle>emptySet();
 		}
 		return resultSet;
 	}	

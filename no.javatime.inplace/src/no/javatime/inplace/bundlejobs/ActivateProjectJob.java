@@ -14,7 +14,7 @@ import java.util.Collection;
 
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundlemanager.BundleTransition.Transition;
-import no.javatime.inplace.bundlemanager.ExtenderException;
+import no.javatime.inplace.bundlemanager.InPlaceException;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.dependencies.BundleClosures;
 import no.javatime.inplace.dependencies.CircularReferenceException;
@@ -126,7 +126,7 @@ public class ActivateProjectJob extends NatureJob {
 			BundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg);
 			multiStatus.add(e.getStatusList());
 			addStatus(multiStatus);
-		} catch (ExtenderException e) {
+		} catch (InPlaceException e) {
 			String msg = ExceptionMessage.getInstance().formatString("terminate_job_with_errors", getName());
 			addError(e, msg);
 		} catch (NullPointerException e) {
@@ -159,12 +159,12 @@ public class ActivateProjectJob extends NatureJob {
 	 * @return status object describing the result of activating with {@code StatusCode.OK} if no failure,
 	 *         otherwise one of the failure codes are returned. If more than one bundle fails, status of the
 	 *         last failed bundle is returned. All failures are added to the job status list
-	 * @throws ExtenderException when failing to enable nature
+	 * @throws InPlaceException when failing to enable nature
 	 * @throws CircularReferenceException if cycles are detected in the project graph
 	 * @see #getStatusList()
 	 */
 	private IBundleStatus activate(IProgressMonitor monitor) 
-			throws ExtenderException, InterruptedException, CircularReferenceException {
+			throws InPlaceException, InterruptedException, CircularReferenceException {
 
 		if (pendingProjects() > 0) {
 			IBundleStatus result = initWorkspace(monitor);

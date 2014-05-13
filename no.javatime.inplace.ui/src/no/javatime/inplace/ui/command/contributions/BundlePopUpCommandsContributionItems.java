@@ -14,7 +14,7 @@ import java.util.ArrayList;
 
 import no.javatime.inplace.bundlemanager.BundleManager;
 import no.javatime.inplace.bundlemanager.BundleTransition.Transition;
-import no.javatime.inplace.bundlemanager.ExtenderException;
+import no.javatime.inplace.bundlemanager.InPlaceException;
 import no.javatime.inplace.bundleproject.BundleProject;
 import no.javatime.inplace.bundleproject.ManifestUtil;
 import no.javatime.inplace.bundleproject.OpenProjectHandler;
@@ -231,7 +231,7 @@ public class BundlePopUpCommandsContributionItems extends BundleCommandsContribu
 							CommandContributionItem.STYLE_PUSH, classPathImage);				
 				}
 			}
-		} catch (ExtenderException e) {
+		} catch (InPlaceException e) {
 			return null; // Menu item not displayed
 		}
 		return null;

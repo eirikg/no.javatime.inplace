@@ -3,7 +3,7 @@ package no.javatime.inplace.bundlemanager.state;
 import org.osgi.framework.Bundle;
 
 import no.javatime.inplace.InPlace;
-import no.javatime.inplace.bundlemanager.ExtenderException;
+import no.javatime.inplace.bundlemanager.InPlaceException;
 import no.javatime.util.messages.TraceMessage;
 
 public abstract class BundleState {
@@ -36,39 +36,39 @@ public abstract class BundleState {
 		return null;
 	}
 
-	public void install(BundleNode bundleNode) throws ExtenderException {
+	public void install(BundleNode bundleNode) throws InPlaceException {
 		errorState(bundleNode);
 	}
 
-	public void uninstall(BundleNode bundleNode) throws ExtenderException {
+	public void uninstall(BundleNode bundleNode) throws InPlaceException {
 		errorState(bundleNode);
 	}
 
-	public void resolve(BundleNode bundleNode) throws ExtenderException {
+	public void resolve(BundleNode bundleNode) throws InPlaceException {
 		errorState(bundleNode);
 	}
 
-	public void starting(BundleNode bundleNode) throws ExtenderException {
+	public void starting(BundleNode bundleNode) throws InPlaceException {
 		errorState(bundleNode);
 	}
 
-	public void start(BundleNode bundleNode) throws ExtenderException {
+	public void start(BundleNode bundleNode) throws InPlaceException {
 		errorState(bundleNode);
 	}
 
-	public void stopping(BundleNode bundleNode) throws ExtenderException {
+	public void stopping(BundleNode bundleNode) throws InPlaceException {
 		errorState(bundleNode);
 	}
 
-	public void stop(BundleNode bundleNode) throws ExtenderException {
+	public void stop(BundleNode bundleNode) throws InPlaceException {
 		errorState(bundleNode);
 	}
 
-	public void update(BundleNode bundleNode) throws ExtenderException {
+	public void update(BundleNode bundleNode) throws InPlaceException {
 		errorState(bundleNode);
 	}
 
-	public void refresh(BundleNode bundleNode) throws ExtenderException {
+	public void refresh(BundleNode bundleNode) throws InPlaceException {
 		errorState(bundleNode);
 	}
 

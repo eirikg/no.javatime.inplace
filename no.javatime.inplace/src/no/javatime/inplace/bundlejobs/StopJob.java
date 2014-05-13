@@ -13,8 +13,15 @@ package no.javatime.inplace.bundlejobs;
 import java.util.Collection;
 import java.util.Collections;
 
+import org.eclipse.core.resources.IProject;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.OperationCanceledException;
+import org.eclipse.core.runtime.SubProgressMonitor;
+import org.osgi.framework.Bundle;
+
 import no.javatime.inplace.InPlace;
-import no.javatime.inplace.bundlemanager.ExtenderException;
+import no.javatime.inplace.bundlemanager.InPlaceException;
 import no.javatime.inplace.bundleproject.BundleProject;
 import no.javatime.inplace.dependencies.BundleClosures;
 import no.javatime.inplace.dependencies.BundleSorter;
@@ -29,13 +36,6 @@ import no.javatime.util.messages.ExceptionMessage;
 import no.javatime.util.messages.Message;
 import no.javatime.util.messages.UserMessage;
 import no.javatime.util.messages.WarnMessage;
-
-import org.eclipse.core.resources.IProject;
-import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.OperationCanceledException;
-import org.eclipse.core.runtime.SubProgressMonitor;
-import org.osgi.framework.Bundle;
 
 /**
  * Stops pending bundle projects with an initial state of ACTIVE and STARTING.
@@ -114,7 +114,7 @@ public class StopJob extends BundleJob {
 			BundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg);
 			multiStatus.add(e.getStatusList());
 			addStatus(multiStatus);
-		} catch (ExtenderException e) {
+		} catch (InPlaceException e) {
 			String msg = ExceptionMessage.getInstance().formatString("terminate_job_with_errors", getName());
 			addError(e, msg);
 		} catch (NullPointerException e) {
@@ -149,7 +149,7 @@ public class StopJob extends BundleJob {
 	 * @throws CircularReferenceException if cycles are detected in the project graph
 	 */
 	private IBundleStatus stop(IProgressMonitor monitor) throws
-			ExtenderException, CoreException, InterruptedException, CircularReferenceException {
+			InPlaceException, CoreException, InterruptedException, CircularReferenceException {
 
 		Collection<Bundle> bundlesToStop = bundleRegion.getBundles(getPendingProjects());
 		Collection<Bundle> activatedBundles = bundleRegion.getActivatedBundles();
@@ -162,11 +162,11 @@ public class StopJob extends BundleJob {
 				|| getDepOpt().get(Operation.DEACTIVATE_BUNDLE, Closure.SINGLE)) {
 			BundleSorter bs = new BundleSorter();
 			for (Bundle bundle : bundlesToStop) {
-				Collection<Bundle> requiringBundles = bs.sortRequiringBundles(Collections.singletonList(bundle),
+				Collection<Bundle> requiringBundles = bs.sortRequiringBundles(Collections.<Bundle>singletonList(bundle),
 						bundleRegion.getBundles(Bundle.ACTIVE | Bundle.STARTING));
 				requiringBundles.remove(bundle);
 				if (requiringBundles.size() > 0) {
-					Collection<Bundle> providingBundles = bs.sortProvidingBundles(Collections.singletonList(bundle),
+					Collection<Bundle> providingBundles = bs.sortProvidingBundles(Collections.<Bundle>singletonList(bundle),
 							bundleRegion.getBundles(Bundle.RESOLVED | Bundle.STOPPING));
 					WarnMessage.getInstance().getString("has_stopped_requiring_bundles",
 							bundleRegion.formatBundleList(requiringBundles, true), bundleRegion.formatBundleList(providingBundles, true)); 

@@ -25,7 +25,7 @@ import no.javatime.inplace.bundlejobs.UpdateScheduler;
 import no.javatime.inplace.bundlemanager.BundleManager;
 import no.javatime.inplace.bundlemanager.BundleRegion;
 import no.javatime.inplace.bundlemanager.BundleTransition.Transition;
-import no.javatime.inplace.bundlemanager.ExtenderException;
+import no.javatime.inplace.bundlemanager.InPlaceException;
 import no.javatime.inplace.bundleproject.BundleProject;
 import no.javatime.inplace.bundleproject.OpenProjectHandler;
 import no.javatime.inplace.bundleproject.ProjectProperties;
@@ -34,7 +34,8 @@ import no.javatime.inplace.statushandler.IBundleStatus;
 import no.javatime.inplace.statushandler.IBundleStatus.StatusCode;
 import no.javatime.inplace.ui.Activator;
 import no.javatime.inplace.ui.command.contributions.BundleCommandsContributionItems;
-import no.javatime.inplace.ui.extender.DependencyDialogProxy;
+import no.javatime.inplace.ui.extender.DependencyDialogExtension;
+import no.javatime.inplace.ui.extender.Extension;
 import no.javatime.inplace.ui.service.DependencyDialog;
 import no.javatime.inplace.ui.views.BundleProperties;
 import no.javatime.inplace.ui.views.BundleView;
@@ -73,7 +74,6 @@ import org.eclipse.ui.navigator.CommonNavigator;
 import org.eclipse.ui.statushandlers.StatusManager;
 import org.eclipse.ui.wizards.IWizardDescriptor;
 import org.osgi.framework.Bundle;
-import org.osgi.util.tracker.ServiceTracker;
 
 /**
  * Executes bundle menu commands for one or more projects. The bundle commands are
@@ -208,7 +208,7 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 					}
 				} catch (IllegalStateException e) {
 					// Also caught by the bundle API
-				} catch (ExtenderException e) {
+				} catch (InPlaceException e) {
 					// Ignore
 				}
 			}
@@ -246,18 +246,18 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 											UserMessage.getInstance().getString("autoupdate_off", project.getName());
 										}
 									}
-								} catch (ExtenderException e) {
+								} catch (InPlaceException e) {
 									addError(e, project);
 								}
 								if (null != bundle) {
 									if ((bundle.getState() & (Bundle.INSTALLED)) != 0) {
-										reInstall(Collections.singletonList(project), new SubProgressMonitor(monitor, 1));
+										reInstall(Collections.<IProject>singletonList(project), new SubProgressMonitor(monitor, 1));
 									} else if ((bundle.getState() & (Bundle.RESOLVED)) != 0) { 
 										// Do not start bundle if in state resolve when toggling policy
 										BundleManager.getTransition().addPending(bundle, Transition.RESOLVE);
 									}
 								}
-							} catch (ExtenderException e) {
+							} catch (InPlaceException e) {
 								String msg = ExceptionMessage.getInstance().formatString("error_set_policy", project.getName());
 								addError(e, msg, project);
 							}
@@ -306,7 +306,7 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 									}
 								}
 							}
-						} catch (ExtenderException e) {
+						} catch (InPlaceException e) {
 							String msg = ErrorMessage.getInstance().formatString("error_set_classpath", project.getName());
 							addError(e, msg, project);
 						}
@@ -333,17 +333,21 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 	 * Displays the closure options dependency dialog
 	 */
 	protected void dependencyHandler() {
-		
+
 		try {
-			DependencyDialogProxy dl = DependencyDialogProxy.getInstance();
-			if (null != dl) {
-				dl.openDlg();
+			Extension<DependencyDialog> ext = new Extension<>(DependencyDialog.class);
+			DependencyDialog depService = ext.getService();
+			if (null != depService) {
+				depService.open();
+			} else {
+				throw new InPlaceException("failed_to_get_service_for_interface", DependencyDialog.class.getName());
 			}
-		} catch (ExtenderException e){
+			new DependencyDialogExtension().openAsService();
+		} catch (InPlaceException e){
 			StatusManager.getManager().handle(
 					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),
 					StatusManager.LOG);						
-		}
+		}		
 	}
 	
 	/**

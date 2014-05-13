@@ -4,6 +4,8 @@ package no.javatime.inplace.dl.preferences.intface;
  * Service interface for access and flushing of commands and manifest (extended interface) options
  */
 public interface CommandOptions extends ManifestOptions {
+	
+	public final static String COMMAND_OPTIONS_HEADER = "Command-Options";
 
 	public static final String IS_UPDATE_ON_BUILD = "isUpdateOnBuild";
 	public static final String IS_DEACTIVATE_ON_EXIT = "isDeactivateOnExit";

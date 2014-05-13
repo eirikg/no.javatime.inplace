@@ -1,6 +1,6 @@
 package no.javatime.inplace.bundlemanager.state;
 
-import no.javatime.inplace.bundlemanager.ExtenderException;
+import no.javatime.inplace.bundlemanager.InPlaceException;
 
 /**
  * Bundle events sent by the framework: {@link org.osgi.framework.BundleEvent#INSTALLED}
@@ -24,14 +24,14 @@ public class InstalledState extends BundleState {
 	 * 
 	 * @see ResolvedState#resolve()
 	 */
-	public void resolve(BundleNode bundleNode) throws ExtenderException {
+	public void resolve(BundleNode bundleNode) throws InPlaceException {
 		bundleNode.setCurrentState(BundleStateFactory.INSTANCE.resolvedState);
 	}
 
 	/**
 	 * Bundle events sent by the framework: {@link org.osgi.framework.BundleEvent#UPDATED}
 	 */
-	public void update(BundleNode bundleNode) throws ExtenderException {
+	public void update(BundleNode bundleNode) throws InPlaceException {
 		bundleNode.setCurrentState(BundleStateFactory.INSTANCE.installedState);
 	}
 
@@ -40,7 +40,7 @@ public class InstalledState extends BundleState {
 	 * bundle. (2) Resolve bundle (moves is to state RESOLVED) (3) If bundle is lazy it is moved to state
 	 * STARTING or ACTIVE (demand loading). If policy is eager the bundle is moved to state RESOLVED.
 	 */
-	public void refresh(BundleNode bundleNode) throws ExtenderException {
+	public void refresh(BundleNode bundleNode) throws InPlaceException {
 		// Deactivated bundles in an activated workspace are not resolved (rejected by the resolver hook)
 		// TODO Test new statement
 		if (bundleNode.isActivated()) {
@@ -52,7 +52,7 @@ public class InstalledState extends BundleState {
 	/**
 	 * Bundle events sent by the framework: {@link org.osgi.framework.BundleEvent#UNINSTALLED}
 	 */
-	public void uninstall(BundleNode bundleNode) throws ExtenderException {
+	public void uninstall(BundleNode bundleNode) throws InPlaceException {
 		bundleNode.setCurrentState(BundleStateFactory.INSTANCE.uninstalledState);
 	}
 

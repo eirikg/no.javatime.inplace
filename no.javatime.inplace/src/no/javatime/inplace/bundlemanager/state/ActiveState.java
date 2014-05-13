@@ -1,6 +1,6 @@
 package no.javatime.inplace.bundlemanager.state;
 
-import no.javatime.inplace.bundlemanager.ExtenderException;
+import no.javatime.inplace.bundlemanager.InPlaceException;
 
 public class ActiveState extends BundleState {
 
@@ -8,7 +8,7 @@ public class ActiveState extends BundleState {
 		super();
 	}
 
-	public void stop(BundleNode bundleNode) throws ExtenderException {
+	public void stop(BundleNode bundleNode) throws InPlaceException {
 		bundleNode.setCurrentState(BundleStateFactory.INSTANCE.resolvedState);		
 	}
 }
