@@ -1,5 +1,6 @@
 Manifest-Version: 1.0
-Export-Package: no.javatime.inplace.pl.dependencies.dialogs
+Export-Package: no.javatime.inplace.pl.dependencies.dialogs,
+ no.javatime.inplace.pl.dependencies.service
 Require-Bundle: org.eclipse.ui,org.eclipse.core.runtime
 Bundle-ActivationPolicy: lazy
 Bundle-Version: 1.0.0.201405071807
@@ -8,8 +9,9 @@ Dependency-Dialog: no.javatime.inplace.pl.dependencies.dialogs.Depende
 Bundle-Name: Dependencies
 Bundle-Activator: no.javatime.inplace.pl.dependencies.Activator
 Bundle-ManifestVersion: 2
-Import-Package: no.javatime.inplace.bundlemanager,no.javatime.inplace.
- dl.preferences.intface,no.javatime.inplace.ui.service
+Import-Package: no.javatime.inplace.bundlemanager,
+ no.javatime.inplace.dl.preferences.intface,
+ no.javatime.inplace.extender.provider
 Bundle-SymbolicName: no.javatime.inplace.pl.dependencies
 Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 

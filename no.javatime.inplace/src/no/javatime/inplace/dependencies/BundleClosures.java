@@ -40,8 +40,8 @@ public class BundleClosures {
 	/**
 	 * Topological sort of projects according to the current dependency option (closure). Providing projects to the specified initial set 
 	 * are always included. In addition requiring projects are included if the requiring on activate option is set.
-	 * The last option is Partial graph. See ({@link #partialGraph(Collection, Collection, boolean)}. If both requiring on activate
-	 * and partial graph is true, partial graph is used.
+	 * The last option is Partial graph. See ({@link #partialGraph(Collection, boolean, boolean).
+	 * 
 	 * @param initialSet the set of start projects to include in the topological sort. If null or empty an empty collection is returned. 
 	 * @param activated if true only consider activated projects and only deactivated projects if false
 	 * @return set of sorted projects according to dependency option or an empty set.
@@ -51,7 +51,7 @@ public class BundleClosures {
 	public Collection<IProject> projectActivation(Collection<IProject> initialSet, boolean activated) 
 			throws CircularReferenceException, InPlaceException {
 		
-		DependencyOptions opt = InPlace.getDefault().getDependencyOptionsService();
+		DependencyOptions opt = InPlace.get().getDependencyOptionsService();
 		Closure closure = opt.get(Operation.ACTIVATE_PROJECT);
 		return projectActivation(closure, initialSet, activated);
 	}
@@ -59,9 +59,10 @@ public class BundleClosures {
 	/**
 	 * Topological sort of projects according to the specified dependency option (closure). Providing projects to the specified initial set 
 	 * are always included. In addition requiring projects are included if the requiring on activate option is set.
-	 * The last option is Partial graph. See ({@link #partialGraph(Collection, Collection, boolean)}. If both requiring on activate
-	 * and partial graph is true, partial graph is used.
-	 * @param closure sort according to closure. Valid closures are providing, requiring and providing and partial graph
+	 * The last option is Partial graph. See ({@link #partialGraph(Collection, boolean, boolean)
+	 * 
+	 * @param closure sort according to closure. Valid closures are providing, requiring and providing and partial graph. An empty set is
+	 * returned if closure is null.
 	 * @param initialSet the set of start projects to include in the topological sort. If null or empty an empty collection is returned. 
 	 * @param activated if true only consider activated projects and only deactivated projects if false
 	 * @return set of sorted projects according to dependency option or an empty set.
@@ -73,10 +74,11 @@ public class BundleClosures {
 		
 		ProjectSorter ps = new ProjectSorter();
 		Collection<IProject> resultSet = null;		
-		DependencyOptions opt = InPlace.getDefault().getDependencyOptionsService();
+		DependencyOptions opt = InPlace.get().getDependencyOptionsService();
 		
-		if (null != initialSet && initialSet.size() > 0) { 
+		if (null != closure && null != initialSet && initialSet.size() > 0) { 
 			if (!opt.isAllowed(Operation.ACTIVATE_PROJECT, closure) ) {
+				// TODO check null == closure
 				throw new InPlaceException("illegal_closure_exception", closure.name(), Operation.ACTIVATE_PROJECT.name());
 			}
 			switch (closure) {
@@ -104,8 +106,8 @@ public class BundleClosures {
 	/**
 	 * Topological sort of projects according to the current dependency option (closure). Requiring projects to the specified initial set 
 	 * are always included. In addition providing projects are included if the provide on deactivate option is set.
-	 * The last option is Partial graph. See ({@link #partialGraph(Collection, Collection, boolean)}. If both providing on deactivate
-	 * and partial graph is true, partial graph is used.
+	 * The last option is Partial graph. See ({@link #partialGraph(Collection, boolean, boolean).
+	 * 
 	 * @param initialSet the set of start projects to include in the topological sort. If null or empty an empty collection is returned. 
 	 * @param activated if true only consider activated projects and only deactivated projects if false
 	 * @return set of sorted projects according to dependency option or an empty set.
@@ -114,7 +116,7 @@ public class BundleClosures {
 	 */
 	public Collection<IProject> projectDeactivation(Collection<IProject> initialSet, boolean activated) 
 			throws CircularReferenceException, InPlaceException {
-		DependencyOptions opt = InPlace.getDefault().getDependencyOptionsService();
+		DependencyOptions opt = InPlace.get().getDependencyOptionsService();
 		Closure closure = opt.get(Operation.DEACTIVATE_PROJECT);
 		return projectDeactivation(closure, initialSet, activated);
 	}
@@ -122,9 +124,10 @@ public class BundleClosures {
 	/**
 	 * Topological sort of projects according to the specified dependency option (closure). Requiring projects to the specified initial set 
 	 * are always included. In addition providing projects are included if the provide on deactivate option is set.
-	 * The last option is Partial graph. See ({@link #partialGraph(Collection, Collection, boolean)}. If both providing on deactivate
-	 * and partial graph is true, partial graph is used.
-	 * @param closure sort according to closure. Valid closures are requiring, providing and requiring and partial graph
+	 * The last option is Partial graph. See ({@link #partialGraph(Collection, boolean, boolean).
+	 * 
+	 * @param closure sort according to closure. Valid closures are requiring, providing and requiring and partial graph. An empty set is
+	 * returned if closure is null.
 	 * @param initialSet the set of start projects to include in the topological sort. If null or empty an empty collection is returned. 
 	 * @param activated if true only consider activated projects and only deactivated projects if false
 	 * @return set of sorted projects according to dependency option or an empty set.
@@ -136,9 +139,9 @@ public class BundleClosures {
 		
 		ProjectSorter ps = new ProjectSorter();
 		Collection<IProject> resultSet = null;		
-		DependencyOptions opt = InPlace.getDefault().getDependencyOptionsService();
+		DependencyOptions opt = InPlace.get().getDependencyOptionsService();
 		
-		if (null != initialSet && initialSet.size() > 0) { 
+		if (null != closure && null != initialSet && initialSet.size() > 0) { 
 			if (!opt.isAllowed(Operation.DEACTIVATE_PROJECT, closure) ) {
 				throw new InPlaceException("illegal_closure_exception", closure.name(), Operation.DEACTIVATE_PROJECT.name());
 			}
@@ -175,7 +178,7 @@ public class BundleClosures {
 	 */
 	public Collection<Bundle> bundleActivation(Collection<Bundle> initialSet, Collection<Bundle> scope) 
 			throws CircularReferenceException, InPlaceException {
-		DependencyOptions opt = InPlace.getDefault().getDependencyOptionsService();
+		DependencyOptions opt = InPlace.get().getDependencyOptionsService();
 		Closure closure = opt.get(Operation.ACTIVATE_BUNDLE);
 		return bundleActivation(closure, initialSet, scope);
 
@@ -184,10 +187,11 @@ public class BundleClosures {
 	/**
 	 * Topological sort of bundles according to the specified dependency option (closure). The options are providing (default), requiring, requiring and providing,
 	 * partial graph and single. 
-	 * @param closure sort according to closure. Valid closures are providing, requiring, requiring and providing, partial graph and single
+	 * @param closure sort according to closure. Valid closures are providing, requiring, requiring and providing, partial graph and single. An empty set is
+	 * returned if closure is null.
 	 * @param initialSet the set of start bundles to include in the topological sort. If null or empty an empty collection is returned. 
 	 * @param scope limit the set of bundles to search for dependencies in relative to the workspace
-	 * @return set of sorted bundles according to dependency option or an empty set.
+	 * @return set of sorted bundles according to dependency option or an empty set. If null or empty an empty collection is returned
 	 * @throws CircularReferenceException if cycles are detected in the bundle graph
 	 * @throws InPlaceException if failing to get the dependency options service or illegal operation/closure combination
 	 */
@@ -195,10 +199,10 @@ public class BundleClosures {
 			throws CircularReferenceException, InPlaceException {
 
 		BundleSorter bs = new BundleSorter();
-		DependencyOptions opt = InPlace.getDefault().getDependencyOptionsService();
+		DependencyOptions opt = InPlace.get().getDependencyOptionsService();
 		Collection<Bundle> resultSet = null;
 		
-		if (null != initialSet && initialSet.size() > 0 && null != scope) {
+		if (null != closure && null != initialSet && initialSet.size() > 0 && null != scope && scope.size() > 0) {
 			if (!opt.isAllowed(Operation.ACTIVATE_BUNDLE, closure) ) {
 				throw new InPlaceException("illegal_closure_exception", closure.name(), Operation.ACTIVATE_BUNDLE.name());
 			}
@@ -234,14 +238,14 @@ public class BundleClosures {
 	 * partial graph and single. 
 	 * 
 	 * @param initialSet the set of start bundles to include in the topological sort. If null or empty an empty collection is returned. 
-	 * @param scope limit the set of bundles to search for dependencies in relative to the workspace
+	 * @param scope limit the set of bundles to search for dependencies in relative to the workspace. If null or empty an empty collection is returned
 	 * @return set of sorted bundles according to dependency option or an empty set.
 	 * @throws CircularReferenceException if cycles are detected in the bundle graph
 	 * @throws InPlaceException if failing to get the dependency options service or illegal operation/closure combination
 	 */
 	public Collection<Bundle> bundleDeactivation(Collection<Bundle> initialSet, Collection<Bundle> scope) 
 			throws CircularReferenceException, InPlaceException {
-		DependencyOptions opt = InPlace.getDefault().getDependencyOptionsService();
+		DependencyOptions opt = InPlace.get().getDependencyOptionsService();
 		Closure closure = opt.get(Operation.DEACTIVATE_BUNDLE);
 		return bundleDeactivation(closure, initialSet, scope);
 		
@@ -251,7 +255,8 @@ public class BundleClosures {
 	 * Topological sort of bundles according to the specified dependency option (closure). The options are requiring (default), providing, providing and requiring,
 	 * partial graph and single. 
 	 * 
-	 * @param closure sort according to closure. Valid closures are requiring, providing, providing and requiring, partial graph and single
+	 * @param closure sort according to closure. Valid closures are requiring, providing, providing and requiring, partial graph and single. An empty set is
+	 * returned if closure is null.
 	 * @param initialSet the set of start bundles to include in the topological sort. If null or empty an empty collection is returned. 
 	 * @param scope limit the set of bundles to search for dependencies in relative to the workspace
 	 * @return set of sorted bundles according to dependency option or an empty set.
@@ -263,10 +268,10 @@ public class BundleClosures {
 
 		BundleSorter bs = new BundleSorter();
 		bs.setAllowCycles(true);
-		DependencyOptions opt = InPlace.getDefault().getDependencyOptionsService();
+		DependencyOptions opt = InPlace.get().getDependencyOptionsService();
 		Collection<Bundle> resultSet = null;
 
-		if (null != initialSet && initialSet.size() > 0 && null != scope) {
+		if (null != closure && null != initialSet && initialSet.size() > 0 && null != scope && scope.size() > 0) {
 			if (!opt.isAllowed(Operation.DEACTIVATE_BUNDLE, closure) ) {
 				throw new InPlaceException("illegal_closure_exception", closure.name(), Operation.DEACTIVATE_BUNDLE.name());
 			}
@@ -300,13 +305,13 @@ public class BundleClosures {
 	 * Topological sort of all projects that are directly or indirectly reachable through dependencies 
 	 * from an initial set of projects until it is not possible to extend the directed graph further
 	 * 
-	 * @param initialSet the set of start projects to include in the topological sort 
+	 * @param initialSet the set of start projects to include in the topological sort. Must not be null or empty 
 	 * @param activated if true only consider activated projects and only deactivated projects if false
 	 * @param requiring sort in requiring order and then in providing order if true and in opposite order if false
 	 * @return the result graph of the topological sort 
 	 * @throws CircularReferenceException if cycles are detected in the project graph
 	 */
-	public Collection<IProject> partialGraph(Collection<IProject> initialSet, boolean activated, boolean requiring) throws CircularReferenceException {
+	protected Collection<IProject> partialGraph(Collection<IProject> initialSet, boolean activated, boolean requiring) throws CircularReferenceException {
 		
 		ProjectSorter ps = new ProjectSorter();
 		Collection<IProject> resultSet = new LinkedHashSet<IProject>(initialSet);
@@ -328,13 +333,13 @@ public class BundleClosures {
 	 * Topological sort of all bundles that are directly or indirectly reachable through dependencies 
 	 * from an initial set of bundles until it is not possible to extend the directed graph further
 	 * 
-	 * @param initialSet the set of start projects to include in the topological sort 
-	 * @param scope the set of bundles to consider as candidates in the result graph
+	 * @param initialSet the set of start projects to include in the topological sort. Must not be null or empty 
+	 * @param scope the set of bundles to consider as candidates in the result graph. Must not be null or empty
 	 * @param requiring sort in requiring order and then in providing order if true and in opposite order if false
 	 * @return the result graph of the topological sort 
 	 * @throws CircularReferenceException if cycles are detected in the bundle graph
 	 */
-	public Collection<Bundle> partialGraph(Collection<Bundle> initialSet, Collection<Bundle> scope, boolean requiring) throws CircularReferenceException {
+	protected Collection<Bundle> partialGraph(Collection<Bundle> initialSet, Collection<Bundle> scope, boolean requiring) throws CircularReferenceException {
 		
 		BundleSorter bs = new BundleSorter();
 		Collection<Bundle> resultSet = new LinkedHashSet<Bundle>(initialSet);

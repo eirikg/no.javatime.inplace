@@ -8,7 +8,7 @@ import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Operation;
 import no.javatime.inplace.pl.dependencies.Activator;
 import no.javatime.inplace.pl.dependencies.msg.Msg;
-import no.javatime.inplace.ui.service.DependencyDialog;
+import no.javatime.inplace.pl.dependencies.service.DependencyDialog;
 
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.IMessageProvider;

@@ -14,7 +14,7 @@ import org.osgi.service.prefs.Preferences;
  */
 public class ManifestOptionsImpl implements ManifestOptions {
 
-	private static final boolean defUpdateDefaultOutputFolder = true;
+	private static final boolean defIsUpdateDefaultOutputFolder = true;
 	private final static boolean defIsEagerOnActivate = true;
 
 	protected BundleContext bundleContext;
@@ -52,7 +52,7 @@ public class ManifestOptionsImpl implements ManifestOptions {
 
 	@Override
 	public boolean getDefaultUpdateDefaultOutPutFolder() {
-		return defUpdateDefaultOutputFolder;
+		return defIsUpdateDefaultOutputFolder;
 	}
 
 	@Override

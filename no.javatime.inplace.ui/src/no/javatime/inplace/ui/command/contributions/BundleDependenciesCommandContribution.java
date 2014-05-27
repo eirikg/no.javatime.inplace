@@ -2,8 +2,8 @@ package no.javatime.inplace.ui.command.contributions;
 
 import java.util.ArrayList;
 
-import no.javatime.inplace.ui.extender.Extender;
-import no.javatime.inplace.ui.service.DependencyDialog;
+import no.javatime.inplace.extender.provider.Extender;
+import no.javatime.inplace.pl.dependencies.service.DependencyDialog;
 import no.javatime.util.messages.Message;
 
 import org.eclipse.jface.action.ContributionItem;

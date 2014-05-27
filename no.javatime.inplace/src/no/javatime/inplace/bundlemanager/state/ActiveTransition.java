@@ -13,12 +13,12 @@ package no.javatime.inplace.bundlemanager.state;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.osgi.framework.Bundle;
-
+import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundlemanager.BundleTransition.Transition;
 import no.javatime.inplace.bundlemanager.BundleTransition.TransitionError;
 import no.javatime.util.messages.Category;
-import no.javatime.util.messages.TraceMessage;
+
+import org.osgi.framework.Bundle;
 
 /**
  * Keeps track of the current active transition performed on a bundle. An active
@@ -63,7 +63,7 @@ public class ActiveTransition {
 	public Transition get(String location) {
 		if (null == location) {
 			if (Category.DEBUG)
-				TraceMessage.getInstance().getString("missing_transit_location");
+				InPlace.get().trace("missing_transit_location");
 			return Transition.NOTRANSITION;
 		}
 		State t = transit.get(location);
@@ -125,13 +125,13 @@ public class ActiveTransition {
 	public Transition put(String location, Transition transition) {
 		if (null == location) {
 			if (Category.DEBUG)
-				TraceMessage.getInstance().getString("missing_transit_location");
+				InPlace.get().trace("missing_transit_location");
 			return Transition.NOTRANSITION;
 		}
 		if (Category.DEBUG && Category.getState(Category.fsm)) {
 			Transition currentTransition = get(location);
 			if (null != currentTransition && Transition.UNINSTALL != currentTransition) {
-				TraceMessage.getInstance().getString("existing_and_new_transition", transition, currentTransition,
+				InPlace.get().trace("existing_and_new_transition", transition, currentTransition,
 						location);
 			}
 		}
@@ -149,7 +149,7 @@ public class ActiveTransition {
 	public boolean setError(String location, TransitionError transitionError) {
 		if (null == location) {
 			if (Category.DEBUG)
-				TraceMessage.getInstance().getString("missing_transit_location");
+				InPlace.get().trace("missing_transit_location");
 			return false;
 		}
 		State state = transit.get(location);
@@ -164,7 +164,7 @@ public class ActiveTransition {
 	public boolean hasError(String location) {
 		if (null == location) {
 			if (Category.DEBUG)
-				TraceMessage.getInstance().getString("missing_transit_location");
+				InPlace.get().trace("missing_transit_location");
 			return false;
 		}
 		State state = transit.get(location);
@@ -191,7 +191,7 @@ public class ActiveTransition {
 
 		if (null == location) {
 			if (Category.DEBUG)
-				TraceMessage.getInstance().getString("missing_transit_location");
+				InPlace.get().trace("missing_transit_location");
 			return TransitionError.NOERROR;
 		}
 		State state = transit.get(location);
@@ -204,7 +204,7 @@ public class ActiveTransition {
 	public boolean clearError(String location) {
 		if (null == location) {
 			if (Category.DEBUG)
-				TraceMessage.getInstance().getString("missing_transit_location");
+				InPlace.get().trace("missing_transit_location");
 			return false;
 		}
 		State state = transit.get(location);
@@ -219,7 +219,7 @@ public class ActiveTransition {
 	public boolean removeError(String location, TransitionError error) {
 		if (null == location) {
 			if (Category.DEBUG)
-				TraceMessage.getInstance().getString("missing_transit_location");
+				InPlace.get().trace("missing_transit_location");
 			return false;
 		}
 		State state = transit.get(location);

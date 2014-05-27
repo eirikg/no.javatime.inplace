@@ -17,7 +17,6 @@ import no.javatime.inplace.InPlace;
 import no.javatime.inplace.statushandler.IBundleStatus.StatusCode;
 import no.javatime.util.messages.Category;
 import no.javatime.util.messages.ExceptionMessage;
-import no.javatime.util.messages.TraceMessage;
 import no.javatime.util.messages.WarnMessage;
 
 import org.eclipse.core.commands.contexts.Context;
@@ -121,7 +120,7 @@ public class ActionSetContexts implements IContextManagerListener, IExtensionCha
 
 	/**
 	 * Defines the context for the specified context id based on a registered action set descriptor. A warning
-	 * is sent to the bundle console if the context id does not belong to an action set extension
+	 * is sent to the bundle CONSOLE if the context id does not belong to an action set extension
 	 * 
 	 * @param contextId to define a context for. Only context id's for action sets are considered
 	 * @return true if the context already was defined or has been defined. False if action set is not
@@ -138,7 +137,7 @@ public class ActionSetContexts implements IContextManagerListener, IExtensionCha
 						context.define(actionSetDescriptor.getLabel(), actionSetDescriptor.getDescription(),
 								"org.eclipse.ui.contexts.actionSet");
 						if (Category.DEBUG && Category.getState(Category.contexts))
-							TraceMessage.getInstance().getString("define_context", contextId);
+							InPlace.get().trace("define_context", contextId);
 					} else {
 						String msg = WarnMessage.getInstance().formatString("no_action_set", contextId);
 						StatusManager.getManager().handle(new BundleStatus(StatusCode.WARNING, InPlace.PLUGIN_ID, msg),
@@ -162,7 +161,7 @@ public class ActionSetContexts implements IContextManagerListener, IExtensionCha
 		IActionSetDescriptor actionSetDescriptor = addActionSetDescriptor(extension);
 		if (null != actionSetDescriptor) {
 			if (Category.DEBUG && Category.getState(Category.contexts))
-				TraceMessage.getInstance().getString("add_dynamic_context", actionSetDescriptor.getId());
+				InPlace.get().trace("add_dynamic_context", actionSetDescriptor.getId());
 		}
 	}
 
@@ -175,7 +174,7 @@ public class ActionSetContexts implements IContextManagerListener, IExtensionCha
 		IActionSetDescriptor actionSetDescriptor = removeActionSetDescriptor(extension);
 		if (null != actionSetDescriptor) {
 			if (Category.DEBUG && Category.getState(Category.contexts))
-				TraceMessage.getInstance().getString("remove_dynamic_context", actionSetDescriptor.getId());
+				InPlace.get().trace("remove_dynamic_context", actionSetDescriptor.getId());
 		}
 	}
 
@@ -203,7 +202,7 @@ public class ActionSetContexts implements IContextManagerListener, IExtensionCha
 						}
 						if (Category.DEBUG && Category.getState(Category.contexts)) {
 							Context context = contextService.getContext(extensionId);
-							TraceMessage.getInstance().getString("get_action_set_descriptor", extensionId,
+							InPlace.get().trace("get_action_set_descriptor", extensionId,
 									context.isDefined());
 						}
 					} catch (CoreException e) {
@@ -238,7 +237,7 @@ public class ActionSetContexts implements IContextManagerListener, IExtensionCha
 				if (configurationElement.isValid()) {
 					String extensionId = configurationElement.getAttribute(IWorkbenchRegistryConstants.ATT_ID);
 					if (Category.DEBUG && Category.getState(Category.contexts))
-						TraceMessage.getInstance().getString("remove_dynamic_context", extensionId);
+						InPlace.get().trace("remove_dynamic_context", extensionId);
 					// Remove action set for an unresolved bundle
 					actionSetDescriptor = actionSets.remove(extensionId);
 					if (null == actionSetDescriptor) {

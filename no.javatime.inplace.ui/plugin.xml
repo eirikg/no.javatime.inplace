@@ -289,39 +289,85 @@
          </with>
       </definition>
    </extension>
-         <extension
-           point="org.eclipse.ui.views">
-		   <category
-		        id="no.javatime.category"
-		        name="InPlace">
-		    </category>
-            <view
-                  allowMultiple="false"
-                  category="no.javatime.category"
-                  class="no.javatime.inplace.ui.views.BundleView"
-                  icon="icons/gear_list_title.png"
-                  id="no.javatime.inplace.ui.views.BundleView"
-                  name="Bundle"
-                  restorable="true">
-            </view>
-         </extension>
-         <extension
-               point="org.eclipse.core.runtime.adapters">
-            <factory
-                  adaptableType="no.javatime.inplace.ui.views.BundleProperties"
-                  class="no.javatime.inplace.ui.views.BundlePropertiesAdapterFactory">
-               <adapter
-                     type="org.eclipse.ui.views.properties.IPropertySource">
-               </adapter>
-               <adapter
-                     type="org.eclipse.jdt.core.IJavaProject">
-               </adapter>
-               <adapter
-                     type="org.eclipse.core.resources.IResource">
-               </adapter>
-               <adapter
-                     type="org.eclipse.core.resources.IProject">
-               </adapter>
-            </factory>
-         </extension>
+   <extension
+     point="org.eclipse.ui.views">
+	   <category
+	        id="no.javatime.category"
+	        name="InPlace">
+	    </category>
+      <view
+            allowMultiple="false"
+            category="no.javatime.category"
+            class="no.javatime.inplace.ui.views.BundleView"
+            icon="icons/gear_list_title.png"
+            id="no.javatime.inplace.ui.views.BundleView"
+            name="Bundle"
+            restorable="true">
+      </view>
+   </extension>
+   <extension
+         point="org.eclipse.core.runtime.adapters">
+      <factory
+            adaptableType="no.javatime.inplace.ui.views.BundleProperties"
+            class="no.javatime.inplace.ui.views.BundlePropertiesAdapterFactory">
+         <adapter
+               type="org.eclipse.ui.views.properties.IPropertySource">
+         </adapter>
+         <adapter
+               type="org.eclipse.jdt.core.IJavaProject">
+         </adapter>
+         <adapter
+               type="org.eclipse.core.resources.IResource">
+         </adapter>
+         <adapter
+               type="org.eclipse.core.resources.IProject">
+         </adapter>
+      </factory>
+   </extension>
+<!--  Key Bindings-->
+
+   <extension
+         point="org.eclipse.ui.perspectiveExtensions">
+      <perspectiveExtension
+            targetID="org.eclipse.ui.resourcePerspective">
+         <viewShortcut
+            id="no.javatime.inplace.ui.views.BundleView">
+         </viewShortcut>
+      </perspectiveExtension>
+      <perspectiveExtension
+            targetID="org.eclipse.pde.ui.PDEPerspective">
+         <viewShortcut
+            id="no.javatime.inplace.ui.views.BundleView">
+         </viewShortcut>
+      </perspectiveExtension>
+   </extension>
+   <extension
+         point="org.eclipse.ui.bindings">
+      <key
+            commandId="org.eclipse.ui.views.showView"
+            schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+            sequence="M2+M3+Q U">
+         <parameter
+               id="org.eclipse.ui.views.showView.viewId"
+               value="no.javatime.inplace.ui.views.BundleView">
+         </parameter>
+      </key>
+      <key
+            platform="carbon"
+            schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+            sequence="M2+M3+Q U">
+      </key>
+      <key
+            platform="carbon"
+            commandId="org.eclipse.ui.views.showView"
+            schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+            sequence="M1+M3+Q U">
+         <parameter
+               id="org.eclipse.ui.views.showView.viewId"
+               value="no.javatime.inplace.ui.views.BundleView">
+         </parameter>
+      </key>
+   </extension>
+
+<!--  Key Bindings-->
 </plugin>

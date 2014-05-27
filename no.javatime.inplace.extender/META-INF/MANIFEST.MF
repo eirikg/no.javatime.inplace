@@ -7,7 +7,7 @@ Bundle-Activator: no.javatime.inplace.extender.Activator
 Bundle-Vendor: Lingo as
 Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 Import-Package: no.javatime.util.messages,
- org.osgi.framework;version="1.3.0",
- org.osgi.util.tracker;version="1.5.1"
+ org.osgi.framework,
+ org.osgi.util.tracker
 Bundle-ActivationPolicy: lazy
 Export-Package: no.javatime.inplace.extender.provider

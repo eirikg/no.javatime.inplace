@@ -31,9 +31,13 @@ import no.javatime.inplace.bundlemanager.events.BundleTransitionEventListener;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.dl.preferences.intface.CommandOptions;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions;
+import no.javatime.inplace.dl.preferences.intface.MessageOptions;
 import no.javatime.inplace.extender.ExtenderBundleTracker;
 import no.javatime.inplace.extender.provider.Extender;
 import no.javatime.inplace.extender.provider.Extension;
+import no.javatime.inplace.pl.trace.intface.Trace;
+import no.javatime.inplace.pl.trace.intface.Trace.Device;
+import no.javatime.inplace.pl.trace.intface.Trace.MessageType;
 import no.javatime.inplace.statushandler.ActionSetContexts;
 import no.javatime.inplace.statushandler.BundleStatus;
 import no.javatime.inplace.statushandler.DynamicExtensionContribution;
@@ -42,7 +46,6 @@ import no.javatime.inplace.statushandler.IBundleStatus.StatusCode;
 import no.javatime.util.messages.Category;
 import no.javatime.util.messages.ErrorMessage;
 import no.javatime.util.messages.ExceptionMessage;
-import no.javatime.util.messages.Message;
 import no.javatime.util.messages.TraceMessage;
 import no.javatime.util.messages.UserMessage;
 import no.javatime.util.messages.WarnMessage;
@@ -58,6 +61,7 @@ import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.OperationCanceledException;
+import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.IJobManager;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences;
@@ -93,15 +97,7 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 	public static final String PLUGIN_ID = "no.javatime.inplace"; //$NON-NLS-1$
 	private static InPlace plugin;
 	private static BundleContext context;
-	private ServiceTracker<IBundleProjectService, IBundleProjectService> bundleProjectTracker;
-	// private ServiceTracker<CommandOptions, CommandOptions> commandOptionsTracker;
-	private ServiceTracker<DependencyOptions, DependencyOptions> dependencyOptionsTracker;
 
-	private Extension<CommandOptions> commandOptions;
-
-	// Don't know the interface to extend yet. Can be any interface 
-	private BundleTracker<Extender<?>> extenderBundleTracker;
-	private BundleTrackerCustomizer<Extender<?>> extenderBundleTrackerCustomizer;
 
 	/**
 	 * Framework launching property specifying whether Equinox's FrameworkWiring
@@ -152,6 +148,17 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 
 	private BundleRegion bundleRegion;
 
+	// Don't know the interface to extend yet. Can be any interface 
+	private BundleTracker<Extender<?>> extenderBundleTracker;
+	private BundleTrackerCustomizer<Extender<?>> extenderBundleTrackerCustomizer;
+
+	// Service interfaces
+	private ServiceTracker<IBundleProjectService, IBundleProjectService> bundleProjectTracker;
+	private Extension<DependencyOptions> dependencyOptions;
+	private Extension<CommandOptions> commandOptions;
+	private Extension<MessageOptions> messageOptions;
+	private Extension<Trace> traceService;
+
 	public InPlace() {
 	}
 
@@ -160,27 +167,25 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 		super.start(context);
 		plugin = this;
 		InPlace.context = context;		
+		extenderBundleTrackerCustomizer = new ExtenderBundleTracker();
+		//int trackStates = Bundle.ACTIVE | Bundle.STARTING | Bundle.STOPPING | Bundle.RESOLVED | Bundle.INSTALLED | Bundle.UNINSTALLED;
+		extenderBundleTracker = new BundleTracker<Extender<?>>(context, Bundle.ACTIVE | Bundle.STARTING, extenderBundleTrackerCustomizer);
+		extenderBundleTracker.open();
 		String refreshBSNResult = context.getProperty(REFRESH_DUPLICATE_BSN);
 		allowRefreshDuplicateBSN = Boolean.TRUE.toString().equals(refreshBSNResult != null ? refreshBSNResult : Boolean.TRUE.toString());
-		extenderBundleTrackerCustomizer = new ExtenderBundleTracker();
-		int trackStates = Bundle.ACTIVE | Bundle.STARTING | Bundle.STOPPING | Bundle.RESOLVED | Bundle.INSTALLED | Bundle.UNINSTALLED;
-		extenderBundleTracker = new BundleTracker<Extender<?>>(context, trackStates, extenderBundleTrackerCustomizer);
-		extenderBundleTracker.open();
-		addDynamicExtensions();
+
+		traceService = new Extension<>(Trace.class);		
+		commandOptions = new Extension<>(CommandOptions.class);
+		dependencyOptions = new Extension<>(DependencyOptions.class);
+		messageOptions = new Extension<>(MessageOptions.class);
+		
 		bundleProjectTracker =  new ServiceTracker<IBundleProjectService, IBundleProjectService>
 				(context, IBundleProjectService.class.getName(), null);
 		bundleProjectTracker.open();
-//		commandOptionsTracker = new ServiceTracker<CommandOptions, CommandOptions>
-//				(context, CommandOptions.class.getName(), null);
-//		commandOptionsTracker.open();
-		commandOptions = new Extension<>(CommandOptions.class);
-		dependencyOptionsTracker = new ServiceTracker<DependencyOptions, DependencyOptions>
-		(context, DependencyOptions.class.getName(), null);
-		dependencyOptionsTracker.open();
-		BundleManager.addBundleJobListener(getDefault());
+		addDynamicExtensions();
+		BundleManager.addBundleJobListener(get());
 		bundleRegion = BundleManager.getRegion();
-		BundleManager.addBundleTransitionListener(getDefault());
-
+		BundleManager.addBundleTransitionListener(get());
 	}	
 	
 	@Override
@@ -191,36 +196,142 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 			shutDownBundles();
 			removeDynamicExtensions();
 		} finally {
-			bundleProjectTracker.close();
-			bundleProjectTracker = null;		
-			BundleManager.removeBundleJobListener(getDefault());
-			BundleManager.removeBundleTransitionListener(getDefault());
-//			commandOptionsTracker.close();
-//			commandOptionsTracker = null;
-			dependencyOptionsTracker.close();
-			dependencyOptionsTracker = null;
 			extenderBundleTracker.close();
 			extenderBundleTracker = null;
+			bundleProjectTracker.close();
+			bundleProjectTracker = null;		
+			BundleManager.removeBundleJobListener(get());
+			BundleManager.removeBundleTransitionListener(get());
 			super.stop(context);
 			plugin = null;
 			InPlace.context = null;
 		}
 	}
+
+	public BundleTracker<Extender<?>> getExtenderBundleTracker() {
+		return extenderBundleTracker;
+	}
+
+	/**
+	 * Finds and return the bundle description for a given project.
+	 * @param project to get the bundle description for
+	 * @return the bundle description for the specified project
+	 * @throws InPlaceException if the description could not be obtained or is invalid
+	 */
+	public IBundleProjectDescription getBundleDescription(IProject project) throws InPlaceException {
+
+		IBundleProjectService bundleProjectService = null;
+
+		bundleProjectService = bundleProjectTracker.getService();
+			if (null == bundleProjectService) {
+				throw new InPlaceException("invalid_project_description_service", project.getName());	
+			}
+		try {
+			return bundleProjectService.getDescription(project);
+		} catch (CoreException e) {
+			// Core and Bundle exception has same message
+			Throwable cause = e.getCause();
+			if (null == cause || !(cause.getMessage().equals(e.getMessage()))) {
+				cause = e;
+			}
+			throw new InPlaceException(cause, "invalid_project_description", project.getName());
+		}
+	}
+
+	public IBundleProjectService getBundleProjectService(IProject project) throws InPlaceException {
+
+		IBundleProjectService bundleProjectService = null;
+		bundleProjectService = bundleProjectTracker.getService();
+		if (null == bundleProjectService) {
+			throw new InPlaceException("invalid_project_description_service", project.getName());	
+		}
+		return bundleProjectService;
+	}
+
+	public Trace getTraceContainerService() throws InPlaceException {
+
+		Trace trace = traceService.getService();
+		if (null == trace) {
+			throw new InPlaceException("invalid_service", Trace.class.getName());			
+		}
+		return trace;
+	}
+
+	public CommandOptions getCommandOptionsService() throws InPlaceException {
+
+		CommandOptions cmdOpt = commandOptions.getService();
+		if (null == cmdOpt) {
+			throw new InPlaceException("invalid_service", CommandOptions.class.getName());			
+		}
+		return cmdOpt;
+	}
+
+	public MessageOptions msgOpt() throws InPlaceException {
+
+		MessageOptions msgOpt = messageOptions.getService();
+		if (null == msgOpt) {
+			throw new InPlaceException("invalid_service", MessageOptions.class.getName());			
+		}
+		return msgOpt;
+	}
+
+	public DependencyOptions getDependencyOptionsService() throws InPlaceException {
+		DependencyOptions dpOpt = dependencyOptions.getService();
+		if (null == dpOpt) {
+			throw new InPlaceException("invalid_service", DependencyOptions.class.getName());			
+		}
+		return dpOpt;
+	}
+
+
+	public Trace getTraceService() throws InPlaceException {
+
+		Trace trace = traceService.getService();
+		if (null == trace) {
+			throw new InPlaceException("invalid_service", Trace.class.getName());			
+		}
+		return trace;
+	}
+	
+	public String trace(IBundleStatus status) {
+		String symbolicName = null;
+		Bundle b = status.getBundle();
+		if (null != b) {
+			symbolicName = b.getSymbolicName();
+		} else {
+			symbolicName = status.getPlugin();
+		}
+		IStatus stat = new Status(Status.INFO, symbolicName, status.getMessage());
+		Trace t = getTraceContainerService();
+		return t.trace(stat);		
+	}
+	public String trace(String key, Object... substitutions) {
+		String msg = TraceMessage.getInstance().formatString(key, substitutions);
+		IStatus status = new Status(Status.INFO, InPlace.PLUGIN_ID, msg);
+		Trace t = getTraceContainerService();
+		return t.trace(status);		
+	}
 	
 	/**
 	 * Uninstalls or deactivates all workspace bundles. All messages
-	 * are sent to error console, and errors, warnings and exceptions
+	 * are sent to error CONSOLE, and errors, warnings and exceptions
 	 * are also sent to the log file.
 	 */
 	public void shutDownBundles() {
 		// Send output to log and standard console when shutting down
 		BundleConsoleFactory.getConsole().setSystemOutToIDEDefault();
-		Message.getInstance().setOutput(Message.Output.log);
-		UserMessage.getInstance().setOutput(Message.Output.log);
-		ExceptionMessage.getInstance().setOutput(Message.Output.consoleAndLog);
-		TraceMessage.getInstance().setOutput(Message.Output.console);
-		WarnMessage.getInstance().setOutput(Message.Output.consoleAndLog);
-		ErrorMessage.getInstance().setOutput(Message.Output.consoleAndLog);
+		// Message.getInstance().setOutput(Message.Output.log);
+		getTraceService().setOut(MessageType.MESSAGE, Device.LOG);
+		// UserMessage.getInstance().setOutput(Message.Output.log);
+		getTraceService().setOut(MessageType.USER, Device.LOG);
+		// ExceptionMessage.getInstance().setOutput(Message.Output.consoleAndLog);
+		getTraceService().setOut(MessageType.EXCEPTION, Device.CONSOLE_AND_LOG);
+		//TraceMessage.getInstance().setOutput(Output.console);
+		getTraceService().setOut(MessageType.TRACE, Device.CONSOLE);
+		// WarnMessage.getInstance().setOutput(Message.Output.consoleAndLog);
+		getTraceService().setOut(MessageType.WARNING, Device.CONSOLE_AND_LOG);
+		// ErrorMessage.getInstance().setOutput(Message.Output.consoleAndLog);
+		getTraceService().setOut(MessageType.ERROR, Device.CONSOLE_AND_LOG);
 		try {
 			Collection<Bundle> bundles = bundleRegion.getBundles();
 			// Unregister all bundles by uninstalling
@@ -324,7 +435,7 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 	 * 
 	 * @return the shared instance
 	 */
-	public static InPlace getDefault() {
+	public static InPlace get() {
 		return plugin;
 	}
 
@@ -337,64 +448,6 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 		return context;
 	}
 	
-	/**
-	 * Finds and return the bundle description for a given project.
-	 * @param project to get the bundle description for
-	 * @return the bundle description for the specified project
-	 * @throws InPlaceException if the description could not be obtained or is invalid
-	 */
-	public IBundleProjectDescription getBundleDescription(IProject project) throws InPlaceException {
-
-		IBundleProjectService bundleProjectService = null;
-
-		bundleProjectService = bundleProjectTracker.getService();
-			if (null == bundleProjectService) {
-				throw new InPlaceException("invalid_project_description_service", project.getName());	
-			}
-		try {
-			return bundleProjectService.getDescription(project);
-		} catch (CoreException e) {
-			// Core and Bundle exception has same message
-			Throwable cause = e.getCause();
-			if (null == cause || !(cause.getMessage().equals(e.getMessage()))) {
-				cause = e;
-			}
-			throw new InPlaceException(cause, "invalid_project_description", project.getName());
-		}
-	}
-
-	public IBundleProjectService getBundleProjectService(IProject project) throws InPlaceException {
-
-		IBundleProjectService bundleProjectService = null;
-		bundleProjectService = bundleProjectTracker.getService();
-		if (null == bundleProjectService) {
-			throw new InPlaceException("invalid_project_description_service", project.getName());	
-		}
-		return bundleProjectService;
-	}
-
-	public BundleTracker<Extender<?>> getExtenderBundleTracker() {
-		return extenderBundleTracker;
-	}
-
-	public CommandOptions getCommandOptionsService() throws InPlaceException {
-
-		CommandOptions cmdOpt = commandOptions.getService();
-		// CommandOptions cmdOpt = commandOptionsTracker.getService();
-		if (null == cmdOpt) {
-			throw new InPlaceException("invalid_service", CommandOptions.class.getName());			
-		}
-		return cmdOpt;
-	}
-
-	public DependencyOptions getDependencyOptionsService() throws InPlaceException {
-		DependencyOptions dpOpt = dependencyOptionsTracker.getService();
-		if (null == dpOpt) {
-			throw new InPlaceException("invalid_service", DependencyOptions.class.getName());			
-		}
-		return dpOpt;
-	}
-
 	/**
 	 * Adds resource listener for project changes and builds
 	 */
@@ -603,7 +656,7 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 		ISavedState lastState;
 		try {
 			lastState = ResourcesPlugin.getWorkspace().addSaveParticipant(
-					getDefault().getBundle().getSymbolicName(), saveParticipant);
+					get().getBundle().getSymbolicName(), saveParticipant);
 			if (lastState != null) {
 				lastState.processResourceChangeEvents(postBuildListener);
 			}

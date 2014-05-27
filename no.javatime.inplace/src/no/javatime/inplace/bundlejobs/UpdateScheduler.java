@@ -54,7 +54,7 @@ public class UpdateScheduler {
 			if (activateProjectJob.pendingProjects() > 0) {
 				// Update all projects together with the deactivated providers to activate
 				try {
-					if (!InPlace.getDefault().getCommandOptionsService().isUpdateOnBuild()) {
+					if (!InPlace.get().getCommandOptionsService().isUpdateOnBuild()) {
 						for (IProject project : projectsToUpdate) {
 							BundleManager.getTransition().addPending(project, Transition.UPDATE_ON_ACTIVATE);					
 						}

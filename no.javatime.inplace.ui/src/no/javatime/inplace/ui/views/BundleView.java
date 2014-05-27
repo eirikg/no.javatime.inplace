@@ -102,7 +102,7 @@ import no.javatime.util.messages.Message;
  * Maintains a bundle details page view and a bundle list page view with bundle properties and status information.
  * <p>
  * Local menus and a tool bar is provided for executing bundle operations, toggle activation policy on a bundle, open
- * manifest editor, flip between list and details page and and show/hide bundle console and message view.
+ * manifest editor, flip between list and details page and and show/hide bundle CONSOLE and message view.
  * <p>
  * Pages are updated with bundle status information received from job, bundle and resource listeners
  */

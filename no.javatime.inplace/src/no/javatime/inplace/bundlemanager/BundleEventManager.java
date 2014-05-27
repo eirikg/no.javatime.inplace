@@ -13,22 +13,6 @@ package no.javatime.inplace.bundlemanager;
 import java.util.Collection;
 import java.util.Collections;
 
-import org.eclipse.core.commands.Command;
-import org.eclipse.core.commands.CommandEvent;
-import org.eclipse.core.commands.ICommandListener;
-import org.eclipse.core.resources.IProject;
-import org.eclipse.core.runtime.jobs.Job;
-import org.eclipse.jface.dialogs.MessageDialog;
-import org.eclipse.ui.IWorkbench;
-import org.eclipse.ui.PlatformUI;
-import org.eclipse.ui.commands.ICommandService;
-import org.eclipse.ui.statushandlers.StatusManager;
-import org.osgi.framework.Bundle;
-import org.osgi.framework.BundleEvent;
-import org.osgi.framework.FrameworkEvent;
-import org.osgi.framework.FrameworkListener;
-import org.osgi.framework.SynchronousBundleListener;
-
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundlejobs.ActivateBundleJob;
 import no.javatime.inplace.bundlejobs.BundleJobListener;
@@ -54,9 +38,24 @@ import no.javatime.inplace.statushandler.BundleStatus;
 import no.javatime.inplace.statushandler.IBundleStatus.StatusCode;
 import no.javatime.util.messages.Category;
 import no.javatime.util.messages.Message;
-import no.javatime.util.messages.TraceMessage;
 import no.javatime.util.messages.UserMessage;
 import no.javatime.util.messages.WarnMessage;
+
+import org.eclipse.core.commands.Command;
+import org.eclipse.core.commands.CommandEvent;
+import org.eclipse.core.commands.ICommandListener;
+import org.eclipse.core.resources.IProject;
+import org.eclipse.core.runtime.jobs.Job;
+import org.eclipse.jface.dialogs.MessageDialog;
+import org.eclipse.ui.IWorkbench;
+import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.commands.ICommandService;
+import org.eclipse.ui.statushandlers.StatusManager;
+import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleEvent;
+import org.osgi.framework.FrameworkEvent;
+import org.osgi.framework.FrameworkListener;
+import org.osgi.framework.SynchronousBundleListener;
 
 /**
  * Registers a bundle job listener and acts on events received from the OSGI framework, bundles and the log
@@ -136,7 +135,7 @@ class BundleEventManager implements FrameworkListener, SynchronousBundleListener
 	 */
 	@Override
 	public void commandChanged(CommandEvent commandEvent) {
-		InPlace activator =InPlace.getDefault();
+		InPlace activator =InPlace.get();
 		if (null == activator) {
 			return;
 		}
@@ -148,7 +147,7 @@ class BundleEventManager implements FrameworkListener, SynchronousBundleListener
 		Command autoBuildCmd = commandEvent.getCommand();
 		try {
 			if (autoBuildCmd.isDefined() && !ProjectProperties.isAutoBuilding()) {
-				if (InPlace.getDefault().getCommandOptionsService().isUpdateOnBuild()) {
+				if (InPlace.get().getCommandOptionsService().isUpdateOnBuild()) {
 					BundleManager.getRegion().setAutoBuild(true);
 					Collection<IProject> activatedProjects = ProjectProperties.getActivatedProjects();
 					Collection<IProject> pendingProjects = bundleTransition.getPendingProjects(
@@ -179,7 +178,7 @@ class BundleEventManager implements FrameworkListener, SynchronousBundleListener
 	public void frameworkEvent(FrameworkEvent event) {
 
 		if (Category.getState(Category.bundleEvents)) {
-			TraceMessage.getInstance().getString("framework_event", BundleCommandImpl.INSTANCE.getStateName(event),
+			InPlace.get().trace("framework_event", BundleCommandImpl.INSTANCE.getStateName(event),
 					event.getBundle().getSymbolicName());
 		}
 		if ((event.getType() & (FrameworkEvent.ERROR)) != 0) {
@@ -446,7 +445,7 @@ class BundleEventManager implements FrameworkListener, SynchronousBundleListener
 		// Event trace
 		if (Category.getState(Category.bundleEvents)) {
 			try {
-				TraceMessage.getInstance().getString("bundle_event", bundle, bundleCommand.getStateName(event),
+				InPlace.get().trace("bundle_event", bundle, bundleCommand.getStateName(event),
 						bundleCommand.getStateName(bundle), bundleTransition.getTransitionName(project));
 			} catch (ProjectLocationException e) {
 			}
@@ -515,7 +514,7 @@ class BundleEventManager implements FrameworkListener, SynchronousBundleListener
 				}
 				// User choice to deactivate workspace or restore uninstalled bundle
 				try {
-					if (!InPlace.getDefault().getCommandOptionsService().isAutoHandleExternalCommands()) {
+					if (!InPlace.get().getCommandOptionsService().isAutoHandleExternalCommands()) {
 						String question = null;
 						int index = 0;
 						if (dependencies) {

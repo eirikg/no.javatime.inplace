@@ -17,9 +17,13 @@ import no.javatime.inplace.bundlemanager.BundleCommand;
 import no.javatime.inplace.bundlemanager.BundleManager;
 import no.javatime.inplace.bundlemanager.BundleRegion;
 import no.javatime.inplace.bundlemanager.BundleTransition.Transition;
+import no.javatime.inplace.bundlemanager.InPlaceException;
 import no.javatime.inplace.bundleproject.ManifestUtil;
 import no.javatime.inplace.bundleproject.OpenProjectHandler;
 import no.javatime.inplace.bundleproject.ProjectProperties;
+import no.javatime.inplace.extender.provider.Extension;
+import no.javatime.inplace.pl.dependencies.service.DependencyDialog;
+import no.javatime.inplace.pl.trace.intface.MessageView;
 import no.javatime.inplace.statushandler.BundleStatus;
 import no.javatime.inplace.statushandler.IBundleStatus.StatusCode;
 import no.javatime.inplace.ui.Activator;
@@ -28,7 +32,6 @@ import no.javatime.util.messages.Message;
 import no.javatime.util.messages.WarnMessage;
 import no.javatime.util.messages.views.BundleConsole;
 import no.javatime.util.messages.views.BundleConsoleFactory;
-import no.javatime.util.messages.views.MessageView;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.jface.action.ContributionItem;
@@ -329,12 +332,17 @@ public class BundleMainCommandsContributionItems extends BundleCommandsContribut
 	}
 
 	private CommandContributionItem addToggleMessageView() {
-		if (!Message.isViewVisible(MessageView.ID)) {
+		Extension<MessageView> ext = new Extension<>(MessageView.class);
+		MessageView viewService = ext.getService();
+		if (null == viewService) {
+			throw new InPlaceException("failed_to_get_service_for_interface", DependencyDialog.class.getName());
+		}
+		if (!viewService.isVisible()) {
 			return addContribution(menuId, dynamicMainCommandId, showMessageView, messageViewParamId,
-					CommandContributionItem.STYLE_PUSH, MessageView.messageViewImage);
+					CommandContributionItem.STYLE_PUSH, viewService.getMessageViewImage());
 		} else {
 			return addContribution(menuId, dynamicMainCommandId, hideMessageView, messageViewParamId,
-					CommandContributionItem.STYLE_PUSH, MessageView.messageViewImage);
+					CommandContributionItem.STYLE_PUSH, viewService.getMessageViewImage());
 		}
 	}
 }

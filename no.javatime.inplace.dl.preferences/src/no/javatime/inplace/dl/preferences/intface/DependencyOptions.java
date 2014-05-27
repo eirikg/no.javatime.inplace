@@ -12,6 +12,8 @@ import org.osgi.service.prefs.BackingStoreException;
  */
 public interface DependencyOptions {
 	
+	public final static String DEPENDENCY_OPTIONS_HEADER = "Dependency-Options";
+
 	/**
 	 * An enumeration of all dependency options that may be applied to bundles that are associated with a bundle operation.
 	 */

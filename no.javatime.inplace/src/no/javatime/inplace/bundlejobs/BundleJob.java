@@ -18,20 +18,6 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
 
-import org.eclipse.core.resources.IProject;
-import org.eclipse.core.resources.ResourcesPlugin;
-import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IPath;
-import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.OperationCanceledException;
-import org.eclipse.core.runtime.SubMonitor;
-import org.eclipse.core.runtime.SubProgressMonitor;
-import org.eclipse.core.runtime.jobs.ISchedulingRule;
-import org.eclipse.core.runtime.jobs.Job;
-import org.eclipse.ui.statushandlers.StatusManager;
-import org.osgi.framework.Bundle;
-import org.osgi.framework.BundleException;
-
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundlemanager.BundleActivatorException;
 import no.javatime.inplace.bundlemanager.BundleManager;
@@ -59,8 +45,23 @@ import no.javatime.util.messages.Category;
 import no.javatime.util.messages.ErrorMessage;
 import no.javatime.util.messages.ExceptionMessage;
 import no.javatime.util.messages.Message;
+import no.javatime.util.messages.TraceMessage;
 import no.javatime.util.messages.UserMessage;
 import no.javatime.util.messages.WarnMessage;
+
+import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IPath;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.OperationCanceledException;
+import org.eclipse.core.runtime.SubMonitor;
+import org.eclipse.core.runtime.SubProgressMonitor;
+import org.eclipse.core.runtime.jobs.ISchedulingRule;
+import org.eclipse.core.runtime.jobs.Job;
+import org.eclipse.ui.statushandlers.StatusManager;
+import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleException;
 
 /**
  * Support processing of bundle operations on bundles added as pending projects to bundle jobs.
@@ -252,7 +253,7 @@ public abstract class BundleJob extends JobStatus {
 	
 	public DependencyOptions getDepOpt() {
 		if (null == dependencyOptions) {
-			dependencyOptions =InPlace.getDefault().getDependencyOptionsService();
+			dependencyOptions =InPlace.get().getDependencyOptionsService();
 		}
 		return dependencyOptions;
 	}
@@ -316,6 +317,18 @@ public abstract class BundleJob extends JobStatus {
 				// Get the activation status of the corresponding project
 				Boolean activated = ProjectProperties.isProjectActivated(project);
 				bundle = bundleCommand.install(project, activated);
+				if (InPlace.get().msgOpt().isBundleOperations()) {
+					String msg = TraceMessage.getInstance().formatString("install_bundle", bundle.getSymbolicName(),
+							bundleCommand.getStateName(bundle), bundle.getLocation());
+					IBundleStatus status = new BundleStatus(StatusCode.INFO, bundle.getSymbolicName(), bundle.getBundleId(), msg, null);				
+					InPlace.get().trace(status);
+				}
+//				if (InPlace.get().msgOpt().isBundleOperations()) {
+//					String msg = TraceMessage.getInstance().formatString("install_bundle", bundle.getSymbolicName(),
+//							bundleCommand.getStateName(bundle), bundle.getLocation());
+//					InPlace.get().trace("install_bundle", bundle.getSymbolicName(),
+//							bundleCommand.getStateName(bundle), bundle.getLocation());
+//				}
 				// Project must be activated and bundle must be successfully installed to be activated
 				if (null != bundle && activated) {
 					activatedBundles.add(bundle);
@@ -456,11 +469,21 @@ public abstract class BundleJob extends JobStatus {
 						if (ManifestUtil.getlazyActivationPolicy(bundle)) {
 							startOption = Bundle.START_ACTIVATION_POLICY;
 						}
+						long startTime = 0;
+						if (InPlace.get().msgOpt().isBundleOperations()) {
+							startTime = System.currentTimeMillis();
+						}
 						if (timeout) {
 							bundleCommand.start(bundle, startOption, timeoutVal);
 						} else {
 							bundleCommand.start(bundle, startOption);
 						}
+						if (InPlace.get().msgOpt().isBundleOperations()) {
+							long msec = System.currentTimeMillis() - startTime;
+							String msg = TraceMessage.getInstance().formatString("start_bundle", bundle, bundleCommand.getStateName(bundle), msec);							 
+							IBundleStatus status = new BundleStatus(StatusCode.INFO, bundle.getSymbolicName(), bundle.getBundleId(), msg, null);				
+							InPlace.get().trace(status);
+						}	
 					}
 				} catch (BundleActivatorException e) {
 					result = addError(e, e.getLocalizedMessage(), bundle.getBundleId());
@@ -559,6 +582,10 @@ public abstract class BundleJob extends JobStatus {
 					if (Category.getState(Category.progressBar))
 						sleep(sleepTime);
 					localMonitor.subTask(StopJob.stopSubTaskName + bundle.getSymbolicName());
+					long startTime = 0;
+					if (InPlace.get().msgOpt().isBundleOperations()) {
+						startTime = System.currentTimeMillis();
+					}
 					if ((bundle.getState() & (Bundle.ACTIVE | Bundle.STARTING)) != 0) {
 						if (timeout) {
 							bundleCommand.stop(bundle, false, timeoutVal);
@@ -566,6 +593,12 @@ public abstract class BundleJob extends JobStatus {
 							bundleCommand.stop(bundle, false);
 						}
 					}
+					if (InPlace.get().msgOpt().isBundleOperations()) {
+						long msec = System.currentTimeMillis() - startTime;
+						String msg = TraceMessage.getInstance().formatString("stop_bundle", bundle, bundleCommand.getStateName(bundle), msec);							 
+						IBundleStatus status = new BundleStatus(StatusCode.INFO, bundle.getSymbolicName(), bundle.getBundleId(), msg, null);				
+						InPlace.get().trace(status);
+					}	
 				} catch (IllegalStateException e) {
 					result = addError(e, e.getLocalizedMessage(), bundle.getBundleId());
 				} catch (BundleStateChangeException e) {
@@ -1143,7 +1176,7 @@ public abstract class BundleJob extends JobStatus {
 	protected Collection<IProject> removeExternalDuplicates(Collection<IProject> projects,
 			Collection<Bundle> bDepClosures, String message) {
 
-		if (!InPlace.getDefault().isRefreshDuplicateBSNAllowed()) {
+		if (!InPlace.get().isRefreshDuplicateBSNAllowed()) {
 			return null;
 		}
 		Map<IProject, Bundle> externalDuplicates = bundleRegion.getSymbolicNameDuplicates(projects,
@@ -1296,7 +1329,7 @@ public abstract class BundleJob extends JobStatus {
 	}
 
 	protected CommandOptions getOptionsService() throws InPlaceException {
-		return InPlace.getDefault().getCommandOptionsService();
+		return InPlace.get().getCommandOptionsService();
 	}
 
 	/**

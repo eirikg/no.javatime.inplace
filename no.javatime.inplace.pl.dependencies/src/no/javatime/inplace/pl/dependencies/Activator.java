@@ -2,6 +2,7 @@ package no.javatime.inplace.pl.dependencies;
 
 import no.javatime.inplace.bundlemanager.InPlaceException;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions;
+import no.javatime.inplace.extender.provider.Extension;
 import no.javatime.inplace.pl.dependencies.msg.Msg;
 
 import org.eclipse.jface.resource.ImageDescriptor;
@@ -11,7 +12,6 @@ import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.osgi.framework.BundleContext;
-import org.osgi.util.tracker.ServiceTracker;
 
 /**
  * The activator class controls the plug-in life cycle
@@ -25,8 +25,8 @@ public class Activator extends AbstractUIPlugin {
 	private static Activator plugin;
 	// Get the workbench window from UI thread
 	private IWorkbenchWindow workBenchWindow = null;
-
-	private ServiceTracker<DependencyOptions, DependencyOptions> dependencyOptionsTracker;
+	
+	private Extension<DependencyOptions> dependencyOptions;
 
 	/**
 	 * The constructor
@@ -42,10 +42,8 @@ public class Activator extends AbstractUIPlugin {
 	public void start(BundleContext context) throws Exception {
 		super.start(context);
 		plugin = this;
-		dependencyOptionsTracker = new ServiceTracker<DependencyOptions, DependencyOptions>
-			(context, DependencyOptions.class.getName(), null);
-		dependencyOptionsTracker.open();
-}
+		dependencyOptions = new Extension<>(DependencyOptions.class);
+	}
 
 	/*
 	 * (non-Javadoc)
@@ -53,19 +51,18 @@ public class Activator extends AbstractUIPlugin {
 	 */
 	@Override
 	public void stop(BundleContext context) throws Exception {
-		dependencyOptionsTracker.close();
-		dependencyOptionsTracker = null;
 		plugin = null;
 		super.stop(context);
 	}
-	
+
 	public DependencyOptions getDependencyOptionsService() throws InPlaceException {
-		DependencyOptions dpOpt = dependencyOptionsTracker.getService();
+		DependencyOptions dpOpt = dependencyOptions.getService();
 		if (null == dpOpt) {
 			throw new InPlaceException(Msg.INVALID_OPTIONS_SERVICE_EXCEPTION, DependencyOptions.class.getName());			
 		}
 		return dpOpt;
 	}
+
 
 	/**
 	 * Returns the shared instance

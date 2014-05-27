@@ -106,12 +106,12 @@ public class StatusHandler extends WorkbenchErrorHandler {
 						UserMessage.getInstance().handleMessage(status.getMessage());
 					}
 				}
-				InPlace.getDefault().getLog().log(status);
+				InPlace.get().getLog().log(status);
 			} else {
 				super.handle(statusAdapter, style);
 			}
 		} else {
-			InPlace.getDefault().getLog().log(status);
+			InPlace.get().getLog().log(status);
 		}
 	}
 
@@ -160,7 +160,7 @@ public class StatusHandler extends WorkbenchErrorHandler {
 					if (Category.getState(Category.bindingMessages)) {
 						// Also related to Bug 279332
 						String currentPrefix = ExceptionMessage.getInstance().setPrefixMsg("[Bug 295662 - Contexts] ");
-						InPlace.getDefault().getLog().log(
+						InPlace.get().getLog().log(
 								new Status(IStatus.ERROR, InPlace.PLUGIN_ID, msg, exception));
 						ExceptionMessage.getInstance().setPrefixMsg(currentPrefix);
 					}
@@ -170,7 +170,7 @@ public class StatusHandler extends WorkbenchErrorHandler {
 				if (contextErrors.contains(msg)) {
 					if (Category.getState(Category.bindingMessages)) {
 						String currentprefix = ExceptionMessage.getInstance().setPrefixMsg("[Bug 295662 - Contexts] ");
-						InPlace.getDefault().getLog().log(
+						InPlace.get().getLog().log(
 								new Status(IStatus.ERROR, InPlace.PLUGIN_ID, msg, exception));
 						ExceptionMessage.getInstance().setPrefixMsg(currentprefix);
 					}

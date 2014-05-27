@@ -16,14 +16,6 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
-import org.eclipse.core.resources.IProject;
-import org.eclipse.ui.statushandlers.StatusManager;
-import org.osgi.framework.Bundle;
-import org.osgi.framework.hooks.resolver.ResolverHook;
-import org.osgi.framework.wiring.BundleCapability;
-import org.osgi.framework.wiring.BundleRequirement;
-import org.osgi.framework.wiring.BundleRevision;
-
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundlejobs.ActivateProjectJob;
 import no.javatime.inplace.bundlemanager.BundleTransition.Transition;
@@ -36,9 +28,16 @@ import no.javatime.inplace.statushandler.BundleStatus;
 import no.javatime.inplace.statushandler.IBundleStatus.StatusCode;
 import no.javatime.util.messages.Category;
 import no.javatime.util.messages.ExceptionMessage;
-import no.javatime.util.messages.TraceMessage;
 import no.javatime.util.messages.UserMessage;
 import no.javatime.util.messages.WarnMessage;
+
+import org.eclipse.core.resources.IProject;
+import org.eclipse.ui.statushandlers.StatusManager;
+import org.osgi.framework.Bundle;
+import org.osgi.framework.hooks.resolver.ResolverHook;
+import org.osgi.framework.wiring.BundleCapability;
+import org.osgi.framework.wiring.BundleRequirement;
+import org.osgi.framework.wiring.BundleRevision;
 
 /**
  * A bundle resolver that intercepts the resolve process to filter bundles to resolve and remove duplicate
@@ -278,22 +277,22 @@ class BundleResolveHandler implements ResolverHook {
 	@Override
 	public void filterSingletonCollisions(BundleCapability singleton,
 			Collection<BundleCapability> collisionCandidates) {
-		if (Category.DEBUG && Category.getState(Category.bundleOperations))
-			TraceMessage.getInstance().getString("singleton_collisions",
+		if (Category.DEBUG && InPlace.get().msgOpt().isBundleOperations())
+			InPlace.get().trace("singleton_collisions",
 					singleton.getRevision().getBundle().getSymbolicName(),
 					formatBundleCapabilityList(collisionCandidates));
 		if (null != groups) {
 			Set<Bundle> group = groups.get(singleton.getRevision().getBundle());
-			if (Category.DEBUG && Category.getState(Category.bundleOperations))
-				TraceMessage.getInstance().getString("singleton_collisions_group",
+			if (Category.DEBUG && InPlace.get().msgOpt().isBundleOperations())
+				InPlace.get().trace("singleton_collisions_group",
 						singleton.getRevision().getBundle().getSymbolicName(),
 						BundleManager.getRegion().formatBundleList(group, true));
 			for (Iterator<BundleCapability> i = collisionCandidates.iterator(); i.hasNext();) {
 				BundleCapability candidate = i.next();
 				Bundle candidateBundle = candidate.getRevision().getBundle();
 				Set<Bundle> otherGroup = groups.get(candidateBundle);
-				if (Category.DEBUG && Category.getState(Category.bundleOperations))
-					TraceMessage.getInstance().getString("singleton_collisions_other_group",
+				if (Category.DEBUG && InPlace.get().msgOpt().isBundleOperations())
+					InPlace.get().trace("singleton_collisions_other_group",
 							candidateBundle.getSymbolicName(), BundleManager.getRegion().formatBundleList(otherGroup, true));
 				// If this singleton is in the group and at the same time is a candidate (other group)
 				// Remove it so the same but new updated instance of the bundle can be resolved
@@ -301,7 +300,7 @@ class BundleResolveHandler implements ResolverHook {
 				if (group == otherGroup || otherGroup == null) // Same group
 					i.remove(); // the duplicate
 				if (Category.getState(Category.bundleEvents)) {
-					TraceMessage.getInstance().getString("singleton_collision_remove_duplicate",
+					InPlace.get().trace("singleton_collision_remove_duplicate",
 							candidateBundle.getSymbolicName(), BundleManager.getRegion().formatBundleList(otherGroup, true));
 				}
 			}
@@ -310,7 +309,7 @@ class BundleResolveHandler implements ResolverHook {
 
 	private void traceResolved(Collection<BundleRevision> errorClosure, Collection<BundleRevision> rejected,
 			Collection<BundleRevision> workspaceCandidates) {
-		if (!Category.getState(Category.bundleOperations)) {
+		if (!InPlace.get().msgOpt().isBundleOperations()) {
 			return;
 		}
 		if (workspaceCandidates.size() > 0) {
@@ -319,20 +318,20 @@ class BundleResolveHandler implements ResolverHook {
 			toResolve.removeAll(errorClosure);
 			if (toResolve.size() > 0) {
 				for (BundleRevision bundleRevision : toResolve) {
-					TraceMessage.getInstance().getString("bundles_to_resolve",
+					InPlace.get().trace("bundles_to_resolve",
 							BundleManager.getRegion().getSymbolicKey(bundleRevision.getBundle(), null));
 				}
 			}
 		}
 		if (rejected.size() > 0 && Category.getState(Category.dag)) {
 			for (BundleRevision bundleRevision : rejected) {
-				TraceMessage.getInstance().getString("rejected_bundles_to_not_resolve",
+				InPlace.get().trace("rejected_bundles_to_not_resolve",
 						BundleManager.getRegion().getSymbolicKey(bundleRevision.getBundle(), null));
 			}
 		}
 		if (errorClosure.size() > 0) {
 			for (BundleRevision bundleRevision : errorClosure) {
-				TraceMessage.getInstance().getString("error_bundles_to_not_resolve",
+				InPlace.get().trace("error_bundles_to_not_resolve",
 						BundleManager.getRegion().getSymbolicKey(bundleRevision.getBundle(), null));
 			}
 		}

@@ -1,6 +1,7 @@
 package no.javatime.inplace.pl.preferences;
 
 import no.javatime.inplace.dl.preferences.intface.CommandOptions;
+import no.javatime.inplace.extender.provider.Extension;
 import no.javatime.inplace.pl.preferences.msg.Msg;
 
 import org.eclipse.jface.resource.ImageDescriptor;
@@ -22,6 +23,8 @@ public class PreferencePlActivator extends AbstractUIPlugin {
 	private static BundleContext context;
 	private ServiceTracker<CommandOptions, CommandOptions> optionsStoretracker;
 
+	private Extension<CommandOptions> commandOptions;
+
 	/**
 	 * The constructor
 	 */
@@ -36,6 +39,7 @@ public class PreferencePlActivator extends AbstractUIPlugin {
 		super.start(context);
 		plugin = this;
 		PreferencePlActivator.context = context;
+		commandOptions = new Extension<>(CommandOptions.class);
 		optionsStoretracker = new ServiceTracker<CommandOptions, CommandOptions>
 			(getContext(), CommandOptions.class.getName(), null);
 		optionsStoretracker.open();
@@ -51,7 +55,21 @@ public class PreferencePlActivator extends AbstractUIPlugin {
 		plugin = null;
 		PreferencePlActivator.context = null;
 	}
-	
+
+	/**
+	 * Get the service object for the command and manifest options
+	 * @return the command options service object
+	 * @throws IllegalStateException if the service object is null
+	 */
+	public CommandOptions getOptionsService() throws IllegalStateException {
+
+		CommandOptions cmdOpt = commandOptions.getService();
+		if (null == cmdOpt) {
+			throw new IllegalStateException(NLS.bind(Msg.STORE_SERVICE_EXCEPTION,  CommandOptions.class.getName()));
+		}
+		return cmdOpt;
+	}
+
 	/**
 	 * The context for interacting with the FrameWork
 	 * 
@@ -68,19 +86,6 @@ public class PreferencePlActivator extends AbstractUIPlugin {
 	 */
 	public static PreferencePlActivator getDefault() {
 		return plugin;
-	}
-	/**
-	 * Get the service object for the command and manifest options
-	 * @return the command options service object
-	 * @throws IllegalStateException if the service object is null
-	 */
-	public CommandOptions getOptionsService() throws IllegalStateException {
-		
-		CommandOptions cmdOpt = optionsStoretracker.getService();
-		if (null == cmdOpt) {
-			throw new IllegalStateException(NLS.bind(Msg.STORE_SERVICE_EXCEPTION,  CommandOptions.class.getName()));
-		}
-		return cmdOpt;
 	}
 
 	/**

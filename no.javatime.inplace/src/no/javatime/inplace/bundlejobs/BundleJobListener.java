@@ -23,8 +23,6 @@ import no.javatime.inplace.statushandler.IBundleStatus;
 import no.javatime.inplace.statushandler.IBundleStatus.StatusCode;
 import no.javatime.util.messages.Category;
 import no.javatime.util.messages.Message;
-import no.javatime.util.messages.TraceMessage;
-import no.javatime.util.messages.WarnMessage;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.jobs.IJobChangeEvent;
@@ -69,8 +67,8 @@ public class BundleJobListener extends JobChangeAdapter {
 	public void running(IJobChangeEvent event) {
 		Job job = event.getJob();
 		if (job instanceof BundleJob) {
-			if (Category.getState(Category.bundleOperations)) {
-				TraceMessage.getInstance().getString("start_job", job.getName());
+			if (InPlace.get().msgOpt().isBundleOperations()) {
+				InPlace.get().trace("start_job", job.getName());
 			}
 		}
 	}
@@ -82,8 +80,8 @@ public class BundleJobListener extends JobChangeAdapter {
 	public void awake(IJobChangeEvent event) {
 		Job job = event.getJob();
 		if (job instanceof BundleJob) {
-			if (Category.getState(Category.bundleOperations)) {
-				TraceMessage.getInstance().getString("awake_job", job.getName());
+			if (InPlace.get().msgOpt().isBundleOperations()) {
+				InPlace.get().trace("awake_job", job.getName());
 			}
 		}
 	}
@@ -95,8 +93,8 @@ public class BundleJobListener extends JobChangeAdapter {
 	public void sleeping(IJobChangeEvent event) {
 		Job job = event.getJob();
 		if (job instanceof BundleJob) {
-			if (Category.getState(Category.bundleOperations)) {
-				TraceMessage.getInstance().getString("sleep_job", job.getName());
+			if (InPlace.get().msgOpt().isBundleOperations()) {
+				InPlace.get().trace("sleep_job", job.getName());
 			}
 		}
 	}
@@ -112,15 +110,15 @@ public class BundleJobListener extends JobChangeAdapter {
 			BundleJob bundleJob = (BundleJob) job;
 			Collection<IBundleStatus> statusList = logCancelStatus(bundleJob);	
 			if (statusList.size() > 0) {
-				String rootMsg = WarnMessage.getInstance().formatString("end_job_root_message", bundleJob.getName());
+				String rootMsg = InPlace.get().trace("end_job_root_message", bundleJob.getName());
 				IBundleStatus multiStatus = bundleJob.createMultiStatus(new BundleStatus(StatusCode.ERROR,
 						InPlace.PLUGIN_ID, rootMsg));
 				StatusManager.getManager().handle(multiStatus, StatusManager.LOG);
 			}
-			if (Category.getState(Category.bundleOperations)) {
+			if (InPlace.get().msgOpt().isBundleOperations()) {
 				if (Category.DEBUG)
 					getBundlesJobRunState(bundleJob);
-				TraceMessage.getInstance().getString("end_job", job.getName());					
+				InPlace.get().trace("end_job", job.getName());					
 			}
 			schedulePendingOperations(bundleJob);
 		}
@@ -181,7 +179,7 @@ public class BundleJobListener extends JobChangeAdapter {
 		for (int i = 0; i < jobs.length; i++) {
 			Job job = jobs[i];
 			if (job.getState() == Job.RUNNING) {
-				TraceMessage.getInstance().getString("running_jobs", job.getName(), bundleJob.getName());
+				InPlace.get().trace("running_jobs", job.getName(), bundleJob.getName());
 			}
 		}
 	}

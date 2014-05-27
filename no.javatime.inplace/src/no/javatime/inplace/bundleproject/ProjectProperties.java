@@ -29,7 +29,6 @@ import no.javatime.inplace.statushandler.IBundleStatus.StatusCode;
 import no.javatime.util.messages.Category;
 import no.javatime.util.messages.ExceptionMessage;
 import no.javatime.util.messages.Message;
-import no.javatime.util.messages.TraceMessage;
 import no.javatime.util.messages.WarnMessage;
 
 import org.eclipse.core.resources.IFile;
@@ -142,7 +141,7 @@ public class ProjectProperties {
 				// Ignore closed or non-existing project
 			}
 			try {
-				if (!InPlace.getDefault().getCommandOptionsService().isAllowUIContributions()) {
+				if (!InPlace.get().getCommandOptionsService().isAllowUIContributions()) {
 					projects.removeAll(getUIContributors());
 				}
 			} catch (CircularReferenceException e) {
@@ -175,7 +174,7 @@ public class ProjectProperties {
 				// Ignore closed or non-existing project
 			}
 			try {
-				if (!InPlace.getDefault().getCommandOptionsService().isAllowUIContributions()) {
+				if (!InPlace.get().getCommandOptionsService().isAllowUIContributions()) {
 					projects.removeAll(getUIContributors());
 				}
 			} catch (CircularReferenceException e) {
@@ -271,7 +270,7 @@ public class ProjectProperties {
 		try {
 			if (project.hasNature(JavaCore.NATURE_ID) && project.isNatureEnabled(PLUGIN_NATURE_ID)
 					&& !isProjectActivated(project)) {
-				if (InPlace.getDefault().getCommandOptionsService().isAllowUIContributions()) {
+				if (InPlace.get().getCommandOptionsService().isAllowUIContributions()) {
 					return true;
 				} else {
 					Collection<IProject> uiContributors = getUIContributors();
@@ -337,7 +336,7 @@ public class ProjectProperties {
 		if (null == project) {
 			throw new InPlaceException("project_null_location");
 		}
-		IBundleProjectDescription bundleProjDesc = InPlace.getDefault().getBundleDescription(project);
+		IBundleProjectDescription bundleProjDesc = InPlace.get().getBundleDescription(project);
 		if (null == bundleProjDesc) {
 			return false;
 		}
@@ -440,8 +439,8 @@ public class ProjectProperties {
 					URL pLoc = new URL(getProjectLocationIdentifier(project, referenceScheme));
 					URL bLoc = new URL(location);
 					if (Category.DEBUG) {
-						TraceMessage.getInstance().getString("display", "Project location: 	" + pLoc.getPath());
-						TraceMessage.getInstance().getString("display", "Bundle  location: 	" + bLoc.getPath());
+						InPlace.get().trace("display", "Project location: 	" + pLoc.getPath());
+						InPlace.get().trace("display", "Bundle  location: 	" + bLoc.getPath());
 					}
 					if (pLoc.getPath().equalsIgnoreCase(bLoc.getPath())) {
 						return project;

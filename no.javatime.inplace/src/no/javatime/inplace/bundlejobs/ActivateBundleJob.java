@@ -14,14 +14,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 
-import org.eclipse.core.resources.IProject;
-import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.OperationCanceledException;
-import org.eclipse.core.runtime.SubProgressMonitor;
-import org.eclipse.core.runtime.preferences.IEclipsePreferences;
-import org.osgi.framework.Bundle;
-
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundlemanager.BundleTransition.TransitionError;
 import no.javatime.inplace.bundlemanager.InPlaceException;
@@ -36,13 +28,19 @@ import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Operation;
 import no.javatime.inplace.statushandler.BundleStatus;
 import no.javatime.inplace.statushandler.IBundleStatus;
 import no.javatime.inplace.statushandler.IBundleStatus.StatusCode;
-import no.javatime.util.messages.Category;
 import no.javatime.util.messages.ErrorMessage;
 import no.javatime.util.messages.ExceptionMessage;
 import no.javatime.util.messages.Message;
-import no.javatime.util.messages.TraceMessage;
 import no.javatime.util.messages.UserMessage;
 import no.javatime.util.messages.WarnMessage;
+
+import org.eclipse.core.resources.IProject;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.OperationCanceledException;
+import org.eclipse.core.runtime.SubProgressMonitor;
+import org.eclipse.core.runtime.preferences.IEclipsePreferences;
+import org.osgi.framework.Bundle;
 
 /**
  * Activates a bundle or set of bundles by installing, resolving and starting the bundle(s). A bundle is only activated
@@ -243,8 +241,8 @@ public class ActivateBundleJob extends BundleJob {
 			}
 		}
 		if (bundlesToResolve.size() == 0) {
-			if (Category.getState(Category.bundleOperations))
-				TraceMessage.getInstance().getString("already_activated",
+			if (InPlace.get().msgOpt().isBundleOperations())
+				InPlace.get().trace("already_activated",
 						bundleRegion.formatBundleList(activatedBundles, true));
 			return getLastStatus();
 		}
@@ -398,7 +396,7 @@ public class ActivateBundleJob extends BundleJob {
 					}
 				}
 			}
-			InPlace.getDefault().savePluginSettings(true, true);
+			InPlace.get().savePluginSettings(true, true);
 		}
 	}
 

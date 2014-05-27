@@ -13,15 +13,6 @@ package no.javatime.inplace.bundlejobs;
 import java.util.Collection;
 import java.util.Collections;
 
-import org.eclipse.core.resources.IProject;
-import org.eclipse.core.resources.IProjectDescription;
-import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.OperationCanceledException;
-import org.eclipse.core.runtime.SubMonitor;
-import org.eclipse.core.runtime.SubProgressMonitor;
-import org.osgi.framework.Bundle;
-
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.builder.JavaTimeNature;
 import no.javatime.inplace.bundlemanager.BundleTransition.Transition;
@@ -33,8 +24,16 @@ import no.javatime.inplace.statushandler.IBundleStatus;
 import no.javatime.inplace.statushandler.IBundleStatus.StatusCode;
 import no.javatime.util.messages.Category;
 import no.javatime.util.messages.Message;
-import no.javatime.util.messages.TraceMessage;
 import no.javatime.util.messages.WarnMessage;
+
+import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.IProjectDescription;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.OperationCanceledException;
+import org.eclipse.core.runtime.SubMonitor;
+import org.eclipse.core.runtime.SubProgressMonitor;
+import org.osgi.framework.Bundle;
 
 /**
  * Enabling and disabling the JavaTime nature of projects. Checks and reports on duplicate bundles.
@@ -220,8 +219,8 @@ public abstract class NatureJob extends BundleJob {
 						System.arraycopy(natures, i + 1, newNatures, i, natures.length - i - 1);
 						description.setNatureIds(newNatures);
 						project.setDescription(description, null);
-						if (Category.getState(Category.bundleOperations))
-							TraceMessage.getInstance().getString("projects_nature_disabled", project.getName());
+						if (InPlace.get().msgOpt().isBundleOperations())
+							InPlace.get().trace("projects_nature_disabled", project.getName());
 						localMonitor.worked(1);
 						return;
 					}
@@ -233,8 +232,8 @@ public abstract class NatureJob extends BundleJob {
 				newNatures[natures.length] = JavaTimeNature.JAVATIME_NATURE_ID;
 				description.setNatureIds(newNatures);
 				project.setDescription(description, null);
-				if (Category.getState(Category.bundleOperations))
-					TraceMessage.getInstance().getString("projects_nature_enabled", project.getName());
+				if (InPlace.get().msgOpt().isBundleOperations())
+					InPlace.get().trace("projects_nature_enabled", project.getName());
 				localMonitor.worked(1);
 			} catch (CoreException e) {
 				throw new InPlaceException(e, "error_changing_nature", project.getName());

@@ -19,6 +19,7 @@ Bundle-ManifestVersion: 2
 Import-Package: no.javatime.inplace.bundlemanager,
  no.javatime.inplace.dl.preferences.intface,
  no.javatime.inplace.extender.provider,
+ no.javatime.inplace.pl.trace.intface,
  no.javatime.util.messages,
  no.javatime.util.messages.exceptions,
  no.javatime.util.messages.views

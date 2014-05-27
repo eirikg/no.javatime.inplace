@@ -113,7 +113,7 @@ public class DynamicExtensionContribution {
 			}
 		}
 		if (!extAdded) {
-			Bundle bundle = InPlace.getDefault().getBundle();
+			Bundle bundle = InPlace.get().getBundle();
 			String msg = ErrorMessage.getInstance().formatString("failed_to_add_status_debug_line_breakpoint_command",
 					(null == bundle) ? null : bundle.getSymbolicName());
 			StatusManager.getManager().handle(new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID, msg),
@@ -169,7 +169,7 @@ public class DynamicExtensionContribution {
 			extAdded = addExtension(sb.toString());
 			if (!extAdded) {
 				// If adding this customized status handler fails, use the standard which will display a dialog
-				Bundle bundle = InPlace.getDefault().getBundle();
+				Bundle bundle = InPlace.get().getBundle();
 				String msg = ErrorMessage.getInstance().formatString("failed_to_add_status_handler_contribution",
 						(null == bundle) ? null : bundle.getSymbolicName());
 				StatusManager.getManager().handle(new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID, msg),
@@ -233,7 +233,7 @@ public class DynamicExtensionContribution {
 	public Boolean addExtension(String xmlsrc) {
 
 		Boolean extAdded = true;
-		Bundle bundle = InPlace.getDefault().getBundle();
+		Bundle bundle = InPlace.get().getBundle();
 		try {
 			IExtensionRegistry reg = RegistryFactory.getRegistry();
 			Object key = ((ExtensionRegistry) reg).getTemporaryUserToken();
@@ -272,7 +272,7 @@ public class DynamicExtensionContribution {
 	public Boolean addExtensionFromFile(String xmlsrc) {
 		// Use Eclipse Dynamic Extension API
 		Boolean extAdded = true;
-		Bundle bundle = InPlace.getDefault().getBundle();
+		Bundle bundle = InPlace.get().getBundle();
 		try {
 			IExtensionRegistry reg = RegistryFactory.getRegistry();
 			Object key = ((ExtensionRegistry) reg).getTemporaryUserToken();

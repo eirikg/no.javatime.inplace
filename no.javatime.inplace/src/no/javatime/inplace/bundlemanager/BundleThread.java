@@ -1,9 +1,7 @@
 package no.javatime.inplace.bundlemanager;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-
 import no.javatime.inplace.InPlace;
+import no.javatime.inplace.extender.provider.Introspector;
 
 import org.osgi.framework.Bundle;
 
@@ -62,7 +60,8 @@ public class BundleThread {
 			if (null != systemClass && null != bundle) {
 				Object systemObject = bundle.adapt(systemClass);
 				if (null != systemObject) {
-					thread = (Thread) invoke(methodName, systemClass, (Class[]) null, systemObject, (Object[]) null);
+					thread = (Thread) Introspector.invoke(methodName, systemClass, (Class[]) null, systemObject, (Object[]) null);					
+					//thread = (Thread) invoke(methodName, systemClass, (Class[]) null, systemObject, (Object[]) null);
 				}
 			}
 			// Just return null when failing
@@ -191,56 +190,6 @@ public class BundleThread {
 			// The class loading is trial and error
 		}
 		return systemClass;
-	}
-
-	/**
-	 * Utility executing an arbitrary class member method given its class, object, formal and actual parameters
-	 * 
-	 * @param methodName method name to invoke
-	 * @param cls class in which the method is the member method to invoke
-	 * @param paramDef an array defining the formal parameter types of the method
-	 * @param obj the object the underlying method is invoked from
-	 * @param paramVal the actual parameter values used in the method call
-	 * @return the return value of the invoked method or null if the signature of the method return value is void
-	 * @exception InPlaceException exception bounded to the underlying reflection exceptions. Does not add any additional
-	 *              information about the cause in context of this method
-	 */
-	public static Object invoke(String methodName, Class<?> cls, Class<?>[] paramDef, Object obj,
-			Object[] paramVal) throws InPlaceException {
-		
-		// Class<?>[] doubleParDef = new Class<?>[] {Double.class};
-		// Object[] doubleParVal = new Object[1];
-
-		// invoke(setMethodName, elemClass, doubleParDef, elemInstance, new Object[] {startValue});
-
-		/* The method to invoke */
-		Method method = null;
-		/* Return value from the invoked method */
-		Object returnValue = null;
-
-		try {			
-			try {
-				method = cls.getMethod(methodName, paramDef);
-			} catch (SecurityException e) {
-		    throw new InPlaceException(e, "security_violation", methodName, cls.getSimpleName());
-			} catch (NoSuchMethodException e) {
-		    throw new InPlaceException(e, "no_such_method", methodName, cls.getSimpleName());
-			}
-			try {
-				returnValue = method.invoke(obj, paramVal);
-			} catch (IllegalArgumentException e) {
-		    throw new InPlaceException(e, "illegal_argument_method", methodName, cls.getSimpleName());
-			} catch (IllegalAccessException e) {
-				throw new InPlaceException(e, "illegal_access_method", methodName, cls.getSimpleName());
-			} catch (InvocationTargetException e) {
-				throw new InPlaceException(e, "method_invocation_target", cls.getSimpleName(), methodName);
-			} catch (ExceptionInInitializerError e) {
-				throw new InPlaceException(e, "initializer_error", cls.getSimpleName(), methodName);
-			}
-		} catch (NullPointerException e) {
-			throw new InPlaceException(e);
-		}
-		return returnValue;
 	}
 
 	/**

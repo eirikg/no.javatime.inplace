@@ -2,6 +2,7 @@ package no.javatime.inplace.extender;
 
 import no.javatime.inplace.extender.provider.Extender;
 import no.javatime.inplace.extender.provider.ExtenderBundleTracker;
+import no.javatime.inplace.extender.provider.Extension;
 
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
@@ -9,6 +10,25 @@ import org.osgi.framework.BundleContext;
 import org.osgi.util.tracker.BundleTracker;
 import org.osgi.util.tracker.BundleTrackerCustomizer;
 
+/**
+ * Implements the extender pattern, offering functionality to register services on behalf of bundles
+ * providing interface and implementation classes. One way to provide the implementation class is
+ * to register it as a header entry in the manifest file of the bundle housing the provided interface.
+ * <?>
+ * To register and use for instance a message view with interface MessageView and the class name
+ * implementing the interface as a header entry the {@link Extender} can be used in the following way:
+ * <p>
+ * </h1>&nbsp;		String implClass = context.getBundle().getHeaders().get(MessageView.MESSAGE_VIEW_HEADER);
+ * </h1>&nbsp;		Extender.<MessageView>register(context.getBundle().getBundleId(), MessageView.class, implClass);
+ * <p> 
+ * To access the message view as a service one approach is to use the {@link Extension} class:
+ * <p>
+ * </h1>&nbsp;		Extension<MessageView> ext = new Extension<>(MessageView.class>());
+ * </h1>&nbsp;		MessageView mv = ext.getService();
+ * </h1>&nbsp;		mv.show(); 
+ * @see Extender
+ * @see Extension
+ */
 public class Activator implements BundleActivator {
 
 	private static Activator plugin;
@@ -26,7 +46,7 @@ public class Activator implements BundleActivator {
 		plugin = this;
 		extenderBundleTrackerCustomizer = new ExtenderBundleTracker();
 		int trackStates = Bundle.ACTIVE | Bundle.STARTING | Bundle.STOPPING | Bundle.RESOLVED | Bundle.INSTALLED | Bundle.UNINSTALLED;
-		extenderBundleTracker = new BundleTracker<Extender<?>>(context, trackStates, extenderBundleTrackerCustomizer);
+				extenderBundleTracker = new BundleTracker<Extender<?>>(context, trackStates, extenderBundleTrackerCustomizer);
 		extenderBundleTracker.open();
 }
 
@@ -37,6 +57,7 @@ public class Activator implements BundleActivator {
 	public void stop(BundleContext bundleContext) throws Exception {
 		extenderBundleTracker.close();
 		extenderBundleTracker = null;
+		Extender.close();
 		Activator.context = null;
 		plugin = null;
 	}

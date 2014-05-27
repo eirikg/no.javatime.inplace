@@ -23,6 +23,13 @@
    </service>
 </scr:component>
 
+<scr:component name="no.javatime.inplace.dl.prefrences.intface.options.messages">
+   <implementation class="no.javatime.inplace.dl.preferences.impl.MessageOptionsImpl"/>
+   <service>
+      <provide interface="no.javatime.inplace.dl.preferences.intface.MessageOptions"/>
+   </service>
+</scr:component>
+
 <scr:component name="no.javatime.inplace.dl.prefrences.intface.options.preferencestore">
    <implementation class="no.javatime.inplace.dl.preferences.impl.PreferencesStoreImpl"/>
    <service>

@@ -29,14 +29,14 @@ import no.javatime.inplace.bundlemanager.InPlaceException;
 import no.javatime.inplace.bundleproject.BundleProject;
 import no.javatime.inplace.bundleproject.OpenProjectHandler;
 import no.javatime.inplace.bundleproject.ProjectProperties;
+import no.javatime.inplace.extender.provider.Extension;
+import no.javatime.inplace.pl.dependencies.service.DependencyDialog;
+import no.javatime.inplace.pl.trace.intface.MessageView;
 import no.javatime.inplace.statushandler.BundleStatus;
 import no.javatime.inplace.statushandler.IBundleStatus;
 import no.javatime.inplace.statushandler.IBundleStatus.StatusCode;
 import no.javatime.inplace.ui.Activator;
 import no.javatime.inplace.ui.command.contributions.BundleCommandsContributionItems;
-import no.javatime.inplace.ui.extender.DependencyDialogExtension;
-import no.javatime.inplace.ui.extender.Extension;
-import no.javatime.inplace.ui.service.DependencyDialog;
 import no.javatime.inplace.ui.views.BundleProperties;
 import no.javatime.inplace.ui.views.BundleView;
 import no.javatime.util.messages.Category;
@@ -46,7 +46,6 @@ import no.javatime.util.messages.Message;
 import no.javatime.util.messages.UserMessage;
 import no.javatime.util.messages.WarnMessage;
 import no.javatime.util.messages.views.BundleConsoleFactory;
-import no.javatime.util.messages.views.MessageView;
 
 import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.Command;
@@ -337,12 +336,11 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 		try {
 			Extension<DependencyDialog> ext = new Extension<>(DependencyDialog.class);
 			DependencyDialog depService = ext.getService();
-			if (null != depService) {
-				depService.open();
-			} else {
+			if (null == depService) {
 				throw new InPlaceException("failed_to_get_service_for_interface", DependencyDialog.class.getName());
 			}
-			new DependencyDialogExtension().openAsService();
+			depService.open();
+			// new DependencyDialogExtension().openAsService();
 		} catch (InPlaceException e){
 			StatusManager.getManager().handle(
 					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),
@@ -447,7 +445,7 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 	}
 
 	/**
-	 * Toggles between showing and hiding the message console view
+	 * Toggles between showing and hiding the message CONSOLE view
 	 */
 	protected void consoleHandler(Collection<IProject> projects) {
 		if (!BundleConsoleFactory.isConsoleViewVisible()) {
@@ -461,12 +459,18 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 	 * Toggles between showing and hiding the message view
 	 */
 	protected void messageViewHandler() {
-		if (Message.isViewVisible(MessageView.ID)) {
-			Message.hideView(MessageView.ID);
+		Extension<MessageView> ext = new Extension<>(MessageView.class);
+		MessageView viewService = ext.getService();
+		if (null == viewService) {
+			throw new InPlaceException("failed_to_get_service_for_interface", DependencyDialog.class.getName());
+		}
+		if (viewService.isVisible()) {
+			viewService.hide();
 		} else {
-			Message.showView(MessageView.ID);
+			viewService.show();
 		}
 	}
+	
 	/**
 	 * Get the selected Java plug-in project in the currently active part.
 	 * 

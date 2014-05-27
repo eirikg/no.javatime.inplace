@@ -12,9 +12,6 @@ package no.javatime.inplace.bundlemanager.state;
 
 import java.util.EnumSet;
 
-import org.eclipse.core.resources.IProject;
-import org.osgi.framework.Bundle;
-
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundlemanager.BundleTransition;
 import no.javatime.inplace.bundlemanager.BundleTransition.Transition;
@@ -22,7 +19,9 @@ import no.javatime.inplace.bundlemanager.BundleTransition.TransitionError;
 import no.javatime.inplace.bundlemanager.InPlaceException;
 import no.javatime.inplace.bundleproject.BundleProject;
 import no.javatime.util.messages.Category;
-import no.javatime.util.messages.TraceMessage;
+
+import org.eclipse.core.resources.IProject;
+import org.osgi.framework.Bundle;
 
 /**
  * Stores a bundle project defined as a conditional one-to-one relationship between a bundle and a project.
@@ -126,10 +125,10 @@ public class BundleNode {
 			if (null != bundleId) {
 				Bundle bundle = InPlace.getContext().getBundle(bundleId);
 				if (null != bundle) {
-					TraceMessage.getInstance().getString("state_change", InPlace.getContext().getBundle(bundleId),
+					InPlace.get().trace("state_change", InPlace.getContext().getBundle(bundleId),
 							this.currentState.getClass().getSimpleName(), currentState.getClass().getSimpleName());
 				} else {
-					TraceMessage.getInstance().getString("state_change", project.getName(),
+					InPlace.get().trace("state_change", project.getName(),
 							this.currentState.getClass().getSimpleName(), currentState.getClass().getSimpleName());
 				}
 			}

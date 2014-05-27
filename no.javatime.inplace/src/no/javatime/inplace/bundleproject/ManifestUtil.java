@@ -20,6 +20,12 @@ import java.util.Dictionary;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 
+import no.javatime.inplace.InPlace;
+import no.javatime.inplace.bundlemanager.InPlaceException;
+import no.javatime.inplace.bundlemanager.ProjectLocationException;
+import no.javatime.util.messages.Category;
+import no.javatime.util.messages.Message;
+
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
@@ -30,12 +36,6 @@ import org.eclipse.osgi.util.ManifestElement;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Constants;
-
-import no.javatime.inplace.bundlemanager.InPlaceException;
-import no.javatime.inplace.bundlemanager.ProjectLocationException;
-import no.javatime.util.messages.Category;
-import no.javatime.util.messages.Message;
-import no.javatime.util.messages.TraceMessage;
 
 /**
  * After a bundle is installed header information in the manifest file and the cached manifest accessed
@@ -172,7 +172,7 @@ public class ManifestUtil {
 				return false;
 			}
 			if (Category.DEBUG && Category.getState(Category.binpath))
-				TraceMessage.getInstance().getString("classpath_header", name, classPath);
+				InPlace.get().trace("classpath_header", name, classPath);
 			// Search for the bin class path entry in the class path header
 			if (classPath.isEmpty()) {
 				return false;

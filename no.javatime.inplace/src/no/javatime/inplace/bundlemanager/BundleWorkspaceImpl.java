@@ -21,20 +21,19 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.eclipse.core.resources.IProject;
-import org.eclipse.core.resources.IWorkspace;
-import org.eclipse.core.resources.ResourcesPlugin;
-import org.eclipse.core.runtime.IPath;
-import org.eclipse.core.runtime.Path;
-import org.osgi.framework.Bundle;
-
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundlemanager.state.BundleNode;
 import no.javatime.inplace.bundlemanager.state.BundleState;
 import no.javatime.inplace.bundleproject.BundleProject;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.util.messages.Category;
-import no.javatime.util.messages.TraceMessage;
+
+import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.IWorkspace;
+import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.core.runtime.IPath;
+import org.eclipse.core.runtime.Path;
+import org.osgi.framework.Bundle;
 
 /**
  * Region for workspace bundles. Associate projects with workspace bundles, support static (not resolved) and
@@ -306,7 +305,7 @@ class BundleWorkspaceImpl implements BundleRegion {
 			} else {
 				// Bundle is uninstalled, but node not removed
 				if (Category.DEBUG && Category.getState(Category.dag))
-					TraceMessage.getInstance().getString("bundle_not_installed", project.getName());
+					InPlace.get().trace("bundle_not_installed", project.getName());
 			}
 		}
 		return bundles;
@@ -616,7 +615,7 @@ class BundleWorkspaceImpl implements BundleRegion {
 	protected BundleNode put(IProject project, Bundle bundle, Boolean activate) throws InPlaceException {
 		if (null == project) {
 			if (Category.DEBUG && Category.getState(Category.dag))
-				TraceMessage.getInstance().getString("npe_project_cache");
+				InPlace.get().trace("npe_project_cache");
 			throw new InPlaceException("project_null_location");
 		}
 //		if (null == bundle) {
@@ -637,14 +636,14 @@ class BundleWorkspaceImpl implements BundleRegion {
 			node.setActivated(activate);
 			bundleNodes.put(project, node);
 			if (Category.DEBUG && Category.getState(Category.dag)) {
-				TraceMessage.getInstance().getString("updated_node", bundleNodes.get(project).getProject());
+				InPlace.get().trace("updated_node", bundleNodes.get(project).getProject());
 			}
 			// Create a new node
 		} else {
 			node = new BundleNode(bundle, project, activate);
 			bundleNodes.put(project, node);
 			if (Category.DEBUG && Category.getState(Category.dag)) {
-				TraceMessage.getInstance().getString("inserted_node", bundleNodes.get(project).getProject());
+				InPlace.get().trace("inserted_node", bundleNodes.get(project).getProject());
 			}
 		}
 		return node;
@@ -656,16 +655,16 @@ class BundleWorkspaceImpl implements BundleRegion {
 			BundleNode deletedNode = bundleNodes.remove(project);
 			if (null == deletedNode) {
 				if (Category.DEBUG && Category.getState(Category.dag))
-					TraceMessage.getInstance().getString("failed_remove_node", project.getName());
+					InPlace.get().trace("failed_remove_node", project.getName());
 				return null;
 			} else {
 				if (Category.DEBUG && Category.getState(Category.dag))
-					TraceMessage.getInstance().getString("removed_node", project.getName());
+					InPlace.get().trace("removed_node", project.getName());
 				return deletedNode.getBundleId();
 			}
 		} else {
 			if (Category.DEBUG && Category.getState(Category.dag))
-				TraceMessage.getInstance().getString("null_remove_node", project.getName());
+				InPlace.get().trace("null_remove_node", project.getName());
 		}
 		return null;
 	}
@@ -682,16 +681,16 @@ class BundleWorkspaceImpl implements BundleRegion {
 			BundleNode deletedNode = bundleNodes.remove(node.getProject());
 			if (null == deletedNode) {
 				if (Category.DEBUG && Category.getState(Category.dag))
-					TraceMessage.getInstance().getString("failed_remove_node", bundle.toString());
+					InPlace.get().trace("failed_remove_node", bundle.toString());
 				return null;
 			} else {
 				if (Category.DEBUG && Category.getState(Category.dag))
-					TraceMessage.getInstance().getString("removed_node", bundle.toString());
+					InPlace.get().trace("removed_node", bundle.toString());
 				return deletedNode.getBundleId();
 			}
 		} else {
 			if (Category.DEBUG && Category.getState(Category.dag))
-				TraceMessage.getInstance().getString("null_remove_node", bundle.toString());
+				InPlace.get().trace("null_remove_node", bundle.toString());
 		}
 		return null;
 	}

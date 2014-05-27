@@ -196,8 +196,8 @@ public class UpdateJob extends BundleJob {
 		removeErrorBundles(getPendingProjects(), bundlesToUpdate, bundlesToRefresh);
 		if (bundlesToUpdate.size() == 0 || 
 				bundleTransition.getPendingProjects(getPendingProjects(), Transition.UPDATE).size() == 0) {
-			if (Category.getState(Category.bundleOperations))
-				TraceMessage.getInstance().getString("not_updated");
+			if (InPlace.get().msgOpt().isBundleOperations())
+				InPlace.get().trace("not_updated");
 			return getLastStatus();
 		}
 		// (4): Collect all bundles to restart after update and refresh
@@ -317,7 +317,13 @@ public class UpdateJob extends BundleJob {
 					// Set conditions in the resolver hook for removal of duplicates to avoid singleton collisions
 					duplicateInstanceCandidates.add(bundle);
 					duplicateInstanceGroups.put(bundle, duplicateInstanceCandidates);
-					bundleCommand.getResolverHookFactory().setGroups(duplicateInstanceGroups);
+					bundleCommand.getResolverHookFactory().setGroups(duplicateInstanceGroups);					
+					if (InPlace.get().msgOpt().isBundleOperations()) {
+						String msg = TraceMessage.getInstance().formatString("update_bundle", bundle, bundleCommand.getStateName(bundle));
+						IBundleStatus status = new BundleStatus(StatusCode.INFO, bundle.getSymbolicName(), bundle.getBundleId(), msg, null);				
+						InPlace.get().trace(status);
+					}
+					
 					bundleCommand.update(bundle);
 				} catch (DuplicateBundleException e) {
 					handleDuplicateException(bundleRegion.getProject(bundle), e, null);

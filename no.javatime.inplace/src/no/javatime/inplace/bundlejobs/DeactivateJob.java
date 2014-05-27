@@ -182,7 +182,7 @@ public class DeactivateJob extends NatureJob {
 				addWarning(null, msg, null);
 			}
 		}
-		InPlace.getDefault().savePluginSettings(true, true);
+		InPlace.get().savePluginSettings(true, true);
 		// All not activated bundles are collectively either in state installed or in state uninstalled.
 		if (ProjectProperties.getActivatedProjects().size() <= pendingProjects()) {
 			// This is the last project(s) to deactivate, move all bundles to state uninstalled

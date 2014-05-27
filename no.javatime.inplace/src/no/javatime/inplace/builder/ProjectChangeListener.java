@@ -10,10 +10,10 @@
  *******************************************************************************/
 package no.javatime.inplace.builder;
 
+import no.javatime.inplace.InPlace;
 import no.javatime.util.messages.Category;
 import no.javatime.util.messages.Message;
 import no.javatime.util.messages.Message.Output;
-import no.javatime.util.messages.TraceMessage;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
@@ -24,7 +24,7 @@ import org.eclipse.core.resources.IResourceDeltaVisitor;
 import org.eclipse.core.runtime.CoreException;
 
 /**
- * Debug listener. Indents resource change events to console.
+ * Debug listener. Indents resource change events to CONSOLE.
  * <p>
  * The calss is not documented.
  * @see no.javatime.util.messages.Category#listeners
@@ -299,27 +299,27 @@ public class ProjectChangeListener implements IResourceChangeListener {
 			break;
 		default:
 		}
-		TraceMessage.getInstance().getString(TraceMessage.defKey, buffer.toString());
+		InPlace.get().trace("{0}", buffer.toString());
 	}
 
 	public static void printKind(int kind) {
 
 		if (kind == IResourceDelta.ADDED) {
-			TraceMessage.getInstance().getString(TraceMessage.defKey, "Kind --> Added");
+
+			InPlace.get().trace("{0}", "Kind --> Added");
 		}
 		if (kind == IResourceDelta.CHANGED) {
-			TraceMessage.getInstance().getString(TraceMessage.defKey, "Kind --> Changed");
+			InPlace.get().trace("{0}", "Kind --> Changed");
 		}
 		if (kind == IResourceDelta.REMOVED) {
-			TraceMessage.getInstance().getString(TraceMessage.defKey, "Kind --> Removed");
+			InPlace.get().trace("{0}", "Kind --> Removed");
 		}
 		if (kind == IResourceDelta.REMOVED_PHANTOM) {
-			TraceMessage.getInstance().getString(TraceMessage.defKey, "Kind --> Removed phantom");
+			InPlace.get().trace("{0}", "Kind --> Removed phantom");
 		}
 		if (kind == IResourceDelta.ADDED_PHANTOM) {
-			TraceMessage.getInstance().getString(TraceMessage.defKey, "Kind --> Added phantom");
+			InPlace.get().trace("{0}", "Kind --> Added phantom");
 		}
-
 	}
 
 	public static String  printFlags(IResourceDelta resourceDelta) {

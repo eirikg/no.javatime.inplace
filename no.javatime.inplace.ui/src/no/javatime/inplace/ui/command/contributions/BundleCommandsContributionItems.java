@@ -81,14 +81,14 @@ public abstract class BundleCommandsContributionItems extends CompoundContributi
 	public static ImageDescriptor dependenciesImage = Activator.getImageDescriptor("icons/dependencies.gif"); //$NON-NLS-1$
 
 	// Menu Labels
-	protected static String showBundleView = "Show Bundle View"; //$NON-NLS-1$
-	protected static String hideBundleView = "Hide Bundle View"; //$NON-NLS-1$
-	protected static String showBundleListPage = "Show Bundle List Page"; //$NON-NLS-1$
+	protected static String showBundleView =       "Show Bundle View            Alt+Shift+Q U"; //$NON-NLS-1$
+	protected static String hideBundleView =       "Hide Bundle View"; //$NON-NLS-1$
+	protected static String showBundleListPage =   "Show Bundle List Page"; //$NON-NLS-1$
 	final protected String showBundleDetailsPage = "Show Bundle Details Page"; 
-	protected static String showConsolePage = "Show Console Page"; //$NON-NLS-1$
-	protected static String hideConsolePage = "Hide Console Page"; //$NON-NLS-1$
-	protected static String showMessageView = "Show Message View"; //$NON-NLS-1$
-	protected static String hideMessageView = "Hide Message View"; //$NON-NLS-1$
+	protected static String showConsolePage =      "Show Console Page         Alt+Shift+Q C"; //$NON-NLS-1$
+	protected static String hideConsolePage =      "Hide Console Page"; //$NON-NLS-1$
+	protected static String showMessageView =      "Show Message View"; //$NON-NLS-1$
+	protected static String hideMessageView =      "Hide Message View"; //$NON-NLS-1$
 	
 	private IServiceLocator serviceLocator;  
 	

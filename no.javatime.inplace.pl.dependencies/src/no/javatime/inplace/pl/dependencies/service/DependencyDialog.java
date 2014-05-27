@@ -1,4 +1,4 @@
-package no.javatime.inplace.ui.service;
+package no.javatime.inplace.pl.dependencies.service;
 
 public interface DependencyDialog {
 

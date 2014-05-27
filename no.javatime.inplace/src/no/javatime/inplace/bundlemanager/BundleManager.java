@@ -1,13 +1,13 @@
 package no.javatime.inplace.bundlemanager;
 
-import org.eclipse.core.resources.WorkspaceJob;
-
+import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundlejobs.events.BundleJobEventListener;
 import no.javatime.inplace.bundlejobs.events.BundleJobNotifier;
 import no.javatime.inplace.bundlemanager.events.BundleTransitionEventListener;
 import no.javatime.inplace.bundlemanager.events.BundleTransitionNotifier;
 import no.javatime.util.messages.Category;
-import no.javatime.util.messages.TraceMessage;
+
+import org.eclipse.core.resources.WorkspaceJob;
 
 public class BundleManager {
 	
@@ -62,14 +62,14 @@ public class BundleManager {
 	public static void addBundleTransitionListener(BundleTransitionEventListener listener) {
 		bundleTransitionNotifier.addBundleTransitionListener(listener);
 		if (Category.DEBUG && Category.getState(Category.listeners))
-			TraceMessage.getInstance().getString("added_job_listener",
+			InPlace.get().trace("added_job_listener",
 					listener.getClass().getName());					
 	}
 
 	public static void removeBundleTransitionListener(BundleTransitionEventListener listener) {
 		bundleTransitionNotifier.removeBundleTransitionListener(listener);
 		if (Category.DEBUG && Category.getState(Category.listeners))
-			TraceMessage.getInstance().getString("removed_job_listener",
+			InPlace.get().trace("removed_job_listener",
 					listener.getClass().getName());					
 	}
 	
@@ -91,7 +91,7 @@ public class BundleManager {
 		}
 		bundleJobNotifier.addBundleJob(bundleJob, delay);
 		if (Category.DEBUG && Category.getState(Category.listeners))
-			TraceMessage.getInstance().getString("added_job",
+			InPlace.get().trace("added_job",
 					bundleJob.getName());					
 	}
 
@@ -110,7 +110,7 @@ public class BundleManager {
 		}
 		bundleJobNotifier.addBundleJobListener(listener);
 		if (Category.DEBUG && Category.getState(Category.listeners))
-			TraceMessage.getInstance().getString("added_job_listener",
+			InPlace.get().trace("added_job_listener",
 					listener.getClass().getName());					
 	}
 
@@ -129,7 +129,7 @@ public class BundleManager {
 		}
 		bundleJobNotifier.removeBundleJobListener(listener);
 		if (Category.DEBUG && Category.getState(Category.listeners))
-			TraceMessage.getInstance().getString("removed_job_listener",
+			InPlace.get().trace("removed_job_listener",
 					listener.getClass().getName());					
 	}
 }

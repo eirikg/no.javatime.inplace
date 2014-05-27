@@ -4,7 +4,7 @@ import org.osgi.service.prefs.BackingStoreException;
 
 public interface ManifestOptions {
 
-	public static final String IS_UPDATE_DEFAULT_OUTPUT_FOLDER = "isupdateDefaultOutputFolder";
+	public static final String IS_UPDATE_DEFAULT_OUTPUT_FOLDER = "isUpdateDefaultOutputFolder";
 	public static final String IS_EAGER_ON_ACTIVATE = "isEagerOnActivate";
 
 	/**

@@ -193,7 +193,7 @@ public class ActivateProjectJob extends NatureJob {
 					}
 				}
 			}
-			InPlace.getDefault().savePluginSettings(true, true);
+			InPlace.get().savePluginSettings(true, true);
 		} else {
 			if (Category.getState(Category.infoMessages)) {
 				UserMessage.getInstance().getString("no_projects_to_activate");

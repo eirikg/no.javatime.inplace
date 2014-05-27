@@ -392,8 +392,8 @@ public class Activator  extends AbstractUIPlugin implements ServiceListener {
 		}
 		Category.setState(Category.bundleEvents,
 				prefs.getBoolean(Category.bundleEvents, Category.getState(Category.bundleEvents)));
-		Category.setState(Category.bundleOperations,
-				prefs.getBoolean(Category.bundleOperations, Category.getState(Category.bundleOperations)));
+//		Category.setState(Category.bundleOperations,
+//				prefs.getBoolean(Category.bundleOperations, Category.getState(Category.bundleOperations)));
 		Category.setState(Category.infoMessages,
 				prefs.getBoolean(Category.infoMessages, Category.getState(Category.infoMessages)));
 		Category.setState(Category.systemOut,

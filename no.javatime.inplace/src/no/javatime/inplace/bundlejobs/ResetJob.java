@@ -22,11 +22,9 @@ import no.javatime.inplace.dependencies.ProjectSorter;
 import no.javatime.inplace.statushandler.BundleStatus;
 import no.javatime.inplace.statushandler.IBundleStatus;
 import no.javatime.inplace.statushandler.IBundleStatus.StatusCode;
-import no.javatime.util.messages.Category;
 import no.javatime.util.messages.ErrorMessage;
 import no.javatime.util.messages.ExceptionMessage;
 import no.javatime.util.messages.Message;
-import no.javatime.util.messages.TraceMessage;
 import no.javatime.util.messages.UserMessage;
 
 import org.eclipse.core.resources.IProject;
@@ -291,7 +289,7 @@ public class ResetJob {
 				// The reset job
 				try {
 					// Use the preference store to reset to same as current state after activate
-					InPlace.getDefault().savePluginSettings(true, false);
+					InPlace.get().savePluginSettings(true, false);
 					ProjectSorter ps = new ProjectSorter();
 					// Reset require that all bundles that the project(s) to reset have requirements on are reset to
 					int count = 0;
@@ -321,20 +319,20 @@ public class ResetJob {
 						}
 					}
 					// Save current state of bundles to be used by the activate j0b to resore the current state
-					InPlace.getDefault().savePluginSettings(true, false);
+					InPlace.get().savePluginSettings(true, false);
 					GroupUninstall uninstallJob = new GroupUninstall(uninstallResetJobName, projectsToReset);
 					uninstallJob.setProgressGroup(groupMonitor, 1);
 					// uninstallJob.schedule();
-					if (Category.getState(Category.bundleOperations)) {
-						TraceMessage.getInstance().getString("schedule_job", uninstallResetJobName);
+					if (InPlace.get().msgOpt().isBundleOperations()) {
+						InPlace.get().trace("schedule_job", uninstallResetJobName);
 					}
 					BundleManager.addBundleJob(uninstallJob, 0);
 					GroupActivate activateBundleJob = new GroupActivate(ResetJob.activateResetJobName, projectsToReset);
 					activateBundleJob.setProgressGroup(groupMonitor, 1);
 					activateBundleJob.setUseStoredState(true);
 					// activateBundleJob.schedule();
-					if (Category.getState(Category.bundleOperations)) {
-						TraceMessage.getInstance().getString("schedule_job", activateResetJobName);
+					if (InPlace.get().msgOpt().isBundleOperations()) {
+						InPlace.get().trace("schedule_job", activateResetJobName);
 					}
 					BundleManager.addBundleJob(activateBundleJob, 0);
 					

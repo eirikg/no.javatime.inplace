@@ -51,8 +51,8 @@ public class StartUp implements IStartup {
 		} finally {
 			// Add resource listeners as as early as possible after scheduling bundle start up activation
 			// This prevent other bundle jobs from being scheduled before the start up activation job
-			InPlace.getDefault().addResourceListeners();
-			InPlace.getDefault().processLastSavedState(true);
+			InPlace.get().addResourceListeners();
+			InPlace.get().processLastSavedState(true);
 		}
 	}
 	

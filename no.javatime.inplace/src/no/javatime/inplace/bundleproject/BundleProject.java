@@ -20,6 +20,16 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Properties;
 
+import no.javatime.inplace.InPlace;
+import no.javatime.inplace.bundlemanager.InPlaceException;
+import no.javatime.inplace.statushandler.BundleStatus;
+import no.javatime.inplace.statushandler.IBundleStatus.StatusCode;
+import no.javatime.util.messages.Category;
+import no.javatime.util.messages.Message;
+import no.javatime.util.messages.UserMessage;
+import no.javatime.util.messages.WarnMessage;
+
+import org.eclipse.core.internal.runtime.DevClassPathHelper;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IWorkspace;
@@ -29,7 +39,6 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.jdt.core.JavaModelException;
-import org.eclipse.core.internal.runtime.DevClassPathHelper;
 import org.eclipse.osgi.util.ManifestElement;
 import org.eclipse.pde.core.project.IBundleClasspathEntry;
 import org.eclipse.pde.core.project.IBundleProjectDescription;
@@ -40,16 +49,6 @@ import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Constants;
 import org.osgi.framework.Version;
-
-import no.javatime.inplace.InPlace;
-import no.javatime.inplace.bundlemanager.InPlaceException;
-import no.javatime.inplace.statushandler.BundleStatus;
-import no.javatime.inplace.statushandler.IBundleStatus.StatusCode;
-import no.javatime.util.messages.Category;
-import no.javatime.util.messages.Message;
-import no.javatime.util.messages.TraceMessage;
-import no.javatime.util.messages.UserMessage;
-import no.javatime.util.messages.WarnMessage;
 
 @SuppressWarnings("restriction")
 public class BundleProject {
@@ -84,7 +83,7 @@ public class BundleProject {
 			throw new InPlaceException("no_manifest_found_project", project.getName());
 		}
 
-		IBundleProjectDescription bundleProjDesc = InPlace.getDefault().getBundleDescription(project);
+		IBundleProjectDescription bundleProjDesc = InPlace.get().getBundleDescription(project);
 		IPath defaultOutpUtPath = bundleProjDesc.getDefaultOutputFolder();
 		String bundleClassPath = bundleProjDesc.getHeader(Constants.BUNDLE_CLASSPATH);
 
@@ -92,13 +91,13 @@ public class BundleProject {
 			return false;
 		}
 		if (Category.DEBUG && Category.getState(Category.binpath)) {
-			TraceMessage.getInstance().getString("default_output_folder", project.getName(), defaultOutpUtPath);
+			InPlace.get().trace("default_output_folder", project.getName(), defaultOutpUtPath);
 		}
 		return ManifestUtil.verifyPathInClassPath(defaultOutpUtPath, bundleClassPath, project.getName());
 	}
 
 	public static IPath getDefaultOutputLocation(IProject project) {
-		IBundleProjectDescription bundleProjDesc = InPlace.getDefault().getBundleDescription(project);
+		IBundleProjectDescription bundleProjDesc = InPlace.get().getBundleDescription(project);
 		return bundleProjDesc.getDefaultOutputFolder();
 	}
 
@@ -112,7 +111,7 @@ public class BundleProject {
 	public static Boolean createClassPathEntry(IProject project) {
 		boolean outputLocationAdded = false;
 		try {
-			IBundleProjectDescription bundleProjDesc = InPlace.getDefault().getBundleDescription(project);
+			IBundleProjectDescription bundleProjDesc = InPlace.get().getBundleDescription(project);
 			IPath defaultOutputPath = bundleProjDesc.getDefaultOutputFolder();
 			if (null == defaultOutputPath) {
 				return false;
@@ -120,7 +119,7 @@ public class BundleProject {
 			Collection<IPath> srcPaths = ProjectProperties.getJavaProjectSourceFolders(project);
 			ArrayList<IBundleClasspathEntry> entries = new ArrayList<IBundleClasspathEntry>();
 			for (IPath srcPath : srcPaths) {
-				IBundleProjectService service = InPlace.getDefault().getBundleProjectService(project);
+				IBundleProjectService service = InPlace.get().getBundleProjectService(project);
 				IBundleClasspathEntry entry = service.newBundleClasspathEntry(srcPath, defaultOutputPath, null);
 				if (!entry.getBinaryPath().equals(defaultOutputPath)) {
 					entries.add(entry);
@@ -153,7 +152,7 @@ public class BundleProject {
 			if (!hasManifest(project)) {
 				throw new InPlaceException("no_manifest_found_project", project.getName());
 			}
-			IBundleProjectDescription bundleProjDesc = InPlace.getDefault().getBundleDescription(project);
+			IBundleProjectDescription bundleProjDesc = InPlace.get().getBundleDescription(project);
 			IPath defaultOutputPath = bundleProjDesc.getDefaultOutputFolder();
 			if (null == defaultOutputPath) {
 				return false;
@@ -163,8 +162,8 @@ public class BundleProject {
 			if (null == storedClassPath) {
 				bundleProjDesc.setHeader(Constants.BUNDLE_CLASSPATH, defaultOutputPath.toString());
 				bundleProjDesc.apply(null);
-				if (Category.getState(Category.bundleOperations))
-					TraceMessage.getInstance().getString("added_bundle_classpath",
+				if (InPlace.get().msgOpt().isBundleOperations())
+					InPlace.get().trace("added_bundle_classpath",
 							bundleProjDesc.getHeader(Constants.BUNDLE_CLASSPATH), project.getName());
 				return true;
 			}
@@ -185,8 +184,8 @@ public class BundleProject {
 					for (int i = 0; i < elements.length; i++) {
 						IPath path = new Path(elements[i].getValue());
 						if (path.equals(defaultOutputPath)) {
-							if (Category.getState(Category.bundleOperations))
-								TraceMessage.getInstance().getString("contains_bundle_classpath",
+							if (InPlace.get().msgOpt().isBundleOperations())
+								InPlace.get().trace("contains_bundle_classpath",
 										bundleProjDesc.getHeader(Constants.BUNDLE_CLASSPATH), project.getName(),
 										defaultOutputPath);
 							return false;
@@ -201,8 +200,8 @@ public class BundleProject {
 				updatedClassPath = updatedClassPath.concat(defaultOutputPath.toString());
 				bundleProjDesc.setHeader(Constants.BUNDLE_CLASSPATH, updatedClassPath);
 				bundleProjDesc.apply(null);
-				if (Category.getState(Category.bundleOperations))
-					TraceMessage.getInstance().getString("update_bundle_classpath",
+				if (InPlace.get().msgOpt().isBundleOperations())
+					InPlace.get().trace("update_bundle_classpath",
 							bundleProjDesc.getHeader(Constants.BUNDLE_CLASSPATH), defaultOutputPath.toString(),
 							project.getName());
 			}
@@ -229,15 +228,15 @@ public class BundleProject {
 			if (!hasManifest(project)) {
 				throw new InPlaceException("no_manifest_found_project", project.getName());
 			}
-			IBundleProjectDescription bundleProjDesc = InPlace.getDefault().getBundleDescription(project);
+			IBundleProjectDescription bundleProjDesc = InPlace.get().getBundleDescription(project);
 			IPath defaultOutpUtPath = bundleProjDesc.getDefaultOutputFolder();
 			if (null == defaultOutpUtPath) {
 				return false;
 			}
 			String storedClassPath = bundleProjDesc.getHeader(Constants.BUNDLE_CLASSPATH);
 			if (null == storedClassPath) {
-				if (Category.getState(Category.bundleOperations))
-					TraceMessage.getInstance().getString("no_bundle_classpath", project.getName());
+				if (InPlace.get().msgOpt().isBundleOperations())
+					InPlace.get().trace("no_bundle_classpath", project.getName());
 				return false;
 			}
 			// Search for the output class path entry in the class path header
@@ -273,13 +272,13 @@ public class BundleProject {
 						if (newClassPath.charAt(lastIndex) == ',') {
 							newClassPath = newClassPath.substring(0, lastIndex);
 						}
-						if (Category.getState(Category.bundleOperations))
-							TraceMessage.getInstance().getString("removed_bundle_classpath_entry", defaultOutpUtPath,
+						if (InPlace.get().msgOpt().isBundleOperations())
+							InPlace.get().trace("removed_bundle_classpath_entry", defaultOutpUtPath,
 									newClassPath, project.getName());
 						bundleProjDesc.setHeader(Constants.BUNDLE_CLASSPATH, newClassPath);
 					} else {
-						if (Category.getState(Category.bundleOperations))
-							TraceMessage.getInstance().getString("removed_bundle_classpath",
+						if (InPlace.get().msgOpt().isBundleOperations())
+							InPlace.get().trace("removed_bundle_classpath",
 									bundleProjDesc.getHeader(Constants.BUNDLE_CLASSPATH), project.getName());
 						bundleProjDesc.setHeader(Constants.BUNDLE_CLASSPATH, null);
 					}
@@ -303,10 +302,10 @@ public class BundleProject {
 		if (null == project) {
 			return;
 		}
-		IBundleProjectDescription bundleProjDesc = InPlace.getDefault().getBundleDescription(project);
+		IBundleProjectDescription bundleProjDesc = InPlace.get().getBundleDescription(project);
 		String policy = bundleProjDesc.getActivationPolicy();
-		if (Category.getState(Category.bundleOperations))
-			TraceMessage.getInstance().getString("toggle_activation_policy", (null == policy) ? "eager" : "lazy",
+		if (InPlace.get().msgOpt().isBundleOperations())
+			InPlace.get().trace("toggle_activation_policy", (null == policy) ? "eager" : "lazy",
 					(null == policy) ? "lazy" : "eager", project.getName());
 		// Policy header does not exist
 		if (null == policy) {
@@ -322,7 +321,7 @@ public class BundleProject {
 	}
 
 	public static Boolean isFragment(IProject project) throws InPlaceException {
-		IBundleProjectDescription bundleProjDesc = InPlace.getDefault().getBundleDescription(project);
+		IBundleProjectDescription bundleProjDesc = InPlace.get().getBundleDescription(project);
 		IHostDescription host = bundleProjDesc.getHost();
 		if (null != host) {
 			return true;
@@ -342,7 +341,7 @@ public class BundleProject {
 		if (null == project) {
 			throw new InPlaceException("project_null");
 		}
-		IBundleProjectDescription bundleProjDesc = InPlace.getDefault().getBundleDescription(project);
+		IBundleProjectDescription bundleProjDesc = InPlace.get().getBundleDescription(project);
 		if (null == bundleProjDesc) {
 			throw new InPlaceException("project_description_null");
 		}
@@ -362,7 +361,7 @@ public class BundleProject {
 	 */
 	public static String getSymbolicNameFromManifest(IProject project) throws InPlaceException {
 
-		IBundleProjectDescription bundleProjDesc = InPlace.getDefault().getBundleDescription(project);
+		IBundleProjectDescription bundleProjDesc = InPlace.get().getBundleDescription(project);
 		if (null == bundleProjDesc) {
 			return null;
 		}
@@ -380,7 +379,7 @@ public class BundleProject {
 		if (null == project) {
 			return null;
 		}
-		IBundleProjectDescription bundleProjDesc = InPlace.getDefault().getBundleDescription(project);
+		IBundleProjectDescription bundleProjDesc = InPlace.get().getBundleDescription(project);
 		if (null == bundleProjDesc) {
 			return null;
 		}
@@ -402,7 +401,7 @@ public class BundleProject {
 		IWorkspaceRoot root = workspace.getRoot();
 		for (IProject project : root.getProjects()) {
 			try {
-				IBundleProjectDescription bundleProjDesc = InPlace.getDefault().getBundleDescription(project);
+				IBundleProjectDescription bundleProjDesc = InPlace.get().getBundleDescription(project);
 				String symbolicName = bundleProjDesc.getSymbolicName();
 				if (null != symbolicName && symbolicName.equals(bundle.getSymbolicName())) {
 					Version version = bundleProjDesc.getBundleVersion();

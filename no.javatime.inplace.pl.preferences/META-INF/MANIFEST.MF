@@ -7,5 +7,6 @@ Bundle-Activator: no.javatime.inplace.pl.preferences.PreferencePlActivator
 Require-Bundle: org.eclipse.ui,
  org.eclipse.core.runtime
 Bundle-RequiredExecutionEnvironment: JavaSE-1.7
-Import-Package: no.javatime.inplace.dl.preferences.intface
+Import-Package: no.javatime.inplace.dl.preferences.intface,
+ no.javatime.inplace.extender.provider
 Bundle-ActivationPolicy: lazy

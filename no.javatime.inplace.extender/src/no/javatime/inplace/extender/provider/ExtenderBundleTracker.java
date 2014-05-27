@@ -13,8 +13,6 @@ public class ExtenderBundleTracker implements BundleTrackerCustomizer<Extender<?
 	
 	@Override
 	public Extender<?> addingBundle(Bundle bundle, BundleEvent event) {
-
-		// Only track bundles of interest
 		return null;  
 	}
 
@@ -25,7 +23,7 @@ public class ExtenderBundleTracker implements BundleTrackerCustomizer<Extender<?
 
 	@Override
 	public void removedBundle(Bundle bundle, BundleEvent event, Extender<?> object) {
-		object.closeTracker();
+		object.closeServiceTracker();
 	}
 
 }

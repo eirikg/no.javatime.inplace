@@ -19,12 +19,14 @@ import no.javatime.inplace.bundleproject.BundleProject;
 import no.javatime.inplace.bundleproject.ManifestUtil;
 import no.javatime.inplace.bundleproject.OpenProjectHandler;
 import no.javatime.inplace.bundleproject.ProjectProperties;
+import no.javatime.inplace.extender.provider.Extension;
+import no.javatime.inplace.pl.dependencies.service.DependencyDialog;
+import no.javatime.inplace.pl.trace.intface.MessageView;
 import no.javatime.inplace.ui.command.handlers.BundleMenuActivationHandler;
 import no.javatime.inplace.ui.views.BundleView;
 import no.javatime.util.messages.Message;
 import no.javatime.util.messages.views.BundleConsole;
 import no.javatime.util.messages.views.BundleConsoleFactory;
-import no.javatime.util.messages.views.MessageView;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.jdt.core.IJavaProject;
@@ -276,12 +278,17 @@ public class BundlePopUpCommandsContributionItems extends BundleCommandsContribu
 	}
 
 	private CommandContributionItem addToggleMessageView() {
-		if (!Message.isViewVisible(MessageView.ID)) {
+		Extension<MessageView> ext = new Extension<>(MessageView.class);
+		MessageView viewService = ext.getService();
+		if (null == viewService) {
+			throw new InPlaceException("failed_to_get_service_for_interface", DependencyDialog.class.getName());
+		}
+		if (!viewService.isVisible()) {
 			return addContribution(menuId, dynamicPopUpCommandId, showMessageView, messageViewParamId,
-					CommandContributionItem.STYLE_PUSH, MessageView.messageViewImage);
+					CommandContributionItem.STYLE_PUSH, viewService.getMessageViewImage());
 		} else {
 			return addContribution(menuId, dynamicPopUpCommandId, hideMessageView, messageViewParamId,
-					CommandContributionItem.STYLE_PUSH, MessageView.messageViewImage);
+					CommandContributionItem.STYLE_PUSH, viewService.getMessageViewImage());
 		}
 	}
 

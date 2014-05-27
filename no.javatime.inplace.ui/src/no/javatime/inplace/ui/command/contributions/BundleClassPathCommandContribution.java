@@ -6,7 +6,8 @@ import java.util.Collection;
 import no.javatime.inplace.bundlemanager.InPlaceException;
 import no.javatime.inplace.bundleproject.BundleProject;
 import no.javatime.inplace.bundleproject.ProjectProperties;
-import no.javatime.util.messages.Category;
+import no.javatime.inplace.dl.preferences.intface.MessageOptions;
+import no.javatime.inplace.extender.provider.Extension;
 import no.javatime.util.messages.Message;
 import no.javatime.util.messages.WarnMessage;
 
@@ -70,7 +71,9 @@ public class BundleClassPathCommandContribution extends BundleCommandsContributi
 				}
 			}
 			if (null != errProjects) {
-				if (Category.getState(Category.infoMessages) || Category.getState(Category.bundleOperations) || Category.getState(Category.bundleEvents)) {
+				Extension<MessageOptions> msgOpt = new Extension<>(MessageOptions.class);
+				MessageOptions optServicet = msgOpt.getService();
+				if (null != optServicet && (optServicet.isInfoMessages() || optServicet.isBundleEvents() || optServicet.isBundleOperations())) {
 					WarnMessage.getInstance().getString("error_not_update_classpath", ProjectProperties.formatProjectList(errProjects));
 				}
 			}

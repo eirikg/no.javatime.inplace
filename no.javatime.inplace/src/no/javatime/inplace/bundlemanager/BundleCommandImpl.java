@@ -38,7 +38,6 @@ import no.javatime.inplace.statushandler.BundleStatus;
 import no.javatime.inplace.statushandler.IBundleStatus.StatusCode;
 import no.javatime.util.messages.Category;
 import no.javatime.util.messages.ExceptionMessage;
-import no.javatime.util.messages.TraceMessage;
 import no.javatime.util.messages.WarnMessage;
 
 import org.eclipse.core.resources.IProject;
@@ -167,9 +166,6 @@ class BundleCommandImpl implements BundleCommand {
 			is = bundleReference.openStream();
 			bundleTransition.setTransition(project, Transition.INSTALL);
 			bundle = getContext().installBundle(locationIdentifier, is);
-			if (Category.getState(Category.bundleOperations))
-				TraceMessage.getInstance().getString("install_bundle", bundle.getSymbolicName(),
-						getStateName(bundle), bundle.getLocation());
 		} catch (MalformedURLException e) {
 			bundleTransition.setTransitionError(project);
 			throw new InPlaceException(e, "bundle_install_malformed_error", locationIdentifier);
@@ -178,25 +174,25 @@ class BundleCommandImpl implements BundleCommand {
 			throw new InPlaceException(e, "bundle_install_error", locationIdentifier);
 		} catch (NullPointerException npe) {
 			bundleTransition.setTransitionError(project);
-			if (Category.DEBUG && Category.isEnabled(Category.bundleOperations))
-				TraceMessage.getInstance().getString("npe_error_install_bundle", locationIdentifier,
+			if (Category.DEBUG && InPlace.get().msgOpt().isBundleOperations())
+				InPlace.get().trace("npe_error_install_bundle", locationIdentifier,
 						npe.getLocalizedMessage());
 			throw new InPlaceException(npe, "bundle_install_npe_error", locationIdentifier);
 		} catch (IllegalStateException e) {
 			bundleTransition.setTransitionError(project);
-			if (Category.DEBUG && Category.isEnabled(Category.bundleOperations))
-				TraceMessage.getInstance().getString("error_install_bundle", locationIdentifier,
+			if (Category.DEBUG && InPlace.get().msgOpt().isBundleOperations())
+				InPlace.get().trace("error_install_bundle", locationIdentifier,
 						e.getLocalizedMessage());
 			throw new InPlaceException(e, "bundle_state_error", locationIdentifier);
 		} catch (SecurityException e) {
 			bundleTransition.setTransitionError(project);
-			if (Category.DEBUG && Category.isEnabled(Category.bundleOperations))
-				TraceMessage.getInstance().getString("error_install_bundle", locationIdentifier,
+			if (Category.DEBUG && InPlace.get().msgOpt().isBundleOperations())
+				InPlace.get().trace("error_install_bundle", locationIdentifier,
 						e.getLocalizedMessage());
 			throw new InPlaceException(e, "bundle_security_error", locationIdentifier);
 		} catch (BundleException e) {
-			if (Category.DEBUG && Category.isEnabled(Category.bundleOperations))
-				TraceMessage.getInstance().getString("error_install_bundle", locationIdentifier,
+			if (Category.DEBUG && InPlace.get().msgOpt().isBundleOperations())
+				InPlace.get().trace("error_install_bundle", locationIdentifier,
 						e.getLocalizedMessage());
 			if (e.getType() == BundleException.DUPLICATE_BUNDLE_ERROR) {
 				bundleTransition.setTransitionError(project, TransitionError.DUPLICATE);
@@ -234,8 +230,8 @@ class BundleCommandImpl implements BundleCommand {
 	@Override
 	public Boolean resolve(Collection<Bundle> bundles) throws InPlaceException {
 		if (null == frameworkWiring) {
-			if (Category.DEBUG && Category.isEnabled(Category.bundleOperations))
-				TraceMessage.getInstance().getString("null_admin_bundle");
+			if (Category.DEBUG && InPlace.get().msgOpt().isBundleOperations())
+				InPlace.get().trace("null_admin_bundle");
 			throw new InPlaceException("null_framework");
 		}
 		try {
@@ -244,10 +240,10 @@ class BundleCommandImpl implements BundleCommand {
 				bundleRegion.getActiveState(bundle).resolve(bundleRegion.getBundleNode(bundle));
 			}
 			boolean resolved = frameworkWiring.resolveBundles(bundles);
-			if (Category.getState(Category.bundleOperations)) {
+			if (InPlace.get().msgOpt().isBundleOperations()) {
 				for (Bundle bundle : bundles) {
 					if ((getState(bundle) & (Bundle.RESOLVED | Bundle.STARTING)) != 0) {
-						TraceMessage.getInstance().getString("resolve_bundle", bundle, getStateName(bundle));
+						InPlace.get().trace("resolve_bundle", bundle, getStateName(bundle));
 					}
 				}
 			}
@@ -260,8 +256,8 @@ class BundleCommandImpl implements BundleCommand {
 					bundleRegion.setActiveState(bundle, BundleStateFactory.INSTANCE.installedState);
 				}
 			}
-			if (Category.DEBUG && Category.isEnabled(Category.bundleOperations))
-				TraceMessage.getInstance().getString("security_error_resolve_bundles",
+			if (Category.DEBUG && InPlace.get().msgOpt().isBundleOperations())
+				InPlace.get().trace("security_error_resolve_bundles",
 						bundleRegion.formatBundleList(bundles, true));
 			throw new InPlaceException(e, "bundles_security_error", bundleRegion.formatBundleList(bundles, true));
 		} catch (IllegalArgumentException e) {
@@ -271,8 +267,8 @@ class BundleCommandImpl implements BundleCommand {
 					bundleRegion.setActiveState(bundle, BundleStateFactory.INSTANCE.installedState);
 				}
 			}
-			if (Category.DEBUG && Category.isEnabled(Category.bundleOperations))
-				TraceMessage.getInstance().getString("argument_error_resolve_bundles",
+			if (Category.DEBUG && InPlace.get().msgOpt().isBundleOperations())
+				InPlace.get().trace("argument_error_resolve_bundles",
 						bundleRegion.formatBundleList(bundles, true));
 			throw new InPlaceException(e, "bundles_argument_resolve_bundle", bundleRegion.formatBundleList(bundles,
 					true));
@@ -305,8 +301,8 @@ class BundleCommandImpl implements BundleCommand {
 		}
 		try {
 			for (Bundle bundle : bundles) {
-				if (Category.getState(Category.bundleOperations))
-					TraceMessage.getInstance().getString("refresh_bundle", bundle);
+				if (InPlace.get().msgOpt().isBundleOperations())
+					InPlace.get().trace("refresh_bundle", bundle);
 				if ((bundle.getState() & (Bundle.UNINSTALLED)) == 0) {
 					bundleTransition.setTransition(bundle, Transition.REFRESH);
 					bundleRegion.getActiveState(bundle).refresh(bundleRegion.getBundleNode(bundle));
@@ -323,7 +319,7 @@ class BundleCommandImpl implements BundleCommand {
 					public void frameworkEvent(FrameworkEvent event) {
 						synchronized (thisBundleCommand) { // Notify job to proceed
 							if (Category.DEBUG && Category.getState(Category.listeners))
-								TraceMessage.getInstance().getString("notify_refresh_finished",
+								InPlace.get().trace("notify_refresh_finished",
 										BundleCommandImpl.class.getSimpleName(), bundleRegion.formatBundleList(bundles, true));
 							thisBundleCommand.refreshed = true;
 							thisBundleCommand.notifyAll();
@@ -337,8 +333,8 @@ class BundleCommandImpl implements BundleCommand {
 						bundleRegion.setActiveState(bundle, BundleStateFactory.INSTANCE.resolvedState);
 					}
 				}
-				if (Category.DEBUG && Category.getState(Category.bundleOperations))
-					TraceMessage.getInstance().getString("security_error_refresh_bundles",
+				if (Category.DEBUG && InPlace.get().msgOpt().isBundleOperations())
+					InPlace.get().trace("security_error_refresh_bundles",
 							bundleRegion.formatBundleList(bundles, true));
 				throw new InPlaceException(e, "framework_bundle_security_error", bundleRegion.formatBundleList(bundles,
 						true));
@@ -349,8 +345,8 @@ class BundleCommandImpl implements BundleCommand {
 						bundleRegion.setActiveState(bundle, BundleStateFactory.INSTANCE.resolvedState);
 					}
 				}
-				if (Category.DEBUG && Category.getState(Category.bundleOperations))
-					TraceMessage.getInstance().getString("argument_error_refresh_bundles",
+				if (Category.DEBUG && InPlace.get().msgOpt().isBundleOperations())
+					InPlace.get().trace("argument_error_refresh_bundles",
 							bundleRegion.formatBundleList(bundles, true));
 				throw new InPlaceException(e, "bundles_argument_refresh_bundle", bundleRegion.formatBundleList(bundles,
 						true));
@@ -359,7 +355,7 @@ class BundleCommandImpl implements BundleCommand {
 			synchronized (this) {
 				while (!this.refreshed) {					
 					if (Category.DEBUG && Category.getState(Category.listeners))
-						TraceMessage.getInstance().getString("waiting_on_refresh",
+						InPlace.get().trace("waiting_on_refresh",
 								BundleCommandImpl.class.getSimpleName());
 					this.wait();
 				}
@@ -368,7 +364,7 @@ class BundleCommandImpl implements BundleCommand {
 			throw new InPlaceException(e, "interrupt_exception_refresh", BundleCommandImpl.class.getSimpleName());
 		} finally {
 			if (Category.DEBUG && Category.getState(Category.listeners))
-				TraceMessage.getInstance().getString("continuing_after_refresh",
+				InPlace.get().trace("continuing_after_refresh",
 						BundleCommandImpl.class.getSimpleName());
 			for (Bundle bundle : bundles) {
 				try {
@@ -394,14 +390,14 @@ class BundleCommandImpl implements BundleCommand {
 	@Override
 	public void refresh(Collection<Bundle> bundles, FrameworkListener listener) throws InPlaceException {
 		if (null == frameworkWiring) {
-			if (Category.DEBUG && Category.isEnabled(Category.bundleOperations))
-				TraceMessage.getInstance().getString("null_admin_bundle");
+			if (Category.DEBUG && InPlace.get().msgOpt().isBundleOperations())
+				InPlace.get().trace("null_admin_bundle");
 			throw new InPlaceException("null_framework");
 		}
 		try {
 			for (Bundle bundle : bundles) {
-				if (Category.getState(Category.bundleOperations))
-					TraceMessage.getInstance().getString("refresh_bundle", bundle);
+				if (Category.DEBUG && InPlace.get().msgOpt().isBundleOperations())
+					InPlace.get().trace("refresh_bundle", bundle);
 				if ((bundle.getState() & (Bundle.UNINSTALLED)) == 0) {
 					bundleTransition.setTransition(bundle, Transition.REFRESH);
 					bundleRegion.getActiveState(bundle).refresh(bundleRegion.getBundleNode(bundle));
@@ -415,8 +411,8 @@ class BundleCommandImpl implements BundleCommand {
 					bundleRegion.setActiveState(bundle, BundleStateFactory.INSTANCE.resolvedState);
 				}
 			}
-			if (Category.DEBUG && Category.getState(Category.bundleOperations))
-				TraceMessage.getInstance().getString("security_error_refresh_bundles",
+			if (Category.DEBUG && InPlace.get().msgOpt().isBundleOperations())
+				InPlace.get().trace("security_error_refresh_bundles",
 						bundleRegion.formatBundleList(bundles, true));
 			throw new InPlaceException(e, "framework_bundle_security_error", bundleRegion.formatBundleList(bundles,
 					true));
@@ -427,8 +423,8 @@ class BundleCommandImpl implements BundleCommand {
 					bundleRegion.setActiveState(bundle, BundleStateFactory.INSTANCE.resolvedState);
 				}
 			}
-			if (Category.DEBUG && Category.getState(Category.bundleOperations))
-				TraceMessage.getInstance().getString("argument_error_refresh_bundles",
+			if (Category.DEBUG && InPlace.get().msgOpt().isBundleOperations())
+				InPlace.get().trace("argument_error_refresh_bundles",
 						bundleRegion.formatBundleList(bundles, true));
 			throw new InPlaceException(e, "bundles_argument_refresh_bundle", bundleRegion.formatBundleList(bundles,
 					true));
@@ -497,31 +493,24 @@ class BundleCommandImpl implements BundleCommand {
 		BundleState state = bundleRegion.getActiveState(bundle);
 		try {
 			bundleTransition.setTransition(bundle, Transition.START);
-			long startTime = 0;
 			state.start(bundleRegion.getBundleNode(bundle));
-			if (Category.getState(Category.bundleOperations))
-				startTime = System.currentTimeMillis();
 			currentBundle = bundle;
 			bundle.start(startOption);
-			if (Category.getState(Category.bundleOperations)) {
-				 long msec = System.currentTimeMillis() - startTime;
-				 TraceMessage.getInstance().getString("start_bundle", bundle, getStateName(bundle), msec); 
-			}
 		} catch (IllegalStateException e) {
 			bundleTransition.setTransitionError(bundle, TransitionError.EXCEPTION);
 			bundleRegion.setActiveState(bundle, state);
-			if (Category.DEBUG && Category.isEnabled(Category.bundleOperations))
-				TraceMessage.getInstance().getString("state_error_start_bundle", bundle, e.getLocalizedMessage());
+			if (Category.DEBUG && InPlace.get().msgOpt().isBundleOperations())
+				InPlace.get().trace("state_error_start_bundle", bundle, e.getLocalizedMessage());
 			throw new InPlaceException(e, "bundle_state_error", bundle);
 		} catch (SecurityException e) {
 			bundleTransition.setTransitionError(bundle, TransitionError.EXCEPTION);
 			bundleRegion.setActiveState(bundle, state);
-			if (Category.DEBUG && Category.isEnabled(Category.bundleOperations))
-				TraceMessage.getInstance().getString("security_error_start_bundle", bundle, e.getLocalizedMessage());
+			if (Category.DEBUG && InPlace.get().msgOpt().isBundleOperations())
+				InPlace.get().trace("security_error_start_bundle", bundle, e.getLocalizedMessage());
 			throw new InPlaceException(e, "bundle_security_error", bundle);
 		} catch (BundleException e) {
-			if (Category.DEBUG && Category.isEnabled(Category.bundleOperations))
-				TraceMessage.getInstance().getString("error_start_bundle", bundle, e.getLocalizedMessage());
+			if (Category.DEBUG && InPlace.get().msgOpt().isBundleOperations())
+				InPlace.get().trace("error_start_bundle", bundle, e.getLocalizedMessage());
 			bundleTransition.setTransition(bundle, Transition.START);
 			bundleRegion.setActiveState(bundle, state);
 			if (null != e.getCause() && (e.getCause() instanceof ThreadDeath)) {
@@ -614,28 +603,21 @@ class BundleCommandImpl implements BundleCommand {
 			bundleTransition.setTransition(bundle, Transition.STOP);
 			BundleState state = bundleRegion.getActiveState(bundle);
 			state.stop(bundleRegion.getBundleNode(bundle));
-			long startTime = 0;
-			if (Category.getState(Category.bundleOperations))
-				startTime = System.currentTimeMillis();
 			currentBundle = bundle;
 			if (!stopTransient) {
 				bundle.stop();
 			} else {
 				bundle.stop(Bundle.STOP_TRANSIENT);
 			}
-			if (Category.getState(Category.bundleOperations)) {
-				long msec = System.currentTimeMillis() - startTime;
-				TraceMessage.getInstance().getString("stop_bundle", bundle, getStateName(bundle), msec);
-			}
 		} catch (IllegalStateException e) {
 			bundleTransition.setTransitionError(bundle, TransitionError.EXCEPTION);
-			if (Category.DEBUG && Category.isEnabled(Category.bundleOperations))
-				TraceMessage.getInstance().getString("state_error_stop_bundle", bundle, e.getLocalizedMessage());
+			if (Category.DEBUG && InPlace.get().msgOpt().isBundleOperations())
+				InPlace.get().trace("state_error_stop_bundle", bundle, e.getLocalizedMessage());
 			throw new InPlaceException(e, "bundle_state_error", bundle);
 		} catch (SecurityException e) {
 			bundleTransition.setTransitionError(bundle, TransitionError.EXCEPTION);
-			if (Category.DEBUG && Category.isEnabled(Category.bundleOperations))
-				TraceMessage.getInstance().getString("security_error_stop_bundle", bundle, e.getLocalizedMessage());
+			if (Category.DEBUG && InPlace.get().msgOpt().isBundleOperations())
+				InPlace.get().trace("security_error_stop_bundle", bundle, e.getLocalizedMessage());
 			throw new InPlaceException(e, "bundle_security_error", bundle);
 		} catch (BundleException e) {
 			if (null != e.getCause() && (e.getCause() instanceof ThreadDeath)) {
@@ -706,8 +688,6 @@ class BundleCommandImpl implements BundleCommand {
 			bundleTransition.setTransition(bundle, Transition.UPDATE);
 			state.update(bundleRegion.getBundleNode(bundle));
 			bundle.update(is);
-			if (Category.getState(Category.bundleOperations))
-				TraceMessage.getInstance().getString("update_bundle", bundle, getStateName(bundle));
 		} catch (MalformedURLException e) {
 			bundleTransition.setTransitionError(bundle);
 			bundleRegion.setActiveState(bundle, state);
@@ -719,19 +699,19 @@ class BundleCommandImpl implements BundleCommand {
 		} catch (IllegalStateException e) {
 			bundleTransition.setTransitionError(bundle);
 			bundleRegion.setActiveState(bundle, state);
-			if (Category.DEBUG && Category.isEnabled(Category.bundleOperations))
-				TraceMessage.getInstance().getString("state_error_update_bundle", bundle, e.getLocalizedMessage());
+			if (Category.DEBUG && InPlace.get().msgOpt().isBundleOperations())
+				InPlace.get().trace("state_error_update_bundle", bundle, e.getLocalizedMessage());
 			throw new InPlaceException(e, "bundle_state_error", bundle);
 		} catch (SecurityException e) {
 			bundleTransition.setTransitionError(bundle);
 			bundleRegion.setActiveState(bundle, state);
-			if (Category.DEBUG && Category.isEnabled(Category.bundleOperations))
-				TraceMessage.getInstance().getString("security_error_update_bundle", bundle, e.getLocalizedMessage());
+			if (Category.DEBUG && InPlace.get().msgOpt().isBundleOperations())
+				InPlace.get().trace("security_error_update_bundle", bundle, e.getLocalizedMessage());
 			throw new InPlaceException(e, "bundle_security_error", bundle);
 		} catch (BundleException e) {
 			bundleRegion.setActiveState(bundle, state);
-			if (Category.DEBUG && Category.isEnabled(Category.bundleOperations))
-				TraceMessage.getInstance().getString("error_update_bundle", bundle.getSymbolicName(),
+			if (Category.DEBUG && InPlace.get().msgOpt().isBundleOperations())
+				InPlace.get().trace("error_update_bundle", bundle.getSymbolicName(),
 						e.getLocalizedMessage());
 			if (e.getType() == BundleException.DUPLICATE_BUNDLE_ERROR) {
 				bundleTransition.setTransitionError(bundle, TransitionError.DUPLICATE);
@@ -786,27 +766,27 @@ class BundleCommandImpl implements BundleCommand {
 			state.uninstall(bundleRegion.getBundleNode(bundle));
 			bundleTransition.setTransition(bundle, Transition.UNINSTALL);
 			bundle.uninstall();
-			if (Category.getState(Category.bundleOperations))
-				TraceMessage.getInstance().getString("uninstall_bundle", bundle.getSymbolicName(),
+			if (InPlace.get().msgOpt().isBundleOperations())
+				InPlace.get().trace("uninstall_bundle", bundle.getSymbolicName(),
 						getStateName(bundle), bundle.getLocation());
 		} catch (IllegalStateException e) {
 			bundleTransition.setTransitionError(bundle);
 			bundleRegion.setActiveState(bundle, state);
-			if (Category.DEBUG && Category.isEnabled(Category.bundleOperations))
-				TraceMessage.getInstance().getString("state_error_uninstall_bundle", bundle, e.getLocalizedMessage());
+			if (Category.DEBUG && InPlace.get().msgOpt().isBundleOperations())
+				InPlace.get().trace("state_error_uninstall_bundle", bundle, e.getLocalizedMessage());
 			throw new InPlaceException(e, "bundle_state_error", bundle);
 		} catch (SecurityException e) {
 			bundleTransition.setTransitionError(bundle);
 			bundleRegion.setActiveState(bundle, state);
-			if (Category.DEBUG && Category.isEnabled(Category.bundleOperations))
-				TraceMessage.getInstance().getString("security_error_uninstall_bundle", bundle,
+			if (Category.DEBUG && InPlace.get().msgOpt().isBundleOperations())
+				InPlace.get().trace("security_error_uninstall_bundle", bundle,
 						e.getLocalizedMessage());
 			throw new InPlaceException(e, "bundle_security_error", bundle);
 		} catch (BundleException e) {
 			bundleTransition.setTransitionError(bundle);
 			bundleRegion.setActiveState(bundle, state);
-			if (Category.DEBUG && Category.isEnabled(Category.bundleOperations))
-				TraceMessage.getInstance().getString("error_uninstall_bundle", bundle, e.getLocalizedMessage());
+			if (Category.DEBUG && InPlace.get().msgOpt().isBundleOperations())
+				InPlace.get().trace("error_uninstall_bundle", bundle, e.getLocalizedMessage());
 			throw new InPlaceException(e, "bundle_uninstall_error", bundle);
 		} finally {
 			try {
@@ -907,8 +887,8 @@ class BundleCommandImpl implements BundleCommand {
 	@Override
 	public Collection<Bundle> getDependencyClosure(Collection<Bundle> bundles) {
 		if (null == frameworkWiring) {
-			if (Category.DEBUG && Category.isEnabled(Category.bundleOperations))
-				TraceMessage.getInstance().getString("null_admin_bundle");
+			if (Category.DEBUG && InPlace.get().msgOpt().isBundleOperations())
+				InPlace.get().trace("null_admin_bundle");
 			throw new InPlaceException("null_framework");
 		}
 		try {
@@ -937,8 +917,8 @@ class BundleCommandImpl implements BundleCommand {
 	@Override
 	public Collection<Bundle> getRemovalPending() throws InPlaceException {
 		if (null == frameworkWiring) {
-			if (Category.DEBUG && Category.isEnabled(Category.bundleOperations))
-				TraceMessage.getInstance().getString("null_admin_bundle");
+			if (Category.DEBUG && InPlace.get().msgOpt().isBundleOperations())
+				InPlace.get().trace("null_admin_bundle");
 			throw new InPlaceException("null_framework");
 		}
 		return frameworkWiring.getRemovalPendingBundles();

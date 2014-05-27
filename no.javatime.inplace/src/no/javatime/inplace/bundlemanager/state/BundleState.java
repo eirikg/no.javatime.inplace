@@ -1,10 +1,9 @@
 package no.javatime.inplace.bundlemanager.state;
 
-import org.osgi.framework.Bundle;
-
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundlemanager.InPlaceException;
-import no.javatime.util.messages.TraceMessage;
+
+import org.osgi.framework.Bundle;
 
 public abstract class BundleState {
 
@@ -77,7 +76,7 @@ public abstract class BundleState {
 	}
 
 	public String error(BundleNode bundleNode, String msg, Class<? extends BundleState> newState) {
-		return TraceMessage.getInstance().getString("state_error",
+		return InPlace.get().trace("state_error",
 				newState.getSimpleName(),getBundle(bundleNode));
 	}
 }

@@ -170,7 +170,7 @@ public class PostBuildListener implements IResourceChangeListener {
 		// Include bundles that are no longer duplicates
 		ActivateBundleJob postActivateBundleJob = null;
 		try {
-			if (InPlace.getDefault().getCommandOptionsService().isUpdateOnBuild() && updateJob.pendingProjects() > 0) {
+			if (InPlace.get().getCommandOptionsService().isUpdateOnBuild() && updateJob.pendingProjects() > 0) {
 				postActivateBundleJob = UpdateScheduler.resolveduplicates(activateProjectJob, activateBundleJob,
 						updateJob);
 			}
@@ -249,7 +249,7 @@ public class PostBuildListener implements IResourceChangeListener {
 			// If this project is part of an activate process and auto update is off, the project is tagged
 			// with an update on activate transition and should be updated
 			try {
-				if (InPlace.getDefault().getCommandOptionsService().isUpdateOnBuild()
+				if (InPlace.get().getCommandOptionsService().isUpdateOnBuild()
 						|| bundleTransition.containsPending(project, Transition.UPDATE_ON_ACTIVATE, Boolean.FALSE)) {
 					UpdateScheduler.addChangedProject(project, updateJob, activateProjectJob);
 					isPending = true;

@@ -16,6 +16,8 @@ import no.javatime.inplace.bundlejobs.events.BundleJobEventListener;
 import no.javatime.inplace.bundlemanager.BundleManager;
 import no.javatime.inplace.bundlemanager.InPlaceException;
 import no.javatime.inplace.dl.preferences.intface.CommandOptions;
+import no.javatime.inplace.extender.provider.Extender;
+import no.javatime.inplace.extender.provider.Extension;
 import no.javatime.inplace.statushandler.BundleStatus;
 import no.javatime.inplace.statushandler.IBundleStatus.StatusCode;
 import no.javatime.inplace.ui.command.handlers.AutoExternalCommandHandler;
@@ -25,9 +27,7 @@ import no.javatime.inplace.ui.command.handlers.DeactivateOnExitHandler;
 import no.javatime.inplace.ui.command.handlers.EagerActivationHandler;
 import no.javatime.inplace.ui.command.handlers.UIContributorsHandler;
 import no.javatime.inplace.ui.command.handlers.UpdateClassPathOnActivateHandler;
-import no.javatime.inplace.ui.extender.Extender;
 import no.javatime.inplace.ui.extender.ExtenderBundleTracker;
-import no.javatime.inplace.ui.extender.Extension;
 import no.javatime.inplace.ui.views.BundleView;
 import no.javatime.util.messages.Message;
 
@@ -86,8 +86,8 @@ public class Activator extends AbstractUIPlugin implements BundleJobEventListene
 		Activator.context = context;
 		try {			
 			extenderBundleTrackerCustomizer = new ExtenderBundleTracker();
-			int trackStates = Bundle.ACTIVE | Bundle.STARTING | Bundle.STOPPING | Bundle.RESOLVED | Bundle.INSTALLED | Bundle.UNINSTALLED;
-			extenderBundleTracker = new BundleTracker<Extender<?>>(context, trackStates, extenderBundleTrackerCustomizer);
+			// int trackStates = Bundle.ACTIVE | Bundle.STARTING | Bundle.STOPPING | Bundle.RESOLVED | Bundle.INSTALLED | Bundle.UNINSTALLED;
+			extenderBundleTracker = new BundleTracker<Extender<?>>(context, Bundle.ACTIVE | Bundle.STARTING, extenderBundleTrackerCustomizer);
 			extenderBundleTracker.open();
 			BundleManager.addBundleJobListener(Activator.getDefault());
 			commandOptions = new Extension<>(CommandOptions.class);

@@ -1,7 +1,10 @@
 package no.javatime.inplace.ui.extender;
 
 import no.javatime.inplace.bundlemanager.InPlaceException;
-import no.javatime.inplace.ui.service.DependencyDialog;
+import no.javatime.inplace.extender.provider.Extender;
+import no.javatime.inplace.extender.provider.Extension;
+import no.javatime.inplace.extender.provider.Introspector;
+import no.javatime.inplace.pl.dependencies.service.DependencyDialog;
 
 public class DependencyDialogExtension extends Extension<DependencyDialog> {
 
