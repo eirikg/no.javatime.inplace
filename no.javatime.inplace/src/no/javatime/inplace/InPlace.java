@@ -35,14 +35,14 @@ import no.javatime.inplace.dl.preferences.intface.MessageOptions;
 import no.javatime.inplace.extender.ExtenderBundleTracker;
 import no.javatime.inplace.extender.provider.Extender;
 import no.javatime.inplace.extender.provider.Extension;
+import no.javatime.inplace.extender.status.BundleStatus;
+import no.javatime.inplace.extender.status.IBundleStatus;
+import no.javatime.inplace.extender.status.IBundleStatus.StatusCode;
 import no.javatime.inplace.pl.trace.intface.Trace;
 import no.javatime.inplace.pl.trace.intface.Trace.Device;
 import no.javatime.inplace.pl.trace.intface.Trace.MessageType;
 import no.javatime.inplace.statushandler.ActionSetContexts;
-import no.javatime.inplace.statushandler.BundleStatus;
 import no.javatime.inplace.statushandler.DynamicExtensionContribution;
-import no.javatime.inplace.statushandler.IBundleStatus;
-import no.javatime.inplace.statushandler.IBundleStatus.StatusCode;
 import no.javatime.util.messages.Category;
 import no.javatime.util.messages.ErrorMessage;
 import no.javatime.util.messages.ExceptionMessage;
@@ -61,7 +61,6 @@ import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.OperationCanceledException;
-import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.IJobManager;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences;
@@ -294,20 +293,13 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 	}
 	
 	public String trace(IBundleStatus status) {
-		String symbolicName = null;
-		Bundle b = status.getBundle();
-		if (null != b) {
-			symbolicName = b.getSymbolicName();
-		} else {
-			symbolicName = status.getPlugin();
-		}
-		IStatus stat = new Status(Status.INFO, symbolicName, status.getMessage());
 		Trace t = getTraceContainerService();
-		return t.trace(stat);		
+		return t.trace(status);		
 	}
+	
 	public String trace(String key, Object... substitutions) {
 		String msg = TraceMessage.getInstance().formatString(key, substitutions);
-		IStatus status = new Status(Status.INFO, InPlace.PLUGIN_ID, msg);
+		IBundleStatus status = new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, msg);
 		Trace t = getTraceContainerService();
 		return t.trace(status);		
 	}

@@ -28,7 +28,8 @@ import org.eclipse.ui.statushandlers.StatusManager;
 import org.osgi.framework.Bundle;
 
 import no.javatime.inplace.InPlace;
-import no.javatime.inplace.statushandler.IBundleStatus.StatusCode;
+import no.javatime.inplace.extender.status.BundleStatus;
+import no.javatime.inplace.extender.status.IBundleStatus.StatusCode;
 import no.javatime.util.messages.Category;
 import no.javatime.util.messages.ErrorMessage;
 import no.javatime.util.messages.UserMessage;

@@ -34,8 +34,8 @@ import no.javatime.inplace.bundlemanager.state.BundleState;
 import no.javatime.inplace.bundlemanager.state.BundleStateFactory;
 import no.javatime.inplace.bundlemanager.state.StateLess;
 import no.javatime.inplace.bundlemanager.state.UninstalledState;
-import no.javatime.inplace.statushandler.BundleStatus;
-import no.javatime.inplace.statushandler.IBundleStatus.StatusCode;
+import no.javatime.inplace.extender.status.BundleStatus;
+import no.javatime.inplace.extender.status.IBundleStatus.StatusCode;
 import no.javatime.util.messages.Category;
 import no.javatime.util.messages.ExceptionMessage;
 import no.javatime.util.messages.WarnMessage;
@@ -91,6 +91,8 @@ class BundleCommandImpl implements BundleCommand {
 	 * Service registrator for the resolve hook factory.
 	 */
 	private ServiceRegistration<ResolverHookFactory> resolveHookRegistration;
+
+	long msec;
 
 	/**
 	 * Default empty constructor.
@@ -239,15 +241,7 @@ class BundleCommandImpl implements BundleCommand {
 				bundleTransition.setTransition(bundle, Transition.RESOLVE);
 				bundleRegion.getActiveState(bundle).resolve(bundleRegion.getBundleNode(bundle));
 			}
-			boolean resolved = frameworkWiring.resolveBundles(bundles);
-			if (InPlace.get().msgOpt().isBundleOperations()) {
-				for (Bundle bundle : bundles) {
-					if ((getState(bundle) & (Bundle.RESOLVED | Bundle.STARTING)) != 0) {
-						InPlace.get().trace("resolve_bundle", bundle, getStateName(bundle));
-					}
-				}
-			}
-			return resolved;
+			return frameworkWiring.resolveBundles(bundles);
 			// Resolved and unresolved bundles are traced and reported in the resolver hook
 		} catch (SecurityException e) {
 			for (Bundle bundle : bundles) {
@@ -301,8 +295,6 @@ class BundleCommandImpl implements BundleCommand {
 		}
 		try {
 			for (Bundle bundle : bundles) {
-				if (InPlace.get().msgOpt().isBundleOperations())
-					InPlace.get().trace("refresh_bundle", bundle);
 				if ((bundle.getState() & (Bundle.UNINSTALLED)) == 0) {
 					bundleTransition.setTransition(bundle, Transition.REFRESH);
 					bundleRegion.getActiveState(bundle).refresh(bundleRegion.getBundleNode(bundle));
@@ -482,6 +474,9 @@ class BundleCommandImpl implements BundleCommand {
 	}
 	
 	
+	public long getExecutionTime() {
+		return msec;
+	}
 		
 	@Override
 	public void start(Bundle bundle, int startOption) 
@@ -494,8 +489,11 @@ class BundleCommandImpl implements BundleCommand {
 		try {
 			bundleTransition.setTransition(bundle, Transition.START);
 			state.start(bundleRegion.getBundleNode(bundle));
+			
 			currentBundle = bundle;
+			long startTime = System.currentTimeMillis();
 			bundle.start(startOption);
+			msec = System.currentTimeMillis() - startTime;
 		} catch (IllegalStateException e) {
 			bundleTransition.setTransitionError(bundle, TransitionError.EXCEPTION);
 			bundleRegion.setActiveState(bundle, state);
@@ -604,11 +602,13 @@ class BundleCommandImpl implements BundleCommand {
 			BundleState state = bundleRegion.getActiveState(bundle);
 			state.stop(bundleRegion.getBundleNode(bundle));
 			currentBundle = bundle;
+			long startTime = System.currentTimeMillis();
 			if (!stopTransient) {
 				bundle.stop();
 			} else {
 				bundle.stop(Bundle.STOP_TRANSIENT);
 			}
+			msec = System.currentTimeMillis() - startTime;
 		} catch (IllegalStateException e) {
 			bundleTransition.setTransitionError(bundle, TransitionError.EXCEPTION);
 			if (Category.DEBUG && InPlace.get().msgOpt().isBundleOperations())
@@ -766,9 +766,6 @@ class BundleCommandImpl implements BundleCommand {
 			state.uninstall(bundleRegion.getBundleNode(bundle));
 			bundleTransition.setTransition(bundle, Transition.UNINSTALL);
 			bundle.uninstall();
-			if (InPlace.get().msgOpt().isBundleOperations())
-				InPlace.get().trace("uninstall_bundle", bundle.getSymbolicName(),
-						getStateName(bundle), bundle.getLocation());
 		} catch (IllegalStateException e) {
 			bundleTransition.setTransitionError(bundle);
 			bundleRegion.setActiveState(bundle, state);

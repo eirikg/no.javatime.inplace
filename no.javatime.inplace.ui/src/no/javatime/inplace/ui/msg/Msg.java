@@ -4,9 +4,7 @@ import org.eclipse.osgi.util.NLS;
 
 	
 public class Msg extends NLS {
-	
-	private static final String BUNDLE_NAME = "no.javatime.inplace.pl.preferences.msg.UIMessages"; //$NON-NLS-1$
-	
+		
 	public static String PREFERENCE_FLUSH_EXCEPTION;
 	public static String IS_TIMEOUT_LABEL;
 	public static String TIMEOUT_SECONDS_LABEL;
@@ -17,6 +15,10 @@ public class Msg extends NLS {
 	public static String IS_EAGER_ON_ACTIVATE_LABEL;
 	public static String IS_AUTO_HANDLE_EXTERNAL_COMMANDS_LABEL;
 	public static String IS_ALLOW_UI_CONTRIBUTIONS_LABEL;
+	
+  public static String UPDATE_BUNDLE_CLASS_PATH_JOB; 
+	
+  private static final String BUNDLE_NAME = "no.javatime.inplace.ui.msg.UIMessages"; //$NON-NLS-1$
 
 	static {
 		// initialize resource bundles

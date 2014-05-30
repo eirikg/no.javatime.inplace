@@ -21,8 +21,8 @@ import no.javatime.inplace.bundlejobs.UninstallJob;
 import no.javatime.inplace.bundlemanager.InPlaceException;
 import no.javatime.inplace.bundlemanager.BundleManager;
 import no.javatime.inplace.bundleproject.ProjectProperties;
-import no.javatime.inplace.statushandler.BundleStatus;
-import no.javatime.inplace.statushandler.IBundleStatus.StatusCode;
+import no.javatime.inplace.extender.status.BundleStatus;
+import no.javatime.inplace.extender.status.IBundleStatus.StatusCode;
 import no.javatime.util.messages.ExceptionMessage;
 
 /**

@@ -19,8 +19,8 @@ import java.util.List;
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundlemanager.BundleManager;
 import no.javatime.inplace.bundlemanager.InPlaceException;
-import no.javatime.inplace.statushandler.BundleStatus;
-import no.javatime.inplace.statushandler.IBundleStatus.StatusCode;
+import no.javatime.inplace.extender.status.BundleStatus;
+import no.javatime.inplace.extender.status.IBundleStatus.StatusCode;
 import no.javatime.util.messages.WarnMessage;
 
 import org.eclipse.core.runtime.Platform;

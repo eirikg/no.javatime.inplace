@@ -87,8 +87,8 @@ public abstract class BundleCommandsContributionItems extends CompoundContributi
 	final protected String showBundleDetailsPage = "Show Bundle Details Page"; 
 	protected static String showConsolePage =      "Show Console Page         Alt+Shift+Q C"; //$NON-NLS-1$
 	protected static String hideConsolePage =      "Hide Console Page"; //$NON-NLS-1$
-	protected static String showMessageView =      "Show Message View"; //$NON-NLS-1$
-	protected static String hideMessageView =      "Hide Message View"; //$NON-NLS-1$
+	protected static String showMessageView =      "Show Bundle Log"; //$NON-NLS-1$
+	protected static String hideMessageView =      "Hide Bundle Log"; //$NON-NLS-1$
 	
 	private IServiceLocator serviceLocator;  
 	

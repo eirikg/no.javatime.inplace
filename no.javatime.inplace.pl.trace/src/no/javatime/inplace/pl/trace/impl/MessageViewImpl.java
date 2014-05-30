@@ -1,8 +1,8 @@
 package no.javatime.inplace.pl.trace.impl;
 
 import no.javatime.inplace.pl.trace.Activator;
-import no.javatime.inplace.pl.trace.LogView;
 import no.javatime.inplace.pl.trace.intface.MessageView;
+import no.javatime.inplace.pl.trace.view.LogView;
 
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.swt.widgets.Display;
@@ -14,7 +14,7 @@ import org.eclipse.ui.part.ViewPart;
 
 public class MessageViewImpl implements MessageView {
 
-	public static String MESSAGE_VIEW_ID = "no.javatime.inplace.pl.traceview";
+	public static String MESSAGE_VIEW_ID = "no.javatime.inplace.pl.trace.view";
 
 	public ImageDescriptor getMessageViewImage() {
 		return LogView.messageViewImage;

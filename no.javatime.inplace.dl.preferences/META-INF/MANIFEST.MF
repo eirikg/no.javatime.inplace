@@ -10,8 +10,7 @@ Require-Bundle: org.eclipse.osgi.services,
 Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Import-Package: no.javatime.inplace.extender.provider,
  org.osgi.framework,
- org.osgi.service.prefs,
- org.osgi.util.tracker
+ org.osgi.service.prefs
 Bundle-ActivationPolicy: lazy
 Command-Options: no.javatime.inplace.dl.preferences.impl.CommandOptionsImpl
 Dependency-Options: no.javatime.inplace.dl.preferences.impl.DependencyOptionsImpl

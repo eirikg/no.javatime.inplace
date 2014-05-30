@@ -3,9 +3,9 @@ package no.javatime.inplace.extender;
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundlemanager.InPlaceException;
 import no.javatime.inplace.extender.provider.Extender;
+import no.javatime.inplace.extender.status.BundleStatus;
+import no.javatime.inplace.extender.status.IBundleStatus.StatusCode;
 import no.javatime.inplace.pl.trace.intface.Trace;
-import no.javatime.inplace.statushandler.BundleStatus;
-import no.javatime.inplace.statushandler.IBundleStatus.StatusCode;
 
 import org.eclipse.ui.statushandlers.StatusManager;
 import org.osgi.framework.Bundle;

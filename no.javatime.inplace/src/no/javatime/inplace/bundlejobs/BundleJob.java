@@ -38,14 +38,14 @@ import no.javatime.inplace.dependencies.ProjectSorter;
 import no.javatime.inplace.dl.preferences.intface.CommandOptions;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
-import no.javatime.inplace.statushandler.BundleStatus;
-import no.javatime.inplace.statushandler.IBundleStatus;
-import no.javatime.inplace.statushandler.IBundleStatus.StatusCode;
+import no.javatime.inplace.extender.status.BundleStatus;
+import no.javatime.inplace.extender.status.IBundleStatus;
+import no.javatime.inplace.extender.status.IBundleStatus.StatusCode;
+import no.javatime.inplace.msg.Msg;
 import no.javatime.util.messages.Category;
 import no.javatime.util.messages.ErrorMessage;
 import no.javatime.util.messages.ExceptionMessage;
 import no.javatime.util.messages.Message;
-import no.javatime.util.messages.TraceMessage;
 import no.javatime.util.messages.UserMessage;
 import no.javatime.util.messages.WarnMessage;
 
@@ -318,17 +318,9 @@ public abstract class BundleJob extends JobStatus {
 				Boolean activated = ProjectProperties.isProjectActivated(project);
 				bundle = bundleCommand.install(project, activated);
 				if (InPlace.get().msgOpt().isBundleOperations()) {
-					String msg = TraceMessage.getInstance().formatString("install_bundle", bundle.getSymbolicName(),
-							bundleCommand.getStateName(bundle), bundle.getLocation());
-					IBundleStatus status = new BundleStatus(StatusCode.INFO, bundle.getSymbolicName(), bundle.getBundleId(), msg, null);				
-					InPlace.get().trace(status);
+					addTrace(Msg.INSTALL_BUNDLE_OPERATION_TRACE, new Object[] 
+							{bundle.getSymbolicName(), bundleCommand.getStateName(bundle), bundle.getLocation()}, bundle);
 				}
-//				if (InPlace.get().msgOpt().isBundleOperations()) {
-//					String msg = TraceMessage.getInstance().formatString("install_bundle", bundle.getSymbolicName(),
-//							bundleCommand.getStateName(bundle), bundle.getLocation());
-//					InPlace.get().trace("install_bundle", bundle.getSymbolicName(),
-//							bundleCommand.getStateName(bundle), bundle.getLocation());
-//				}
 				// Project must be activated and bundle must be successfully installed to be activated
 				if (null != bundle && activated) {
 					activatedBundles.add(bundle);
@@ -382,6 +374,10 @@ public abstract class BundleJob extends JobStatus {
 				localMonitor.subTask(UninstallJob.uninstallSubtaskName + bundle.getSymbolicName());
 				try {
 					bundleCommand.uninstall(bundle, unregister);
+					if (InPlace.get().msgOpt().isBundleOperations()) {
+						addTrace(Msg.UNINSTALL_BUNDLE_OPERATION_TRACE, new Object[] 
+								{bundle.getSymbolicName(), bundleCommand.getStateName(bundle), bundle.getLocation()}, bundle);
+					}
 				} catch (InPlaceException e) {
 					result = addError(e, e.getLocalizedMessage(), bundle.getBundleId());
 				} finally {
@@ -391,7 +387,7 @@ public abstract class BundleJob extends JobStatus {
 		}
 		return result;
 	}
-
+		
 	/**
 	 * Start the specified bundles. If the activation policy for a bundle is lazy the bundle is activated according to the
 	 * declared activation policy. If the activation policy is eager, the bundle is started transient. Only bundles in
@@ -469,20 +465,14 @@ public abstract class BundleJob extends JobStatus {
 						if (ManifestUtil.getlazyActivationPolicy(bundle)) {
 							startOption = Bundle.START_ACTIVATION_POLICY;
 						}
-						long startTime = 0;
-						if (InPlace.get().msgOpt().isBundleOperations()) {
-							startTime = System.currentTimeMillis();
-						}
 						if (timeout) {
 							bundleCommand.start(bundle, startOption, timeoutVal);
 						} else {
 							bundleCommand.start(bundle, startOption);
 						}
 						if (InPlace.get().msgOpt().isBundleOperations()) {
-							long msec = System.currentTimeMillis() - startTime;
-							String msg = TraceMessage.getInstance().formatString("start_bundle", bundle, bundleCommand.getStateName(bundle), msec);							 
-							IBundleStatus status = new BundleStatus(StatusCode.INFO, bundle.getSymbolicName(), bundle.getBundleId(), msg, null);				
-							InPlace.get().trace(status);
+							addTrace(Msg.START_BUNDLE_OPERATION_TRACE, new Object[] {bundle.getSymbolicName(),
+									bundleCommand.getStateName(bundle), Long.toString(bundleCommand.getExecutionTime())}, bundle);
 						}	
 					}
 				} catch (BundleActivatorException e) {
@@ -582,10 +572,6 @@ public abstract class BundleJob extends JobStatus {
 					if (Category.getState(Category.progressBar))
 						sleep(sleepTime);
 					localMonitor.subTask(StopJob.stopSubTaskName + bundle.getSymbolicName());
-					long startTime = 0;
-					if (InPlace.get().msgOpt().isBundleOperations()) {
-						startTime = System.currentTimeMillis();
-					}
 					if ((bundle.getState() & (Bundle.ACTIVE | Bundle.STARTING)) != 0) {
 						if (timeout) {
 							bundleCommand.stop(bundle, false, timeoutVal);
@@ -594,10 +580,8 @@ public abstract class BundleJob extends JobStatus {
 						}
 					}
 					if (InPlace.get().msgOpt().isBundleOperations()) {
-						long msec = System.currentTimeMillis() - startTime;
-						String msg = TraceMessage.getInstance().formatString("stop_bundle", bundle, bundleCommand.getStateName(bundle), msec);							 
-						IBundleStatus status = new BundleStatus(StatusCode.INFO, bundle.getSymbolicName(), bundle.getBundleId(), msg, null);				
-						InPlace.get().trace(status);
+						addTrace(Msg.STOP_BUNDLE_OPERATION_TRACE, new Object[] {bundle.getSymbolicName(),
+								bundleCommand.getStateName(bundle), Long.toString(bundleCommand.getExecutionTime())}, bundle);
 					}	
 				} catch (IllegalStateException e) {
 					result = addError(e, e.getLocalizedMessage(), bundle.getBundleId());
@@ -803,6 +787,11 @@ public abstract class BundleJob extends JobStatus {
 		}
 		try {
 			bundleCommand.refresh(bundlesToRefresh);
+			if (InPlace.get().msgOpt().isBundleOperations()) {
+				for (Bundle bundle : bundlesToRefresh) {
+					addTrace(Msg.REFRESH_BUNDLE_OPERATION_TRACE, new Object[] {bundle.getSymbolicName()}, bundle);
+				}		
+			}
 		} finally {
 			localMonitor.worked(bundlesToRefresh.size());
 		}
@@ -843,6 +832,14 @@ public abstract class BundleJob extends JobStatus {
 			if (Category.getState(Category.progressBar))
 				sleep(sleepTime);
 			localMonitor.subTask(resolveTaskName);
+			if (InPlace.get().msgOpt().isBundleOperations()) {
+				for (Bundle bundle : bundlesToResolve) {
+					if ((bundleCommand.getState(bundle) & (Bundle.RESOLVED | Bundle.STARTING)) != 0) {
+						addTrace(Msg.RESOLVE_BUNDLE_OPERATION_TRACE, new Object[] 
+								{bundle.getSymbolicName(), bundleCommand.getStateName(bundle)}, bundle);
+					}
+				}
+			}
 			if (!bundleCommand.resolve(bundlesToResolve)) {
 				ProjectSorter bs = new ProjectSorter();
 				Collection<IProject> projectsToResolve = bundleRegion.getProjects(bundlesToResolve);
@@ -899,6 +896,14 @@ public abstract class BundleJob extends JobStatus {
 					String rootMsg = WarnMessage.getInstance().formatString("not_resolved_root");
 					createMultiStatus(new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID, rootMsg), startStatus);
 					return notResolvedBundles;
+				}
+			}
+			if (InPlace.get().msgOpt().isBundleOperations()) {
+				for (Bundle bundle : bundlesToResolve) {
+					if ((bundleCommand.getState(bundle) & (Bundle.RESOLVED | Bundle.STARTING)) != 0) {
+						addTrace(Msg.RESOLVE_BUNDLE_OPERATION_TRACE, new Object[] 
+								{bundle.getSymbolicName(), bundleCommand.getStateName(bundle)}, bundle);
+					}
 				}
 			}
 			if (monitor.isCanceled()) {
@@ -998,7 +1003,7 @@ public abstract class BundleJob extends JobStatus {
 			BundleProject.setDevClasspath(BundleProject.getSymbolicNameFromManifest(project), BundleProject
 					.getDefaultOutputLocation(project).toString());
 			if (getOptionsService().isUpdateDefaultOutPutFolder()) {
-				BundleProject.addOutputLocationToBundleClassPath(project);
+				BundleProject.addOutputLocationToBundleClassPath(project, this);
 			}
 		} catch (InPlaceException e) {
 			String msg = ExceptionMessage.getInstance().formatString("error_resolve_class_path", project);

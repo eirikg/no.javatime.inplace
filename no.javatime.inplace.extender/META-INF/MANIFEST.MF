@@ -5,9 +5,13 @@ Bundle-SymbolicName: no.javatime.inplace.extender
 Bundle-Version: 0.0.1.qualifier
 Bundle-Activator: no.javatime.inplace.extender.Activator
 Bundle-Vendor: Lingo as
-Bundle-RequiredExecutionEnvironment: JavaSE-1.8
+Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Import-Package: no.javatime.util.messages,
  org.osgi.framework,
  org.osgi.util.tracker
 Bundle-ActivationPolicy: lazy
-Export-Package: no.javatime.inplace.extender.provider
+Export-Package: no.javatime.inplace.extender.provider,
+ no.javatime.inplace.extender.status
+Require-Bundle: org.eclipse.core.runtime,
+ org.eclipse.pde.core,
+ org.eclipse.core.resources

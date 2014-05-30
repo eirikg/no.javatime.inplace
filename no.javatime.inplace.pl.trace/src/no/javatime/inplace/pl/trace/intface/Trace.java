@@ -1,6 +1,6 @@
 package no.javatime.inplace.pl.trace.intface;
 
-import org.eclipse.core.runtime.IStatus;
+import no.javatime.inplace.extender.status.IBundleStatus;
 
 
 
@@ -47,15 +47,15 @@ public interface Trace {
 	 * 
 	 * @see MessageView
 	 */
-	public String trace(IStatus status);
+	public String trace(IBundleStatus status);
 	
-	public String message(IStatus status);
+	public String message(IBundleStatus status);
 
-	public String user(IStatus status);
+	public String user(IBundleStatus status);
 	
-	public String exception(IStatus status);
+	public String exception(IBundleStatus status);
 
-	public String warning(IStatus status);
+	public String warning(IBundleStatus status);
 
-	public String error(IStatus status);
+	public String error(IBundleStatus status);
 }

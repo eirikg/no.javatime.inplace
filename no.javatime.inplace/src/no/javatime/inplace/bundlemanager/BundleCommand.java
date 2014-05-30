@@ -282,4 +282,6 @@ public interface BundleCommand {
 	
 	public Bundle getCurrentBundle();
 	public void setCurrentBundle(Bundle bundle);
+	public long getExecutionTime();
+
 }

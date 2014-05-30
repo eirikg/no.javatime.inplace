@@ -30,13 +30,14 @@ import no.javatime.inplace.bundleproject.BundleProject;
 import no.javatime.inplace.bundleproject.OpenProjectHandler;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.extender.provider.Extension;
+import no.javatime.inplace.extender.status.BundleStatus;
+import no.javatime.inplace.extender.status.IBundleStatus;
+import no.javatime.inplace.extender.status.IBundleStatus.StatusCode;
 import no.javatime.inplace.pl.dependencies.service.DependencyDialog;
 import no.javatime.inplace.pl.trace.intface.MessageView;
-import no.javatime.inplace.statushandler.BundleStatus;
-import no.javatime.inplace.statushandler.IBundleStatus;
-import no.javatime.inplace.statushandler.IBundleStatus.StatusCode;
 import no.javatime.inplace.ui.Activator;
 import no.javatime.inplace.ui.command.contributions.BundleCommandsContributionItems;
+import no.javatime.inplace.ui.msg.Msg;
 import no.javatime.inplace.ui.views.BundleProperties;
 import no.javatime.inplace.ui.views.BundleView;
 import no.javatime.util.messages.Category;
@@ -229,7 +230,7 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 				
 					for (IProject project : projects) {
 							try {					
-								BundleProject.toggleActivationPolicy(project);
+								BundleProject.toggleActivationPolicy(project, this);
 								BundleRegion bundleRegion = BundleManager.getRegion();
 								// No bundle jobs (which updates the bundle view) are run when the project(s) are deactivated or auto build is off
 								Bundle bundle = bundleRegion.get(project);
@@ -288,7 +289,7 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 		if (so.saveModifiedFiles()) {
 			OpenProjectHandler.waitOnBuilder();
 			final ResetJob resetJob = new ResetJob();
-			WorkspaceJob updateBundleClassPathJob = new BundleJob(Message.getInstance().formatString("update_bundle_class_path_job_name")) {
+			WorkspaceJob updateBundleClassPathJob = new BundleJob(Msg.UPDATE_BUNDLE_CLASS_PATH_JOB) {
 				@Override
 				public IBundleStatus runInWorkspace(IProgressMonitor monitor) throws CoreException {
 
@@ -296,11 +297,11 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 						try {
 							if (!ProjectProperties.hasManifestBuildErrors(project)) {
 								if (addToPath) {
-									if (BundleProject.addOutputLocationToBundleClassPath(project)) {
+									if (BundleProject.addOutputLocationToBundleClassPath(project, this)) {
 										resetJob.addPendingProject(project);
 									} 
 								} else {
-									if (BundleProject.removeOutputLocationFromClassPath(project)) {
+									if (BundleProject.removeOutputLocationFromClassPath(project, this)) {
 										resetJob.addPendingProject(project);
 									}
 								}
@@ -462,7 +463,7 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 		Extension<MessageView> ext = new Extension<>(MessageView.class);
 		MessageView viewService = ext.getService();
 		if (null == viewService) {
-			throw new InPlaceException("failed_to_get_service_for_interface", DependencyDialog.class.getName());
+			throw new InPlaceException("failed_to_get_service_for_interface", MessageView.class.getName());
 		}
 		if (viewService.isVisible()) {
 			viewService.hide();

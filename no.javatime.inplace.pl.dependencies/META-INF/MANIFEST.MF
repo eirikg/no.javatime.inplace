@@ -12,6 +12,6 @@ Bundle-ManifestVersion: 2
 Import-Package: no.javatime.inplace.bundlemanager,
  no.javatime.inplace.dl.preferences.intface,
  no.javatime.inplace.extender.provider
-Bundle-SymbolicName: no.javatime.inplace.pl.dependencies
+Bundle-SymbolicName: no.javatime.inplace.pl.dependencies;singleton:=true
 Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 

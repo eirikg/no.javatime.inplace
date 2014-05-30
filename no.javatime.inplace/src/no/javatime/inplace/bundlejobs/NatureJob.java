@@ -19,11 +19,12 @@ import no.javatime.inplace.bundlemanager.BundleTransition.Transition;
 import no.javatime.inplace.bundlemanager.InPlaceException;
 import no.javatime.inplace.bundleproject.BundleProject;
 import no.javatime.inplace.bundleproject.ProjectProperties;
-import no.javatime.inplace.statushandler.BundleStatus;
-import no.javatime.inplace.statushandler.IBundleStatus;
-import no.javatime.inplace.statushandler.IBundleStatus.StatusCode;
+import no.javatime.inplace.extender.status.BundleStatus;
+import no.javatime.inplace.extender.status.IBundleStatus;
+import no.javatime.inplace.extender.status.IBundleStatus.StatusCode;
 import no.javatime.util.messages.Category;
 import no.javatime.util.messages.Message;
+import no.javatime.util.messages.TraceMessage;
 import no.javatime.util.messages.WarnMessage;
 
 import org.eclipse.core.resources.IProject;
@@ -33,7 +34,9 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.core.runtime.SubProgressMonitor;
+import org.eclipse.pde.core.project.IBundleProjectDescription;
 import org.osgi.framework.Bundle;
+import org.osgi.framework.Constants;
 
 /**
  * Enabling and disabling the JavaTime nature of projects. Checks and reports on duplicate bundles.
@@ -114,7 +117,12 @@ public abstract class NatureJob extends BundleJob {
 					toggleNatureActivation(project, new SubProgressMonitor(monitor, 1));
 					bundleTransition.clearTransitionError(project);
 					if (getOptionsService().isUpdateDefaultOutPutFolder()) {
-						BundleProject.removeOutputLocationFromClassPath(project);
+						boolean removed = BundleProject.removeOutputLocationFromClassPath(project, this);
+						if (InPlace.get().msgOpt().isBundleOperations() && removed) {
+							IBundleProjectDescription bd = InPlace.get().getBundleDescription(project);						
+							String bundleClassPath = bd.getHeader(Constants.BUNDLE_CLASSPATH);
+							
+						}
 					}
 				}
 			} catch (InPlaceException e) {
@@ -126,7 +134,7 @@ public abstract class NatureJob extends BundleJob {
 		}
 		return getLastStatus();
 	}
-
+	
 	/**
 	 * Activates the specified projects by adding the JavaTime nature to the projects. Updates output folder and
 	 * reinstalls bundles with lazy activation policy when the Set Activation Policy to Eager on activate option
@@ -157,7 +165,7 @@ public abstract class NatureJob extends BundleJob {
 						if (getOptionsService().isEagerOnActivate()) {
 							Boolean isLazy = BundleProject.getLazyActivationPolicyFromManifest(project.getProject());
 							if (isLazy) {
-								BundleProject.toggleActivationPolicy(project);
+								BundleProject.toggleActivationPolicy(project, this);
 								// Uninstall and install bundles when toggling from lazy to eager activation policy
 								if (null != bundle) {
 									reInstall(Collections.<IProject>singletonList(project), new SubProgressMonitor(monitor, 1));
@@ -219,8 +227,14 @@ public abstract class NatureJob extends BundleJob {
 						System.arraycopy(natures, i + 1, newNatures, i, natures.length - i - 1);
 						description.setNatureIds(newNatures);
 						project.setDescription(description, null);
-						if (InPlace.get().msgOpt().isBundleOperations())
-							InPlace.get().trace("projects_nature_disabled", project.getName());
+						if (InPlace.get().msgOpt().isBundleOperations()) {
+							String msg = TraceMessage.getInstance().formatString("projects_nature_disabled", project.getName());
+							Bundle bundle = bundleRegion.get(project);
+							if (null == bundle) {
+								bundle = InPlace.get().getBundle();
+							}
+							addTrace(msg, bundle, project);
+						}
 						localMonitor.worked(1);
 						return;
 					}
@@ -232,8 +246,14 @@ public abstract class NatureJob extends BundleJob {
 				newNatures[natures.length] = JavaTimeNature.JAVATIME_NATURE_ID;
 				description.setNatureIds(newNatures);
 				project.setDescription(description, null);
-				if (InPlace.get().msgOpt().isBundleOperations())
-					InPlace.get().trace("projects_nature_enabled", project.getName());
+				if (InPlace.get().msgOpt().isBundleOperations()) {
+					String msg = TraceMessage.getInstance().formatString("projects_nature_enabled", project.getName());
+					Bundle bundle = bundleRegion.get(project);
+					if (null == bundle) {
+						bundle = InPlace.get().getBundle();
+					}
+					addTrace(msg, bundle, project);
+				}
 				localMonitor.worked(1);
 			} catch (CoreException e) {
 				throw new InPlaceException(e, "error_changing_nature", project.getName());

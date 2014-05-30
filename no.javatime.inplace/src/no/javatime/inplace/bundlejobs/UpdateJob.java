@@ -29,14 +29,14 @@ import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.dependencies.BundleSorter;
 import no.javatime.inplace.dependencies.CircularReferenceException;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
-import no.javatime.inplace.statushandler.BundleStatus;
-import no.javatime.inplace.statushandler.IBundleStatus;
-import no.javatime.inplace.statushandler.IBundleStatus.StatusCode;
+import no.javatime.inplace.extender.status.BundleStatus;
+import no.javatime.inplace.extender.status.IBundleStatus;
+import no.javatime.inplace.extender.status.IBundleStatus.StatusCode;
+import no.javatime.inplace.msg.Msg;
 import no.javatime.util.messages.Category;
 import no.javatime.util.messages.ErrorMessage;
 import no.javatime.util.messages.ExceptionMessage;
 import no.javatime.util.messages.Message;
-import no.javatime.util.messages.TraceMessage;
 import no.javatime.util.messages.UserMessage;
 
 import org.eclipse.core.resources.IProject;
@@ -318,13 +318,11 @@ public class UpdateJob extends BundleJob {
 					duplicateInstanceCandidates.add(bundle);
 					duplicateInstanceGroups.put(bundle, duplicateInstanceCandidates);
 					bundleCommand.getResolverHookFactory().setGroups(duplicateInstanceGroups);					
-					if (InPlace.get().msgOpt().isBundleOperations()) {
-						String msg = TraceMessage.getInstance().formatString("update_bundle", bundle, bundleCommand.getStateName(bundle));
-						IBundleStatus status = new BundleStatus(StatusCode.INFO, bundle.getSymbolicName(), bundle.getBundleId(), msg, null);				
-						InPlace.get().trace(status);
-					}
-					
 					bundleCommand.update(bundle);
+					if (InPlace.get().msgOpt().isBundleOperations()) {
+						addTrace(Msg.UPDATE_BUNDLE_OPERATION_TRACE, new Object[] 
+								{bundle.getSymbolicName(), bundleCommand.getStateName(bundle)}, bundle);
+					}
 				} catch (DuplicateBundleException e) {
 					handleDuplicateException(bundleRegion.getProject(bundle), e, null);
 					String msg = ErrorMessage.getInstance().formatString("duplicate_error", bundle.getSymbolicName(),

@@ -5,13 +5,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
-import org.eclipse.core.resources.IProject;
-import org.eclipse.core.resources.WorkspaceJob;
-import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.OperationCanceledException;
-
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundlemanager.BundleCommand;
 import no.javatime.inplace.bundlemanager.BundleManager;
@@ -21,17 +14,26 @@ import no.javatime.inplace.bundlemanager.DuplicateBundleException;
 import no.javatime.inplace.bundlemanager.ProjectLocationException;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.dependencies.ProjectSorter;
-import no.javatime.inplace.statushandler.BundleStatus;
-import no.javatime.inplace.statushandler.IBundleStatus;
-import no.javatime.inplace.statushandler.IBundleStatus.StatusCode;
+import no.javatime.inplace.extender.status.BundleStatus;
+import no.javatime.inplace.extender.status.IBundleStatus;
+import no.javatime.inplace.extender.status.IBundleStatus.StatusCode;
 import no.javatime.util.messages.ErrorMessage;
 import no.javatime.util.messages.ExceptionMessage;
+
+import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.WorkspaceJob;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.OperationCanceledException;
+import org.eclipse.osgi.util.NLS;
+import org.osgi.framework.Bundle;
 
 /**
  * Container class for bundle status objects added during a bundle job. A status object contains a status code
  * and one or more elements of type exception, message, project and a bundle id.
  * 
- * @see no.javatime.inplace.statushandler.IBundleStatus
+ * @see no.javatime.inplace.extender.status.IBundleStatus
  */
 public abstract class JobStatus extends WorkspaceJob {
 
@@ -53,6 +55,8 @@ public abstract class JobStatus extends WorkspaceJob {
 
 	// List of status objects
 	private List<IBundleStatus> statusList = new ArrayList<IBundleStatus>();
+	
+	private List<IBundleStatus> traceStatusList = new ArrayList<IBundleStatus>();
 
 	/**
 	 * Runs the bundle(s) status operation.
@@ -91,6 +95,64 @@ public abstract class JobStatus extends WorkspaceJob {
 		}
 		return status;
 	}
+
+	/**
+	 * Get all trace status objects added by this job
+	 * 
+	 * @return a list of status trace objects
+	 * 
+	 * @see #addTrace(String, Bundle, IProject)
+	 * @see #addTrace(String, Object[], Object)
+	 */
+	public Collection<IBundleStatus> getTraceList() {
+		return traceStatusList;
+	}
+	
+	/**
+	 * Creates a bundle status trace object and stores it in a trace list
+	 *<p>
+	 *Either the specified bundle or project may be null, but not both
+	 * 
+	 * @param message the message part of the created trace object 
+	 * @param bundle the bundle part of the created trace object
+	 * @param project the project part of the created trace object
+	 * @return the bundle status trace object added to the trace list
+	 * @see #addTrace(String, Object[], Object)
+	 * @see #getTraceList()
+	 */
+	public IBundleStatus addTrace(String message, Bundle bundle, IProject project) {
+		IBundleStatus status = new BundleStatus(StatusCode.INFO, bundle, project, message, null);
+		this.traceStatusList.add(status);
+		return status;
+	}
+	/**
+	 * Creates a bundle status trace object and adds it to the bundle status trace list
+	 * <p>
+	 * If the specified bundle project is of type {@code IProject}, its
+	 * corresponding bundle will be added to the status trace object if it
+	 * exists and if of type {@code Bundle} its project will be added.
+	 *  
+	 * @param key a {@code NLS} identifier
+	 * @param substitutions parameters to the {@code NLS} string
+	 * @param bundleProject a {@code Bundle} or an {@code IProject}
+	 * @see #addTrace(String, Bundle, IProject)
+	 * @see #getTraceList()
+	 */
+	public void addTrace(String key, Object[] substitutions, Object bundleProject) {
+		Bundle bundle = null;
+		IProject project = null;;
+		if (null != bundleProject) {
+			if (bundleProject instanceof IProject) {
+				project = (IProject) bundleProject;
+				bundle = bundleRegion.get(project);
+			} else if (bundleProject instanceof Bundle) {
+				bundle = (Bundle) bundleProject;
+				project = bundleRegion.getProject(bundle);
+			}
+		}
+		addTrace(NLS.bind(key, substitutions), bundle, project);
+	}
+	
 
 	/**
 	 * Adds an error to the status list

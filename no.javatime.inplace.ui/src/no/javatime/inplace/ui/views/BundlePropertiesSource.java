@@ -17,9 +17,9 @@ import org.eclipse.ui.views.properties.PropertyDescriptor;
 
 import no.javatime.inplace.bundlemanager.InPlaceException;
 import no.javatime.inplace.bundlemanager.ProjectLocationException;
-import no.javatime.inplace.statushandler.BundleStatus;
-import no.javatime.inplace.statushandler.IBundleStatus;
-import no.javatime.inplace.statushandler.IBundleStatus.StatusCode;
+import no.javatime.inplace.extender.status.BundleStatus;
+import no.javatime.inplace.extender.status.IBundleStatus;
+import no.javatime.inplace.extender.status.IBundleStatus.StatusCode;
 import no.javatime.inplace.ui.Activator;
 import no.javatime.util.messages.ErrorMessage;
 import no.javatime.util.messages.Message;

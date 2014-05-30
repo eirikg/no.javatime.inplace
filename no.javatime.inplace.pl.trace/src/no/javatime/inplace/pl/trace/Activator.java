@@ -1,23 +1,13 @@
-/*******************************************************************************
- * Copyright (c) 2007 IBM Corporation and others.
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v1.0
- * which accompanies this distribution, and is available at
- * http://www.eclipse.org/legal/epl-v10.html
- *
- * Contributors:
- *     IBM Corporation - initial API and implementation
- *     Jacek Pospychala <jacek.pospychala@pl.ibm.com> - bug 202583
- *******************************************************************************/
 package no.javatime.inplace.pl.trace;
 
 import java.io.File;
 import java.util.Dictionary;
 
 import no.javatime.inplace.extender.provider.Extender;
+import no.javatime.inplace.pl.trace.dl.LogWriter;
 import no.javatime.inplace.pl.trace.intface.MessageView;
 import no.javatime.inplace.pl.trace.intface.Trace;
-import no.javatime.inplace.pl.trace.logservice.TraceLogWriter;
+import no.javatime.inplace.pl.trace.view.SharedImages;
 
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Platform;
@@ -42,7 +32,7 @@ public class Activator extends AbstractUIPlugin {
 
 	// Log path and file
 	public static final String F_META_AREA = ".metadata"; //$NON-NLS-1$
-	public static final String F_TRACE = "command.log"; //$NON-NLS-1$
+	public static final String F_TRACE = "bundle.log"; //$NON-NLS-1$
 	private IPath traceLogPath;
 	private File fInputFile;
 	
@@ -50,6 +40,7 @@ public class Activator extends AbstractUIPlugin {
 	private IWorkbenchWindow workBenchWindow;
 
 	public static final String PLUGIN_ID = "no.javatime.inplace.pl.trace"; //$NON-NLS-1$
+	public static final String TRACE_LOGGER_NAME = "no.javatime.inplace.pl.trace.logger"; //$NON-NLS-1$
 
 	private static Activator plugin;
 	private static BundleContext context;
@@ -83,9 +74,9 @@ public class Activator extends AbstractUIPlugin {
 		String msgImpl = dictionary.get(MessageView.MESSAGE_VIEW_HEADER);
 	  Extender.<MessageView>register(bundle, MessageView.class, msgImpl);
 	  
-		TraceLogWriter writer = new TraceLogWriter(getLogService(), context.getBundle());
+		LogWriter logWriter = new LogWriter(Activator.getDefault().getLogFile(), TRACE_LOGGER_NAME);
 		ExtendedLogReaderService readerService = getLogReaderService(); 
-		readerService.addLogListener(writer, writer);
+		readerService.addLogListener(logWriter, logWriter);
 	}
 
 	/*
@@ -136,9 +127,6 @@ public class Activator extends AbstractUIPlugin {
 	public ExtendedLogReaderService getLogReaderService() {
 
 		if (null == extendedLogReaderServiceTracker) {
-			if (null == context) {
-				return null;
-			}
 			extendedLogReaderServiceTracker = new 
 					ServiceTracker<ExtendedLogReaderService, ExtendedLogReaderService>(context, ExtendedLogReaderService.class, null);
 			extendedLogReaderServiceTracker.open();
@@ -153,9 +141,6 @@ public class Activator extends AbstractUIPlugin {
 	public ExtendedLogService getLogService() {
 
 		if (null == extendedLogServiceTracker) {
-			if (null == context) {
-				return null;
-			}
 			extendedLogServiceTracker = new 
 					ServiceTracker<ExtendedLogService, ExtendedLogService>(context, ExtendedLogService.class, null);
 			extendedLogServiceTracker.open();
@@ -168,7 +153,7 @@ public class Activator extends AbstractUIPlugin {
 		if (null == bundle) {
 			return logService.getLogger(null);
 		} else {
-			return logService.getLogger(bundle, TraceLogWriter.TRACE_LOGGER_NAME); 			
+			return logService.getLogger(bundle, TRACE_LOGGER_NAME); 			
 		}
 	}
 
