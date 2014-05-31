@@ -14,6 +14,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 
+import no.javatime.inplace.bundle.log.status.BundleStatus;
+import no.javatime.inplace.bundle.log.status.IBundleStatus.StatusCode;
 import no.javatime.inplace.bundlemanager.BundleCommand;
 import no.javatime.inplace.bundlemanager.BundleManager;
 import no.javatime.inplace.bundlemanager.BundleTransition;
@@ -27,8 +29,6 @@ import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.dependencies.BundleSorter;
 import no.javatime.inplace.dependencies.CircularReferenceException;
 import no.javatime.inplace.dependencies.ProjectSorter;
-import no.javatime.inplace.extender.status.BundleStatus;
-import no.javatime.inplace.extender.status.IBundleStatus.StatusCode;
 import no.javatime.inplace.ui.Activator;
 import no.javatime.util.messages.ErrorMessage;
 import no.javatime.util.messages.Message;

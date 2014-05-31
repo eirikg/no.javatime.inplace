@@ -2,11 +2,9 @@ package no.javatime.inplace;
 
 import java.util.Collection;
 
-import org.eclipse.core.resources.IProject;
-import org.eclipse.core.runtime.preferences.IEclipsePreferences;
-import org.eclipse.ui.IStartup;
-import org.eclipse.ui.statushandlers.StatusManager;
-
+import no.javatime.inplace.bundle.log.status.BundleStatus;
+import no.javatime.inplace.bundle.log.status.IBundleStatus;
+import no.javatime.inplace.bundle.log.status.IBundleStatus.StatusCode;
 import no.javatime.inplace.bundlejobs.ActivateBundleJob;
 import no.javatime.inplace.bundlemanager.BundleManager;
 import no.javatime.inplace.bundlemanager.BundleTransition;
@@ -14,12 +12,14 @@ import no.javatime.inplace.bundlemanager.BundleTransition.Transition;
 import no.javatime.inplace.bundlemanager.ProjectLocationException;
 import no.javatime.inplace.bundleproject.BundleProject;
 import no.javatime.inplace.bundleproject.ProjectProperties;
-import no.javatime.inplace.extender.status.BundleStatus;
-import no.javatime.inplace.extender.status.IBundleStatus;
-import no.javatime.inplace.extender.status.IBundleStatus.StatusCode;
 import no.javatime.util.messages.Category;
 import no.javatime.util.messages.ExceptionMessage;
 import no.javatime.util.messages.UserMessage;
+
+import org.eclipse.core.resources.IProject;
+import org.eclipse.core.runtime.preferences.IEclipsePreferences;
+import org.eclipse.ui.IStartup;
+import org.eclipse.ui.statushandlers.StatusManager;
 
 /**
  * In an activated workspace install all projects and set activated projects to the same state as they had at the last shutdown.

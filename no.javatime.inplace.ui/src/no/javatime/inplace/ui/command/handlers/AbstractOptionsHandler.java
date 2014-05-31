@@ -14,8 +14,12 @@ import java.util.Map;
 
 import no.javatime.inplace.bundlemanager.InPlaceException;
 import no.javatime.inplace.dl.preferences.intface.CommandOptions;
-import no.javatime.inplace.extender.status.BundleStatus;
-import no.javatime.inplace.extender.status.IBundleStatus.StatusCode;
+import no.javatime.inplace.bundle.log.intface.BundleLog;
+import no.javatime.inplace.bundle.log.intface.BundleLog.Device;
+import no.javatime.inplace.bundle.log.intface.BundleLog.MessageType;
+import no.javatime.inplace.bundle.log.status.BundleStatus;
+import no.javatime.inplace.bundle.log.status.IBundleStatus;
+import no.javatime.inplace.bundle.log.status.IBundleStatus.StatusCode;
 import no.javatime.inplace.ui.Activator;
 import no.javatime.inplace.ui.msg.Msg;
 

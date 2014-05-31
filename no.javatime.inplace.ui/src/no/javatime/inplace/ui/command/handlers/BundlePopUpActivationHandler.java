@@ -14,6 +14,17 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 
+import no.javatime.inplace.bundle.log.status.BundleStatus;
+import no.javatime.inplace.bundle.log.status.IBundleStatus.StatusCode;
+import no.javatime.inplace.bundlemanager.InPlaceException;
+import no.javatime.inplace.bundleproject.BundleProject;
+import no.javatime.inplace.bundleproject.ProjectProperties;
+import no.javatime.inplace.ui.Activator;
+import no.javatime.inplace.ui.command.contributions.BundleMainCommandsContributionItems;
+import no.javatime.inplace.ui.command.contributions.BundlePopUpCommandsContributionItems;
+import no.javatime.util.messages.ExceptionMessage;
+import no.javatime.util.messages.WarnMessage;
+
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.resources.IProject;
@@ -24,17 +35,6 @@ import org.eclipse.ui.commands.IElementUpdater;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.menus.UIElement;
 import org.eclipse.ui.statushandlers.StatusManager;
-
-import no.javatime.inplace.bundlemanager.InPlaceException;
-import no.javatime.inplace.bundleproject.BundleProject;
-import no.javatime.inplace.bundleproject.ProjectProperties;
-import no.javatime.inplace.extender.status.BundleStatus;
-import no.javatime.inplace.extender.status.IBundleStatus.StatusCode;
-import no.javatime.inplace.ui.Activator;
-import no.javatime.inplace.ui.command.contributions.BundleMainCommandsContributionItems;
-import no.javatime.inplace.ui.command.contributions.BundlePopUpCommandsContributionItems;
-import no.javatime.util.messages.ExceptionMessage;
-import no.javatime.util.messages.WarnMessage;
 
 /**
  * Handles pop-up menu from java project in package explorer and bundle view.

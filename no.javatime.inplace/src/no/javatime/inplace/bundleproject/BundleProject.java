@@ -21,10 +21,10 @@ import java.util.Collection;
 import java.util.Properties;
 
 import no.javatime.inplace.InPlace;
+import no.javatime.inplace.bundle.log.status.BundleStatus;
+import no.javatime.inplace.bundle.log.status.IBundleStatus.StatusCode;
 import no.javatime.inplace.bundlejobs.BundleJob;
 import no.javatime.inplace.bundlemanager.InPlaceException;
-import no.javatime.inplace.extender.status.BundleStatus;
-import no.javatime.inplace.extender.status.IBundleStatus.StatusCode;
 import no.javatime.inplace.msg.Msg;
 import no.javatime.util.messages.Category;
 import no.javatime.util.messages.Message;

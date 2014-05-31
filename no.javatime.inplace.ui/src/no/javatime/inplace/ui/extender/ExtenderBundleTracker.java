@@ -1,10 +1,10 @@
 package no.javatime.inplace.ui.extender;
 
+import no.javatime.inplace.bundle.log.status.BundleStatus;
+import no.javatime.inplace.bundle.log.status.IBundleStatus.StatusCode;
 import no.javatime.inplace.bundlemanager.BundleManager;
 import no.javatime.inplace.bundlemanager.InPlaceException;
 import no.javatime.inplace.extender.provider.Extender;
-import no.javatime.inplace.extender.status.BundleStatus;
-import no.javatime.inplace.extender.status.IBundleStatus.StatusCode;
 import no.javatime.inplace.pl.dependencies.service.DependencyDialog;
 import no.javatime.inplace.ui.Activator;
 

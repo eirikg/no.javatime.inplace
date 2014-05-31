@@ -30,11 +30,14 @@ import no.javatime.inplace.bundleproject.BundleProject;
 import no.javatime.inplace.bundleproject.OpenProjectHandler;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.extender.provider.Extension;
-import no.javatime.inplace.extender.status.BundleStatus;
-import no.javatime.inplace.extender.status.IBundleStatus;
-import no.javatime.inplace.extender.status.IBundleStatus.StatusCode;
 import no.javatime.inplace.pl.dependencies.service.DependencyDialog;
-import no.javatime.inplace.pl.trace.intface.MessageView;
+import no.javatime.inplace.bundle.log.intface.BundleLogView;
+import no.javatime.inplace.bundle.log.intface.BundleLog;
+import no.javatime.inplace.bundle.log.intface.BundleLog.Device;
+import no.javatime.inplace.bundle.log.intface.BundleLog.MessageType;
+import no.javatime.inplace.bundle.log.status.BundleStatus;
+import no.javatime.inplace.bundle.log.status.IBundleStatus;
+import no.javatime.inplace.bundle.log.status.IBundleStatus.StatusCode;
 import no.javatime.inplace.ui.Activator;
 import no.javatime.inplace.ui.command.contributions.BundleCommandsContributionItems;
 import no.javatime.inplace.ui.msg.Msg;
@@ -460,10 +463,10 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 	 * Toggles between showing and hiding the message view
 	 */
 	protected void messageViewHandler() {
-		Extension<MessageView> ext = new Extension<>(MessageView.class);
-		MessageView viewService = ext.getService();
+		Extension<BundleLogView> ext = new Extension<>(BundleLogView.class);
+		BundleLogView viewService = ext.getService();
 		if (null == viewService) {
-			throw new InPlaceException("failed_to_get_service_for_interface", MessageView.class.getName());
+			throw new InPlaceException("failed_to_get_service_for_interface", BundleLogView.class.getName());
 		}
 		if (viewService.isVisible()) {
 			viewService.hide();

@@ -17,6 +17,8 @@ import java.util.Map;
 import java.util.Set;
 
 import no.javatime.inplace.InPlace;
+import no.javatime.inplace.bundle.log.status.BundleStatus;
+import no.javatime.inplace.bundle.log.status.IBundleStatus.StatusCode;
 import no.javatime.inplace.bundlejobs.ActivateProjectJob;
 import no.javatime.inplace.bundlemanager.BundleTransition.Transition;
 import no.javatime.inplace.bundlemanager.state.BundleStateFactory;
@@ -24,8 +26,6 @@ import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.dependencies.BundleDependencies;
 import no.javatime.inplace.dependencies.CircularReferenceException;
 import no.javatime.inplace.dependencies.ProjectSorter;
-import no.javatime.inplace.extender.status.BundleStatus;
-import no.javatime.inplace.extender.status.IBundleStatus.StatusCode;
 import no.javatime.util.messages.Category;
 import no.javatime.util.messages.ExceptionMessage;
 import no.javatime.util.messages.UserMessage;

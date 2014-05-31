@@ -1,21 +1,25 @@
 Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Command Trace
-Bundle-SymbolicName: no.javatime.inplace.pl.trace;singleton:=true
+Bundle-SymbolicName: no.javatime.inplace.bundle.log;singleton:=true
 Bundle-Version: 0.1.0.qualifier
-Bundle-Activator: no.javatime.inplace.pl.trace.Activator
+Bundle-Activator: no.javatime.inplace.bundle.log.Activator
 Bundle-Vendor: JavaTime
-Trace-Container: no.javatime.inplace.pl.trace.impl.TraceImpl
-Trace-View: no.javatime.inplace.pl.trace.impl.MessageViewImpl
+BundleLog-Container: no.javatime.inplace.bundle.log.impl.BundleLogimpl
+BundleLog-View: no.javatime.inplace.bundle.log.impl.BundleLogViewImpl
 Require-Bundle: org.eclipse.core.runtime,
  org.eclipse.core.filesystem,
  org.eclipse.ui,
  org.eclipse.ui.ide,
- org.eclipse.osgi.services
+ org.eclipse.osgi.services,
+ org.eclipse.pde.core,
+ org.eclipse.core.resources
 Import-Package: com.ibm.icu.text,
+ no.javatime.inplace.bundle.log.status,
+ no.javatime.inplace.dl.preferences.intface,
  no.javatime.inplace.extender.provider,
- no.javatime.inplace.extender.status,
  no.javatime.util.messages
 Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Bundle-ActivationPolicy: lazy
-Export-Package: no.javatime.inplace.pl.trace.intface
+Export-Package: no.javatime.inplace.bundle.log.intface,
+ no.javatime.inplace.bundle.log.status

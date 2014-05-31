@@ -4,9 +4,9 @@ import java.util.Collection;
 import java.util.LinkedHashSet;
 
 import no.javatime.inplace.InPlace;
+import no.javatime.inplace.bundle.log.status.BundleStatus;
+import no.javatime.inplace.bundle.log.status.IBundleStatus.StatusCode;
 import no.javatime.inplace.bundleproject.ProjectProperties;
-import no.javatime.inplace.extender.status.BundleStatus;
-import no.javatime.inplace.extender.status.IBundleStatus.StatusCode;
 import no.javatime.util.messages.ExceptionMessage;
 
 import org.eclipse.core.resources.IProject;

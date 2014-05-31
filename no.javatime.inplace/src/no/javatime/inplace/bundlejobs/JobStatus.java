@@ -6,6 +6,9 @@ import java.util.Collections;
 import java.util.List;
 
 import no.javatime.inplace.InPlace;
+import no.javatime.inplace.bundle.log.status.BundleStatus;
+import no.javatime.inplace.bundle.log.status.IBundleStatus;
+import no.javatime.inplace.bundle.log.status.IBundleStatus.StatusCode;
 import no.javatime.inplace.bundlemanager.BundleCommand;
 import no.javatime.inplace.bundlemanager.BundleManager;
 import no.javatime.inplace.bundlemanager.BundleRegion;
@@ -14,9 +17,6 @@ import no.javatime.inplace.bundlemanager.DuplicateBundleException;
 import no.javatime.inplace.bundlemanager.ProjectLocationException;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.dependencies.ProjectSorter;
-import no.javatime.inplace.extender.status.BundleStatus;
-import no.javatime.inplace.extender.status.IBundleStatus;
-import no.javatime.inplace.extender.status.IBundleStatus.StatusCode;
 import no.javatime.util.messages.ErrorMessage;
 import no.javatime.util.messages.ExceptionMessage;
 
@@ -33,7 +33,7 @@ import org.osgi.framework.Bundle;
  * Container class for bundle status objects added during a bundle job. A status object contains a status code
  * and one or more elements of type exception, message, project and a bundle id.
  * 
- * @see no.javatime.inplace.extender.status.IBundleStatus
+ * @see no.javatime.inplace.bundle.log.status.IBundleStatus
  */
 public abstract class JobStatus extends WorkspaceJob {
 

@@ -10,21 +10,21 @@
  *******************************************************************************/
 package no.javatime.inplace.builder;
 
+import no.javatime.inplace.InPlace;
+import no.javatime.inplace.bundle.log.status.BundleStatus;
+import no.javatime.inplace.bundle.log.status.IBundleStatus.StatusCode;
+import no.javatime.inplace.bundlemanager.BundleManager;
+import no.javatime.inplace.bundlemanager.BundleTransition.Transition;
+import no.javatime.inplace.bundlemanager.InPlaceException;
+import no.javatime.inplace.bundleproject.ProjectProperties;
+import no.javatime.util.messages.ExceptionMessage;
+
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IResourceChangeEvent;
 import org.eclipse.core.resources.IResourceChangeListener;
 import org.eclipse.core.resources.IResourceDelta;
 import org.eclipse.ui.statushandlers.StatusManager;
-
-import no.javatime.inplace.InPlace;
-import no.javatime.inplace.bundlemanager.BundleManager;
-import no.javatime.inplace.bundlemanager.BundleTransition.Transition;
-import no.javatime.inplace.bundlemanager.InPlaceException;
-import no.javatime.inplace.bundleproject.ProjectProperties;
-import no.javatime.inplace.extender.status.BundleStatus;
-import no.javatime.inplace.extender.status.IBundleStatus.StatusCode;
-import no.javatime.util.messages.ExceptionMessage;
 
 /**
  * Register a bundle as pending for build after workspace resources have been changed. 

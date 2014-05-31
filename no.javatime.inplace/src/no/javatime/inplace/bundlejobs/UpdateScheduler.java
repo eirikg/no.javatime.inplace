@@ -6,12 +6,9 @@ import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 
-import org.eclipse.core.resources.IProject;
-import org.eclipse.core.resources.WorkspaceJob;
-import org.eclipse.ui.statushandlers.StatusManager;
-import org.osgi.framework.Bundle;
-
 import no.javatime.inplace.InPlace;
+import no.javatime.inplace.bundle.log.status.BundleStatus;
+import no.javatime.inplace.bundle.log.status.IBundleStatus.StatusCode;
 import no.javatime.inplace.bundlemanager.BundleManager;
 import no.javatime.inplace.bundlemanager.BundleRegion;
 import no.javatime.inplace.bundlemanager.BundleTransition;
@@ -24,10 +21,13 @@ import no.javatime.inplace.dependencies.BundleClosures;
 import no.javatime.inplace.dependencies.CircularReferenceException;
 import no.javatime.inplace.dependencies.ProjectSorter;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
-import no.javatime.inplace.extender.status.BundleStatus;
-import no.javatime.inplace.extender.status.IBundleStatus.StatusCode;
 import no.javatime.util.messages.Category;
 import no.javatime.util.messages.UserMessage;
+
+import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.WorkspaceJob;
+import org.eclipse.ui.statushandlers.StatusManager;
+import org.osgi.framework.Bundle;
 
 public class UpdateScheduler {
 

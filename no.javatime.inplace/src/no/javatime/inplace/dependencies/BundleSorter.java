@@ -16,18 +16,18 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 
+import no.javatime.inplace.InPlace;
+import no.javatime.inplace.bundle.log.status.BundleStatus;
+import no.javatime.inplace.bundle.log.status.IBundleStatus.StatusCode;
+import no.javatime.inplace.bundlemanager.BundleManager;
+import no.javatime.inplace.bundlemanager.BundleTransition.TransitionError;
+import no.javatime.inplace.bundlemanager.InPlaceException;
+import no.javatime.util.messages.ExceptionMessage;
+
 import org.osgi.framework.Bundle;
 import org.osgi.framework.wiring.BundleRevision;
 import org.osgi.framework.wiring.BundleWire;
 import org.osgi.framework.wiring.BundleWiring;
-
-import no.javatime.inplace.InPlace;
-import no.javatime.inplace.bundlemanager.BundleManager;
-import no.javatime.inplace.bundlemanager.BundleTransition.TransitionError;
-import no.javatime.inplace.bundlemanager.InPlaceException;
-import no.javatime.inplace.extender.status.BundleStatus;
-import no.javatime.inplace.extender.status.IBundleStatus.StatusCode;
-import no.javatime.util.messages.ExceptionMessage;
 
 /**
  * Topological sort of bundles in requiring and providing bundle dependency order.

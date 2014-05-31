@@ -10,20 +10,20 @@
  *******************************************************************************/
 package no.javatime.inplace.ui.views;
 
-import org.eclipse.ui.statushandlers.StatusManager;
-import org.eclipse.ui.views.properties.IPropertyDescriptor;
-import org.eclipse.ui.views.properties.IPropertySource;
-import org.eclipse.ui.views.properties.PropertyDescriptor;
-
+import no.javatime.inplace.bundle.log.status.BundleStatus;
+import no.javatime.inplace.bundle.log.status.IBundleStatus;
+import no.javatime.inplace.bundle.log.status.IBundleStatus.StatusCode;
 import no.javatime.inplace.bundlemanager.InPlaceException;
 import no.javatime.inplace.bundlemanager.ProjectLocationException;
-import no.javatime.inplace.extender.status.BundleStatus;
-import no.javatime.inplace.extender.status.IBundleStatus;
-import no.javatime.inplace.extender.status.IBundleStatus.StatusCode;
 import no.javatime.inplace.ui.Activator;
 import no.javatime.util.messages.ErrorMessage;
 import no.javatime.util.messages.Message;
 import no.javatime.util.messages.UserMessage;
+
+import org.eclipse.ui.statushandlers.StatusManager;
+import org.eclipse.ui.views.properties.IPropertyDescriptor;
+import org.eclipse.ui.views.properties.IPropertySource;
+import org.eclipse.ui.views.properties.PropertyDescriptor;
 /**
  * Standard property source providing properties for projects and bundles  
  */

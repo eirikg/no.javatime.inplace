@@ -15,6 +15,24 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
+import no.javatime.inplace.bundle.log.status.BundleStatus;
+import no.javatime.inplace.bundle.log.status.IBundleStatus.StatusCode;
+import no.javatime.inplace.bundlejobs.BundleJob;
+import no.javatime.inplace.bundlemanager.BundleManager;
+import no.javatime.inplace.bundlemanager.BundleRegion;
+import no.javatime.inplace.bundlemanager.BundleTransition;
+import no.javatime.inplace.bundlemanager.BundleTransition.Transition;
+import no.javatime.inplace.bundlemanager.InPlaceException;
+import no.javatime.inplace.bundlemanager.ProjectLocationException;
+import no.javatime.inplace.bundleproject.BundleProject;
+import no.javatime.inplace.bundleproject.ManifestUtil;
+import no.javatime.inplace.bundleproject.ProjectProperties;
+import no.javatime.inplace.ui.Activator;
+import no.javatime.inplace.ui.command.contributions.BundleCommandsContributionItems;
+import no.javatime.inplace.ui.command.handlers.BundleMenuActivationHandler;
+import no.javatime.util.messages.ExceptionMessage;
+import no.javatime.util.messages.Message;
+
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
@@ -79,24 +97,6 @@ import org.eclipse.ui.views.properties.PropertySheetSorter;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleEvent;
 import org.osgi.framework.BundleListener;
-
-import no.javatime.inplace.bundlejobs.BundleJob;
-import no.javatime.inplace.bundlemanager.BundleManager;
-import no.javatime.inplace.bundlemanager.BundleRegion;
-import no.javatime.inplace.bundlemanager.BundleTransition;
-import no.javatime.inplace.bundlemanager.BundleTransition.Transition;
-import no.javatime.inplace.bundlemanager.InPlaceException;
-import no.javatime.inplace.bundlemanager.ProjectLocationException;
-import no.javatime.inplace.bundleproject.BundleProject;
-import no.javatime.inplace.bundleproject.ManifestUtil;
-import no.javatime.inplace.bundleproject.ProjectProperties;
-import no.javatime.inplace.extender.status.BundleStatus;
-import no.javatime.inplace.extender.status.IBundleStatus.StatusCode;
-import no.javatime.inplace.ui.Activator;
-import no.javatime.inplace.ui.command.contributions.BundleCommandsContributionItems;
-import no.javatime.inplace.ui.command.handlers.BundleMenuActivationHandler;
-import no.javatime.util.messages.ExceptionMessage;
-import no.javatime.util.messages.Message;
 
 /**
  * Maintains a bundle details page view and a bundle list page view with bundle properties and status information.

@@ -13,6 +13,18 @@ package no.javatime.inplace.statushandler;
 import java.util.HashSet;
 import java.util.Set;
 
+import no.javatime.inplace.InPlace;
+import no.javatime.inplace.bundle.log.status.BundleStatus;
+import no.javatime.inplace.bundle.log.status.IBundleStatus;
+import no.javatime.inplace.bundle.log.status.IBundleStatus.StatusCode;
+import no.javatime.inplace.bundlejobs.BundleJob;
+import no.javatime.inplace.bundleproject.OpenProjectHandler;
+import no.javatime.util.messages.Category;
+import no.javatime.util.messages.ErrorMessage;
+import no.javatime.util.messages.ExceptionMessage;
+import no.javatime.util.messages.UserMessage;
+import no.javatime.util.messages.WarnMessage;
+
 import org.eclipse.core.commands.common.NotDefinedException;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
@@ -20,18 +32,6 @@ import org.eclipse.ui.statushandlers.StatusAdapter;
 import org.eclipse.ui.statushandlers.StatusManager;
 import org.eclipse.ui.statushandlers.StatusManager.INotificationTypes;
 import org.eclipse.ui.statushandlers.WorkbenchErrorHandler;
-
-import no.javatime.inplace.InPlace;
-import no.javatime.inplace.bundlejobs.BundleJob;
-import no.javatime.inplace.bundleproject.OpenProjectHandler;
-import no.javatime.inplace.extender.status.BundleStatus;
-import no.javatime.inplace.extender.status.IBundleStatus;
-import no.javatime.inplace.extender.status.IBundleStatus.StatusCode;
-import no.javatime.util.messages.Category;
-import no.javatime.util.messages.ErrorMessage;
-import no.javatime.util.messages.ExceptionMessage;
-import no.javatime.util.messages.UserMessage;
-import no.javatime.util.messages.WarnMessage;
 
 /**
  * Overrides logging of status of type {@link IBundleStatus}, set interrupt and cancel status on the running

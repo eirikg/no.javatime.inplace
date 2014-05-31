@@ -15,6 +15,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 
+import no.javatime.inplace.InPlace;
+import no.javatime.inplace.bundle.log.status.BundleStatus;
+import no.javatime.inplace.bundle.log.status.IBundleStatus.StatusCode;
+import no.javatime.util.messages.Category;
+import no.javatime.util.messages.ErrorMessage;
+import no.javatime.util.messages.UserMessage;
+
 import org.eclipse.core.internal.registry.ExtensionRegistry;
 import org.eclipse.core.runtime.ContributorFactoryOSGi;
 import org.eclipse.core.runtime.FileLocator;
@@ -26,13 +33,6 @@ import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.RegistryFactory;
 import org.eclipse.ui.statushandlers.StatusManager;
 import org.osgi.framework.Bundle;
-
-import no.javatime.inplace.InPlace;
-import no.javatime.inplace.extender.status.BundleStatus;
-import no.javatime.inplace.extender.status.IBundleStatus.StatusCode;
-import no.javatime.util.messages.Category;
-import no.javatime.util.messages.ErrorMessage;
-import no.javatime.util.messages.UserMessage;
 
 /**
  * Supports dynamic addition and removal of extensions.

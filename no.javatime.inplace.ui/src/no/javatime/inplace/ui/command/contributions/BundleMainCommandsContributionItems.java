@@ -13,6 +13,9 @@ package no.javatime.inplace.ui.command.contributions;
 import java.util.ArrayList;
 import java.util.Collection;
 
+import no.javatime.inplace.bundle.log.intface.BundleLogView;
+import no.javatime.inplace.bundle.log.status.BundleStatus;
+import no.javatime.inplace.bundle.log.status.IBundleStatus.StatusCode;
 import no.javatime.inplace.bundlemanager.BundleCommand;
 import no.javatime.inplace.bundlemanager.BundleManager;
 import no.javatime.inplace.bundlemanager.BundleRegion;
@@ -22,10 +25,7 @@ import no.javatime.inplace.bundleproject.ManifestUtil;
 import no.javatime.inplace.bundleproject.OpenProjectHandler;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.extender.provider.Extension;
-import no.javatime.inplace.extender.status.BundleStatus;
-import no.javatime.inplace.extender.status.IBundleStatus.StatusCode;
 import no.javatime.inplace.pl.dependencies.service.DependencyDialog;
-import no.javatime.inplace.pl.trace.intface.MessageView;
 import no.javatime.inplace.ui.Activator;
 import no.javatime.inplace.ui.views.BundleView;
 import no.javatime.util.messages.Message;
@@ -332,8 +332,8 @@ public class BundleMainCommandsContributionItems extends BundleCommandsContribut
 	}
 
 	private CommandContributionItem addToggleMessageView() {
-		Extension<MessageView> ext = new Extension<>(MessageView.class);
-		MessageView viewService = ext.getService();
+		Extension<BundleLogView> ext = new Extension<>(BundleLogView.class);
+		BundleLogView viewService = ext.getService();
 		if (null == viewService) {
 			throw new InPlaceException("failed_to_get_service_for_interface", DependencyDialog.class.getName());
 		}

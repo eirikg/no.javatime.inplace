@@ -35,12 +35,12 @@ import no.javatime.inplace.dl.preferences.intface.MessageOptions;
 import no.javatime.inplace.extender.ExtenderBundleTracker;
 import no.javatime.inplace.extender.provider.Extender;
 import no.javatime.inplace.extender.provider.Extension;
-import no.javatime.inplace.extender.status.BundleStatus;
-import no.javatime.inplace.extender.status.IBundleStatus;
-import no.javatime.inplace.extender.status.IBundleStatus.StatusCode;
-import no.javatime.inplace.pl.trace.intface.Trace;
-import no.javatime.inplace.pl.trace.intface.Trace.Device;
-import no.javatime.inplace.pl.trace.intface.Trace.MessageType;
+import no.javatime.inplace.bundle.log.intface.BundleLog;
+import no.javatime.inplace.bundle.log.intface.BundleLog.Device;
+import no.javatime.inplace.bundle.log.intface.BundleLog.MessageType;
+import no.javatime.inplace.bundle.log.status.BundleStatus;
+import no.javatime.inplace.bundle.log.status.IBundleStatus;
+import no.javatime.inplace.bundle.log.status.IBundleStatus.StatusCode;
 import no.javatime.inplace.statushandler.ActionSetContexts;
 import no.javatime.inplace.statushandler.DynamicExtensionContribution;
 import no.javatime.util.messages.Category;
@@ -156,7 +156,7 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 	private Extension<DependencyOptions> dependencyOptions;
 	private Extension<CommandOptions> commandOptions;
 	private Extension<MessageOptions> messageOptions;
-	private Extension<Trace> traceService;
+	private Extension<BundleLog> traceService;
 
 	public InPlace() {
 	}
@@ -173,7 +173,7 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 		String refreshBSNResult = context.getProperty(REFRESH_DUPLICATE_BSN);
 		allowRefreshDuplicateBSN = Boolean.TRUE.toString().equals(refreshBSNResult != null ? refreshBSNResult : Boolean.TRUE.toString());
 
-		traceService = new Extension<>(Trace.class);		
+		traceService = new Extension<>(BundleLog.class);		
 		commandOptions = new Extension<>(CommandOptions.class);
 		dependencyOptions = new Extension<>(DependencyOptions.class);
 		messageOptions = new Extension<>(MessageOptions.class);
@@ -247,11 +247,11 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 		return bundleProjectService;
 	}
 
-	public Trace getTraceContainerService() throws InPlaceException {
+	public BundleLog getTraceContainerService() throws InPlaceException {
 
-		Trace trace = traceService.getService();
+		BundleLog trace = traceService.getService();
 		if (null == trace) {
-			throw new InPlaceException("invalid_service", Trace.class.getName());			
+			throw new InPlaceException("invalid_service", BundleLog.class.getName());			
 		}
 		return trace;
 	}
@@ -283,24 +283,24 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 	}
 
 
-	public Trace getTraceService() throws InPlaceException {
+	public BundleLog getTraceService() throws InPlaceException {
 
-		Trace trace = traceService.getService();
+		BundleLog trace = traceService.getService();
 		if (null == trace) {
-			throw new InPlaceException("invalid_service", Trace.class.getName());			
+			throw new InPlaceException("invalid_service", BundleLog.class.getName());			
 		}
 		return trace;
 	}
 	
 	public String trace(IBundleStatus status) {
-		Trace t = getTraceContainerService();
+		BundleLog t = getTraceContainerService();
 		return t.trace(status);		
 	}
 	
 	public String trace(String key, Object... substitutions) {
 		String msg = TraceMessage.getInstance().formatString(key, substitutions);
 		IBundleStatus status = new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, msg);
-		Trace t = getTraceContainerService();
+		BundleLog t = getTraceContainerService();
 		return t.trace(status);		
 	}
 	

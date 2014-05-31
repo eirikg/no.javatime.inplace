@@ -13,14 +13,10 @@ package no.javatime.inplace.bundlejobs;
 import java.util.Collection;
 import java.util.Collections;
 
-import org.eclipse.core.resources.IProject;
-import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.OperationCanceledException;
-import org.eclipse.core.runtime.SubProgressMonitor;
-import org.osgi.framework.Bundle;
-
 import no.javatime.inplace.InPlace;
+import no.javatime.inplace.bundle.log.status.BundleStatus;
+import no.javatime.inplace.bundle.log.status.IBundleStatus;
+import no.javatime.inplace.bundle.log.status.IBundleStatus.StatusCode;
 import no.javatime.inplace.bundlemanager.InPlaceException;
 import no.javatime.inplace.bundleproject.BundleProject;
 import no.javatime.inplace.dependencies.BundleClosures;
@@ -28,14 +24,18 @@ import no.javatime.inplace.dependencies.BundleSorter;
 import no.javatime.inplace.dependencies.CircularReferenceException;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Operation;
-import no.javatime.inplace.extender.status.BundleStatus;
-import no.javatime.inplace.extender.status.IBundleStatus;
-import no.javatime.inplace.extender.status.IBundleStatus.StatusCode;
 import no.javatime.util.messages.ErrorMessage;
 import no.javatime.util.messages.ExceptionMessage;
 import no.javatime.util.messages.Message;
 import no.javatime.util.messages.UserMessage;
 import no.javatime.util.messages.WarnMessage;
+
+import org.eclipse.core.resources.IProject;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.OperationCanceledException;
+import org.eclipse.core.runtime.SubProgressMonitor;
+import org.osgi.framework.Bundle;
 
 /**
  * Stops pending bundle projects with an initial state of ACTIVE and STARTING.

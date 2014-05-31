@@ -12,6 +12,7 @@ package no.javatime.inplace.ui.command.contributions;
 
 import java.util.ArrayList;
 
+import no.javatime.inplace.bundle.log.intface.BundleLogView;
 import no.javatime.inplace.bundlemanager.BundleManager;
 import no.javatime.inplace.bundlemanager.BundleTransition.Transition;
 import no.javatime.inplace.bundlemanager.InPlaceException;
@@ -21,7 +22,6 @@ import no.javatime.inplace.bundleproject.OpenProjectHandler;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.extender.provider.Extension;
 import no.javatime.inplace.pl.dependencies.service.DependencyDialog;
-import no.javatime.inplace.pl.trace.intface.MessageView;
 import no.javatime.inplace.ui.command.handlers.BundleMenuActivationHandler;
 import no.javatime.inplace.ui.views.BundleView;
 import no.javatime.util.messages.Message;
@@ -278,8 +278,8 @@ public class BundlePopUpCommandsContributionItems extends BundleCommandsContribu
 	}
 
 	private CommandContributionItem addToggleMessageView() {
-		Extension<MessageView> ext = new Extension<>(MessageView.class);
-		MessageView viewService = ext.getService();
+		Extension<BundleLogView> ext = new Extension<>(BundleLogView.class);
+		BundleLogView viewService = ext.getService();
 		if (null == viewService) {
 			throw new InPlaceException("failed_to_get_service_for_interface", DependencyDialog.class.getName());
 		}

@@ -18,9 +18,12 @@ import no.javatime.inplace.bundlemanager.BundleManager;
 import no.javatime.inplace.bundlemanager.BundleTransition;
 import no.javatime.inplace.bundlemanager.BundleTransition.Transition;
 import no.javatime.inplace.bundleproject.ProjectProperties;
-import no.javatime.inplace.extender.status.BundleStatus;
-import no.javatime.inplace.extender.status.IBundleStatus;
-import no.javatime.inplace.extender.status.IBundleStatus.StatusCode;
+import no.javatime.inplace.bundle.log.intface.BundleLog;
+import no.javatime.inplace.bundle.log.intface.BundleLog.Device;
+import no.javatime.inplace.bundle.log.intface.BundleLog.MessageType;
+import no.javatime.inplace.bundle.log.status.BundleStatus;
+import no.javatime.inplace.bundle.log.status.IBundleStatus;
+import no.javatime.inplace.bundle.log.status.IBundleStatus.StatusCode;
 import no.javatime.util.messages.Category;
 import no.javatime.util.messages.Message;
 import no.javatime.util.messages.WarnMessage;
@@ -35,7 +38,7 @@ import org.eclipse.ui.statushandlers.StatusManager;
 /**
  * Listen to state changes and report job status in bundle jobs. Bundle status objects added by bundle
  * jobs are reported by this bundle job  listener when jobs are done.
- * @see no.javatime.inplace.extender.status.IBundleStatus
+ * @see no.javatime.inplace.bundle.log.status.IBundleStatus
  * @see no.javatime.inplace.bundlejobs.JobStatus   
  */
 public class BundleJobListener extends JobChangeAdapter {

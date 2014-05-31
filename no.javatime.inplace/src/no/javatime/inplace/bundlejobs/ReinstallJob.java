@@ -12,22 +12,22 @@ package no.javatime.inplace.bundlejobs;
 
 import java.util.Collection;
 
+import no.javatime.inplace.InPlace;
+import no.javatime.inplace.bundle.log.status.BundleStatus;
+import no.javatime.inplace.bundle.log.status.IBundleStatus;
+import no.javatime.inplace.bundle.log.status.IBundleStatus.StatusCode;
+import no.javatime.inplace.bundlemanager.InPlaceException;
+import no.javatime.inplace.dependencies.CircularReferenceException;
+import no.javatime.util.messages.ErrorMessage;
+import no.javatime.util.messages.ExceptionMessage;
+import no.javatime.util.messages.Message;
+import no.javatime.util.messages.UserMessage;
+
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.SubProgressMonitor;
-
-import no.javatime.inplace.InPlace;
-import no.javatime.inplace.bundlemanager.InPlaceException;
-import no.javatime.inplace.dependencies.CircularReferenceException;
-import no.javatime.inplace.extender.status.BundleStatus;
-import no.javatime.inplace.extender.status.IBundleStatus;
-import no.javatime.inplace.extender.status.IBundleStatus.StatusCode;
-import no.javatime.util.messages.ErrorMessage;
-import no.javatime.util.messages.ExceptionMessage;
-import no.javatime.util.messages.Message;
-import no.javatime.util.messages.UserMessage;
 
 /**
  * Reinstalls pending projects. Projects are first uninstalled and then installed. Only pending bundle
