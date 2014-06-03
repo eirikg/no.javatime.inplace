@@ -47,6 +47,8 @@ import no.javatime.inplace.bundle.log.impl.BundleLogEntryImpl;
 import no.javatime.inplace.bundle.log.msg.Messages;
 import no.javatime.inplace.bundle.log.status.BundleStatus;
 import no.javatime.inplace.bundle.log.status.IBundleStatus;
+import no.javatime.inplace.dl.preferences.intface.MessageOptions;
+import no.javatime.inplace.extender.provider.Extension;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -219,6 +221,11 @@ public class LogView extends ViewPart implements SynchronousLogListener, LogFilt
 	private Action fOpenLogAction;
 	private Action fExportLogAction;
 	private Action fExportLogEntryAction;
+	private Action fToggleLoggingAction;
+
+	// Option for toggling logging
+	private Extension<MessageOptions> messageOptions;
+
 
 	/**
 	 * Action called when user selects "Group by -> ..." from menu.
@@ -252,6 +259,7 @@ public class LogView extends ViewPart implements SynchronousLogListener, LogFilt
 		groups = new HashMap();
 		batchedEntries = new ArrayList();
 		fInputFile = Activator.getDefault().getLogFile();
+		messageOptions = new Extension<>(MessageOptions.class);
 	}
 
 	/* (non-Javadoc)
@@ -325,6 +333,11 @@ public class LogView extends ViewPart implements SynchronousLogListener, LogFilt
 
 		IToolBarManager toolBarManager = bars.getToolBarManager();
 
+		fToggleLoggingAction = createToggleLoggingAction();
+		toolBarManager.add(fToggleLoggingAction);
+
+		toolBarManager.add(new Separator(IWorkbenchActionConstants.MB_ADDITIONS));
+
 		fExportLogAction = createExportLogAction();
 		toolBarManager.add(fExportLogAction);
 
@@ -377,6 +390,8 @@ public class LogView extends ViewPart implements SynchronousLogListener, LogFilt
 				manager.add(createImportLogAction());
 				manager.add(new Separator());
 				manager.add(fExportLogEntryAction);
+				manager.add(new Separator());
+				manager.add(fToggleLoggingAction);
 				manager.add(new Separator());
 
 				((EventDetailsDialogAction) fPropertiesAction).setComparator(fComparator);
@@ -441,6 +456,34 @@ public class LogView extends ViewPart implements SynchronousLogListener, LogFilt
 		return action;
 	}
 
+	private Action createToggleLoggingAction() {
+		Action action = new Action(Messages.LogView_toggle) {
+			public void run() {
+				MessageOptions toggle = getToggleLogService();
+				if (null != toggle) {
+					if (toggle.isBundleOperations()) {
+						setImageDescriptor(SharedImages.getImageDescriptor(SharedImages.DESC_DISABLE_LOGGING));
+						toggle.setIsBundleOperations(false);
+					} else {
+						setImageDescriptor(SharedImages.getImageDescriptor(SharedImages.DESC_ENABLE_LOGGING));			
+						toggle.setIsBundleOperations(true);
+					}
+				}
+			}
+		};
+		action.setToolTipText(Messages.LogView_toggle_tooltip);
+		MessageOptions toggle = getToggleLogService();
+		if (null != toggle) {
+			if (toggle.isBundleOperations()) {
+				action.setImageDescriptor(SharedImages.getImageDescriptor(SharedImages.DESC_ENABLE_LOGGING));
+			} else {
+				action.setImageDescriptor(SharedImages.getImageDescriptor(SharedImages.DESC_DISABLE_LOGGING));			
+			}
+		}
+		action.setEnabled(true);
+		return action;
+	}
+	
 	private Action createExportLogAction() {
 		Action action = new Action(Messages.LogView_export) {
 			public void run() {
@@ -1685,7 +1728,7 @@ public class LogView extends ViewPart implements SynchronousLogListener, LogFilt
 		fMemento.putInteger(P_COLUMN_2, getColumnWidthPreference(instancePrefs, defaultPrefs, P_COLUMN_2, 150));
 		fMemento.putInteger(P_COLUMN_3, getColumnWidthPreference(instancePrefs, defaultPrefs, P_COLUMN_3, 150));
 		fMemento.putInteger(P_COLUMN_4, getColumnWidthPreference(instancePrefs, defaultPrefs, P_COLUMN_4, 150));
-		fMemento.putBoolean(P_ACTIVATE, instancePrefs.getBoolean(P_ACTIVATE, defaultPrefs.getBoolean(P_ACTIVATE, true)));
+		fMemento.putBoolean(P_ACTIVATE, instancePrefs.getBoolean(P_ACTIVATE, defaultPrefs.getBoolean(P_ACTIVATE, false)));
 		fMemento.putInteger(P_ORDER_VALUE, instancePrefs.getInt(P_ORDER_VALUE, defaultPrefs.getInt(P_ORDER_VALUE, DESCENDING)));
 		fMemento.putInteger(P_ORDER_TYPE, instancePrefs.getInt(P_ORDER_TYPE, defaultPrefs.getInt(P_ORDER_TYPE, LogView.DATE)));
 		fMemento.putBoolean(P_SHOW_FILTER_TEXT, instancePrefs.getBoolean(P_SHOW_FILTER_TEXT, defaultPrefs.getBoolean(P_SHOW_FILTER_TEXT, true)));
@@ -1781,6 +1824,10 @@ public class LogView extends ViewPart implements SynchronousLogListener, LogFilt
 		};
 	}
 
+	public MessageOptions getToggleLogService() {
+		return messageOptions.getService();
+	}
+
 	protected File getLogFile() {
 		return fInputFile;
 	}
@@ -1811,5 +1858,5 @@ public class LogView extends ViewPart implements SynchronousLogListener, LogFilt
 
 	@Override
 	public boolean isLoggable(Bundle bundle, String loggerName, int logLevel) {
-		return Activator.TRACE_LOGGER_NAME.equals(loggerName);	}
+		return Activator.BUNDLE_LOGGER_NAME.equals(loggerName);	}
 }

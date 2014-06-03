@@ -13,6 +13,10 @@ package no.javatime.inplace.ui.command.handlers;
 import java.util.Collection;
 import java.util.Collections;
 
+import no.javatime.inplace.bundle.log.intface.BundleLogView;
+import no.javatime.inplace.bundle.log.status.BundleStatus;
+import no.javatime.inplace.bundle.log.status.IBundleStatus;
+import no.javatime.inplace.bundle.log.status.IBundleStatus.StatusCode;
 import no.javatime.inplace.bundlejobs.ActivateProjectJob;
 import no.javatime.inplace.bundlejobs.BundleJob;
 import no.javatime.inplace.bundlejobs.DeactivateJob;
@@ -31,13 +35,6 @@ import no.javatime.inplace.bundleproject.OpenProjectHandler;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.extender.provider.Extension;
 import no.javatime.inplace.pl.dependencies.service.DependencyDialog;
-import no.javatime.inplace.bundle.log.intface.BundleLogView;
-import no.javatime.inplace.bundle.log.intface.BundleLog;
-import no.javatime.inplace.bundle.log.intface.BundleLog.Device;
-import no.javatime.inplace.bundle.log.intface.BundleLog.MessageType;
-import no.javatime.inplace.bundle.log.status.BundleStatus;
-import no.javatime.inplace.bundle.log.status.IBundleStatus;
-import no.javatime.inplace.bundle.log.status.IBundleStatus.StatusCode;
 import no.javatime.inplace.ui.Activator;
 import no.javatime.inplace.ui.command.contributions.BundleCommandsContributionItems;
 import no.javatime.inplace.ui.msg.Msg;
@@ -106,9 +103,13 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 		OpenProjectHandler so = new OpenProjectHandler();
 		if (so.saveModifiedFiles()) {
 			OpenProjectHandler.waitOnBuilder();
-			ActivateProjectJob activateJob = new ActivateProjectJob(ActivateProjectJob.activateNatureJobName,
-					projects);
-			jobHandler(activateJob);
+			ActivateProjectJob activateJob = null;
+			if (ProjectProperties.getActivatedProjects().size() > 0) {
+				activateJob = new ActivateProjectJob(ActivateProjectJob.activateProjectsJobName, projects);
+			} else {
+				activateJob = new ActivateProjectJob(ActivateProjectJob.activateWorkspaceJobName, projects);
+			}
+				jobHandler(activateJob);
 		}
 	}
 
@@ -118,8 +119,12 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 	 * @param projects to deactivate
 	 */
 	static public void deactivateHandler(Collection<IProject> projects) {
-
-		DeactivateJob deactivateJob = new DeactivateJob(DeactivateJob.deactivateWorkspaceJobName, projects);
+		DeactivateJob deactivateJob = null;
+		if (ProjectProperties.getActivatedProjects().size() <= projects.size()) {
+			deactivateJob = new DeactivateJob(DeactivateJob.deactivateWorkspaceJobName, projects);			
+		} else {
+			deactivateJob = new DeactivateJob(DeactivateJob.deactivateJobName, projects);
+		}
 		jobHandler(deactivateJob);
 	}
 

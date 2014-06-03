@@ -15,10 +15,8 @@ Require-Bundle: org.eclipse.core.runtime,
  org.eclipse.pde.core,
  org.eclipse.core.resources
 Import-Package: com.ibm.icu.text,
- no.javatime.inplace.bundle.log.status,
  no.javatime.inplace.dl.preferences.intface,
- no.javatime.inplace.extender.provider,
- no.javatime.util.messages
+ no.javatime.inplace.extender.provider
 Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Bundle-ActivationPolicy: lazy
 Export-Package: no.javatime.inplace.bundle.log.intface,

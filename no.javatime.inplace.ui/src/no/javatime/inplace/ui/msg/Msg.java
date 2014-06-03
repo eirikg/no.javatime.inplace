@@ -17,6 +17,7 @@ public class Msg extends NLS {
 	public static String IS_ALLOW_UI_CONTRIBUTIONS_LABEL;
 	
   public static String UPDATE_BUNDLE_CLASS_PATH_JOB; 
+	public static String ACTIVATE_JOB;
 	
   private static final String BUNDLE_NAME = "no.javatime.inplace.ui.msg.UIMessages"; //$NON-NLS-1$
 

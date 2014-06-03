@@ -16,6 +16,10 @@ import no.javatime.inplace.builder.PostBuildListener;
 import no.javatime.inplace.builder.PreBuildListener;
 import no.javatime.inplace.builder.PreChangeListener;
 import no.javatime.inplace.builder.ProjectChangeListener;
+import no.javatime.inplace.bundle.log.intface.BundleLog;
+import no.javatime.inplace.bundle.log.status.BundleStatus;
+import no.javatime.inplace.bundle.log.status.IBundleStatus;
+import no.javatime.inplace.bundle.log.status.IBundleStatus.StatusCode;
 import no.javatime.inplace.bundlejobs.BundleJob;
 import no.javatime.inplace.bundlejobs.DeactivateJob;
 import no.javatime.inplace.bundlejobs.UninstallJob;
@@ -26,8 +30,6 @@ import no.javatime.inplace.bundlemanager.BundleRegion;
 import no.javatime.inplace.bundlemanager.BundleTransition.Transition;
 import no.javatime.inplace.bundlemanager.InPlaceException;
 import no.javatime.inplace.bundlemanager.ProjectLocationException;
-import no.javatime.inplace.bundlemanager.events.BundleTransitionEvent;
-import no.javatime.inplace.bundlemanager.events.BundleTransitionEventListener;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.dl.preferences.intface.CommandOptions;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions;
@@ -35,16 +37,10 @@ import no.javatime.inplace.dl.preferences.intface.MessageOptions;
 import no.javatime.inplace.extender.ExtenderBundleTracker;
 import no.javatime.inplace.extender.provider.Extender;
 import no.javatime.inplace.extender.provider.Extension;
-import no.javatime.inplace.bundle.log.intface.BundleLog;
-import no.javatime.inplace.bundle.log.intface.BundleLog.Device;
-import no.javatime.inplace.bundle.log.intface.BundleLog.MessageType;
-import no.javatime.inplace.bundle.log.status.BundleStatus;
-import no.javatime.inplace.bundle.log.status.IBundleStatus;
-import no.javatime.inplace.bundle.log.status.IBundleStatus.StatusCode;
+import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.statushandler.ActionSetContexts;
 import no.javatime.inplace.statushandler.DynamicExtensionContribution;
 import no.javatime.util.messages.Category;
-import no.javatime.util.messages.ErrorMessage;
 import no.javatime.util.messages.ExceptionMessage;
 import no.javatime.util.messages.TraceMessage;
 import no.javatime.util.messages.UserMessage;
@@ -60,7 +56,6 @@ import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.jobs.IJobManager;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences;
@@ -91,7 +86,7 @@ import org.osgi.util.tracker.ServiceTracker;
  * <li>Bundle project service for managing of bundle meta information
  * <ul/>
  */
-public class InPlace extends AbstractUIPlugin implements BundleJobEventListener, BundleTransitionEventListener {
+public class InPlace extends AbstractUIPlugin implements BundleJobEventListener {
 
 	public static final String PLUGIN_ID = "no.javatime.inplace"; //$NON-NLS-1$
 	private static InPlace plugin;
@@ -184,7 +179,6 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 		addDynamicExtensions();
 		BundleManager.addBundleJobListener(get());
 		bundleRegion = BundleManager.getRegion();
-		BundleManager.addBundleTransitionListener(get());
 	}	
 	
 	@Override
@@ -200,7 +194,6 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 			bundleProjectTracker.close();
 			bundleProjectTracker = null;		
 			BundleManager.removeBundleJobListener(get());
-			BundleManager.removeBundleTransitionListener(get());
 			super.stop(context);
 			plugin = null;
 			InPlace.context = null;
@@ -306,88 +299,66 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 	
 	/**
 	 * Uninstalls or deactivates all workspace bundles. All messages
-	 * are sent to error CONSOLE, and errors, warnings and exceptions
-	 * are also sent to the log file.
+	 * are sent to error console
 	 */
 	public void shutDownBundles() {
-		// Send output to log and standard console when shutting down
+		// Send output to standard console when shutting down
 		BundleConsoleFactory.getConsole().setSystemOutToIDEDefault();
-		// Message.getInstance().setOutput(Message.Output.log);
-		getTraceService().setOut(MessageType.MESSAGE, Device.LOG);
-		// UserMessage.getInstance().setOutput(Message.Output.log);
-		getTraceService().setOut(MessageType.USER, Device.LOG);
-		// ExceptionMessage.getInstance().setOutput(Message.Output.consoleAndLog);
-		getTraceService().setOut(MessageType.EXCEPTION, Device.CONSOLE_AND_LOG);
-		//TraceMessage.getInstance().setOutput(Output.console);
-		getTraceService().setOut(MessageType.TRACE, Device.CONSOLE);
-		// WarnMessage.getInstance().setOutput(Message.Output.consoleAndLog);
-		getTraceService().setOut(MessageType.WARNING, Device.CONSOLE_AND_LOG);
-		// ErrorMessage.getInstance().setOutput(Message.Output.consoleAndLog);
-		getTraceService().setOut(MessageType.ERROR, Device.CONSOLE_AND_LOG);
-		try {
-			Collection<Bundle> bundles = bundleRegion.getBundles();
-			// Unregister all bundles by uninstalling
-			savePluginSettings(true, false);
-			if (ProjectProperties.isProjectWorkspaceActivated()) {
+		savePluginSettings(true, false);
+		if (ProjectProperties.isProjectWorkspaceActivated()) {
+			try {
 				BundleJob shutdDownJob = null;
 				Collection<IProject> projects = ProjectProperties.getActivatedProjects();
 				if (getCommandOptionsService().isDeactivateOnExit()) {
 					shutdDownJob = new DeactivateJob(DeactivateJob.deactivateOnshutDownJobName);
-				} else if (bundles.size() > 0) {
+				} else {
 					shutdDownJob = new UninstallJob(UninstallJob.shutDownJobName);
 				}
 				shutdDownJob.addPendingProjects(projects);
 				shutdDownJob.setUser(false);
 				shutdDownJob.schedule();
 				IJobManager jobManager = Job.getJobManager();
-				// Wait for all jobs to end before shutting down
+				// Wait for build and bundle jobs
 				jobManager.join(BundleJob.FAMILY_BUNDLE_LIFECYCLE, null);
 				jobManager.join(ResourcesPlugin.FAMILY_AUTO_BUILD, null);
 				jobManager.join(ResourcesPlugin.FAMILY_MANUAL_BUILD, null);
 				if (shutdDownJob.getStatusList().size() > 0) {
-					String msg = ErrorMessage.getInstance().formatString("begin_shutdown_error");
-					System.err.println(msg);
+					System.err.println(Msg.BEGIN_SHUTDOWN_ERROR);
 					Collection<IBundleStatus> statusList = shutdDownJob.getStatusList();	
 					for (IBundleStatus status : statusList) {
-						Throwable t = status.getException();
-						if (null != t) {
-							t.printStackTrace();
-						} else {
-							System.err.println(status.getMessage());
-						}
-						if (status.isMultiStatus()) {
-							IStatus[] children = status.getChildren();
-							for (int i = 0; i < children.length; i++) {
-								Throwable e = children[i].getException();
-								if (null != e) {
-									e.printStackTrace();
-								} else {
-									System.err.println(children[i].getMessage());
-								}
-							}
-						}			
+						printStatus(status);
 					}
-					msg = ErrorMessage.getInstance().formatString("end_shutdown_error");
-					System.err.println(msg);
+					System.err.println(Msg.END_SHUTDOWN_ERROR);
 				}
-			}				
-		} catch (InPlaceException e) {
-			ExceptionMessage.getInstance().handleMessage(e, e.getMessage());
-		} catch (InterruptedException e) {
-			Thread.currentThread().interrupt();
-		} catch (OperationCanceledException e) {
-			String msg = ExceptionMessage.getInstance().formatString("job_cancel_exception",
-					e.getLocalizedMessage());
-			ExceptionMessage.getInstance().handleMessage(e, msg);
-		} catch (IllegalStateException e) {
-			String msg = ExceptionMessage.getInstance()
-					.formatString("job_state_exception", e.getLocalizedMessage());
-			ExceptionMessage.getInstance().handleMessage(e, msg);
-		} catch (Exception e) {
-			ExceptionMessage.getInstance().handleMessage(e, e.getLocalizedMessage());
+			} catch (InPlaceException e) {
+				ExceptionMessage.getInstance().handleMessage(e, e.getMessage());
+			} catch (IllegalStateException e) {
+				String msg = ExceptionMessage.getInstance()
+						.formatString("job_state_exception", e.getLocalizedMessage());
+				ExceptionMessage.getInstance().handleMessage(e, msg);
+			} catch (Exception e) {
+				ExceptionMessage.getInstance().handleMessage(e, e.getLocalizedMessage());
+			}
+		}				
+	}
+	
+	/**
+	 * Print status and sub status objects to system err
+	 * @param status status object to print to system err
+	 */
+	private void printStatus(IStatus status) {
+		Throwable t = status.getException();
+		if (null != t) {
+			t.printStackTrace();
+		} else {
+			System.err.println(status.getMessage());
+		}
+		IStatus[] children = status.getChildren();
+		for (int i = 0; i < children.length; i++) {
+			printStatus(children[i]);
 		}
 	}
-		
+	
 	/**
 	 * Adds custom status handler, a command extension for the debug line break point
 	 * and management for defining undefined action sets.
@@ -663,16 +634,5 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 
 	@Override
 	public void bundleJobEvent(BundleJobEvent event) {		
-	}
-
-	@Override
-	public void bundleTransitionChanged(BundleTransitionEvent event) {
-//		Bundle b = event.getBundle();
-//		Transition t = event.getTransition();
-//		IProject p = event.getProject();
-//		System.out.println("Bundle, project, transition " + b + " " + p + " " + t);
-//		if (t == Transition.START){
-//			BundleManager.getCommand().setCurrentBundle(b);
-//		}
 	}
 }

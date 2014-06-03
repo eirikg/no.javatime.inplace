@@ -7,9 +7,7 @@ import no.javatime.inplace.bundle.log.dl.LogWriter;
 import no.javatime.inplace.bundle.log.intface.BundleLog;
 import no.javatime.inplace.bundle.log.intface.BundleLogView;
 import no.javatime.inplace.bundle.log.view.SharedImages;
-import no.javatime.inplace.dl.preferences.intface.MessageOptions;
 import no.javatime.inplace.extender.provider.Extender;
-import no.javatime.inplace.extender.provider.Extension;
 import no.javatime.inplace.extender.provider.InPlaceException;
 
 import org.eclipse.core.resources.IProject;
@@ -40,14 +38,17 @@ public class Activator extends AbstractUIPlugin {
 	// Log path and file
 	public static final String F_META_AREA = ".metadata"; //$NON-NLS-1$
 	public static final String F_TRACE = "bundle.log"; //$NON-NLS-1$
+
+	// Path to log file
 	private IPath traceLogPath;
+	// The log file
 	private File fInputFile;
 	
 	// Get the workbench window from UI thread
 	private IWorkbenchWindow workBenchWindow;
 
 	public static final String PLUGIN_ID = "no.javatime.inplace.bundle.log"; //$NON-NLS-1$
-	public static final String TRACE_LOGGER_NAME = "no.javatime.inplace.bundle.log.logger"; //$NON-NLS-1$
+	public static final String BUNDLE_LOGGER_NAME = "no.javatime.inplace.bundle.log.logger"; //$NON-NLS-1$
 
 	private static Activator plugin;
 	private static BundleContext context;
@@ -57,7 +58,6 @@ public class Activator extends AbstractUIPlugin {
 	private ServiceTracker<EnvironmentInfo, EnvironmentInfo> environmentInfoServiceTracker;
 	private ServiceTracker<IBundleProjectService, IBundleProjectService> bundleProjectTracker;
 
-	private Extension<MessageOptions> messageOptions;
 	
 	/**
 	 * The constructor
@@ -72,27 +72,25 @@ public class Activator extends AbstractUIPlugin {
 	 * @see org.eclipse.ui.plugin.AbstractUIPlugin#start(org.osgi.framework.BundleContext)
 	 */
 	public void start(BundleContext context) throws Exception {
+
 		super.start(context);
 		Activator.context = context;
 		plugin = this;
-		messageOptions = new Extension<>(MessageOptions.class);
-		// TODO move as selection in the bundle log view
-		messageOptions.getService().setIsBundleOperations(true);
 
 		bundleProjectTracker =  new ServiceTracker<IBundleProjectService, IBundleProjectService>
-		(context, IBundleProjectService.class.getName(), null);
+				(context, IBundleProjectService.class.getName(), null);
 		bundleProjectTracker.open();
 
 		Bundle bundle = context.getBundle();
 		Dictionary<String, String> dictionary = bundle.getHeaders();
 
-		String contImpl = dictionary.get(BundleLog.BUNDLE_LOG_HEADER);
-		Extender.<BundleLog>register(bundle, BundleLog.class, contImpl);
+		String bundleLogImpl = dictionary.get(BundleLog.BUNDLE_LOG_HEADER);
+		Extender.<BundleLog>register(bundle, BundleLog.class, bundleLogImpl);
 		
-		String msgImpl = dictionary.get(BundleLogView.BUNDLE_LOG_VIEW_HEADER);
-		Extender.<BundleLogView>register(bundle, BundleLogView.class, msgImpl);
+		String bundleLogViewImpl = dictionary.get(BundleLogView.BUNDLE_LOG_VIEW_HEADER);
+		Extender.<BundleLogView>register(bundle, BundleLogView.class, bundleLogViewImpl);
 	  
-		LogWriter logWriter = new LogWriter(Activator.getDefault().getLogFile(), TRACE_LOGGER_NAME);
+		LogWriter logWriter = new LogWriter(getLogFile(), BUNDLE_LOGGER_NAME);
 		ExtendedLogReaderService readerService = getLogReaderService(); 
 		readerService.addLogListener(logWriter, logWriter);
 	}
@@ -126,7 +124,7 @@ public class Activator extends AbstractUIPlugin {
 	public void setLogFile(File fInputFile) {
 		this.fInputFile = fInputFile;
 	}
-	
+
 	public EnvironmentInfo getEnvironmentService() {
 
 		if (null == environmentInfoServiceTracker) {
@@ -173,7 +171,7 @@ public class Activator extends AbstractUIPlugin {
 		if (null == bundle) {
 			return logService.getLogger(null);
 		} else {
-			return logService.getLogger(bundle, TRACE_LOGGER_NAME); 			
+			return logService.getLogger(bundle, BUNDLE_LOGGER_NAME); 			
 		}
 	}
 
@@ -241,6 +239,8 @@ public class Activator extends AbstractUIPlugin {
 		registry.put(SharedImages.DESC_PROPERTIES_DISABLED, createImageDescriptor(SharedImages.DESC_PROPERTIES_DISABLED));
 		registry.put(SharedImages.DESC_READ_LOG, createImageDescriptor(SharedImages.DESC_READ_LOG));
 		registry.put(SharedImages.DESC_READ_LOG_DISABLED, createImageDescriptor(SharedImages.DESC_READ_LOG_DISABLED));
+		registry.put(SharedImages.DESC_ENABLE_LOGGING, createImageDescriptor(SharedImages.DESC_ENABLE_LOGGING));
+		registry.put(SharedImages.DESC_DISABLE_LOGGING, createImageDescriptor(SharedImages.DESC_DISABLE_LOGGING));
 	}
 
 	private ImageDescriptor createImageDescriptor(String id) {

@@ -743,7 +743,7 @@ public class LogWriter implements SynchronousLogListener, LogFilter {
 			return false;
 		}
 		return loggerName.equals(loggableName);
-		//return Activator.TRACE_LOGGER_NAME.equals(loggerName);
+		//return Activator.BUNDLE_LOGGER_NAME.equals(loggerName);
 	}
 
 	@Override

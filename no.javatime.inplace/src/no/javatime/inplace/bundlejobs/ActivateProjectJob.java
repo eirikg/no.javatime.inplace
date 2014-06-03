@@ -13,18 +13,17 @@ package no.javatime.inplace.bundlejobs;
 import java.util.Collection;
 
 import no.javatime.inplace.InPlace;
+import no.javatime.inplace.bundle.log.status.BundleStatus;
+import no.javatime.inplace.bundle.log.status.IBundleStatus;
+import no.javatime.inplace.bundle.log.status.IBundleStatus.StatusCode;
+import no.javatime.inplace.bundlemanager.BundleManager;
 import no.javatime.inplace.bundlemanager.BundleTransition.Transition;
 import no.javatime.inplace.bundlemanager.InPlaceException;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.dependencies.BundleClosures;
 import no.javatime.inplace.dependencies.CircularReferenceException;
 import no.javatime.inplace.dependencies.ProjectSorter;
-import no.javatime.inplace.bundle.log.intface.BundleLog;
-import no.javatime.inplace.bundle.log.intface.BundleLog.Device;
-import no.javatime.inplace.bundle.log.intface.BundleLog.MessageType;
-import no.javatime.inplace.bundle.log.status.BundleStatus;
-import no.javatime.inplace.bundle.log.status.IBundleStatus;
-import no.javatime.inplace.bundle.log.status.IBundleStatus.StatusCode;
+import no.javatime.inplace.msg.Msg;
 import no.javatime.util.messages.Category;
 import no.javatime.util.messages.ErrorMessage;
 import no.javatime.util.messages.ExceptionMessage;
@@ -62,8 +61,9 @@ import org.osgi.framework.Bundle;
 public class ActivateProjectJob extends NatureJob {
 
 	/** Standard name of an activate job */
-	final public static String activateNatureJobName = Message.getInstance().formatString(
-			"activate_project_job_name");
+	final public static String activateProjectsJobName = Msg.ACTIVATE_PROJECTS_JOB; 
+	final public static String activateWorkspaceJobName = Msg.ACTIVATE_WORKSPACE_JOB; 
+
 	/** Used to name the set of operations needed to activate a project */
 	final private static String activateProjectTaskName = Message.getInstance().formatString(
 			"activate_project_task_name");
@@ -109,15 +109,9 @@ public class ActivateProjectJob extends NatureJob {
 	public IBundleStatus runInWorkspace(IProgressMonitor monitor) {
 
 		try {
+			BundleManager.addBundleTransitionListener(this);
 			monitor.beginTask(ActivateProjectJob.activateProjectTaskName, getTicks());
 			activate(monitor);
-//			if (ProjectProperties.isAutoBuilding()&& !BundleManager.getRegion().isBundleWorkspaceActivated()) {
-//				if (pendingProjects() == ProjectProperties.getInstallableProjects().size()) {
-//					ResourcesPlugin.getWorkspace().build(IncrementalProjectBuilder.INCREMENTAL_BUILD, new SubProgressMonitor(monitor, 1));
-//				} else {
-//					buildProjects(getPendingProjects(), IncrementalProjectBuilder.INCREMENTAL_BUILD, buildTaskName, new SubProgressMonitor(monitor, 1));
-//				}
-//			}
 		} catch(InterruptedException e) {
 			String msg = ExceptionMessage.getInstance().formatString("interrupt_job", getName());
 			addError(e, msg);
@@ -141,16 +135,17 @@ public class ActivateProjectJob extends NatureJob {
 		} catch (Exception e) {
 			String msg = ExceptionMessage.getInstance().formatString("exception_job", getName());
 			addError(e, msg);
-		} finally {
-			monitor.done();
 		}
 		try {
 			return super.runInWorkspace(monitor);
 		} catch (CoreException e) {
 			String msg = ErrorMessage.getInstance().formatString("error_end_job", getName());
 			return new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID, msg, e);
+		} finally {
+			monitor.done();
+			BundleManager.removeBundleTransitionListener(this);
 		}
-	}
+	} 
 
 	/**
 	 * Activates pending projects to this job by adding the JavaTime nature to the projects

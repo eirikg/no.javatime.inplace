@@ -12,15 +12,12 @@ package no.javatime.inplace.ui.views;
 
 import java.util.Collection;
 
-import no.javatime.inplace.bundlemanager.InPlaceException;
-import no.javatime.inplace.bundlemanager.ProjectLocationException;
-import no.javatime.inplace.bundleproject.ProjectProperties;
-import no.javatime.inplace.bundle.log.intface.BundleLog;
-import no.javatime.inplace.bundle.log.intface.BundleLog.Device;
-import no.javatime.inplace.bundle.log.intface.BundleLog.MessageType;
 import no.javatime.inplace.bundle.log.status.BundleStatus;
 import no.javatime.inplace.bundle.log.status.IBundleStatus;
 import no.javatime.inplace.bundle.log.status.IBundleStatus.StatusCode;
+import no.javatime.inplace.bundlemanager.InPlaceException;
+import no.javatime.inplace.bundlemanager.ProjectLocationException;
+import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.ui.Activator;
 import no.javatime.util.messages.ErrorMessage;
 import no.javatime.util.messages.ExceptionMessage;

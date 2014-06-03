@@ -12,19 +12,19 @@ package no.javatime.inplace.bundle.log.status;
 
 import java.util.Collection;
 
+import no.javatime.inplace.bundle.log.Activator;
+import no.javatime.inplace.extender.provider.InPlaceException;
+
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.MultiStatus;
-import org.eclipse.core.runtime.Platform;
 import org.eclipse.pde.core.project.IBundleProjectDescription;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.Version;
-
-import no.javatime.inplace.bundle.log.Activator;
-import no.javatime.inplace.extender.provider.InPlaceException;
 
 /**
  * Bundle status object containing status codes, exceptions and messages associated with a bundle project.
@@ -93,12 +93,28 @@ public class BundleStatus extends MultiStatus implements IBundleStatus {
 			this.bundleId = bundle.getBundleId();
 			bundleState = bundle.getState();
 		} else if (null != project) {
-			IBundleProjectDescription pd = Activator.getDefault().getBundleDescription(project);
-			symbolicName = pd.getSymbolicName();
-			Platform.getBundle(symbolicName);
+			// TODO Consider (strongly) revising
+			IPath path = project.getLocation();
+			String bundleReferenceLocationScheme = "reference:file:/";
+			StringBuffer locScheme = null;
+			locScheme = new StringBuffer(bundleReferenceLocationScheme);
+			String locIdent = path.toOSString();
+			locScheme = locScheme.append(locIdent);
+			bundle = Activator.getContext().getBundle(locScheme.toString());			
+			//bundle = Platform.getBundle(symbolicName);
+			if (null != bundle) {
+				this.bundleId = Activator.getContext().getBundle().getBundleId();
+				symbolicName = bundle.getSymbolicName();
+			} else {
+				IBundleProjectDescription pd = Activator.getDefault().getBundleDescription(project);
+				symbolicName = pd.getSymbolicName();
+				bundleState = Bundle.UNINSTALLED;
+			}
 		} else {
-			// Worst case. Symbolic name is not always be the same as the plug-gin id.
-			symbolicName = Activator.PLUGIN_ID;
+			// Worst case. Symbolic name is not always the same as the plug-gin id.
+			if (null == symbolicName) {
+				symbolicName = Activator.PLUGIN_ID;
+			}
 		}
 		setPlugin(symbolicName);
 		convertToSeverity(statusCode);
@@ -191,6 +207,10 @@ public class BundleStatus extends MultiStatus implements IBundleStatus {
 	@Override
 	public int getBundleState() {
 		return bundleState;
+	}
+
+	public void setBundleState(int bundleState) {
+		this.bundleState = bundleState;
 	}
 
 	@Override

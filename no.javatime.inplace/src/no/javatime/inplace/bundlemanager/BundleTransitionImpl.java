@@ -226,8 +226,6 @@ class BundleTransitionImpl implements BundleTransition {
 			return;
 		}		
 		bn.setTransition(Transition.UNINSTALL);
-//		String location = ws.getBundleLocationIdentifier(project);
-//		setTransition(location, Transition.UNINSTALL);
 	}
 
 	@Override
@@ -238,9 +236,8 @@ class BundleTransitionImpl implements BundleTransition {
 		}
 		bn.clearTransitionError();
 		return bn.setTransition(transition);
-//		String location = ws.getBundleLocationIdentifier(project);
-//		return this.activeTransition.put(location, transition);
 	}
+
 	@Override
 	public Transition setTransition(Bundle bundle, Transition transition) {
 		BundleNode bn = ws.getBundleNode(bundle);
@@ -249,8 +246,14 @@ class BundleTransitionImpl implements BundleTransition {
 		}		
 		bn.clearTransitionError();
 		return bn.setTransition(transition);
-//		String location = ws.getBundleLocationIdentifier(project);
-//		return this.activeTransition.put(location, transition);
+	}
+	@Override
+	public Transition getTransition(Bundle bundle) {
+		BundleNode bn = ws.getBundleNode(bundle);
+		if (null == bn) {
+			return null;
+		}		
+		return bn.getTransition();
 	}
 
 	@Override

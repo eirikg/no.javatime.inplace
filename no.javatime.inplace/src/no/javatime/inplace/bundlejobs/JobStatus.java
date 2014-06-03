@@ -13,10 +13,14 @@ import no.javatime.inplace.bundlemanager.BundleCommand;
 import no.javatime.inplace.bundlemanager.BundleManager;
 import no.javatime.inplace.bundlemanager.BundleRegion;
 import no.javatime.inplace.bundlemanager.BundleTransition;
+import no.javatime.inplace.bundlemanager.BundleTransition.Transition;
 import no.javatime.inplace.bundlemanager.DuplicateBundleException;
 import no.javatime.inplace.bundlemanager.ProjectLocationException;
+import no.javatime.inplace.bundlemanager.events.BundleTransitionEvent;
+import no.javatime.inplace.bundlemanager.events.BundleTransitionEventListener;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.dependencies.ProjectSorter;
+import no.javatime.inplace.msg.Msg;
 import no.javatime.util.messages.ErrorMessage;
 import no.javatime.util.messages.ExceptionMessage;
 
@@ -35,7 +39,7 @@ import org.osgi.framework.Bundle;
  * 
  * @see no.javatime.inplace.bundle.log.status.IBundleStatus
  */
-public abstract class JobStatus extends WorkspaceJob {
+public abstract class JobStatus extends WorkspaceJob implements BundleTransitionEventListener{
 
 	/**
 	 * Convenience reference to the bundle manager
@@ -57,6 +61,50 @@ public abstract class JobStatus extends WorkspaceJob {
 	private List<IBundleStatus> statusList = new ArrayList<IBundleStatus>();
 	
 	private List<IBundleStatus> traceStatusList = new ArrayList<IBundleStatus>();
+	@Override
+
+	public void bundleTransitionChanged(BundleTransitionEvent event) {
+		if (!InPlace.get().msgOpt().isBundleOperations()) {
+			return;
+		}
+		Bundle bundle = event.getBundle();
+		Transition transition = event.getTransition();
+		switch (transition) {
+		case RESOLVE:
+			IBundleStatus status = addTrace(Msg.RESOLVE_BUNDLE_OPERATION_TRACE, new Object[] 
+					{bundle.getSymbolicName(), bundleCommand.getStateName(bundle)}, bundle);			
+			// The resolver hook does not show an updated bundle state (resolved) in its end method
+			if ((bundle.getState() & (Bundle.INSTALLED)) != 0) {
+				status.setBundleState(Bundle.RESOLVED);
+			}
+			break;
+		case UPDATE:
+				addTrace(Msg.UPDATE_BUNDLE_OPERATION_TRACE, new Object[] 
+						{bundle.getSymbolicName(), bundleCommand.getStateName(bundle)}, bundle);
+				break;
+		case REFRESH:
+			addTrace(Msg.REFRESH_BUNDLE_OPERATION_TRACE, new Object[] {bundle.getSymbolicName()}, bundle);
+			break;
+		case START:
+			addTrace(Msg.START_BUNDLE_OPERATION_TRACE, new Object[] {bundle.getSymbolicName(),
+					bundleCommand.getStateName(bundle), Long.toString(bundleCommand.getExecutionTime())}, bundle);
+			break;
+		case STOP:
+			addTrace(Msg.STOP_BUNDLE_OPERATION_TRACE, new Object[] {bundle.getSymbolicName(),
+					bundleCommand.getStateName(bundle), Long.toString(bundleCommand.getExecutionTime())}, bundle);
+			break;
+		case UNINSTALL:
+			addTrace(Msg.UNINSTALL_BUNDLE_OPERATION_TRACE, new Object[] 
+					{bundle.getSymbolicName(), bundleCommand.getStateName(bundle), bundle.getLocation()}, bundle);
+			break;
+		case INSTALL:
+			addTrace(Msg.INSTALL_BUNDLE_OPERATION_TRACE, new Object[] 
+					{bundle.getSymbolicName(), bundleCommand.getStateName(bundle), bundle.getLocation()}, bundle);
+			break;
+		default:
+			break;
+		}
+	}
 
 	/**
 	 * Runs the bundle(s) status operation.
@@ -134,23 +182,23 @@ public abstract class JobStatus extends WorkspaceJob {
 	 *  
 	 * @param key a {@code NLS} identifier
 	 * @param substitutions parameters to the {@code NLS} string
-	 * @param bundleProject a {@code Bundle} or an {@code IProject}
+	 * @param bundleProject a {@code Bundle} or an {@code IProject}. Must not be null
 	 * @see #addTrace(String, Bundle, IProject)
 	 * @see #getTraceList()
 	 */
-	public void addTrace(String key, Object[] substitutions, Object bundleProject) {
+	public IBundleStatus addTrace(String key, Object[] substitutions, Object bundleProject) {
 		Bundle bundle = null;
 		IProject project = null;;
 		if (null != bundleProject) {
-			if (bundleProject instanceof IProject) {
-				project = (IProject) bundleProject;
-				bundle = bundleRegion.get(project);
-			} else if (bundleProject instanceof Bundle) {
+			if (bundleProject instanceof Bundle) {
 				bundle = (Bundle) bundleProject;
 				project = bundleRegion.getProject(bundle);
+			} else if (bundleProject instanceof IProject) {
+				project = (IProject) bundleProject;
+				bundle = bundleRegion.get(project);
 			}
-		}
-		addTrace(NLS.bind(key, substitutions), bundle, project);
+		}		
+		return addTrace(NLS.bind(key, substitutions), bundle, project);
 	}
 	
 

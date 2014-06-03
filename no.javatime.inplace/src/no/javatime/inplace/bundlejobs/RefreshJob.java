@@ -17,6 +17,7 @@ import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundle.log.status.BundleStatus;
 import no.javatime.inplace.bundle.log.status.IBundleStatus;
 import no.javatime.inplace.bundle.log.status.IBundleStatus.StatusCode;
+import no.javatime.inplace.bundlemanager.BundleManager;
 import no.javatime.inplace.bundlemanager.InPlaceException;
 import no.javatime.inplace.dependencies.CircularReferenceException;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
@@ -88,6 +89,7 @@ public class RefreshJob extends BundleJob {
 	public IBundleStatus runInWorkspace(IProgressMonitor monitor) {
 
 		try {
+			BundleManager.addBundleTransitionListener(this);
 			monitor.beginTask(refreshTaskName, getTicks());
 			refreshBundles(monitor);
 		} catch(InterruptedException e) {
@@ -110,14 +112,15 @@ public class RefreshJob extends BundleJob {
 		} catch (Exception e) {
 			String msg = ExceptionMessage.getInstance().formatString("exception_job", getName());
 			addError(e, msg);
-		} finally {
-			monitor.done();
 		}
 		try {
 			return super.runInWorkspace(monitor);
 		} catch (CoreException e) {
 			String msg = ErrorMessage.getInstance().formatString("error_end_job", getName());
 			return new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID, msg);
+		} finally {
+			monitor.done();
+			BundleManager.removeBundleTransitionListener(this);
 		}
 	}
 

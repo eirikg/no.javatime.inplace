@@ -618,11 +618,6 @@ class BundleWorkspaceImpl implements BundleRegion {
 				InPlace.get().trace("npe_project_cache");
 			throw new InPlaceException("project_null_location");
 		}
-//		if (null == bundle) {
-//			if (Category.DEBUG && Category.getState(Category.dag))
-//				TraceMessage.getInstance().getString("npe_project_cache");
-//			throw new InPlaceException("bundle_null_location");
-//		}
 		BundleNode node = getNode(project);
 		// Update node based on bundle
 		if (null != node) {
@@ -755,7 +750,7 @@ class BundleWorkspaceImpl implements BundleRegion {
 		if (null != bundleId) {
 			for (BundleNode node : bundleNodes.values()) {
 				Long id = node.getBundleId();
-				if (null != id && id == bundleId) {
+				if (null != id && id.equals(bundleId)) {
 					return node;
 				}
 			}

@@ -34,7 +34,7 @@ public class UpdateScheduler {
 	static public void scheduleUpdateJob(Collection<IProject> projects, long delay) {
 		if (projects.size() > 0) {
 			UpdateJob updateJob = new UpdateJob(UpdateJob.updateJobName);;
-			ActivateProjectJob activateProjectJob = new ActivateProjectJob(ActivateProjectJob.activateNatureJobName);
+			ActivateProjectJob activateProjectJob = new ActivateProjectJob(ActivateProjectJob.activateProjectsJobName);
 			Collection<IProject> initialSet = new LinkedHashSet<>();
 			// Include pending projects to update in partial graph of projects to update  
 			initialSet.addAll(BundleManager.getTransition().getPendingProjects(projects, Transition.UPDATE));			

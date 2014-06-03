@@ -16,6 +16,7 @@ import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundle.log.status.BundleStatus;
 import no.javatime.inplace.bundle.log.status.IBundleStatus;
 import no.javatime.inplace.bundle.log.status.IBundleStatus.StatusCode;
+import no.javatime.inplace.bundlemanager.BundleManager;
 import no.javatime.inplace.bundlemanager.InPlaceException;
 import no.javatime.inplace.dependencies.BundleSorter;
 import no.javatime.inplace.dependencies.CircularReferenceException;
@@ -99,6 +100,7 @@ public class UninstallJob extends NatureJob {
 
 		try {
 			monitor.beginTask(uninstallTaskName, getTicks());
+			BundleManager.addBundleTransitionListener(this);
 			uninstall(monitor);
 		} catch(InterruptedException e) {
 			String msg = ExceptionMessage.getInstance().formatString("interrupt_job", getName());
@@ -120,14 +122,15 @@ public class UninstallJob extends NatureJob {
 		} catch (Exception e) {
 			String msg = ExceptionMessage.getInstance().formatString("exception_job", getName());
 			addError(e, msg);
-		} finally {
-			monitor.done();
 		}
 		try {
 			return super.runInWorkspace(monitor);
 		} catch (CoreException e) {
 			String msg = ErrorMessage.getInstance().formatString("error_end_job", getName());
 			return new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID, msg, e);
+		} finally {
+			monitor.done();
+			BundleManager.removeBundleTransitionListener(this);
 		}
 	}
 

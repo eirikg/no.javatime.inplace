@@ -16,6 +16,7 @@ import java.util.Collection;
 import no.javatime.inplace.bundle.log.intface.BundleLogView;
 import no.javatime.inplace.bundle.log.status.BundleStatus;
 import no.javatime.inplace.bundle.log.status.IBundleStatus.StatusCode;
+import no.javatime.inplace.bundlejobs.ActivateProjectJob;
 import no.javatime.inplace.bundlemanager.BundleCommand;
 import no.javatime.inplace.bundlemanager.BundleManager;
 import no.javatime.inplace.bundlemanager.BundleRegion;
@@ -27,6 +28,7 @@ import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.extender.provider.Extension;
 import no.javatime.inplace.pl.dependencies.service.DependencyDialog;
 import no.javatime.inplace.ui.Activator;
+import no.javatime.inplace.ui.msg.Msg;
 import no.javatime.inplace.ui.views.BundleView;
 import no.javatime.util.messages.Message;
 import no.javatime.util.messages.WarnMessage;
@@ -131,13 +133,12 @@ public class BundleMainCommandsContributionItems extends BundleCommandsContribut
 	private CommandContributionItem addActivate(Collection<IProject> candidateProjects,
 			Collection<IProject> activatedProjects) {
 		if (candidateProjects.size() > 0) {
-			String activateName = "Activate";
 			String activateLabel = null;
 			if (activatedProjects.isEmpty()) {
-				activateName += " Workspace";
-				activateLabel = formatLabel(activateName, candidateProjects.size(), Boolean.FALSE);
+				activateLabel = formatLabel(ActivateProjectJob.activateWorkspaceJobName, 
+						candidateProjects.size(), Boolean.FALSE);
 			} else {
-				activateLabel = formatLabel(activateName, candidateProjects.size(), Boolean.TRUE);
+				activateLabel = formatLabel(Msg.ACTIVATE_JOB, candidateProjects.size(), Boolean.TRUE);
 			}
 			return addContribution(menuId, dynamicMainCommandId, activateLabel, activateParamId,
 					CommandContributionItem.STYLE_PUSH, activateImage);

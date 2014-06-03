@@ -27,6 +27,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import no.javatime.inplace.InPlace;
+import no.javatime.inplace.bundle.log.status.BundleStatus;
+import no.javatime.inplace.bundle.log.status.IBundleStatus.StatusCode;
 import no.javatime.inplace.bundlemanager.BundleTransition.Transition;
 import no.javatime.inplace.bundlemanager.BundleTransition.TransitionError;
 import no.javatime.inplace.bundlemanager.state.BundleNode;
@@ -34,12 +36,6 @@ import no.javatime.inplace.bundlemanager.state.BundleState;
 import no.javatime.inplace.bundlemanager.state.BundleStateFactory;
 import no.javatime.inplace.bundlemanager.state.StateLess;
 import no.javatime.inplace.bundlemanager.state.UninstalledState;
-import no.javatime.inplace.bundle.log.intface.BundleLog;
-import no.javatime.inplace.bundle.log.intface.BundleLog.Device;
-import no.javatime.inplace.bundle.log.intface.BundleLog.MessageType;
-import no.javatime.inplace.bundle.log.status.BundleStatus;
-import no.javatime.inplace.bundle.log.status.IBundleStatus;
-import no.javatime.inplace.bundle.log.status.IBundleStatus.StatusCode;
 import no.javatime.util.messages.Category;
 import no.javatime.util.messages.ExceptionMessage;
 import no.javatime.util.messages.WarnMessage;
@@ -271,14 +267,14 @@ class BundleCommandImpl implements BundleCommand {
 			throw new InPlaceException(e, "bundles_argument_resolve_bundle", bundleRegion.formatBundleList(bundles,
 					true));
 		} finally {
-			for (Bundle bundle : bundles) {
-				try {
-					BundleManager.addBundleTransition(new TransitionEvent(bundle, bundleTransition
-							.getTransition(bundleRegion.getProject(bundle))));
-				} catch (ProjectLocationException e) {
-					throw new InPlaceException(e, "bundle_resolve_error", bundle);
-				}
-			}
+//			for (Bundle bundle : bundles) {
+//				try {
+//					BundleManager.addBundleTransition(new TransitionEvent(bundle, bundleTransition
+//							.getTransition(bundleRegion.getProject(bundle))));
+//				} catch (ProjectLocationException e) {
+//					throw new InPlaceException(e, "bundle_resolve_error", bundle);
+//				}
+//			}
 		}
 	}
 

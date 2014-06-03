@@ -10,7 +10,14 @@
  *******************************************************************************/
 package no.javatime.inplace.builder;
 
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Map.Entry;
+
 import no.javatime.inplace.InPlace;
+import no.javatime.inplace.bundle.log.status.BundleStatus;
+import no.javatime.inplace.bundle.log.status.IBundleStatus;
+import no.javatime.inplace.bundle.log.status.IBundleStatus.StatusCode;
 import no.javatime.inplace.bundlejobs.ActivateBundleJob;
 import no.javatime.inplace.bundlejobs.ActivateProjectJob;
 import no.javatime.inplace.bundlejobs.BundleJob;
@@ -27,13 +34,7 @@ import no.javatime.inplace.bundlemanager.BundleTransition.Transition;
 import no.javatime.inplace.bundlemanager.InPlaceException;
 import no.javatime.inplace.bundlemanager.ProjectLocationException;
 import no.javatime.inplace.bundleproject.ProjectProperties;
-import no.javatime.inplace.bundle.log.intface.BundleLogView;
-import no.javatime.inplace.bundle.log.intface.BundleLog;
-import no.javatime.inplace.bundle.log.intface.BundleLog.Device;
-import no.javatime.inplace.bundle.log.intface.BundleLog.MessageType;
-import no.javatime.inplace.bundle.log.status.BundleStatus;
-import no.javatime.inplace.bundle.log.status.IBundleStatus;
-import no.javatime.inplace.bundle.log.status.IBundleStatus.StatusCode;
+import no.javatime.inplace.msg.Msg;
 import no.javatime.util.messages.Category;
 import no.javatime.util.messages.ErrorMessage;
 import no.javatime.util.messages.ExceptionMessage;
@@ -115,7 +116,7 @@ public class PostBuildListener implements IResourceChangeListener {
 		ActivateBundleJob activateBundleJob = new ActivateBundleJob(ActivateBundleJob.activateJobName);
 		// If a project to update has requirements on deactivated projects, the deactivated projects are scheduled
 		// for project activation and update
-		ActivateProjectJob activateProjectJob = new ActivateProjectJob(ActivateProjectJob.activateNatureJobName);
+		ActivateProjectJob activateProjectJob = new ActivateProjectJob(ActivateProjectJob.activateProjectsJobName);
 		// Project with new requirements on UI plug-in(s), when UI plug-ins are not allowed
 		DeactivateJob deactivateJob = new DeactivateJob(DeactivateJob.deactivateJobName);
 		// Project probably moved or needs a reactivation for some reason
@@ -123,7 +124,7 @@ public class PostBuildListener implements IResourceChangeListener {
 		// When a project is activated and in state uninstalled or deactivated and in state 
 		// uninstalled in an activated workspace
 		InstallJob installJob = new InstallJob(InstallJob.installJobName);
-
+		traceBuilds();
 		int buildType = event.getBuildKind();
 		IResourceDelta rootDelta = event.getDelta();
 		IResourceDelta[] resourceDeltas = null;
@@ -378,5 +379,26 @@ public class PostBuildListener implements IResourceChangeListener {
 			StatusManager.getManager().handle(status, StatusManager.LOG);
 		}
 		return false;
+	}
+
+	/**
+	 * Add activated projects that have been built to the bundle log
+	 * @see JavaTimeBuilder
+	 */
+	private void traceBuilds() {
+		if (InPlace.get().msgOpt().isBundleOperations()) {
+			Map<IProject, IBundleStatus> builds = JavaTimeBuilder.getBuilds();
+			if (!builds.isEmpty()) {
+				IBundleStatus mStatus = new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, Msg.BUILD_HEADER_TRACE);
+				Iterator<Entry<IProject, IBundleStatus>> it = builds.entrySet().iterator();
+				while (it.hasNext()) {
+					Map.Entry<IProject, IBundleStatus> entry = it.next();
+					IBundleStatus status = entry.getValue();
+					mStatus.add(status);
+				}			
+				JavaTimeBuilder.clearBuilds();
+				InPlace.get().trace(mStatus);
+			}
+		}
 	}
 }

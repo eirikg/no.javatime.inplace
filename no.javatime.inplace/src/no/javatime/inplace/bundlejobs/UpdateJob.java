@@ -23,6 +23,7 @@ import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundle.log.status.BundleStatus;
 import no.javatime.inplace.bundle.log.status.IBundleStatus;
 import no.javatime.inplace.bundle.log.status.IBundleStatus.StatusCode;
+import no.javatime.inplace.bundlemanager.BundleManager;
 import no.javatime.inplace.bundlemanager.BundleTransition.Transition;
 import no.javatime.inplace.bundlemanager.BundleTransition.TransitionError;
 import no.javatime.inplace.bundlemanager.DuplicateBundleException;
@@ -32,7 +33,6 @@ import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.dependencies.BundleSorter;
 import no.javatime.inplace.dependencies.CircularReferenceException;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
-import no.javatime.inplace.msg.Msg;
 import no.javatime.util.messages.Category;
 import no.javatime.util.messages.ErrorMessage;
 import no.javatime.util.messages.ExceptionMessage;
@@ -110,6 +110,7 @@ public class UpdateJob extends BundleJob {
 
 		try {
 			monitor.beginTask(Message.getInstance().formatString("update_task_name"), getTicks());
+			BundleManager.addBundleTransitionListener(this);
 			update(monitor);
 		} catch(InterruptedException e) {
 			String msg = ExceptionMessage.getInstance().formatString("interrupt_job", getName());
@@ -134,14 +135,15 @@ public class UpdateJob extends BundleJob {
 		} catch (Exception e) {
 			String msg = ExceptionMessage.getInstance().formatString("exception_job", getName());
 			addError(e, msg);
-		} finally {
-			monitor.done();
 		}
 		try {
 			return super.runInWorkspace(monitor);
 		} catch (CoreException e) {
 			String msg = ErrorMessage.getInstance().formatString("error_end_job", getName());
 			return new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID, msg);
+		} finally {
+			monitor.done();
+			BundleManager.removeBundleTransitionListener(this);
 		}
 	}
 
@@ -169,8 +171,8 @@ public class UpdateJob extends BundleJob {
 	 * @throws InterruptedIOException 
 	 */
 	private IBundleStatus update(IProgressMonitor monitor) throws InPlaceException, InterruptedException, CoreException {
-
-		// (1) Collect any additional bundles to update
+			
+			// (1) Collect any additional bundles to update
 		// Update all bundles that are part of an activation process when the update on build option is switched
 		// off
 		Collection<IProject> activateProjects = bundleTransition.getPendingProjects(
@@ -319,10 +321,6 @@ public class UpdateJob extends BundleJob {
 					duplicateInstanceGroups.put(bundle, duplicateInstanceCandidates);
 					bundleCommand.getResolverHookFactory().setGroups(duplicateInstanceGroups);					
 					bundleCommand.update(bundle);
-					if (InPlace.get().msgOpt().isBundleOperations()) {
-						addTrace(Msg.UPDATE_BUNDLE_OPERATION_TRACE, new Object[] 
-								{bundle.getSymbolicName(), bundleCommand.getStateName(bundle)}, bundle);
-					}
 				} catch (DuplicateBundleException e) {
 					handleDuplicateException(bundleRegion.getProject(bundle), e, null);
 					String msg = ErrorMessage.getInstance().formatString("duplicate_error", bundle.getSymbolicName(),

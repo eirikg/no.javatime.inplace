@@ -19,6 +19,9 @@ import java.util.Map;
 import java.util.concurrent.TimeoutException;
 
 import no.javatime.inplace.InPlace;
+import no.javatime.inplace.bundle.log.status.BundleStatus;
+import no.javatime.inplace.bundle.log.status.IBundleStatus;
+import no.javatime.inplace.bundle.log.status.IBundleStatus.StatusCode;
 import no.javatime.inplace.bundlemanager.BundleActivatorException;
 import no.javatime.inplace.bundlemanager.BundleManager;
 import no.javatime.inplace.bundlemanager.BundleStateChangeException;
@@ -38,13 +41,6 @@ import no.javatime.inplace.dependencies.ProjectSorter;
 import no.javatime.inplace.dl.preferences.intface.CommandOptions;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
-import no.javatime.inplace.msg.Msg;
-import no.javatime.inplace.bundle.log.intface.BundleLog;
-import no.javatime.inplace.bundle.log.intface.BundleLog.Device;
-import no.javatime.inplace.bundle.log.intface.BundleLog.MessageType;
-import no.javatime.inplace.bundle.log.status.BundleStatus;
-import no.javatime.inplace.bundle.log.status.IBundleStatus;
-import no.javatime.inplace.bundle.log.status.IBundleStatus.StatusCode;
 import no.javatime.util.messages.Category;
 import no.javatime.util.messages.ErrorMessage;
 import no.javatime.util.messages.ExceptionMessage;
@@ -320,10 +316,6 @@ public abstract class BundleJob extends JobStatus {
 				// Get the activation status of the corresponding project
 				Boolean activated = ProjectProperties.isProjectActivated(project);
 				bundle = bundleCommand.install(project, activated);
-				if (InPlace.get().msgOpt().isBundleOperations()) {
-					addTrace(Msg.INSTALL_BUNDLE_OPERATION_TRACE, new Object[] 
-							{bundle.getSymbolicName(), bundleCommand.getStateName(bundle), bundle.getLocation()}, bundle);
-				}
 				// Project must be activated and bundle must be successfully installed to be activated
 				if (null != bundle && activated) {
 					activatedBundles.add(bundle);
@@ -377,10 +369,6 @@ public abstract class BundleJob extends JobStatus {
 				localMonitor.subTask(UninstallJob.uninstallSubtaskName + bundle.getSymbolicName());
 				try {
 					bundleCommand.uninstall(bundle, unregister);
-					if (InPlace.get().msgOpt().isBundleOperations()) {
-						addTrace(Msg.UNINSTALL_BUNDLE_OPERATION_TRACE, new Object[] 
-								{bundle.getSymbolicName(), bundleCommand.getStateName(bundle), bundle.getLocation()}, bundle);
-					}
 				} catch (InPlaceException e) {
 					result = addError(e, e.getLocalizedMessage(), bundle.getBundleId());
 				} finally {
@@ -473,10 +461,6 @@ public abstract class BundleJob extends JobStatus {
 						} else {
 							bundleCommand.start(bundle, startOption);
 						}
-						if (InPlace.get().msgOpt().isBundleOperations()) {
-							addTrace(Msg.START_BUNDLE_OPERATION_TRACE, new Object[] {bundle.getSymbolicName(),
-									bundleCommand.getStateName(bundle), Long.toString(bundleCommand.getExecutionTime())}, bundle);
-						}	
 					}
 				} catch (BundleActivatorException e) {
 					result = addError(e, e.getLocalizedMessage(), bundle.getBundleId());
@@ -582,10 +566,6 @@ public abstract class BundleJob extends JobStatus {
 							bundleCommand.stop(bundle, false);
 						}
 					}
-					if (InPlace.get().msgOpt().isBundleOperations()) {
-						addTrace(Msg.STOP_BUNDLE_OPERATION_TRACE, new Object[] {bundle.getSymbolicName(),
-								bundleCommand.getStateName(bundle), Long.toString(bundleCommand.getExecutionTime())}, bundle);
-					}	
 				} catch (IllegalStateException e) {
 					result = addError(e, e.getLocalizedMessage(), bundle.getBundleId());
 				} catch (BundleStateChangeException e) {
@@ -790,11 +770,6 @@ public abstract class BundleJob extends JobStatus {
 		}
 		try {
 			bundleCommand.refresh(bundlesToRefresh);
-			if (InPlace.get().msgOpt().isBundleOperations()) {
-				for (Bundle bundle : bundlesToRefresh) {
-					addTrace(Msg.REFRESH_BUNDLE_OPERATION_TRACE, new Object[] {bundle.getSymbolicName()}, bundle);
-				}		
-			}
 		} finally {
 			localMonitor.worked(bundlesToRefresh.size());
 		}
@@ -835,14 +810,6 @@ public abstract class BundleJob extends JobStatus {
 			if (Category.getState(Category.progressBar))
 				sleep(sleepTime);
 			localMonitor.subTask(resolveTaskName);
-			if (InPlace.get().msgOpt().isBundleOperations()) {
-				for (Bundle bundle : bundlesToResolve) {
-					if ((bundleCommand.getState(bundle) & (Bundle.RESOLVED | Bundle.STARTING)) != 0) {
-						addTrace(Msg.RESOLVE_BUNDLE_OPERATION_TRACE, new Object[] 
-								{bundle.getSymbolicName(), bundleCommand.getStateName(bundle)}, bundle);
-					}
-				}
-			}
 			if (!bundleCommand.resolve(bundlesToResolve)) {
 				ProjectSorter bs = new ProjectSorter();
 				Collection<IProject> projectsToResolve = bundleRegion.getProjects(bundlesToResolve);
@@ -899,14 +866,6 @@ public abstract class BundleJob extends JobStatus {
 					String rootMsg = WarnMessage.getInstance().formatString("not_resolved_root");
 					createMultiStatus(new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID, rootMsg), startStatus);
 					return notResolvedBundles;
-				}
-			}
-			if (InPlace.get().msgOpt().isBundleOperations()) {
-				for (Bundle bundle : bundlesToResolve) {
-					if ((bundleCommand.getState(bundle) & (Bundle.RESOLVED | Bundle.STARTING)) != 0) {
-						addTrace(Msg.RESOLVE_BUNDLE_OPERATION_TRACE, new Object[] 
-								{bundle.getSymbolicName(), bundleCommand.getStateName(bundle)}, bundle);
-					}
 				}
 			}
 			if (monitor.isCanceled()) {

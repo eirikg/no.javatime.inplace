@@ -18,6 +18,7 @@ import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundle.log.status.BundleStatus;
 import no.javatime.inplace.bundle.log.status.IBundleStatus;
 import no.javatime.inplace.bundle.log.status.IBundleStatus.StatusCode;
+import no.javatime.inplace.bundlemanager.BundleManager;
 import no.javatime.inplace.bundlemanager.BundleTransition.TransitionError;
 import no.javatime.inplace.bundlemanager.InPlaceException;
 import no.javatime.inplace.bundleproject.BundleProject;
@@ -28,6 +29,7 @@ import no.javatime.inplace.dependencies.CircularReferenceException;
 import no.javatime.inplace.dependencies.ProjectSorter;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Operation;
+import no.javatime.inplace.msg.Msg;
 import no.javatime.util.messages.ErrorMessage;
 import no.javatime.util.messages.ExceptionMessage;
 import no.javatime.util.messages.Message;
@@ -136,6 +138,7 @@ public class ActivateBundleJob extends BundleJob {
 	public IBundleStatus runInWorkspace(IProgressMonitor monitor) {
 
 		try {
+			BundleManager.addBundleTransitionListener(this);
 			monitor.beginTask(activateTaskName, getTicks());
 			activate(monitor);
 		} catch (InterruptedException e) {
@@ -158,14 +161,15 @@ public class ActivateBundleJob extends BundleJob {
 		} catch (Exception e) {
 			String msg = ExceptionMessage.getInstance().formatString("exception_job", getName());
 			addError(e, msg);
-		} finally {
-			monitor.done();
 		}
 		try {
 			return super.runInWorkspace(monitor);
 		} catch (CoreException e) {
 			String msg = ErrorMessage.getInstance().formatString("error_end_job", getName());
 			return new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID, msg, e);
+		} finally {
+			monitor.done();
+			BundleManager.removeBundleTransitionListener(this);
 		}
 	}
 
@@ -242,8 +246,10 @@ public class ActivateBundleJob extends BundleJob {
 		}
 		if (bundlesToResolve.size() == 0) {
 			if (InPlace.get().msgOpt().isBundleOperations())
-				InPlace.get().trace("already_activated",
-						bundleRegion.formatBundleList(activatedBundles, true));
+				addTrace(Msg.ACTIVATED_BUNDLES, new Object[] {bundleRegion.formatBundleList(activatedBundles, true)}, 
+						InPlace.getContext().getBundle());
+//				InPlace.get().trace("already_activated",
+//						bundleRegion.formatBundleList(activatedBundles, true));
 			return getLastStatus();
 		}
 		Collection<Bundle> notResolvedBundles = resolve(bundlesToResolve, new SubProgressMonitor(monitor, 1));

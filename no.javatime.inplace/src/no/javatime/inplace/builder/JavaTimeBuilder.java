@@ -12,9 +12,13 @@ package no.javatime.inplace.builder;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 
 import no.javatime.inplace.InPlace;
+import no.javatime.inplace.bundle.log.status.BundleStatus;
+import no.javatime.inplace.bundle.log.status.IBundleStatus;
+import no.javatime.inplace.bundle.log.status.IBundleStatus.StatusCode;
 import no.javatime.inplace.bundlemanager.BundleCommand;
 import no.javatime.inplace.bundlemanager.BundleManager;
 import no.javatime.inplace.bundlemanager.BundleRegion;
@@ -26,13 +30,7 @@ import no.javatime.inplace.bundleproject.BundleProject;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.dependencies.CircularReferenceException;
 import no.javatime.inplace.dependencies.ProjectSorter;
-import no.javatime.inplace.bundle.log.intface.BundleLogView;
-import no.javatime.inplace.bundle.log.intface.BundleLog;
-import no.javatime.inplace.bundle.log.intface.BundleLog.Device;
-import no.javatime.inplace.bundle.log.intface.BundleLog.MessageType;
-import no.javatime.inplace.bundle.log.status.BundleStatus;
-import no.javatime.inplace.bundle.log.status.IBundleStatus;
-import no.javatime.inplace.bundle.log.status.IBundleStatus.StatusCode;
+import no.javatime.inplace.msg.Msg;
 import no.javatime.util.messages.Category;
 import no.javatime.util.messages.ExceptionMessage;
 import no.javatime.util.messages.WarnMessage;
@@ -46,6 +44,7 @@ import org.eclipse.core.resources.IResourceVisitor;
 import org.eclipse.core.resources.IncrementalProjectBuilder;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.osgi.util.NLS;
 import org.eclipse.ui.statushandlers.StatusManager;
 import org.osgi.framework.Bundle;
 
@@ -71,10 +70,19 @@ import org.osgi.framework.Bundle;
 public class JavaTimeBuilder extends IncrementalProjectBuilder {
 
 	public static final String JAVATIME_BUILDER_ID = "no.javatime.inplace.JavaTimeBuilder";
+	
+	private static Map<IProject, IBundleStatus> builds = new HashMap<IProject, IBundleStatus>();
 
 	public JavaTimeBuilder() {
 	}
 
+	public static Map<IProject, IBundleStatus> getBuilds() {
+		return builds;
+	}
+	
+	public static void clearBuilds () {
+		builds.clear();
+	}
 	// Incremental build
 	class DeltaVisitor implements IResourceDeltaVisitor {
 
@@ -152,12 +160,18 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 						.getAffectedChildren(IResourceDelta.ADDED | IResourceDelta.CHANGED, IResource.NONE);
 			} else if (kind != FULL_BUILD) { // null delta when not a full build imply an unspecified change
 				if (InPlace.get().msgOpt().isBundleOperations()) {
-					InPlace.get().trace("no_build_delta_available", project.getName());
+					String msg = NLS.bind(Msg.NO_RESOURCE_DELTA_BUILD_AVAILABLE_TRACE, 
+							new Object[] {project.getName()});
+					IBundleStatus status = new BundleStatus(StatusCode.INFO,bundle, project, msg, null);
+					builds.put(project, status);
 				}
 			}
 			if (null != resourceDelta && resourceDelta.length == 0) { // no change since last build
 				if (InPlace.get().msgOpt().isBundleOperations()) {
-					InPlace.get().trace("no_build_delta", project.getName());
+					String msg = NLS.bind(Msg.NO_RESOURCE_DELTA_BUILD_TRACE, 
+							new Object[] {project.getName()});
+					IBundleStatus status = new BundleStatus(StatusCode.INFO,bundle, project, msg, null);
+					builds.put(project, status);
 				}
 			}
 
@@ -218,17 +232,27 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 	}
 
 	protected void fullBuild(final IProgressMonitor monitor) throws CoreException {
-		if (InPlace.get().msgOpt().isBundleOperations())
-			InPlace.get().trace("full_bundle_build", getProject().getName(),
-					getProject().getLocation().toOSString());
+		if (InPlace.get().msgOpt().isBundleOperations()){
+			IProject project = getProject();
+			Bundle bundle = BundleManager.getRegion().get(project);
+			String msg = NLS.bind(Msg.FULL_BUILD_TRACE, 
+					new Object[] {project.getName(), project.getLocation().toOSString()});
+			IBundleStatus status = new BundleStatus(StatusCode.INFO,bundle, project, msg, null);
+			builds.put(project, status);
+		}
 		if (Category.DEBUG && Category.getState(Category.build))
 			getProject().accept(new ResourceVisitor());
 	}
 
 	protected void incrementalBuild(IResourceDelta delta, IProgressMonitor monitor) throws CoreException {
-		if (InPlace.get().msgOpt().isBundleOperations())
-			InPlace.get().trace("incremental_bundle_build", getProject().getName(),
-					getProject().getLocation().toOSString());
+		if (InPlace.get().msgOpt().isBundleOperations()) {
+			IProject project = getProject();
+			Bundle bundle = BundleManager.getRegion().get(project);
+			String msg = NLS.bind(Msg.INCREMENTAL_BUILD_TRACE, 
+					new Object[] {project.getName(), project.getLocation().toOSString()});
+			IBundleStatus status = new BundleStatus(StatusCode.INFO,bundle, project, msg, null);
+			builds.put(project, status);
+		}
 		if (Category.DEBUG && Category.getState(Category.build))
 			delta.accept(new DeltaVisitor());
 	}
@@ -263,30 +287,36 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 			cycle = true;
 		}
 		try {
-			String msg = null;
-			if (InPlace.get().getCommandOptionsService().isUpdateOnBuild()) {
-				msg = WarnMessage.getInstance().formatString("build_error_in_project_to_update", project.getName());
-			} else {
-				msg = WarnMessage.getInstance().formatString("build_error_in_project", project.getName());
-			}
-			IBundleStatus buildStatus = new BundleStatus(StatusCode.BUILDERROR, InPlace.PLUGIN_ID, msg);
-			Bundle bundle = BundleManager.getRegion().get(project);
-			if (null != bundle && (bundle.getState() & (Bundle.INSTALLED)) == 0) {
-				msg = WarnMessage.getInstance().formatString("using_current_revision", bundle);
-				IBundleStatus revisionStatus = new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, msg);
-				buildStatus.add(revisionStatus);
-			}
-			if (!cycle) {
-				projectErrorClosures.remove(project);
-				if (projectErrorClosures.size() > 0) {
-					// Add requiring bundles to build error message
-					msg = WarnMessage.getInstance().formatString("requiring_bundles",
-							ProjectProperties.formatProjectList(projectErrorClosures));
-					IBundleStatus status = new BundleStatus(StatusCode.BUILDERROR, InPlace.PLUGIN_ID, msg);
-					buildStatus.add(status);
+			if (InPlace.get().msgOpt().isBundleOperations()) {
+				String msg = null;
+				Bundle bundle = BundleManager.getRegion().get(project);
+				msg = NLS.bind(Msg.INCREMENTAL_BUILD_TRACE, 
+						new Object[] {project.getName(), project.getLocation().toOSString()});
+				IBundleStatus status = new BundleStatus(StatusCode.INFO, bundle, project, msg, null);
+				builds.put(project, status);
+				if (InPlace.get().getCommandOptionsService().isUpdateOnBuild()) {
+					msg = NLS.bind(Msg.BUILD_ERROR_UPDATE_TRACE, new Object[] {project.getName()});
+				} else {
+					msg = NLS.bind(Msg.BUILD_ERROR_TRACE, new Object[] {project.getName()});
 				}
+				IBundleStatus buildStatus = new BundleStatus(StatusCode.BUILDERROR, bundle,project, msg, null);
+				if (null != bundle && (bundle.getState() & (Bundle.INSTALLED | Bundle.UNINSTALLED)) == 0) {
+					msg = NLS.bind(Msg.USING_CURRENT_REVISION_TRACE, new Object[] {bundle});
+					IBundleStatus revisionStatus = new BundleStatus(StatusCode.INFO, bundle, project, msg, null);
+					buildStatus.add(revisionStatus);
+				}
+				if (!cycle) {
+					projectErrorClosures.remove(project);
+					if (projectErrorClosures.size() > 0) {
+						// Add requiring bundles to build error message
+						msg = NLS.bind(Msg.REQUIRING_BUNDLES_TRACE, 
+								new Object[] {ProjectProperties.formatProjectList(projectErrorClosures)});
+						status = new BundleStatus(StatusCode.BUILDERROR, bundle, project, msg, null);
+						buildStatus.add(status);
+					}
+				}
+				builds.put(project, buildStatus);
 			}
-			StatusManager.getManager().handle(buildStatus, StatusManager.LOG);
 		} catch (InPlaceException e) {
 			StatusManager.getManager().handle(
 					new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, e.getMessage(), e),

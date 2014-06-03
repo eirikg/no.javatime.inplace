@@ -32,7 +32,29 @@ public class Msg extends NLS {
 	public static String UNINSTALL_BUNDLE_OPERATION_TRACE;
 	public static String INSTALL_BUNDLE_OPERATION_TRACE;
 	public static String UPDATE_BUNDLE_OPERATION_TRACE;
+	public static String DISABLE_NATURE_TRACE;
+	public static String ENABLE_NATURE_TRACE;
+	public static String ACTIVATED_BUNDLES;
 	
+	// Build trace operations
+	public static String BUILD_HEADER_TRACE;
+	public static String NO_RESOURCE_DELTA_BUILD_TRACE;
+	public static String NO_RESOURCE_DELTA_BUILD_AVAILABLE_TRACE;
+	public static String INCREMENTAL_BUILD_TRACE;
+	public static String FULL_BUILD_TRACE;
+	public static String BUILD_ERROR_UPDATE_TRACE;
+	public static String BUILD_ERROR_TRACE;
+	public static String USING_CURRENT_REVISION_TRACE;
+	public static String REQUIRING_BUNDLES_TRACE;
+	
+	// Bundle job names
+	public static String ACTIVATE_PROJECTS_JOB;
+	public static String ACTIVATE_WORKSPACE_JOB;
+	
+	// Errors
+	public static String BEGIN_SHUTDOWN_ERROR;
+	public static String END_SHUTDOWN_ERROR;
+
 	private static final String BUNDLE_NAME = "no.javatime.inplace.msg.messages"; //$NON-NLS-1$
 
 	static {

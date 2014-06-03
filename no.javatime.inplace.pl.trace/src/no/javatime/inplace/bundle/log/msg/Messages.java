@@ -25,6 +25,9 @@ public class Messages extends NLS {
 	public static String LogView_copy;
 	public static String LogView_delete;
 	public static String LogView_delete_tooltip;
+	public static String LogView_toggle;
+	public static String LogView_toggle_tooltip;
+
 	public static String LogView_export;
 	public static String LogView_exportLog;
 	public static String LogView_export_tooltip;

@@ -71,6 +71,7 @@ class BundleResolveHandler implements ResolverHook {
 
 	// Groups of singletons
 	private Map<Bundle, Set<Bundle>> groups = null;
+	private Collection<Long> resolved = new LinkedHashSet<Long>();
 
 	@Override
 	public void filterMatches(BundleRequirement r, Collection<BundleCapability> candidates) {
@@ -123,21 +124,25 @@ class BundleResolveHandler implements ResolverHook {
 		candidates.removeAll(errorClosure);
 		
 		// If no deactivated bundles, all error free bundles are activated and will be resolved
-		if (deactivatedBundles.isEmpty()) {
-			traceResolved(errorClosure, deactivatedBundles, workspaceCandidates);
-			return;
-		}
-		candidates.removeAll(deactivatedBundles);
-		// If no activated bundles, the candidate list should be empty
-		// Note this is not among all workspace bundles, but the ones relevant for this resolve
-		if (activatedBundles.isEmpty()) {
-			traceResolved(errorClosure, deactivatedBundles, workspaceCandidates);
-			return;
+		if (!deactivatedBundles.isEmpty()) {
+			candidates.removeAll(deactivatedBundles);
+			// If no activated bundles, the candidate list should be empty
+			// Note this is not among all workspace bundles, but the ones relevant for this resolve
+			if (activatedBundles.isEmpty() && candidates.isEmpty()) {
+				// traceResolved(errorClosure, deactivatedBundles, workspaceCandidates);
+				return;
+			}
 		}
 		// Delay resolve for bundles dependent on deactivated bundles until deactivated bundles are activated
 		Collection<BundleRevision> dependentBundles = activateDependentBundles(activatedBundles, deactivatedBundles);
 		if (dependentBundles.size() > 0) {
 			candidates.removeAll(dependentBundles);
+		}
+		// traceResolved(errorClosure, deactivatedBundles, workspaceCandidates);
+		// Record bundles to resolve
+		for (BundleRevision bundleRevision : candidates) {
+			Long bundleId = bundleRevision.getBundle().getBundleId();
+			resolved.add(bundleId);
 		}
 	}
 
@@ -188,7 +193,7 @@ class BundleResolveHandler implements ResolverHook {
 		}
 		if (null != projectsToActivate) {
 			ActivateProjectJob activateProjectJob = new ActivateProjectJob(
-					ActivateProjectJob.activateNatureJobName, projectsToActivate);
+					ActivateProjectJob.activateProjectsJobName, projectsToActivate);
 			BundleManager.addBundleJob(activateProjectJob, 0);
 		}
 		return bundlesToNotResolve;
@@ -339,6 +344,21 @@ class BundleResolveHandler implements ResolverHook {
 
 	@Override
 	public void end() {
+		// Collection<Bundle> resolvedBundles = BundleDependencies.getBundlesFrom(resolved);
+
+		for (Long bundleId : resolved) {
+//			if ((bundle.getState() & (Bundle.RESOLVED | Bundle.STARTING)) != 0 
+//					&& BundleManager.getTransition().getTransition(bundle) != Transition.RESOLVE) {
+			// if resolve is invoked directly the transition is added from the resolve command
+//			if (BundleManager.getTransition().getTransition(bundle) != Transition.RESOLVE) {
+//			Bundle bundle = InPlace.getContext().getBundle(bundleId);
+			Bundle bundle = BundleManager.getRegion().get(bundleId);	
+			if (null != bundle) {
+				BundleManager.addBundleTransition(new TransitionEvent(bundle, Transition.RESOLVE));
+			}
+//			}
+		}
+		resolved.clear();
 		groups = null;
 	}
 

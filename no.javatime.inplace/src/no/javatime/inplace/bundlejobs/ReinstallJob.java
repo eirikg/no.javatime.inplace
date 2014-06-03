@@ -16,6 +16,7 @@ import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundle.log.status.BundleStatus;
 import no.javatime.inplace.bundle.log.status.IBundleStatus;
 import no.javatime.inplace.bundle.log.status.IBundleStatus.StatusCode;
+import no.javatime.inplace.bundlemanager.BundleManager;
 import no.javatime.inplace.bundlemanager.InPlaceException;
 import no.javatime.inplace.dependencies.CircularReferenceException;
 import no.javatime.util.messages.ErrorMessage;
@@ -83,6 +84,7 @@ public class ReinstallJob extends BundleJob {
 
 		try {
 			monitor.beginTask(reinstallTaskName, getTicks());
+			BundleManager.addBundleTransitionListener(this);
 			reinstall(monitor);
 		} catch (OperationCanceledException e) {
 			String msg = UserMessage.getInstance().formatString("cancel_job", getName());
@@ -101,14 +103,15 @@ public class ReinstallJob extends BundleJob {
 		} catch (Exception e) {
 			String msg = ExceptionMessage.getInstance().formatString("exception_job", getName());
 			addError(e, msg);
-		} finally {
-			monitor.done();
 		}
 		try {
 			return super.runInWorkspace(monitor);
 		} catch (CoreException e) {
 			String msg = ErrorMessage.getInstance().formatString("error_end_job", getName());
 			return new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID, msg);
+		} finally {
+			monitor.done();
+			BundleManager.removeBundleTransitionListener(this);
 		}
 	}
 

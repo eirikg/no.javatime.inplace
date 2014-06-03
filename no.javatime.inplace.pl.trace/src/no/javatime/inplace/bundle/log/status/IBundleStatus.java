@@ -52,9 +52,16 @@ public interface IBundleStatus extends IStatus {
 
 	/**
 	 * Bundle state at time of creation of this bundle status object
+	 * if not changed by {@linkplain #setBundleState(int)}
 	 * @return the bundle state
 	 */
 	int getBundleState();
+	
+	/**
+	 * Set the bundle state
+	 * @param bundleState the bundle state
+	 */
+	void setBundleState(int bundleState);
 
 		/**
 	 * Returns the message describing the outcome. The message is localized to the current locale.

@@ -12,6 +12,17 @@ package no.javatime.inplace.bundlejobs;
 
 import java.util.Collection;
 
+import no.javatime.inplace.InPlace;
+import no.javatime.inplace.bundle.log.status.BundleStatus;
+import no.javatime.inplace.bundle.log.status.IBundleStatus;
+import no.javatime.inplace.bundle.log.status.IBundleStatus.StatusCode;
+import no.javatime.inplace.bundlemanager.BundleManager;
+import no.javatime.inplace.bundleproject.ProjectProperties;
+import no.javatime.util.messages.ErrorMessage;
+import no.javatime.util.messages.ExceptionMessage;
+import no.javatime.util.messages.Message;
+import no.javatime.util.messages.UserMessage;
+
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IncrementalProjectBuilder;
 import org.eclipse.core.resources.ResourcesPlugin;
@@ -19,19 +30,6 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.SubProgressMonitor;
-
-import no.javatime.inplace.InPlace;
-import no.javatime.inplace.bundleproject.ProjectProperties;
-import no.javatime.inplace.bundle.log.intface.BundleLog;
-import no.javatime.inplace.bundle.log.intface.BundleLog.Device;
-import no.javatime.inplace.bundle.log.intface.BundleLog.MessageType;
-import no.javatime.inplace.bundle.log.status.BundleStatus;
-import no.javatime.inplace.bundle.log.status.IBundleStatus;
-import no.javatime.inplace.bundle.log.status.IBundleStatus.StatusCode;
-import no.javatime.util.messages.ErrorMessage;
-import no.javatime.util.messages.ExceptionMessage;
-import no.javatime.util.messages.Message;
-import no.javatime.util.messages.UserMessage;
 
 /**
  * Runs incremental or full build for a set of projects. A clean build is only applied to the the whole
@@ -114,6 +112,7 @@ public class BuildJob extends NatureJob {
 
 		try {
 			monitor.beginTask(buildTaskName, getTicks());
+			BundleManager.addBundleTransitionListener(this);
 			if (buildType == IncrementalProjectBuilder.INCREMENTAL_BUILD) {
 				incrementalBuild(monitor);
 			} else {
@@ -131,14 +130,15 @@ public class BuildJob extends NatureJob {
 		} catch (Exception e) {
 			String msg = ExceptionMessage.getInstance().formatString("exception_job", getName());
 			addError(e, msg);
-		} finally {
-			monitor.done();
 		}
 		try {
 			return super.runInWorkspace(monitor);
 		} catch (CoreException e) {
 			String msg = ErrorMessage.getInstance().formatString("error_end_job", getName());
 			return new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID, msg);
+		} finally {
+			monitor.done();
+			BundleManager.removeBundleTransitionListener(this);
 		}
 	}
 

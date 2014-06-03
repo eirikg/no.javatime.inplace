@@ -25,9 +25,10 @@ public class PreferenceInitializer extends AbstractPreferenceInitializer {
 		IPreferenceStore prefStore = PreferencePlActivator.getDefault().getPreferenceStore();
 		try {
 			CommandOptions cmdStore = PreferencePlActivator.getDefault().getOptionsService();
-			prefStore.setDefault(Msg.TIMEOUT_RADIOGROUP_NAME, CommandOptions.IS_TIMEOUT);
-			prefStore.setDefault(CommandOptions.IS_TIMEOUT, cmdStore.getDefaultIsTimeOut());
-//			prefStore.setDefault(CommandOptions.IS_MANUAL_TERMINATE, cmdStore.getDefaultIsManualTerminate());
+			/// prefStore.setDefault(Msg.TIMEOUT_RADIOGROUP_NAME, CommandOptions.IS_TIMEOUT);
+			// prefStore.setDefault(CommandOptions.IS_TIMEOUT, cmdStore.getDefaultIsTimeOut());
+			prefStore.setDefault(Msg.TIMEOUT_RADIOGROUP_NAME, CommandOptions.IS_MANUAL_TERMINATE);
+			prefStore.setDefault(CommandOptions.IS_MANUAL_TERMINATE, cmdStore.getDefaultIsManualTerminate());
 			prefStore.setDefault(CommandOptions.TIMEOUT_SECONDS, cmdStore.getDeafultTimeout());
 			prefStore.setDefault(CommandOptions.IS_DEACTIVATE_ON_EXIT, cmdStore.getDefaultIsDeactivateOnExit());
 			prefStore.setDefault(CommandOptions.IS_DEACTIVATE_ON_TERMINATE, cmdStore.getDefaultIsDeactivateOnTerminate());

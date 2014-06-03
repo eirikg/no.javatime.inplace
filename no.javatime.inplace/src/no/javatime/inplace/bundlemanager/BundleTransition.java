@@ -165,6 +165,14 @@ public interface BundleTransition {
 	 * @return the previous transition or null if there is no previous transition or the bundle does not exist
 	 */
 	Transition setTransition(Bundle bundle, Transition transition);
+	
+	/**
+	 * Get the current or the most recent transition for the specified bundle
+	 * @param bundle the bundle to obtain the current transition from
+	 * @return the current or most recent transition. If no transition is defined
+	 * return null.
+	 */
+	Transition getTransition(Bundle bundle);
 
 	/**
 	 * Mark the current transition of the specified bundle project with {@code TransitionError#ERROR}.

@@ -185,6 +185,7 @@ public class ResetJob {
 					public IBundleStatus runInWorkspace(IProgressMonitor monitor) {
 
 						try {
+							BundleManager.addBundleTransitionListener(this);
 							if (ProjectProperties.reportBuildErrorClosure(getPendingProjects(), getName()).size() > 0) {
 								throw new OperationCanceledException();
 							}
@@ -197,6 +198,9 @@ public class ResetJob {
 						} catch (CircularReferenceException e) {
 							String msg = ExceptionMessage.getInstance().formatString("circular_reference", getName());
 							addError(e, msg);
+						} finally {
+							monitor.done();
+							BundleManager.removeBundleTransitionListener(this);
 						}
 						if (getStatusList().size() > 0) {
 							return new BundleStatus(StatusCode.JOBINFO, InPlace.PLUGIN_ID, null);
@@ -257,6 +261,7 @@ public class ResetJob {
 						try {
 							// Wait for the uninstall job to finish before activating the bundles
 							getJobManager().join(uninstallFamily, null);
+							BundleManager.addBundleTransitionListener(this);
 							if (ProjectProperties.reportBuildErrorClosure(getPendingProjects(), getName()).size() > 0) {
 								throw new OperationCanceledException();
 							}
@@ -279,6 +284,9 @@ public class ResetJob {
 						} catch (CircularReferenceException e) {
 							String msg = ExceptionMessage.getInstance().formatString("circular_reference", getName());
 							addError(e, msg);
+						} finally {
+							monitor.done();
+							BundleManager.removeBundleTransitionListener(this);
 						}
 						if (getStatusList().size() > 0) {
 							return new BundleStatus(StatusCode.JOBINFO, InPlace.PLUGIN_ID, null);

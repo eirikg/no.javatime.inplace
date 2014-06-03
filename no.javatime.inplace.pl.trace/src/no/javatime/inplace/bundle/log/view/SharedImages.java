@@ -55,6 +55,9 @@ public final class SharedImages {
 	public static final String DESC_OK_ST_OBJ = PATH_OBJ + "ok_st_obj.gif"; //$NON-NLS-1$
 	public static final String DESC_WARNING_ST_OBJ = PATH_OBJ + "warning_st_obj.gif"; //$NON-NLS-1$
 	public static final String DESC_HIERARCHICAL_LAYOUT_OBJ = PATH_OBJ + "hierarchical.gif"; //$NON-NLS-1$
+	
+	public static final String DESC_ENABLE_LOGGING = ICONS_PATH + "enable_trace_op.png"; //$NON-NLS-1$
+	public static final String DESC_DISABLE_LOGGING = ICONS_PATH + "disable_trace_op.png"; //$NON-NLS-1$
 
 	public static ImageDescriptor getImageDescriptor(String key) {
 		return Activator.getDefault().getImageRegistry().getDescriptor(key);

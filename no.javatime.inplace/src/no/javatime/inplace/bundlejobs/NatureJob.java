@@ -15,20 +15,16 @@ import java.util.Collections;
 
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.builder.JavaTimeNature;
+import no.javatime.inplace.bundle.log.status.BundleStatus;
+import no.javatime.inplace.bundle.log.status.IBundleStatus;
+import no.javatime.inplace.bundle.log.status.IBundleStatus.StatusCode;
 import no.javatime.inplace.bundlemanager.BundleTransition.Transition;
 import no.javatime.inplace.bundlemanager.InPlaceException;
 import no.javatime.inplace.bundleproject.BundleProject;
 import no.javatime.inplace.bundleproject.ProjectProperties;
-import no.javatime.inplace.bundle.log.intface.BundleLogView;
-import no.javatime.inplace.bundle.log.intface.BundleLog;
-import no.javatime.inplace.bundle.log.intface.BundleLog.Device;
-import no.javatime.inplace.bundle.log.intface.BundleLog.MessageType;
-import no.javatime.inplace.bundle.log.status.BundleStatus;
-import no.javatime.inplace.bundle.log.status.IBundleStatus;
-import no.javatime.inplace.bundle.log.status.IBundleStatus.StatusCode;
+import no.javatime.inplace.msg.Msg;
 import no.javatime.util.messages.Category;
 import no.javatime.util.messages.Message;
-import no.javatime.util.messages.TraceMessage;
 import no.javatime.util.messages.WarnMessage;
 
 import org.eclipse.core.resources.IProject;
@@ -38,9 +34,7 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.core.runtime.SubProgressMonitor;
-import org.eclipse.pde.core.project.IBundleProjectDescription;
 import org.osgi.framework.Bundle;
-import org.osgi.framework.Constants;
 
 /**
  * Enabling and disabling the JavaTime nature of projects. Checks and reports on duplicate bundles.
@@ -121,12 +115,7 @@ public abstract class NatureJob extends BundleJob {
 					toggleNatureActivation(project, new SubProgressMonitor(monitor, 1));
 					bundleTransition.clearTransitionError(project);
 					if (getOptionsService().isUpdateDefaultOutPutFolder()) {
-						boolean removed = BundleProject.removeOutputLocationFromClassPath(project, this);
-						if (InPlace.get().msgOpt().isBundleOperations() && removed) {
-							IBundleProjectDescription bd = InPlace.get().getBundleDescription(project);						
-							String bundleClassPath = bd.getHeader(Constants.BUNDLE_CLASSPATH);
-							
-						}
+						BundleProject.removeOutputLocationFromClassPath(project, this);
 					}
 				}
 			} catch (InPlaceException e) {
@@ -232,12 +221,12 @@ public abstract class NatureJob extends BundleJob {
 						description.setNatureIds(newNatures);
 						project.setDescription(description, null);
 						if (InPlace.get().msgOpt().isBundleOperations()) {
-							String msg = TraceMessage.getInstance().formatString("projects_nature_disabled", project.getName());
 							Bundle bundle = bundleRegion.get(project);
 							if (null == bundle) {
-								bundle = InPlace.get().getBundle();
+								addTrace(Msg.DISABLE_NATURE_TRACE, new Object[] {project.getName()}, project);
+							} else {
+								addTrace(Msg.DISABLE_NATURE_TRACE, new Object[] {project.getName()}, bundle);							
 							}
-							addTrace(msg, bundle, project);
 						}
 						localMonitor.worked(1);
 						return;
@@ -251,12 +240,12 @@ public abstract class NatureJob extends BundleJob {
 				description.setNatureIds(newNatures);
 				project.setDescription(description, null);
 				if (InPlace.get().msgOpt().isBundleOperations()) {
-					String msg = TraceMessage.getInstance().formatString("projects_nature_enabled", project.getName());
 					Bundle bundle = bundleRegion.get(project);
 					if (null == bundle) {
-						bundle = InPlace.get().getBundle();
+						addTrace(Msg.ENABLE_NATURE_TRACE, new Object[] {project.getName()}, project);
+					} else {
+						addTrace(Msg.ENABLE_NATURE_TRACE, new Object[] {project.getName()}, bundle);							
 					}
-					addTrace(msg, bundle, project);
 				}
 				localMonitor.worked(1);
 			} catch (CoreException e) {
