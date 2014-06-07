@@ -14,9 +14,9 @@ import java.util.HashSet;
 import java.util.Set;
 
 import no.javatime.inplace.InPlace;
-import no.javatime.inplace.bundle.log.status.BundleStatus;
-import no.javatime.inplace.bundle.log.status.IBundleStatus;
-import no.javatime.inplace.bundle.log.status.IBundleStatus.StatusCode;
+import no.javatime.inplace.log.status.BundleStatus;
+import no.javatime.inplace.log.status.IBundleStatus;
+import no.javatime.inplace.log.status.IBundleStatus.StatusCode;
 import no.javatime.inplace.bundlejobs.BundleJob;
 import no.javatime.inplace.bundleproject.OpenProjectHandler;
 import no.javatime.util.messages.Category;

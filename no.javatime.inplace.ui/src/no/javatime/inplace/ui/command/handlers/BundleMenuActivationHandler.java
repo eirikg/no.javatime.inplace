@@ -13,10 +13,10 @@ package no.javatime.inplace.ui.command.handlers;
 import java.util.Collection;
 import java.util.Collections;
 
-import no.javatime.inplace.bundle.log.intface.BundleLogView;
-import no.javatime.inplace.bundle.log.status.BundleStatus;
-import no.javatime.inplace.bundle.log.status.IBundleStatus;
-import no.javatime.inplace.bundle.log.status.IBundleStatus.StatusCode;
+import no.javatime.inplace.log.intface.BundleLogView;
+import no.javatime.inplace.log.status.BundleStatus;
+import no.javatime.inplace.log.status.IBundleStatus;
+import no.javatime.inplace.log.status.IBundleStatus.StatusCode;
 import no.javatime.inplace.bundlejobs.ActivateProjectJob;
 import no.javatime.inplace.bundlejobs.BundleJob;
 import no.javatime.inplace.bundlejobs.DeactivateJob;

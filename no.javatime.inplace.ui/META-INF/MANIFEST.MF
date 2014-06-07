@@ -13,8 +13,8 @@ Bundle-Version: 0.1.8.qualifier
 Bundle-Name: InPlace Activator Bundle UI
 Bundle-Activator: no.javatime.inplace.ui.Activator
 Bundle-ManifestVersion: 2
-Import-Package: no.javatime.inplace.bundle.log.intface,
- no.javatime.inplace.bundle.log.status,
+Import-Package: no.javatime.inplace.log.intface,
+ no.javatime.inplace.log.status,
  no.javatime.inplace.bundlejobs,
  no.javatime.inplace.bundlejobs.events,
  no.javatime.inplace.bundlemanager,

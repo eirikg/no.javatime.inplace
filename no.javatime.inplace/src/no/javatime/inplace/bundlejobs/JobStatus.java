@@ -6,9 +6,9 @@ import java.util.Collections;
 import java.util.List;
 
 import no.javatime.inplace.InPlace;
-import no.javatime.inplace.bundle.log.status.BundleStatus;
-import no.javatime.inplace.bundle.log.status.IBundleStatus;
-import no.javatime.inplace.bundle.log.status.IBundleStatus.StatusCode;
+import no.javatime.inplace.log.status.BundleStatus;
+import no.javatime.inplace.log.status.IBundleStatus;
+import no.javatime.inplace.log.status.IBundleStatus.StatusCode;
 import no.javatime.inplace.bundlemanager.BundleCommand;
 import no.javatime.inplace.bundlemanager.BundleManager;
 import no.javatime.inplace.bundlemanager.BundleRegion;
@@ -40,7 +40,7 @@ import org.osgi.framework.Constants;
  * Container class for bundle status objects added during a bundle job. A status object contains a status code
  * and one or more elements of type exception, message, project and a bundle id.
  * 
- * @see no.javatime.inplace.bundle.log.status.IBundleStatus
+ * @see no.javatime.inplace.log.status.IBundleStatus
  */
 public abstract class JobStatus extends WorkspaceJob implements BundleTransitionEventListener{
 

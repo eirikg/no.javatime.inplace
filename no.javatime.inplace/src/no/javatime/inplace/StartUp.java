@@ -2,9 +2,6 @@ package no.javatime.inplace;
 
 import java.util.Collection;
 
-import no.javatime.inplace.bundle.log.status.BundleStatus;
-import no.javatime.inplace.bundle.log.status.IBundleStatus;
-import no.javatime.inplace.bundle.log.status.IBundleStatus.StatusCode;
 import no.javatime.inplace.bundlejobs.ActivateBundleJob;
 import no.javatime.inplace.bundlemanager.BundleManager;
 import no.javatime.inplace.bundlemanager.BundleTransition;
@@ -12,6 +9,9 @@ import no.javatime.inplace.bundlemanager.BundleTransition.Transition;
 import no.javatime.inplace.bundlemanager.ProjectLocationException;
 import no.javatime.inplace.bundleproject.BundleProject;
 import no.javatime.inplace.bundleproject.ProjectProperties;
+import no.javatime.inplace.log.status.BundleStatus;
+import no.javatime.inplace.log.status.IBundleStatus;
+import no.javatime.inplace.log.status.IBundleStatus.StatusCode;
 import no.javatime.util.messages.Category;
 import no.javatime.util.messages.ExceptionMessage;
 import no.javatime.util.messages.UserMessage;

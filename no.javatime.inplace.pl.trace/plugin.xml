@@ -22,8 +22,8 @@
             name="Bundle Log"
             icon="icons/message_view.gif"
             category="no.javatime.category"
-            class="no.javatime.inplace.bundle.log.view.LogView"
-            id="no.javatime.inplace.bundle.log.view">
+            class="no.javatime.inplace.log.view.LogView"
+            id="no.javatime.inplace.log.view">
       </view>
    </extension>
    <extension
@@ -31,13 +31,13 @@
       <perspectiveExtension
             targetID="org.eclipse.ui.resourcePerspective">
          <viewShortcut
-               id="no.javatime.inplace.bundle.log.view">
+               id="no.javatime.inplace.log.view">
          </viewShortcut>
       </perspectiveExtension>
       <perspectiveExtension
             targetID="org.eclipse.pde.ui.PDEPerspective">
          <viewShortcut
-               id="no.javatime.inplace.bundle.log.view">
+               id="no.javatime.inplace.log.view">
          </viewShortcut>
       </perspectiveExtension>
    </extension>
@@ -49,7 +49,7 @@
             sequence="M2+M3+Q M">
          <parameter
                id="org.eclipse.ui.views.showView.viewId"
-               value="no.javatime.inplace.bundle.log.view">
+               value="no.javatime.inplace.log.view">
          </parameter>
       </key>
       <key
@@ -64,7 +64,7 @@
             sequence="M1+M3+Q M">
          <parameter
                id="org.eclipse.ui.views.showView.viewId"
-               value="no.javatime.inplace.bundle.log.view">
+               value="no.javatime.inplace.log.view">
          </parameter>
       </key>
    </extension>

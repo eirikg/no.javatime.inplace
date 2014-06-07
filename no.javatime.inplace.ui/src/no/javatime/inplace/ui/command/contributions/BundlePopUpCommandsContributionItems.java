@@ -12,7 +12,7 @@ package no.javatime.inplace.ui.command.contributions;
 
 import java.util.ArrayList;
 
-import no.javatime.inplace.bundle.log.intface.BundleLogView;
+import no.javatime.inplace.log.intface.BundleLogView;
 import no.javatime.inplace.bundlemanager.BundleManager;
 import no.javatime.inplace.bundlemanager.BundleTransition.Transition;
 import no.javatime.inplace.bundlemanager.InPlaceException;
