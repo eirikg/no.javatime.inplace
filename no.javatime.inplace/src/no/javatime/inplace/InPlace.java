@@ -31,6 +31,7 @@ import no.javatime.inplace.bundlemanager.BundleTransition.Transition;
 import no.javatime.inplace.bundlemanager.InPlaceException;
 import no.javatime.inplace.bundlemanager.ProjectLocationException;
 import no.javatime.inplace.bundleproject.ProjectProperties;
+import no.javatime.inplace.dialogs.ExternalTransition;
 import no.javatime.inplace.dl.preferences.intface.CommandOptions;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions;
 import no.javatime.inplace.dl.preferences.intface.MessageOptions;
@@ -139,7 +140,8 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener 
 	 * Debug listener.
 	 */
 	private IResourceChangeListener projectChangeListener;
-
+	private ExternalTransition externalTransitionListener = new ExternalTransition();
+	
 	private BundleRegion bundleRegion;
 
 	// Don't know the interface to extend yet. Can be any interface 
@@ -177,6 +179,7 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener 
 				(context, IBundleProjectService.class.getName(), null);
 		bundleProjectTracker.open();
 		addDynamicExtensions();
+		BundleManager.addBundleTransitionListener(externalTransitionListener);
 		BundleManager.addBundleJobListener(get());
 		bundleRegion = BundleManager.getRegion();
 	}	
@@ -194,6 +197,7 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener 
 			bundleProjectTracker.close();
 			bundleProjectTracker = null;		
 			BundleManager.removeBundleJobListener(get());
+			BundleManager.removeBundleTransitionListener(externalTransitionListener);
 			super.stop(context);
 			plugin = null;
 			InPlace.context = null;

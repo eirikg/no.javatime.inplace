@@ -12,13 +12,12 @@ import org.osgi.framework.Bundle;
 
 class BundleTransitionImpl implements BundleTransition {
 
-	public BundleTransitionImpl() {
-	}
-	
 	final static BundleTransitionImpl INSTANCE = new BundleTransitionImpl();
 
 	private BundleWorkspaceImpl ws = BundleWorkspaceImpl.INSTANCE;
 
+	public BundleTransitionImpl() {
+	}
 
 	@Override
 	public Transition getTransition(IProject project) throws ProjectLocationException {
@@ -27,8 +26,6 @@ class BundleTransitionImpl implements BundleTransition {
 			return Transition.NOTRANSITION;
 		}
 		return bn.getTransition();
-//		String location = ws.getBundleLocationIdentifier(project);
-//		return activeTransition.get(location);
 	}
 
 	@Override
@@ -38,14 +35,11 @@ class BundleTransitionImpl implements BundleTransition {
 			return BundleNode.getTransitionName(Transition.NOTRANSITION);
 		}
 		return BundleNode.getTransitionName(bn.getTransition());
-//		String location = ws.getBundleLocationIdentifier(project);
-//		return activeTransition.getName(location);
 	}
 
 	@Override
 	public String getTransitionName(Transition transition) {
 		return BundleNode.getTransitionName(transition);
-//		return activeTransition.getName(transition);
 	}
 
 	@Override
@@ -55,8 +49,6 @@ class BundleTransitionImpl implements BundleTransition {
 			return false;
 		}		
 		return bn.setTransitionError(TransitionError.ERROR);
-//		String location = ws.getBundleLocationIdentifier(project);
-//		return this.activeTransition.setError(location, TransitionError.ERROR);			
 	}
 
 	public boolean setTransitionError(IProject project, TransitionError error) throws ProjectLocationException {
@@ -66,8 +58,6 @@ class BundleTransitionImpl implements BundleTransition {
 			return false;
 		}		
 		return bn.setTransitionError(error);
-//		String location = ws.getBundleLocationIdentifier(project);
-//		return this.activeTransition.setError(location, error);			
 	}
 	
 	@Override
@@ -77,7 +67,6 @@ class BundleTransitionImpl implements BundleTransition {
 		}
 		BundleNode bn = ws.getBundleNode(bundle);
 		return bn.setTransitionError(TransitionError.ERROR);
-//		return this.activeTransition.setError(bundle.getLocation(), TransitionError.ERROR);			
 	}
 
 	public boolean setTransitionError(Bundle bundle, TransitionError error) {
@@ -86,7 +75,6 @@ class BundleTransitionImpl implements BundleTransition {
 		}
 		BundleNode bn = ws.getBundleNode(bundle);
 		return bn.setTransitionError(error);
-//		return this.activeTransition.setError(bundle.getLocation(), error);			
 	}
 	
 	@Override
@@ -116,7 +104,6 @@ class BundleTransitionImpl implements BundleTransition {
 			}
 		}
 		return false;
-//		return activeTransition.hasError(transitionError);
 	}
 	
 	@Override
@@ -126,8 +113,6 @@ class BundleTransitionImpl implements BundleTransition {
 			return TransitionError.NOERROR;
 		}		
 		return bn.getTransitionError();
-//		String location = ws.getBundleLocationIdentifier(project);
-//		return this.activeTransition.getError(location);
 	}
 
 	@Override
@@ -138,7 +123,6 @@ class BundleTransitionImpl implements BundleTransition {
 		}
 		BundleNode bn = ws.getBundleNode(bundle);
 		return bn.getTransitionError();
-		//return this.activeTransition.getError(bundle.getLocation());
 	}
 	
 	@Override
@@ -149,8 +133,6 @@ class BundleTransitionImpl implements BundleTransition {
 			return false;
 		}		
 		return bn.clearTransitionError();
-//		String location = ws.getBundleLocationIdentifier(project);
-//		return this.activeTransition.clearError(location);
 	}
 
 	@Override
@@ -160,8 +142,6 @@ class BundleTransitionImpl implements BundleTransition {
 			return false;
 		}		
 		return bn.removeTransitionError(transitionError);
-//		String location = ws.getBundleLocationIdentifier(project);
-//		return this.activeTransition.removeError(location, transitionError);
 	}
 	
 	@Override
@@ -183,8 +163,8 @@ class BundleTransitionImpl implements BundleTransition {
 		}
 		BundleNode bn = ws.getBundleNode(bundle);
 		return bn.removeTransitionError(transitionError);
-//		return this.activeTransition.removeError(bundle.getLocation(), transitionError);
 	}
+
 	@Override
 	public Collection<Bundle> removeTransitionErrorClosures(Collection<Bundle> initialBundleSet,
 			Collection<Bundle> bDepClosures, Collection<IProject> pDepClosures) {
@@ -247,6 +227,7 @@ class BundleTransitionImpl implements BundleTransition {
 		bn.clearTransitionError();
 		return bn.setTransition(transition);
 	}
+	
 	@Override
 	public Transition getTransition(Bundle bundle) {
 		BundleNode bn = ws.getBundleNode(bundle);

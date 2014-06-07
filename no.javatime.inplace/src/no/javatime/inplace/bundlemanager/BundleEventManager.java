@@ -11,16 +11,11 @@
 package no.javatime.inplace.bundlemanager;
 
 import java.util.Collection;
-import java.util.Collections;
 
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundle.log.status.BundleStatus;
 import no.javatime.inplace.bundle.log.status.IBundleStatus.StatusCode;
-import no.javatime.inplace.bundlejobs.ActivateBundleJob;
 import no.javatime.inplace.bundlejobs.BundleJobListener;
-import no.javatime.inplace.bundlejobs.DeactivateJob;
-import no.javatime.inplace.bundlejobs.InstallJob;
-import no.javatime.inplace.bundlejobs.UninstallJob;
 import no.javatime.inplace.bundlejobs.UpdateScheduler;
 import no.javatime.inplace.bundlemanager.BundleTransition.Transition;
 import no.javatime.inplace.bundlemanager.BundleTransition.TransitionError;
@@ -33,20 +28,15 @@ import no.javatime.inplace.bundlemanager.state.LazyState;
 import no.javatime.inplace.bundlemanager.state.ResolvedState;
 import no.javatime.inplace.bundlemanager.state.UninstalledState;
 import no.javatime.inplace.bundleproject.ManifestUtil;
-import no.javatime.inplace.bundleproject.OpenProjectHandler;
 import no.javatime.inplace.bundleproject.ProjectProperties;
-import no.javatime.inplace.dependencies.ProjectSorter;
 import no.javatime.util.messages.Category;
-import no.javatime.util.messages.Message;
 import no.javatime.util.messages.UserMessage;
-import no.javatime.util.messages.WarnMessage;
 
 import org.eclipse.core.commands.Command;
 import org.eclipse.core.commands.CommandEvent;
 import org.eclipse.core.commands.ICommandListener;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.jobs.Job;
-import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.ICommandService;
@@ -135,7 +125,7 @@ class BundleEventManager implements FrameworkListener, SynchronousBundleListener
 	 */
 	@Override
 	public void commandChanged(CommandEvent commandEvent) {
-		InPlace activator =InPlace.get();
+		InPlace activator = InPlace.get();
 		if (null == activator) {
 			return;
 		}
@@ -317,14 +307,14 @@ class BundleEventManager implements FrameworkListener, SynchronousBundleListener
 				if (null != bundleNode) {
 					bundleNode.setCurrentState(BundleStateFactory.INSTANCE.uninstalledState);
 				}
-				undefinedTransitions(event);
 				// Uninstalling a bundle from an external source is not permitted in an activated workspace
 				if (ProjectProperties.isProjectWorkspaceActivated()) {
-					externalUninstall(bundle, project);
+					bundleTransition.setTransitionError(bundle, TransitionError.UNINSTALL);
 				} else {
 					// Remove the externally uninstalled bundle from the workspace region
 					bundleCommand.unregisterBundle(bundle);
 				}
+				undefinedTransitions(event);
 			}
 			break;
 		}
@@ -464,100 +454,18 @@ class BundleEventManager implements FrameworkListener, SynchronousBundleListener
 		BundleTransitionImpl bundleTransition = BundleTransitionImpl.INSTANCE;
 		final String symbolicName = bundleRegion.getSymbolicKey(bundle, null);
 		final String stateName = bundleCommand.getStateName(event);
-		if (bundleTransition.hasTransitionError(bundle)) { 		
-			if (bundleTransition.getError(bundle) == TransitionError.INCOMPLETE) {
-				if (Category.getState(Category.infoMessages)) {
-					UserMessage.getInstance().getString("incomplete_bundle_operation", symbolicName, stateName, location);
-				}
+		if (bundleTransition.getError(bundle) == TransitionError.INCOMPLETE) {
+			if (Category.getState(Category.infoMessages)) {
+				UserMessage.getInstance().getString("incomplete_bundle_operation", symbolicName, stateName, location);
 			}
 		} else {
+			TransitionError error = bundleTransition.getError(bundle);
 			bundleTransition.setTransition(bundle, Transition.EXTERNAL);
+			bundleTransition.setTransitionError(bundle, error);
+			BundleManager.addBundleTransition(new TransitionEvent(bundle, Transition.EXTERNAL));
 			if (Category.getState(Category.infoMessages)) {
 				UserMessage.getInstance().getString("external_bundle_operation", symbolicName, stateName, location);
 			}
 		}
-	}
-
-	/**
-	 * Bundle has been uninstalled from an external source in an activated workspace. Either restore (activate
-	 * or install) the bundle or deactivate the workspace depending on default actions or user option/choice.
-	 * 
-	 * @param project the project to restore or deactivate
-	 * @param bundle the bundle to restore or deactivate
-	 */
-	private void externalUninstall(final Bundle bundle, final IProject project) {
-
-		final String symbolicName = bundle.getSymbolicName();
-		final String location = bundle.getLocation();
-		// After the fact
-		InPlace.getDisplay().asyncExec(new Runnable() {
-			@Override
-			public void run() {
-				BundleCommandImpl bundleManager = BundleCommandImpl.INSTANCE;
-				int autoDependencyAction = 1; // Default auto dependency action
-				new OpenProjectHandler().saveModifiedFiles();
-				Boolean dependencies = false;
-				Collection<IProject> reqProjects = Collections.<IProject>emptySet();
-				if (bundleRegion.isActivated(bundle)) {
-					ProjectSorter bs = new ProjectSorter();
-					reqProjects = bs.sortRequiringProjects(Collections.<IProject>singletonList(project), Boolean.TRUE);
-					// Remove initial project from result set
-					reqProjects.remove(project);
-					dependencies = reqProjects.size() > 0;
-					if (dependencies) {
-						String msg = WarnMessage.getInstance().formatString("has_requiring_bundles",
-								bundleRegion.formatBundleList(bundleRegion.getBundles(reqProjects), true),
-								bundleRegion.getSymbolicKey(bundle, null));
-						StatusManager.getManager().handle(new BundleStatus(StatusCode.WARNING, InPlace.PLUGIN_ID, msg),
-								StatusManager.LOG);
-					}
-				}
-				// User choice to deactivate workspace or restore uninstalled bundle
-				try {
-					if (!InPlace.get().getCommandOptionsService().isAutoHandleExternalCommands()) {
-						String question = null;
-						int index = 0;
-						if (dependencies) {
-							question = Message.getInstance().formatString("deactivate_question_requirements", symbolicName,
-									location, bundleRegion.formatBundleList(bundleRegion.getBundles(reqProjects), true));
-							index = 1;
-						} else {
-							question = Message.getInstance().formatString("deactivate_question", symbolicName, location);
-						}
-						MessageDialog dialog = new MessageDialog(null, "InPlace Activator", null, question,
-								MessageDialog.QUESTION, new String[] { "Yes", "No" }, index);
-						autoDependencyAction = dialog.open();
-					}
-				} catch (InPlaceException e) {
-					StatusManager.getManager().handle(
-							new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, e.getMessage(), e),
-							StatusManager.LOG);			
-				}
-				bundleManager.unregisterBundle(bundle);
-				if (autoDependencyAction == 0) {
-					if (ProjectProperties.isProjectActivated(project)) {
-						// Restore activated bundle and dependent bundles
-						ActivateBundleJob activateBundleJob = new ActivateBundleJob(ActivateBundleJob.activateJobName,
-								project);
-						if (dependencies) {
-							// Bring workspace back to a consistent state before restoring
-							UninstallJob uninstallJob = new UninstallJob(UninstallJob.uninstallJobName, reqProjects);
-							BundleManager.addBundleJob(uninstallJob, 0);
-							activateBundleJob.addPendingProjects(reqProjects);
-						}
-						BundleManager.addBundleJob(activateBundleJob, 0);
-					} else {
-						// Workspace is activated but bundle is not. Install the bundle
-						InstallJob installJob = new InstallJob(InstallJob.installJobName, project);
-						BundleManager.addBundleJob(installJob, 0);
-					}
-				} else if (autoDependencyAction == 1) {
-					// Deactivate workspace to obtain a consistent state between all workspace bundles
-					DeactivateJob deactivateJob = new DeactivateJob(DeactivateJob.deactivateWorkspaceJobName);
-					deactivateJob.addPendingProjects(ProjectProperties.getActivatedProjects());
-					BundleManager.addBundleJob(deactivateJob, 0);
-				}
-			}
-		});
 	}
 }

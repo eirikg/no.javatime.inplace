@@ -99,7 +99,8 @@ public interface BundleTransition {
 		 * Never ending or operations that timeout will have an incomplete transition error and the 
 		 * state will be the state the bundle had when the previous transition ended. 
 		 */
-		INCOMPLETE
+		INCOMPLETE,
+		UNINSTALL
 	}
 
 	/**

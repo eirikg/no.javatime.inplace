@@ -57,12 +57,13 @@ public abstract class JobStatus extends WorkspaceJob implements BundleTransition
 		super(name);
 	}
 
-	// List of status objects
-	private List<IBundleStatus> statusList = new ArrayList<IBundleStatus>();
+	// List of error status objects
+	private List<IBundleStatus> errStatusList = new ArrayList<IBundleStatus>();
 	
-	private List<IBundleStatus> traceStatusList = new ArrayList<IBundleStatus>();
+	// List of historic status objects
+	private List<IBundleStatus> logStatusList = new ArrayList<IBundleStatus>();
+	
 	@Override
-
 	public void bundleTransitionChanged(BundleTransitionEvent event) {
 		if (!InPlace.get().msgOpt().isBundleOperations()) {
 			return;
@@ -135,7 +136,7 @@ public abstract class JobStatus extends WorkspaceJob implements BundleTransition
 	 */
 	public IBundleStatus addError(Throwable e, String message, IProject project) {
 		IBundleStatus status = new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID, project, message, e);
-		this.statusList.add(status);
+		this.errStatusList.add(status);
 		try {
 			bundleTransition.setTransitionError(project);
 		} catch (ProjectLocationException locEx) {
@@ -153,7 +154,7 @@ public abstract class JobStatus extends WorkspaceJob implements BundleTransition
 	 * @see #addTrace(String, Object[], Object)
 	 */
 	public Collection<IBundleStatus> getTraceList() {
-		return traceStatusList;
+		return logStatusList;
 	}
 	
 	/**
@@ -170,9 +171,22 @@ public abstract class JobStatus extends WorkspaceJob implements BundleTransition
 	 */
 	public IBundleStatus addTrace(String message, Bundle bundle, IProject project) {
 		IBundleStatus status = new BundleStatus(StatusCode.INFO, bundle, project, message, null);
-		this.traceStatusList.add(status);
+		this.logStatusList.add(status);
 		return status;
 	}
+
+	/**
+	 * Adds a bundle status trace object to the bundle status trace list
+	 * <p>
+	 * @param status the status object added to the trace list should contain at least
+	 * the bundle and/or the project related to the status message
+	 * @see #getTraceList()
+	 */
+	public IBundleStatus addTrace(IBundleStatus status) {
+		this.logStatusList.add(status);
+		return status;
+	}
+
 	/**
 	 * Creates a bundle status trace object and adds it to the bundle status trace list
 	 * <p>
@@ -212,7 +226,7 @@ public abstract class JobStatus extends WorkspaceJob implements BundleTransition
 	 */
 	public IBundleStatus addError(Throwable e, String message, Long bundleId) {
 		IBundleStatus status = new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID, bundleId, message, e);
-		this.statusList.add(status);
+		this.errStatusList.add(status);
 		try {
 			bundleTransition.setTransitionError(bundleRegion.getProject(bundleRegion.get(bundleId)));
 		} catch (ProjectLocationException locEx) {
@@ -230,7 +244,7 @@ public abstract class JobStatus extends WorkspaceJob implements BundleTransition
 	 */
 	public IBundleStatus addError(Throwable e, Long bundleId) {
 		IBundleStatus status = new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID, bundleId, null, e);
-		this.statusList.add(status);
+		this.errStatusList.add(status);
 		try {
 			bundleTransition.setTransitionError(bundleRegion.getProject(bundleRegion.get(bundleId)));
 		} catch (ProjectLocationException locEx) {
@@ -249,7 +263,7 @@ public abstract class JobStatus extends WorkspaceJob implements BundleTransition
 	 */
 	public IBundleStatus addError(Throwable e, IProject project) {
 		IBundleStatus status = new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID, project, null, e);
-		this.statusList.add(status);
+		this.errStatusList.add(status);
 		try {
 			bundleTransition.setTransitionError(project);
 		} catch (ProjectLocationException locEx) {
@@ -267,7 +281,7 @@ public abstract class JobStatus extends WorkspaceJob implements BundleTransition
 			msg = ErrorMessage.getInstance().formatString("project_location", project.getName());			
 		}
 		IBundleStatus status = new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID, msg, e);
-		this.statusList.add(status);
+		this.errStatusList.add(status);
 		return status;
 	}
 
@@ -280,7 +294,7 @@ public abstract class JobStatus extends WorkspaceJob implements BundleTransition
 	 */
 	public IBundleStatus addError(Throwable e, String message) {
 		IBundleStatus status = new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID, (IProject) null, message, e);
-		this.statusList.add(status);
+		this.errStatusList.add(status);
 		return status;
 	}
 
@@ -294,7 +308,7 @@ public abstract class JobStatus extends WorkspaceJob implements BundleTransition
 	public IBundleStatus addInfoMessage(String message) {
 		IBundleStatus status = new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, (IProject) null, message,
 				null);
-		this.statusList.add(status);
+		this.errStatusList.add(status);
 		return status;
 	}
 
@@ -307,7 +321,7 @@ public abstract class JobStatus extends WorkspaceJob implements BundleTransition
 	 */
 	public IBundleStatus addCancelMessage(OperationCanceledException e, String message) {
 		IBundleStatus status = new BundleStatus(StatusCode.CANCEL, InPlace.PLUGIN_ID, (IProject) null, message, e);
-		this.statusList.add(status);
+		this.errStatusList.add(status);
 		return status;
 	}
 
@@ -321,7 +335,7 @@ public abstract class JobStatus extends WorkspaceJob implements BundleTransition
 	 */
 	public IBundleStatus addBuildError(String msg, IProject project) {
 		IBundleStatus status = new BundleStatus(StatusCode.BUILDERROR, InPlace.PLUGIN_ID, project, msg, null);
-		this.statusList.add(status);
+		this.errStatusList.add(status);
 		return status;
 	}
 
@@ -335,7 +349,7 @@ public abstract class JobStatus extends WorkspaceJob implements BundleTransition
 	 */
 	public IBundleStatus addWarning(Throwable e, String message, IProject project) {
 		IBundleStatus status = new BundleStatus(StatusCode.WARNING, InPlace.PLUGIN_ID, project, message, e);
-		this.statusList.add(status);
+		this.errStatusList.add(status);
 		return status;
 	}
 
@@ -346,7 +360,7 @@ public abstract class JobStatus extends WorkspaceJob implements BundleTransition
 	 * @return the added status object
 	 */
 	public IBundleStatus addStatus(IBundleStatus status) {
-		this.statusList.add(status);
+		this.errStatusList.add(status);
 		return status;
 	}
 
@@ -356,7 +370,7 @@ public abstract class JobStatus extends WorkspaceJob implements BundleTransition
 	 * @param statusList the list of status objects to add to the list
 	 */
 	public void addStatus(Collection<IBundleStatus> statusList) {
-		this.statusList.addAll(statusList);
+		this.errStatusList.addAll(statusList);
 	}
 
 	/**
@@ -384,21 +398,21 @@ public abstract class JobStatus extends WorkspaceJob implements BundleTransition
 	 */
 	public IBundleStatus createMultiStatus(IBundleStatus parent, IBundleStatus child) {
 		int startIndex = 0;
-		if (null == child || statusList.size() == 0 ) {
+		if (null == child || errStatusList.size() == 0 ) {
 			String msg = ErrorMessage.getInstance().formatString("failed_to_format_multi_status"); 
 			addError(null, msg);
 		} else {
-			startIndex = statusList.indexOf(child);
+			startIndex = errStatusList.indexOf(child);
 			if (-1 == startIndex) {
 				startIndex = 0;
 			}
 		}
-		for (int i = statusList.size()-1; i >= startIndex; i--) {
-			parent.add(statusList.get(i));
+		for (int i = errStatusList.size()-1; i >= startIndex; i--) {
+			parent.add(errStatusList.get(i));
 		}
 		IStatus[] is = parent.getChildren();
 		for (int i = 0; i < is.length; i++) {
-			statusList.remove(is[i]);
+			errStatusList.remove(is[i]);
 		}
 		return addStatus(parent);
 	}
@@ -418,7 +432,7 @@ public abstract class JobStatus extends WorkspaceJob implements BundleTransition
 	 * @return a list of status objects where each status object describes the nature of the status
 	 */
 	public Collection<IBundleStatus> getStatusList() {
-		return statusList;
+		return errStatusList;
 	}
 
 	/**
@@ -427,7 +441,7 @@ public abstract class JobStatus extends WorkspaceJob implements BundleTransition
 	 * @return number of status elements
 	 */
 	public int statusList() {
-		return statusList.size();
+		return errStatusList.size();
 	}
 
 	/**
@@ -438,7 +452,7 @@ public abstract class JobStatus extends WorkspaceJob implements BundleTransition
 	 */
 	public IBundleStatus getLastStatus() {
 		if (hasStatus()) {
-			return statusList.get(statusList.size() - 1);
+			return errStatusList.get(errStatusList.size() - 1);
 		}
 		return createStatus();
 	}
@@ -449,14 +463,14 @@ public abstract class JobStatus extends WorkspaceJob implements BundleTransition
 	 * @return true if bundle status objects exists in the status list, otherwise false
 	 */
 	public boolean hasStatus() {
-		return (statusList.size() > 0 ? true : false);
+		return (errStatusList.size() > 0 ? true : false);
 	}
 
 	/**
 	 * Removes all status objects from the status list
 	 */
 	public void clearStatusList() {
-		this.statusList.clear();
+		this.errStatusList.clear();
 	}
 		
 	public IBundleStatus formateBundleStatus(Collection<IBundleStatus> statusList, String rootMessage) {

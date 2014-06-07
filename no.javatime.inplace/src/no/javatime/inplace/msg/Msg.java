@@ -32,6 +32,7 @@ public class Msg extends NLS {
 	public static String UNINSTALL_BUNDLE_OPERATION_TRACE;
 	public static String INSTALL_BUNDLE_OPERATION_TRACE;
 	public static String UPDATE_BUNDLE_OPERATION_TRACE;
+	public static String EXTERNAL_BUNDLE_OPERATION_TRACE;
 	public static String DISABLE_NATURE_TRACE;
 	public static String ENABLE_NATURE_TRACE;
 	public static String ACTIVATED_BUNDLES;
@@ -54,7 +55,15 @@ public class Msg extends NLS {
 	// Errors
 	public static String BEGIN_SHUTDOWN_ERROR;
 	public static String END_SHUTDOWN_ERROR;
+	
+	// Warnings
+	public static String EXTERNAL_UNINSTALL_WARN;
+	public static String REQUIRING_BUNDLES_WARN;
 
+	// Dialog and View messages
+	public static String DEACTIVATE_QUESTION_DLG;
+	public static String DEACTIVATE_QUESTION_REQ_DLG;
+	
 	private static final String BUNDLE_NAME = "no.javatime.inplace.msg.messages"; //$NON-NLS-1$
 
 	static {
