@@ -115,7 +115,7 @@ public abstract class NatureJob extends BundleJob {
 					toggleNatureActivation(project, new SubProgressMonitor(monitor, 1));
 					bundleTransition.clearTransitionError(project);
 					if (getOptionsService().isUpdateDefaultOutPutFolder()) {
-						BundleProject.removeOutputLocationFromClassPath(project, this);
+						BundleProject.removeOutputLocationFromClassPath(project);
 					}
 				}
 			} catch (InPlaceException e) {
@@ -158,7 +158,7 @@ public abstract class NatureJob extends BundleJob {
 						if (getOptionsService().isEagerOnActivate()) {
 							Boolean isLazy = BundleProject.getLazyActivationPolicyFromManifest(project.getProject());
 							if (isLazy) {
-								BundleProject.toggleActivationPolicy(project, this);
+								BundleProject.toggleActivationPolicy(project);
 								// Uninstall and install bundles when toggling from lazy to eager activation policy
 								if (null != bundle) {
 									reInstall(Collections.<IProject>singletonList(project), new SubProgressMonitor(monitor, 1));

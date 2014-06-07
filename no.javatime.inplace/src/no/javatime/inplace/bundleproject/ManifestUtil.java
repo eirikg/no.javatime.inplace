@@ -20,10 +20,8 @@ import java.util.Dictionary;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 
-import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundlemanager.InPlaceException;
 import no.javatime.inplace.bundlemanager.ProjectLocationException;
-import no.javatime.util.messages.Category;
 import no.javatime.util.messages.Message;
 
 import org.eclipse.core.resources.IFile;
@@ -171,8 +169,9 @@ public class ManifestUtil {
 			if (null == classPath || null == path) {
 				return false;
 			}
-			if (Category.DEBUG && Category.getState(Category.binpath))
-				InPlace.get().trace("classpath_header", name, classPath);
+// TODO Use trace from new plug-in
+//			if (Category.DEBUG && Category.getState(Category.binpath))
+//				InPlace.get().trace("classpath_header", name, classPath);
 			// Search for the bin class path entry in the class path header
 			if (classPath.isEmpty()) {
 				return false;

@@ -18,6 +18,7 @@ import no.javatime.inplace.bundlemanager.DuplicateBundleException;
 import no.javatime.inplace.bundlemanager.ProjectLocationException;
 import no.javatime.inplace.bundlemanager.events.BundleTransitionEvent;
 import no.javatime.inplace.bundlemanager.events.BundleTransitionEventListener;
+import no.javatime.inplace.bundleproject.BundleProject;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.dependencies.ProjectSorter;
 import no.javatime.inplace.msg.Msg;
@@ -31,7 +32,9 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.osgi.util.NLS;
+import org.eclipse.pde.core.project.IBundleProjectDescription;
 import org.osgi.framework.Bundle;
+import org.osgi.framework.Constants;
 
 /**
  * Container class for bundle status objects added during a bundle job. A status object contains a status code
@@ -70,6 +73,9 @@ public abstract class JobStatus extends WorkspaceJob implements BundleTransition
 		}
 		Bundle bundle = event.getBundle();
 		Transition transition = event.getTransition();
+		IProject project = event.getProject();
+		IBundleProjectDescription bundleProjDesc = null;
+		
 		switch (transition) {
 		case RESOLVE:
 			IBundleStatus status = addTrace(Msg.RESOLVE_BUNDLE_OPERATION_TRACE, new Object[] 
@@ -101,6 +107,25 @@ public abstract class JobStatus extends WorkspaceJob implements BundleTransition
 		case INSTALL:
 			addTrace(Msg.INSTALL_BUNDLE_OPERATION_TRACE, new Object[] 
 					{bundle.getSymbolicName(), bundleCommand.getStateName(bundle), bundle.getLocation()}, bundle);
+			break;
+		case UPDATE_CLASSPATH:
+			bundleProjDesc = InPlace.get().getBundleDescription(project);
+			addTrace(Msg.UPDATE_BUNDLE_CLASSPATH_TRACE, 
+					new Object[] {bundleProjDesc.getHeader(Constants.BUNDLE_CLASSPATH), 
+							BundleProject.getDefaultOutputLocation(project), project.getName()}, project);
+			break;
+		case REMOVE_CLASSPATH:
+			bundleProjDesc = InPlace.get().getBundleDescription(project);			
+			addTrace(Msg.REMOVE_BUNDLE_CLASSPATH_TRACE, 
+					new Object[] {bundleProjDesc.getHeader(Constants.BUNDLE_CLASSPATH), 
+					BundleProject.getDefaultOutputLocation(project), project.getName()}, project);
+			break;
+		case UPDATE_ACTIVATION_POLICY:
+			bundleProjDesc = InPlace.get().getBundleDescription(project);			
+			String policy = bundleProjDesc.getActivationPolicy();
+				addTrace(Msg.TOGGLE_ACTIVATION_POLICY_TRACE, 
+						new Object[] {(null == policy) ? "lazy" : "eager", 
+								(null == policy) ? "eager" : "lazy", project.getName()}, project);
 			break;
 		default:
 			break;

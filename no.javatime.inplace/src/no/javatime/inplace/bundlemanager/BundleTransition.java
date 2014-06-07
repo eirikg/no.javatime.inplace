@@ -87,7 +87,12 @@ public interface BundleTransition {
 		 * party tool or bundle
 		 */
 		EXTERNAL,
+		UPDATE_CLASSPATH,
+		REMOVE_CLASSPATH,
+		UPDATE_ACTIVATION_POLICY,
+		
 		/** No transition defined. This is also the case if a transition is canceled or rejected */
+		
 		NOTRANSITION,
 	}
 

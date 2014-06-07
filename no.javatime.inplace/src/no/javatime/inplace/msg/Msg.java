@@ -18,10 +18,7 @@ public class Msg extends NLS {
 
 	// Manifest trace operations 
 	public static String UPDATE_BUNDLE_CLASSPATH_TRACE;
-	public static String BUNDLE_CLASSPATH_EXIST_TRACE;
-	public static String REMOVE_BUNDLE_CLASSPATH_ENTRY_TRACE;
 	public static String REMOVE_BUNDLE_CLASSPATH_TRACE;
-	public static String NO_BUNDLE_CLASSPATH_HEADER_TRACE;
 	public static String TOGGLE_ACTIVATION_POLICY_TRACE;
 	
 	// Bundle trace operations

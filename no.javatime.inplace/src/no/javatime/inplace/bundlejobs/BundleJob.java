@@ -965,7 +965,7 @@ public abstract class BundleJob extends JobStatus {
 			BundleProject.setDevClasspath(BundleProject.getSymbolicNameFromManifest(project), BundleProject
 					.getDefaultOutputLocation(project).toString());
 			if (getOptionsService().isUpdateDefaultOutPutFolder()) {
-				BundleProject.addOutputLocationToBundleClassPath(project, this);
+				BundleProject.addOutputLocationToBundleClassPath(project);
 			}
 		} catch (InPlaceException e) {
 			String msg = ExceptionMessage.getInstance().formatString("error_resolve_class_path", project);

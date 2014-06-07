@@ -23,9 +23,10 @@ import java.util.Properties;
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundle.log.status.BundleStatus;
 import no.javatime.inplace.bundle.log.status.IBundleStatus.StatusCode;
-import no.javatime.inplace.bundlejobs.BundleJob;
+import no.javatime.inplace.bundlemanager.BundleManager;
+import no.javatime.inplace.bundlemanager.BundleTransition.Transition;
 import no.javatime.inplace.bundlemanager.InPlaceException;
-import no.javatime.inplace.msg.Msg;
+import no.javatime.inplace.bundlemanager.TransitionEvent;
 import no.javatime.util.messages.Category;
 import no.javatime.util.messages.Message;
 import no.javatime.util.messages.UserMessage;
@@ -146,11 +147,10 @@ public class BundleProject {
 	 * Set the default output folder, if it does not exists.
 	 * 
 	 * @param project to set the bundle class path header on
-	 * @param bundleJob the bundle job who adds the default output folder to the class path. Can be null.  
 	 * @return true if the bundle class path is modified, otherwise false (already in path)
 	 * @throws InPlaceException if failed to get bundle project description or if the manifest file is invalid
 	 */
-	public static Boolean addOutputLocationToBundleClassPath(IProject project, BundleJob bundleJob) throws InPlaceException {
+	public static Boolean addOutputLocationToBundleClassPath(IProject project) throws InPlaceException {
 		try {
 			if (!hasManifest(project)) {
 				throw new InPlaceException("no_manifest_found_project", project.getName());
@@ -165,11 +165,7 @@ public class BundleProject {
 			if (null == storedClassPath) {
 				bundleProjDesc.setHeader(Constants.BUNDLE_CLASSPATH, defaultOutputPath.toString());
 				bundleProjDesc.apply(null);
-				if (InPlace.get().msgOpt().isBundleOperations() && null != bundleJob) {
-					bundleJob.addTrace(Msg.UPDATE_BUNDLE_CLASSPATH_TRACE, 
-							new Object[] {bundleProjDesc.getHeader(Constants.BUNDLE_CLASSPATH), 
-									defaultOutputPath, project.getName()}, project);
-				}
+				BundleManager.addBundleTransition(new TransitionEvent(project, Transition.UPDATE_CLASSPATH));
 				return true;
 			}
 			// Search for the output class path entry in the class path header
@@ -189,11 +185,6 @@ public class BundleProject {
 					for (int i = 0; i < elements.length; i++) {
 						IPath path = new Path(elements[i].getValue());
 						if (path.equals(defaultOutputPath)) {
-							if (InPlace.get().msgOpt().isBundleOperations() && null != bundleJob) {
-								bundleJob.addTrace(Msg.BUNDLE_CLASSPATH_EXIST_TRACE, 
-										new Object[] {project.getName(), 
-										bundleProjDesc.getHeader(Constants.BUNDLE_CLASSPATH)}, project);
-							}
 							return false;
 						}
 					}
@@ -206,11 +197,7 @@ public class BundleProject {
 				updatedClassPath = updatedClassPath.concat(defaultOutputPath.toString());
 				bundleProjDesc.setHeader(Constants.BUNDLE_CLASSPATH, updatedClassPath);
 				bundleProjDesc.apply(null);
-				if (InPlace.get().msgOpt().isBundleOperations() && null != bundleJob) {
-					bundleJob.addTrace(Msg.UPDATE_BUNDLE_CLASSPATH_TRACE, 
-							new Object[] {bundleProjDesc.getHeader(Constants.BUNDLE_CLASSPATH), 
-							defaultOutputPath, project.getName()}, project);
-				}
+				BundleManager.addBundleTransition(new TransitionEvent(project, Transition.UPDATE_CLASSPATH));
 			}
 		} catch (CoreException e) {
 			throw new InPlaceException(e, "manifest_io_project", project.getName());
@@ -222,12 +209,11 @@ public class BundleProject {
 	 * Removes the default output folder, if it exists.
 	 * 
 	 * @param project to remove the bundle class path header from
-	 * @param bundleJob the bundle job who removes the default output folder to the class path. Can be null.  
 	 * @return true if the bundle class path is removed, otherwise false (not in path)
 	 * @throws InPlaceException if failed to get bundle project description, failed to read or parse manifest and when
 	 *           the header is empty or contains space(s) only
 	 */
-	public static Boolean removeOutputLocationFromClassPath(IProject project, BundleJob bundleJob) throws InPlaceException {
+	public static Boolean removeOutputLocationFromClassPath(IProject project) throws InPlaceException {
 
 		// Output folder initially not removed
 		boolean removed = false;
@@ -243,10 +229,6 @@ public class BundleProject {
 			}
 			String storedClassPath = bundleProjDesc.getHeader(Constants.BUNDLE_CLASSPATH);
 			if (null == storedClassPath) {
-				if (InPlace.get().msgOpt().isBundleOperations() && null != bundleJob) {
-					bundleJob.addTrace(Msg.NO_BUNDLE_CLASSPATH_HEADER_TRACE, 
-							new Object[] {defaultOutpUtPath, project.getName()}, project);
-				}
 				return false;
 			}
 			// Search for the output class path entry in the class path header
@@ -282,20 +264,12 @@ public class BundleProject {
 						if (newClassPath.charAt(lastIndex) == ',') {
 							newClassPath = newClassPath.substring(0, lastIndex);
 						}
-						if (InPlace.get().msgOpt().isBundleOperations() && null != bundleJob) {
-							bundleJob.addTrace(Msg.REMOVE_BUNDLE_CLASSPATH_ENTRY_TRACE, 
-									new Object[] {defaultOutpUtPath, newClassPath, project.getName()}, project);
-						}
 						bundleProjDesc.setHeader(Constants.BUNDLE_CLASSPATH, newClassPath);
 					} else {
-						if (InPlace.get().msgOpt().isBundleOperations() && null != bundleJob) {
-							bundleJob.addTrace(Msg.REMOVE_BUNDLE_CLASSPATH_TRACE, 
-									new Object[] {bundleProjDesc.getHeader(Constants.BUNDLE_CLASSPATH), 
-									defaultOutpUtPath, project.getName()}, project);
-						}
 						bundleProjDesc.setHeader(Constants.BUNDLE_CLASSPATH, null);
 					}
 					bundleProjDesc.apply(null);
+					BundleManager.addBundleTransition(new TransitionEvent(project, Transition.REMOVE_CLASSPATH));
 				}
 			}
 		} catch (CoreException e) {
@@ -308,22 +282,16 @@ public class BundleProject {
 	 * Toggles between lazy and eager activation
 	 * 
 	 * @param project of bundle containing the activation policy
-	 * @param bundleJob the bundle job who is changing the policy. Can be null.  
 	 * @throws InPlaceException if failed to get bundle project description or saving activation policy to
 	 *           manifest
 	 */
-	public static void toggleActivationPolicy(IProject project, BundleJob bundleJob) throws InPlaceException {
+	public static void toggleActivationPolicy(IProject project) throws InPlaceException {
+
 		if (null == project) {
 			return;
 		}
 		IBundleProjectDescription bundleProjDesc = InPlace.get().getBundleDescription(project);
 		String policy = bundleProjDesc.getActivationPolicy();
-		if (InPlace.get().msgOpt().isBundleOperations() && null != bundleJob) {
-			bundleJob.addTrace(Msg.TOGGLE_ACTIVATION_POLICY_TRACE, 
-					new Object[] {(null == policy) ? "eager" : "lazy", 
-							(null == policy) ? "lazy" : "eager", project.getName()},
-					project);
-		}
 		// Policy header does not exist
 		if (null == policy) {
 			bundleProjDesc.setActivationPolicy(Constants.ACTIVATION_LAZY);
@@ -332,12 +300,14 @@ public class BundleProject {
 		}
 		try {
 			bundleProjDesc.apply(null);
+			BundleManager.addBundleTransition(new TransitionEvent(project, Transition.UPDATE_ACTIVATION_POLICY));
 		} catch (CoreException e) {
 			throw new InPlaceException(e, "manifest_io_project", project.getName());
 		}
 	}
 
 	public static Boolean isFragment(IProject project) throws InPlaceException {
+
 		IBundleProjectDescription bundleProjDesc = InPlace.get().getBundleDescription(project);
 		IHostDescription host = bundleProjDesc.getHost();
 		if (null != host) {

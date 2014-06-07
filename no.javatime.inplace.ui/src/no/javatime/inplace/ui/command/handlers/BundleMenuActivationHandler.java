@@ -236,9 +236,10 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 				@Override
 				public IBundleStatus runInWorkspace(IProgressMonitor monitor) throws CoreException {
 				
+					BundleManager.addBundleTransitionListener(this);
 					for (IProject project : projects) {
 							try {					
-								BundleProject.toggleActivationPolicy(project, this);
+								BundleProject.toggleActivationPolicy(project);
 								BundleRegion bundleRegion = BundleManager.getRegion();
 								// No bundle jobs (which updates the bundle view) are run when the project(s) are deactivated or auto build is off
 								Bundle bundle = bundleRegion.get(project);
@@ -275,6 +276,8 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 					} catch (CoreException e) {
 						String msg = ErrorMessage.getInstance().formatString("error_end_job", getName());
 						return new BundleStatus(StatusCode.ERROR, Activator.PLUGIN_ID, msg, e);
+					} finally {
+						BundleManager.removeBundleTransitionListener(this);
 					}
 				}
 			};
@@ -298,18 +301,20 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 			OpenProjectHandler.waitOnBuilder();
 			final ResetJob resetJob = new ResetJob();
 			WorkspaceJob updateBundleClassPathJob = new BundleJob(Msg.UPDATE_BUNDLE_CLASS_PATH_JOB) {
+				
 				@Override
 				public IBundleStatus runInWorkspace(IProgressMonitor monitor) throws CoreException {
-
+					
+					BundleManager.addBundleTransitionListener(this);
 					for (IProject project : projects) {
 						try {
 							if (!ProjectProperties.hasManifestBuildErrors(project)) {
 								if (addToPath) {
-									if (BundleProject.addOutputLocationToBundleClassPath(project, this)) {
+									if (BundleProject.addOutputLocationToBundleClassPath(project)) {
 										resetJob.addPendingProject(project);
 									} 
 								} else {
-									if (BundleProject.removeOutputLocationFromClassPath(project, this)) {
+									if (BundleProject.removeOutputLocationFromClassPath(project)) {
 										resetJob.addPendingProject(project);
 									}
 								}
@@ -324,6 +329,8 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 					} catch (CoreException e) {
 						String msg = ErrorMessage.getInstance().formatString("error_end_job", getName());
 						return new BundleStatus(StatusCode.ERROR, Activator.PLUGIN_ID, msg, e);
+					} finally {
+						BundleManager.removeBundleTransitionListener(this);
 					}
 				}
 			};

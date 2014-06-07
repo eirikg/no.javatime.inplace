@@ -1,17 +1,25 @@
 package no.javatime.inplace.bundlemanager;
 
+import no.javatime.inplace.bundlemanager.BundleTransition.Transition;
+
 import org.eclipse.core.resources.IProject;
 import org.osgi.framework.Bundle;
-
-import no.javatime.inplace.bundlemanager.BundleTransition.Transition;
 
 public class TransitionEvent {
 
 	Transition transition;
 	Bundle bundle;
+	IProject project;
 	
 	public TransitionEvent (Bundle bundle, Transition transition) {
 		this.bundle = bundle;
+		this.project = BundleManager.getRegion().getProject(bundle);
+		this.transition = transition;
+	}
+
+	public TransitionEvent (IProject project, Transition transition) {
+		this.project = project;
+		this.bundle = BundleManager.getRegion().get(project);
 		this.transition = transition;
 	}
 	
@@ -20,7 +28,7 @@ public class TransitionEvent {
 	}
 
 	public IProject getProject() {
-		return BundleManager.getRegion().getProject(bundle);
+		return project;
 	}
 	
 	public Transition getTransition() {
