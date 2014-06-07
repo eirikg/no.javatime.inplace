@@ -38,6 +38,7 @@ public class UpdateScheduler {
 			Collection<IProject> initialSet = new LinkedHashSet<>();
 			// Include pending projects to update in partial graph of projects to update  
 			initialSet.addAll(BundleManager.getTransition().getPendingProjects(projects, Transition.UPDATE));			
+			initialSet.addAll(projects);
 			BundleClosures bc = new BundleClosures();
 			Collection<IProject> projectsToUpdate = bc.projectActivation(Closure.PARTIAL_GRAPH, initialSet, true);
 
@@ -247,7 +248,7 @@ public class UpdateScheduler {
 	 * content bar of the bundle view
 	 * 
 	 * @param job to schedule
-	 * @param delay TODO
+	 * @param delay number of msecs to wait before starting the job
 	 */
 	static public void jobHandler(WorkspaceJob job, long delay) {
 	

@@ -246,10 +246,8 @@ public class ActivateBundleJob extends BundleJob {
 		}
 		if (bundlesToResolve.size() == 0) {
 			if (InPlace.get().msgOpt().isBundleOperations())
-				addTrace(Msg.ACTIVATED_BUNDLES, new Object[] {bundleRegion.formatBundleList(activatedBundles, true)}, 
+				addTrace(Msg.ACTIVATED_BUNDLES_INFO, new Object[] {bundleRegion.formatBundleList(activatedBundles, true)}, 
 						InPlace.getContext().getBundle());
-//				InPlace.get().trace("already_activated",
-//						bundleRegion.formatBundleList(activatedBundles, true));
 			return getLastStatus();
 		}
 		Collection<Bundle> notResolvedBundles = resolve(bundlesToResolve, new SubProgressMonitor(monitor, 1));

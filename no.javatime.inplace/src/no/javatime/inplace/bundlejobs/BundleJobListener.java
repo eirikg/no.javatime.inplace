@@ -110,12 +110,15 @@ public class BundleJobListener extends JobChangeAdapter {
 			Message.getInstance().flush();
 			BundleJob bundleJob = (BundleJob) job;
 			if (InPlace.get().msgOpt().isBundleOperations()) {
-				IBundleStatus mStatus = new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, bundleJob.getName());
-				for (IBundleStatus status : bundleJob.getTraceList()) {
-					mStatus.add(status);
+				Collection<IBundleStatus> statusList = bundleJob.getTraceList();
+				if (statusList.size() > 0) {
+					IBundleStatus mStatus = new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, bundleJob.getName());
+					for (IBundleStatus status : statusList) {
+						mStatus.add(status);
+					}
+					// TODO run in separate thread
+					InPlace.get().trace(mStatus);
 				}
-				// TODO run in separate thread
-				InPlace.get().trace(mStatus);
 			}			
 			Collection<IBundleStatus> statusList = logCancelStatus(bundleJob);	
 			if (statusList.size() > 0) {

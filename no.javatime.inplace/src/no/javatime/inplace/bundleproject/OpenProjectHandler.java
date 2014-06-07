@@ -100,13 +100,13 @@ public class OpenProjectHandler extends SaveScopeResourcesHandler {
 	static public void waitOnBundleJob() {
 
 		IJobManager jobMan = Job.getJobManager();
-		Job[] build = jobMan.find(BundleJob.FAMILY_BUNDLE_LIFECYCLE); 
-		if (build.length >= 1) {
+		Job[] bundleJobs = jobMan.find(BundleJob.FAMILY_BUNDLE_LIFECYCLE); 
+		if (bundleJobs.length >= 1) {
 			try {
 				if (Category.getState(Category.infoMessages)) {
-					UserMessage.getInstance().getString("start_waiting_on_builder",  build[0].getName());
+					UserMessage.getInstance().getString("start_waiting_on_builder",  bundleJobs[0].getName());
 				}
-				build[0].join();
+				bundleJobs[0].join();
 				waitOnBundleJob();
 			} catch (InterruptedException e) {
 			}

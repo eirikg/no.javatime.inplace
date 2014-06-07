@@ -23,10 +23,12 @@ import no.javatime.inplace.bundle.log.status.IBundleStatus.StatusCode;
 import no.javatime.inplace.bundlejobs.BundleJob;
 import no.javatime.inplace.bundlejobs.DeactivateJob;
 import no.javatime.inplace.bundlejobs.UninstallJob;
+import no.javatime.inplace.bundlejobs.UpdateScheduler;
 import no.javatime.inplace.bundlejobs.events.BundleJobEvent;
 import no.javatime.inplace.bundlejobs.events.BundleJobEventListener;
 import no.javatime.inplace.bundlemanager.BundleManager;
 import no.javatime.inplace.bundlemanager.BundleRegion;
+import no.javatime.inplace.bundlemanager.BundleTransition;
 import no.javatime.inplace.bundlemanager.BundleTransition.Transition;
 import no.javatime.inplace.bundlemanager.InPlaceException;
 import no.javatime.inplace.bundlemanager.ProjectLocationException;
@@ -48,6 +50,9 @@ import no.javatime.util.messages.UserMessage;
 import no.javatime.util.messages.WarnMessage;
 import no.javatime.util.messages.views.BundleConsoleFactory;
 
+import org.eclipse.core.commands.Command;
+import org.eclipse.core.commands.CommandEvent;
+import org.eclipse.core.commands.ICommandListener;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResourceChangeEvent;
 import org.eclipse.core.resources.IResourceChangeListener;
@@ -68,6 +73,8 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchWindow;
+import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.commands.ICommandService;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.eclipse.ui.statushandlers.StatusManager;
 import org.osgi.framework.Bundle;
@@ -87,7 +94,7 @@ import org.osgi.util.tracker.ServiceTracker;
  * <li>Bundle project service for managing of bundle meta information
  * <ul/>
  */
-public class InPlace extends AbstractUIPlugin implements BundleJobEventListener {
+public class InPlace extends AbstractUIPlugin implements BundleJobEventListener, ICommandListener {
 
 	public static final String PLUGIN_ID = "no.javatime.inplace"; //$NON-NLS-1$
 	private static InPlace plugin;
@@ -140,7 +147,9 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener 
 	 * Debug listener.
 	 */
 	private IResourceChangeListener projectChangeListener;
+
 	private ExternalTransition externalTransitionListener = new ExternalTransition();
+	private Command autoBuildCommand;
 	
 	private BundleRegion bundleRegion;
 
@@ -181,6 +190,14 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener 
 		addDynamicExtensions();
 		BundleManager.addBundleTransitionListener(externalTransitionListener);
 		BundleManager.addBundleJobListener(get());
+		IWorkbench workbench = PlatformUI.getWorkbench();
+		if (null != workbench) {
+			ICommandService service = (ICommandService) workbench.getService(ICommandService.class);
+			autoBuildCommand = service.getCommand("org.eclipse.ui.project.buildAutomatically");
+			if (autoBuildCommand.isDefined()) {
+				autoBuildCommand.addCommandListener(this);
+			}
+		}
 		bundleRegion = BundleManager.getRegion();
 	}	
 	
@@ -197,6 +214,9 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener 
 			bundleProjectTracker.close();
 			bundleProjectTracker = null;		
 			BundleManager.removeBundleJobListener(get());
+			if (autoBuildCommand.isDefined()) {
+				autoBuildCommand.removeCommandListener(this);
+			}
 			BundleManager.removeBundleTransitionListener(externalTransitionListener);
 			super.stop(context);
 			plugin = null;
@@ -396,7 +416,52 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener 
 				DynamicExtensionContribution.statusHandlerExtensionPointId, 
 				DynamicExtensionContribution.statusHandlerExtensionId);
 	}
-	
+	/**
+	 * Callback for the "Build Automatically" main menu option.
+	 * Auto build is set to true when "Build Automatically" is switched on.
+	 * <p>
+	 * When auto build is switched on the post builder is not invoked,
+	 * so an update job is scheduled here to update projects being built when
+	 * the auto build option is switched on.
+	 */
+	@Override
+	public void commandChanged(CommandEvent commandEvent) {
+		if (null == plugin) {
+			return;
+		}
+		IWorkbench workbench = getWorkbench();
+		if (!ProjectProperties.isProjectWorkspaceActivated() || 
+				(null != workbench && workbench.isClosing())) {
+			return;
+		}
+		Command autoBuildCmd = commandEvent.getCommand();
+		try {
+			if (autoBuildCmd.isDefined() && !ProjectProperties.isAutoBuilding()) {
+				if (getCommandOptionsService().isUpdateOnBuild()) {
+					BundleTransition bundleTransition = BundleManager.getTransition();
+					BundleManager.getRegion().setAutoBuild(true);
+					Collection<IProject> activatedProjects = ProjectProperties.getActivatedProjects();
+					Collection<IProject> pendingProjects = bundleTransition.getPendingProjects(
+							activatedProjects, Transition.BUILD);
+					Collection<IProject> pendingProjectsToUpdate = bundleTransition.getPendingProjects(
+							activatedProjects, Transition.UPDATE);
+					if (pendingProjectsToUpdate.size() > 0) {
+						pendingProjects.addAll(pendingProjectsToUpdate);
+					}
+					if (pendingProjects.size() > 0) {
+						UpdateScheduler.scheduleUpdateJob(pendingProjects, 1000);
+					}
+				}
+			} else {
+				BundleManager.getRegion().setAutoBuild(false);			
+			}
+		} catch (InPlaceException e) {
+			StatusManager.getManager().handle(
+					new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, e.getMessage(), e),
+					StatusManager.LOG);			
+		}
+	}
+
 	/**
 	 * Returns the shared instance
 	 * 

@@ -35,7 +35,6 @@ public class Msg extends NLS {
 	public static String EXTERNAL_BUNDLE_OPERATION_TRACE;
 	public static String DISABLE_NATURE_TRACE;
 	public static String ENABLE_NATURE_TRACE;
-	public static String ACTIVATED_BUNDLES;
 	
 	// Build trace operations
 	public static String BUILD_HEADER_TRACE;
@@ -63,6 +62,10 @@ public class Msg extends NLS {
 	// Dialog and View messages
 	public static String DEACTIVATE_QUESTION_DLG;
 	public static String DEACTIVATE_QUESTION_REQ_DLG;
+	
+	// Info messages
+	public static String ACTIVATED_BUNDLES_INFO;
+	public static String NO_BUNDLES_TO_UPDATE_INFO;
 	
 	private static final String BUNDLE_NAME = "no.javatime.inplace.msg.messages"; //$NON-NLS-1$
 

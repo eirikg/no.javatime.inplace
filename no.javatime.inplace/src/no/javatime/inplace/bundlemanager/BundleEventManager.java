@@ -10,13 +10,10 @@
  *******************************************************************************/
 package no.javatime.inplace.bundlemanager;
 
-import java.util.Collection;
-
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundle.log.status.BundleStatus;
 import no.javatime.inplace.bundle.log.status.IBundleStatus.StatusCode;
 import no.javatime.inplace.bundlejobs.BundleJobListener;
-import no.javatime.inplace.bundlejobs.UpdateScheduler;
 import no.javatime.inplace.bundlemanager.BundleTransition.Transition;
 import no.javatime.inplace.bundlemanager.BundleTransition.TransitionError;
 import no.javatime.inplace.bundlemanager.state.ActiveState;
@@ -32,14 +29,8 @@ import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.util.messages.Category;
 import no.javatime.util.messages.UserMessage;
 
-import org.eclipse.core.commands.Command;
-import org.eclipse.core.commands.CommandEvent;
-import org.eclipse.core.commands.ICommandListener;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.jobs.Job;
-import org.eclipse.ui.IWorkbench;
-import org.eclipse.ui.PlatformUI;
-import org.eclipse.ui.commands.ICommandService;
 import org.eclipse.ui.statushandlers.StatusManager;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleEvent;
@@ -69,11 +60,10 @@ import org.osgi.framework.SynchronousBundleListener;
  * although present, but as a structural coherence.
  * <p>
  */
-class BundleEventManager implements FrameworkListener, SynchronousBundleListener, ICommandListener {
+class BundleEventManager implements FrameworkListener, SynchronousBundleListener {
 
 	private BundleJobListener jobListener = new BundleJobListener();
 	private BundleWorkspaceImpl bundleRegion = BundleWorkspaceImpl.INSTANCE;
-	private Command autoBuildCommand;
 	BundleCommandImpl bundleCommand = BundleCommandImpl.INSTANCE;
 	BundleTransitionImpl bundleTransition = BundleTransitionImpl.INSTANCE;
 
@@ -92,14 +82,6 @@ class BundleEventManager implements FrameworkListener, SynchronousBundleListener
 		bundleCommand.getContext().addFrameworkListener(this);
 		bundleCommand.getContext().addBundleListener(this);
 		Job.getJobManager().addJobChangeListener(jobListener);
-		IWorkbench workbench = PlatformUI.getWorkbench();
-		if (null != workbench) {
-			ICommandService service = (ICommandService) workbench.getService(ICommandService.class);
-			autoBuildCommand = service.getCommand("org.eclipse.ui.project.buildAutomatically");
-			if (autoBuildCommand.isDefined()) {
-				autoBuildCommand.addCommandListener(this);
-			}
-		}
 	}
 
 	/**
@@ -110,56 +92,8 @@ class BundleEventManager implements FrameworkListener, SynchronousBundleListener
 		bundleCommand.getContext().removeFrameworkListener(this);
 		bundleCommand.getContext().removeBundleListener(this);
 		Job.getJobManager().removeJobChangeListener(jobListener);
-		if (autoBuildCommand.isDefined()) {
-			autoBuildCommand.removeCommandListener(this);
-		}
 	}
 
-	/**
-	 * Callback for the "Build Automatically" main menu option.
-	 * Auto build is set to true when "Build Automatically" is switched on.
-	 * <p>
-	 * When auto build is switched on the post builder is not invoked,
-	 * so an update job is scheduled here to update projects being built when
-	 * the auto build option is switched on.
-	 */
-	@Override
-	public void commandChanged(CommandEvent commandEvent) {
-		InPlace activator = InPlace.get();
-		if (null == activator) {
-			return;
-		}
-		IWorkbench workbench = activator.getWorkbench();
-		if (!ProjectProperties.isProjectWorkspaceActivated() || 
-				(null != workbench && workbench.isClosing())) {
-			return;
-		}
-		Command autoBuildCmd = commandEvent.getCommand();
-		try {
-			if (autoBuildCmd.isDefined() && !ProjectProperties.isAutoBuilding()) {
-				if (InPlace.get().getCommandOptionsService().isUpdateOnBuild()) {
-					BundleManager.getRegion().setAutoBuild(true);
-					Collection<IProject> activatedProjects = ProjectProperties.getActivatedProjects();
-					Collection<IProject> pendingProjects = bundleTransition.getPendingProjects(
-							activatedProjects, Transition.BUILD);
-					Collection<IProject> pendingProjectsToUpdate = bundleTransition.getPendingProjects(
-							activatedProjects, Transition.UPDATE);
-					if (pendingProjectsToUpdate.size() > 0) {
-						pendingProjects.addAll(pendingProjectsToUpdate);
-					}
-					if (pendingProjects.size() > 0) {
-						UpdateScheduler.scheduleUpdateJob(pendingProjects, 1000);
-					}
-				}
-			} else {
-				BundleManager.getRegion().setAutoBuild(false);			
-			}
-		} catch (InPlaceException e) {
-			StatusManager.getManager().handle(
-					new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, e.getMessage(), e),
-					StatusManager.LOG);			
-		}
-	}
 
 	/**
 	 * Trace events and report on framework errors.

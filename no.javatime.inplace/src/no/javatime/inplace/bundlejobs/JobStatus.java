@@ -80,9 +80,9 @@ public abstract class JobStatus extends WorkspaceJob implements BundleTransition
 			}
 			break;
 		case UPDATE:
-				addTrace(Msg.UPDATE_BUNDLE_OPERATION_TRACE, new Object[] 
-						{bundle.getSymbolicName(), bundleCommand.getStateName(bundle)}, bundle);
-				break;
+			addTrace(Msg.UPDATE_BUNDLE_OPERATION_TRACE, new Object[] 
+					{bundle.getSymbolicName(), bundleCommand.getStateName(bundle)}, bundle);
+			break;
 		case REFRESH:
 			addTrace(Msg.REFRESH_BUNDLE_OPERATION_TRACE, new Object[] {bundle.getSymbolicName()}, bundle);
 			break;
@@ -148,7 +148,7 @@ public abstract class JobStatus extends WorkspaceJob implements BundleTransition
 	/**
 	 * Get all trace status objects added by this job
 	 * 
-	 * @return a list of status trace objects
+	 * @return a list of status trace objects or an empty list
 	 * 
 	 * @see #addTrace(String, Bundle, IProject)
 	 * @see #addTrace(String, Object[], Object)

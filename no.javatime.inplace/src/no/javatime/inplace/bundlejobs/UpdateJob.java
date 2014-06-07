@@ -33,6 +33,7 @@ import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.dependencies.BundleSorter;
 import no.javatime.inplace.dependencies.CircularReferenceException;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
+import no.javatime.inplace.msg.Msg;
 import no.javatime.util.messages.Category;
 import no.javatime.util.messages.ErrorMessage;
 import no.javatime.util.messages.ExceptionMessage;
@@ -198,8 +199,9 @@ public class UpdateJob extends BundleJob {
 		removeErrorBundles(getPendingProjects(), bundlesToUpdate, bundlesToRefresh);
 		if (bundlesToUpdate.size() == 0 || 
 				bundleTransition.getPendingProjects(getPendingProjects(), Transition.UPDATE).size() == 0) {
-			if (InPlace.get().msgOpt().isBundleOperations())
-				InPlace.get().trace("not_updated");
+			if (InPlace.get().msgOpt().isBundleOperations()) {
+				addTrace( new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, Msg.NO_BUNDLES_TO_UPDATE_INFO));
+			}
 			return getLastStatus();
 		}
 		// (4): Collect all bundles to restart after update and refresh
