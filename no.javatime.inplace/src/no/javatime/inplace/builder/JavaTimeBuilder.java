@@ -16,23 +16,24 @@ import java.util.HashMap;
 import java.util.Map;
 
 import no.javatime.inplace.InPlace;
-import no.javatime.inplace.bundlemanager.BundleCommand;
 import no.javatime.inplace.bundlemanager.BundleManager;
-import no.javatime.inplace.bundlemanager.BundleRegion;
-import no.javatime.inplace.bundlemanager.BundleTransition;
-import no.javatime.inplace.bundlemanager.BundleTransition.Transition;
-import no.javatime.inplace.bundlemanager.InPlaceException;
-import no.javatime.inplace.bundlemanager.ProjectLocationException;
 import no.javatime.inplace.bundleproject.BundleProject;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.dependencies.CircularReferenceException;
 import no.javatime.inplace.dependencies.ProjectSorter;
-import no.javatime.inplace.log.status.BundleStatus;
-import no.javatime.inplace.log.status.IBundleStatus;
-import no.javatime.inplace.log.status.IBundleStatus.StatusCode;
 import no.javatime.inplace.msg.Msg;
+import no.javatime.inplace.region.manager.BundleCommand;
+import no.javatime.inplace.region.manager.BundleRegion;
+import no.javatime.inplace.region.manager.BundleTransition;
+import no.javatime.inplace.region.manager.InPlaceException;
+import no.javatime.inplace.region.manager.ProjectLocationException;
+import no.javatime.inplace.region.manager.BundleTransition.Transition;
+import no.javatime.inplace.region.status.BundleStatus;
+import no.javatime.inplace.region.status.IBundleStatus;
+import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import no.javatime.util.messages.Category;
 import no.javatime.util.messages.ExceptionMessage;
+import no.javatime.util.messages.TraceMessage;
 import no.javatime.util.messages.WarnMessage;
 
 import org.eclipse.core.resources.IFile;
@@ -92,23 +93,23 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 			case IResourceDelta.ADDED:
 				if (resource instanceof IFile && resource.getName().endsWith(".java")) {
 					if (Category.DEBUG && Category.getState(Category.build))
-						InPlace.get().trace("added_resource", Category.build, resource.getName());
+						TraceMessage.getInstance().getString("added_resource", Category.build, resource.getName());
 				}
 				break;
 			case IResourceDelta.REMOVED:
 				if (resource instanceof IFile && resource.getName().endsWith(".java")) {
 					if (Category.DEBUG && Category.getState(Category.build))
-						InPlace.get().trace("removed_resource", resource.getName());
+						TraceMessage.getInstance().getString("removed_resource", resource.getName());
 				}
 				break;
 			case IResourceDelta.CHANGED:
 				if (resource instanceof IFile && resource.getName().endsWith(".java")) {
 					if (Category.DEBUG && Category.getState(Category.build))
-						InPlace.get().trace("changed_resource", resource.getName());
+						TraceMessage.getInstance().getString("changed_resource", resource.getName());
 				}
 				if (resource instanceof IFile && resource.getName().endsWith(BundleProject.MANIFEST_FILE_NAME)) {
 					if (Category.DEBUG && Category.getState(Category.build))
-						InPlace.get().trace("changed_resource", resource.getName());
+						TraceMessage.getInstance().getString("changed_resource", resource.getName());
 				}
 				break;
 			default:
@@ -123,11 +124,11 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 		public boolean visit(IResource resource) {
 			if (resource instanceof IFile && resource.getName().endsWith(".java")) {
 				if (Category.DEBUG && Category.getState(Category.build))
-					InPlace.get().trace("full_build_resource", resource.getName());
+					TraceMessage.getInstance().getString("full_build_resource", resource.getName());
 			}
 			if (resource instanceof IFile && resource.getName().endsWith(BundleProject.MANIFEST_FILE_NAME)) {
 				if (Category.DEBUG && Category.getState(Category.build))
-					InPlace.get().trace("full_build_resource", resource.getName());
+					TraceMessage.getInstance().getString("full_build_resource", resource.getName());
 			}
 			return true;
 		}
@@ -144,7 +145,7 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 			// Also removed in the post build listener
 			bundleTransition.removePending(project, Transition.BUILD);
 			if (Category.DEBUG && Category.getState(Category.build))
-				InPlace.get().trace("start_build");
+				TraceMessage.getInstance().getString("start_build");
 			IResourceDelta delta = getDelta(project);
 			if (kind == FULL_BUILD) {
 				fullBuild(monitor);
@@ -224,7 +225,7 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 				}
 			}
 			if (Category.DEBUG && Category.getState(Category.build))
-				InPlace.get().trace("end_build");
+				TraceMessage.getInstance().getString("end_build");
 		} catch (InPlaceException e) {
 			ExceptionMessage.getInstance().handleMessage(e, e.getMessage());
 		}

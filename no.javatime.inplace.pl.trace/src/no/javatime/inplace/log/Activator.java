@@ -4,11 +4,11 @@ import java.io.File;
 import java.util.Dictionary;
 
 import no.javatime.inplace.extender.provider.Extender;
-import no.javatime.inplace.extender.provider.InPlaceException;
 import no.javatime.inplace.log.dl.LogWriter;
 import no.javatime.inplace.log.intface.BundleLog;
 import no.javatime.inplace.log.intface.BundleLogView;
 import no.javatime.inplace.log.view.SharedImages;
+import no.javatime.inplace.region.manager.InPlaceException;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;

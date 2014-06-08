@@ -14,14 +14,14 @@ import java.util.ArrayList;
 
 import no.javatime.inplace.log.intface.BundleLogView;
 import no.javatime.inplace.bundlemanager.BundleManager;
-import no.javatime.inplace.bundlemanager.BundleTransition.Transition;
-import no.javatime.inplace.bundlemanager.InPlaceException;
 import no.javatime.inplace.bundleproject.BundleProject;
-import no.javatime.inplace.bundleproject.ManifestUtil;
-import no.javatime.inplace.bundleproject.OpenProjectHandler;
 import no.javatime.inplace.bundleproject.ProjectProperties;
+import no.javatime.inplace.dialogs.OpenProjectHandler;
 import no.javatime.inplace.extender.provider.Extension;
 import no.javatime.inplace.pl.dependencies.service.DependencyDialog;
+import no.javatime.inplace.region.manager.InPlaceException;
+import no.javatime.inplace.region.manager.BundleTransition.Transition;
+import no.javatime.inplace.region.project.ManifestUtil;
 import no.javatime.inplace.ui.command.handlers.BundleMenuActivationHandler;
 import no.javatime.inplace.ui.views.BundleView;
 import no.javatime.util.messages.Message;

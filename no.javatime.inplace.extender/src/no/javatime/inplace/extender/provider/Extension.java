@@ -20,12 +20,12 @@ public class Extension<T> implements IExtension<T> {
 	 */
 	private Extender<T> extender;
 	
-	public Extension(Class<T> intFace)  throws InPlaceException {
+	public Extension(Class<T> intFace)  throws ExtenderException {
 		this.intFace = intFace;
 		this.extender = getInstance();
 	}
 
-	public Extension(String interfaceName)  throws InPlaceException {
+	public Extension(String interfaceName)  throws ExtenderException {
 		this.extender = Extender.<T>getInstance(interfaceName);
 		this.intFace = extender.getExtensionInterface();
 	}
@@ -34,7 +34,7 @@ public class Extension<T> implements IExtension<T> {
 		return extender.getService();
 	}		
 	
-	public Extender<T> getInstance() throws InPlaceException {
+	public Extender<T> getInstance() throws ExtenderException {
 		this.extender = Extender.<T>getInstance(intFace.getName());
 		return extender;
 	}

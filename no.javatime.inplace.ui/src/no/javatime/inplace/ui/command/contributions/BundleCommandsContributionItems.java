@@ -14,8 +14,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import no.javatime.inplace.bundlejobs.BundleJob;
-import no.javatime.inplace.bundlemanager.InPlaceException;
-import no.javatime.inplace.bundleproject.OpenProjectHandler;
+import no.javatime.inplace.dialogs.OpenProjectHandler;
+import no.javatime.inplace.region.manager.InPlaceException;
 import no.javatime.inplace.ui.Activator;
 import no.javatime.inplace.ui.views.BundleProperties;
 import no.javatime.inplace.ui.views.BundleView;

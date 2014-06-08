@@ -6,22 +6,22 @@ import java.util.Collections;
 import java.util.List;
 
 import no.javatime.inplace.InPlace;
-import no.javatime.inplace.log.status.BundleStatus;
-import no.javatime.inplace.log.status.IBundleStatus;
-import no.javatime.inplace.log.status.IBundleStatus.StatusCode;
-import no.javatime.inplace.bundlemanager.BundleCommand;
 import no.javatime.inplace.bundlemanager.BundleManager;
-import no.javatime.inplace.bundlemanager.BundleRegion;
-import no.javatime.inplace.bundlemanager.BundleTransition;
-import no.javatime.inplace.bundlemanager.BundleTransition.Transition;
-import no.javatime.inplace.bundlemanager.DuplicateBundleException;
-import no.javatime.inplace.bundlemanager.ProjectLocationException;
-import no.javatime.inplace.bundlemanager.events.BundleTransitionEvent;
-import no.javatime.inplace.bundlemanager.events.BundleTransitionEventListener;
 import no.javatime.inplace.bundleproject.BundleProject;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.dependencies.ProjectSorter;
 import no.javatime.inplace.msg.Msg;
+import no.javatime.inplace.region.events.BundleTransitionEvent;
+import no.javatime.inplace.region.events.BundleTransitionEventListener;
+import no.javatime.inplace.region.manager.BundleCommand;
+import no.javatime.inplace.region.manager.BundleRegion;
+import no.javatime.inplace.region.manager.BundleTransition;
+import no.javatime.inplace.region.manager.DuplicateBundleException;
+import no.javatime.inplace.region.manager.ProjectLocationException;
+import no.javatime.inplace.region.manager.BundleTransition.Transition;
+import no.javatime.inplace.region.status.BundleStatus;
+import no.javatime.inplace.region.status.IBundleStatus;
+import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import no.javatime.util.messages.ErrorMessage;
 import no.javatime.util.messages.ExceptionMessage;
 
@@ -40,7 +40,7 @@ import org.osgi.framework.Constants;
  * Container class for bundle status objects added during a bundle job. A status object contains a status code
  * and one or more elements of type exception, message, project and a bundle id.
  * 
- * @see no.javatime.inplace.log.status.IBundleStatus
+ * @see no.javatime.inplace.region.status.IBundleStatus
  */
 public abstract class JobStatus extends WorkspaceJob implements BundleTransitionEventListener{
 

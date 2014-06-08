@@ -15,14 +15,15 @@ import java.util.Collection;
 
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundlemanager.BundleManager;
-import no.javatime.inplace.bundlemanager.BundleTransition;
-import no.javatime.inplace.bundlemanager.BundleTransition.Transition;
 import no.javatime.inplace.bundleproject.ProjectProperties;
-import no.javatime.inplace.log.status.BundleStatus;
-import no.javatime.inplace.log.status.IBundleStatus;
-import no.javatime.inplace.log.status.IBundleStatus.StatusCode;
+import no.javatime.inplace.region.manager.BundleTransition;
+import no.javatime.inplace.region.manager.BundleTransition.Transition;
+import no.javatime.inplace.region.status.BundleStatus;
+import no.javatime.inplace.region.status.IBundleStatus;
+import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import no.javatime.util.messages.Category;
 import no.javatime.util.messages.Message;
+import no.javatime.util.messages.TraceMessage;
 import no.javatime.util.messages.WarnMessage;
 
 import org.eclipse.core.resources.IProject;
@@ -35,7 +36,7 @@ import org.eclipse.ui.statushandlers.StatusManager;
 /**
  * Listen to state changes and report job status in bundle jobs. Bundle status objects added by bundle
  * jobs are reported by this bundle job  listener when jobs are done.
- * @see no.javatime.inplace.log.status.IBundleStatus
+ * @see no.javatime.inplace.region.status.IBundleStatus
  * @see no.javatime.inplace.bundlejobs.JobStatus   
  */
 public class BundleJobListener extends JobChangeAdapter {
@@ -69,7 +70,7 @@ public class BundleJobListener extends JobChangeAdapter {
 		Job job = event.getJob();
 		if (job instanceof BundleJob) {
 //			if (InPlace.get().msgOpt().isBundleOperations()) {
-//				InPlace.get().trace("start_job", job.getName());
+//				TraceMessage.getInstance().getString("start_job", job.getName());
 //			}
 		}
 	}
@@ -82,7 +83,7 @@ public class BundleJobListener extends JobChangeAdapter {
 		Job job = event.getJob();
 		if (job instanceof BundleJob) {
 //			if (InPlace.get().msgOpt().isBundleOperations()) {
-//				InPlace.get().trace("awake_job", job.getName());
+//				TraceMessage.getInstance().getString("awake_job", job.getName());
 //			}
 		}
 	}
@@ -95,7 +96,7 @@ public class BundleJobListener extends JobChangeAdapter {
 		Job job = event.getJob();
 		if (job instanceof BundleJob) {
 //			if (InPlace.get().msgOpt().isBundleOperations()) {
-//				InPlace.get().trace("sleep_job", job.getName());
+//				TraceMessage.getInstance().getString("sleep_job", job.getName());
 //			}
 		}
 	}
@@ -130,7 +131,7 @@ public class BundleJobListener extends JobChangeAdapter {
 			if (InPlace.get().msgOpt().isBundleOperations()) {
 				if (Category.DEBUG)
 					getBundlesJobRunState(bundleJob);
-//				InPlace.get().trace("end_job", job.getName());					
+//				TraceMessage.getInstance().getString("end_job", job.getName());					
 			}
 			schedulePendingOperations(bundleJob);
 		}
@@ -191,7 +192,7 @@ public class BundleJobListener extends JobChangeAdapter {
 		for (int i = 0; i < jobs.length; i++) {
 			Job job = jobs[i];
 			if (job.getState() == Job.RUNNING) {
-				InPlace.get().trace("running_jobs", job.getName(), bundleJob.getName());
+				TraceMessage.getInstance().getString("running_jobs", job.getName(), bundleJob.getName());
 			}
 		}
 	}

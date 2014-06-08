@@ -19,7 +19,7 @@ import java.util.Date;
 
 import no.javatime.inplace.log.Activator;
 import no.javatime.inplace.log.impl.BundleLogEntryImpl;
-import no.javatime.inplace.log.status.IBundleStatus;
+import no.javatime.inplace.region.status.IBundleStatus;
 
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.equinox.log.ExtendedLogEntry;

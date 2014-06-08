@@ -16,8 +16,8 @@ import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 
 import no.javatime.inplace.InPlace;
-import no.javatime.inplace.log.status.BundleStatus;
-import no.javatime.inplace.log.status.IBundleStatus.StatusCode;
+import no.javatime.inplace.region.status.BundleStatus;
+import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import no.javatime.util.messages.Category;
 import no.javatime.util.messages.ErrorMessage;
 import no.javatime.util.messages.UserMessage;

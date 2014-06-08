@@ -20,20 +20,21 @@ import java.util.Map;
 import java.util.Set;
 
 import no.javatime.inplace.InPlace;
-import no.javatime.inplace.log.status.BundleStatus;
-import no.javatime.inplace.log.status.IBundleStatus;
-import no.javatime.inplace.log.status.IBundleStatus.StatusCode;
 import no.javatime.inplace.bundlemanager.BundleManager;
-import no.javatime.inplace.bundlemanager.BundleTransition.Transition;
-import no.javatime.inplace.bundlemanager.BundleTransition.TransitionError;
-import no.javatime.inplace.bundlemanager.DuplicateBundleException;
-import no.javatime.inplace.bundlemanager.InPlaceException;
-import no.javatime.inplace.bundlemanager.ProjectLocationException;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.dependencies.BundleSorter;
 import no.javatime.inplace.dependencies.CircularReferenceException;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.msg.Msg;
+import no.javatime.inplace.region.manager.BundleCommandImpl;
+import no.javatime.inplace.region.manager.BundleTransition.Transition;
+import no.javatime.inplace.region.manager.BundleTransition.TransitionError;
+import no.javatime.inplace.region.manager.DuplicateBundleException;
+import no.javatime.inplace.region.manager.InPlaceException;
+import no.javatime.inplace.region.manager.ProjectLocationException;
+import no.javatime.inplace.region.status.BundleStatus;
+import no.javatime.inplace.region.status.IBundleStatus;
+import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import no.javatime.util.messages.Category;
 import no.javatime.util.messages.ErrorMessage;
 import no.javatime.util.messages.ExceptionMessage;
@@ -321,7 +322,7 @@ public class UpdateJob extends BundleJob {
 					// Set conditions in the resolver hook for removal of duplicates to avoid singleton collisions
 					duplicateInstanceCandidates.add(bundle);
 					duplicateInstanceGroups.put(bundle, duplicateInstanceCandidates);
-					bundleCommand.getResolverHookFactory().setGroups(duplicateInstanceGroups);					
+					InPlace.get().getResolverHookFactory().setGroups(duplicateInstanceGroups);					
 					bundleCommand.update(bundle);
 				} catch (DuplicateBundleException e) {
 					handleDuplicateException(bundleRegion.getProject(bundle), e, null);

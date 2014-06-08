@@ -11,11 +11,11 @@
 package no.javatime.inplace.builder;
 
 import no.javatime.inplace.InPlace;
-import no.javatime.inplace.log.status.BundleStatus;
-import no.javatime.inplace.log.status.IBundleStatus.StatusCode;
+import no.javatime.inplace.region.manager.InPlaceException;
+import no.javatime.inplace.region.status.BundleStatus;
+import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import no.javatime.inplace.bundlejobs.UninstallJob;
 import no.javatime.inplace.bundlemanager.BundleManager;
-import no.javatime.inplace.bundlemanager.InPlaceException;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.util.messages.ExceptionMessage;
 

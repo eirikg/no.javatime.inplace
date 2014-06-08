@@ -21,14 +21,16 @@ import java.util.Collection;
 import java.util.Properties;
 
 import no.javatime.inplace.InPlace;
-import no.javatime.inplace.log.status.BundleStatus;
-import no.javatime.inplace.log.status.IBundleStatus.StatusCode;
 import no.javatime.inplace.bundlemanager.BundleManager;
-import no.javatime.inplace.bundlemanager.BundleTransition.Transition;
-import no.javatime.inplace.bundlemanager.InPlaceException;
-import no.javatime.inplace.bundlemanager.TransitionEvent;
+import no.javatime.inplace.region.events.TransitionEvent;
+import no.javatime.inplace.region.manager.InPlaceException;
+import no.javatime.inplace.region.manager.BundleTransition.Transition;
+import no.javatime.inplace.region.project.ManifestUtil;
+import no.javatime.inplace.region.status.BundleStatus;
+import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import no.javatime.util.messages.Category;
 import no.javatime.util.messages.Message;
+import no.javatime.util.messages.TraceMessage;
 import no.javatime.util.messages.UserMessage;
 import no.javatime.util.messages.WarnMessage;
 
@@ -94,7 +96,7 @@ public class BundleProject {
 			return false;
 		}
 		if (Category.DEBUG && Category.getState(Category.binpath)) {
-			InPlace.get().trace("default_output_folder", project.getName(), defaultOutpUtPath);
+			TraceMessage.getInstance().getString("default_output_folder", project.getName(), defaultOutpUtPath);
 		}
 		return ManifestUtil.verifyPathInClassPath(defaultOutpUtPath, bundleClassPath, project.getName());
 	}

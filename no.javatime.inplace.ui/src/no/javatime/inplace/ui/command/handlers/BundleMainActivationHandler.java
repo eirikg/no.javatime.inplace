@@ -14,8 +14,8 @@ import java.util.Collection;
 import java.util.LinkedHashSet;
 
 import no.javatime.inplace.bundlemanager.BundleManager;
-import no.javatime.inplace.bundlemanager.BundleTransition;
 import no.javatime.inplace.bundleproject.ProjectProperties;
+import no.javatime.inplace.region.manager.BundleTransition;
 import no.javatime.inplace.ui.command.contributions.BundleCommandsContributionItems;
 import no.javatime.inplace.ui.command.contributions.BundleMainCommandsContributionItems;
 

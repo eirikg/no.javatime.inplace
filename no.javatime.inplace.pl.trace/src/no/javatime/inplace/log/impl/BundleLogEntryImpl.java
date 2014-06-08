@@ -21,8 +21,8 @@ import java.util.StringTokenizer;
 import no.javatime.inplace.log.dl.AbstractEntry;
 import no.javatime.inplace.log.dl.LogSession;
 import no.javatime.inplace.log.msg.Messages;
-import no.javatime.inplace.log.status.BundleStatus;
-import no.javatime.inplace.log.status.IBundleStatus;
+import no.javatime.inplace.region.status.BundleStatus;
+import no.javatime.inplace.region.status.IBundleStatus;
 
 import org.eclipse.core.runtime.IStatus;
 import org.osgi.framework.Bundle;

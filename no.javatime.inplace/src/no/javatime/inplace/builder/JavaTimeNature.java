@@ -10,7 +10,7 @@
  *******************************************************************************/
 package no.javatime.inplace.builder;
 
-import no.javatime.inplace.bundlemanager.InPlaceException;
+import no.javatime.inplace.region.manager.InPlaceException;
 
 import org.eclipse.core.resources.ICommand;
 import org.eclipse.core.resources.IProject;

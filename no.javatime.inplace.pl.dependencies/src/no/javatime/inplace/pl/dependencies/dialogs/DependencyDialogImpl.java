@@ -2,13 +2,13 @@ package no.javatime.inplace.pl.dependencies.dialogs;
 
 import java.util.EnumSet;
 
-import no.javatime.inplace.bundlemanager.InPlaceException;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Operation;
 import no.javatime.inplace.pl.dependencies.Activator;
 import no.javatime.inplace.pl.dependencies.msg.Msg;
 import no.javatime.inplace.pl.dependencies.service.DependencyDialog;
+import no.javatime.inplace.region.manager.InPlaceException;
 
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.IMessageProvider;

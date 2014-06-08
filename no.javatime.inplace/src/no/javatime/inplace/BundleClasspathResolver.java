@@ -11,9 +11,9 @@ import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.pde.core.IBundleClasspathResolver;
 
-import no.javatime.inplace.bundlemanager.InPlaceException;
 import no.javatime.inplace.bundleproject.BundleProject;
 import no.javatime.inplace.bundleproject.ProjectProperties;
+import no.javatime.inplace.region.manager.InPlaceException;
 
 /**
  * Adds default output location to source folders when dynamically generated bundles 

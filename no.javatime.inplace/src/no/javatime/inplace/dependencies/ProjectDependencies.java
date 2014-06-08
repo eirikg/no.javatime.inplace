@@ -4,8 +4,8 @@ import java.util.Collection;
 import java.util.LinkedHashSet;
 
 import no.javatime.inplace.InPlace;
-import no.javatime.inplace.log.status.BundleStatus;
-import no.javatime.inplace.log.status.IBundleStatus.StatusCode;
+import no.javatime.inplace.region.status.BundleStatus;
+import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.util.messages.ExceptionMessage;
 

@@ -20,15 +20,16 @@ import java.util.LinkedHashSet;
 
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.builder.JavaTimeNature;
-import no.javatime.inplace.log.status.BundleStatus;
-import no.javatime.inplace.log.status.IBundleStatus.StatusCode;
-import no.javatime.inplace.bundlemanager.InPlaceException;
-import no.javatime.inplace.bundlemanager.ProjectLocationException;
 import no.javatime.inplace.dependencies.CircularReferenceException;
 import no.javatime.inplace.dependencies.ProjectSorter;
+import no.javatime.inplace.region.manager.InPlaceException;
+import no.javatime.inplace.region.manager.ProjectLocationException;
+import no.javatime.inplace.region.status.BundleStatus;
+import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import no.javatime.util.messages.Category;
 import no.javatime.util.messages.ExceptionMessage;
 import no.javatime.util.messages.Message;
+import no.javatime.util.messages.TraceMessage;
 import no.javatime.util.messages.WarnMessage;
 
 import org.eclipse.core.resources.IFile;
@@ -70,6 +71,7 @@ public class ProjectProperties {
 	final public static String PLUGIN_NATURE_ID = "org.eclipse.pde.PluginNature";
 	final public static String PACKAGE_EXPLORER_ID = org.eclipse.jdt.ui.JavaUI.ID_PACKAGES;
 	final public static String PROJECT_EXPLORER_ID = "org.eclipse.ui.navigator.ProjectExplorer";
+//	public static final String JAVATIME_NATURE_ID = "no.javatime.inplace.builder.javatimenature";
 
 	final public static String bundleReferenceLocationScheme = Message.getInstance().formatString(
 			"bundle_identifier_reference_scheme");
@@ -214,9 +216,9 @@ public class ProjectProperties {
 	 * 
 	 * @param project to check for JavaTime nature
 	 * @return true if JavaTime nature is enabled for the project and false if not
-	 * @see no.javatime.inplace.bundlemanager.BundleWorkspaceImpl#isActivated(IProject)
-	 * @see no.javatime.inplace.bundlemanager.BundleWorkspaceImpl#isActivated(Long)
-	 * @see no.javatime.inplace.bundlemanager.BundleWorkspaceImpl#isActivated(Bundle)
+	 * @see no.javatime.inplace.region.manager.BundleWorkspaceImpl#isActivated(IProject)
+	 * @see no.javatime.inplace.region.manager.BundleWorkspaceImpl#isActivated(Long)
+	 * @see no.javatime.inplace.region.manager.BundleWorkspaceImpl#isActivated(Bundle)
 	 */
 	public static Boolean isProjectActivated(IProject project) {
 		try {
@@ -439,8 +441,8 @@ public class ProjectProperties {
 					URL pLoc = new URL(getProjectLocationIdentifier(project, referenceScheme));
 					URL bLoc = new URL(location);
 					if (Category.DEBUG) {
-						InPlace.get().trace("display", "Project location: 	" + pLoc.getPath());
-						InPlace.get().trace("display", "Bundle  location: 	" + bLoc.getPath());
+						TraceMessage.getInstance().getString("display", "Project location: 	" + pLoc.getPath());
+						TraceMessage.getInstance().getString("display", "Bundle  location: 	" + bLoc.getPath());
 					}
 					if (pLoc.getPath().equalsIgnoreCase(bLoc.getPath())) {
 						return project;

@@ -17,17 +17,22 @@ import java.util.Map;
 import java.util.Set;
 
 import no.javatime.inplace.InPlace;
-import no.javatime.inplace.log.status.BundleStatus;
-import no.javatime.inplace.log.status.IBundleStatus.StatusCode;
 import no.javatime.inplace.bundlejobs.ActivateProjectJob;
-import no.javatime.inplace.bundlemanager.BundleTransition.Transition;
-import no.javatime.inplace.bundlemanager.state.BundleStateFactory;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.dependencies.BundleDependencies;
 import no.javatime.inplace.dependencies.CircularReferenceException;
 import no.javatime.inplace.dependencies.ProjectSorter;
+import no.javatime.inplace.region.events.TransitionEvent;
+import no.javatime.inplace.region.manager.BundleRegion;
+import no.javatime.inplace.region.manager.BundleTransition;
+import no.javatime.inplace.region.manager.BundleWorkspaceImpl;
+import no.javatime.inplace.region.manager.BundleTransition.Transition;
+import no.javatime.inplace.region.state.BundleStateFactory;
+import no.javatime.inplace.region.status.BundleStatus;
+import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import no.javatime.util.messages.Category;
 import no.javatime.util.messages.ExceptionMessage;
+import no.javatime.util.messages.TraceMessage;
 import no.javatime.util.messages.UserMessage;
 import no.javatime.util.messages.WarnMessage;
 
@@ -283,13 +288,13 @@ class BundleResolveHandler implements ResolverHook {
 	public void filterSingletonCollisions(BundleCapability singleton,
 			Collection<BundleCapability> collisionCandidates) {
 		if (Category.DEBUG && InPlace.get().msgOpt().isBundleOperations())
-			InPlace.get().trace("singleton_collisions",
+			TraceMessage.getInstance().getString("singleton_collisions",
 					singleton.getRevision().getBundle().getSymbolicName(),
 					formatBundleCapabilityList(collisionCandidates));
 		if (null != groups) {
 			Set<Bundle> group = groups.get(singleton.getRevision().getBundle());
 			if (Category.DEBUG && InPlace.get().msgOpt().isBundleOperations())
-				InPlace.get().trace("singleton_collisions_group",
+				TraceMessage.getInstance().getString("singleton_collisions_group",
 						singleton.getRevision().getBundle().getSymbolicName(),
 						BundleManager.getRegion().formatBundleList(group, true));
 			for (Iterator<BundleCapability> i = collisionCandidates.iterator(); i.hasNext();) {
@@ -297,7 +302,7 @@ class BundleResolveHandler implements ResolverHook {
 				Bundle candidateBundle = candidate.getRevision().getBundle();
 				Set<Bundle> otherGroup = groups.get(candidateBundle);
 				if (Category.DEBUG && InPlace.get().msgOpt().isBundleOperations())
-					InPlace.get().trace("singleton_collisions_other_group",
+					TraceMessage.getInstance().getString("singleton_collisions_other_group",
 							candidateBundle.getSymbolicName(), BundleManager.getRegion().formatBundleList(otherGroup, true));
 				// If this singleton is in the group and at the same time is a candidate (other group)
 				// Remove it so the same but new updated instance of the bundle can be resolved
@@ -305,7 +310,7 @@ class BundleResolveHandler implements ResolverHook {
 				if (group == otherGroup || otherGroup == null) // Same group
 					i.remove(); // the duplicate
 				if (Category.getState(Category.bundleEvents)) {
-					InPlace.get().trace("singleton_collision_remove_duplicate",
+					TraceMessage.getInstance().getString("singleton_collision_remove_duplicate",
 							candidateBundle.getSymbolicName(), BundleManager.getRegion().formatBundleList(otherGroup, true));
 				}
 			}
@@ -323,20 +328,20 @@ class BundleResolveHandler implements ResolverHook {
 			toResolve.removeAll(errorClosure);
 			if (toResolve.size() > 0) {
 				for (BundleRevision bundleRevision : toResolve) {
-					InPlace.get().trace("bundles_to_resolve",
+					TraceMessage.getInstance().getString("bundles_to_resolve",
 							BundleManager.getRegion().getSymbolicKey(bundleRevision.getBundle(), null));
 				}
 			}
 		}
 		if (rejected.size() > 0 && Category.getState(Category.dag)) {
 			for (BundleRevision bundleRevision : rejected) {
-				InPlace.get().trace("rejected_bundles_to_not_resolve",
+				TraceMessage.getInstance().getString("rejected_bundles_to_not_resolve",
 						BundleManager.getRegion().getSymbolicKey(bundleRevision.getBundle(), null));
 			}
 		}
 		if (errorClosure.size() > 0) {
 			for (BundleRevision bundleRevision : errorClosure) {
-				InPlace.get().trace("error_bundles_to_not_resolve",
+				TraceMessage.getInstance().getString("error_bundles_to_not_resolve",
 						BundleManager.getRegion().getSymbolicKey(bundleRevision.getBundle(), null));
 			}
 		}

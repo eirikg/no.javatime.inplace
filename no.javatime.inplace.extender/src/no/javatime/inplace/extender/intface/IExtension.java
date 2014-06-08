@@ -1,7 +1,8 @@
 package no.javatime.inplace.extender.intface;
 
 import no.javatime.inplace.extender.provider.Extender;
-import no.javatime.inplace.extender.provider.InPlaceException;
+import no.javatime.inplace.extender.provider.ExtenderException;
+
 
 public interface IExtension<T> {
 	
@@ -22,8 +23,8 @@ public interface IExtension<T> {
 	 * 
 	 * @return the extender instance or null if the bundle is no longer tracked, the bundle has no
 	 * registered extensions or the registered class does not implement the registered interface
-	 * @throws InPlaceException if the bundle context of this extension is no longer valid or the class
+	 * @throws ExtenderException if the bundle context of this extension is no longer valid or the class
 	 * object implementing the extension could not be created
 	 */
-	public Extender<T> getInstance() throws InPlaceException;
+	public Extender<T> getInstance() throws ExtenderException;
 }

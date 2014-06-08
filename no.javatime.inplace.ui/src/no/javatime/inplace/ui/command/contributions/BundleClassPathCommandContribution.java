@@ -3,11 +3,11 @@ package no.javatime.inplace.ui.command.contributions;
 import java.util.ArrayList;
 import java.util.Collection;
 
-import no.javatime.inplace.bundlemanager.InPlaceException;
 import no.javatime.inplace.bundleproject.BundleProject;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.dl.preferences.intface.MessageOptions;
 import no.javatime.inplace.extender.provider.Extension;
+import no.javatime.inplace.region.manager.InPlaceException;
 import no.javatime.util.messages.Message;
 import no.javatime.util.messages.WarnMessage;
 

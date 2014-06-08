@@ -197,10 +197,10 @@ public class Extender<T> {
 	 * @param interfaceName one of possible multiple interface names of the extension bundle.
 	 * @return the extender instance or null if the bundle is no longer tracked, the bundle has no
 	 * registered extensions or the registered class does not implement the registered interface
-	 * @throws InPlaceException if the bundle context of the extension is no longer valid or the class
+	 * @throws ExtenderException if the bundle context of the extension is no longer valid or the class
 	 * object implementing the extension could not be created
 	 */
-	public static <E> Extender<E> getInstance(String interfaceName) throws InPlaceException {
+	public static <E> Extender<E> getInstance(String interfaceName) throws ExtenderException {
 
 		Extender<?> extender = extenders.get(interfaceName);
 		if (null != extender) {
@@ -271,7 +271,7 @@ public class Extender<T> {
 	 * @param intFace one of possible multiple interfaces of the extension bundle.
 	 * @return the extender instance or null if the bundle is no longer tracked, the bundle has no
 	 * registered extensions or the registered class does not implement the registered interface
-	 * @throws InPlaceException if the bundle context of the extension is no longer valid or the class
+	 * @throws ExtenderException if the bundle context of the extension is no longer valid or the class
 	 * object implementing the extension could not be created
 	 */
 	public static <E, T> Extender<E> getInstance(Class<T> intFace) {
@@ -280,7 +280,7 @@ public class Extender<T> {
 	}
 
 	@SuppressWarnings("unchecked")
-	private static <E> Extender<E> register(Extender<?> extender) throws InPlaceException {
+	private static <E> Extender<E> register(Extender<?> extender) throws ExtenderException {
 		// Ensure that this is a valid interface and that the implementation class
 		// actually implements the interface
 		if (null != extender.getExtensionInterface()) {
@@ -293,7 +293,7 @@ public class Extender<T> {
 		return null;
 	}
 
-	protected void openServiceTracker() throws InPlaceException {
+	protected void openServiceTracker() throws ExtenderException {
 		if (null == tracker) {
 			try {
 				// TODO Is it ok that the context from this bundle is used?
@@ -301,7 +301,7 @@ public class Extender<T> {
 				tracker.open();
 			} catch (IllegalStateException e) {
 				tracker = null;
-				throw new InPlaceException("failed_to_open_tracker", getExtensionInterfaceName());
+				throw new ExtenderException("failed_to_open_tracker", getExtensionInterfaceName());
 			}
 		}
 	}
@@ -318,7 +318,7 @@ public class Extender<T> {
 				openServiceTracker();
 			}
 			return tracker.getService();
-		} catch (InPlaceException e) {
+		} catch (ExtenderException e) {
 			// Ignore
 		}
 		return null;
@@ -367,11 +367,11 @@ public class Extender<T> {
 	 * Get the interface class of this extension
 	 * 
 	 * @return the interface class
-	 * @throws InPlaceException if the class object implementing this interface could not be created,
+	 * @throws ExtenderException if the class object implementing this interface could not be created,
 	 * the class is not implementing the registered interface or if the bundle context of the
 	 * extension is no longer valid
 	 */
-	public Class<T> getExtensionInterface() throws InPlaceException {
+	public Class<T> getExtensionInterface() throws ExtenderException {
 		if (null == intFace) {
 			intFace = Introspector.getTypeInterface(getExtensionClass(), getExtensionInterfaceName());
 		}
@@ -395,18 +395,18 @@ public class Extender<T> {
 	 * The class is returned even if the bundle is no longer tracked
 	 * 
 	 * @return the implementation class of this extension
-	 * @throws InPlaceException if the bundle context of the extension is no longer valid or the class
+	 * @throws ExtenderException if the bundle context of the extension is no longer valid or the class
 	 * name is invalid
 	 */
-	public Class<?> getExtensionClass() throws InPlaceException {
+	public Class<?> getExtensionClass() throws ExtenderException {
 		if (null == cls) {
 			Bundle bundle = getExtensionBundle();
 			if (null == bundle) {
 				// Not tracked
-				throw new InPlaceException("get_bundle_exception", ownerBId);
+				throw new ExtenderException("get_bundle_exception", ownerBId);
 			}
 			if (null == clsName) {
-				throw new InPlaceException("missing_class_name");
+				throw new ExtenderException("missing_class_name");
 			}
 			cls = Introspector.loadExtensionClass(bundle, getExtensionClassName());
 		}
@@ -430,11 +430,11 @@ public class Extender<T> {
 	 * The class from which the object is created is loaded from the extension bundle
 	 * 
 	 * @return an object of the class implementing this extension interface.
-	 * @throws InPlaceException If the class object or the object could not be created
+	 * @throws ExtenderException If the class object or the object could not be created
 	 * @see #getExtensionBundle()
 	 * @see #getExtensionClass()
 	 */
-	public Object createExtensionObjec() throws InPlaceException {
+	public Object createExtensionObjec() throws ExtenderException {
 
 		return Introspector.createExtensionObject(getExtensionClass());
 	}
@@ -503,30 +503,30 @@ public class Extender<T> {
 	 * registered earlier by this bundle or by an other (typically the extension) bundle
 	 * <p>
 	 * 
-	 * @throws InPlaceException if the bundle context of the extension is no longer valid, the service
+	 * @throws ExtenderException if the bundle context of the extension is no longer valid, the service
 	 * was not registered by this framework, the implementation class not owned by the bundle registering the service,
 	 * the registered implementation class does not implement
 	 * the registered interface, the interface name is illegal or if the service object could not be
 	 * obtained
 	 */
-	public void registerAsService() throws InPlaceException {
+	public void registerAsService() throws ExtenderException {
 		try {
 			synchronized (this) {
 				if (requesters.add(regBId)) {
 					serviceRef = getServicereReference();
 					Class<?> cls = getExtensionClass();
 					if (null == interfaceName) {
-						throw new InPlaceException("missing_interface_name", cls);
+						throw new ExtenderException("missing_interface_name", cls);
 					}
 					if (null == Introspector.getInterface(cls, interfaceName)) {
-						throw new InPlaceException("missing_interface", interfaceName, cls);
+						throw new ExtenderException("missing_interface", interfaceName, cls);
 					}
 					if (null == serviceRef) {
 						serviceRegOwner = getRegistratorBundle().getBundleContext().registerService(interfaceName,
 								createExtensionObjec(), null);
 						serviceRef = getServicereReference();
 						if (null == serviceRef) {
-							throw new InPlaceException("failed_to_get_service_for_interface", interfaceName);
+							throw new ExtenderException("failed_to_get_service_for_interface", interfaceName);
 						}
 					} else {
 						regBId = serviceRef.getBundle().getBundleId();
@@ -535,15 +535,15 @@ public class Extender<T> {
 					Object extensionImplObject = getExtensionBundle().getBundleContext().getService(serviceRef);
 					printServiceregInfo(serviceRef);
 					if (null == extensionImplObject) {
-						throw new InPlaceException("failed_to_get_service", interfaceName, cls);
+						throw new ExtenderException("failed_to_get_service", interfaceName, cls);
 					}
 					if (!serviceRef.isAssignableTo(getExtensionBundle(), getExtensionClass().getName())) {
-						throw new InPlaceException("illegal_source_package_reference", getExtensionBundle(), getExtensionClass().getName());					
+						throw new ExtenderException("illegal_source_package_reference", getExtensionBundle(), getExtensionClass().getName());					
 					}
 				}
 			}
 		} catch (IllegalStateException | IllegalArgumentException | SecurityException e) {
-			throw new InPlaceException(e, e.getMessage());
+			throw new ExtenderException(e, e.getMessage());
 		}
 	}
 

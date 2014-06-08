@@ -10,11 +10,11 @@
  *******************************************************************************/
 package no.javatime.inplace.ui.views;
 
-import no.javatime.inplace.log.status.BundleStatus;
-import no.javatime.inplace.log.status.IBundleStatus;
-import no.javatime.inplace.log.status.IBundleStatus.StatusCode;
-import no.javatime.inplace.bundlemanager.InPlaceException;
-import no.javatime.inplace.bundlemanager.ProjectLocationException;
+import no.javatime.inplace.region.manager.InPlaceException;
+import no.javatime.inplace.region.manager.ProjectLocationException;
+import no.javatime.inplace.region.status.BundleStatus;
+import no.javatime.inplace.region.status.IBundleStatus;
+import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import no.javatime.inplace.ui.Activator;
 import no.javatime.util.messages.ErrorMessage;
 import no.javatime.util.messages.Message;

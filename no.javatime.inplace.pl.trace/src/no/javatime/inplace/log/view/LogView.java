@@ -47,8 +47,8 @@ import no.javatime.inplace.log.dl.LogReader;
 import no.javatime.inplace.log.dl.LogSession;
 import no.javatime.inplace.log.impl.BundleLogEntryImpl;
 import no.javatime.inplace.log.msg.Messages;
-import no.javatime.inplace.log.status.BundleStatus;
-import no.javatime.inplace.log.status.IBundleStatus;
+import no.javatime.inplace.region.status.BundleStatus;
+import no.javatime.inplace.region.status.IBundleStatus;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;

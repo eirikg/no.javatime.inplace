@@ -14,17 +14,18 @@ import java.util.Collection;
 import java.util.LinkedHashSet;
 
 import no.javatime.inplace.InPlace;
-import no.javatime.inplace.log.status.BundleStatus;
-import no.javatime.inplace.log.status.IBundleStatus;
-import no.javatime.inplace.log.status.IBundleStatus.StatusCode;
 import no.javatime.inplace.bundlemanager.BundleManager;
-import no.javatime.inplace.bundlemanager.BundleTransition.Transition;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.dependencies.CircularReferenceException;
 import no.javatime.inplace.dependencies.ProjectSorter;
+import no.javatime.inplace.region.manager.BundleTransition.Transition;
+import no.javatime.inplace.region.status.BundleStatus;
+import no.javatime.inplace.region.status.IBundleStatus;
+import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import no.javatime.util.messages.ErrorMessage;
 import no.javatime.util.messages.ExceptionMessage;
 import no.javatime.util.messages.Message;
+import no.javatime.util.messages.TraceMessage;
 import no.javatime.util.messages.UserMessage;
 
 import org.eclipse.core.resources.IProject;
@@ -332,7 +333,7 @@ public class ResetJob {
 					uninstallJob.setProgressGroup(groupMonitor, 1);
 					// uninstallJob.schedule();
 					if (InPlace.get().msgOpt().isBundleOperations()) {
-						InPlace.get().trace("schedule_job", uninstallResetJobName);
+						TraceMessage.getInstance().getString("schedule_job", uninstallResetJobName);
 					}
 					BundleManager.addBundleJob(uninstallJob, 0);
 					GroupActivate activateBundleJob = new GroupActivate(ResetJob.activateResetJobName, projectsToReset);
@@ -340,7 +341,7 @@ public class ResetJob {
 					activateBundleJob.setUseStoredState(true);
 					// activateBundleJob.schedule();
 					if (InPlace.get().msgOpt().isBundleOperations()) {
-						InPlace.get().trace("schedule_job", activateResetJobName);
+						TraceMessage.getInstance().getString("schedule_job", activateResetJobName);
 					}
 					BundleManager.addBundleJob(activateBundleJob, 0);
 					

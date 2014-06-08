@@ -11,26 +11,30 @@
 package no.javatime.inplace.bundlemanager;
 
 import no.javatime.inplace.InPlace;
-import no.javatime.inplace.log.status.BundleStatus;
-import no.javatime.inplace.log.status.IBundleStatus.StatusCode;
-import no.javatime.inplace.bundlejobs.BundleJobListener;
-import no.javatime.inplace.bundlemanager.BundleTransition.Transition;
-import no.javatime.inplace.bundlemanager.BundleTransition.TransitionError;
-import no.javatime.inplace.bundlemanager.state.ActiveState;
-import no.javatime.inplace.bundlemanager.state.BundleNode;
-import no.javatime.inplace.bundlemanager.state.BundleState;
-import no.javatime.inplace.bundlemanager.state.BundleStateFactory;
-import no.javatime.inplace.bundlemanager.state.InstalledState;
-import no.javatime.inplace.bundlemanager.state.LazyState;
-import no.javatime.inplace.bundlemanager.state.ResolvedState;
-import no.javatime.inplace.bundlemanager.state.UninstalledState;
-import no.javatime.inplace.bundleproject.ManifestUtil;
 import no.javatime.inplace.bundleproject.ProjectProperties;
+import no.javatime.inplace.region.events.TransitionEvent;
+import no.javatime.inplace.region.manager.BundleCommandImpl;
+import no.javatime.inplace.region.manager.BundleTransitionImpl;
+import no.javatime.inplace.region.manager.BundleWorkspaceImpl;
+import no.javatime.inplace.region.manager.ProjectLocationException;
+import no.javatime.inplace.region.manager.BundleTransition.Transition;
+import no.javatime.inplace.region.manager.BundleTransition.TransitionError;
+import no.javatime.inplace.region.project.ManifestUtil;
+import no.javatime.inplace.region.state.ActiveState;
+import no.javatime.inplace.region.state.BundleNode;
+import no.javatime.inplace.region.state.BundleState;
+import no.javatime.inplace.region.state.BundleStateFactory;
+import no.javatime.inplace.region.state.InstalledState;
+import no.javatime.inplace.region.state.LazyState;
+import no.javatime.inplace.region.state.ResolvedState;
+import no.javatime.inplace.region.state.UninstalledState;
+import no.javatime.inplace.region.status.BundleStatus;
+import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import no.javatime.util.messages.Category;
+import no.javatime.util.messages.TraceMessage;
 import no.javatime.util.messages.UserMessage;
 
 import org.eclipse.core.resources.IProject;
-import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.ui.statushandlers.StatusManager;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleEvent;
@@ -60,9 +64,8 @@ import org.osgi.framework.SynchronousBundleListener;
  * although present, but as a structural coherence.
  * <p>
  */
-class BundleEventManager implements FrameworkListener, SynchronousBundleListener {
+public class BundleEventManager implements FrameworkListener, SynchronousBundleListener {
 
-	private BundleJobListener jobListener = new BundleJobListener();
 	private BundleWorkspaceImpl bundleRegion = BundleWorkspaceImpl.INSTANCE;
 	BundleCommandImpl bundleCommand = BundleCommandImpl.INSTANCE;
 	BundleTransitionImpl bundleTransition = BundleTransitionImpl.INSTANCE;
@@ -74,35 +77,13 @@ class BundleEventManager implements FrameworkListener, SynchronousBundleListener
 	}
 
 	/**
-	 * Registers the framework, bundle and bundle job listeners. Other listeners are registered in the
-	 * {@linkplain no.javatime.inplace.InPlace activator}.
-	 */
-	public void init() {
-
-		bundleCommand.getContext().addFrameworkListener(this);
-		bundleCommand.getContext().addBundleListener(this);
-		Job.getJobManager().addJobChangeListener(jobListener);
-	}
-
-	/**
-	 * Removes the framework, bundle and bundle job listeners.
-	 */
-	public void dispose() {
-
-		bundleCommand.getContext().removeFrameworkListener(this);
-		bundleCommand.getContext().removeBundleListener(this);
-		Job.getJobManager().removeJobChangeListener(jobListener);
-	}
-
-
-	/**
 	 * Trace events and report on framework errors.
 	 */
 	@Override
 	public void frameworkEvent(FrameworkEvent event) {
 
 		if (Category.getState(Category.bundleEvents)) {
-			InPlace.get().trace("framework_event", BundleCommandImpl.INSTANCE.getStateName(event),
+			TraceMessage.getInstance().getString("framework_event", BundleCommandImpl.INSTANCE.getStateName(event),
 					event.getBundle().getSymbolicName());
 		}
 		if ((event.getType() & (FrameworkEvent.ERROR)) != 0) {
@@ -369,7 +350,7 @@ class BundleEventManager implements FrameworkListener, SynchronousBundleListener
 		// Event trace
 		if (Category.getState(Category.bundleEvents)) {
 			try {
-				InPlace.get().trace("bundle_event", bundle, bundleCommand.getStateName(event),
+				TraceMessage.getInstance().getString("bundle_event", bundle, bundleCommand.getStateName(event),
 						bundleCommand.getStateName(bundle), bundleTransition.getTransitionName(project));
 			} catch (ProjectLocationException e) {
 			}

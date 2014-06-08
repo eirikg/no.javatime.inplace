@@ -10,14 +10,14 @@
  *******************************************************************************/
 package no.javatime.inplace.ui.views;
 
-import no.javatime.inplace.bundlemanager.BundleCommand;
 import no.javatime.inplace.bundlemanager.BundleManager;
-import no.javatime.inplace.bundlemanager.BundleTransition;
-import no.javatime.inplace.bundlemanager.BundleTransition.Transition;
-import no.javatime.inplace.bundlemanager.BundleTransition.TransitionError;
-import no.javatime.inplace.bundlemanager.ProjectLocationException;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.dependencies.BundleSorter;
+import no.javatime.inplace.region.manager.BundleCommand;
+import no.javatime.inplace.region.manager.BundleTransition;
+import no.javatime.inplace.region.manager.ProjectLocationException;
+import no.javatime.inplace.region.manager.BundleTransition.Transition;
+import no.javatime.inplace.region.manager.BundleTransition.TransitionError;
 import no.javatime.inplace.ui.Activator;
 
 import org.eclipse.core.resources.IProject;

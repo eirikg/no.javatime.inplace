@@ -1,6 +1,6 @@
 package no.javatime.inplace.log.intface;
 
-import no.javatime.inplace.log.status.IBundleStatus;
+import no.javatime.inplace.region.status.IBundleStatus;
 
 
 

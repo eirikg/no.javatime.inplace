@@ -10,10 +10,10 @@
  *******************************************************************************/
 package no.javatime.inplace.builder;
 
-import no.javatime.inplace.InPlace;
 import no.javatime.util.messages.Category;
 import no.javatime.util.messages.Message;
 import no.javatime.util.messages.Message.Output;
+import no.javatime.util.messages.TraceMessage;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
@@ -299,26 +299,26 @@ public class ProjectChangeListener implements IResourceChangeListener {
 			break;
 		default:
 		}
-		InPlace.get().trace("{0}", buffer.toString());
+		TraceMessage.getInstance().getString("{0}", buffer.toString());
 	}
 
 	public static void printKind(int kind) {
 
 		if (kind == IResourceDelta.ADDED) {
 
-			InPlace.get().trace("{0}", "Kind --> Added");
+			TraceMessage.getInstance().getString("{0}", "Kind --> Added");
 		}
 		if (kind == IResourceDelta.CHANGED) {
-			InPlace.get().trace("{0}", "Kind --> Changed");
+			TraceMessage.getInstance().getString("{0}", "Kind --> Changed");
 		}
 		if (kind == IResourceDelta.REMOVED) {
-			InPlace.get().trace("{0}", "Kind --> Removed");
+			TraceMessage.getInstance().getString("{0}", "Kind --> Removed");
 		}
 		if (kind == IResourceDelta.REMOVED_PHANTOM) {
-			InPlace.get().trace("{0}", "Kind --> Removed phantom");
+			TraceMessage.getInstance().getString("{0}", "Kind --> Removed phantom");
 		}
 		if (kind == IResourceDelta.ADDED_PHANTOM) {
-			InPlace.get().trace("{0}", "Kind --> Added phantom");
+			TraceMessage.getInstance().getString("{0}", "Kind --> Added phantom");
 		}
 	}
 

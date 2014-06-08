@@ -17,17 +17,15 @@ import no.javatime.inplace.builder.PreBuildListener;
 import no.javatime.inplace.builder.PreChangeListener;
 import no.javatime.inplace.builder.ProjectChangeListener;
 import no.javatime.inplace.bundlejobs.BundleJob;
+import no.javatime.inplace.bundlejobs.BundleJobListener;
 import no.javatime.inplace.bundlejobs.DeactivateJob;
 import no.javatime.inplace.bundlejobs.UninstallJob;
 import no.javatime.inplace.bundlejobs.UpdateScheduler;
 import no.javatime.inplace.bundlejobs.events.BundleJobEvent;
 import no.javatime.inplace.bundlejobs.events.BundleJobEventListener;
+import no.javatime.inplace.bundlemanager.BundleEventManager;
 import no.javatime.inplace.bundlemanager.BundleManager;
-import no.javatime.inplace.bundlemanager.BundleRegion;
-import no.javatime.inplace.bundlemanager.BundleTransition;
-import no.javatime.inplace.bundlemanager.BundleTransition.Transition;
-import no.javatime.inplace.bundlemanager.InPlaceException;
-import no.javatime.inplace.bundlemanager.ProjectLocationException;
+import no.javatime.inplace.bundlemanager.BundleResolveHookFactory;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.dialogs.ExternalTransition;
 import no.javatime.inplace.dl.preferences.intface.CommandOptions;
@@ -37,15 +35,20 @@ import no.javatime.inplace.extender.ExtenderBundleTracker;
 import no.javatime.inplace.extender.provider.Extender;
 import no.javatime.inplace.extender.provider.Extension;
 import no.javatime.inplace.log.intface.BundleLog;
-import no.javatime.inplace.log.status.BundleStatus;
-import no.javatime.inplace.log.status.IBundleStatus;
-import no.javatime.inplace.log.status.IBundleStatus.StatusCode;
 import no.javatime.inplace.msg.Msg;
+import no.javatime.inplace.region.manager.BundleCommandImpl;
+import no.javatime.inplace.region.manager.BundleRegion;
+import no.javatime.inplace.region.manager.BundleTransition;
+import no.javatime.inplace.region.manager.BundleTransition.Transition;
+import no.javatime.inplace.region.manager.InPlaceException;
+import no.javatime.inplace.region.manager.ProjectLocationException;
+import no.javatime.inplace.region.status.BundleStatus;
+import no.javatime.inplace.region.status.IBundleStatus;
+import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import no.javatime.inplace.statushandler.ActionSetContexts;
 import no.javatime.inplace.statushandler.DynamicExtensionContribution;
 import no.javatime.util.messages.Category;
 import no.javatime.util.messages.ExceptionMessage;
-import no.javatime.util.messages.TraceMessage;
 import no.javatime.util.messages.UserMessage;
 import no.javatime.util.messages.WarnMessage;
 import no.javatime.util.messages.views.BundleConsoleFactory;
@@ -79,6 +82,8 @@ import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.eclipse.ui.statushandlers.StatusManager;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
+import org.osgi.framework.ServiceRegistration;
+import org.osgi.framework.hooks.resolver.ResolverHookFactory;
 import org.osgi.service.prefs.BackingStoreException;
 import org.osgi.util.tracker.BundleTracker;
 import org.osgi.util.tracker.BundleTrackerCustomizer;
@@ -148,6 +153,9 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 	 */
 	private IResourceChangeListener projectChangeListener;
 
+	private BundleJobListener jobChangeListener = new BundleJobListener();
+	private BundleEventManager eventManager = new BundleEventManager();;
+
 	private ExternalTransition externalTransitionListener = new ExternalTransition();
 	private Command autoBuildCommand;
 	
@@ -164,6 +172,18 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 	private Extension<MessageOptions> messageOptions;
 	private Extension<BundleLog> traceService;
 
+	/**
+	 * Factory creating resolver hook objects for filtering and detection of duplicate bundle instances
+	 */
+	protected BundleResolveHookFactory resolverHookFactory = new BundleResolveHookFactory();
+
+	/**
+	 * Service registrator for the resolve hook factory.
+	 */
+	private ServiceRegistration<ResolverHookFactory> resolveHookRegistration;
+
+
+
 	public InPlace() {
 	}
 
@@ -172,6 +192,7 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 		super.start(context);
 		plugin = this;
 		InPlace.context = context;		
+		registerResolverHook();
 		extenderBundleTrackerCustomizer = new ExtenderBundleTracker();
 		//int trackStates = Bundle.ACTIVE | Bundle.STARTING | Bundle.STOPPING | Bundle.RESOLVED | Bundle.INSTALLED | Bundle.UNINSTALLED;
 		extenderBundleTracker = new BundleTracker<Extender<?>>(context, Bundle.ACTIVE | Bundle.STARTING, extenderBundleTrackerCustomizer);
@@ -187,8 +208,12 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 		bundleProjectTracker =  new ServiceTracker<IBundleProjectService, IBundleProjectService>
 				(context, IBundleProjectService.class.getName(), null);
 		bundleProjectTracker.open();
+
 		addDynamicExtensions();
 		BundleManager.addBundleTransitionListener(externalTransitionListener);
+		Job.getJobManager().addJobChangeListener(jobChangeListener);
+		getContext().addFrameworkListener(eventManager);
+		getContext().addBundleListener(eventManager);
 		BundleManager.addBundleJobListener(get());
 		IWorkbench workbench = PlatformUI.getWorkbench();
 		if (null != workbench) {
@@ -198,6 +223,7 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 				autoBuildCommand.addCommandListener(this);
 			}
 		}
+		BundleCommandImpl.INSTANCE.init();
 		bundleRegion = BundleManager.getRegion();
 	}	
 	
@@ -213,16 +239,44 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 			extenderBundleTracker = null;
 			bundleProjectTracker.close();
 			bundleProjectTracker = null;		
+			Job.getJobManager().removeJobChangeListener(jobChangeListener);
+			getContext().removeFrameworkListener(eventManager);
+			getContext().removeBundleListener(eventManager);
 			BundleManager.removeBundleJobListener(get());
 			if (autoBuildCommand.isDefined()) {
 				autoBuildCommand.removeCommandListener(this);
 			}
 			BundleManager.removeBundleTransitionListener(externalTransitionListener);
+			unregisterResolverHook();
 			super.stop(context);
 			plugin = null;
 			InPlace.context = null;
 		}
 	}
+
+	/**
+	 * Obtain the resolver hook factory for singletons.
+	 * 
+	 * @return the resolver hook factory object
+	 */
+	public final BundleResolveHookFactory getResolverHookFactory() {
+		return resolverHookFactory;
+	}
+
+	public void registerResolverHook() {
+		resolveHookRegistration = getContext().registerService(ResolverHookFactory.class, resolverHookFactory,
+				null);		
+	}
+
+	/**
+	 * Unregister the resolver hook.
+	 * <p>
+	 * This is redundant. Unregistered by the OSGi service implementation
+	 */
+	public void unregisterResolverHook() {
+		resolveHookRegistration.unregister();
+	}
+
 
 	public BundleTracker<Extender<?>> getExtenderBundleTracker() {
 		return extenderBundleTracker;
@@ -314,12 +368,12 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 		return t.trace(status);		
 	}
 	
-	public String trace(String key, Object... substitutions) {
-		String msg = TraceMessage.getInstance().formatString(key, substitutions);
-		IBundleStatus status = new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, msg);
-		BundleLog t = getTraceContainerService();
-		return t.trace(status);		
-	}
+//	public String trace(String key, Object... substitutions) {
+//		String msg = TraceMessage.getInstance().formatString(key, substitutions);
+//		IBundleStatus status = new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, msg);
+//		BundleLog t = getTraceContainerService();
+//		return t.trace(status);		
+//	}
 	
 	/**
 	 * Uninstalls or deactivates all workspace bundles. All messages

@@ -1,17 +1,23 @@
 package no.javatime.inplace.bundlemanager;
 
-import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundlejobs.events.BundleJobEventListener;
 import no.javatime.inplace.bundlejobs.events.BundleJobNotifier;
-import no.javatime.inplace.bundlemanager.events.BundleTransitionEventListener;
-import no.javatime.inplace.bundlemanager.events.BundleTransitionNotifier;
+import no.javatime.inplace.region.events.BundleTransitionEventListener;
+import no.javatime.inplace.region.events.BundleTransitionNotifier;
+import no.javatime.inplace.region.events.TransitionEvent;
+import no.javatime.inplace.region.manager.BundleCommand;
+import no.javatime.inplace.region.manager.BundleCommandImpl;
+import no.javatime.inplace.region.manager.BundleRegion;
+import no.javatime.inplace.region.manager.BundleTransition;
+import no.javatime.inplace.region.manager.BundleTransitionImpl;
+import no.javatime.inplace.region.manager.BundleWorkspaceImpl;
 import no.javatime.util.messages.Category;
+import no.javatime.util.messages.TraceMessage;
 
 import org.eclipse.core.resources.WorkspaceJob;
 
 public class BundleManager {
 	
-	private static BundleEventManager eventManager = new BundleEventManager();;
 	private static boolean isInitialized;
 
 	/**
@@ -26,8 +32,7 @@ public class BundleManager {
 	private static boolean init() {
 		
 		if (!isInitialized) {
-			BundleCommandImpl.INSTANCE.init();
-			eventManager.init();
+			// BundleCommandImpl.INSTANCE.init();
 			isInitialized = true;
 		}
 		return isInitialized;
@@ -36,8 +41,7 @@ public class BundleManager {
 	private static boolean dispose() {
 		
 		if (isInitialized) {
-			eventManager.dispose();
-			BundleCommandImpl.INSTANCE.dispose();
+			// BundleCommandImpl.INSTANCE.unregisterResolverHook();
 			isInitialized = false;
 		}
 		return isInitialized;
@@ -62,14 +66,14 @@ public class BundleManager {
 	public static void addBundleTransitionListener(BundleTransitionEventListener listener) {
 		bundleTransitionNotifier.addBundleTransitionListener(listener);
 		if (Category.DEBUG && Category.getState(Category.listeners))
-			InPlace.get().trace("added_job_listener",
+			TraceMessage.getInstance().getString("added_job_listener",
 					listener.getClass().getName());					
 	}
 
 	public static void removeBundleTransitionListener(BundleTransitionEventListener listener) {
 		bundleTransitionNotifier.removeBundleTransitionListener(listener);
 		if (Category.DEBUG && Category.getState(Category.listeners))
-			InPlace.get().trace("removed_job_listener",
+			TraceMessage.getInstance().getString("removed_job_listener",
 					listener.getClass().getName());					
 	}
 	
@@ -91,7 +95,7 @@ public class BundleManager {
 		}
 		bundleJobNotifier.addBundleJob(bundleJob, delay);
 		if (Category.DEBUG && Category.getState(Category.listeners))
-			InPlace.get().trace("added_job",
+			TraceMessage.getInstance().getString("added_job",
 					bundleJob.getName());					
 	}
 
@@ -110,7 +114,7 @@ public class BundleManager {
 		}
 		bundleJobNotifier.addBundleJobListener(listener);
 		if (Category.DEBUG && Category.getState(Category.listeners))
-			InPlace.get().trace("added_job_listener",
+			TraceMessage.getInstance().getString("added_job_listener",
 					listener.getClass().getName());					
 	}
 
@@ -129,7 +133,7 @@ public class BundleManager {
 		}
 		bundleJobNotifier.removeBundleJobListener(listener);
 		if (Category.DEBUG && Category.getState(Category.listeners))
-			InPlace.get().trace("removed_job_listener",
+			TraceMessage.getInstance().getString("removed_job_listener",
 					listener.getClass().getName());					
 	}
 }

@@ -3,7 +3,7 @@ package no.javatime.inplace.log.impl;
 import no.javatime.inplace.log.Activator;
 import no.javatime.inplace.log.dl.LogWriter;
 import no.javatime.inplace.log.intface.BundleLog;
-import no.javatime.inplace.log.status.IBundleStatus;
+import no.javatime.inplace.region.status.IBundleStatus;
 
 import org.eclipse.equinox.log.Logger;
 import org.osgi.framework.Bundle;
