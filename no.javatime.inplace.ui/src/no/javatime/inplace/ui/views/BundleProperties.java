@@ -14,7 +14,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 
-import no.javatime.inplace.bundlemanager.BundleManager;
+import no.javatime.inplace.bundlemanager.BundleJobManager;
 import no.javatime.inplace.bundleproject.BundleProject;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.dependencies.BundleSorter;
@@ -102,13 +102,13 @@ public class BundleProperties {
 			}
 		} catch (CoreException e) {
 		}
-		bundle = BundleManager.getRegion().get(project);
+		bundle = BundleJobManager.getRegion().get(project);
 	}
 
 	public BundleProperties(IJavaProject javaProject) {
 		this.project = javaProject.getProject();
 		this.javaProject = javaProject;
-		bundle = BundleManager.getRegion().get(project);
+		bundle = BundleJobManager.getRegion().get(project);
 	}
 
 	public BundleProperties(IProject project, String name, String value) {
@@ -119,7 +119,7 @@ public class BundleProperties {
 			}
 		} catch (CoreException e) {
 		}
-		bundle = BundleManager.getRegion().get(project);
+		bundle = BundleJobManager.getRegion().get(project);
 		this.name = name;
 		this.value = value;
 
@@ -128,7 +128,7 @@ public class BundleProperties {
 	public BundleProperties(IJavaProject javaProject, String name, String value) {
 		this.project = javaProject.getProject();
 		this.javaProject = javaProject;
-		bundle = BundleManager.getRegion().get(project);
+		bundle = BundleJobManager.getRegion().get(project);
 		this.name = name;
 		this.value = value;
 
@@ -156,7 +156,7 @@ public class BundleProperties {
 	 */
 	public final String getBundleName() {
 		String bundleKey = null;
-		bundleKey = BundleManager.getRegion().getSymbolicKey(null, project);
+		bundleKey = BundleJobManager.getRegion().getSymbolicKey(null, project);
 		if (bundleKey.isEmpty()) {
 			return "?_?";
 		}
@@ -236,8 +236,8 @@ public class BundleProperties {
 	public String getBundleStatus() {
 
 		boolean isProjectActivated = ProjectProperties.isProjectActivated(project);
-		BundleCommand bundleCommand = BundleManager.getCommand();
-		BundleTransition bundleTransition = BundleManager.getTransition();
+		BundleCommand bundleCommand = BundleJobManager.getCommand();
+		BundleTransition bundleTransition = BundleJobManager.getTransition();
 
 		try {
 			if (!ProjectProperties.hasBuildState(project)) {
@@ -298,21 +298,21 @@ public class BundleProperties {
 
 	public String getLastTransition() {
 		try {
-			return BundleManager.getTransition().getTransitionName(project);
+			return BundleJobManager.getTransition().getTransitionName(project);
 		} catch (ProjectLocationException e) {
 		}
-		return BundleManager.getTransition().getTransitionName(Transition.NOTRANSITION);
+		return BundleJobManager.getTransition().getTransitionName(Transition.NOTRANSITION);
 	}
 
 	/**
 	 * @return the bundleState
 	 */
 	public String getBundleState() {
-		return BundleManager.getCommand().getStateName(bundle);
+		return BundleJobManager.getCommand().getStateName(bundle);
 	}
 
 	public String getServicesInUse() {
-		Bundle bundle = BundleManager.getRegion().get(project);
+		Bundle bundle = BundleJobManager.getRegion().get(project);
 		StringBuffer buf = new StringBuffer();
 		if (null != bundle) {
 			ServiceReference<?>[] sr = bundle.getServicesInUse();
@@ -343,7 +343,7 @@ public class BundleProperties {
 			return String.valueOf(noOfRevisions);
 		} else {
 			try {
-				noOfRevisions = BundleManager.getCommand().getBundleRevisions(bundle).size();
+				noOfRevisions = BundleJobManager.getCommand().getBundleRevisions(bundle).size();
 			} catch (InPlaceException e) {
 				// Ignore and return zero revisions
 			}
@@ -382,7 +382,7 @@ public class BundleProperties {
 	 *         project could not be found
 	 */
 	public String getBundleLocationIdentifier() throws ProjectLocationException {
-		return BundleManager.getRegion().getBundleLocationIdentifier(project);
+		return BundleJobManager.getRegion().getBundleLocationIdentifier(project);
 	}
 
 	public String getLastInstalledOrUpdated() {
@@ -424,9 +424,9 @@ public class BundleProperties {
 		} else {
 			try {
 				Collection<Bundle> bundles = bundleSorter.sortDeclaredRequiringBundles(Collections.singleton(bundle),
-						BundleManager.getRegion().getBundles());
+						BundleJobManager.getRegion().getBundles());
 				bundles.remove(bundle);
-				requires = BundleManager.getRegion().formatBundleList(bundles, false);
+				requires = BundleJobManager.getRegion().formatBundleList(bundles, false);
 			} catch (CircularReferenceException e) {
 				requires = "Cycles";
 			}
@@ -449,7 +449,7 @@ public class BundleProperties {
 			try {
 				Collection<Bundle> bundles = bundleSorter.sortRequiringBundles(Collections.singleton(bundle));
 				bundles.remove(bundle);
-				requires = BundleManager.getRegion().formatBundleList(bundles, false);
+				requires = BundleJobManager.getRegion().formatBundleList(bundles, false);
 			} catch (CircularReferenceException e) {
 				requires = "Cycles";
 			}
@@ -485,9 +485,9 @@ public class BundleProperties {
 		} else {
 			try {
 				Collection<Bundle> bundles = bundleSorter.sortDeclaredProvidingBundles(Collections.singleton(bundle),
-						BundleManager.getRegion().getBundles());
+						BundleJobManager.getRegion().getBundles());
 				bundles.remove(bundle);
-				providers = BundleManager.getRegion().formatBundleList(bundles, false);
+				providers = BundleJobManager.getRegion().formatBundleList(bundles, false);
 			} catch (CircularReferenceException e) {
 				providers = "Cycles";
 			}
@@ -510,7 +510,7 @@ public class BundleProperties {
 			try {
 				Collection<Bundle> bundles = bundleSorter.sortProvidingBundles(Collections.singleton(bundle));
 				bundles.remove(bundle);
-				providers = BundleManager.getRegion().formatBundleList(bundles, false);
+				providers = BundleJobManager.getRegion().formatBundleList(bundles, false);
 			} catch (CircularReferenceException e) {
 				providers = "Cycles";
 			}

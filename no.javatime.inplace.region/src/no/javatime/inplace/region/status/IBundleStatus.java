@@ -12,6 +12,8 @@ package no.javatime.inplace.region.status;
 
 import java.util.Collection;
 
+import no.javatime.inplace.region.manager.BundleTransition.Transition;
+
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.IStatus;
 import org.osgi.framework.Bundle;
@@ -37,18 +39,18 @@ public interface IBundleStatus extends IStatus {
 	boolean hasStatus(StatusCode statusCode);
 
 	/**
-	 * Return the status code of this bundle status object
-	 * 
-	 * @return return the status code
-	 */
-	public Enum<StatusCode> getStatusCode();
-
-	/**
 	 * Set the status code of this bundle status object
 	 * 
 	 * @param statusCode the status code to set
 	 */
 	void setStatusCode(StatusCode statusCode);
+
+	/**
+	 * Get the status code of this bundle status object
+	 * 
+	 * @return statusCode of this status object
+	 */
+	StatusCode getStatusCode();
 
 	/**
 	 * Bundle state at time of creation of this bundle status object
@@ -62,6 +64,10 @@ public interface IBundleStatus extends IStatus {
 	 * @param bundleState the bundle state
 	 */
 	void setBundleState(int bundleState);
+
+	public Transition getBundleTransition();
+
+	public void setBundleTransition(Transition bundleTransition);
 
 		/**
 	 * Returns the message describing the outcome. The message is localized to the current locale.

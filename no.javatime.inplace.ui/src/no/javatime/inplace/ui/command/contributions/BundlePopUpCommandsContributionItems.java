@@ -13,7 +13,7 @@ package no.javatime.inplace.ui.command.contributions;
 import java.util.ArrayList;
 
 import no.javatime.inplace.log.intface.BundleLogView;
-import no.javatime.inplace.bundlemanager.BundleManager;
+import no.javatime.inplace.bundlemanager.BundleJobManager;
 import no.javatime.inplace.bundleproject.BundleProject;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.dialogs.OpenProjectHandler;
@@ -69,7 +69,7 @@ public class BundlePopUpCommandsContributionItems extends BundleCommandsContribu
 		// Get project, activation status and the bundle project
 		IProject project = javaProject.getProject();
 		Boolean activated = ProjectProperties.isProjectActivated(project);
-		Bundle bundle = BundleManager.getRegion().get(project);
+		Bundle bundle = BundleJobManager.getRegion().get(project);
 
 		// Busy running bundle jobs. Show a limited set of contributors
 		if (OpenProjectHandler.getBundlesJobRunState()) {
@@ -152,7 +152,7 @@ public class BundlePopUpCommandsContributionItems extends BundleCommandsContribu
 		String label;
 		String stateName = " (";
 		if (!activated) {
-			stateName += BundleManager.getCommand().getStateName(bundle) + ")";
+			stateName += BundleJobManager.getCommand().getStateName(bundle) + ")";
 			label = activateParamId;
 			label += " " + stateName;
 			return addContribution(menuId, dynamicPopUpCommandId, label, activateParamId,
@@ -165,7 +165,7 @@ public class BundlePopUpCommandsContributionItems extends BundleCommandsContribu
 		String label;
 		String stateName = " (";
 		if (activated) {
-			stateName += BundleManager.getCommand().getStateName(bundle) + ")";
+			stateName += BundleJobManager.getCommand().getStateName(bundle) + ")";
 			label = deactivateParamId;
 			label += " " + stateName;
 			return addContribution(menuId, dynamicPopUpCommandId, label, deactivateParamId,
@@ -199,7 +199,7 @@ public class BundlePopUpCommandsContributionItems extends BundleCommandsContribu
 	private CommandContributionItem addRefresh(Boolean activated, Bundle bundle) {
 
 		// Conditional enabling of refresh
-		if (null != bundle && activated && BundleManager.getCommand().getBundleRevisions(bundle).size() > 1) {
+		if (null != bundle && activated && BundleJobManager.getCommand().getBundleRevisions(bundle).size() > 1) {
 			return addContribution(menuId, dynamicPopUpCommandId, refreshParamId, refreshParamId,
 					CommandContributionItem.STYLE_PUSH, refreshImage);
 		}
@@ -207,7 +207,7 @@ public class BundlePopUpCommandsContributionItems extends BundleCommandsContribu
 	}
 
 	private CommandContributionItem addUpdate(Boolean activated, IProject project, Bundle bundle) {
-		if (null != bundle && activated && BundleManager.getTransition().containsPending(project, Transition.UPDATE, Boolean.FALSE)) {
+		if (null != bundle && activated && BundleJobManager.getTransition().containsPending(project, Transition.UPDATE, Boolean.FALSE)) {
 			return addContribution(menuId, dynamicPopUpCommandId, updateParamId, updateParamId,
 					CommandContributionItem.STYLE_PUSH, updateImage);
 		}

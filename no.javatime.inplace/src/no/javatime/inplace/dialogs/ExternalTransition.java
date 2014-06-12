@@ -10,7 +10,7 @@ import no.javatime.inplace.bundlejobs.BundleJob;
 import no.javatime.inplace.bundlejobs.DeactivateJob;
 import no.javatime.inplace.bundlejobs.InstallJob;
 import no.javatime.inplace.bundlejobs.UninstallJob;
-import no.javatime.inplace.bundlemanager.BundleManager;
+import no.javatime.inplace.bundlemanager.BundleJobManager;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.dependencies.ProjectSorter;
 import no.javatime.inplace.msg.Msg;
@@ -38,7 +38,7 @@ public class ExternalTransition implements BundleTransitionEventListener{
 		if (evt.getTransition() == Transition.EXTERNAL) {
 			Bundle bundle = evt.getBundle();
 			IProject project = evt.getProject();
-			if (BundleManager.getTransition().getError(bundle) == TransitionError.UNINSTALL) {  
+			if (BundleJobManager.getTransition().getError(bundle) == TransitionError.UNINSTALL) {  
 				externalUninstall(bundle, project);
 			} else {
 				if (InPlace.get().msgOpt().isBundleOperations()) {
@@ -63,12 +63,12 @@ public class ExternalTransition implements BundleTransitionEventListener{
 
 		final String symbolicName = bundle.getSymbolicName();
 		final String location = bundle.getLocation();
-		final BundleCommand bundleCommand = BundleManager.getCommand(); 
+		final BundleCommand bundleCommand = BundleJobManager.getCommand(); 
 		// After the fact
 		InPlace.getDisplay().syncExec(new Runnable() {
 			@Override
 			public void run() {
-				final BundleRegion bundleRegion = BundleManager.getRegion(); 
+				final BundleRegion bundleRegion = BundleJobManager.getRegion(); 
 				IBundleStatus reqStatus = null;
 				int autoDependencyAction = 1; // Default auto dependency action
 				new OpenProjectHandler().saveModifiedFiles();
@@ -116,7 +116,7 @@ public class ExternalTransition implements BundleTransitionEventListener{
 						if (dependencies) {
 							// Bring workspace back to a consistent state before restoring
 							UninstallJob uninstallJob = new UninstallJob(UninstallJob.uninstallJobName, reqProjects);
-							BundleManager.addBundleJob(uninstallJob, 0);
+							BundleJobManager.addBundleJob(uninstallJob, 0);
 							bundleJob.addPendingProjects(reqProjects);
 						}
 					} else {
@@ -149,7 +149,7 @@ public class ExternalTransition implements BundleTransitionEventListener{
 						bundleJob.addTrace(mStatus);
 					}
 					StatusManager.getManager().handle(mStatus, StatusManager.LOG);
-					BundleManager.addBundleJob(bundleJob, 0);
+					BundleJobManager.addBundleJob(bundleJob, 0);
 				}
 			}
 		});

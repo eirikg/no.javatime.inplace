@@ -13,7 +13,7 @@ package no.javatime.inplace.ui;
 import no.javatime.inplace.bundlejobs.BundleJob;
 import no.javatime.inplace.bundlejobs.events.BundleJobEvent;
 import no.javatime.inplace.bundlejobs.events.BundleJobEventListener;
-import no.javatime.inplace.bundlemanager.BundleManager;
+import no.javatime.inplace.bundlemanager.BundleJobManager;
 import no.javatime.inplace.dl.preferences.intface.CommandOptions;
 import no.javatime.inplace.extender.provider.Extender;
 import no.javatime.inplace.extender.provider.Extension;
@@ -89,7 +89,7 @@ public class Activator extends AbstractUIPlugin implements BundleJobEventListene
 			// int trackStates = Bundle.ACTIVE | Bundle.STARTING | Bundle.STOPPING | Bundle.RESOLVED | Bundle.INSTALLED | Bundle.UNINSTALLED;
 			extenderBundleTracker = new BundleTracker<Extender<?>>(context, Bundle.ACTIVE | Bundle.STARTING, extenderBundleTrackerCustomizer);
 			extenderBundleTracker.open();
-			BundleManager.addBundleJobListener(Activator.getDefault());
+			BundleJobManager.addBundleJobListener(Activator.getDefault());
 			commandOptions = new Extension<>(CommandOptions.class);
 			loadCheckedMenus();
 		} catch (IllegalStateException | InPlaceException e) {
@@ -107,7 +107,7 @@ public class Activator extends AbstractUIPlugin implements BundleJobEventListene
 	@Override
 	public void stop(BundleContext context) throws Exception {
 
-		BundleManager.removeBundleJobListener(this);
+		BundleJobManager.removeBundleJobListener(this);
 		extenderBundleTracker.close();
 		extenderBundleTracker = null;
 		super.stop(context);

@@ -15,7 +15,7 @@ import no.javatime.inplace.region.manager.InPlaceException;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import no.javatime.inplace.bundlejobs.UninstallJob;
-import no.javatime.inplace.bundlemanager.BundleManager;
+import no.javatime.inplace.bundlemanager.BundleJobManager;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.util.messages.ExceptionMessage;
 
@@ -52,13 +52,13 @@ public class PreChangeListener implements IResourceChangeListener {
 				} else {
 					// A special case is that an activated bundle may be in state uninstall when the activated duplicate
 					// project has been imported or opened
-					if (null == BundleManager.getRegion().get(project)) {
+					if (null == BundleJobManager.getRegion().get(project)) {
 						return;
 					}
 					uninstallJob.addPendingProject(project);
 				}
 				uninstallJob.unregisterBundleProject(true);
-				BundleManager.addBundleJob(uninstallJob, 0);
+				BundleJobManager.addBundleJob(uninstallJob, 0);
 			} catch (InPlaceException e) {
 				String hint = ExceptionMessage.getInstance().formatString("project_uninstall_error",
 						project.getName());

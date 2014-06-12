@@ -13,13 +13,14 @@ package no.javatime.inplace.region.status;
 import java.util.Collection;
 
 import no.javatime.inplace.region.Activator;
+import no.javatime.inplace.region.manager.BundleTransition.Transition;
+import no.javatime.inplace.region.manager.BundleManager;
 import no.javatime.inplace.region.manager.InPlaceException;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
-import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.MultiStatus;
 import org.eclipse.pde.core.project.IBundleProjectDescription;
@@ -33,10 +34,12 @@ import org.osgi.framework.Version;
 public class BundleStatus extends MultiStatus implements IBundleStatus {
 
 	/** Overrules the {@code IStatus} status codes */
-	private Enum<StatusCode> statusCode;
+	private StatusCode statusCode;
 	private IProject project;
 	private Long bundleId;
-	private int bundleState;
+	private int bundleState = Bundle.UNINSTALLED;;
+	private Transition bundleTransition = Transition.NOTRANSITION;;
+	
 
 	/**
 	 * Creates a new status object. The underlying <code>Status</code> object is assigned a status 
@@ -49,8 +52,7 @@ public class BundleStatus extends MultiStatus implements IBundleStatus {
 	 */
 	public BundleStatus(StatusCode statusCode, String pluginId, String message) {
 		super(pluginId, IStatus.OK, message, null);
-		convertToSeverity(statusCode);
-		this.statusCode = statusCode;
+		init(statusCode, null, null);
 	}
 	
 	/**
@@ -62,7 +64,12 @@ public class BundleStatus extends MultiStatus implements IBundleStatus {
 	 */
 	public BundleStatus(IStatus status) {
 		super(status.getPlugin(), status.getSeverity(), status.getMessage(), status.getException());
-		this.statusCode = converToStausCode(status.getSeverity());
+		if (status instanceof IBundleStatus) {
+			IBundleStatus bundleStatus = (BundleStatus) status;
+			init(bundleStatus.getStatusCode(), bundleStatus.getBundle(), bundleStatus.getProject());			
+		} else {
+			init(converToStausCode(status.getSeverity()), null, null);
+		}
 	}
 
 	/**
@@ -79,50 +86,15 @@ public class BundleStatus extends MultiStatus implements IBundleStatus {
 	public BundleStatus(StatusCode statusCode, String pluginId, IProject project, String message,
 			Throwable exception) {
 		super(pluginId, IStatus.OK, message, exception);
-		convertToSeverity(statusCode);
-		this.statusCode = statusCode;
-		this.project = project;
+		init(statusCode, null, project); 
 	}
 	
 	public BundleStatus(StatusCode statusCode, Bundle bundle, IProject project, String message,
 			Throwable exception) {
 		super(Activator.PLUGIN_ID, IStatus.OK, message, exception);
-		String symbolicName = null;
-		// Must have a symbolic name
-		if (null != bundle) {
-			symbolicName = bundle.getSymbolicName();
-			this.bundleId = bundle.getBundleId();
-			bundleState = bundle.getState();
-		} else if (null != project) {
-			// TODO Consider (strongly) revising
-			IPath path = project.getLocation();
-			String bundleReferenceLocationScheme = "reference:file:/";
-			StringBuffer locScheme = null;
-			locScheme = new StringBuffer(bundleReferenceLocationScheme);
-			String locIdent = path.toOSString();
-			locScheme = locScheme.append(locIdent);
-			bundle = Activator.getContext().getBundle(locScheme.toString());			
-			//bundle = Platform.getBundle(symbolicName);
-			if (null != bundle) {
-				this.bundleId = Activator.getContext().getBundle().getBundleId();
-				symbolicName = bundle.getSymbolicName();
-			} else {
-				IBundleProjectDescription pd = Activator.getDefault().getBundleDescription(project);
-				symbolicName = pd.getSymbolicName();
-				bundleState = Bundle.UNINSTALLED;
-			}
-		} else {
-			// Worst case. Symbolic name is not always the same as the plug-gin id.
-			if (null == symbolicName) {
-				symbolicName = Activator.PLUGIN_ID;
-			}
-		}
-		setPlugin(symbolicName);
-		convertToSeverity(statusCode);
-		this.statusCode = statusCode;
-		this.project = project;
+		init(statusCode, bundle, project);
 	}
-
+		
 	/**
 	 * Creates a new status object. The underlying <code>Status</code> object is assigned a status 
 	 * converted from the specified {@code StatusCode}
@@ -135,14 +107,24 @@ public class BundleStatus extends MultiStatus implements IBundleStatus {
 	 * @see #convertToSeverity(no.javatime.inplace.region.status.IBundleStatus.StatusCode)
 	 */
 	public BundleStatus(StatusCode statusCode, String pluginId, Long bundleId, String message, Throwable exception) {
-		super(pluginId,IStatus.OK, message, exception);
-		convertToSeverity(statusCode);
-		this.statusCode = statusCode;
-		this.bundleId = bundleId;
-		Bundle bundle = Activator.getContext().getBundle(bundleId);
-		if (null != bundle) {
-			bundleState = bundle.getState();
-		}
+		super(pluginId, IStatus.OK, message, exception);
+		init(statusCode, Activator.getContext().getBundle(bundleId), null);
+	}
+
+	/**
+	 * Creates a new status object. The underlying <code>Status</code> object is assigned a status 
+	 * converted from the specified {@code StatusCode}
+	 * 
+	 * @param statusCode one of the <code>StatusCode</code> constants
+	 * @param pluginId the unique identifier of the relevant plug-in
+	 * @param bundle associated with this status object
+	 * @param message a verbose message related to the status
+	 * @param exception an exception or <code>null</code> if not applicable
+	 * @see #convertToSeverity(no.javatime.inplace.region.status.IBundleStatus.StatusCode)
+	 */
+	public BundleStatus(StatusCode statusCode, String pluginId, Bundle bundle, String message, Throwable exception) {
+		super(pluginId, IStatus.OK, message, exception);
+		init(statusCode, bundle, null);
 	}
 		
 	/**
@@ -157,8 +139,65 @@ public class BundleStatus extends MultiStatus implements IBundleStatus {
 	 */
 	public BundleStatus(StatusCode statusCode, String pluginId, String message, Throwable exception) {
 		super(pluginId, IStatus.OK, message, exception);
+		init(statusCode, null, null);
+	}
+
+	private void init(StatusCode statusCode, Bundle bundle, IProject project) {
+		String symbolicName = null;
+		// Must have a symbolic name
+		if (null != bundle) {
+			symbolicName = bundle.getSymbolicName();
+			this.bundleId = bundle.getBundleId();
+			bundleState = bundle.getState();
+			bundleTransition = BundleManager.getTransition().getTransition(bundle);
+		} else if (null != project) {
+			bundle = BundleManager.getRegion().get(project);
+			if (null != bundle) {
+				symbolicName = bundle.getSymbolicName();
+				this.bundleId = bundle.getBundleId();
+				bundleState = bundle.getState();
+				bundleTransition = BundleManager.getTransition().getTransition(bundle);
+			} else {
+				IBundleProjectDescription pd = Activator.getDefault().getBundleDescription(project);
+				symbolicName = pd.getSymbolicName();
+			}
+		} else {
+			// Worst case. Symbolic name is not always the same as the plug-gin id.
+			if (null == symbolicName) {
+				symbolicName = getPlugin();
+				IWorkspace workspace = ResourcesPlugin.getWorkspace();
+				IWorkspaceRoot root = workspace.getRoot();
+				for (IProject bundleProject : root.getProjects()) {
+					try {
+						IBundleProjectDescription bundleProjDesc = Activator.getDefault().getBundleDescription(bundleProject);
+						String pdSymbolicName = bundleProjDesc.getSymbolicName();
+						if (null != pdSymbolicName && pdSymbolicName.equals(symbolicName)) {
+							// Drop comparison with version. Use the first one available
+							project = bundleProject;
+						}
+					} catch (InPlaceException e) {
+						StatusManager.getManager().handle(new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, null, e),
+								StatusManager.LOG);
+					}
+				}
+				if (null != project) {
+					bundle = BundleManager.getRegion().get(project);
+					if (null != bundle) {
+						symbolicName = bundle.getSymbolicName();
+						this.bundleId = bundle.getBundleId();
+						bundleState = bundle.getState();
+						bundleTransition = BundleManager.getTransition().getTransition(bundle);
+					} else {
+						IBundleProjectDescription pd = Activator.getDefault().getBundleDescription(project);
+						symbolicName = pd.getSymbolicName();
+					}
+				}
+			}
+		}
+		setPlugin(symbolicName);
 		convertToSeverity(statusCode);
 		this.statusCode = statusCode;
+		this.project = project;		
 	}
 
 	/**
@@ -214,20 +253,19 @@ public class BundleStatus extends MultiStatus implements IBundleStatus {
 		this.bundleState = bundleState;
 	}
 
+	public Transition getBundleTransition() {
+		return bundleTransition;
+	}
+
+	public void setBundleTransition(Transition bundleTransition) {
+		this.bundleTransition = bundleTransition;
+	}
+
 	@Override
 	public boolean hasStatus(StatusCode statusCode) {
 		return statusCode == this.statusCode;
 	}
 	
-	@Override
-	public Enum<StatusCode> getStatusCode() {
-		return this.statusCode;
-	}
-	
-	public void setStatusCode(Enum<StatusCode> statusCode) {
-		this.statusCode = statusCode;
-	}
-
 	@Override
 	public String getMessage() {
 		return super.getMessage();
@@ -249,6 +287,10 @@ public class BundleStatus extends MultiStatus implements IBundleStatus {
 	public void setStatusCode(StatusCode statusCode) {
 		this.statusCode = statusCode;
 		super.setSeverity(convertToSeverity(statusCode));
+	}
+	
+	public StatusCode getStatusCode() {
+		return statusCode;
 	}
 
 	@Override

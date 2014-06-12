@@ -16,13 +16,13 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 
 import no.javatime.inplace.InPlace;
-import no.javatime.inplace.bundlemanager.BundleManager;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.dependencies.BundleClosures;
 import no.javatime.inplace.dependencies.BundleSorter;
 import no.javatime.inplace.dependencies.CircularReferenceException;
 import no.javatime.inplace.dependencies.ProjectSorter;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
+import no.javatime.inplace.region.manager.BundleManager;
 import no.javatime.inplace.region.manager.InPlaceException;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
@@ -213,7 +213,7 @@ public class DeactivateJob extends NatureJob {
 				// The resolver always include bundles with the same symbolic name in the resolve process
 				// TODO let getSymbolicNameDuplicates throw an InPlaceException
 				Map<IProject, Bundle> duplicates = bundleRegion.getSymbolicNameDuplicates(
-						bundleRegion.getProjects(pendingBundles), bundleRegion.getActivatedBundles(), true);
+						bundleRegion.getBundleProjects(pendingBundles), bundleRegion.getActivatedBundles(), true);
 				Collection<Bundle> bundlesToRestart = null;
 				Collection<Bundle> bundlesToResolve = null;
 				if (duplicates.size() > 0) {

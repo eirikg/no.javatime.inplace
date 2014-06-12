@@ -20,7 +20,7 @@ import no.javatime.inplace.region.manager.InPlaceException;
 import no.javatime.inplace.region.manager.BundleTransition.TransitionError;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
-import no.javatime.inplace.bundlemanager.BundleManager;
+import no.javatime.inplace.bundlemanager.BundleJobManager;
 import no.javatime.inplace.bundleproject.BundleProject;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.util.messages.ExceptionMessage;
@@ -293,8 +293,8 @@ public class ProjectSorter extends BaseSorter {
 			ps.setAllowCycles(true);
 			Collection<IProject> projects = ps.sortRequiringProjects(Collections.<IProject>singletonList(parent));
 			projects.addAll(ps.sortRequiringProjects(Collections.<IProject>singletonList(child)));
-			BundleManager.getTransition().setTransitionError(parent, TransitionError.CYCLE);
-			BundleManager.getTransition().setTransitionError(child, TransitionError.CYCLE);
+			BundleJobManager.getTransition().setTransitionError(parent, TransitionError.CYCLE);
+			BundleJobManager.getTransition().setTransitionError(child, TransitionError.CYCLE);
 			if (null == circularException) {
 				circularException = new CircularReferenceException();
 			}
@@ -328,9 +328,9 @@ public class ProjectSorter extends BaseSorter {
 			Boolean activated) throws CircularReferenceException, InPlaceException {
 		Collection<IProject> projects = new LinkedHashSet<IProject>(projectScope);
 		if (activated) {
-			projects.retainAll(BundleManager.getRegion().getProjects(true));
+			projects.retainAll(BundleJobManager.getRegion().getBundleProjects(true));
 		} else {
-			projects.removeAll(BundleManager.getRegion().getProjects(true));
+			projects.removeAll(BundleJobManager.getRegion().getBundleProjects(true));
 		}
 		return getRequiringBuildErrorClosure(projects);
 	}
@@ -359,7 +359,7 @@ public class ProjectSorter extends BaseSorter {
 			if (null != circularException) {
 				throw circularException;
 			}
-			BundleTransition bundleTransition = BundleManager.getTransition();
+			BundleTransition bundleTransition = BundleJobManager.getTransition();
 			for (IProject errorProject : projectOrder) {
 				if (ProjectProperties.isProjectActivated(errorProject)) {
 					if (errorProjects.contains(errorProject)) {

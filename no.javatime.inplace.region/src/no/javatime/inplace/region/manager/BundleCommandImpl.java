@@ -27,6 +27,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import no.javatime.inplace.region.Activator;
+import no.javatime.inplace.region.events.BundleEventManager;
+import no.javatime.inplace.region.events.TransitionEvent;
 import no.javatime.inplace.region.manager.BundleTransition.Transition;
 import no.javatime.inplace.region.manager.BundleTransition.TransitionError;
 import no.javatime.inplace.region.state.BundleNode;
@@ -190,8 +192,8 @@ public class BundleCommandImpl implements BundleCommand {
 			} catch (IOException e) {
 				throw new InPlaceException(e, "io_exception_install", locationIdentifier);
 			} finally {
-//				BundleManager.addBundleTransition(new TransitionEvent(bundle, bundleTransition
-//						.getTransition(project)));
+				BundleManager.addBundleTransition(new TransitionEvent(bundle, bundleTransition
+						.getTransition(project)));
 			}
 		}
 		return bundle;
@@ -245,15 +247,6 @@ public class BundleCommandImpl implements BundleCommand {
 						bundleRegion.formatBundleList(bundles, true));
 			throw new InPlaceException(e, "bundles_argument_resolve_bundle", bundleRegion.formatBundleList(bundles,
 					true));
-		} finally {
-//			for (Bundle bundle : bundles) {
-//				try {
-//					BundleManager.addBundleTransition(new TransitionEvent(bundle, bundleTransition
-//							.getTransition(bundleRegion.getProject(bundle))));
-//				} catch (ProjectLocationException e) {
-//					throw new InPlaceException(e, "bundle_resolve_error", bundle);
-//				}
-//			}
 		}
 	}
 
@@ -269,12 +262,13 @@ public class BundleCommandImpl implements BundleCommand {
 	@Override
 	public void refresh(final Collection<Bundle> bundles) throws InPlaceException {
 
-		if (bundles.size() == 0) {
+		if (bundles.size() == 0 || !bundleRegion.isBundleWorkspaceActivated()) {
+			// TODO Issue a warning in the log
 			return;
 		}
 		try {
 			for (Bundle bundle : bundles) {
-				if ((bundle.getState() & (Bundle.UNINSTALLED)) == 0) {
+				if (BundleManager.getRegion().exist(bundle)) {
 					bundleTransition.setTransition(bundle, Transition.REFRESH);
 					bundleRegion.getActiveState(bundle).refresh(bundleRegion.getBundleNode(bundle));
 				}
@@ -339,8 +333,8 @@ public class BundleCommandImpl implements BundleCommand {
 						BundleCommandImpl.class.getSimpleName());
 			for (Bundle bundle : bundles) {
 				try {
-//					BundleManager.addBundleTransition(new TransitionEvent(bundle, bundleTransition
-//							.getTransition(bundleRegion.getProject(bundle))));
+					BundleManager.addBundleTransition(new TransitionEvent(bundle, bundleTransition
+							.getTransition(bundleRegion.getBundleProject(bundle))));
 				} catch (ProjectLocationException e) {
 					throw new InPlaceException(e, "bundle_refresh_error", bundle);
 				}
@@ -369,7 +363,7 @@ public class BundleCommandImpl implements BundleCommand {
 			for (Bundle bundle : bundles) {
 				if (Category.DEBUG && Activator.getDefault().msgOpt().isBundleOperations())
 					TraceMessage.getInstance().getString("refresh_bundle", bundle);
-				if ((bundle.getState() & (Bundle.UNINSTALLED)) == 0) {
+				if (BundleManager.getRegion().exist(bundle)) {
 					bundleTransition.setTransition(bundle, Transition.REFRESH);
 					bundleRegion.getActiveState(bundle).refresh(bundleRegion.getBundleNode(bundle));
 				}
@@ -509,8 +503,8 @@ public class BundleCommandImpl implements BundleCommand {
 				currentBundle = null;
 			}
 			try {
-//				BundleManager.addBundleTransition(new TransitionEvent(bundle, bundleTransition
-//						.getTransition(bundleRegion.getProject(bundle))));
+				BundleManager.addBundleTransition(new TransitionEvent(bundle, bundleTransition
+						.getTransition(bundleRegion.getBundleProject(bundle))));
 			} catch (ProjectLocationException e) {
 				throw new InPlaceException(e, "bundle_start_error", bundle);
 			}
@@ -615,8 +609,8 @@ public class BundleCommandImpl implements BundleCommand {
 				currentBundle = null;
 			}
 		try {
-//				BundleManager.addBundleTransition(new TransitionEvent(bundle, bundleTransition
-//						.getTransition(bundleRegion.getProject(bundle))));
+			BundleManager.addBundleTransition(new TransitionEvent(bundle, bundleTransition
+						.getTransition(bundleRegion.getBundleProject(bundle))));
 			} catch (ProjectLocationException e) {
 				throw new InPlaceException(e, "bundle_stop_error", bundle);
 			}
@@ -708,8 +702,8 @@ public class BundleCommandImpl implements BundleCommand {
 				throw new InPlaceException(e, "io_exception_update", bundle, location);
 			} finally {
 				try {
-//					BundleManager.addBundleTransition(new TransitionEvent(bundle, bundleTransition
-//							.getTransition(bundleRegion.getProject(bundle))));
+					BundleManager.addBundleTransition(new TransitionEvent(bundle, bundleTransition
+							.getTransition(bundleRegion.getBundleProject(bundle))));
 				} catch (ProjectLocationException e) {
 					throw new InPlaceException(e, "bundle_update_error", bundle);
 				}
@@ -741,7 +735,7 @@ public class BundleCommandImpl implements BundleCommand {
 		BundleState state = bundleRegion.getActiveState(bundle);
 		IProject project = null;
 		try {
-			project = bundleRegion.getProject(bundle);
+			project = bundleRegion.getBundleProject(bundle);
 			state.uninstall(bundleRegion.getBundleNode(bundle));
 			bundleTransition.setTransition(bundle, Transition.UNINSTALL);
 			bundle.uninstall();
@@ -767,8 +761,8 @@ public class BundleCommandImpl implements BundleCommand {
 		} finally {
 			try {
 				if (null != project) {
-//					BundleManager.addBundleTransition(new TransitionEvent(bundle, bundleTransition
-//							.getTransition(project)));
+					BundleManager.addBundleTransition(new TransitionEvent(bundle, bundleTransition
+							.getTransition(project)));
 				}
 			} catch (ProjectLocationException e) {
 				throw new InPlaceException(e, "bundle_uninstall_error", bundle);

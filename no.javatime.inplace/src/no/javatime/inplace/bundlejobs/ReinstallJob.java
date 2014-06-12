@@ -13,12 +13,12 @@ package no.javatime.inplace.bundlejobs;
 import java.util.Collection;
 
 import no.javatime.inplace.InPlace;
+import no.javatime.inplace.dependencies.CircularReferenceException;
+import no.javatime.inplace.region.manager.BundleManager;
 import no.javatime.inplace.region.manager.InPlaceException;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
-import no.javatime.inplace.bundlemanager.BundleManager;
-import no.javatime.inplace.dependencies.CircularReferenceException;
 import no.javatime.util.messages.ErrorMessage;
 import no.javatime.util.messages.ExceptionMessage;
 import no.javatime.util.messages.Message;

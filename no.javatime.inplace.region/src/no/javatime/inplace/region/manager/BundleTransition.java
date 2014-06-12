@@ -3,6 +3,7 @@ package no.javatime.inplace.region.manager;
 import java.util.Collection;
 import java.util.EnumSet;
 
+import no.javatime.inplace.region.manager.BundleTransition.Transition;
 
 import org.eclipse.core.resources.IProject;
 import org.osgi.framework.Bundle;
@@ -45,13 +46,14 @@ public interface BundleTransition {
 		 * Set as pending to indicate that the bundle should be updated together with deactivated bundles to activate
 		 * in an activated workspace
 		 */
-		ACTIVATE,	
+		ACTIVATE_BUNDLE,	
 		/**
 		 * An activate project job triggers an update job when the workspace is deactivated and
 		 * an activate bundle job when the workspace is activated.
 		 * If Update on Build is switched off and the workspace is activated, mark that these projects
 		 * should be updated as part of the activation process		 
 		 */
+		ACTIVATE_PROJECT,
 		UPDATE_ON_ACTIVATE,
 		/**
 		 * Set as pending when an activated project has been assigned new requirements on UI plug-in(s), when UI

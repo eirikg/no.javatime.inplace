@@ -33,8 +33,8 @@ import org.eclipse.ui.statushandlers.StatusManager;
 
 /**
  * Input to the content provider is a single bundle project or a collection of bundle projects. The collection
- * only accept plug-ins and BundleManager bundle projects, while a single project may be any kind of project. When input is a plug-in
- * project or an BundleManager bundle project, bundle property values are available.
+ * only accept plug-ins and BundleJobManager bundle projects, while a single project may be any kind of project. When input is a plug-in
+ * project or an BundleJobManager bundle project, bundle property values are available.
  * <p>
  * Input is converted to one {@link BundleProperties} model object for each java project in the collection.
  * <p>

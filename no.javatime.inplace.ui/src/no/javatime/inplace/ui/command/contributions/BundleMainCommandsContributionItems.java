@@ -15,7 +15,7 @@ import java.util.Collection;
 
 import no.javatime.inplace.log.intface.BundleLogView;
 import no.javatime.inplace.bundlejobs.ActivateProjectJob;
-import no.javatime.inplace.bundlemanager.BundleManager;
+import no.javatime.inplace.bundlemanager.BundleJobManager;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.dialogs.OpenProjectHandler;
 import no.javatime.inplace.extender.provider.Extension;
@@ -157,8 +157,8 @@ public class BundleMainCommandsContributionItems extends BundleCommandsContribut
 
 	private CommandContributionItem addStart(Collection<IProject> activatedProjects) {
 		
-		BundleRegion bundleRegion = BundleManager.getRegion();
-		BundleCommand bundleCommand = BundleManager.getCommand();
+		BundleRegion bundleRegion = BundleJobManager.getRegion();
+		BundleCommand bundleCommand = BundleJobManager.getCommand();
 
 		// Calculate number of projects to start
 		if (activatedProjects.size() > 0) {
@@ -189,8 +189,8 @@ public class BundleMainCommandsContributionItems extends BundleCommandsContribut
 
 	private CommandContributionItem addStop(Collection<IProject> activatedProjects) {
 		
-		BundleRegion bundleRegion = BundleManager.getRegion();
-		BundleCommand bundleCommand = BundleManager.getCommand();
+		BundleRegion bundleRegion = BundleJobManager.getRegion();
+		BundleCommand bundleCommand = BundleJobManager.getCommand();
 		
 		// Calculate number of projects to stop
 		if (activatedProjects.size() > 0) {
@@ -224,7 +224,7 @@ public class BundleMainCommandsContributionItems extends BundleCommandsContribut
 
 	private CommandContributionItem addUpdate(Collection<IProject> activatedProjects) {
 		
-		BundleRegion bundleRegion = BundleManager.getRegion();
+		BundleRegion bundleRegion = BundleJobManager.getRegion();
 
 		// Calculate number of projects to update
 		if (activatedProjects.size() > 0) {
@@ -234,7 +234,7 @@ public class BundleMainCommandsContributionItems extends BundleCommandsContribut
 				if (null == bundleRegion.get(project)) {
 					continue;
 				}
-				if (BundleManager.getTransition().containsPending(project, Transition.UPDATE, Boolean.FALSE)) {
+				if (BundleJobManager.getTransition().containsPending(project, Transition.UPDATE, Boolean.FALSE)) {
 					nUpdate++;
 					continue;
 				}
@@ -250,7 +250,7 @@ public class BundleMainCommandsContributionItems extends BundleCommandsContribut
 
 	private CommandContributionItem addRefreshPending(Collection<IProject> activatedProjects) {
 		
-		BundleRegion bundleRegion = BundleManager.getRegion();
+		BundleRegion bundleRegion = BundleJobManager.getRegion();
 
 		// Calculate number of projects to update
 		if (activatedProjects.size() > 0) {
@@ -261,13 +261,13 @@ public class BundleMainCommandsContributionItems extends BundleCommandsContribut
 				if (null == bundle) {
 					continue;
 				}
-				if (BundleManager.getCommand().getBundleRevisions(bundle).size() > 1) {
+				if (BundleJobManager.getCommand().getBundleRevisions(bundle).size() > 1) {
 					nRefresh++;
 					continue;
 				}
 			}
 			if (nRefresh > 0) {
-				BundleCommand bundleCommand = BundleManager.getCommand();
+				BundleCommand bundleCommand = BundleJobManager.getCommand();
 				if (nRefresh != bundleCommand.getRemovalPending().size()) {
 					String msg = WarnMessage.getInstance().formatString("illegal_number_of_revisions",
 							bundleCommand.getRemovalPending().size(), nRefresh);

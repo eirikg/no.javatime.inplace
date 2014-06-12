@@ -20,7 +20,6 @@ import java.util.Map;
 import java.util.Set;
 
 import no.javatime.inplace.InPlace;
-import no.javatime.inplace.bundlemanager.BundleManager;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.dependencies.BundleSorter;
 import no.javatime.inplace.dependencies.CircularReferenceException;
@@ -29,6 +28,7 @@ import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.manager.BundleCommandImpl;
 import no.javatime.inplace.region.manager.BundleTransition.Transition;
 import no.javatime.inplace.region.manager.BundleTransition.TransitionError;
+import no.javatime.inplace.region.manager.BundleManager;
 import no.javatime.inplace.region.manager.DuplicateBundleException;
 import no.javatime.inplace.region.manager.InPlaceException;
 import no.javatime.inplace.region.manager.ProjectLocationException;
@@ -178,7 +178,7 @@ public class UpdateJob extends BundleJob {
 		// Update all bundles that are part of an activation process when the update on build option is switched
 		// off
 		Collection<IProject> activateProjects = bundleTransition.getPendingProjects(
-				bundleRegion.getProjects(true), Transition.UPDATE_ON_ACTIVATE);
+				bundleRegion.getBundleProjects(true), Transition.UPDATE_ON_ACTIVATE);
 		if (activateProjects.size() > 0) {
 			for (IProject project : activateProjects) {
 				bundleTransition.removePending(project, Transition.UPDATE_ON_ACTIVATE);
@@ -188,7 +188,7 @@ public class UpdateJob extends BundleJob {
 		// This is an optimization to reduce the number of update jobs, by including pending projects
 		// waiting for the next update job. See post build listener for delayed projects on update
 		if (getOptionsService().isUpdateOnBuild()) {
-			addPendingProjects(bundleTransition.getPendingProjects(bundleRegion.getProjects(true),
+			addPendingProjects(bundleTransition.getPendingProjects(bundleRegion.getBundleProjects(true),
 					Transition.UPDATE));
 		}
 		Collection<Bundle> bundlesToUpdate = bundleRegion.getBundles(getPendingProjects());
@@ -269,7 +269,7 @@ public class UpdateJob extends BundleJob {
 				Bundle bundle = bundleError.getBundle();
 				if (null != bundle) {
 					try {
-						IProject project = bundleRegion.getProject(bundle);
+						IProject project = bundleRegion.getBundleProject(bundle);
 						Throwable updExp = bundleError.getException();
 						if (null != updExp && updExp instanceof DuplicateBundleException) {
 							bundleTransition.setTransitionError(project, TransitionError.DUPLICATE);
@@ -281,7 +281,7 @@ public class UpdateJob extends BundleJob {
 							String msg = ExceptionMessage.getInstance().formatString("error_setting_bundle_error");
 							status = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg, null);
 						}
-						IProject project = bundleRegion.getProject(bundle);
+						IProject project = bundleRegion.getBundleProject(bundle);
 						if (null != project) {
 							status.add(new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, project,
 									project.getName(), e));
@@ -325,7 +325,7 @@ public class UpdateJob extends BundleJob {
 					InPlace.get().getResolverHookFactory().setGroups(duplicateInstanceGroups);					
 					bundleCommand.update(bundle);
 				} catch (DuplicateBundleException e) {
-					handleDuplicateException(bundleRegion.getProject(bundle), e, null);
+					handleDuplicateException(bundleRegion.getBundleProject(bundle), e, null);
 					String msg = ErrorMessage.getInstance().formatString("duplicate_error", bundle.getSymbolicName(),
 							bundle.getVersion().toString());
 					IBundleStatus result = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, bundle.getBundleId(), msg, e);
@@ -359,7 +359,7 @@ public class UpdateJob extends BundleJob {
 	private void removeErrorBundles(Collection<IProject> projectsToUpdate, Collection<Bundle> bundlesToUpdate,
 			Collection<Bundle> bDepClosures) throws OperationCanceledException {
 
-		Collection<IProject> pDepClosures = bundleRegion.getProjects(bDepClosures);
+		Collection<IProject> pDepClosures = bundleRegion.getBundleProjects(bDepClosures);
 		removeBuildErrorClosures(bundlesToUpdate, bDepClosures, pDepClosures);
 		Collection<IProject> duplicateProjects = removeExternalDuplicates(projectsToUpdate, bDepClosures, currentExternalInstance);
 		if (null != duplicateProjects) {
@@ -420,7 +420,7 @@ public class UpdateJob extends BundleJob {
 			return bundlesToUpdate;
 		}
 		for (Bundle bundle : bundlesToUpdate) {
-			IProject project = bundleRegion.getProject(bundle);
+			IProject project = bundleRegion.getBundleProject(bundle);
 			String newProjectKey = bundleRegion.getSymbolicKey(null, project);
 			String oldBundleKey = bundleRegion.getSymbolicKey(bundle, null);
 			if (newProjectKey.length() == 0 || oldBundleKey.length() == 0) {

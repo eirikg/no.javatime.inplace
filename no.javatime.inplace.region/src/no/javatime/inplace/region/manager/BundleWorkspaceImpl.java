@@ -11,6 +11,7 @@
 package no.javatime.inplace.region.manager;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -31,6 +32,7 @@ import no.javatime.util.messages.TraceMessage;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.pde.core.project.IBundleProjectDescription;
@@ -46,6 +48,8 @@ public class BundleWorkspaceImpl implements BundleRegion {
 
 	public final static BundleWorkspaceImpl INSTANCE = new BundleWorkspaceImpl();
 
+	public static final String JAVATIME_NATURE_ID = "no.javatime.inplace.builder.javatimenature";
+	
 	final public static String bundleReferenceLocationScheme = Message.getInstance().formatString(
 			"bundle_identifier_reference_scheme");
 	final public static String bundleFileLocationScheme = Message.getInstance().formatString(
@@ -83,7 +87,7 @@ public class BundleWorkspaceImpl implements BundleRegion {
 	}
 
 	@Override
-	public IProject getProject(Bundle bundle) {
+	public IProject getBundleProject(Bundle bundle) {
 		if (null == bundle) {
 			return null;
 		}
@@ -105,12 +109,37 @@ public class BundleWorkspaceImpl implements BundleRegion {
 	}
 
 	@Override
-	public IProject getProject(String symbolicName, String version) {
+	public IProject getBundleProject(String symbolicName, String version) {
 		BundleNode node = getNode(symbolicName, version);
 		if (null != node) {
 			return node.getProject();
 		}
 		return null;
+	}
+
+	@Override
+	public Boolean isProjectWorkspaceNatureActivated() {
+
+		Collection<IProject> projects = Arrays.asList(ResourcesPlugin.getWorkspace().getRoot().getProjects());
+		for (IProject project : projects) {
+			if (isProjectNatureActivated(project)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+
+	@Override
+	public Boolean isProjectNatureActivated(IProject project) {
+		try {
+			if (null != project && project.isNatureEnabled(JAVATIME_NATURE_ID)) {
+				return true;
+			}
+		} catch (CoreException e) {
+			// Ignore closed or non-existing project
+		}
+		return false;
 	}
 
 	/**
@@ -184,7 +213,7 @@ public class BundleWorkspaceImpl implements BundleRegion {
 	 * @return true if at least one project is JavaTime nature enabled and its bundle project is not
 	 *         uninstalled. Otherwise false
 	 * @see BundleWorkspaceImpl#isActivated(Bundle)
-	 * @see no.javatime.inplace.bundleproject.ProjectProperties#isProjectWorkspaceActivated()
+	 * @see no.javatime.inplace.bundleproject.ProjectProperties#isProjectWorkspaceNatureActivated()
 	 */
 	@Override
 	public Boolean isBundleWorkspaceActivated() {
@@ -201,15 +230,15 @@ public class BundleWorkspaceImpl implements BundleRegion {
 	 * Check if the bundle is activated. The condition is satisfied if the project is JavaTime nature enabled
 	 * and its bundle project is at least installed.
 	 * 
-	 * @param project to check for activation
+	 * @param bundleProject to check for activation
 	 * @return true if the specified project is JavaTime nature enabled and its bundle project is not
 	 *         uninstalled. Otherwise false
 	 * @see BundleWorkspaceImpl#isActivated(Bundle)
-	 * @see no.javatime.inplace.bundleproject.ProjectProperties#isProjectWorkspaceActivated()
+	 * @see no.javatime.inplace.bundleproject.ProjectProperties#isProjectWorkspaceNatureActivated()
 	 */
 	@Override
-	public Boolean isActivated(IProject project) {
-		BundleNode node = getNode(project);
+	public Boolean isActivated(IProject bundleProject) {
+		BundleNode node = getNode(bundleProject);
 		if (null == node) {
 			return false;
 		} else {
@@ -238,7 +267,7 @@ public class BundleWorkspaceImpl implements BundleRegion {
 	}
 
 	@Override
-	public Collection<IProject> getProjects(Boolean activated) {
+	public Collection<IProject> getBundleProjects(Boolean activated) {
 		Collection<IProject> projects = new ArrayList<IProject>();
 		for (BundleNode node : bundleNodes.values()) {
 			if (node.isActivated()) {
@@ -249,7 +278,7 @@ public class BundleWorkspaceImpl implements BundleRegion {
 	}
 
 	@Override
-	public Collection<IProject> getProjects() {
+	public Collection<IProject> getBundleProjects() {
 		Collection<IProject> projects = new ArrayList<IProject>();
 		for (BundleNode node : bundleNodes.values()) {
 			projects.add(node.getProject());
@@ -258,10 +287,10 @@ public class BundleWorkspaceImpl implements BundleRegion {
 	}
 
 	@Override
-	public Collection<IProject> getProjects(Collection<Bundle> bundles) {
+	public Collection<IProject> getBundleProjects(Collection<Bundle> bundles) {
 		Collection<IProject> projects = new ArrayList<IProject>();
 		for (Bundle bundle : bundles) {
-			projects.add(getProject(bundle));
+			projects.add(getBundleProject(bundle));
 		}
 		return projects;
 	}

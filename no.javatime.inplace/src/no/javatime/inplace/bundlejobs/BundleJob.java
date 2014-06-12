@@ -19,7 +19,7 @@ import java.util.Map;
 import java.util.concurrent.TimeoutException;
 
 import no.javatime.inplace.InPlace;
-import no.javatime.inplace.bundlemanager.BundleManager;
+import no.javatime.inplace.bundlemanager.BundleJobManager;
 import no.javatime.inplace.bundleproject.BundleProject;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.dependencies.BundleClosures;
@@ -30,13 +30,14 @@ import no.javatime.inplace.dl.preferences.intface.CommandOptions;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.region.manager.BundleActivatorException;
+import no.javatime.inplace.region.manager.BundleCommandImpl;
 import no.javatime.inplace.region.manager.BundleStateChangeException;
 import no.javatime.inplace.region.manager.BundleThread;
+import no.javatime.inplace.region.manager.BundleTransition.Transition;
+import no.javatime.inplace.region.manager.BundleTransition.TransitionError;
 import no.javatime.inplace.region.manager.DuplicateBundleException;
 import no.javatime.inplace.region.manager.InPlaceException;
 import no.javatime.inplace.region.manager.ProjectLocationException;
-import no.javatime.inplace.region.manager.BundleTransition.Transition;
-import no.javatime.inplace.region.manager.BundleTransition.TransitionError;
 import no.javatime.inplace.region.project.ManifestUtil;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
@@ -493,7 +494,7 @@ public abstract class BundleJob extends JobStatus {
 								Integer.toString(timeoutVal), bundle);
 						IBundleStatus errStat = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg, e);
 						msg = WarnMessage.getInstance().formatString("timeout_termination", bundle);
-						createMultiStatus(errStat, addWarning(null, msg, BundleManager.getRegion().getProject(bundle)));
+						createMultiStatus(errStat, addWarning(null, msg, BundleJobManager.getRegion().getBundleProject(bundle)));
 						stopCurrentBundleOperation(monitor);						
 					} else if (null != cause && cause instanceof BundleException) {
 						stopCurrentBundleOperation(monitor);						
@@ -576,7 +577,7 @@ public abstract class BundleJob extends JobStatus {
 								Integer.toString(timeoutVal), bundle);
 						IBundleStatus errStat = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg, e);
 						msg = WarnMessage.getInstance().formatString("timeout_termination", bundle);
-						createMultiStatus(errStat, addWarning(null, msg, BundleManager.getRegion().getProject(bundle)));
+						createMultiStatus(errStat, addWarning(null, msg, BundleJobManager.getRegion().getBundleProject(bundle)));
 						stopCurrentBundleOperation(monitor);						
 					} else if (null != cause && cause instanceof BundleException) {
 						stopCurrentBundleOperation(monitor);						
@@ -593,7 +594,7 @@ public abstract class BundleJob extends JobStatus {
 	}
 
 	public static boolean isStateChanging() {
-		Bundle bundle = BundleManager.getCommand().getCurrentBundle();
+		Bundle bundle = BundleJobManager.getCommand().getCurrentBundle();
 		if (null != bundle) {
 			return true;
 		}
@@ -614,7 +615,7 @@ public abstract class BundleJob extends JobStatus {
 		if (null != bundle) {
 			if (getOptionsService().isDeactivateOnTerminate() && null == deactivateTask) {
 				deactivateTask = new DeactivateJob(DeactivateJob.deactivateJobName);
-				deactivateTask.addPendingProject(bundleRegion.getProject(bundle));
+				deactivateTask.addPendingProject(bundleRegion.getBundleProject(bundle));
 			}
 			Thread thread = BundleThread.getThread(bundle);
 			if (null != thread) {
@@ -623,7 +624,7 @@ public abstract class BundleJob extends JobStatus {
 				BundleThread.stopThread(thread);
 				if (state == State.BLOCKED) {
 					String msg = UserMessage.getInstance().formatString("thread_blocked", threadName);
-					IBundleStatus status = new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, msg);
+					IBundleStatus status = new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, bundle, msg, null);
 					if (getOptionsService().isTimeOut()) {
 						addStatus(status);
 					} else {
@@ -631,7 +632,7 @@ public abstract class BundleJob extends JobStatus {
 					}
 				} else if (state == State.WAITING || state == State.TIMED_WAITING) {
 					String msg = UserMessage.getInstance().formatString("thread_waiting", threadName);
-					IBundleStatus status = new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, msg);
+					IBundleStatus status = new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, bundle, msg, null);
 					if (getOptionsService().isTimeOut()) {
 						addStatus(status);
 					} else {
@@ -639,9 +640,9 @@ public abstract class BundleJob extends JobStatus {
 					}
 				}
 			} else {
-				String transitioNname = bundleTransition.getTransitionName(bundleRegion.getProject(bundle));
+				String transitioNname = bundleTransition.getTransitionName(bundleRegion.getBundleProject(bundle));
 				String msg = UserMessage.getInstance().formatString("failed_to_get_thread", bundle, transitioNname);
-				IBundleStatus status = new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, msg);
+				IBundleStatus status = new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, bundle, msg, null);
 				if (getOptionsService().isTimeOut()) {
 					addStatus(status);						
 				} else {
@@ -650,7 +651,7 @@ public abstract class BundleJob extends JobStatus {
 			}
 		} else {
 			String msg = UserMessage.getInstance().formatString("no_task_to_stop");
-			IBundleStatus status = new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, msg);
+			IBundleStatus status = new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, bundle, msg, null);
 			if (getOptionsService().isTimeOut()) {
 				addStatus(status);
 			} else {
@@ -665,29 +666,29 @@ public abstract class BundleJob extends JobStatus {
 						deactivateTask.deactivate(monitor);
 						if (getOptionsService().isTimeOut()) {
 							String msg = UserMessage.getInstance().formatString("deactivating_after_timeout_stop_task", bundle, threadName);
-							addStatus(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, msg));
+							addStatus(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, bundle, msg, null));
 						} else {
 							String msg = UserMessage.getInstance().formatString("deactivating_manual_stop_task", bundle, threadName);
-							StatusManager.getManager().handle(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, msg),
+							StatusManager.getManager().handle(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, bundle, msg, null),
 									StatusManager.LOG);						
 						}
 					}
 				} catch (InPlaceException e) {
-					IBundleStatus status = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, e.getMessage(), e);
+					IBundleStatus status = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, bundle, e.getMessage(), e);
 					if (getOptionsService().isTimeOut()) {
 						addStatus(status);
 					} else {
 						StatusManager.getManager().handle(status, StatusManager.LOG);						
 					}
 				} catch (InterruptedException e) {
-					IBundleStatus status = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, e.getMessage(), e);
+					IBundleStatus status = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, bundle, e.getMessage(), e);
 					if (getOptionsService().isTimeOut()) {
 						addStatus(status);
 					} else {
 						StatusManager.getManager().handle(status, StatusManager.LOG);						
 					}
 				} catch (OperationCanceledException e) {
-					IBundleStatus status = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, e.getMessage(), e);
+					IBundleStatus status = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, bundle, e.getMessage(), e);
 					if (getOptionsService().isTimeOut()) {
 						addStatus(status);
 					} else {
@@ -695,13 +696,13 @@ public abstract class BundleJob extends JobStatus {
 					}
 				}
 			} else {
-				String transitioNname = bundleTransition.getTransitionName(bundleRegion.getProject(bundle));
+				String transitioNname = bundleTransition.getTransitionName(bundleRegion.getBundleProject(bundle));
 				if (getOptionsService().isTimeOut()) {
 					String msg = UserMessage.getInstance().formatString("after_timeout_stop_task", bundle, threadName, transitioNname);
-					addStatus(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, msg));
+					addStatus(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, bundle, msg, null));
 				} else {
 					String msg = UserMessage.getInstance().formatString("manual_stop_task", bundle, threadName, transitioNname);
-					StatusManager.getManager().handle(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, msg),
+					StatusManager.getManager().handle(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, bundle, msg, null),
 							StatusManager.LOG);						
 				}				
 			}
@@ -788,7 +789,7 @@ public abstract class BundleJob extends JobStatus {
 		Collection<Bundle> bundlesToResolve = bs.sortDeclaredRequiringBundles(bundles, activatedBundles);
 		// The resolver always include bundles with the same symbolic name in the resolve process
 		Map<IProject, Bundle> duplicates = bundleRegion.getSymbolicNameDuplicates(
-				bundleRegion.getProjects(bundlesToResolve), activatedBundles, true);
+				bundleRegion.getBundleProjects(bundlesToResolve), activatedBundles, true);
 		if (duplicates.size() > 0) {
 			bundlesToResolve.addAll(bs.sortDeclaredRequiringBundles(duplicates.values(), activatedBundles));
 		}
@@ -812,7 +813,7 @@ public abstract class BundleJob extends JobStatus {
 			localMonitor.subTask(resolveTaskName);
 			if (!bundleCommand.resolve(bundlesToResolve)) {
 				ProjectSorter bs = new ProjectSorter();
-				Collection<IProject> projectsToResolve = bundleRegion.getProjects(bundlesToResolve);
+				Collection<IProject> projectsToResolve = bundleRegion.getBundleProjects(bundlesToResolve);
 				// Error closures are also removed in the resolver hook
 				Collection<IProject> pErrorClosures = bs.getRequiringBuildErrorClosure(projectsToResolve);
 				projectsToResolve.removeAll(pErrorClosures);
@@ -901,7 +902,7 @@ public abstract class BundleJob extends JobStatus {
 			try {
 				if ((bundle.getState() & (Bundle.RESOLVED | Bundle.STOPPING | Bundle.STARTING)) != 0) {
 					// Check for the output folder path in the cached version of the bundle
-					IPath path = BundleProject.getDefaultOutputLocation(bundleRegion.getProject(bundle));
+					IPath path = BundleProject.getDefaultOutputLocation(bundleRegion.getBundleProject(bundle));
 					if (!ManifestUtil.verifyPathInClassPath(bundle, path)) {
 						if (null == errorBundles) {
 							bs = new BundleSorter();
@@ -911,7 +912,7 @@ public abstract class BundleJob extends JobStatus {
 						errorBundles = bs.sortRequiringBundles(errorBundles);
 						String msg = null;
 						// Check if the not cached output folder path exist in the manifest file
-						Boolean binExist = BundleProject.isOutputFolderInBundleClassPath(bundleRegion.getProject(bundle));
+						Boolean binExist = BundleProject.isOutputFolderInBundleClassPath(bundleRegion.getBundleProject(bundle));
 						if (binExist) {
 							msg = ErrorMessage.getInstance().formatString("missing_classpath_bundle_loaded", bundle);
 						} else {
@@ -922,18 +923,18 @@ public abstract class BundleJob extends JobStatus {
 						if (errorBundles.size() > 1) {
 							msg = ErrorMessage.getInstance().formatString("missing_classpath_bundle_affected",
 									bundleRegion.formatBundleList(errorBundles, true));
-							result.add(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, msg));
+							result.add(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, bundle.getBundleId(),msg, null));
 						}
 						if (binExist) {
 							msg = UserMessage.getInstance().formatString("missing_classpath_bundle_loaded_info", bundle);
 						} else {
 							msg = UserMessage.getInstance().formatString("missing_classpath_bundle_info", bundle);
 						}
-						result.add(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, msg));
+						result.add(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, bundle.getBundleId(), msg, null));
 					}
 				}
 			} catch (InPlaceException e) {
-				addError(e, bundleRegion.getProject(bundle));
+				addError(e, bundleRegion.getBundleProject(bundle));
 			} finally {
 				if (null != errorBundles) {
 					errorBundles.clear();
@@ -1041,7 +1042,7 @@ public abstract class BundleJob extends JobStatus {
 				.sortDeclaredProvidingBundles(initialBundleSet, workspaceBundles);
 		Collection<Bundle> bundles = null;
 		for (Bundle errorBundle : bErrorDepClosures) {
-			IProject errorProject = bundleRegion.getProject(errorBundle);
+			IProject errorProject = bundleRegion.getBundleProject(errorBundle);
 			TransitionError transitionError = bundleTransition.getError(errorBundle);
 			if (null != errorProject
 					&& (transitionError == TransitionError.DUPLICATE || transitionError == TransitionError.CYCLE)) {
@@ -1054,7 +1055,7 @@ public abstract class BundleJob extends JobStatus {
 		}
 		if (null != bundles) {
 			if (null != pDepClosures) {
-				pDepClosures.removeAll(bundleRegion.getProjects(bundles));
+				pDepClosures.removeAll(bundleRegion.getBundleProjects(bundles));
 			}
 			if (null != bDepClosures) {
 				bDepClosures.removeAll(bundles);

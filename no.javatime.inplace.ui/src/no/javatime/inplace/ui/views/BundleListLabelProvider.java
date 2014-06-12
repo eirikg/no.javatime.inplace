@@ -10,7 +10,7 @@
  *******************************************************************************/
 package no.javatime.inplace.ui.views;
 
-import no.javatime.inplace.bundlemanager.BundleManager;
+import no.javatime.inplace.bundlemanager.BundleJobManager;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.dependencies.BundleSorter;
 import no.javatime.inplace.region.manager.BundleCommand;
@@ -127,8 +127,8 @@ public class BundleListLabelProvider extends LabelProvider implements ITableLabe
 				Bundle bundle = ((BundleProperties) element).getBundle();
 				IProject project = ((BundleProperties) element).getProject();
 				boolean isProjectActivated = ProjectProperties.isProjectActivated(project);
-				BundleCommand bundleCommand = BundleManager.getCommand();
-				BundleTransition bundleTransition = BundleManager.getTransition();
+				BundleCommand bundleCommand = BundleJobManager.getCommand();
+				BundleTransition bundleTransition = BundleJobManager.getTransition();
 				try {
 					if (!ProjectProperties.hasBuildState(project)) {
 						return warningImage;

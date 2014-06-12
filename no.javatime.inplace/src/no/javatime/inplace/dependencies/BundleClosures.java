@@ -78,7 +78,6 @@ public class BundleClosures {
 		
 		if (null != closure && null != initialSet && initialSet.size() > 0) { 
 			if (!opt.isAllowed(Operation.ACTIVATE_PROJECT, closure) ) {
-				// TODO check null == closure
 				throw new InPlaceException("illegal_closure_exception", closure.name(), Operation.ACTIVATE_PROJECT.name());
 			}
 			switch (closure) {

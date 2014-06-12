@@ -2,6 +2,7 @@ package no.javatime.inplace.region;
 
 import no.javatime.inplace.dl.preferences.intface.MessageOptions;
 import no.javatime.inplace.extender.provider.Extension;
+import no.javatime.inplace.region.events.BundleEventManager;
 import no.javatime.inplace.region.manager.InPlaceException;
 
 import org.eclipse.core.resources.IProject;
@@ -20,7 +21,9 @@ public class Activator extends AbstractUIPlugin {
 	public static final String PLUGIN_ID = "no.javatime.inplace.region"; //$NON-NLS-1$
 	private static Activator plugin;
 	private static BundleContext context;
-	
+
+	private BundleEventManager eventManager = new BundleEventManager();;
+
 	private ServiceTracker<IBundleProjectService, IBundleProjectService> bundleProjectTracker;
 	private Extension<MessageOptions> messageOptions;
 
@@ -38,6 +41,8 @@ public class Activator extends AbstractUIPlugin {
 		super.start(context);
 		plugin = this;
 		Activator.context = context;		
+		Activator.context.addFrameworkListener(eventManager);
+		Activator.context.addBundleListener(eventManager);
 
 		messageOptions = new Extension<>(MessageOptions.class);
 
@@ -51,6 +56,8 @@ public class Activator extends AbstractUIPlugin {
 	 * @see org.eclipse.ui.plugin.AbstractUIPlugin#stop(org.osgi.framework.BundleContext)
 	 */
 	public void stop(BundleContext context) throws Exception {
+		Activator.context.removeFrameworkListener(eventManager);
+		Activator.context.removeBundleListener(eventManager);
 		bundleProjectTracker.close();
 		bundleProjectTracker = null;		
 		super.stop(context);

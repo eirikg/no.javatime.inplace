@@ -362,6 +362,9 @@ public class BundleNode {
 			return typeName;
 		}
 		switch (transition) {
+		case ACTIVATE_BUNDLE:
+			typeName = "ACTIVATE_BUNDLE";
+			break;
 		case INSTALL:
 			typeName = "INSTALL";
 			break;
@@ -401,6 +404,15 @@ public class BundleNode {
 			break;
 		case BUILD:
 			typeName = "BUILD";
+			break;
+		case UPDATE_CLASSPATH:
+			typeName = "UPDATE_CLASSPATH";
+			break;
+		case REMOVE_CLASSPATH:
+			typeName = "REMOVE_CLASSPATH";
+			break;
+		case UPDATE_ACTIVATION_POLICY:
+			typeName = "UPDATE_ACTIVATION_POLICY";
 			break;
 		case NOTRANSITION:
 		default:

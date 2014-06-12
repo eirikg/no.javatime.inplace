@@ -13,7 +13,7 @@ package no.javatime.inplace.ui.command.handlers;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 
-import no.javatime.inplace.bundlemanager.BundleManager;
+import no.javatime.inplace.bundlemanager.BundleJobManager;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.region.manager.BundleTransition;
 import no.javatime.inplace.ui.command.contributions.BundleCommandsContributionItems;
@@ -47,30 +47,30 @@ public class BundleMainActivationHandler extends BundleMenuActivationHandler {
 
 			Collection<Bundle> startProjects = new LinkedHashSet<Bundle>(); 
 			for (IProject project : ProjectProperties.getActivatedProjects()) {
-				Bundle bundle = BundleManager.getRegion().get(project);
+				Bundle bundle = BundleJobManager.getRegion().get(project);
 				if (null == bundle) {
 					continue;
 				}
-				int state = BundleManager.getCommand().getState(bundle);
+				int state = BundleJobManager.getCommand().getState(bundle);
 				if (Bundle.INSTALLED == state || Bundle.RESOLVED == state|| Bundle.STOPPING == state) {
 					startProjects.add(bundle);
 				}
 			}
 			if (startProjects.size() > 0) {
-				Collection<IProject> projects = BundleManager.getRegion().getProjects(startProjects);
+				Collection<IProject> projects = BundleJobManager.getRegion().getBundleProjects(startProjects);
 				startHandler(projects);
 			}
 		} else if (parameterId.equals(BundleMainCommandsContributionItems.stopParamId)) {
 			Collection<Bundle> stopProjects = new LinkedHashSet<Bundle>(); 
 			for (IProject project : ProjectProperties.getActivatedProjects()) {
-				Bundle bundle = BundleManager.getRegion().get(project);
-    		int state = BundleManager.getCommand().getState(bundle);
+				Bundle bundle = BundleJobManager.getRegion().get(project);
+    		int state = BundleJobManager.getCommand().getState(bundle);
     		if (Bundle.ACTIVE == state || Bundle.STARTING == state) {
     			stopProjects.add(bundle);
     		}
 			}
 			if (stopProjects.size() > 0) {
-				Collection<IProject> projects = BundleManager.getRegion().getProjects(stopProjects);
+				Collection<IProject> projects = BundleJobManager.getRegion().getBundleProjects(stopProjects);
 				stopHandler(projects);
 			}
 		} else if (parameterId.equals(BundleMainCommandsContributionItems.refreshParamId)) {
@@ -82,7 +82,7 @@ public class BundleMainActivationHandler extends BundleMenuActivationHandler {
 		} else if (parameterId.equals(BundleMainCommandsContributionItems.updateParamId)) {
 			Collection<IProject> projects = ProjectProperties.getActivatedProjects();
 			Collection<IProject> projectsToUpdate = 
-					BundleManager.getTransition().getPendingProjects(projects, BundleTransition.Transition.UPDATE);			
+					BundleJobManager.getTransition().getPendingProjects(projects, BundleTransition.Transition.UPDATE);			
 			updateHandler(projectsToUpdate);
 		} else if (parameterId.equals(BundleMainCommandsContributionItems.resetParamId)) {
 			Collection<IProject> projects = ProjectProperties.getInstallableProjects();

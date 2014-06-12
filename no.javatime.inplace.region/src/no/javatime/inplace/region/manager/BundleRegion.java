@@ -14,7 +14,7 @@ public interface BundleRegion {
 	 * @param bundle the bundle associated with the project to return
 	 * @return the associated project of the specified bundle or null if no project is found
 	 */
-	public IProject getProject(Bundle bundle);
+	public IProject getBundleProject(Bundle bundle);
 
 	/**
 	 * Get the project containing the specified symbolic name and version.
@@ -24,7 +24,7 @@ public interface BundleRegion {
 	 * @return project containing the specified symbolic name and version {@code null} if no project matching
 	 *         the specified symbolic name and version.
 	 */
-	public IProject getProject(String symbolicName, String version);
+	public IProject getBundleProject(String symbolicName, String version);
 
 	/**
 	 * Retrieves the bundle location identifier as an absolute platform-dependent file system path of the
@@ -51,7 +51,7 @@ public interface BundleRegion {
 	 * @return true if at least one project is JavaTime nature enabled and its bundle project is not
 	 *         uninstalled. Otherwise false
 	 * @see BundleWorkspaceImpl#isActivated(Bundle)
-	 * @see no.javatime.inplace.bundleproject.ProjectProperties#isProjectWorkspaceActivated()
+	 * @see no.javatime.inplace.bundleproject.ProjectProperties#isProjectWorkspaceNatureActivated()
 	 */
 	public Boolean isBundleWorkspaceActivated();
 
@@ -59,13 +59,13 @@ public interface BundleRegion {
 	 * Check if the bundle is activated. The condition is satisfied if the project is JavaTime nature enabled
 	 * and its bundle project is at least installed.
 	 * 
-	 * @param project to check for activation
+	 * @param bundleProject to check for activation
 	 * @return true if the specified project is JavaTime nature enabled and its bundle project is not
 	 *         uninstalled. Otherwise false
 	 * @see BundleWorkspaceImpl#isActivated(Bundle)
-	 * @see no.javatime.inplace.bundleproject.ProjectProperties#isProjectWorkspaceActivated()
+	 * @see no.javatime.inplace.bundleproject.ProjectProperties#isProjectWorkspaceNatureActivated()
 	 */
-	public Boolean isActivated(IProject project);
+	public Boolean isActivated(IProject bundleProject);
 
 	/**
 	 * Check if the bundle with the specified bundle id is activated. The condition is satisfied if it
@@ -93,7 +93,7 @@ public interface BundleRegion {
 	 * @return all activated projects if the specified activation parameter is true, otherwise return all
 	 *         deactivated projects
 	 */
-	public Collection<IProject> getProjects(Boolean activated);
+	public Collection<IProject> getBundleProjects(Boolean activated);
 
 	/**
 	 * Get all activated bundles.
@@ -125,7 +125,7 @@ public interface BundleRegion {
 	 * 
 	 * @return associated projects for all installed bundles
 	 */
-	public Collection<IProject> getProjects();
+	public Collection<IProject> getBundleProjects();
 
 	/**
 	 * Get associated projects for the specified bundles
@@ -133,7 +133,7 @@ public interface BundleRegion {
 	 * @param bundles with associated projects
 	 * @return associated projects for the specified bundles
 	 */
-	public Collection<IProject> getProjects(Collection<Bundle> bundles);
+	public Collection<IProject> getBundleProjects(Collection<Bundle> bundles);
 
 	/**
 	 * Get associated bundles for the specified projects
@@ -271,5 +271,27 @@ public interface BundleRegion {
 	// TODO Duplicated from bundleproject
 	public String getSymbolicNameFromManifest(IProject project) throws InPlaceException;
 	public String getBundleVersionFromManifest(IProject project) throws InPlaceException;
+	
+	/**
+	 * Check if a project is JavaTime nature enabled (activated). The condition is satisfied if one workspace
+	 * project is activated. This only implies that one or more projects are JavaTime enabled, and does not
+	 * necessary mean that the corresponding bundle is activated.
+	 * 
+	 * @return true if at least one project is activated or false if no projects are activated
+	 */
+	public Boolean isProjectWorkspaceNatureActivated();
+	
+	/**
+	 * When a project has JavaTime nature enabled the project is activated.
+	 * 
+	 * @param project to check for JavaTime nature
+	 * @return true if JavaTime nature is enabled for the project and false if not
+	 * @see no.javatime.inplace.region.manager.BundleWorkspaceImpl#isActivated(IProject)
+	 * @see no.javatime.inplace.region.manager.BundleWorkspaceImpl#isActivated(Long)
+	 * @see no.javatime.inplace.region.manager.BundleWorkspaceImpl#isActivated(Bundle)
+	 */
+	public Boolean isProjectNatureActivated(IProject project);
+
+
 
 }

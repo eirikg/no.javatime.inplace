@@ -21,10 +21,10 @@ import java.util.Collection;
 import java.util.Properties;
 
 import no.javatime.inplace.InPlace;
-import no.javatime.inplace.bundlemanager.BundleManager;
 import no.javatime.inplace.region.events.TransitionEvent;
-import no.javatime.inplace.region.manager.InPlaceException;
 import no.javatime.inplace.region.manager.BundleTransition.Transition;
+import no.javatime.inplace.region.manager.BundleManager;
+import no.javatime.inplace.region.manager.InPlaceException;
 import no.javatime.inplace.region.project.ManifestUtil;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;

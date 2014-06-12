@@ -14,7 +14,7 @@ import java.util.Collection;
 import java.util.LinkedHashSet;
 
 import no.javatime.inplace.InPlace;
-import no.javatime.inplace.bundlemanager.BundleManager;
+import no.javatime.inplace.bundlemanager.BundleJobManager;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.dependencies.CircularReferenceException;
 import no.javatime.inplace.dependencies.ProjectSorter;
@@ -186,7 +186,6 @@ public class ResetJob {
 					public IBundleStatus runInWorkspace(IProgressMonitor monitor) {
 
 						try {
-							BundleManager.addBundleTransitionListener(this);
 							if (ProjectProperties.reportBuildErrorClosure(getPendingProjects(), getName()).size() > 0) {
 								throw new OperationCanceledException();
 							}
@@ -201,7 +200,6 @@ public class ResetJob {
 							addError(e, msg);
 						} finally {
 							monitor.done();
-							BundleManager.removeBundleTransitionListener(this);
 						}
 						if (getStatusList().size() > 0) {
 							return new BundleStatus(StatusCode.JOBINFO, InPlace.PLUGIN_ID, null);
@@ -262,7 +260,6 @@ public class ResetJob {
 						try {
 							// Wait for the uninstall job to finish before activating the bundles
 							getJobManager().join(uninstallFamily, null);
-							BundleManager.addBundleTransitionListener(this);
 							if (ProjectProperties.reportBuildErrorClosure(getPendingProjects(), getName()).size() > 0) {
 								throw new OperationCanceledException();
 							}
@@ -273,7 +270,7 @@ public class ResetJob {
 							//install(getPendingProjects(), monitor);
 							super.runInWorkspace(monitor);
 							for (IProject project : getPendingProjects()) {
-								BundleManager.getTransition().removePending(project, Transition.UPDATE);
+								BundleJobManager.getTransition().removePending(project, Transition.UPDATE);
 							}
 						} catch (OperationCanceledException e) {
 							String msg = UserMessage.getInstance().formatString("cancel_job", getName());
@@ -287,7 +284,6 @@ public class ResetJob {
 							addError(e, msg);
 						} finally {
 							monitor.done();
-							BundleManager.removeBundleTransitionListener(this);
 						}
 						if (getStatusList().size() > 0) {
 							return new BundleStatus(StatusCode.JOBINFO, InPlace.PLUGIN_ID, null);
@@ -335,7 +331,7 @@ public class ResetJob {
 					if (InPlace.get().msgOpt().isBundleOperations()) {
 						TraceMessage.getInstance().getString("schedule_job", uninstallResetJobName);
 					}
-					BundleManager.addBundleJob(uninstallJob, 0);
+					BundleJobManager.addBundleJob(uninstallJob, 0);
 					GroupActivate activateBundleJob = new GroupActivate(ResetJob.activateResetJobName, projectsToReset);
 					activateBundleJob.setProgressGroup(groupMonitor, 1);
 					activateBundleJob.setUseStoredState(true);
@@ -343,7 +339,7 @@ public class ResetJob {
 					if (InPlace.get().msgOpt().isBundleOperations()) {
 						TraceMessage.getInstance().getString("schedule_job", activateResetJobName);
 					}
-					BundleManager.addBundleJob(activateBundleJob, 0);
+					BundleJobManager.addBundleJob(activateBundleJob, 0);
 					
 				} catch (OperationCanceledException e) {
 					getJobManager().cancel(resetFamily);
@@ -362,6 +358,6 @@ public class ResetJob {
 		};
 		groupMonitor.beginTask(resetJobName, 3);
 		resetJob.setProgressGroup(groupMonitor, 1);
-		BundleManager.addBundleJob(resetJob, 0);
+		BundleJobManager.addBundleJob(resetJob, 0);
 	}
 }

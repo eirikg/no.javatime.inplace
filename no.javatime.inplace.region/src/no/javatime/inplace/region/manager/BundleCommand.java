@@ -22,7 +22,7 @@ public interface BundleCommand {
 	 * along with the project and activation status as a workspace bundle in the bundle workspace region.
 	 * <p>
 	 * The activation status of a project can be obtained from
-	 * {@link no.javatime.inplace.bundleproject.ProjectProperties#isProjectActivated(IProject)
+	 * {@link no.javatime.inplace.bundleproject.ProjectProperties#isProjectNatureActivated(IProject)
 	 * isProjectActivated(IProject)}.
 	 * <p>
 	 * The location identifier is obtained from {@link #getBundleLocationIdentifier(IProject)} .

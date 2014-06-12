@@ -17,7 +17,7 @@ import no.javatime.inplace.region.manager.InPlaceException;
 
 /**
  * Adds default output location to source folders when dynamically generated bundles 
- * added to BundleManager runtime launch and when looking up sources from the bundle
+ * added to BundleJobManager runtime launch and when looking up sources from the bundle
  */
 public class BundleClasspathResolver implements IBundleClasspathResolver {
 

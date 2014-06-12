@@ -95,7 +95,7 @@ public class BundleTransitionImpl implements BundleTransition {
 
 	@Override
 	public boolean hasTransitionError(TransitionError transitionError) {
-		for (IProject project : ws.getProjects()) {
+		for (IProject project : ws.getBundleProjects()) {
 			BundleNode bn = ws.getBundleNode(project);
 			if  (bn.hasTransitionError()) {
 				return true;
@@ -144,7 +144,7 @@ public class BundleTransitionImpl implements BundleTransition {
 	
 	@Override
 	public void removeTransitionError(TransitionError transitionError) throws ProjectLocationException {
-		for (IProject project : ws.getProjects()) {
+		for (IProject project : ws.getBundleProjects()) {
 			BundleNode bn = ws.getBundleNode(project);
 			if (null == bn) {
 				continue;

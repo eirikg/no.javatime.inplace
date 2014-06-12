@@ -16,7 +16,7 @@ import java.util.Collections;
 import java.util.List;
 
 import no.javatime.inplace.bundlejobs.BundleJob;
-import no.javatime.inplace.bundlemanager.BundleManager;
+import no.javatime.inplace.bundlemanager.BundleJobManager;
 import no.javatime.inplace.bundleproject.BundleProject;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.region.manager.BundleRegion;
@@ -546,10 +546,10 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 	public void bundleChanged(BundleEvent event) {
 
 		final Bundle bundle = event.getBundle();
-		BundleRegion bundleRegion = BundleManager.getRegion();
-		BundleTransition bundleTransition = BundleManager.getTransition();
+		BundleRegion bundleRegion = BundleJobManager.getRegion();
+		BundleTransition bundleTransition = BundleJobManager.getTransition();
 		try {
-			IProject project = bundleRegion.getProject(bundle);
+			IProject project = bundleRegion.getBundleProject(bundle);
 			if (null == project) {
 				return; // External bundle
 			}
@@ -597,8 +597,8 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 					projectResource = projectDelta.getResource();
 					if (projectResource.isAccessible() && (projectResource.getType() & (IResource.PROJECT)) != 0) {
 						IProject project = projectResource.getProject();
-						if (BundleManager.getRegion().isActivated(project)
-								&& BundleManager.getTransition().containsPending(project, Transition.BUILD, false)) {
+						if (BundleJobManager.getRegion().isActivated(project)
+								&& BundleJobManager.getTransition().containsPending(project, Transition.BUILD, false)) {
 							isBuildingPending = true;
 						}
 					}
@@ -640,7 +640,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 			}
 			try {
 				if (!Activator.getDefault().getCommandOptionsService().isUpdateOnBuild()
-						&& BundleManager.getTransition().containsPending(Transition.UPDATE)) {
+						&& BundleJobManager.getTransition().containsPending(Transition.UPDATE)) {
 					showProjectInfo();
 				}
 			} catch (InPlaceException e) {
@@ -843,7 +843,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 				IProject project = getSelectedProject();
 				if (null != project) {
 					if (ProjectProperties.isProjectActivated(project)) {
-						boolean update = BundleManager.getTransition().containsPending(project, Transition.UPDATE,
+						boolean update = BundleJobManager.getTransition().containsPending(project, Transition.UPDATE,
 								Boolean.FALSE);
 						if (update) {
 							BundleMenuActivationHandler.updateHandler(Collections.<IProject>singletonList(project));
@@ -862,9 +862,9 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 				IProject project = getSelectedProject();
 				if (null != project) {
 					if (ProjectProperties.isProjectActivated(project)) {
-						Bundle bundle = BundleManager.getRegion().get(project);
+						Bundle bundle = BundleJobManager.getRegion().get(project);
 						if (null != bundle) {
-							boolean refresh = (null != bundle && BundleManager.getCommand().getBundleRevisions(bundle)
+							boolean refresh = (null != bundle && BundleJobManager.getCommand().getBundleRevisions(bundle)
 									.size() > 1) ? true : false;
 							if (refresh) {
 								BundleMenuActivationHandler.refreshHandler(Collections.<IProject>singletonList(project));
@@ -884,7 +884,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 				IProject project = getSelectedProject();
 				if (null != project) {
 					if (ProjectProperties.isProjectActivated(project)) {
-						Bundle bundle = BundleManager.getRegion().get(project);
+						Bundle bundle = BundleJobManager.getRegion().get(project);
 						if (bundle != null) {
 							Collection<IProject> projects = Collections.<IProject>singletonList(project);
 							if ((bundle.getState() & (Bundle.ACTIVE | Bundle.STARTING)) != 0) {
@@ -993,7 +993,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 		setUpdateClassPathAction(project);
 		if (ProjectProperties.isProjectActivated(project)) {
 			// Bundle should be in state installed (if resolve errors), resolved or active/starting
-			Bundle bundle = BundleManager.getRegion().get(project);
+			Bundle bundle = BundleJobManager.getRegion().get(project);
 			if (null != bundle) {
 				// Start and Stop is dependent on the bundle state of the activated bundle
 				if ((bundle.getState() & (Bundle.ACTIVE | Bundle.STARTING)) != 0) {
@@ -1036,14 +1036,14 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 	private void setUpdateRefresh(boolean enable, Bundle bundle) {
 
 		if (enable && null != bundle) {
-			if (BundleManager.getTransition().containsPending(bundle, Transition.UPDATE, Boolean.FALSE)) {
+			if (BundleJobManager.getTransition().containsPending(bundle, Transition.UPDATE, Boolean.FALSE)) {
 				setUIElement(updateAction, true, updateText, updateText,
 						BundleCommandsContributionItems.updateImage);
 			} else {
 				setUIElement(updateAction, false, updateGeneralText, updateGeneralText,
 						BundleCommandsContributionItems.updateImage);
 			}
-			if (BundleManager.getCommand().getBundleRevisions(bundle).size() > 1) {
+			if (BundleJobManager.getCommand().getBundleRevisions(bundle).size() > 1) {
 				setUIElement(refreshAction, true, refreshText, refreshText,
 						BundleCommandsContributionItems.refreshImage);
 			} else {

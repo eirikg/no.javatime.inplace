@@ -21,7 +21,7 @@ import no.javatime.inplace.region.manager.InPlaceException;
 import no.javatime.inplace.region.manager.BundleTransition.TransitionError;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
-import no.javatime.inplace.bundlemanager.BundleManager;
+import no.javatime.inplace.bundlemanager.BundleJobManager;
 import no.javatime.util.messages.ExceptionMessage;
 
 import org.osgi.framework.Bundle;
@@ -83,7 +83,7 @@ public class BundleSorter extends BaseSorter {
 	 */
 	public Collection<Bundle> sortRequiringBundles(Collection<Bundle> bundles)
 			throws CircularReferenceException {
-		return sortRequiringBundles(bundles, BundleManager.getRegion().getBundles());
+		return sortRequiringBundles(bundles, BundleJobManager.getRegion().getBundles());
 	}
 
 	/**
@@ -106,7 +106,7 @@ public class BundleSorter extends BaseSorter {
 		imports a package which is exported by the bundle, 
 		is a fragment to the bundle or is the host of the bundle.
 		*/
-		removalPendingBundles = BundleManager.getCommand().getRemovalPending();
+		removalPendingBundles = BundleJobManager.getCommand().getRemovalPending();
 		removalPendingBundles.retainAll(bundleScope);
 		if (removalPendingBundles.size() > 0) {
 			sortDeclaredRequiringBundles(bundles, bundleScope);
@@ -235,7 +235,7 @@ public class BundleSorter extends BaseSorter {
 				// Get the capabilities from all name spaces
 				for (BundleWire wire : wiredReqBundle.getProvidedWires(null)) {
 					Bundle reqBundle = wire.getRequirerWiring().getBundle();
-					if (null != reqBundle && BundleManager.getRegion().exist(reqBundle)) {
+					if (null != reqBundle && BundleJobManager.getRegion().exist(reqBundle)) {
 						// Restrict to scope
 						if (scope.contains(reqBundle)) {
 							requiredBundles.add(reqBundle);
@@ -260,7 +260,7 @@ public class BundleSorter extends BaseSorter {
 	 */
 	public Collection<Bundle> sortProvidingBundles(Collection<Bundle> bundles)
 			throws CircularReferenceException {
-		return sortProvidingBundles(bundles, BundleManager.getRegion().getBundles());
+		return sortProvidingBundles(bundles, BundleJobManager.getRegion().getBundles());
 	}
 
 	/**
@@ -277,7 +277,7 @@ public class BundleSorter extends BaseSorter {
 	public Collection<Bundle> sortProvidingBundles(Collection<Bundle> bundles, Collection<Bundle> bundleScope)
 			throws CircularReferenceException {
 		circularException = null;
-		removalPendingBundles = BundleManager.getCommand().getRemovalPending();
+		removalPendingBundles = BundleJobManager.getCommand().getRemovalPending();
 		removalPendingBundles.retainAll(bundleScope);
 		if (removalPendingBundles.size() > 0) {
 			sortDeclaredProvidingBundles(bundles, bundleScope);
@@ -408,7 +408,7 @@ public class BundleSorter extends BaseSorter {
 				// Get the requirements from all name spaces
 				for (BundleWire wire : wiredProvBundle.getRequiredWires(null)) {
 					Bundle provBundle = wire.getProviderWiring().getBundle();
-					if (null != provBundle && BundleManager.getRegion().exist(provBundle)) {
+					if (null != provBundle && BundleJobManager.getRegion().exist(provBundle)) {
 						// Adjust to scope
 						if (scope.contains(provBundle)) {
 							providedBundles.add(provBundle);
@@ -447,15 +447,15 @@ public class BundleSorter extends BaseSorter {
 		if (!getAllowCycles() && (!isFragment(child) && !isFragment(parent))) {
 			BundleSorter bs = new BundleSorter();
 			bs.setAllowCycles(true);
-			Collection<Bundle> bundles = bs.sortDeclaredRequiringBundles(Collections.<Bundle>singletonList(parent), BundleManager.getRegion().getBundles());
-			BundleManager.getTransition().setTransitionError(parent, TransitionError.CYCLE);
-			bundles.addAll(bs.sortDeclaredRequiringBundles(Collections.<Bundle>singletonList(child), BundleManager.getRegion().getBundles()));
-			BundleManager.getTransition().setTransitionError(child, TransitionError.CYCLE);
+			Collection<Bundle> bundles = bs.sortDeclaredRequiringBundles(Collections.<Bundle>singletonList(parent), BundleJobManager.getRegion().getBundles());
+			BundleJobManager.getTransition().setTransitionError(parent, TransitionError.CYCLE);
+			bundles.addAll(bs.sortDeclaredRequiringBundles(Collections.<Bundle>singletonList(child), BundleJobManager.getRegion().getBundles()));
+			BundleJobManager.getTransition().setTransitionError(child, TransitionError.CYCLE);
 			if (null == circularException) {
 				circularException = new CircularReferenceException();
 			}
 			String msg = ExceptionMessage.getInstance().formatString("affected_bundles",
-					BundleManager.getRegion().formatBundleList(bundles, false));
+					BundleJobManager.getRegion().formatBundleList(bundles, false));
 			circularException.addToStatusList(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, msg, null));
 			if (directRecursion) {
 				msg = ExceptionMessage.getInstance().formatString("direct_circular_reference_with_bundles",
@@ -552,6 +552,6 @@ public class BundleSorter extends BaseSorter {
 			return;
 		}
 		System.out.println("Bundle topological Order "
-				+ BundleManager.getRegion().formatBundleList(bundleOrder, true));
+				+ BundleJobManager.getRegion().formatBundleList(bundleOrder, true));
 	}
 }

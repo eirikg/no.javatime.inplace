@@ -14,7 +14,7 @@ public class TransitionEvent {
 	
 	public TransitionEvent (Bundle bundle, Transition transition) {
 		this.bundle = bundle;
-		this.project = BundleWorkspaceImpl.INSTANCE.getProject(bundle); // BundleManager.getRegion().getProject(bundle);
+		this.project = BundleWorkspaceImpl.INSTANCE.getBundleProject(bundle); // BundleManager.getRegion().getProject(bundle);
 		this.transition = transition;
 	}
 

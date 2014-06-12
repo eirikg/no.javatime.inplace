@@ -3,7 +3,7 @@ package no.javatime.inplace;
 import java.util.Collection;
 
 import no.javatime.inplace.bundlejobs.ActivateBundleJob;
-import no.javatime.inplace.bundlemanager.BundleManager;
+import no.javatime.inplace.bundlemanager.BundleJobManager;
 import no.javatime.inplace.bundleproject.BundleProject;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.region.manager.BundleTransition;
@@ -64,7 +64,7 @@ public class StartUp implements IStartup {
 		ActivateBundleJob activateJob = new ActivateBundleJob(ActivateBundleJob.activateStartupJobName,
 				ProjectProperties.getActivatedProjects());
 		activateJob.setUseStoredState(true);
-		BundleManager.addBundleJob(activateJob, 0);
+		BundleJobManager.addBundleJob(activateJob, 0);
 	}
 
 	/**
@@ -74,11 +74,11 @@ public class StartUp implements IStartup {
 	private void setTransitionStates() {
 		IEclipsePreferences store = InPlace.getEclipsePreferenceStore();
 		if (null != store) {
-			BundleTransition  bundleTransition = BundleManager.getTransition();
+			BundleTransition  bundleTransition = BundleJobManager.getTransition();
 			IBundleStatus status = null;
 			for (IProject project : ProjectProperties.getProjects()) {
 				if (!ProjectProperties.isProjectActivated(project)) {
-					String symbolicKey = BundleManager.getRegion().getSymbolicKey(null, project);
+					String symbolicKey = BundleJobManager.getRegion().getSymbolicKey(null, project);
 					int state = store.getInt(symbolicKey, Transition.INSTALL.ordinal());
 					if (state == Transition.UNINSTALL.ordinal()) {
 						try {

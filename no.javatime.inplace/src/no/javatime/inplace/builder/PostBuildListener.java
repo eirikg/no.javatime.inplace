@@ -23,15 +23,15 @@ import no.javatime.inplace.bundlejobs.InstallJob;
 import no.javatime.inplace.bundlejobs.UninstallJob;
 import no.javatime.inplace.bundlejobs.UpdateJob;
 import no.javatime.inplace.bundlejobs.UpdateScheduler;
-import no.javatime.inplace.bundlemanager.BundleManager;
+import no.javatime.inplace.bundlemanager.BundleJobManager;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.manager.BundleCommand;
 import no.javatime.inplace.region.manager.BundleRegion;
 import no.javatime.inplace.region.manager.BundleTransition;
+import no.javatime.inplace.region.manager.BundleTransition.Transition;
 import no.javatime.inplace.region.manager.InPlaceException;
 import no.javatime.inplace.region.manager.ProjectLocationException;
-import no.javatime.inplace.region.manager.BundleTransition.Transition;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
@@ -94,9 +94,9 @@ import org.osgi.framework.Bundle;
  */
 public class PostBuildListener implements IResourceChangeListener {
 
-	private BundleCommand bundleCommand = BundleManager.getCommand();
-	private BundleRegion bundleRegion = BundleManager.getRegion();
-	private BundleTransition bundleTransition = BundleManager.getTransition();
+	private BundleCommand bundleCommand = BundleJobManager.getCommand();
+	private BundleRegion bundleRegion = BundleJobManager.getRegion();
+	private BundleTransition bundleTransition = BundleJobManager.getTransition();
 
 	/**
 	 * Schedules bundle jobs for changed projects. Removed and closed projects are handled in the
@@ -201,7 +201,7 @@ public class PostBuildListener implements IResourceChangeListener {
 	 */
 	private boolean scheduleJob(BundleJob job) {
 		if (null != job && job.hasPendingProjects()) {
-			BundleManager.addBundleJob(job, 0);
+			BundleJobManager.addBundleJob(job, 0);
 			return true;
 		}
 		return false;
@@ -228,7 +228,7 @@ public class PostBuildListener implements IResourceChangeListener {
 
 	/**
 	 * Add the specified project as pending to one of the specified jobs if the project has one or more pending
-	 * transitions that equals or is a combination of one of {@link Transition#ACTIVATE},
+	 * transitions that equals or is a combination of one of {@link Transition#ACTIVATE_BUNDLE},
 	 * {@link Transition#UPDATE}, {@link Transition#UNINSTALL} or {@link Transition#DEACTIVATE}.
 	 * <p>
 	 * The project is only added to the update job if auto update is on or {@link Transition#UPDATE_ON_ACTIVATE}
@@ -271,7 +271,7 @@ public class PostBuildListener implements IResourceChangeListener {
 			installJob.addPendingProject(project);
 			isPending = true;
 		}
-		if (bundleTransition.containsPending(project, Transition.ACTIVATE, Boolean.TRUE)) {
+		if (bundleTransition.containsPending(project, Transition.ACTIVATE_BUNDLE, Boolean.TRUE)) {
 			// TODO Check this check
 			if (ProjectProperties.isInstallableProject(project)) {
 				activateBundleJob.addPendingProject(project);
@@ -367,7 +367,7 @@ public class PostBuildListener implements IResourceChangeListener {
 			// For all other modifications of the project description, use update bundle
 			if (!projectLoaction.equals(bundleLocation) && ProjectProperties.isInstallableProject(project)) {
 				UninstallJob uninstallJob = new UninstallJob(UninstallJob.uninstallJobName, project);
-				BundleManager.addBundleJob(uninstallJob, 0);
+				BundleJobManager.addBundleJob(uninstallJob, 0);
 				activateBundleJob.addPendingProject(project);
 				return true;
 			}
@@ -375,7 +375,7 @@ public class PostBuildListener implements IResourceChangeListener {
 			String msg = ErrorMessage.getInstance().formatString("project_location", project.getName());
 			IBundleStatus status = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg, e);
 			msg = UserMessage.getInstance().formatString("refresh_hint", project.getName());
-			status.add(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, msg));
+			status.add(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, project, msg, null));
 			StatusManager.getManager().handle(status, StatusManager.LOG);
 		}
 		return false;

@@ -13,14 +13,14 @@ package no.javatime.inplace.bundlejobs;
 import java.util.Collection;
 
 import no.javatime.inplace.InPlace;
-import no.javatime.inplace.bundlemanager.BundleManager;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.dependencies.BundleClosures;
 import no.javatime.inplace.dependencies.CircularReferenceException;
 import no.javatime.inplace.dependencies.ProjectSorter;
 import no.javatime.inplace.msg.Msg;
-import no.javatime.inplace.region.manager.InPlaceException;
 import no.javatime.inplace.region.manager.BundleTransition.Transition;
+import no.javatime.inplace.region.manager.BundleManager;
+import no.javatime.inplace.region.manager.InPlaceException;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
@@ -233,7 +233,7 @@ public class ActivateProjectJob extends NatureJob {
 			if (monitor.isCanceled()) {
 				throw new OperationCanceledException();
 			}
-			Collection<IProject> projectsToActivate = bundleRegion.getProjects(bundlesToActivate);
+			Collection<IProject> projectsToActivate = bundleRegion.getBundleProjects(bundlesToActivate);
 			// Subtract installed projects already pending
 			projectsToActivate.removeAll(getPendingProjects());
 			if (projectsToActivate.size() > 0) {
@@ -301,7 +301,7 @@ public class ActivateProjectJob extends NatureJob {
 			removePendingProjects(projectErrorClosures);
 			// Remove delayed activated projects to update waiting for this project with errors to be activated
 			Collection<IProject> delayedProjects = bundleTransition.getPendingProjects(
-					bundleRegion.getProjects(true), Transition.UPDATE);
+					bundleRegion.getBundleProjects(true), Transition.UPDATE);
 			if (delayedProjects.size() > 0) {
 				String delayedMsg = WarnMessage.getInstance().formatString("build_errors_delayed",
 						UpdateJob.updateJobName, ProjectProperties.formatProjectList(delayedProjects));

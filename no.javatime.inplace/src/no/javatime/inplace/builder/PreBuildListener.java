@@ -11,7 +11,7 @@
 package no.javatime.inplace.builder;
 
 import no.javatime.inplace.InPlace;
-import no.javatime.inplace.bundlemanager.BundleManager;
+import no.javatime.inplace.bundlemanager.BundleJobManager;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.region.manager.InPlaceException;
 import no.javatime.inplace.region.manager.BundleTransition.Transition;
@@ -55,10 +55,10 @@ public class PreBuildListener implements IResourceChangeListener {
 				IProject project = projectResource.getProject();
 //				int buildType = event.getBuildKind();
 				try {
-//					Bundle bundle = BundleManager.getRegion().get(project);
+//					Bundle bundle = BundleJobManager.getRegion().get(project);
 					if (!ProjectProperties.isAutoBuilding() && ProjectProperties.isProjectActivated(project)) { 
 							// && buildType == IncrementalProjectBuilder.AUTO_BUILD) {
-							BundleManager.getTransition().addPending(project, Transition.BUILD);
+							BundleJobManager.getTransition().addPending(project, Transition.BUILD);
 					}
 				} catch (InPlaceException e) {
 					String msg = ExceptionMessage.getInstance().formatString("preparing_osgi_command", project.getName());

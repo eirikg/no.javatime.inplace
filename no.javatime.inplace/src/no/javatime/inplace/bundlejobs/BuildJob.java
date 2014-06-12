@@ -13,8 +13,8 @@ package no.javatime.inplace.bundlejobs;
 import java.util.Collection;
 
 import no.javatime.inplace.InPlace;
-import no.javatime.inplace.bundlemanager.BundleManager;
 import no.javatime.inplace.bundleproject.ProjectProperties;
+import no.javatime.inplace.region.manager.BundleManager;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;

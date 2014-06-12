@@ -10,7 +10,7 @@
  *******************************************************************************/
 /**
  * Set of bundle jobs implementing composite (Activate, Deactivate, Reinstall 
- * and Reset) and explicit (Start, Stop, Install, Uninstall, Resolve, Update and Refresh) BundleManager commands.
+ * and Reset) and explicit (Start, Stop, Install, Uninstall, Resolve, Update and Refresh) BundleJobManager commands.
  * <p>
  * A project is activated when the JavaTime nature is applied to the project and a bundle
  * is activated when the project is activated and the bundle is in state RESOLVED, ACTIVE or STARTING. Activated projects with errors may be in any state.

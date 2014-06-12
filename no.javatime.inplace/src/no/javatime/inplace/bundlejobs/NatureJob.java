@@ -18,8 +18,8 @@ import no.javatime.inplace.builder.JavaTimeNature;
 import no.javatime.inplace.bundleproject.BundleProject;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.msg.Msg;
-import no.javatime.inplace.region.manager.InPlaceException;
 import no.javatime.inplace.region.manager.BundleTransition.Transition;
+import no.javatime.inplace.region.manager.InPlaceException;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
@@ -182,8 +182,8 @@ public abstract class NatureJob extends BundleJob {
 						bundleTransition.addPending(project, Transition.START);
 					} else {
 						if (!isAutoBuilding) {
-						// Assure that the bundle is activated when uninstalled 
-							bundleTransition.addPending(project, Transition.ACTIVATE);
+						// Assure that the bundle is activated when installed 
+							bundleTransition.addPending(project, Transition.ACTIVATE_BUNDLE);
 						}
 					}
 				}

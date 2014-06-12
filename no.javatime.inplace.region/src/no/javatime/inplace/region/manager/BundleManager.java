@@ -6,30 +6,28 @@ import no.javatime.inplace.region.events.TransitionEvent;
 import no.javatime.util.messages.Category;
 import no.javatime.util.messages.TraceMessage;
 
-public class BundleTransitionManager {
+public class BundleManager {
 	
-//	private static boolean isInitialized;
-
 	/**
-	 * Management of bundle jobs listeners.
+	 * Management of bundle transition listeners.
 	 */
 	private static BundleTransitionNotifier bundleTransitionNotifier = new BundleTransitionNotifier();
 
-	public BundleTransitionManager() {
+	public BundleManager() {
 	}
 	
 	
-//	public static BundleRegion getRegion() {
-//		return BundleWorkspaceImpl.INSTANCE;
-//	}
-//	
-//	public static BundleCommand getCommand() {
-//		return BundleCommandImpl.INSTANCE;
-//	}
-//
-//	public static BundleTransition getTransition() {
-//		return BundleTransitionImpl.INSTANCE;
-//	}
+	public static BundleRegion getRegion() {
+		return BundleWorkspaceImpl.INSTANCE;
+	}
+	
+	public static BundleCommand getCommand() {
+		return BundleCommandImpl.INSTANCE;
+	}
+
+	public static BundleTransition getTransition() {
+		return BundleTransitionImpl.INSTANCE;
+	}
 	
 	public static void addBundleTransition(TransitionEvent transitionEvent) {
 		bundleTransitionNotifier.addBundleTransitionEvent(transitionEvent);

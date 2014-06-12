@@ -19,7 +19,7 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 
 import no.javatime.inplace.InPlace;
-import no.javatime.inplace.builder.JavaTimeNature;
+import no.javatime.inplace.bundlemanager.BundleJobManager;
 import no.javatime.inplace.dependencies.CircularReferenceException;
 import no.javatime.inplace.dependencies.ProjectSorter;
 import no.javatime.inplace.region.manager.InPlaceException;
@@ -71,7 +71,6 @@ public class ProjectProperties {
 	final public static String PLUGIN_NATURE_ID = "org.eclipse.pde.PluginNature";
 	final public static String PACKAGE_EXPLORER_ID = org.eclipse.jdt.ui.JavaUI.ID_PACKAGES;
 	final public static String PROJECT_EXPLORER_ID = "org.eclipse.ui.navigator.ProjectExplorer";
-//	public static final String JAVATIME_NATURE_ID = "no.javatime.inplace.builder.javatimenature";
 
 	final public static String bundleReferenceLocationScheme = Message.getInstance().formatString(
 			"bundle_identifier_reference_scheme");
@@ -87,13 +86,34 @@ public class ProjectProperties {
 	 * @return true if at least one project is activated or false if no projects are activated
 	 */
 	public static Boolean isProjectWorkspaceActivated() {
+		return BundleJobManager.getRegion().isProjectWorkspaceNatureActivated();
+//		for (IProject project : getProjects()) {
+//			if (isProjectActivated(project)) {
+//				return true;
+//			}
+//		}
+//		return false;
+	}
 
-		for (IProject project : getProjects()) {
-			if (isProjectActivated(project)) {
-				return true;
-			}
-		}
-		return false;
+	/**
+	 * When a project has JavaTime nature enabled the project is activated.
+	 * 
+	 * @param project to check for JavaTime nature
+	 * @return true if JavaTime nature is enabled for the project and false if not
+	 * @see no.javatime.inplace.region.manager.BundleWorkspaceImpl#isActivated(IProject)
+	 * @see no.javatime.inplace.region.manager.BundleWorkspaceImpl#isActivated(Long)
+	 * @see no.javatime.inplace.region.manager.BundleWorkspaceImpl#isActivated(Bundle)
+	 */
+	public static Boolean isProjectActivated(IProject project) {
+		return BundleJobManager.getRegion().isProjectNatureActivated(project);
+//		try {
+//			if (null != project && project.isNatureEnabled(JavaTimeNature.JAVATIME_NATURE_ID)) {
+//				return true;
+//			}
+//		} catch (CoreException e) {
+//			// Ignore closed or non-existing project
+//		}
+//		return false;
 	}
 
 	/**
@@ -211,25 +231,6 @@ public class ProjectProperties {
 		return projects;
 	}
 
-	/**
-	 * When a project has JavaTime nature enabled the project is activated.
-	 * 
-	 * @param project to check for JavaTime nature
-	 * @return true if JavaTime nature is enabled for the project and false if not
-	 * @see no.javatime.inplace.region.manager.BundleWorkspaceImpl#isActivated(IProject)
-	 * @see no.javatime.inplace.region.manager.BundleWorkspaceImpl#isActivated(Long)
-	 * @see no.javatime.inplace.region.manager.BundleWorkspaceImpl#isActivated(Bundle)
-	 */
-	public static Boolean isProjectActivated(IProject project) {
-		try {
-			if (null != project && project.isNatureEnabled(JavaTimeNature.JAVATIME_NATURE_ID)) {
-				return true;
-			}
-		} catch (CoreException e) {
-			// Ignore closed or non-existing project
-		}
-		return false;
-	}
 	/**
 	 * Checks if this project has the Java and plug-in nature enabled.
 	 * 

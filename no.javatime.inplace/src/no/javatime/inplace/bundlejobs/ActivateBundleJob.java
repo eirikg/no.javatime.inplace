@@ -15,7 +15,6 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 
 import no.javatime.inplace.InPlace;
-import no.javatime.inplace.bundlemanager.BundleManager;
 import no.javatime.inplace.bundleproject.BundleProject;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.dependencies.BundleSorter;
@@ -24,8 +23,9 @@ import no.javatime.inplace.dependencies.ProjectSorter;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Operation;
 import no.javatime.inplace.msg.Msg;
-import no.javatime.inplace.region.manager.InPlaceException;
 import no.javatime.inplace.region.manager.BundleTransition.TransitionError;
+import no.javatime.inplace.region.manager.BundleManager;
+import no.javatime.inplace.region.manager.InPlaceException;
 import no.javatime.inplace.region.project.ManifestUtil;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
@@ -262,7 +262,7 @@ public class ActivateBundleJob extends BundleJob {
 		if (getName().equals(ActivateBundleJob.activateStartupJobName)
 				&& (null != BundleProject.inDevelopmentMode() || getOptionsService().isUpdateDefaultOutPutFolder())) {
 			for (Bundle bundle : activatedBundles) {
-				resolveBundleClasspath(bundleRegion.getProject(bundle));
+				resolveBundleClasspath(bundleRegion.getBundleProject(bundle));
 			}
 		}
 		if (monitor.isCanceled()) {

@@ -11,6 +11,7 @@
 package no.javatime.inplace.bundlemanager;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.Map;
@@ -23,10 +24,11 @@ import no.javatime.inplace.dependencies.BundleDependencies;
 import no.javatime.inplace.dependencies.CircularReferenceException;
 import no.javatime.inplace.dependencies.ProjectSorter;
 import no.javatime.inplace.region.events.TransitionEvent;
+import no.javatime.inplace.region.manager.BundleManager;
 import no.javatime.inplace.region.manager.BundleRegion;
 import no.javatime.inplace.region.manager.BundleTransition;
-import no.javatime.inplace.region.manager.BundleWorkspaceImpl;
 import no.javatime.inplace.region.manager.BundleTransition.Transition;
+import no.javatime.inplace.region.manager.BundleWorkspaceImpl;
 import no.javatime.inplace.region.state.BundleStateFactory;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
@@ -102,7 +104,7 @@ class BundleResolveHandler implements ResolverHook {
 		
 		Collection<BundleRevision> deactivatedBundles = new LinkedHashSet<BundleRevision>();
 		Collection<BundleRevision> activatedBundles = new LinkedHashSet<BundleRevision>();
-		Collection<Bundle> bundles = BundleManager.getRegion().getBundles();
+		Collection<Bundle> bundles = BundleJobManager.getRegion().getBundles();
 		if (bundles.size() == 0) {
 			return;
 		}
@@ -115,7 +117,7 @@ class BundleResolveHandler implements ResolverHook {
 				
 		// Split candidates in those activated and those deactivated
 		for (BundleRevision workspaceCandidate : workspaceCandidates) {
-			if (BundleManager.getRegion().isActivated(workspaceCandidate.getBundle())) {
+			if (BundleJobManager.getRegion().isActivated(workspaceCandidate.getBundle())) {
 				activatedBundles.add(workspaceCandidate);
 			} else {
 				deactivatedBundles.add(workspaceCandidate);
@@ -150,7 +152,44 @@ class BundleResolveHandler implements ResolverHook {
 			resolved.add(bundleId);
 		}
 	}
+	// Replacement of activateDependentBundles
+	// Version without scheduling a bundle job. The job is scheduled in the job listener
+	public Collection<BundleRevision> activateProvidingProjects (Collection<BundleRevision> activatedBundleRevisions,
+			Collection<BundleRevision> deactivatedBundleRevisions) {
 
+		Collection<BundleRevision> bundlesToNotResolve = new LinkedHashSet<BundleRevision>();
+
+		// Does the set of activated bundles to resolve have requirements on this non activated (installed) candidate bundle
+		for (BundleRevision deactivatedBundleRevision : deactivatedBundleRevisions) {
+			Bundle deactivatedBundle = deactivatedBundleRevision.getBundle();
+			Collection<Bundle> activatedRequireres = 
+					BundleManager.getCommand().getDependencyClosure(Collections.singletonList(deactivatedBundle)); 
+			// Remove self from activated requiring bundles
+			activatedRequireres.remove(deactivatedBundle);
+			if (!activatedRequireres.isEmpty()) {
+				BundleRegion bundleRegion = BundleJobManager.getRegion();
+				BundleManager.getTransition().addPending(deactivatedBundleRevision.getBundle(), Transition.ACTIVATE_PROJECT);					
+				for (Bundle activatedRequirer : activatedRequireres) {
+					bundlesToNotResolve.add(BundleManager.getCommand().getCurrentRevision(activatedRequirer));
+					// Tag as not resolved and adjust state
+					BundleManager.getTransition().addPending(activatedRequirer, Transition.UPDATE_ON_ACTIVATE);
+					BundleTransition transition = BundleJobManager.getTransition();
+					transition.setTransition(bundleRegion.getBundleProject(activatedRequirer), Transition.INSTALL);
+					BundleWorkspaceImpl.INSTANCE.setActiveState(activatedRequirer, BundleStateFactory.INSTANCE.installedState);
+				}
+
+				if (Category.getState(Category.infoMessages)) {
+					IProject deactivatedProject = bundleRegion.getBundleProject(deactivatedBundleRevision
+							.getBundle());
+					String activatedBundleList = formatBundleRevisionList(activatedBundleRevisions);
+					UserMessage.getInstance().getString("implicit_activation", activatedBundleList, deactivatedProject.getName());
+					UserMessage.getInstance().getString("delayed_resolve", activatedBundleList, deactivatedProject.getName());
+				}
+			}
+		}
+		return bundlesToNotResolve;
+	}
+	
 	/**
 	 * Schedule an activate project job for deactivated bundles providing capabilities to activated bundles.
 	 * 
@@ -171,23 +210,23 @@ class BundleResolveHandler implements ResolverHook {
 			Collection<BundleRevision> activatedRequireres = BundleDependencies.getRequiringBundles(
 					deactivatedBundleRevision, activatedBundleRevisions, null, new LinkedHashSet<BundleRevision>());
 			if (!activatedRequireres.isEmpty()) {
-				BundleRegion bundleRegion = BundleManager.getRegion();
+				BundleRegion bundleRegion = BundleJobManager.getRegion();
 				for (BundleRevision activatedRequirer : activatedRequireres) {
 					Bundle activatedRequirerBundle = activatedRequirer.getBundle();
 					// Tag as not resolved and adjust state
-					BundleTransition transition = BundleManager.getTransition();
-					transition.setTransition(bundleRegion.getProject(activatedRequirerBundle), Transition.INSTALL);
+					BundleTransition transition = BundleJobManager.getTransition();
+					transition.setTransition(bundleRegion.getBundleProject(activatedRequirerBundle), Transition.INSTALL);
 					BundleWorkspaceImpl.INSTANCE.setActiveState(activatedRequirerBundle, BundleStateFactory.INSTANCE.installedState);
 				}
 				if (null == projectsToActivate) {
 					projectsToActivate = new LinkedHashSet<IProject>();
 				}
-				projectsToActivate.add(bundleRegion.getProject(deactivatedBundleRevision.getBundle()));
+				projectsToActivate.add(bundleRegion.getBundleProject(deactivatedBundleRevision.getBundle()));
 				bundlesToNotResolve.addAll(activatedRequireres);
 				if (Category.getState(Category.infoMessages)) {
-					Collection<IProject> activatedProjects = bundleRegion.getProjects(BundleDependencies
+					Collection<IProject> activatedProjects = bundleRegion.getBundleProjects(BundleDependencies
 							.getBundlesFrom(activatedRequireres));
-					IProject deactivatedProject = bundleRegion.getProject(deactivatedBundleRevision
+					IProject deactivatedProject = bundleRegion.getBundleProject(deactivatedBundleRevision
 							.getBundle());
 					UserMessage.getInstance().getString("implicit_activation",
 							ProjectProperties.formatProjectList(activatedProjects), deactivatedProject.getName());
@@ -199,7 +238,7 @@ class BundleResolveHandler implements ResolverHook {
 		if (null != projectsToActivate) {
 			ActivateProjectJob activateProjectJob = new ActivateProjectJob(
 					ActivateProjectJob.activateProjectsJobName, projectsToActivate);
-			BundleManager.addBundleJob(activateProjectJob, 0);
+			BundleJobManager.addBundleJob(activateProjectJob, 0);
 		}
 		return bundlesToNotResolve;
 	}
@@ -216,14 +255,14 @@ class BundleResolveHandler implements ResolverHook {
 
 		// Add activated bundles dependent on deactivated bundles with build errors to the not resolve list
 		ProjectSorter bs = new ProjectSorter();
-		Collection<IProject> deactivatedProjects = BundleManager.getRegion().getProjects(BundleDependencies
+		Collection<IProject> deactivatedProjects = BundleJobManager.getRegion().getBundleProjects(BundleDependencies
 				.getBundlesFrom(deactivatedBundles));
 		Collection<IProject> deactivatedErrorProjects = ProjectProperties.getBuildErrors(deactivatedProjects);
 		deactivatedErrorProjects.addAll(ProjectProperties.hasBuildState(deactivatedProjects));
 		Collection<BundleRevision> notResolveList = new LinkedHashSet<BundleRevision>();
 		if (deactivatedErrorProjects.size() > 0) {
 			for (IProject deactivatedErrorProject : deactivatedErrorProjects) {
-				Bundle deactivatedErrorBundle = BundleManager.getRegion().get(deactivatedErrorProject);
+				Bundle deactivatedErrorBundle = BundleJobManager.getRegion().get(deactivatedErrorProject);
 				BundleRevision deactivatedErrorBundleRev = deactivatedErrorBundle.adapt(BundleRevision.class);
 				try {
 					notResolveList.addAll(BundleDependencies.getRequiringBundles(deactivatedErrorBundleRev,
@@ -244,14 +283,14 @@ class BundleResolveHandler implements ResolverHook {
 			if (notResolveList.size() > 0) {
 				String msg = WarnMessage.getInstance().formatString("build_error_on_deactivated_dependencies",
 						ProjectProperties.formatProjectList(deactivatedErrorProjects),
-						BundleManager.getRegion().formatBundleList(BundleDependencies.getBundlesFrom(notResolveList), true));
+						BundleJobManager.getRegion().formatBundleList(BundleDependencies.getBundlesFrom(notResolveList), true));
 				StatusManager.getManager().handle(new BundleStatus(StatusCode.WARNING, InPlace.PLUGIN_ID, msg),
 						StatusManager.LOG);
 			}
 		}
 		// Add activated bundles dependent on other activated bundles with build errors to the not resolve list
 		try {
-			Collection<IProject> projectScope = BundleManager.getRegion().getProjects(BundleDependencies
+			Collection<IProject> projectScope = BundleJobManager.getRegion().getBundleProjects(BundleDependencies
 					.getBundlesFrom(activatedBundles));
 			Collection<IProject> projectErrorClosure = bs.getRequiringBuildErrorClosure(projectScope, true);
 			if (projectErrorClosure.size() > 0) {
@@ -261,7 +300,7 @@ class BundleResolveHandler implements ResolverHook {
 					StatusManager.getManager().handle(new BundleStatus(StatusCode.WARNING, InPlace.PLUGIN_ID, warnMsg),
 							StatusManager.LOG);
 				}
-				Collection<Bundle> bundles = BundleManager.getRegion().getBundles(projectErrorClosure);
+				Collection<Bundle> bundles = BundleJobManager.getRegion().getBundles(projectErrorClosure);
 				notResolveList.addAll(BundleDependencies.getRevisionsFrom(bundles));
 			}
 		} catch (CircularReferenceException e) {
@@ -280,7 +319,7 @@ class BundleResolveHandler implements ResolverHook {
 	}
 
 	/**
-	 * See also: The Resolve Operation Resolver Hook Service Specification Version 1.0, at page 316 in BundleManager
+	 * See also: The Resolve Operation Resolver Hook Service Specification Version 1.0, at page 316 in BundleJobManager
 	 * Service Platform Release 4, Version 4.3
 	 * 
 	 */
@@ -296,14 +335,14 @@ class BundleResolveHandler implements ResolverHook {
 			if (Category.DEBUG && InPlace.get().msgOpt().isBundleOperations())
 				TraceMessage.getInstance().getString("singleton_collisions_group",
 						singleton.getRevision().getBundle().getSymbolicName(),
-						BundleManager.getRegion().formatBundleList(group, true));
+						BundleJobManager.getRegion().formatBundleList(group, true));
 			for (Iterator<BundleCapability> i = collisionCandidates.iterator(); i.hasNext();) {
 				BundleCapability candidate = i.next();
 				Bundle candidateBundle = candidate.getRevision().getBundle();
 				Set<Bundle> otherGroup = groups.get(candidateBundle);
 				if (Category.DEBUG && InPlace.get().msgOpt().isBundleOperations())
 					TraceMessage.getInstance().getString("singleton_collisions_other_group",
-							candidateBundle.getSymbolicName(), BundleManager.getRegion().formatBundleList(otherGroup, true));
+							candidateBundle.getSymbolicName(), BundleJobManager.getRegion().formatBundleList(otherGroup, true));
 				// If this singleton is in the group and at the same time is a candidate (other group)
 				// Remove it so the same but new updated instance of the bundle can be resolved
 				// Note this is opposite to the sample in the OSGI 4.3 specification
@@ -311,7 +350,7 @@ class BundleResolveHandler implements ResolverHook {
 					i.remove(); // the duplicate
 				if (Category.getState(Category.bundleEvents)) {
 					TraceMessage.getInstance().getString("singleton_collision_remove_duplicate",
-							candidateBundle.getSymbolicName(), BundleManager.getRegion().formatBundleList(otherGroup, true));
+							candidateBundle.getSymbolicName(), BundleJobManager.getRegion().formatBundleList(otherGroup, true));
 				}
 			}
 		}
@@ -329,20 +368,20 @@ class BundleResolveHandler implements ResolverHook {
 			if (toResolve.size() > 0) {
 				for (BundleRevision bundleRevision : toResolve) {
 					TraceMessage.getInstance().getString("bundles_to_resolve",
-							BundleManager.getRegion().getSymbolicKey(bundleRevision.getBundle(), null));
+							BundleJobManager.getRegion().getSymbolicKey(bundleRevision.getBundle(), null));
 				}
 			}
 		}
 		if (rejected.size() > 0 && Category.getState(Category.dag)) {
 			for (BundleRevision bundleRevision : rejected) {
 				TraceMessage.getInstance().getString("rejected_bundles_to_not_resolve",
-						BundleManager.getRegion().getSymbolicKey(bundleRevision.getBundle(), null));
+						BundleJobManager.getRegion().getSymbolicKey(bundleRevision.getBundle(), null));
 			}
 		}
 		if (errorClosure.size() > 0) {
 			for (BundleRevision bundleRevision : errorClosure) {
 				TraceMessage.getInstance().getString("error_bundles_to_not_resolve",
-						BundleManager.getRegion().getSymbolicKey(bundleRevision.getBundle(), null));
+						BundleJobManager.getRegion().getSymbolicKey(bundleRevision.getBundle(), null));
 			}
 		}
 	}
@@ -353,11 +392,11 @@ class BundleResolveHandler implements ResolverHook {
 
 		for (Long bundleId : resolved) {
 //			if ((bundle.getState() & (Bundle.RESOLVED | Bundle.STARTING)) != 0 
-//					&& BundleManager.getTransition().getTransition(bundle) != Transition.RESOLVE) {
+//					&& BundleJobManager.getTransition().getTransition(bundle) != Transition.RESOLVE) {
 			// if resolve is invoked directly the transition is added from the resolve command
-//			if (BundleManager.getTransition().getTransition(bundle) != Transition.RESOLVE) {
+//			if (BundleJobManager.getTransition().getTransition(bundle) != Transition.RESOLVE) {
 //			Bundle bundle = InPlace.getContext().getBundle(bundleId);
-			Bundle bundle = BundleManager.getRegion().get(bundleId);	
+			Bundle bundle = BundleJobManager.getRegion().get(bundleId);	
 			if (null != bundle) {
 				BundleManager.addBundleTransition(new TransitionEvent(bundle, Transition.RESOLVE));
 			}

@@ -23,8 +23,7 @@ import no.javatime.inplace.bundlejobs.UninstallJob;
 import no.javatime.inplace.bundlejobs.UpdateScheduler;
 import no.javatime.inplace.bundlejobs.events.BundleJobEvent;
 import no.javatime.inplace.bundlejobs.events.BundleJobEventListener;
-import no.javatime.inplace.bundlemanager.BundleEventManager;
-import no.javatime.inplace.bundlemanager.BundleManager;
+import no.javatime.inplace.bundlemanager.BundleJobManager;
 import no.javatime.inplace.bundlemanager.BundleResolveHookFactory;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.dialogs.ExternalTransition;
@@ -40,6 +39,7 @@ import no.javatime.inplace.region.manager.BundleCommandImpl;
 import no.javatime.inplace.region.manager.BundleRegion;
 import no.javatime.inplace.region.manager.BundleTransition;
 import no.javatime.inplace.region.manager.BundleTransition.Transition;
+import no.javatime.inplace.region.manager.BundleManager;
 import no.javatime.inplace.region.manager.InPlaceException;
 import no.javatime.inplace.region.manager.ProjectLocationException;
 import no.javatime.inplace.region.status.BundleStatus;
@@ -154,7 +154,6 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 	private IResourceChangeListener projectChangeListener;
 
 	private BundleJobListener jobChangeListener = new BundleJobListener();
-	private BundleEventManager eventManager = new BundleEventManager();;
 
 	private ExternalTransition externalTransitionListener = new ExternalTransition();
 	private Command autoBuildCommand;
@@ -212,9 +211,7 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 		addDynamicExtensions();
 		BundleManager.addBundleTransitionListener(externalTransitionListener);
 		Job.getJobManager().addJobChangeListener(jobChangeListener);
-		getContext().addFrameworkListener(eventManager);
-		getContext().addBundleListener(eventManager);
-		BundleManager.addBundleJobListener(get());
+		BundleJobManager.addBundleJobListener(get());
 		IWorkbench workbench = PlatformUI.getWorkbench();
 		if (null != workbench) {
 			ICommandService service = (ICommandService) workbench.getService(ICommandService.class);
@@ -224,7 +221,7 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 			}
 		}
 		BundleCommandImpl.INSTANCE.init();
-		bundleRegion = BundleManager.getRegion();
+		bundleRegion = BundleJobManager.getRegion();
 	}	
 	
 	@Override
@@ -240,9 +237,7 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 			bundleProjectTracker.close();
 			bundleProjectTracker = null;		
 			Job.getJobManager().removeJobChangeListener(jobChangeListener);
-			getContext().removeFrameworkListener(eventManager);
-			getContext().removeBundleListener(eventManager);
-			BundleManager.removeBundleJobListener(get());
+			BundleJobManager.removeBundleJobListener(get());
 			if (autoBuildCommand.isDefined()) {
 				autoBuildCommand.removeCommandListener(this);
 			}
@@ -492,8 +487,8 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 		try {
 			if (autoBuildCmd.isDefined() && !ProjectProperties.isAutoBuilding()) {
 				if (getCommandOptionsService().isUpdateOnBuild()) {
-					BundleTransition bundleTransition = BundleManager.getTransition();
-					BundleManager.getRegion().setAutoBuild(true);
+					BundleTransition bundleTransition = BundleJobManager.getTransition();
+					BundleJobManager.getRegion().setAutoBuild(true);
 					Collection<IProject> activatedProjects = ProjectProperties.getActivatedProjects();
 					Collection<IProject> pendingProjects = bundleTransition.getPendingProjects(
 							activatedProjects, Transition.BUILD);
@@ -507,7 +502,7 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 					}
 				}
 			} else {
-				BundleManager.getRegion().setAutoBuild(false);			
+				BundleJobManager.getRegion().setAutoBuild(false);			
 			}
 		} catch (InPlaceException e) {
 			StatusManager.getManager().handle(
@@ -673,7 +668,7 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 						prefs.putInt(symbolicKey, Bundle.RESOLVED);					
 					} catch (IllegalStateException e) {
 						String msg = WarnMessage.getInstance().formatString("node_removed_preference_store");
-						StatusManager.getManager().handle(new BundleStatus(StatusCode.WARNING, InPlace.PLUGIN_ID, msg),
+						StatusManager.getManager().handle(new BundleStatus(StatusCode.WARNING, InPlace.PLUGIN_ID, project, msg, null),
 								StatusManager.LOG);
 					}
 				}
@@ -698,7 +693,7 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 			} else {
 				for (IProject project : ProjectProperties.getProjects()) {
 					try {					
-						Transition transition = BundleManager.getTransition().getTransition(project);
+						Transition transition = BundleJobManager.getTransition().getTransition(project);
 						if (!ProjectProperties.isProjectActivated(project) && 
 								transition == Transition.UNINSTALL) {
 							String symbolicKey = bundleRegion.getSymbolicKey(null, project);

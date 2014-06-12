@@ -20,7 +20,7 @@ import no.javatime.inplace.InPlace;
 import no.javatime.inplace.region.manager.InPlaceException;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
-import no.javatime.inplace.bundlemanager.BundleManager;
+import no.javatime.inplace.bundlemanager.BundleJobManager;
 import no.javatime.util.messages.WarnMessage;
 
 import org.eclipse.core.runtime.Platform;
@@ -63,7 +63,7 @@ public class BundleDependencies {
 		Collection<Bundle> requirers = null;
 		if (null != provider) {
 			if ((provider.getState() & (Bundle.INSTALLED)) != 0) {
-				requirers = getRequiringBundles(provider, BundleManager.getRegion().getBundles());
+				requirers = getRequiringBundles(provider, BundleJobManager.getRegion().getBundles());
 			} else {
 				requirers = getRequiringBundles(provider, null, new LinkedHashSet<Bundle>());
 			}
@@ -109,7 +109,7 @@ public class BundleDependencies {
 				// Get the capabilities from all name spaces
 				for (BundleWire wire : wiredReqBundle.getProvidedWires(null)) {
 					Bundle reqBundle = wire.getRequirerWiring().getBundle();
-					if (null != reqBundle && BundleManager.getRegion().exist(reqBundle)) {
+					if (null != reqBundle && BundleJobManager.getRegion().exist(reqBundle)) {
 						requiredBundles.add(reqBundle);
 					}
 				}
@@ -134,7 +134,7 @@ public class BundleDependencies {
 		Collection<Bundle> providers = null;
 		if (null != requirer) {
 			if ((requirer.getState() & (Bundle.INSTALLED)) != 0) {
-				providers = getProvidingBundles(requirer, BundleManager.getRegion().getBundles());
+				providers = getProvidingBundles(requirer, BundleJobManager.getRegion().getBundles());
 			} else {
 				providers = getProvidingBundles(requirer, null, new LinkedHashSet<Bundle>());
 			}
@@ -178,7 +178,7 @@ public class BundleDependencies {
 				// Get the requirements from all name spaces
 				for (BundleWire wire : wiredProvBundle.getRequiredWires(null)) {
 					Bundle provBundle = wire.getProviderWiring().getBundle();
-					if (null != provBundle && BundleManager.getRegion().exist(provBundle)) {
+					if (null != provBundle && BundleJobManager.getRegion().exist(provBundle)) {
 						providedBundles.add(provBundle);
 					}
 				}

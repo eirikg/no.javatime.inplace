@@ -13,7 +13,6 @@ package no.javatime.inplace.ui.command.handlers;
 import java.util.Collection;
 import java.util.Collections;
 
-import no.javatime.inplace.log.intface.BundleLogView;
 import no.javatime.inplace.bundlejobs.ActivateProjectJob;
 import no.javatime.inplace.bundlejobs.BundleJob;
 import no.javatime.inplace.bundlejobs.DeactivateJob;
@@ -23,15 +22,17 @@ import no.javatime.inplace.bundlejobs.ResetJob;
 import no.javatime.inplace.bundlejobs.StartJob;
 import no.javatime.inplace.bundlejobs.StopJob;
 import no.javatime.inplace.bundlejobs.UpdateScheduler;
-import no.javatime.inplace.bundlemanager.BundleManager;
+import no.javatime.inplace.bundlemanager.BundleJobManager;
 import no.javatime.inplace.bundleproject.BundleProject;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.dialogs.OpenProjectHandler;
 import no.javatime.inplace.extender.provider.Extension;
+import no.javatime.inplace.log.intface.BundleLogView;
 import no.javatime.inplace.pl.dependencies.service.DependencyDialog;
 import no.javatime.inplace.region.manager.BundleRegion;
-import no.javatime.inplace.region.manager.InPlaceException;
 import no.javatime.inplace.region.manager.BundleTransition.Transition;
+import no.javatime.inplace.region.manager.BundleManager;
+import no.javatime.inplace.region.manager.InPlaceException;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
@@ -240,7 +241,7 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 					for (IProject project : projects) {
 							try {					
 								BundleProject.toggleActivationPolicy(project);
-								BundleRegion bundleRegion = BundleManager.getRegion();
+								BundleRegion bundleRegion = BundleJobManager.getRegion();
 								// No bundle jobs (which updates the bundle view) are run when the project(s) are deactivated or auto build is off
 								Bundle bundle = bundleRegion.get(project);
 								if (!ProjectProperties.isAutoBuilding()) {
@@ -263,7 +264,7 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 										reInstall(Collections.<IProject>singletonList(project), new SubProgressMonitor(monitor, 1));
 									} else if ((bundle.getState() & (Bundle.RESOLVED)) != 0) { 
 										// Do not start bundle if in state resolve when toggling policy
-										BundleManager.getTransition().addPending(bundle, Transition.RESOLVE);
+										BundleJobManager.getTransition().addPending(bundle, Transition.RESOLVE);
 									}
 								}
 							} catch (InPlaceException e) {
@@ -281,7 +282,7 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 					}
 				}
 			};
-			BundleManager.addBundleJob(togglePolicyJob, 0);
+			BundleJobManager.addBundleJob(togglePolicyJob, 0);
 		}
 	}
 
@@ -334,7 +335,7 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 					}
 				}
 			};
-			BundleManager.addBundleJob(updateBundleClassPathJob, 0);
+			BundleJobManager.addBundleJob(updateBundleClassPathJob, 0);
 			if (projects.size() > 0 && !ProjectProperties.isAutoBuilding()) {
 				if (Category.getState(Category.infoMessages)) {
 					UserMessage.getInstance().getString("atobuild_of_reset");
@@ -627,7 +628,7 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 			OpenProjectHandler so = new OpenProjectHandler();
 			if (so.saveModifiedFiles()) {
 				OpenProjectHandler.waitOnBuilder();
-				BundleManager.addBundleJob(job, 0);
+				BundleJobManager.addBundleJob(job, 0);
 			}
 	}
 
