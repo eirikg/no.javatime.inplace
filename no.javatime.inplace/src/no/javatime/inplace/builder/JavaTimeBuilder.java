@@ -17,17 +17,18 @@ import java.util.Map;
 
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundlemanager.BundleJobManager;
-import no.javatime.inplace.bundleproject.BundleProject;
+import no.javatime.inplace.bundleproject.BundleProjectSettings;
 import no.javatime.inplace.bundleproject.ProjectProperties;
-import no.javatime.inplace.dependencies.CircularReferenceException;
-import no.javatime.inplace.dependencies.ProjectSorter;
 import no.javatime.inplace.msg.Msg;
+import no.javatime.inplace.region.closure.CircularReferenceException;
+import no.javatime.inplace.region.closure.ProjectSorter;
 import no.javatime.inplace.region.manager.BundleCommand;
 import no.javatime.inplace.region.manager.BundleRegion;
 import no.javatime.inplace.region.manager.BundleTransition;
 import no.javatime.inplace.region.manager.BundleTransition.Transition;
 import no.javatime.inplace.region.manager.InPlaceException;
 import no.javatime.inplace.region.manager.ProjectLocationException;
+import no.javatime.inplace.region.project.BundleProjectState;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
@@ -107,7 +108,7 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 					if (Category.DEBUG && Category.getState(Category.build))
 						TraceMessage.getInstance().getString("changed_resource", resource.getName());
 				}
-				if (resource instanceof IFile && resource.getName().endsWith(BundleProject.MANIFEST_FILE_NAME)) {
+				if (resource instanceof IFile && resource.getName().endsWith(BundleProjectSettings.MANIFEST_FILE_NAME)) {
 					if (Category.DEBUG && Category.getState(Category.build))
 						TraceMessage.getInstance().getString("changed_resource", resource.getName());
 				}
@@ -126,7 +127,7 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 				if (Category.DEBUG && Category.getState(Category.build))
 					TraceMessage.getInstance().getString("full_build_resource", resource.getName());
 			}
-			if (resource instanceof IFile && resource.getName().endsWith(BundleProject.MANIFEST_FILE_NAME)) {
+			if (resource instanceof IFile && resource.getName().endsWith(BundleProjectSettings.MANIFEST_FILE_NAME)) {
 				if (Category.DEBUG && Category.getState(Category.build))
 					TraceMessage.getInstance().getString("full_build_resource", resource.getName());
 			}
@@ -184,14 +185,14 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 					bundleCommand.registerBundleProject(project, bundle, null != bundle ? true : false);
 					// When an activated project is imported or opened, install in an activated workspace before
 					// deactivating the bundle
-					if (ProjectProperties.getActivatedProjects().size() > 1) {
+					if (BundleProjectState.getActivatedProjects().size() > 1) {
 						bundleTransition.addPending(project, Transition.INSTALL);
 					}
 				}
 				logDependentUIContributors(project);
 				bundleTransition.addPending(project, Transition.DEACTIVATE);
 			} else {
-				if (!ProjectProperties.hasBuildErrors(project) && ProjectProperties.hasBuildState(project)) {
+				if (!BundleProjectState.hasBuildErrors(project) && BundleProjectState.hasBuildState(project)) {
 					if (null != bundle) {
 						// Moved projects requires a reactivate (uninstall and bundle activate)
 						try {
@@ -260,16 +261,17 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 
 	private boolean isMoveOperation(IProject project) throws ProjectLocationException{
 
-		String projectLoaction = ProjectProperties.getProjectLocationIdentifier(project, true);
+		String projectLoaction = BundleProjectState.getLocationIdentifier(project, 
+				BundleProjectState.BUNDLE_REF_LOC_SCHEME);
 		String bundleLocation = BundleJobManager.getRegion().getBundleLocationIdentifier(project);
-		if (!projectLoaction.equals(bundleLocation) && ProjectProperties.isInstallableProject(project)) {
+		if (!projectLoaction.equals(bundleLocation) && ProjectProperties.isInstallable(project)) {
 			return true;
 		}
 		return false;
 	}
 
 	/**
-	 * Log messages to Log View. Include requiring projects if any and differentiate message depending on the
+	 * Log messages to Log View. Include requiring projects if any and select message depending on the
 	 * auto build option.
 	 * 
 	 * @param project with build error
@@ -311,7 +313,7 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 					if (projectErrorClosures.size() > 0) {
 						// Add requiring bundles to build error message
 						msg = NLS.bind(Msg.REQUIRING_BUNDLES_TRACE, 
-								new Object[] {ProjectProperties.formatProjectList(projectErrorClosures)});
+								new Object[] {BundleProjectState.formatProjectList(projectErrorClosures)});
 						status = new BundleStatus(StatusCode.BUILDERROR, bundle, project, msg, null);
 						buildStatus.add(status);
 					}
@@ -340,7 +342,7 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 			Collection<IProject> projects = ps.sortProvidingProjects(Collections.singleton(project));
 			Collection<IProject> uiContributers = ProjectProperties.getUIContributors();
 			projects.retainAll(uiContributers);
-			if (!ProjectProperties.contributesToTheUI(project)) {
+			if (!ProjectProperties.isUIContributor(project)) {
 				projects.remove(project);
 			}
 			IBundleStatus buildStatus = null;
@@ -351,7 +353,7 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 
 			} else {
 				String msg = WarnMessage.getInstance().formatString("uicontributors_deactivate", project.getName(),
-						ProjectProperties.formatProjectList(projects));
+						BundleProjectState.formatProjectList(projects));
 				buildStatus = new BundleStatus(StatusCode.WARNING, InPlace.PLUGIN_ID, project, msg, null);
 				msg = WarnMessage.getInstance().formatString("uicontributors_deactivate_info_deactivate",
 						project.getName());

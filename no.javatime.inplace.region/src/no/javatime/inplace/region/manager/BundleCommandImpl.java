@@ -31,6 +31,7 @@ import no.javatime.inplace.region.events.BundleEventManager;
 import no.javatime.inplace.region.events.TransitionEvent;
 import no.javatime.inplace.region.manager.BundleTransition.Transition;
 import no.javatime.inplace.region.manager.BundleTransition.TransitionError;
+import no.javatime.inplace.region.resolver.BundleResolveHookFactory;
 import no.javatime.inplace.region.state.BundleNode;
 import no.javatime.inplace.region.state.BundleState;
 import no.javatime.inplace.region.state.BundleStateFactory;
@@ -60,13 +61,13 @@ import org.osgi.framework.wiring.FrameworkWiring;
  * Installed workspace bundles are added and uninstalled workspace bundles are removed from the workspace
  * region.
  * 
- * @see BundleWorkspaceImpl
+ * @see BundleWorkspaceRegionImpl
  */
 public class BundleCommandImpl implements BundleCommand {
 
 	public final static BundleCommandImpl INSTANCE = new BundleCommandImpl();
 
-	private BundleWorkspaceImpl bundleRegion = BundleWorkspaceImpl.INSTANCE;
+	private BundleWorkspaceRegionImpl bundleRegion = BundleWorkspaceRegionImpl.INSTANCE;
 	private BundleTransitionImpl bundleTransition = BundleTransitionImpl.INSTANCE;
 
 	// Used in wait loop, waiting for the refresh thread to notify that it has finished refreshing bundles
@@ -103,6 +104,11 @@ public class BundleCommandImpl implements BundleCommand {
 //			StatusManager.getManager().handle(new BundleStatus(StatusCode.WARNING, InPlace.PLUGIN_ID, msg),
 //					StatusManager.LOG);
 		}
+	}
+
+	@Override
+	public final BundleResolveHookFactory getResolverHookFactory() {
+		return Activator.getDefault().getResolverHookFactory();
 	}
 
 	@Override
@@ -148,7 +154,7 @@ public class BundleCommandImpl implements BundleCommand {
 			URL bundleReference = new URL(locationIdentifier);
 			is = bundleReference.openStream();
 			bundleTransition.setTransition(project, Transition.INSTALL);
-			bundle = getContext().installBundle(locationIdentifier, is);
+			bundle = Activator.getContext().installBundle(locationIdentifier, is);
 		} catch (MalformedURLException e) {
 			bundleTransition.setTransitionError(project);
 			throw new InPlaceException(e, "bundle_install_malformed_error", locationIdentifier);
@@ -192,7 +198,7 @@ public class BundleCommandImpl implements BundleCommand {
 			} catch (IOException e) {
 				throw new InPlaceException(e, "io_exception_install", locationIdentifier);
 			} finally {
-				BundleManager.addBundleTransition(new TransitionEvent(bundle, bundleTransition
+				BundleManager.addBundleTransition(new TransitionEvent(project, bundleTransition
 						.getTransition(project)));
 			}
 		}

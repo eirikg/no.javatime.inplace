@@ -12,6 +12,7 @@ package no.javatime.inplace.builder;
 
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.region.manager.InPlaceException;
+import no.javatime.inplace.region.project.BundleProjectState;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import no.javatime.inplace.bundlejobs.UninstallJob;
@@ -37,7 +38,7 @@ public class PreChangeListener implements IResourceChangeListener {
 	@Override
 	public void resourceChanged(IResourceChangeEvent event) {
 
-		if (!ProjectProperties.isProjectWorkspaceActivated()) {
+		if (!BundleProjectState.isProjectWorkspaceActivated()) {
 			return;
 		}
 		final IResource resource = event.getResource();
@@ -47,7 +48,7 @@ public class PreChangeListener implements IResourceChangeListener {
 				// Uninstall projects that are going to be deleted, closed or renamed
 				UninstallJob uninstallJob = new UninstallJob(UninstallJob.uninstallJobName);
 				// If this is the last activated project, deactivate workspace by uninstalling all projects
-				if (ProjectProperties.isProjectActivated(project) && ProjectProperties.getActivatedProjects().size() == 1) {
+				if (BundleProjectState.isProjectActivated(project) && BundleProjectState.getActivatedProjects().size() == 1) {
 					uninstallJob.addPendingProjects(ProjectProperties.getPlugInProjects());
 				} else {
 					// A special case is that an activated bundle may be in state uninstall when the activated duplicate

@@ -19,12 +19,13 @@ import no.javatime.inplace.bundlemanager.BundleJobManager;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.dialogs.OpenProjectHandler;
 import no.javatime.inplace.extender.provider.Extension;
-import no.javatime.inplace.pl.dependencies.service.DependencyDialog;
+import no.javatime.inplace.pl.dependencies.intface.DependencyDialog;
 import no.javatime.inplace.region.manager.BundleCommand;
 import no.javatime.inplace.region.manager.BundleRegion;
 import no.javatime.inplace.region.manager.InPlaceException;
 import no.javatime.inplace.region.manager.BundleTransition.Transition;
-import no.javatime.inplace.region.project.ManifestUtil;
+import no.javatime.inplace.region.project.BundleProjectState;
+import no.javatime.inplace.region.project.ManifestOptions;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import no.javatime.inplace.ui.Activator;
@@ -61,7 +62,7 @@ public class BundleMainCommandsContributionItems extends BundleCommandsContribut
 		ArrayList<ContributionItem> contributions = new ArrayList<ContributionItem>();
 
 		Collection<IProject> candidateProjects = ProjectProperties.getCandidateProjects();
-		Collection<IProject> activatedProjects = ProjectProperties.getActivatedProjects();
+		Collection<IProject> activatedProjects = BundleProjectState.getActivatedProjects();
 		CommandContributionItem contribution;
 
 		// Busy running bundle jobs. Show a limited set of contributors
@@ -172,7 +173,7 @@ public class BundleMainCommandsContributionItems extends BundleCommandsContribut
 					continue;
 				}
 				int state = bundleCommand.getState(bundle);
-				if (!ManifestUtil.isFragment(bundle)
+				if (!ManifestOptions.isFragment(bundle)
 						&& (state & (Bundle.INSTALLED | Bundle.RESOLVED | Bundle.STOPPING)) != 0) {
 					nStart++;
 					continue;

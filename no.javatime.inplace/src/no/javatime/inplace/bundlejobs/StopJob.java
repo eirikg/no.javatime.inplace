@@ -14,12 +14,12 @@ import java.util.Collection;
 import java.util.Collections;
 
 import no.javatime.inplace.InPlace;
-import no.javatime.inplace.bundleproject.BundleProject;
+import no.javatime.inplace.bundleproject.BundleProjectSettings;
 import no.javatime.inplace.dependencies.BundleClosures;
-import no.javatime.inplace.dependencies.BundleSorter;
-import no.javatime.inplace.dependencies.CircularReferenceException;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Operation;
+import no.javatime.inplace.region.closure.BundleSorter;
+import no.javatime.inplace.region.closure.CircularReferenceException;
 import no.javatime.inplace.region.manager.BundleManager;
 import no.javatime.inplace.region.manager.InPlaceException;
 import no.javatime.inplace.region.status.BundleStatus;
@@ -87,7 +87,7 @@ public class StopJob extends BundleJob {
 	}
 	
 	public StopJob(String name, Bundle bundle) {
-		super(name, BundleProject.getProject(bundle));
+		super(name, BundleProjectSettings.getProject(bundle));
 	}
 
 	/**

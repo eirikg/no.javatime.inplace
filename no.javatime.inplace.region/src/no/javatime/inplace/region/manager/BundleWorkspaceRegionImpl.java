@@ -11,7 +11,6 @@
 package no.javatime.inplace.region.manager;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -23,16 +22,16 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import no.javatime.inplace.region.Activator;
+import no.javatime.inplace.region.manager.BundleTransition.Transition;
+import no.javatime.inplace.region.project.BundleProjectState;
 import no.javatime.inplace.region.state.BundleNode;
 import no.javatime.inplace.region.state.BundleState;
 import no.javatime.util.messages.Category;
-import no.javatime.util.messages.Message;
 import no.javatime.util.messages.TraceMessage;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.ResourcesPlugin;
-import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.pde.core.project.IBundleProjectDescription;
@@ -44,17 +43,10 @@ import org.osgi.framework.Version;
  * dynamic bidirectional traversal of bundle dependencies and a factory for resolver hook handlers filtering
  * bundles from resolving and enforcement of singletons.
  */
-public class BundleWorkspaceImpl implements BundleRegion {
+public class BundleWorkspaceRegionImpl implements BundleRegion {
 
-	public final static BundleWorkspaceImpl INSTANCE = new BundleWorkspaceImpl();
-
-	public static final String JAVATIME_NATURE_ID = "no.javatime.inplace.builder.javatimenature";
+	public final static BundleWorkspaceRegionImpl INSTANCE = new BundleWorkspaceRegionImpl();
 	
-	final public static String bundleReferenceLocationScheme = Message.getInstance().formatString(
-			"bundle_identifier_reference_scheme");
-	final public static String bundleFileLocationScheme = Message.getInstance().formatString(
-			"bundle_identifier_file_scheme");
-
 	// Default initial capacity of 16 assume peak on 22 bundles in workspace to avoid rehash
 	private static int initialCapacity = Math.round(20 / 0.75f) + 1;
 	
@@ -70,7 +62,7 @@ public class BundleWorkspaceImpl implements BundleRegion {
 	 */
 	private Map<IProject, BundleNode> bundleNodes = new ConcurrentHashMap<IProject, BundleNode>(initialCapacity, 1);
 
-	protected BundleWorkspaceImpl() {
+	protected BundleWorkspaceRegionImpl() {
 		super();
 	}
 	
@@ -117,42 +109,24 @@ public class BundleWorkspaceImpl implements BundleRegion {
 		return null;
 	}
 
-	@Override
-	public Boolean isProjectWorkspaceNatureActivated() {
-
-		Collection<IProject> projects = Arrays.asList(ResourcesPlugin.getWorkspace().getRoot().getProjects());
-		for (IProject project : projects) {
-			if (isProjectNatureActivated(project)) {
-				return true;
-			}
-		}
-		return false;
-	}
-
-
-	@Override
-	public Boolean isProjectNatureActivated(IProject project) {
-		try {
-			if (null != project && project.isNatureEnabled(JAVATIME_NATURE_ID)) {
-				return true;
-			}
-		} catch (CoreException e) {
-			// Ignore closed or non-existing project
-		}
-		return false;
-	}
-
 	/**
 	 * Retrieves the bundle location identifier as an absolute platform-dependent file system path of the
-	 * specified project prepended with the reference file scheme (reference:file:/).
+	 * specified project prepended with the reference file scheme {@link BundleProjectState#BUNDLE_REF_LOC_SCHEME}. 
+	 * 
 	 * <p>
-	 * If the associated workspace bundle of the specified project is installed {@link Bundle#getLocation()} is
-	 * used.
+	 * If the associated workspace bundle of the specified project is installed the {@link Bundle#getLocation()} is
+	 * used. Otherwise {@link BundleProjectState#getLocationIdentifier(IProject, String)} is used.
+	 * <p>
+	 * If the bundle project is {@link BundleCommandImpl#install(IProject) installed} with a different scheme,
+	 * {@link BundleProjectState#getLocationIdentifier(IProject, String)} can be used directly
+	 * supplying another file scheme.
 	 * 
 	 * @param project which is the base for finding the path
-	 * @return the absolute file system path of project prepended with the URI scheme
+	 * @return the absolute file system path of the project prepended with the URI scheme
 	 * @throws ProjectLocationException if the specified project is null or the location of the specified project could
 	 *           not be found
+	 * @throws InPlaceException if the caller does not have the right permission to access the location data
+	 * @see BundleProjectState#getLocationIdentifier(IProject, String)
 	 */
 	@Override
 	public String getBundleLocationIdentifier(IProject project) throws ProjectLocationException, InPlaceException {
@@ -165,45 +139,9 @@ public class BundleWorkspaceImpl implements BundleRegion {
 				throw new InPlaceException(e, "project_security_error", project.getName());
 			}
 		} else {
-			return getProjectLocationIdentifier(project, true);
+			return BundleProjectState.getLocationIdentifier(project, 
+					BundleProjectState.BUNDLE_REF_LOC_SCHEME);
 		}
-	}
-
-	/**
-	 * Retrieves the project location identifier as an absolute file system path of the specified project
-	 * prepended with the reference and/or file scheme. Uses the platform-dependent path separator. This method
-	 * is used internally with the specified reference scheme set to {@code true} when bundles are installed.
-	 * <p>
-	 * After a bundle is installed the path returned from {@linkplain Bundle#getLocation()} equals the path
-	 * returned from this method with the reference scheme parameter set to {@code true}. This method use
-	 * {@linkplain IProject#getLocation()} internally.
-	 * 
-	 * @param project which is the base for finding the path
-	 * @param referenceScheme true if the path is by reference (path prepended with: reference:file:/) and false
-	 *          (path prepended with: file:/) if by value
-	 * @return the absolute file system path of the project prepended with the specified URI scheme
-	 * @throws ProjectLocationException if the specified project is null or the location of the specified
-	 *           project could not be found
-	 * @see IProject#getLocation()
-	 * @see Bundle#getLocation()
-	 */
-	private String getProjectLocationIdentifier(IProject project, Boolean referenceScheme)
-			throws ProjectLocationException {
-		if (null == project) {
-			throw new ProjectLocationException("project_null_location");
-		}
-		StringBuffer locScheme = null;
-		if (referenceScheme) {
-			locScheme = new StringBuffer(bundleReferenceLocationScheme);
-		} else {
-			locScheme = new StringBuffer(bundleFileLocationScheme);
-		}
-		IPath path = project.getLocation();
-		if (null == path || path.isEmpty()) {
-			throw new ProjectLocationException("project_location_find", project.getName());
-		}
-		String locIdent = path.toOSString();
-		return locScheme.append(locIdent).toString();
 	}
 
 	/**
@@ -212,8 +150,8 @@ public class BundleWorkspaceImpl implements BundleRegion {
 	 * 
 	 * @return true if at least one project is JavaTime nature enabled and its bundle project is not
 	 *         uninstalled. Otherwise false
-	 * @see BundleWorkspaceImpl#isActivated(Bundle)
-	 * @see no.javatime.inplace.bundleproject.ProjectProperties#isProjectWorkspaceNatureActivated()
+	 * @see BundleWorkspaceRegionImpl#isActivated(Bundle)
+	 * @see BundleProjectState#isProjectWorkspaceNatureActivated()
 	 */
 	@Override
 	public Boolean isBundleWorkspaceActivated() {
@@ -233,8 +171,8 @@ public class BundleWorkspaceImpl implements BundleRegion {
 	 * @param bundleProject to check for activation
 	 * @return true if the specified project is JavaTime nature enabled and its bundle project is not
 	 *         uninstalled. Otherwise false
-	 * @see BundleWorkspaceImpl#isActivated(Bundle)
-	 * @see no.javatime.inplace.bundleproject.ProjectProperties#isProjectWorkspaceNatureActivated()
+	 * @see BundleWorkspaceRegionImpl#isActivated(Bundle)
+	 * @see BundleProjectState#isProjectWorkspaceActivated()
 	 */
 	@Override
 	public Boolean isActivated(IProject bundleProject) {
@@ -559,7 +497,7 @@ public class BundleWorkspaceImpl implements BundleRegion {
 	 * @param project bundle project to add the pending operation to
 	 * @param operation to register with this bundle project
 	 */
-	void addPendingCommand(IProject project, BundleTransition.Transition operation) {
+	void addPendingCommand(IProject project, Transition operation) {
 		BundleNode bn = getNode(project);
 		if (null != bn) {
 			bn.addPendingCommand(operation);
@@ -572,7 +510,7 @@ public class BundleWorkspaceImpl implements BundleRegion {
 	 * @param bundle bundle project to add the pending operation to
 	 * @param operation to register with this bundle project
 	 */
-	void addPendingCommand(Bundle bundle, BundleTransition.Transition operation) {
+	void addPendingCommand(Bundle bundle, Transition operation) {
 		BundleNode bn = getNode(bundle);
 		if (null != bn) {
 			bn.addPendingCommand(operation);
@@ -587,7 +525,7 @@ public class BundleWorkspaceImpl implements BundleRegion {
 	 * @return all projects among the specified projects containing the specified transition or an empty
 	 *         collection
 	 */
-	Collection<IProject> getPendingProjects(Collection<IProject> projects, BundleTransition.Transition command) {
+	Collection<IProject> getPendingProjects(Collection<IProject> projects, Transition command) {
 		Collection<IProject> pendingProjects = new LinkedHashSet<IProject>();
 		for (IProject project : projects) {
 			if (containsPendingCommand(project, command, false)) {
@@ -603,7 +541,7 @@ public class BundleWorkspaceImpl implements BundleRegion {
 	 * @param project bundle project to get pending operations for
 	 * @return all pending operations for this bundle project
 	 */
-	EnumSet<BundleTransition.Transition> getPendingCommands(IProject project) {
+	EnumSet<Transition> getPendingCommands(IProject project) {
 		BundleNode bn = getNode(project);
 		if (null != bn) {
 			return bn.getPendingCommands();
@@ -619,7 +557,7 @@ public class BundleWorkspaceImpl implements BundleRegion {
 	 * @param remove clear the command from the bundle project if true
 	 * @return true if this command is associated with this bundle project
 	 */
-	boolean containsPendingCommand(IProject project, BundleTransition.Transition command, boolean remove) {
+	boolean containsPendingCommand(IProject project, Transition command, boolean remove) {
 		BundleNode bn = getNode(project);
 		if (null != bn) {
 			return bn.containsPendingCommand(command, remove);
@@ -635,7 +573,7 @@ public class BundleWorkspaceImpl implements BundleRegion {
 	 * @param remove clear the command from the bundle project if true
 	 * @return true if this command is associated with this bundle project
 	 */
-	boolean containsPendingCommand(Bundle bundle, BundleTransition.Transition command, boolean remove) {
+	boolean containsPendingCommand(Bundle bundle, Transition command, boolean remove) {
 		BundleNode bn = getNode(bundle);
 		if (null != bn) {
 			return bn.containsPendingCommand(command, remove);
@@ -648,7 +586,7 @@ public class BundleWorkspaceImpl implements BundleRegion {
 	 * @param command pending command
 	 * @return true if the specified command is associated with any bundle project
 	 */
-	boolean containsPendingCommand(BundleTransition.Transition command) {
+	boolean containsPendingCommand(Transition command) {
 		for (BundleNode node : bundleNodes.values()) {
 			Long bundleId = node.getBundleId();
 			if (null != bundleId) {
@@ -667,7 +605,7 @@ public class BundleWorkspaceImpl implements BundleRegion {
 	 * @param project bundle project to remove this operation from
 	 * @param operation to remove from this bundle project
 	 */
-	Boolean removePendingCommand(IProject project, BundleTransition.Transition operation) {
+	Boolean removePendingCommand(IProject project, Transition operation) {
 		BundleNode bn = getNode(project);
 		if (null != bn) {
 			return bn.removePendingCommand(operation);
@@ -681,7 +619,7 @@ public class BundleWorkspaceImpl implements BundleRegion {
 	 * @param bundle bundle project to remove this operation from
 	 * @param operation to remove from this bundle project
 	 */
-	Boolean removePendingCommand(Bundle bundle, BundleTransition.Transition operation) {
+	Boolean removePendingCommand(Bundle bundle, Transition operation) {
 		BundleNode bn = getNode(bundle);
 		if (null != bn) {
 			return bn.removePendingCommand(operation);

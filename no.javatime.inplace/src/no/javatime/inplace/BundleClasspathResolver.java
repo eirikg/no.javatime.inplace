@@ -11,8 +11,7 @@ import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.pde.core.IBundleClasspathResolver;
 
-import no.javatime.inplace.bundleproject.BundleProject;
-import no.javatime.inplace.bundleproject.ProjectProperties;
+import no.javatime.inplace.bundleproject.BundleProjectSettings;
 import no.javatime.inplace.region.manager.InPlaceException;
 
 /**
@@ -31,10 +30,10 @@ public class BundleClasspathResolver implements IBundleClasspathResolver {
 	@Override
 	public Map getAdditionalClasspathEntries(IJavaProject javaProject) {
 		Map<IPath, Collection<IPath>> additionalEntries = new HashMap<IPath, Collection<IPath>>(); 		
-		IPath defaultOutputlocation = BundleProject.getDefaultOutputLocation(javaProject.getProject());
+		IPath defaultOutputlocation = BundleProjectSettings.getDefaultOutputLocation(javaProject.getProject());
 		Collection<IPath> srcPath = null;
 		try {
-			srcPath = ProjectProperties.getJavaProjectSourceFolders(javaProject.getProject());
+			srcPath = BundleProjectSettings.getJavaProjectSourceFolders(javaProject.getProject());
 			for (IPath path : srcPath) {
 				additionalEntries.put(path, Collections.<IPath>singletonList(defaultOutputlocation)); 
 			}

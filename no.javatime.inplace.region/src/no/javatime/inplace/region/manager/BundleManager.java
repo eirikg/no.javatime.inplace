@@ -18,7 +18,7 @@ public class BundleManager {
 	
 	
 	public static BundleRegion getRegion() {
-		return BundleWorkspaceImpl.INSTANCE;
+		return BundleWorkspaceRegionImpl.INSTANCE;
 	}
 	
 	public static BundleCommand getCommand() {

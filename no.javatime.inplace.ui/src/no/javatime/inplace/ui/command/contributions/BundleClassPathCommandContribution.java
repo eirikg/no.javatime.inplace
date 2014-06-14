@@ -3,11 +3,12 @@ package no.javatime.inplace.ui.command.contributions;
 import java.util.ArrayList;
 import java.util.Collection;
 
-import no.javatime.inplace.bundleproject.BundleProject;
+import no.javatime.inplace.bundleproject.BundleProjectSettings;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.dl.preferences.intface.MessageOptions;
 import no.javatime.inplace.extender.provider.Extension;
 import no.javatime.inplace.region.manager.InPlaceException;
+import no.javatime.inplace.region.project.BundleProjectState;
 import no.javatime.util.messages.Message;
 import no.javatime.util.messages.WarnMessage;
 
@@ -56,7 +57,7 @@ public class BundleClassPathCommandContribution extends BundleCommandsContributi
 			for (IProject project : projects) {
 				try {
 					if (!ProjectProperties.hasManifestBuildErrors(project)) {
-						if (!BundleProject.isOutputFolderInBundleClassPath(project)) {
+						if (!BundleProjectSettings.isOutputFolderInBundleClassPath(project)) {
 							nAdd++;
 						} else {
 							nRemove++;
@@ -74,7 +75,7 @@ public class BundleClassPathCommandContribution extends BundleCommandsContributi
 				Extension<MessageOptions> msgOpt = new Extension<>(MessageOptions.class);
 				MessageOptions optServicet = msgOpt.getService();
 				if (null != optServicet && (optServicet.isInfoMessages() || optServicet.isBundleEvents() || optServicet.isBundleOperations())) {
-					WarnMessage.getInstance().getString("error_not_update_classpath", ProjectProperties.formatProjectList(errProjects));
+					WarnMessage.getInstance().getString("error_not_update_classpath", BundleProjectState.formatProjectList(errProjects));
 				}
 			}
 			if (nAdd > 0) {

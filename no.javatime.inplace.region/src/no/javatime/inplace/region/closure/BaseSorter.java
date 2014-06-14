@@ -9,7 +9,7 @@
  * 	JavaTime project, Eirik Gronsund - initial implementation
  *******************************************************************************/
 
-package no.javatime.inplace.dependencies;
+package no.javatime.inplace.region.closure;
 
 /**
  * This base class is typically used by classes analyzing cycles in workspace bundles and projects.

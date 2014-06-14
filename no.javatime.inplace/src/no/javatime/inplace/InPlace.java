@@ -24,7 +24,6 @@ import no.javatime.inplace.bundlejobs.UpdateScheduler;
 import no.javatime.inplace.bundlejobs.events.BundleJobEvent;
 import no.javatime.inplace.bundlejobs.events.BundleJobEventListener;
 import no.javatime.inplace.bundlemanager.BundleJobManager;
-import no.javatime.inplace.bundlemanager.BundleResolveHookFactory;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.dialogs.ExternalTransition;
 import no.javatime.inplace.dl.preferences.intface.CommandOptions;
@@ -36,12 +35,13 @@ import no.javatime.inplace.extender.provider.Extension;
 import no.javatime.inplace.log.intface.BundleLog;
 import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.manager.BundleCommandImpl;
+import no.javatime.inplace.region.manager.BundleManager;
 import no.javatime.inplace.region.manager.BundleRegion;
 import no.javatime.inplace.region.manager.BundleTransition;
 import no.javatime.inplace.region.manager.BundleTransition.Transition;
-import no.javatime.inplace.region.manager.BundleManager;
 import no.javatime.inplace.region.manager.InPlaceException;
 import no.javatime.inplace.region.manager.ProjectLocationException;
+import no.javatime.inplace.region.project.BundleProjectState;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
@@ -82,8 +82,6 @@ import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.eclipse.ui.statushandlers.StatusManager;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
-import org.osgi.framework.ServiceRegistration;
-import org.osgi.framework.hooks.resolver.ResolverHookFactory;
 import org.osgi.service.prefs.BackingStoreException;
 import org.osgi.util.tracker.BundleTracker;
 import org.osgi.util.tracker.BundleTrackerCustomizer;
@@ -171,17 +169,6 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 	private Extension<MessageOptions> messageOptions;
 	private Extension<BundleLog> traceService;
 
-	/**
-	 * Factory creating resolver hook objects for filtering and detection of duplicate bundle instances
-	 */
-	protected BundleResolveHookFactory resolverHookFactory = new BundleResolveHookFactory();
-
-	/**
-	 * Service registrator for the resolve hook factory.
-	 */
-	private ServiceRegistration<ResolverHookFactory> resolveHookRegistration;
-
-
 
 	public InPlace() {
 	}
@@ -191,7 +178,6 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 		super.start(context);
 		plugin = this;
 		InPlace.context = context;		
-		registerResolverHook();
 		extenderBundleTrackerCustomizer = new ExtenderBundleTracker();
 		//int trackStates = Bundle.ACTIVE | Bundle.STARTING | Bundle.STOPPING | Bundle.RESOLVED | Bundle.INSTALLED | Bundle.UNINSTALLED;
 		extenderBundleTracker = new BundleTracker<Extender<?>>(context, Bundle.ACTIVE | Bundle.STARTING, extenderBundleTrackerCustomizer);
@@ -242,36 +228,11 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 				autoBuildCommand.removeCommandListener(this);
 			}
 			BundleManager.removeBundleTransitionListener(externalTransitionListener);
-			unregisterResolverHook();
 			super.stop(context);
 			plugin = null;
 			InPlace.context = null;
 		}
 	}
-
-	/**
-	 * Obtain the resolver hook factory for singletons.
-	 * 
-	 * @return the resolver hook factory object
-	 */
-	public final BundleResolveHookFactory getResolverHookFactory() {
-		return resolverHookFactory;
-	}
-
-	public void registerResolverHook() {
-		resolveHookRegistration = getContext().registerService(ResolverHookFactory.class, resolverHookFactory,
-				null);		
-	}
-
-	/**
-	 * Unregister the resolver hook.
-	 * <p>
-	 * This is redundant. Unregistered by the OSGi service implementation
-	 */
-	public void unregisterResolverHook() {
-		resolveHookRegistration.unregister();
-	}
-
 
 	public BundleTracker<Extender<?>> getExtenderBundleTracker() {
 		return extenderBundleTracker;
@@ -378,10 +339,10 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 		// Send output to standard console when shutting down
 		BundleConsoleFactory.getConsole().setSystemOutToIDEDefault();
 		savePluginSettings(true, false);
-		if (ProjectProperties.isProjectWorkspaceActivated()) {
+		if (BundleProjectState.isProjectWorkspaceActivated()) {
 			try {
 				BundleJob shutdDownJob = null;
-				Collection<IProject> projects = ProjectProperties.getActivatedProjects();
+				Collection<IProject> projects = BundleProjectState.getActivatedProjects();
 				if (getCommandOptionsService().isDeactivateOnExit()) {
 					shutdDownJob = new DeactivateJob(DeactivateJob.deactivateOnshutDownJobName);
 				} else {
@@ -479,7 +440,7 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 			return;
 		}
 		IWorkbench workbench = getWorkbench();
-		if (!ProjectProperties.isProjectWorkspaceActivated() || 
+		if (!BundleProjectState.isProjectWorkspaceActivated() || 
 				(null != workbench && workbench.isClosing())) {
 			return;
 		}
@@ -489,7 +450,7 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 				if (getCommandOptionsService().isUpdateOnBuild()) {
 					BundleTransition bundleTransition = BundleJobManager.getTransition();
 					BundleJobManager.getRegion().setAutoBuild(true);
-					Collection<IProject> activatedProjects = ProjectProperties.getActivatedProjects();
+					Collection<IProject> activatedProjects = BundleProjectState.getActivatedProjects();
 					Collection<IProject> pendingProjects = bundleTransition.getPendingProjects(
 							activatedProjects, Transition.BUILD);
 					Collection<IProject> pendingProjectsToUpdate = bundleTransition.getPendingProjects(
@@ -658,8 +619,8 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 			return; // Use existing values
 		}
 		if (allResolve) {
-			if (ProjectProperties.isProjectWorkspaceActivated()) {
-				for (IProject project : ProjectProperties.getActivatedProjects()) {
+			if (BundleProjectState.isProjectWorkspaceActivated()) {
+				for (IProject project : BundleProjectState.getActivatedProjects()) {
 					try {
 						String symbolicKey = bundleRegion.getSymbolicKey(null, project);
 						if (symbolicKey.isEmpty()) {
@@ -691,10 +652,10 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 					}
 				} 
 			} else {
-				for (IProject project : ProjectProperties.getProjects()) {
+				for (IProject project : BundleProjectState.getProjects()) {
 					try {					
 						Transition transition = BundleJobManager.getTransition().getTransition(project);
-						if (!ProjectProperties.isProjectActivated(project) && 
+						if (!BundleProjectState.isProjectActivated(project) && 
 								transition == Transition.UNINSTALL) {
 							String symbolicKey = bundleRegion.getSymbolicKey(null, project);
 							if (symbolicKey.isEmpty()) {

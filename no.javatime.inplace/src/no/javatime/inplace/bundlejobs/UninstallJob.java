@@ -13,8 +13,8 @@ package no.javatime.inplace.bundlejobs;
 import java.util.Collection;
 
 import no.javatime.inplace.InPlace;
-import no.javatime.inplace.dependencies.BundleSorter;
-import no.javatime.inplace.dependencies.CircularReferenceException;
+import no.javatime.inplace.region.closure.BundleSorter;
+import no.javatime.inplace.region.closure.CircularReferenceException;
 import no.javatime.inplace.region.manager.BundleManager;
 import no.javatime.inplace.region.manager.InPlaceException;
 import no.javatime.inplace.region.status.BundleStatus;

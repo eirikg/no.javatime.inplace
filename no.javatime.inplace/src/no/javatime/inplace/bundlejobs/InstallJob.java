@@ -14,11 +14,12 @@ import java.util.Collection;
 
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundleproject.ProjectProperties;
-import no.javatime.inplace.dependencies.CircularReferenceException;
-import no.javatime.inplace.dependencies.ProjectSorter;
+import no.javatime.inplace.region.closure.CircularReferenceException;
+import no.javatime.inplace.region.closure.ProjectSorter;
 import no.javatime.inplace.region.manager.BundleTransition.TransitionError;
 import no.javatime.inplace.region.manager.BundleManager;
 import no.javatime.inplace.region.manager.InPlaceException;
+import no.javatime.inplace.region.project.BundleProjectState;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
@@ -92,7 +93,7 @@ public class InstallJob extends BundleJob {
 		try {
 			monitor.beginTask(installTaskName, 1);
 			BundleManager.addBundleTransitionListener(this);
-		if (ProjectProperties.isProjectWorkspaceActivated()) {
+		if (BundleProjectState.isProjectWorkspaceActivated()) {
 				if (!bundleRegion.isBundleWorkspaceActivated()) {
 					// First nature activated projects. Activate the workspace
 					addPendingProjects(ProjectProperties.getPlugInProjects());
@@ -162,7 +163,7 @@ public class InstallJob extends BundleJob {
 		try {
 			projectErrorClosures = projectSorter.getRequiringBuildErrorClosure(getPendingProjects());
 			if (projectErrorClosures.size() > 0) {
-				String msg = ProjectProperties.formatBuildErrorsFromClosure(projectErrorClosures, getName());
+				String msg = BundleProjectState.formatBuildErrorsFromClosure(projectErrorClosures, getName());
 				if (null != msg) {
 					status = addBuildError(msg, null);
 				}
@@ -180,8 +181,8 @@ public class InstallJob extends BundleJob {
 			}
 
 		} catch (CircularReferenceException e) {
-			projectErrorClosures = ProjectProperties.getBuildErrors(getPendingProjects());
-			projectErrorClosures.addAll(ProjectProperties.hasBuildState(getPendingProjects()));
+			projectErrorClosures = BundleProjectState.getBuildErrors(getPendingProjects());
+			projectErrorClosures.addAll(BundleProjectState.hasBuildState(getPendingProjects()));
 			if (projectErrorClosures.size() > 0) {
 				removePendingProjects(projectErrorClosures);
 				if (null != installedBundles) {

@@ -11,13 +11,13 @@
 package no.javatime.inplace.ui.views;
 
 import no.javatime.inplace.bundlemanager.BundleJobManager;
-import no.javatime.inplace.bundleproject.ProjectProperties;
-import no.javatime.inplace.dependencies.BundleSorter;
+import no.javatime.inplace.region.closure.BundleSorter;
 import no.javatime.inplace.region.manager.BundleCommand;
 import no.javatime.inplace.region.manager.BundleTransition;
 import no.javatime.inplace.region.manager.ProjectLocationException;
 import no.javatime.inplace.region.manager.BundleTransition.Transition;
 import no.javatime.inplace.region.manager.BundleTransition.TransitionError;
+import no.javatime.inplace.region.project.BundleProjectState;
 import no.javatime.inplace.ui.Activator;
 
 import org.eclipse.core.resources.IProject;
@@ -126,13 +126,13 @@ public class BundleListLabelProvider extends LabelProvider implements ITableLabe
 				}
 				Bundle bundle = ((BundleProperties) element).getBundle();
 				IProject project = ((BundleProperties) element).getProject();
-				boolean isProjectActivated = ProjectProperties.isProjectActivated(project);
+				boolean isProjectActivated = BundleProjectState.isProjectActivated(project);
 				BundleCommand bundleCommand = BundleJobManager.getCommand();
 				BundleTransition bundleTransition = BundleJobManager.getTransition();
 				try {
-					if (!ProjectProperties.hasBuildState(project)) {
+					if (!BundleProjectState.hasBuildState(project)) {
 						return warningImage;
-					} else if (ProjectProperties.hasBuildErrors(project)) {
+					} else if (BundleProjectState.hasBuildErrors(project)) {
 						return warningImage;
 					} else if (bundleTransition.containsPending(project, Transition.BUILD, false)) {
 						return pendingImage;

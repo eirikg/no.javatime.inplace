@@ -12,8 +12,8 @@ import no.javatime.inplace.bundlejobs.InstallJob;
 import no.javatime.inplace.bundlejobs.UninstallJob;
 import no.javatime.inplace.bundlemanager.BundleJobManager;
 import no.javatime.inplace.bundleproject.ProjectProperties;
-import no.javatime.inplace.dependencies.ProjectSorter;
 import no.javatime.inplace.msg.Msg;
+import no.javatime.inplace.region.closure.ProjectSorter;
 import no.javatime.inplace.region.events.BundleTransitionEvent;
 import no.javatime.inplace.region.events.BundleTransitionEventListener;
 import no.javatime.inplace.region.manager.BundleCommand;
@@ -21,6 +21,7 @@ import no.javatime.inplace.region.manager.BundleRegion;
 import no.javatime.inplace.region.manager.InPlaceException;
 import no.javatime.inplace.region.manager.BundleTransition.Transition;
 import no.javatime.inplace.region.manager.BundleTransition.TransitionError;
+import no.javatime.inplace.region.project.BundleProjectState;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
@@ -82,7 +83,7 @@ public class ExternalTransition implements BundleTransitionEventListener{
 					dependencies = reqProjects.size() > 0;
 					if (dependencies) {
 						String msg = NLS.bind(Msg.REQUIRING_BUNDLES_WARN, 
-								new Object[] {ProjectProperties.formatProjectList(reqProjects), symbolicName});
+								new Object[] {BundleProjectState.formatProjectList(reqProjects), symbolicName});
 						reqStatus = new BundleStatus(StatusCode.WARNING, symbolicName, msg);
 					}
 				}
@@ -93,7 +94,7 @@ public class ExternalTransition implements BundleTransitionEventListener{
 						int index = 0;
 						if (dependencies) {
 							question = NLS.bind(Msg.DEACTIVATE_QUESTION_REQ_DLG, new Object[] {symbolicName, 
-									location, ProjectProperties.formatProjectList(reqProjects)});
+									location, BundleProjectState.formatProjectList(reqProjects)});
 							index = 1;
 						} else {
 							question = NLS.bind(Msg.DEACTIVATE_QUESTION_DLG, new Object[] {symbolicName, location});
@@ -111,7 +112,7 @@ public class ExternalTransition implements BundleTransitionEventListener{
 				BundleJob bundleJob = null;
 				// Reactivate uninstalled bundle
 				if (autoDependencyAction == 0) {
-					if (ProjectProperties.isProjectActivated(project)) {
+					if (BundleProjectState.isProjectActivated(project)) {
 						bundleJob = new ActivateBundleJob(ActivateBundleJob.activateJobName, project);
 						if (dependencies) {
 							// Bring workspace back to a consistent state before restoring
@@ -120,7 +121,7 @@ public class ExternalTransition implements BundleTransitionEventListener{
 							bundleJob.addPendingProjects(reqProjects);
 						}
 					} else {
-						if (!ProjectProperties.isProjectWorkspaceActivated()) {
+						if (!BundleProjectState.isProjectWorkspaceActivated()) {
 							// External uninstall may have been issued on multiple bundles (uninstall A B)
 							bundleJob = new ActivateProjectJob(ActivateProjectJob.activateProjectsJobName, project);
 						} else {
@@ -131,9 +132,9 @@ public class ExternalTransition implements BundleTransitionEventListener{
 					// Deactivate workspace
 				} else if (autoDependencyAction == 1) {
 					// Deactivate workspace to obtain a consistent state between all workspace bundles
-					if (ProjectProperties.isProjectWorkspaceActivated()) {
+					if (BundleProjectState.isProjectWorkspaceActivated()) {
 						bundleJob = new DeactivateJob(DeactivateJob.deactivateWorkspaceJobName);
-						bundleJob.addPendingProjects(ProjectProperties.getActivatedProjects());
+						bundleJob.addPendingProjects(BundleProjectState.getActivatedProjects());
 					}
 				}
 				if (null != bundleJob) {

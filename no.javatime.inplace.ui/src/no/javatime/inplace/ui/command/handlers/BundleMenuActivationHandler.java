@@ -23,16 +23,17 @@ import no.javatime.inplace.bundlejobs.StartJob;
 import no.javatime.inplace.bundlejobs.StopJob;
 import no.javatime.inplace.bundlejobs.UpdateScheduler;
 import no.javatime.inplace.bundlemanager.BundleJobManager;
-import no.javatime.inplace.bundleproject.BundleProject;
+import no.javatime.inplace.bundleproject.BundleProjectSettings;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.dialogs.OpenProjectHandler;
 import no.javatime.inplace.extender.provider.Extension;
 import no.javatime.inplace.log.intface.BundleLogView;
-import no.javatime.inplace.pl.dependencies.service.DependencyDialog;
+import no.javatime.inplace.pl.dependencies.intface.DependencyDialog;
+import no.javatime.inplace.region.manager.BundleManager;
 import no.javatime.inplace.region.manager.BundleRegion;
 import no.javatime.inplace.region.manager.BundleTransition.Transition;
-import no.javatime.inplace.region.manager.BundleManager;
 import no.javatime.inplace.region.manager.InPlaceException;
+import no.javatime.inplace.region.project.BundleProjectState;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
@@ -82,6 +83,9 @@ import org.osgi.framework.Bundle;
  */
 public abstract class BundleMenuActivationHandler extends AbstractHandler {
 
+	final public static String PACKAGE_EXPLORER_ID = org.eclipse.jdt.ui.JavaUI.ID_PACKAGES;
+	final public static String PROJECT_EXPLORER_ID = "org.eclipse.ui.navigator.ProjectExplorer";
+
 	/**
 	 * Schedules an installation job for the specified projects
 	 * 
@@ -105,7 +109,7 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 		if (so.saveModifiedFiles()) {
 			OpenProjectHandler.waitOnBuilder();
 			ActivateProjectJob activateJob = null;
-			if (ProjectProperties.getActivatedProjects().size() > 0) {
+			if (BundleProjectState.getActivatedProjects().size() > 0) {
 				activateJob = new ActivateProjectJob(ActivateProjectJob.activateProjectsJobName, projects);
 			} else {
 				activateJob = new ActivateProjectJob(ActivateProjectJob.activateWorkspaceJobName, projects);
@@ -121,7 +125,7 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 	 */
 	static public void deactivateHandler(Collection<IProject> projects) {
 		DeactivateJob deactivateJob = null;
-		if (ProjectProperties.getActivatedProjects().size() <= projects.size()) {
+		if (BundleProjectState.getActivatedProjects().size() <= projects.size()) {
 			deactivateJob = new DeactivateJob(DeactivateJob.deactivateWorkspaceJobName, projects);			
 		} else {
 			deactivateJob = new DeactivateJob(DeactivateJob.deactivateJobName, projects);
@@ -240,7 +244,7 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 					BundleManager.addBundleTransitionListener(this);
 					for (IProject project : projects) {
 							try {					
-								BundleProject.toggleActivationPolicy(project);
+								BundleProjectSettings.toggleActivationPolicy(project);
 								BundleRegion bundleRegion = BundleJobManager.getRegion();
 								// No bundle jobs (which updates the bundle view) are run when the project(s) are deactivated or auto build is off
 								Bundle bundle = bundleRegion.get(project);
@@ -311,11 +315,11 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 						try {
 							if (!ProjectProperties.hasManifestBuildErrors(project)) {
 								if (addToPath) {
-									if (BundleProject.addOutputLocationToBundleClassPath(project)) {
+									if (BundleProjectSettings.addOutputLocationToBundleClassPath(project)) {
 										resetJob.addPendingProject(project);
 									} 
 								} else {
-									if (BundleProject.removeOutputLocationFromClassPath(project)) {
+									if (BundleProjectSettings.removeOutputLocationFromClassPath(project)) {
 										resetJob.addPendingProject(project);
 									}
 								}
@@ -508,9 +512,9 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 		if (activePart instanceof BundleView) {
 			selection = page.getSelection(BundleView.ID);
 		} else if (activePart instanceof IPackagesViewPart) {
-			selection = page.getSelection(ProjectProperties.PACKAGE_EXPLORER_ID);
+			selection = page.getSelection(PACKAGE_EXPLORER_ID);
 		} else if (activePart instanceof CommonNavigator) {
-			selection = page.getSelection(ProjectProperties.PROJECT_EXPLORER_ID);
+			selection = page.getSelection(PROJECT_EXPLORER_ID);
 		}
 		if (null != selection && !selection.isEmpty()) {
 			return getSelectedJavaProject(selection);			
@@ -550,7 +554,7 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 			// The Java project must also be a plug-in project
 			if (null != javaProject) {
 				try {
-					if (!javaProject.getProject().hasNature(ProjectProperties.PLUGIN_NATURE_ID)) {
+					if (!javaProject.getProject().hasNature(BundleProjectState.PLUGIN_NATURE_ID)) {
 						return null;
 					}
 				} catch (Exception e) {
@@ -585,9 +589,9 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 		if (activePart instanceof BundleView) {
 			selection = page.getSelection(BundleView.ID);
 		} else if (activePart instanceof IPackagesViewPart) {
-			selection = page.getSelection(ProjectProperties.PACKAGE_EXPLORER_ID);
+			selection = page.getSelection(PACKAGE_EXPLORER_ID);
 		} else if (activePart instanceof CommonNavigator) {
-			selection = page.getSelection(ProjectProperties.PROJECT_EXPLORER_ID);
+			selection = page.getSelection(PROJECT_EXPLORER_ID);
 		}
 		if (null != selection && !selection.isEmpty()) {
 			return getSelectedProject(selection);			

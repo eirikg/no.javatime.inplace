@@ -20,29 +20,31 @@ import org.osgi.util.tracker.BundleTracker;
 import org.osgi.util.tracker.ServiceTracker;
 
 /**
- * Manage extensions registered by bundle trackers. The extender provides functionality for
+ * Manage extensions. The extender provides functionality for
  * examination and direct use of the extension as a service or through introspection.
  * <p>
- * When registered, the extension is automatically registered as a service or if a service is
- * available that service is used.
+ * When registered, the extension is automatically registered as a service or if a service 
+ * for the extension is available that service is used.
+ * <p>
+ * The extender may also be used directly to access a registered service
  */
 public class Extender<T> {
 
-	/* extension interface definition name */
+	/* Extension interface definition name */
 	final private String interfaceName;
 	/* Interface class of the extension */
 	private Class<T> intFace;
-	/* bundle id of the bundle providing the extension */
+	/* Bundle id of the bundle providing the extension */
 	final private Long ownerBId;
-	/* bundle id of the bundle registering the extension */
+	/* Bundle id of the bundle registering the extension */
 	private Long regBId;
 	/* Name of the implementation class */
 	final private String clsName;
-	/* implementation class loaded by extender or obtained from service registry */
+	/* Implementation class loaded by extender or obtained from service registry */
 	private Class<?> cls;
 	/* Service registration object when the service is created by the extender */
 	private ServiceRegistration<?> serviceRegOwner;
-	/* service reference obtained from the service registration object */
+	/* Service reference obtained from the service registration object */
 	private ServiceReference<?> serviceRef;
 	/* Service tracker for use by the extension */
 	private ServiceTracker<T, T> tracker;
@@ -59,6 +61,9 @@ public class Extender<T> {
 	 */
 	private static ConcurrentMap<String, Extender<?>> extenders = new ConcurrentHashMap<>();
 
+	/**
+	 * List of all bundles registering a service
+	 */
 	private ConcurrentSkipListSet<Long> requesters = new ConcurrentSkipListSet<>();
 
 	public static <T> Extender<T> register(Bundle ownerBundle, Class<T> intFace, String className) {
@@ -69,8 +74,8 @@ public class Extender<T> {
 		return register(ownerBundle, ownerBundle, interfaceName, className);
 	}
 
-	public static <T> Extender<T> register(Bundle owneBundle, Bundle regBundle, Class<T> intFace, String className) {
-		return register(owneBundle, regBundle, intFace.getName(), className);
+	public static <T> Extender<T> register(Bundle ownerBundle, Bundle regBundle, Class<T> intFace, String className) {
+		return register(ownerBundle, regBundle, intFace.getName(), className);
 	}
 
 	public static <T> Extender<T> register(Bundle ownerBundle, Bundle regBundle, String interfaceName, String className) {
@@ -231,20 +236,20 @@ public class Extender<T> {
 		return null;
 	}
 
-	public static <T> Long getBundle(Class<T> intFace) {
-		Bundle[] bundles = Activator.getContext().getBundles();
-		for (int i = 0; i < bundles.length; i++) {
-			Bundle bundle = bundles[i];
-			//bundle.getBundleContext().getAllServiceReferences(intFace.getName(), null);
-		}
-		return null;
-	}
+//	public static <T> Long getBundle(Class<T> intFace) {
+//		Bundle[] bundles = Activator.getContext().getBundles();
+//		for (int i = 0; i < bundles.length; i++) {
+//			Bundle bundle = bundles[i];
+//			//bundle.getBundleContext().getAllServiceReferences(intFace.getName(), null);
+//		}
+//		return null;
+//	}
 
 
 	/**
 	 * Check if this interface is registered or attached to a service by the extender 
 	 * <P>
-	 * If trying to register an already registered interface the extender attach
+	 * If trying to register an already registered interface the extender attaches
 	 * itself to it and returns silently
 	 * 
 	 * @param interfaceName interface name of a registered service

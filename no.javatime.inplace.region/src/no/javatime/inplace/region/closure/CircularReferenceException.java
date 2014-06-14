@@ -8,7 +8,7 @@
  * Contributors:
  * 	JavaTime project, Eirik Gronsund - initial implementation
  *******************************************************************************/
-package no.javatime.inplace.dependencies;
+package no.javatime.inplace.region.closure;
 
 import java.util.ArrayList;
 import java.util.Collection;

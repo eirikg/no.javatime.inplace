@@ -16,14 +16,14 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 
 import no.javatime.inplace.InPlace;
-import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.dependencies.BundleClosures;
-import no.javatime.inplace.dependencies.BundleSorter;
-import no.javatime.inplace.dependencies.CircularReferenceException;
-import no.javatime.inplace.dependencies.ProjectSorter;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
+import no.javatime.inplace.region.closure.BundleSorter;
+import no.javatime.inplace.region.closure.CircularReferenceException;
+import no.javatime.inplace.region.closure.ProjectSorter;
 import no.javatime.inplace.region.manager.BundleManager;
 import no.javatime.inplace.region.manager.InPlaceException;
+import no.javatime.inplace.region.project.BundleProjectState;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
@@ -181,13 +181,13 @@ public class DeactivateJob extends NatureJob {
 					getPendingProjects(), true);
 			if (errorProjectClosures.size() > 0) {
 				String msg = WarnMessage.getInstance().formatString("deactivate_with_build_errors",
-						ProjectProperties.formatProjectList(errorProjectClosures));
+						BundleProjectState.formatProjectList(errorProjectClosures));
 				addWarning(null, msg, null);
 			}
 		}
 		InPlace.get().savePluginSettings(true, true);
 		// All not activated bundles are collectively either in state installed or in state uninstalled.
-		if (ProjectProperties.getActivatedProjects().size() <= pendingProjects()) {
+		if (BundleProjectState.getActivatedProjects().size() <= pendingProjects()) {
 			// This is the last project(s) to deactivate, move all bundles to state uninstalled
 			Collection<Bundle> allWorkspaceBundles = bundleRegion.getBundles();
 			// Sort to stop and uninstall in dependency order

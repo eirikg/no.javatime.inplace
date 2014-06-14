@@ -8,21 +8,20 @@
  * Contributors:
  * 	JavaTime project, Eirik Gronsund - initial implementation
  *******************************************************************************/
-package no.javatime.inplace.dependencies;
+package no.javatime.inplace.region.closure;
 
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 
-import no.javatime.inplace.InPlace;
+import no.javatime.inplace.region.Activator;
+import no.javatime.inplace.region.manager.BundleManager;
 import no.javatime.inplace.region.manager.BundleTransition;
-import no.javatime.inplace.region.manager.InPlaceException;
 import no.javatime.inplace.region.manager.BundleTransition.TransitionError;
+import no.javatime.inplace.region.manager.InPlaceException;
+import no.javatime.inplace.region.project.BundleProjectState;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
-import no.javatime.inplace.bundlemanager.BundleJobManager;
-import no.javatime.inplace.bundleproject.BundleProject;
-import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.util.messages.ExceptionMessage;
 
 import org.eclipse.core.resources.IProject;
@@ -155,7 +154,7 @@ public class ProjectSorter extends BaseSorter {
 			visited.add(child);
 			Collection<IProject> requirers = ProjectDependencies.getRequiringProjects(child);
 			for (IProject requirer : requirers) {
-				if (natureEnabled.equals(ProjectProperties.isProjectActivated(requirer))) {
+				if (natureEnabled.equals(BundleProjectState.isProjectActivated(requirer))) {
 					visitRequiringProject(requirer, child, natureEnabled, visited);
 				}
 			}
@@ -257,7 +256,7 @@ public class ProjectSorter extends BaseSorter {
 			visited.add(child); // Overlook self providing
 			Collection<IProject> providers = ProjectDependencies.getProvidingProjects(child);
 			for (IProject provider : providers) {
-				if (natureEnabled.equals(ProjectProperties.isProjectActivated(provider))) {
+				if (natureEnabled.equals(BundleProjectState.isProjectActivated(provider))) {
 					visitProvidingProject(provider, child, natureEnabled, visited);
 				}
 			}
@@ -288,19 +287,19 @@ public class ProjectSorter extends BaseSorter {
 		// Hosts can import packages from fragment (no complaints from PDE),
 		// even if fragment is an inherent part of the host. Is this a kind of self reference?
 		// Must check both parent and child, due to traversal order (providing or requiring)
-		if (!getAllowCycles() && (!BundleProject.isFragment(child) && !BundleProject.isFragment(parent))) {
+		if (!getAllowCycles() && (!BundleProjectState.isFragment(child) && !BundleProjectState.isFragment(parent))) {
 			ProjectSorter ps = new ProjectSorter();
 			ps.setAllowCycles(true);
 			Collection<IProject> projects = ps.sortRequiringProjects(Collections.<IProject>singletonList(parent));
 			projects.addAll(ps.sortRequiringProjects(Collections.<IProject>singletonList(child)));
-			BundleJobManager.getTransition().setTransitionError(parent, TransitionError.CYCLE);
-			BundleJobManager.getTransition().setTransitionError(child, TransitionError.CYCLE);
+			BundleManager.getTransition().setTransitionError(parent, TransitionError.CYCLE);
+			BundleManager.getTransition().setTransitionError(child, TransitionError.CYCLE);
 			if (null == circularException) {
 				circularException = new CircularReferenceException();
 			}
 			String msg = ExceptionMessage.getInstance().formatString("affected_bundles",
-					ProjectProperties.formatProjectList(projects));
-			circularException.addToStatusList(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, msg, null));
+					BundleProjectState.formatProjectList(projects));
+			circularException.addToStatusList(new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, msg, null));
 			if (directRecursion) {
 				msg = ExceptionMessage.getInstance().formatString("direct_circular_reference_with_bundles",
 						parent.getName());
@@ -308,7 +307,7 @@ public class ProjectSorter extends BaseSorter {
 				msg = ExceptionMessage.getInstance().formatString("circular_reference_with_bundles",
 						parent.getName(), child.getName());
 			}
-			circularException.addToStatusList(new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg, null));
+			circularException.addToStatusList(new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, msg, null));
 			circularException.addProjects(projects);
 		}
 	}
@@ -328,9 +327,9 @@ public class ProjectSorter extends BaseSorter {
 			Boolean activated) throws CircularReferenceException, InPlaceException {
 		Collection<IProject> projects = new LinkedHashSet<IProject>(projectScope);
 		if (activated) {
-			projects.retainAll(BundleJobManager.getRegion().getBundleProjects(true));
+			projects.retainAll(BundleManager.getRegion().getBundleProjects(true));
 		} else {
-			projects.removeAll(BundleJobManager.getRegion().getBundleProjects(true));
+			projects.removeAll(BundleManager.getRegion().getBundleProjects(true));
 		}
 		return getRequiringBuildErrorClosure(projects);
 	}
@@ -351,17 +350,17 @@ public class ProjectSorter extends BaseSorter {
 		projectOrder = new LinkedHashSet<IProject>();
 		circularException = null;
 		Collection<IProject> errorProjects = null;
-		errorProjects = ProjectProperties.getBuildErrors(projectScope);
-		errorProjects.addAll(ProjectProperties.hasBuildState(projectScope));
+		errorProjects = BundleProjectState.getBuildErrors(projectScope);
+		errorProjects.addAll(BundleProjectState.hasBuildState(projectScope));
 		if (errorProjects.size() > 0) {
 			// Always include projects requiring capabilities from projects with build errors in error list
 			sortRequiringProjects(errorProjects);
 			if (null != circularException) {
 				throw circularException;
 			}
-			BundleTransition bundleTransition = BundleJobManager.getTransition();
+			BundleTransition bundleTransition = BundleManager.getTransition();
 			for (IProject errorProject : projectOrder) {
-				if (ProjectProperties.isProjectActivated(errorProject)) {
+				if (BundleProjectState.isProjectActivated(errorProject)) {
 					if (errorProjects.contains(errorProject)) {
 						bundleTransition.setTransitionError(errorProject, TransitionError.BUILD);
 					} else {
@@ -382,6 +381,6 @@ public class ProjectSorter extends BaseSorter {
 		if (null == projectOrder) {
 			return;
 		}
-		System.out.println("Project topological Order " + ProjectProperties.formatProjectList(projectOrder));
+		System.out.println("Project topological Order " + BundleProjectState.formatProjectList(projectOrder));
 	}
 }

@@ -15,12 +15,13 @@ import java.util.Collection;
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.dependencies.BundleClosures;
-import no.javatime.inplace.dependencies.CircularReferenceException;
-import no.javatime.inplace.dependencies.ProjectSorter;
 import no.javatime.inplace.msg.Msg;
+import no.javatime.inplace.region.closure.CircularReferenceException;
+import no.javatime.inplace.region.closure.ProjectSorter;
 import no.javatime.inplace.region.manager.BundleTransition.Transition;
 import no.javatime.inplace.region.manager.BundleManager;
 import no.javatime.inplace.region.manager.InPlaceException;
+import no.javatime.inplace.region.project.BundleProjectState;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
@@ -186,7 +187,7 @@ public class ActivateProjectJob extends NatureJob {
 			// should be updated as part of the activation process
 			if (!getOptionsService().isUpdateOnBuild() && bundleRegion.isBundleWorkspaceActivated()) {
 				for (IProject project : getPendingProjects()) {
-					if (ProjectProperties.isProjectActivated(project)) {
+					if (BundleProjectState.isProjectActivated(project)) {
 						bundleTransition.addPending(project, Transition.UPDATE_ON_ACTIVATE);
 					}
 				}
@@ -201,7 +202,7 @@ public class ActivateProjectJob extends NatureJob {
 		if (Category.getState(Category.infoMessages) && !ProjectProperties.isAutoBuilding()) {
 			UserMessage.getInstance().getString("builder_off");
 			UserMessage.getInstance().getString("builder_off_list",
-					ProjectProperties.formatProjectList(getPendingProjects()));
+					BundleProjectState.formatProjectList(getPendingProjects()));
 		}
 		return getLastStatus();
 	}
@@ -228,7 +229,7 @@ public class ActivateProjectJob extends NatureJob {
 		// The bundles are registered in the workspace region when installed from an external source		
 		final Collection<Bundle> bundlesToActivate = bundleRegion.getBundles();
 
-		if (!ProjectProperties.isProjectWorkspaceActivated() && bundlesToActivate.size() > 0) {
+		if (!BundleProjectState.isProjectWorkspaceActivated() && bundlesToActivate.size() > 0) {
 			uninstallBundles(bundlesToActivate, monitor);
 			if (monitor.isCanceled()) {
 				throw new OperationCanceledException();
@@ -240,7 +241,7 @@ public class ActivateProjectJob extends NatureJob {
 				addPendingProjects(projectsToActivate);
 				if (Category.getState(Category.infoMessages))
 					UserMessage.getInstance().getString("added_bundles_to_activate",
-							ProjectProperties.formatProjectList(projectsToActivate));
+							BundleProjectState.formatProjectList(projectsToActivate));
 			}
 		}
 		return getLastStatus();
@@ -294,7 +295,7 @@ public class ActivateProjectJob extends NatureJob {
 
 		Collection<IProject> projectErrorClosures = bs.getRequiringBuildErrorClosure(getPendingProjects(), false);
 		if (projectErrorClosures.size() > 0) {
-			String msg = ProjectProperties.formatBuildErrorsFromClosure(projectErrorClosures, getName());
+			String msg = BundleProjectState.formatBuildErrorsFromClosure(projectErrorClosures, getName());
 			if (null != msg) {
 				result = addBuildError(msg, null);
 			}
@@ -304,7 +305,7 @@ public class ActivateProjectJob extends NatureJob {
 					bundleRegion.getBundleProjects(true), Transition.UPDATE);
 			if (delayedProjects.size() > 0) {
 				String delayedMsg = WarnMessage.getInstance().formatString("build_errors_delayed",
-						UpdateJob.updateJobName, ProjectProperties.formatProjectList(delayedProjects));
+						UpdateJob.updateJobName, BundleProjectState.formatProjectList(delayedProjects));
 				for (IProject delayedProject : delayedProjects) {
 					bundleTransition.removePending(delayedProject, Transition.UPDATE);
 				}

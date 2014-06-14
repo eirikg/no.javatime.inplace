@@ -7,18 +7,19 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 
 import no.javatime.inplace.InPlace;
+import no.javatime.inplace.region.closure.CircularReferenceException;
+import no.javatime.inplace.region.closure.ProjectSorter;
 import no.javatime.inplace.region.manager.BundleRegion;
 import no.javatime.inplace.region.manager.BundleTransition;
 import no.javatime.inplace.region.manager.InPlaceException;
 import no.javatime.inplace.region.manager.BundleTransition.Transition;
 import no.javatime.inplace.region.manager.BundleTransition.TransitionError;
+import no.javatime.inplace.region.project.BundleProjectState;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import no.javatime.inplace.bundlemanager.BundleJobManager;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.dependencies.BundleClosures;
-import no.javatime.inplace.dependencies.CircularReferenceException;
-import no.javatime.inplace.dependencies.ProjectSorter;
 import no.javatime.inplace.dialogs.OpenProjectHandler;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.util.messages.Category;
@@ -43,7 +44,7 @@ public class UpdateScheduler {
 			Collection<IProject> projectsToUpdate = bc.projectActivation(Closure.PARTIAL_GRAPH, initialSet, true);
 
 			for (IProject project : projectsToUpdate) {
-				if (ProjectProperties.isProjectActivated(project)) {
+				if (BundleProjectState.isProjectActivated(project)) {
 					addChangedProject(project, updateJob, activateProjectJob);
 				}
 			}
@@ -103,7 +104,7 @@ public class UpdateScheduler {
 			activateProjectJob.addPendingProjects(projects);
 			if (Category.getState(Category.infoMessages)) {
 				UserMessage.getInstance().getString("implicit_activation", project.getName(),
-						ProjectProperties.formatProjectList(projects));
+						BundleProjectState.formatProjectList(projects));
 			}
 		}
 		return updated;

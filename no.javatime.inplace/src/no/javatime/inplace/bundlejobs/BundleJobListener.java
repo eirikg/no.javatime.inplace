@@ -18,6 +18,7 @@ import no.javatime.inplace.bundlemanager.BundleJobManager;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.region.manager.BundleTransition;
 import no.javatime.inplace.region.manager.BundleTransition.Transition;
+import no.javatime.inplace.region.project.BundleProjectState;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
@@ -126,6 +127,7 @@ public class BundleJobListener extends JobChangeAdapter {
 				String rootMsg = WarnMessage.getInstance().formatString("end_job_root_message", bundleJob.getName());
 				IBundleStatus multiStatus = bundleJob.createMultiStatus(new BundleStatus(StatusCode.ERROR,
 						InPlace.PLUGIN_ID, rootMsg));
+				InPlace.get().trace(multiStatus);				
 				StatusManager.getManager().handle(multiStatus, StatusManager.LOG);
 			}
 			if (InPlace.get().msgOpt().isBundleOperations()) {
@@ -152,7 +154,7 @@ public class BundleJobListener extends JobChangeAdapter {
 			BundleJobManager.addBundleJob(bundleJob, 0);
 		}
 		
-		Collection<IProject> activatedProjects = ProjectProperties.getActivatedProjects();
+		Collection<IProject> activatedProjects = BundleProjectState.getActivatedProjects();
 
 		Collection<IProject> projectsToRefresh = 
 				bundleTransition.getPendingProjects(activatedProjects, Transition.REFRESH);

@@ -8,7 +8,7 @@
  * Contributors:
  * 	JavaTime project, Eirik Gronsund - initial implementation
  *******************************************************************************/
-package no.javatime.inplace.bundlemanager;
+package no.javatime.inplace.region.resolver;
 
 import java.util.Collection;
 import java.util.Map;

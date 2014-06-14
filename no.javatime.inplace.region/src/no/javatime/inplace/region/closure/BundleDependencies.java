@@ -8,7 +8,7 @@
  * Contributors:
  * 	JavaTime project, Eirik Gronsund - initial implementation
  *******************************************************************************/
-package no.javatime.inplace.dependencies;
+package no.javatime.inplace.region.closure;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -16,11 +16,11 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 
-import no.javatime.inplace.InPlace;
+import no.javatime.inplace.region.Activator;
+import no.javatime.inplace.region.manager.BundleManager;
 import no.javatime.inplace.region.manager.InPlaceException;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
-import no.javatime.inplace.bundlemanager.BundleJobManager;
 import no.javatime.util.messages.WarnMessage;
 
 import org.eclipse.core.runtime.Platform;
@@ -63,7 +63,7 @@ public class BundleDependencies {
 		Collection<Bundle> requirers = null;
 		if (null != provider) {
 			if ((provider.getState() & (Bundle.INSTALLED)) != 0) {
-				requirers = getRequiringBundles(provider, BundleJobManager.getRegion().getBundles());
+				requirers = getRequiringBundles(provider, BundleManager.getRegion().getBundles());
 			} else {
 				requirers = getRequiringBundles(provider, null, new LinkedHashSet<Bundle>());
 			}
@@ -109,7 +109,7 @@ public class BundleDependencies {
 				// Get the capabilities from all name spaces
 				for (BundleWire wire : wiredReqBundle.getProvidedWires(null)) {
 					Bundle reqBundle = wire.getRequirerWiring().getBundle();
-					if (null != reqBundle && BundleJobManager.getRegion().exist(reqBundle)) {
+					if (null != reqBundle && BundleManager.getRegion().exist(reqBundle)) {
 						requiredBundles.add(reqBundle);
 					}
 				}
@@ -134,7 +134,7 @@ public class BundleDependencies {
 		Collection<Bundle> providers = null;
 		if (null != requirer) {
 			if ((requirer.getState() & (Bundle.INSTALLED)) != 0) {
-				providers = getProvidingBundles(requirer, BundleJobManager.getRegion().getBundles());
+				providers = getProvidingBundles(requirer, BundleManager.getRegion().getBundles());
 			} else {
 				providers = getProvidingBundles(requirer, null, new LinkedHashSet<Bundle>());
 			}
@@ -178,7 +178,7 @@ public class BundleDependencies {
 				// Get the requirements from all name spaces
 				for (BundleWire wire : wiredProvBundle.getRequiredWires(null)) {
 					Bundle provBundle = wire.getProviderWiring().getBundle();
-					if (null != provBundle && BundleJobManager.getRegion().exist(provBundle)) {
+					if (null != provBundle && BundleManager.getRegion().exist(provBundle)) {
 						providedBundles.add(provBundle);
 					}
 				}
@@ -465,7 +465,7 @@ public class BundleDependencies {
 				bundleRevisions.add(br);
 			} else {
 				String msg = WarnMessage.getInstance().formatString("failed_to_adapt_to_revision", bundle);
-				StatusManager.getManager().handle(new BundleStatus(StatusCode.WARNING, InPlace.PLUGIN_ID, msg),
+				StatusManager.getManager().handle(new BundleStatus(StatusCode.WARNING, Activator.PLUGIN_ID, msg),
 						StatusManager.LOG);
 			}
 		}

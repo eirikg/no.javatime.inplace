@@ -14,14 +14,15 @@ import java.util.ArrayList;
 
 import no.javatime.inplace.log.intface.BundleLogView;
 import no.javatime.inplace.bundlemanager.BundleJobManager;
-import no.javatime.inplace.bundleproject.BundleProject;
+import no.javatime.inplace.bundleproject.BundleProjectSettings;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.dialogs.OpenProjectHandler;
 import no.javatime.inplace.extender.provider.Extension;
-import no.javatime.inplace.pl.dependencies.service.DependencyDialog;
+import no.javatime.inplace.pl.dependencies.intface.DependencyDialog;
 import no.javatime.inplace.region.manager.InPlaceException;
 import no.javatime.inplace.region.manager.BundleTransition.Transition;
-import no.javatime.inplace.region.project.ManifestUtil;
+import no.javatime.inplace.region.project.ManifestOptions;
+import no.javatime.inplace.region.project.BundleProjectState;
 import no.javatime.inplace.ui.command.handlers.BundleMenuActivationHandler;
 import no.javatime.inplace.ui.views.BundleView;
 import no.javatime.util.messages.Message;
@@ -68,7 +69,7 @@ public class BundlePopUpCommandsContributionItems extends BundleCommandsContribu
 		} 
 		// Get project, activation status and the bundle project
 		IProject project = javaProject.getProject();
-		Boolean activated = ProjectProperties.isProjectActivated(project);
+		Boolean activated = BundleProjectState.isProjectActivated(project);
 		Bundle bundle = BundleJobManager.getRegion().get(project);
 
 		// Busy running bundle jobs. Show a limited set of contributors
@@ -177,7 +178,7 @@ public class BundlePopUpCommandsContributionItems extends BundleCommandsContribu
 	private CommandContributionItem addStart(Boolean activated, Bundle bundle) {
 		if (null != bundle && activated) {
 			int state = bundle.getState();
-			if (!ManifestUtil.isFragment(bundle) && (state & (Bundle.INSTALLED | Bundle.RESOLVED | Bundle.STOPPING)) != 0) {
+			if (!ManifestOptions.isFragment(bundle) && (state & (Bundle.INSTALLED | Bundle.RESOLVED | Bundle.STOPPING)) != 0) {
 				return addContribution(menuId, dynamicPopUpCommandId, startParamId, startParamId,
 						CommandContributionItem.STYLE_PUSH, startImage);
 			}
@@ -225,7 +226,7 @@ public class BundlePopUpCommandsContributionItems extends BundleCommandsContribu
 	private CommandContributionItem addClassPath(IProject project) {
 		try {
 			if (!ProjectProperties.hasManifestBuildErrors(project)) {
-				if (!BundleProject.isOutputFolderInBundleClassPath(project)) {
+				if (!BundleProjectSettings.isOutputFolderInBundleClassPath(project)) {
 					return addContribution(menuId, dynamicPopUpCommandId, addClassPathLabel, addClassPathParamId,
 							CommandContributionItem.STYLE_PUSH, classPathImage);
 				} else {

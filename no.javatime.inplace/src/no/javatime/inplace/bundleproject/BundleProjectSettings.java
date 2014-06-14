@@ -22,10 +22,11 @@ import java.util.Properties;
 
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.region.events.TransitionEvent;
-import no.javatime.inplace.region.manager.BundleTransition.Transition;
 import no.javatime.inplace.region.manager.BundleManager;
+import no.javatime.inplace.region.manager.BundleTransition.Transition;
 import no.javatime.inplace.region.manager.InPlaceException;
-import no.javatime.inplace.region.project.ManifestUtil;
+import no.javatime.inplace.region.project.BundleProjectState;
+import no.javatime.inplace.region.project.ManifestOptions;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import no.javatime.util.messages.Category;
@@ -43,12 +44,14 @@ import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
+import org.eclipse.jdt.core.IClasspathEntry;
+import org.eclipse.jdt.core.IJavaProject;
+import org.eclipse.jdt.core.IPackageFragmentRoot;
 import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.osgi.util.ManifestElement;
 import org.eclipse.pde.core.project.IBundleClasspathEntry;
 import org.eclipse.pde.core.project.IBundleProjectDescription;
 import org.eclipse.pde.core.project.IBundleProjectService;
-import org.eclipse.pde.core.project.IHostDescription;
 import org.eclipse.ui.statushandlers.StatusManager;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
@@ -56,7 +59,7 @@ import org.osgi.framework.Constants;
 import org.osgi.framework.Version;
 
 @SuppressWarnings("restriction")
-public class BundleProject {
+public class BundleProjectSettings {
 	/**
 	 * Path to manifest file relative to workspace root
 	 */
@@ -66,16 +69,6 @@ public class BundleProject {
 	 * Standard file name of the manifest file
 	 */
 	final public static String MANIFEST_FILE_NAME = Message.getInstance().formatString("manifest_file_name");
-	/**
-	 * Default path for the bin location in the Bundle-ClassPath header
-	 */
-	final public static String BIN_CLASS_PATH = Message.getInstance().formatString("bundle_bin_classpath");
-	/**
-	 * Workspace root path which is the default for class files.
-	 */
-	@SuppressWarnings("unused")
-	final private static String DEFAULT_CLASS_PATH = Message.getInstance().formatString(
-			"bundle_default_classpath");
 
 	/**
 	 * Verify that the default output folder is part of the bundle class path header in the manifest
@@ -98,7 +91,7 @@ public class BundleProject {
 		if (Category.DEBUG && Category.getState(Category.binpath)) {
 			TraceMessage.getInstance().getString("default_output_folder", project.getName(), defaultOutpUtPath);
 		}
-		return ManifestUtil.verifyPathInClassPath(defaultOutpUtPath, bundleClassPath, project.getName());
+		return ManifestOptions.verifyPathInClassPath(defaultOutpUtPath, bundleClassPath, project.getName());
 	}
 
 	public static IPath getDefaultOutputLocation(IProject project) {
@@ -121,7 +114,7 @@ public class BundleProject {
 			if (null == defaultOutputPath) {
 				return false;
 			}
-			Collection<IPath> srcPaths = ProjectProperties.getJavaProjectSourceFolders(project);
+			Collection<IPath> srcPaths = getJavaProjectSourceFolders(project);
 			ArrayList<IBundleClasspathEntry> entries = new ArrayList<IBundleClasspathEntry>();
 			for (IPath srcPath : srcPaths) {
 				IBundleProjectService service = InPlace.get().getBundleProjectService(project);
@@ -143,6 +136,32 @@ public class BundleProject {
 			outputLocationAdded = false;
 		}
 		return outputLocationAdded;
+	}
+
+	/**
+	 * Finds all source class path entries and return the relative path of source folders
+	 * 
+	 * @param project with source folders
+	 * @return source folders or an empty collection
+	 * @throws JavaModelException when accessing the project resource or the class path element does not exist
+	 * @throws InPlaceException if the project could not be accessed
+	 */
+	public static Collection<IPath> getJavaProjectSourceFolders(IProject project) throws JavaModelException,
+			InPlaceException {
+		ArrayList<IPath> paths = new ArrayList<IPath>();
+		IJavaProject javaProject = BundleProjectState.getJavaProject(project);
+		IClasspathEntry[] classpathEntries = javaProject.getResolvedClasspath(true);
+		for (int i = 0; i < classpathEntries.length; i++) {
+			IClasspathEntry entry = classpathEntries[i];
+			if (entry.getContentKind() == IPackageFragmentRoot.K_SOURCE) {
+				IPath path = entry.getPath();
+				String segment = path.segment(path.segmentCount() - 1);
+				if (null != segment) {
+					paths.add(new Path(segment));
+				}
+			}
+		}
+		return paths;
 	}
 
 	/**
@@ -305,17 +324,6 @@ public class BundleProject {
 			BundleManager.addBundleTransition(new TransitionEvent(project, Transition.UPDATE_ACTIVATION_POLICY));
 		} catch (CoreException e) {
 			throw new InPlaceException(e, "manifest_io_project", project.getName());
-		}
-	}
-
-	public static Boolean isFragment(IProject project) throws InPlaceException {
-
-		IBundleProjectDescription bundleProjDesc = InPlace.get().getBundleDescription(project);
-		IHostDescription host = bundleProjDesc.getHost();
-		if (null != host) {
-			return true;
-		} else {
-			return false;
 		}
 	}
 

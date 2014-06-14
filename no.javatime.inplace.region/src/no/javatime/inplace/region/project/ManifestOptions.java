@@ -42,11 +42,9 @@ import org.osgi.framework.Constants;
  * 
  * @see BundleProject
  */
-public class ManifestUtil {
+public class ManifestOptions {
 
 	final public static String MANIFEST_FILE_NAME = Message.getInstance().formatString("manifest_file_name");
-	final public static String bundleFileLocationScheme = Message.getInstance().formatString(
-			"bundle_identifier_file_scheme");
 
 	private static void setActivationPolicy(Collection<IProject> projects, Boolean eagerActivation) {
 		if (null == projects) {
@@ -285,7 +283,7 @@ public class ManifestUtil {
 	 */
 	private static void saveManifest(IProject project, Manifest manifest) throws InPlaceException, ProjectLocationException {
 		String location = null;
-		location = getProjectLocationIdentifier(project);
+		location = BundleProjectState.getLocationIdentifier(project, BundleProjectState.BUNDLE_FILE_LOC_SCHEME);
 		URL urlLoc;
 		try {
 			FileOutputStream os = null;
@@ -307,20 +305,5 @@ public class ManifestUtil {
 		} catch (CoreException e) {
 			throw new InPlaceException(e, "manifest_io_project", project.getName());
 		}
-	}
-	
-	private static String getProjectLocationIdentifier(IProject project)
-			throws ProjectLocationException {
-		if (null == project) {
-			throw new ProjectLocationException("project_null_location");
-		}
-		StringBuffer locScheme = new StringBuffer(bundleFileLocationScheme);
-		IPath path = project.getLocation();
-		if (null == path || path.isEmpty()) {
-			throw new ProjectLocationException("project_location_find", project.getName());
-		}
-		String locIdent = path.toOSString();
-		return locScheme.append(locIdent).toString();
-	}
-
+	}	
 }

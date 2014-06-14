@@ -59,7 +59,8 @@ import org.osgi.util.tracker.BundleTrackerCustomizer;
 public class Activator extends AbstractUIPlugin implements BundleJobEventListener {
 
 	// The plug-in ID
-	public static final String PLUGIN_ID = "no.javatime.inplace.ui"; //$NON-NLS-1$
+	final public static String PLUGIN_ID = "no.javatime.inplace.ui"; //$NON-NLS-1$
+
 	private static Activator plugin;
 	private static BundleContext context;
 	

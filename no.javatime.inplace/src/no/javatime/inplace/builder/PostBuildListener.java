@@ -32,6 +32,7 @@ import no.javatime.inplace.region.manager.BundleTransition;
 import no.javatime.inplace.region.manager.BundleTransition.Transition;
 import no.javatime.inplace.region.manager.InPlaceException;
 import no.javatime.inplace.region.manager.ProjectLocationException;
+import no.javatime.inplace.region.project.BundleProjectState;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
@@ -79,15 +80,16 @@ import org.osgi.framework.Bundle;
  * </ol>
  * <li>Update (the project has been built)
  * <ol>
- * <li>Updated projects are scheduled for a bundle update job. Built projects with an empty resource delta is
- * not updated unless it is tagged with a pending update transition. Projects with a null delta are usually
+ * <li>Updated projects are scheduled for a bundle update job. Built projects with an empty resource delta are
+ * not updated unless tagged with a pending update transition. Projects with a null delta are usually
  * tagged with a pending update transition and hence updated.
  * </ol>
  * <li>Activate and Deactivate:
  * <ol>
  * <li>Deactivated providing projects of bundle projects being updated are scheduled for activation.
  * <li>Activated projects ({@link ActivateProjectJob}) are scheduled for a bundle activate job 
- * ({@link ActivateBundleJob})
+ * ({@link ActivateBundleJob}) in state uninstalled and a bundle update job ({@link UpdateJob}) if
+ * in state installed at arrival
  * <li>If a project to update has new requirements on UI plug-in(s), when UI plug-ins are not allowed it is
  * scheduled for deactivation instead of update
  * </ol>
@@ -106,7 +108,7 @@ public class PostBuildListener implements IResourceChangeListener {
 	public void resourceChanged(IResourceChangeEvent event) {
 
 		// Nothing to do in a deactivated workspace where all bundle projects are uninstalled
-		if (!ProjectProperties.isProjectWorkspaceActivated()) {
+		if (!BundleProjectState.isProjectWorkspaceActivated()) {
 			return;
 		}
 		// After a build when source has changed and the project is pending for update and auto build is on
@@ -240,8 +242,8 @@ public class PostBuildListener implements IResourceChangeListener {
 	 *          activated projects
 	 * @param updateJob updates a project
 	 * @param deactivateJob deactivates a project by removing the JavaTime nature
-	 * @param uninstallJob TODO
-	 * @param installJob TODO
+	 * @param uninstallJob uninstalls a bundle project
+	 * @param installJob innstalls a bundle project
 	 * @return true if the specified project has been added as a pending project to one of the specified bundle
 	 *         jobs.Otherwise false
 	 */
@@ -273,7 +275,7 @@ public class PostBuildListener implements IResourceChangeListener {
 		}
 		if (bundleTransition.containsPending(project, Transition.ACTIVATE_BUNDLE, Boolean.TRUE)) {
 			// TODO Check this check
-			if (ProjectProperties.isInstallableProject(project)) {
+			if (ProjectProperties.isInstallable(project)) {
 				activateBundleJob.addPendingProject(project);
 				isPending = true;
 			}
@@ -323,7 +325,7 @@ public class PostBuildListener implements IResourceChangeListener {
 	private boolean handleCRUDOperation(IResourceDelta projectDelta, IProject project,
 			ActivateBundleJob activateBundleJob) {
 
-		if (!ProjectProperties.isPlugInProject(project)) {
+		if (!ProjectProperties.isPlugIn(project)) {
 			return false;
 		}
 		// A renamed project has already been uninstalled in pre change listener
@@ -360,12 +362,13 @@ public class PostBuildListener implements IResourceChangeListener {
 	private boolean addMovedProject(IProject project, ActivateBundleJob activateBundleJob) {
 
 		try {
-			String projectLoaction = ProjectProperties.getProjectLocationIdentifier(project, true);
+			String projectLoaction = BundleProjectState.getLocationIdentifier(project, 
+					BundleProjectState.BUNDLE_REF_LOC_SCHEME);
 			String bundleLocation = bundleRegion.getBundleLocationIdentifier(project);
 			// If path is different its a move (the path of the project description is changed)
 			// The replaced flag is set on files being moved but not set on project level.
 			// For all other modifications of the project description, use update bundle
-			if (!projectLoaction.equals(bundleLocation) && ProjectProperties.isInstallableProject(project)) {
+			if (!projectLoaction.equals(bundleLocation) && ProjectProperties.isInstallable(project)) {
 				UninstallJob uninstallJob = new UninstallJob(UninstallJob.uninstallJobName, project);
 				BundleJobManager.addBundleJob(uninstallJob, 0);
 				activateBundleJob.addPendingProject(project);

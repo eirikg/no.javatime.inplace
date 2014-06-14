@@ -16,6 +16,7 @@ import java.util.LinkedHashSet;
 import no.javatime.inplace.bundlemanager.BundleJobManager;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.region.manager.BundleTransition;
+import no.javatime.inplace.region.project.BundleProjectState;
 import no.javatime.inplace.ui.command.contributions.BundleCommandsContributionItems;
 import no.javatime.inplace.ui.command.contributions.BundleMainCommandsContributionItems;
 
@@ -38,7 +39,7 @@ public class BundleMainActivationHandler extends BundleMenuActivationHandler {
 		}
 		
 		if (parameterId.equals(BundleMainCommandsContributionItems.deactivateParamId)) {
-		 Collection<IProject> javaTimeProjects = ProjectProperties.getActivatedProjects();
+		 Collection<IProject> javaTimeProjects = BundleProjectState.getActivatedProjects();
 		 deactivateHandler(javaTimeProjects);
 		} else if (parameterId.equals(BundleMainCommandsContributionItems.activateParamId)) {
 			Collection<IProject> projects = ProjectProperties.getCandidateProjects();
@@ -46,7 +47,7 @@ public class BundleMainActivationHandler extends BundleMenuActivationHandler {
 		} else if (parameterId.equals(BundleMainCommandsContributionItems.startParamId)) {
 
 			Collection<Bundle> startProjects = new LinkedHashSet<Bundle>(); 
-			for (IProject project : ProjectProperties.getActivatedProjects()) {
+			for (IProject project : BundleProjectState.getActivatedProjects()) {
 				Bundle bundle = BundleJobManager.getRegion().get(project);
 				if (null == bundle) {
 					continue;
@@ -62,7 +63,7 @@ public class BundleMainActivationHandler extends BundleMenuActivationHandler {
 			}
 		} else if (parameterId.equals(BundleMainCommandsContributionItems.stopParamId)) {
 			Collection<Bundle> stopProjects = new LinkedHashSet<Bundle>(); 
-			for (IProject project : ProjectProperties.getActivatedProjects()) {
+			for (IProject project : BundleProjectState.getActivatedProjects()) {
 				Bundle bundle = BundleJobManager.getRegion().get(project);
     		int state = BundleJobManager.getCommand().getState(bundle);
     		if (Bundle.ACTIVE == state || Bundle.STARTING == state) {
@@ -74,13 +75,13 @@ public class BundleMainActivationHandler extends BundleMenuActivationHandler {
 				stopHandler(projects);
 			}
 		} else if (parameterId.equals(BundleMainCommandsContributionItems.refreshParamId)) {
-			Collection<IProject> projects = ProjectProperties.getActivatedProjects();
+			Collection<IProject> projects = BundleProjectState.getActivatedProjects();
 			refreshHandler(projects);
 		} else if (parameterId.equals(BundleMainCommandsContributionItems.refreshPendingParamId)) {
-			Collection<IProject> projects = ProjectProperties.getActivatedProjects();
+			Collection<IProject> projects = BundleProjectState.getActivatedProjects();
 			refreshHandler(projects);
 		} else if (parameterId.equals(BundleMainCommandsContributionItems.updateParamId)) {
-			Collection<IProject> projects = ProjectProperties.getActivatedProjects();
+			Collection<IProject> projects = BundleProjectState.getActivatedProjects();
 			Collection<IProject> projectsToUpdate = 
 					BundleJobManager.getTransition().getPendingProjects(projects, BundleTransition.Transition.UPDATE);			
 			updateHandler(projectsToUpdate);

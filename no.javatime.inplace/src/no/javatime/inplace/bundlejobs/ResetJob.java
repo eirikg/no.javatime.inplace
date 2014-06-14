@@ -16,9 +16,10 @@ import java.util.LinkedHashSet;
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundlemanager.BundleJobManager;
 import no.javatime.inplace.bundleproject.ProjectProperties;
-import no.javatime.inplace.dependencies.CircularReferenceException;
-import no.javatime.inplace.dependencies.ProjectSorter;
+import no.javatime.inplace.region.closure.CircularReferenceException;
+import no.javatime.inplace.region.closure.ProjectSorter;
 import no.javatime.inplace.region.manager.BundleTransition.Transition;
+import no.javatime.inplace.region.project.BundleProjectState;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
@@ -311,7 +312,7 @@ public class ResetJob {
 						errorProjects = removeExternalDuplicates(projectsToReset, null, null);
 						if (null != errorProjects) {
 							projectsToReset.removeAll(errorProjects);
-							String msg = ErrorMessage.getInstance().formatString("bundle_errors_reset", ProjectProperties.formatProjectList((errorProjects)));
+							String msg = ErrorMessage.getInstance().formatString("bundle_errors_reset", BundleProjectState.formatProjectList((errorProjects)));
 							addError(null, msg);
 						}
 					}

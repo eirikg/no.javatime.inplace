@@ -3,7 +3,7 @@ Bundle-ManifestVersion: 2
 Bundle-Name: Preferences
 Bundle-SymbolicName: no.javatime.inplace.dl.preferences
 Bundle-Version: 0.1.1.qualifier
-Bundle-Activator: no.javatime.inplace.dl.preferences.PreferencesDlActivator
+Bundle-Activator: no.javatime.inplace.dl.preferences.Activator
 Export-Package: no.javatime.inplace.dl.preferences.intface
 Require-Bundle: org.eclipse.osgi.services,
  org.eclipse.osgi

@@ -4,6 +4,10 @@ import java.io.InputStream;
 import java.util.Collection;
 import java.util.List;
 
+import no.javatime.inplace.region.events.BundleEventManager;
+import no.javatime.inplace.region.project.BundleProjectState;
+import no.javatime.inplace.region.resolver.BundleResolveHookFactory;
+
 import org.eclipse.core.resources.IProject;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -16,13 +20,20 @@ import org.osgi.framework.wiring.FrameworkWiring;
 
 
 public interface BundleCommand {
+	
+	/**
+	 * Obtain the resolver hook factory for singletons.
+	 * 
+	 * @return the resolver hook factory object
+	 */
+	public BundleResolveHookFactory getResolverHookFactory();
 
 	/**
 	 * Installs the workspace bundle project and if the register parameter is true records the installed bundle 
 	 * along with the project and activation status as a workspace bundle in the bundle workspace region.
 	 * <p>
 	 * The activation status of a project can be obtained from
-	 * {@link no.javatime.inplace.bundleproject.ProjectProperties#isProjectNatureActivated(IProject)
+	 * {@link BundleProjectState#isProjectActivated(IProject)
 	 * isProjectActivated(IProject)}.
 	 * <p>
 	 * The location identifier is obtained from {@link #getBundleLocationIdentifier(IProject)} .

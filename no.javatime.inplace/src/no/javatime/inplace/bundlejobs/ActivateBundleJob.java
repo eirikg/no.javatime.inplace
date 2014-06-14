@@ -15,18 +15,19 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 
 import no.javatime.inplace.InPlace;
-import no.javatime.inplace.bundleproject.BundleProject;
+import no.javatime.inplace.bundleproject.BundleProjectSettings;
 import no.javatime.inplace.bundleproject.ProjectProperties;
-import no.javatime.inplace.dependencies.BundleSorter;
-import no.javatime.inplace.dependencies.CircularReferenceException;
-import no.javatime.inplace.dependencies.ProjectSorter;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Operation;
 import no.javatime.inplace.msg.Msg;
+import no.javatime.inplace.region.closure.BundleSorter;
+import no.javatime.inplace.region.closure.CircularReferenceException;
+import no.javatime.inplace.region.closure.ProjectSorter;
 import no.javatime.inplace.region.manager.BundleTransition.TransitionError;
 import no.javatime.inplace.region.manager.BundleManager;
 import no.javatime.inplace.region.manager.InPlaceException;
-import no.javatime.inplace.region.project.ManifestUtil;
+import no.javatime.inplace.region.project.ManifestOptions;
+import no.javatime.inplace.region.project.BundleProjectState;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
@@ -196,7 +197,7 @@ public class ActivateBundleJob extends BundleJob {
 		Collection<Bundle> activatedBundles = null;
 		ProjectSorter projectSorter = new ProjectSorter();
 		// At least one project must be activated (nature enabled) for workspace bundles to be activated
-		if (ProjectProperties.isProjectWorkspaceActivated()) {
+		if (BundleProjectState.isProjectWorkspaceActivated()) {
 			// If this is the first set of workspace project(s) that have been activated no bundle(s) have been activated yet
 			// and all deactivated bundles should be installed in an activated workspace (except erroneous bundles)
 			if (!bundleRegion.isBundleWorkspaceActivated()) {
@@ -260,7 +261,7 @@ public class ActivateBundleJob extends BundleJob {
 		}
 		// Set the bundle class path on start up if settings (dev and/or update bundle class path) are changed
 		if (getName().equals(ActivateBundleJob.activateStartupJobName)
-				&& (null != BundleProject.inDevelopmentMode() || getOptionsService().isUpdateDefaultOutPutFolder())) {
+				&& (null != BundleProjectSettings.inDevelopmentMode() || getOptionsService().isUpdateDefaultOutPutFolder())) {
 			for (Bundle bundle : activatedBundles) {
 				resolveBundleClasspath(bundleRegion.getBundleProject(bundle));
 			}
@@ -293,7 +294,7 @@ public class ActivateBundleJob extends BundleJob {
 		try {
 			projectErrorClosures = projectSorter.getRequiringBuildErrorClosure(getPendingProjects());
 			if (projectErrorClosures.size() > 0) {
-				String msg = ProjectProperties.formatBuildErrorsFromClosure(projectErrorClosures, getName());
+				String msg = BundleProjectState.formatBuildErrorsFromClosure(projectErrorClosures, getName());
 				if (null != msg) {
 					status = addBuildError(msg, null);
 				}
@@ -311,8 +312,8 @@ public class ActivateBundleJob extends BundleJob {
 			}
 
 		} catch (CircularReferenceException e) {
-			projectErrorClosures = ProjectProperties.getBuildErrors(getPendingProjects());
-			projectErrorClosures.addAll(ProjectProperties.hasBuildState(getPendingProjects()));
+			projectErrorClosures = BundleProjectState.getBuildErrors(getPendingProjects());
+			projectErrorClosures.addAll(BundleProjectState.hasBuildState(getPendingProjects()));
 			if (projectErrorClosures.size() > 0) {
 				removePendingProjects(projectErrorClosures);
 				if (null != installedBundles) {
@@ -339,7 +340,7 @@ public class ActivateBundleJob extends BundleJob {
 			if (null != store) {
 				// Default is to start the bundle, so only consider bundles with state resolved
 				for (Bundle bundle : bundleRegion.getActivatedBundles()) {
-					if (bundles.contains(bundle) && !ManifestUtil.isFragment(bundle)) {
+					if (bundles.contains(bundle) && !ManifestOptions.isFragment(bundle)) {
 						String symbolicKey = bundleRegion.getSymbolicKey(bundle, null);
 						if (symbolicKey.isEmpty()) {
 							continue;
@@ -360,7 +361,7 @@ public class ActivateBundleJob extends BundleJob {
 							if (reqBundles.size() > 0) {
 								for (Bundle reqBundle : reqBundles) {
 									// Fragments are only resolved (not started)
-									if (ManifestUtil.isFragment(reqBundle)) {
+									if (ManifestOptions.isFragment(reqBundle)) {
 										continue;
 									}
 									int reqState = 0;

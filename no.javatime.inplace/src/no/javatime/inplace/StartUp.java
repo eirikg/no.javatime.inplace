@@ -4,11 +4,11 @@ import java.util.Collection;
 
 import no.javatime.inplace.bundlejobs.ActivateBundleJob;
 import no.javatime.inplace.bundlemanager.BundleJobManager;
-import no.javatime.inplace.bundleproject.BundleProject;
-import no.javatime.inplace.bundleproject.ProjectProperties;
+import no.javatime.inplace.bundleproject.BundleProjectSettings;
 import no.javatime.inplace.region.manager.BundleTransition;
 import no.javatime.inplace.region.manager.ProjectLocationException;
 import no.javatime.inplace.region.manager.BundleTransition.Transition;
+import no.javatime.inplace.region.project.BundleProjectState;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
@@ -35,13 +35,13 @@ public class StartUp implements IStartup {
 	@Override
 	public void earlyStartup() {
 		if (Category.getState(Category.infoMessages)) {
-			String osgiDev = BundleProject.inDevelopmentMode();
+			String osgiDev = BundleProjectSettings.inDevelopmentMode();
 			if (null != osgiDev) {
 				UserMessage.getInstance().getString("class_path_dev_parameter", osgiDev);						
 			}
 		}
 		try {
-			Collection<IProject> activatedProjects = ProjectProperties.getActivatedProjects();
+			Collection<IProject> activatedProjects = BundleProjectState.getActivatedProjects();
 			if (activatedProjects.size() > 0) {
 				// Restore bundles to state from previous session
 				bundleStartUpActivation(activatedProjects);
@@ -62,7 +62,7 @@ public class StartUp implements IStartup {
 	 */
 	private void bundleStartUpActivation(Collection<IProject> activatedProjects) {
 		ActivateBundleJob activateJob = new ActivateBundleJob(ActivateBundleJob.activateStartupJobName,
-				ProjectProperties.getActivatedProjects());
+				BundleProjectState.getActivatedProjects());
 		activateJob.setUseStoredState(true);
 		BundleJobManager.addBundleJob(activateJob, 0);
 	}
@@ -76,8 +76,8 @@ public class StartUp implements IStartup {
 		if (null != store) {
 			BundleTransition  bundleTransition = BundleJobManager.getTransition();
 			IBundleStatus status = null;
-			for (IProject project : ProjectProperties.getProjects()) {
-				if (!ProjectProperties.isProjectActivated(project)) {
+			for (IProject project : BundleProjectState.getProjects()) {
+				if (!BundleProjectState.isProjectActivated(project)) {
 					String symbolicKey = BundleJobManager.getRegion().getSymbolicKey(null, project);
 					int state = store.getInt(symbolicKey, Transition.INSTALL.ordinal());
 					if (state == Transition.UNINSTALL.ordinal()) {

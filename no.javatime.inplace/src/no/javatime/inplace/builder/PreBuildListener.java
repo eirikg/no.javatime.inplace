@@ -15,6 +15,7 @@ import no.javatime.inplace.bundlemanager.BundleJobManager;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.region.manager.InPlaceException;
 import no.javatime.inplace.region.manager.BundleTransition.Transition;
+import no.javatime.inplace.region.project.BundleProjectState;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import no.javatime.util.messages.ExceptionMessage;
@@ -43,7 +44,7 @@ public class PreBuildListener implements IResourceChangeListener {
 	public void resourceChanged(IResourceChangeEvent event) {
 
 		// Nothing to do in a deactivated workspace where all bundle projects are uninstalled
-		if (!ProjectProperties.isProjectWorkspaceActivated()) {
+		if (!BundleProjectState.isProjectWorkspaceActivated()) {
 			return;
 		}		
 		IResourceDelta rootDelta = event.getDelta();
@@ -56,7 +57,7 @@ public class PreBuildListener implements IResourceChangeListener {
 //				int buildType = event.getBuildKind();
 				try {
 //					Bundle bundle = BundleJobManager.getRegion().get(project);
-					if (!ProjectProperties.isAutoBuilding() && ProjectProperties.isProjectActivated(project)) { 
+					if (!ProjectProperties.isAutoBuilding() && BundleProjectState.isProjectActivated(project)) { 
 							// && buildType == IncrementalProjectBuilder.AUTO_BUILD) {
 							BundleJobManager.getTransition().addPending(project, Transition.BUILD);
 					}

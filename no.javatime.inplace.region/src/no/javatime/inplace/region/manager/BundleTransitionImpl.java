@@ -12,7 +12,7 @@ public class BundleTransitionImpl implements BundleTransition {
 
 	public final static BundleTransitionImpl INSTANCE = new BundleTransitionImpl();
 
-	private BundleWorkspaceImpl ws = BundleWorkspaceImpl.INSTANCE;
+	private BundleWorkspaceRegionImpl ws = BundleWorkspaceRegionImpl.INSTANCE;
 
 	public BundleTransitionImpl() {
 	}

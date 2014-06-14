@@ -1,12 +1,12 @@
-package no.javatime.inplace.dependencies;
+package no.javatime.inplace.region.closure;
 
 import java.util.Collection;
 import java.util.LinkedHashSet;
 
-import no.javatime.inplace.InPlace;
+import no.javatime.inplace.region.Activator;
+import no.javatime.inplace.region.project.BundleProjectState;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
-import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.util.messages.ExceptionMessage;
 
 import org.eclipse.core.resources.IProject;
@@ -40,8 +40,8 @@ public class ProjectDependencies {
 					}
 				}
 			} catch (CoreException e) {
-				String msg = ExceptionMessage.getInstance().formatString("error_get_providing_projects", ProjectProperties.formatProjectList(projects));
-				StatusManager.getManager().handle(new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg, e),
+				String msg = ExceptionMessage.getInstance().formatString("error_get_providing_projects", BundleProjectState.formatProjectList(projects));
+				StatusManager.getManager().handle(new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, msg, e),
 						StatusManager.LOG);
 			}
 		}
@@ -64,8 +64,8 @@ public class ProjectDependencies {
 					getProvidingProjects(referencedProjects[i], projects);
 				}
 			} catch (CoreException e) {
-				String msg = ExceptionMessage.getInstance().formatString("error_get_providing_projects", ProjectProperties.formatProjectList(projects));
-				StatusManager.getManager().handle(new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg, e),
+				String msg = ExceptionMessage.getInstance().formatString("error_get_providing_projects", BundleProjectState.formatProjectList(projects));
+				StatusManager.getManager().handle(new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, msg, e),
 						StatusManager.LOG);
 			}
 		}
@@ -86,7 +86,7 @@ public class ProjectDependencies {
 				try {
 					IProject refProject = referencingProjects[i];
 					if (refProject.hasNature(JavaCore.NATURE_ID) 
-							&& refProject.isNatureEnabled(ProjectProperties.PLUGIN_NATURE_ID)) {
+							&& refProject.isNatureEnabled(BundleProjectState.PLUGIN_NATURE_ID)) {
 						projects.add(referencingProjects[i]);
 					}
 				} catch (CoreException e) {
@@ -114,7 +114,7 @@ public class ProjectDependencies {
 				try {
 					IProject refProject = referencingProjects[i];
 					if (refProject.hasNature(JavaCore.NATURE_ID) 
-							&& refProject.isNatureEnabled(ProjectProperties.PLUGIN_NATURE_ID)) {
+							&& refProject.isNatureEnabled(BundleProjectState.PLUGIN_NATURE_ID)) {
 						getRequiringProjects(referencingProjects[i], projects);
 					}
 				} catch (CoreException e) {

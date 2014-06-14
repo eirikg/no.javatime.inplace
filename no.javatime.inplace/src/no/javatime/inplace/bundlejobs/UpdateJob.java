@@ -21,14 +21,14 @@ import java.util.Set;
 
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundleproject.ProjectProperties;
-import no.javatime.inplace.dependencies.BundleSorter;
-import no.javatime.inplace.dependencies.CircularReferenceException;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.msg.Msg;
+import no.javatime.inplace.region.closure.BundleSorter;
+import no.javatime.inplace.region.closure.CircularReferenceException;
 import no.javatime.inplace.region.manager.BundleCommandImpl;
+import no.javatime.inplace.region.manager.BundleManager;
 import no.javatime.inplace.region.manager.BundleTransition.Transition;
 import no.javatime.inplace.region.manager.BundleTransition.TransitionError;
-import no.javatime.inplace.region.manager.BundleManager;
 import no.javatime.inplace.region.manager.DuplicateBundleException;
 import no.javatime.inplace.region.manager.InPlaceException;
 import no.javatime.inplace.region.manager.ProjectLocationException;
@@ -174,9 +174,8 @@ public class UpdateJob extends BundleJob {
 	 */
 	private IBundleStatus update(IProgressMonitor monitor) throws InPlaceException, InterruptedException, CoreException {
 			
-			// (1) Collect any additional bundles to update
-		// Update all bundles that are part of an activation process when the update on build option is switched
-		// off
+		// (1) Collect any additional bundles to update
+		// Update all bundles that are part of an activation process when the update on build option is switched off
 		Collection<IProject> activateProjects = bundleTransition.getPendingProjects(
 				bundleRegion.getBundleProjects(true), Transition.UPDATE_ON_ACTIVATE);
 		if (activateProjects.size() > 0) {
@@ -193,7 +192,7 @@ public class UpdateJob extends BundleJob {
 		}
 		Collection<Bundle> bundlesToUpdate = bundleRegion.getBundles(getPendingProjects());
 
-		// (2) Include requiring bundles to refresh (and resolve) due to changes in projects to update
+		// (2) Include requiring bundles to resolve (and optionally refresh) due to changes in projects to update
 		Collection<Bundle> bundlesToRefresh = getBundlesToResolve(bundlesToUpdate);
 
 		// (3) Reduce the set of bundles to update and refresh due to bundles with errors
@@ -201,15 +200,14 @@ public class UpdateJob extends BundleJob {
 		if (bundlesToUpdate.size() == 0 || 
 				bundleTransition.getPendingProjects(getPendingProjects(), Transition.UPDATE).size() == 0) {
 			if (InPlace.get().msgOpt().isBundleOperations()) {
-				addTrace( new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, Msg.NO_BUNDLES_TO_UPDATE_INFO));
+				addTrace(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, Msg.NO_BUNDLES_TO_UPDATE_INFO));
 			}
 			return getLastStatus();
 		}
 		// (4): Collect all bundles to restart after update and refresh
 		Collection<Bundle> bundlesToRestart = new LinkedHashSet<Bundle>();
 		// ACTIVE (and STARTING) bundles are restored to their current state or as directed by operations assigned
-		// to the bundle. Activated bundles in state INSTALLED (this indicates a corrected bundle error) are
-		// started
+		// to the bundle. Activated bundles in state INSTALLED (this indicates a corrected bundle error) are started
 		for (Bundle bundle : bundlesToRefresh) {
 			if (bundleTransition.containsPending(bundle, Transition.START, Boolean.TRUE)
 					|| (bundle.getState() & (Bundle.ACTIVE | Bundle.STARTING | Bundle.INSTALLED)) != 0) {
@@ -322,7 +320,7 @@ public class UpdateJob extends BundleJob {
 					// Set conditions in the resolver hook for removal of duplicates to avoid singleton collisions
 					duplicateInstanceCandidates.add(bundle);
 					duplicateInstanceGroups.put(bundle, duplicateInstanceCandidates);
-					InPlace.get().getResolverHookFactory().setGroups(duplicateInstanceGroups);					
+					bundleCommand.getResolverHookFactory().setGroups(duplicateInstanceGroups);					
 					bundleCommand.update(bundle);
 				} catch (DuplicateBundleException e) {
 					handleDuplicateException(bundleRegion.getBundleProject(bundle), e, null);

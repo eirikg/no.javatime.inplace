@@ -2,7 +2,7 @@ package no.javatime.inplace.ui.extender;
 
 import no.javatime.inplace.bundlemanager.BundleJobManager;
 import no.javatime.inplace.extender.provider.Extender;
-import no.javatime.inplace.pl.dependencies.service.DependencyDialog;
+import no.javatime.inplace.pl.dependencies.intface.DependencyDialog;
 import no.javatime.inplace.region.manager.InPlaceException;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;

@@ -12,13 +12,14 @@ package no.javatime.inplace.region.events;
 
 import no.javatime.inplace.region.Activator;
 import no.javatime.inplace.region.manager.BundleCommandImpl;
+import no.javatime.inplace.region.manager.BundleManager;
 import no.javatime.inplace.region.manager.BundleTransition.Transition;
 import no.javatime.inplace.region.manager.BundleTransition.TransitionError;
 import no.javatime.inplace.region.manager.BundleTransitionImpl;
-import no.javatime.inplace.region.manager.BundleManager;
-import no.javatime.inplace.region.manager.BundleWorkspaceImpl;
+import no.javatime.inplace.region.manager.BundleWorkspaceRegionImpl;
 import no.javatime.inplace.region.manager.ProjectLocationException;
-import no.javatime.inplace.region.project.ManifestUtil;
+import no.javatime.inplace.region.project.ManifestOptions;
+import no.javatime.inplace.region.project.BundleProjectState;
 import no.javatime.inplace.region.state.ActiveState;
 import no.javatime.inplace.region.state.BundleNode;
 import no.javatime.inplace.region.state.BundleState;
@@ -57,7 +58,7 @@ import org.osgi.framework.SynchronousBundleListener;
  * <p>
  * Installed and uninstalled bundles are registered and unregistered as workspace bundles respectively.
  * <p>
- * The design supports a concept of a region bounded bundle structure ({@link BundleWorkspaceImpl}) acted on
+ * The design supports a concept of a region bounded bundle structure ({@link BundleWorkspaceRegionImpl}) acted on
  * by bundle operations ({@link BundleCommandImpl}), which in turn creates a result (events) to interpret and
  * react upon ({@code BundleEventManager}). This interrelationship is not interpreted as a sequence or a flow,
  * although present, but as a structural coherence.
@@ -65,7 +66,7 @@ import org.osgi.framework.SynchronousBundleListener;
  */
 public class BundleEventManager implements FrameworkListener, SynchronousBundleListener {
 
-	private BundleWorkspaceImpl bundleRegion = BundleWorkspaceImpl.INSTANCE;
+	private BundleWorkspaceRegionImpl bundleRegion = BundleWorkspaceRegionImpl.INSTANCE;
 	BundleCommandImpl bundleCommand = BundleCommandImpl.INSTANCE;
 	BundleTransitionImpl bundleTransition = BundleTransitionImpl.INSTANCE;
 
@@ -136,7 +137,7 @@ public class BundleEventManager implements FrameworkListener, SynchronousBundleL
 		// If bundle has no recorded state and this is an internal install operation this method is called
 		// synchronously by install and the bundle will be registered as an installed workspace bundle.
 		if (null == state && Transition.INSTALL == transition) {
-			bundleCommand.registerBundleNode(project, bundle, bundleRegion.isProjectNatureActivated(project));
+			bundleCommand.registerBundleNode(project, bundle, BundleProjectState.isProjectActivated(project));
 			
 			// Get the new current state (installed) of the registered bundle
 			state = bundleRegion.getActiveState(bundle);
@@ -160,7 +161,7 @@ public class BundleEventManager implements FrameworkListener, SynchronousBundleL
 			// Transition: Install. Source: External
 			if (null == state || !(state instanceof InstalledState)) {
 				// Register the external installed workspace bundle
-				bundleNode = bundleCommand.registerBundleNode(project, bundle, bundleRegion.isProjectNatureActivated(project));
+				bundleNode = bundleCommand.registerBundleNode(project, bundle, BundleProjectState.isProjectActivated(project));
 				bundleTransition.setTransition(bundle, Transition.EXTERNAL);
 				// External transition message
 				if (Category.getState(Category.infoMessages)) {
@@ -222,7 +223,7 @@ public class BundleEventManager implements FrameworkListener, SynchronousBundleL
 					bundleNode.setCurrentState(BundleStateFactory.INSTANCE.uninstalledState);
 				}
 				// Uninstalling a bundle from an external source is not permitted in an activated workspace
-				if (bundleRegion.isProjectWorkspaceNatureActivated()) {
+				if (BundleProjectState.isProjectWorkspaceActivated()) {
 					bundleTransition.setTransitionError(bundle, TransitionError.UNINSTALL);
 				} else {
 					// Remove the externally uninstalled bundle from the workspace region
@@ -323,16 +324,16 @@ public class BundleEventManager implements FrameworkListener, SynchronousBundleL
 		case BundleEvent.RESOLVED: {
 			if (state instanceof ResolvedState) {
 				if (Transition.RESOLVE == transition) {
-					if (ManifestUtil.getlazyActivationPolicy(bundle)) {
+					if (ManifestOptions.getlazyActivationPolicy(bundle)) {
 						bundleNode.setCurrentState(BundleStateFactory.INSTANCE.lazyState);
 					}
 				} else if (Transition.REFRESH == transition) {
-					if (ManifestUtil.getlazyActivationPolicy(bundle)) {
+					if (ManifestOptions.getlazyActivationPolicy(bundle)) {
 						bundleNode.setCurrentState(BundleStateFactory.INSTANCE.lazyState);
 					}
 				}
 			} else {
-				if (ManifestUtil.getlazyActivationPolicy(bundle)) {
+				if (ManifestOptions.getlazyActivationPolicy(bundle)) {
 					bundleNode.setCurrentState(BundleStateFactory.INSTANCE.lazyState);
 				} else {
 					bundleNode.setCurrentState(BundleStateFactory.INSTANCE.resolvedState);

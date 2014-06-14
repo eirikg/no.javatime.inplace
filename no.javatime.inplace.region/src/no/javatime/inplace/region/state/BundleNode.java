@@ -17,7 +17,7 @@ import no.javatime.inplace.region.manager.BundleCommandImpl;
 import no.javatime.inplace.region.manager.BundleTransition;
 import no.javatime.inplace.region.manager.BundleTransition.Transition;
 import no.javatime.inplace.region.manager.BundleTransition.TransitionError;
-import no.javatime.inplace.region.manager.BundleWorkspaceImpl;
+import no.javatime.inplace.region.manager.BundleWorkspaceRegionImpl;
 import no.javatime.inplace.region.manager.InPlaceException;
 import no.javatime.util.messages.Category;
 import no.javatime.util.messages.TraceMessage;
@@ -174,8 +174,8 @@ public class BundleNode {
 			String symbolicName = null;
 			String version = null;
 			try {
-				symbolicName = BundleWorkspaceImpl.INSTANCE.getSymbolicNameFromManifest(project);
-				version = BundleWorkspaceImpl.INSTANCE.getBundleVersionFromManifest(project);
+				symbolicName = BundleWorkspaceRegionImpl.INSTANCE.getSymbolicNameFromManifest(project);
+				version = BundleWorkspaceRegionImpl.INSTANCE.getBundleVersionFromManifest(project);
 			} catch (InPlaceException e) {
 			}
 			if (null != symbolicName && null != version) {

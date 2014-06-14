@@ -7,10 +7,9 @@ import java.util.List;
 
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundlemanager.BundleJobManager;
-import no.javatime.inplace.bundleproject.BundleProject;
-import no.javatime.inplace.bundleproject.ProjectProperties;
-import no.javatime.inplace.dependencies.ProjectSorter;
+import no.javatime.inplace.bundleproject.BundleProjectSettings;
 import no.javatime.inplace.msg.Msg;
+import no.javatime.inplace.region.closure.ProjectSorter;
 import no.javatime.inplace.region.events.BundleTransitionEvent;
 import no.javatime.inplace.region.events.BundleTransitionEventListener;
 import no.javatime.inplace.region.manager.BundleCommand;
@@ -19,6 +18,7 @@ import no.javatime.inplace.region.manager.BundleTransition;
 import no.javatime.inplace.region.manager.BundleTransition.Transition;
 import no.javatime.inplace.region.manager.DuplicateBundleException;
 import no.javatime.inplace.region.manager.ProjectLocationException;
+import no.javatime.inplace.region.project.BundleProjectState;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
@@ -112,18 +112,18 @@ public abstract class JobStatus extends WorkspaceJob implements BundleTransition
 			bundleProjDesc = InPlace.get().getBundleDescription(project);
 			addTrace(Msg.UPDATE_BUNDLE_CLASSPATH_TRACE, 
 					new Object[] {bundleProjDesc.getHeader(Constants.BUNDLE_CLASSPATH), 
-							BundleProject.getDefaultOutputLocation(project), project.getName()}, project);
+							BundleProjectSettings.getDefaultOutputLocation(project), project.getName()}, project);
 			break;
 		case REMOVE_CLASSPATH:
 			bundleProjDesc = InPlace.get().getBundleDescription(project);			
 			String classPath = bundleProjDesc.getHeader(Constants.BUNDLE_CLASSPATH);
 			if (null == classPath) {
 				addTrace(Msg.REMOVE_BUNDLE_CLASSPATH_TRACE, 
-						new Object[] {BundleProject.getDefaultOutputLocation(project), 
+						new Object[] {BundleProjectSettings.getDefaultOutputLocation(project), 
 						project.getName()}, project);
 			} else {
 				addTrace(Msg.REMOVE_BUNDLE_CLASSPATH_ENTRY_TRACE, 
-						new Object[] {classPath, BundleProject.getDefaultOutputLocation(project), 
+						new Object[] {classPath, BundleProjectSettings.getDefaultOutputLocation(project), 
 						project.getName()}, project);
 			}
 			break;
@@ -517,7 +517,7 @@ public abstract class JobStatus extends WorkspaceJob implements BundleTransition
 					duplicateClosureSet.remove(project);
 					if (duplicateClosureSet.size() > 0) {
 						String msg = ErrorMessage.getInstance().formatString("duplicate_affected_bundles",
-								project.getName(), ProjectProperties.formatProjectList(duplicateClosureSet));
+								project.getName(), BundleProjectState.formatProjectList(duplicateClosureSet));
 						rootStatus.add(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, msg));
 					}
 				}

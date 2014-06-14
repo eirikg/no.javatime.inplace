@@ -17,14 +17,15 @@ import java.util.List;
 
 import no.javatime.inplace.bundlejobs.BundleJob;
 import no.javatime.inplace.bundlemanager.BundleJobManager;
-import no.javatime.inplace.bundleproject.BundleProject;
+import no.javatime.inplace.bundleproject.BundleProjectSettings;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.region.manager.BundleRegion;
 import no.javatime.inplace.region.manager.BundleTransition;
+import no.javatime.inplace.region.manager.BundleTransition.Transition;
 import no.javatime.inplace.region.manager.InPlaceException;
 import no.javatime.inplace.region.manager.ProjectLocationException;
-import no.javatime.inplace.region.manager.BundleTransition.Transition;
-import no.javatime.inplace.region.project.ManifestUtil;
+import no.javatime.inplace.region.project.BundleProjectState;
+import no.javatime.inplace.region.project.ManifestOptions;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import no.javatime.inplace.ui.Activator;
@@ -322,9 +323,9 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 		bundleDetailsPage.addSelectionChangedListener(bundleDetailsListener);
 		// The bundle view listen to selections in package and project explorer
 		site.getWorkbenchWindow().getSelectionService()
-				.addSelectionListener(ProjectProperties.PACKAGE_EXPLORER_ID, this);
+				.addSelectionListener(BundleMenuActivationHandler.PACKAGE_EXPLORER_ID, this);
 		site.getWorkbenchWindow().getSelectionService()
-				.addSelectionListener(ProjectProperties.PROJECT_EXPLORER_ID, this);
+				.addSelectionListener(BundleMenuActivationHandler.PROJECT_EXPLORER_ID, this);
 		// Open manifest editor on double click in both pages
 		bundleDetailsPage.addDoubleClickListener(bundleDoubleClickListener);
 		bundleListPage.addDoubleClickListener(bundleDoubleClickListener);
@@ -388,7 +389,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 		// Set input to list page and restore UI elements state
 		showProjects(javaProjects, true);
 		restoreState(memento);
-		if (!ProjectProperties.isProjectWorkspaceActivated()) {
+		if (!BundleProjectState.isProjectWorkspaceActivated()) {
 			pagebook.getDisplay().asyncExec(new Runnable() {
 				@Override
 				public void run() {
@@ -407,9 +408,9 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 		detailsTitleImage.dispose();
 		listTitleImage.dispose();
 		getSite().getWorkbenchWindow().getSelectionService()
-				.removeSelectionListener(ProjectProperties.PACKAGE_EXPLORER_ID, this);
+				.removeSelectionListener(BundleMenuActivationHandler.PACKAGE_EXPLORER_ID, this);
 		getSite().getWorkbenchWindow().getSelectionService()
-				.removeSelectionListener(ProjectProperties.PROJECT_EXPLORER_ID, this);
+				.removeSelectionListener(BundleMenuActivationHandler.PROJECT_EXPLORER_ID, this);
 		bundleListPage.removeSelectionChangedListener(bundleListListener);
 		bundleListPage.removeDoubleClickListener(bundleDoubleClickListener);
 		bundleDetailsPage.removeSelectionChangedListener(bundleDetailsListener);
@@ -516,7 +517,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 					IProject project = (IProject) Platform.getAdapterManager().getAdapter(object, IProject.class);
 					if (null != project && project.isAccessible()) {
 						// Set selection in list page view to the same project as in part
-						if (ProjectProperties.isInstallableProject(project)) {
+						if (ProjectProperties.isInstallable(project)) {
 							selectProject(project, true);
 						} else {
 							selectProject(project, false);
@@ -582,7 +583,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 			final IResource resource = event.getResource();
 			if (resource.getType() == IResource.PROJECT) {
 				IProject removedProject = resource.getProject();
-				if (ProjectProperties.isInstallableProject(removedProject)) {
+				if (ProjectProperties.isInstallable(removedProject)) {
 					markProjectRemoved(removedProject);
 				}
 			}
@@ -743,7 +744,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 	@Override
 	public void showBusy(boolean busy) {
 		super.showBusy(busy);
-		if (!ProjectProperties.isProjectWorkspaceActivated()) {
+		if (!BundleProjectState.isProjectWorkspaceActivated()) {
 			pagebook.getDisplay().asyncExec(new Runnable() {
 				@Override
 				public void run() {
@@ -792,7 +793,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 			public void run() {
 				IProject project = getSelectedProject();
 				if (null != project) {
-					if (!BundleProject.isOutputFolderInBundleClassPath(project)) {
+					if (!BundleProjectSettings.isOutputFolderInBundleClassPath(project)) {
 						BundleMenuActivationHandler.updateClassPathHandler(Collections.<IProject>singletonList(project), true);
 					} else {
 						BundleMenuActivationHandler.updateClassPathHandler(Collections.<IProject>singletonList(project), false);
@@ -810,7 +811,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 				IProject project = getSelectedProject();
 				if (null != project) {
 					Collection<IProject> projects = Collections.<IProject>singletonList(project);
-					if (ProjectProperties.isProjectActivated(project)) {
+					if (BundleProjectState.isProjectActivated(project)) {
 						BundleMenuActivationHandler.deactivateHandler(projects);
 					} else {
 						BundleMenuActivationHandler.activateProjectHandler(projects);
@@ -827,7 +828,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 			public void run() {
 				IProject project = getSelectedProject();
 				if (null != project) {
-					if (ProjectProperties.isProjectActivated(project)) {
+					if (BundleProjectState.isProjectActivated(project)) {
 						BundleMenuActivationHandler.resetHandler(Collections.<IProject>singletonList(project));
 					}
 				}
@@ -842,7 +843,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 			public void run() {
 				IProject project = getSelectedProject();
 				if (null != project) {
-					if (ProjectProperties.isProjectActivated(project)) {
+					if (BundleProjectState.isProjectActivated(project)) {
 						boolean update = BundleJobManager.getTransition().containsPending(project, Transition.UPDATE,
 								Boolean.FALSE);
 						if (update) {
@@ -861,7 +862,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 			public void run() {
 				IProject project = getSelectedProject();
 				if (null != project) {
-					if (ProjectProperties.isProjectActivated(project)) {
+					if (BundleProjectState.isProjectActivated(project)) {
 						Bundle bundle = BundleJobManager.getRegion().get(project);
 						if (null != bundle) {
 							boolean refresh = (null != bundle && BundleJobManager.getCommand().getBundleRevisions(bundle)
@@ -883,7 +884,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 			public void run() {
 				IProject project = getSelectedProject();
 				if (null != project) {
-					if (ProjectProperties.isProjectActivated(project)) {
+					if (BundleProjectState.isProjectActivated(project)) {
 						Bundle bundle = BundleJobManager.getRegion().get(project);
 						if (bundle != null) {
 							Collection<IProject> projects = Collections.<IProject>singletonList(project);
@@ -924,8 +925,8 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 
 				IProject project = getSelectedProject();
 				if (null != project && project.exists() && project.isOpen()) {
-					IFile manifestFile = project.getFile(BundleProject.MANIFEST_RELATIVE_PATH
-							+ BundleProject.MANIFEST_FILE_NAME);
+					IFile manifestFile = project.getFile(BundleProjectSettings.MANIFEST_RELATIVE_PATH
+							+ BundleProjectSettings.MANIFEST_FILE_NAME);
 					if (manifestFile.exists() && manifestFile.isAccessible()) {
 						// Open in plug-in Manifest editor
 						IEditorDescriptor editorDesc = PlatformUI.getWorkbench().getEditorRegistry()
@@ -959,7 +960,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 		IProject project = getSelectedProject();
 		// Disable all buttons and menu entries and return when no active project is selected,
 		// not a plug-in or bundle (should not exist in bundle list) and when a bundle job is running
-		if (null == project || isBundleJobRunning() || !ProjectProperties.isInstallableProject(project)) {
+		if (null == project || isBundleJobRunning() || !ProjectProperties.isInstallable(project)) {
 			setUIElement(resetAction, false, resetGeneralText, resetGeneralText,
 					BundleCommandsContributionItems.resetImage);
 			setUIElement(startStopAction, false, startStopGeneralText, startStopGeneralText,
@@ -991,7 +992,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 		activateAction.setEnabled(true);
 		// Allow to update the class path for deactivated and activated bundle projects
 		setUpdateClassPathAction(project);
-		if (ProjectProperties.isProjectActivated(project)) {
+		if (BundleProjectState.isProjectActivated(project)) {
 			// Bundle should be in state installed (if resolve errors), resolved or active/starting
 			Bundle bundle = BundleJobManager.getRegion().get(project);
 			if (null != bundle) {
@@ -999,7 +1000,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 				if ((bundle.getState() & (Bundle.ACTIVE | Bundle.STARTING)) != 0) {
 					setUIElement(startStopAction, true, stopText, stopText, BundleCommandsContributionItems.stopImage);
 				} else { // bundle in state installed or resolved
-					if (ManifestUtil.isFragment(bundle)) {
+					if (ManifestOptions.isFragment(bundle)) {
 						setUIElement(startStopAction, false, startText, startText,
 								BundleCommandsContributionItems.startImage);
 					} else {
@@ -1076,7 +1077,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 	private void setUpdateClassPathAction(IProject project) {
 		try {
 			updateClassPathAction.setEnabled(true);
-			if (!BundleProject.isOutputFolderInBundleClassPath(project)) {
+			if (!BundleProjectSettings.isOutputFolderInBundleClassPath(project)) {
 				setUIElement(updateClassPathAction, updateClassPathAction.isEnabled(),
 						addClassPathLabel /* updateClassPathText */, addClassPathLabel /* updateClassPathText */,
 						BundleCommandsContributionItems.classPathImage);
@@ -1397,9 +1398,9 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 			IWorkbenchPartSite workbenchPartSite = null;
 			ISelectionProvider selProvider = null;
 			try {
-				packageExplorer = Message.getView(ProjectProperties.PACKAGE_EXPLORER_ID);
+				packageExplorer = Message.getView(BundleMenuActivationHandler.PACKAGE_EXPLORER_ID);
 				if (null != packageExplorer) {
-					IJavaProject jp = ProjectProperties.getJavaProject(project);
+					IJavaProject jp = BundleProjectState.getJavaProject(project);
 					IStructuredSelection jpSelection = new StructuredSelection(jp);
 					workbenchPartSite = packageExplorer.getSite();
 					if (null != workbenchPartSite) {
@@ -1409,7 +1410,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 						}
 					}
 				}
-				projectExplorer = Message.getView(ProjectProperties.PROJECT_EXPLORER_ID);
+				projectExplorer = Message.getView(BundleMenuActivationHandler.PROJECT_EXPLORER_ID);
 				if (null != projectExplorer) {
 					IStructuredSelection pSelection = new StructuredSelection(project);
 					workbenchPartSite = projectExplorer.getSite();

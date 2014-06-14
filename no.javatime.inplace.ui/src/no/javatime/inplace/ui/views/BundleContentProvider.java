@@ -137,7 +137,7 @@ class BundleContentProvider implements IStructuredContentProvider {
 		Boolean uiExtensions = false;
 		String locationIdentifier = null;
 		try {
-			uiExtensions = ProjectProperties.contributesToTheUI(project);
+			uiExtensions = ProjectProperties.isUIContributor(project);
 		} catch (InPlaceException e) {
 		}
 
@@ -157,7 +157,7 @@ class BundleContentProvider implements IStructuredContentProvider {
 			locationIdentifier = e.getLocalizedMessage();
 		}
 		try {
-			Boolean installeable = ProjectProperties.isInstallableProject(project);
+			Boolean installeable = ProjectProperties.isInstallable(project);
 			if (!installeable && !uiExtensions) {  // Not a plug-in project
 				return new BundleProperties[] {
 						new BundleProperties(project, BundleProperties.projectLabelName, bp.getProjectName()),

@@ -1,7 +1,7 @@
 package no.javatime.inplace.region.state;
 
 import no.javatime.inplace.region.manager.InPlaceException;
-import no.javatime.inplace.region.project.ManifestUtil;
+import no.javatime.inplace.region.project.ManifestOptions;
 
 public class LazyState extends BundleState {
 
@@ -14,7 +14,7 @@ public class LazyState extends BundleState {
 	}
 
 	public void start(BundleNode bundleNode) throws InPlaceException {		
-		if (!ManifestUtil.getlazyActivationPolicy(getBundle(bundleNode))) {
+		if (!ManifestOptions.getlazyActivationPolicy(getBundle(bundleNode))) {
 			bundleNode.setCurrentState(BundleStateFactory.INSTANCE.activeState);		
 		}
 	}

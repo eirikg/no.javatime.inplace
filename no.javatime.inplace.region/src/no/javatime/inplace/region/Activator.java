@@ -4,6 +4,7 @@ import no.javatime.inplace.dl.preferences.intface.MessageOptions;
 import no.javatime.inplace.extender.provider.Extension;
 import no.javatime.inplace.region.events.BundleEventManager;
 import no.javatime.inplace.region.manager.InPlaceException;
+import no.javatime.inplace.region.resolver.BundleResolveHookFactory;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
@@ -11,6 +12,8 @@ import org.eclipse.pde.core.project.IBundleProjectDescription;
 import org.eclipse.pde.core.project.IBundleProjectService;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.osgi.framework.BundleContext;
+import org.osgi.framework.ServiceRegistration;
+import org.osgi.framework.hooks.resolver.ResolverHookFactory;
 import org.osgi.util.tracker.ServiceTracker;
 
 /**
@@ -28,8 +31,15 @@ public class Activator extends AbstractUIPlugin {
 	private Extension<MessageOptions> messageOptions;
 
 	/**
-	 * The constructor
+	 * Factory creating resolver hook objects for filtering and detection of duplicate bundle instances
 	 */
+	protected BundleResolveHookFactory resolverHookFactory = new BundleResolveHookFactory();
+
+	/**
+	 * Service registrator for the resolve hook factory.
+	 */
+	private ServiceRegistration<ResolverHookFactory> resolveHookRegistration;
+
 	public Activator() {
 	}
 
@@ -41,11 +51,10 @@ public class Activator extends AbstractUIPlugin {
 		super.start(context);
 		plugin = this;
 		Activator.context = context;		
+		registerResolverHook();
 		Activator.context.addFrameworkListener(eventManager);
 		Activator.context.addBundleListener(eventManager);
-
 		messageOptions = new Extension<>(MessageOptions.class);
-
 		bundleProjectTracker =  new ServiceTracker<IBundleProjectService, IBundleProjectService>
 				(context, IBundleProjectService.class.getName(), null);
 		bundleProjectTracker.open();
@@ -60,10 +69,35 @@ public class Activator extends AbstractUIPlugin {
 		Activator.context.removeBundleListener(eventManager);
 		bundleProjectTracker.close();
 		bundleProjectTracker = null;		
+		unregisterResolverHook();
 		super.stop(context);
 		plugin = null;
 		Activator.context = null;
 	}
+
+	/**
+	 * Obtain the resolver hook factory for singletons.
+	 * 
+	 * @return the resolver hook factory object
+	 */
+	public final BundleResolveHookFactory getResolverHookFactory() {
+		return resolverHookFactory;
+	}
+
+	public void registerResolverHook() {
+		resolveHookRegistration = getContext().registerService(ResolverHookFactory.class, resolverHookFactory,
+				null);		
+	}
+
+	/**
+	 * Unregister the resolver hook.
+	 * <p>
+	 * This is redundant. Unregistered by the OSGi service implementation
+	 */
+	public void unregisterResolverHook() {
+		resolveHookRegistration.unregister();
+	}
+
 
 	/**
 	 * Finds and return the bundle description for a given project.

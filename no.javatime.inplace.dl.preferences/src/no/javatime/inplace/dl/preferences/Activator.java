@@ -28,9 +28,9 @@ import org.osgi.framework.BundleContext;
  * start/stop method and add the OSGI-INFO/optins.xml file to the
  * Service-Component header in the META-INF/manifest.mf
  */
-public class PreferencesDlActivator implements BundleActivator {
+public class Activator implements BundleActivator {
 
-	private static PreferencesDlActivator plugin = null;
+	private static Activator plugin = null;
 	private static BundleContext context;
 
 	/*
@@ -42,7 +42,7 @@ public class PreferencesDlActivator implements BundleActivator {
 	@Override
 	public void start(BundleContext context) throws Exception {
 		plugin = this;
-		PreferencesDlActivator.context = context;
+		Activator.context = context;
 		Bundle bundle = context.getBundle();
 		Dictionary<String, String> dictionary = bundle.getHeaders();
 		
@@ -64,7 +64,7 @@ public class PreferencesDlActivator implements BundleActivator {
 	 */
 	@Override
 	public void stop(BundleContext context) throws Exception {
-		PreferencesDlActivator.context = null;
+		Activator.context = null;
 		plugin = null;
 	}
 
@@ -82,7 +82,7 @@ public class PreferencesDlActivator implements BundleActivator {
 	 * 
 	 * @return the shared bundle object
 	 */
-	public static PreferencesDlActivator getPlugin() {
+	public static Activator getPlugin() {
 		return plugin;
 	}
 }
