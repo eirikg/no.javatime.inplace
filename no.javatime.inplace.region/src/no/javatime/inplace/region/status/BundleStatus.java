@@ -13,8 +13,8 @@ package no.javatime.inplace.region.status;
 import java.util.Collection;
 
 import no.javatime.inplace.region.Activator;
-import no.javatime.inplace.region.manager.BundleTransition.Transition;
 import no.javatime.inplace.region.manager.BundleManager;
+import no.javatime.inplace.region.manager.BundleTransition.Transition;
 import no.javatime.inplace.region.manager.InPlaceException;
 
 import org.eclipse.core.resources.IProject;
@@ -37,7 +37,7 @@ public class BundleStatus extends MultiStatus implements IBundleStatus {
 	private StatusCode statusCode;
 	private IProject project;
 	private Long bundleId;
-	private int bundleState = Bundle.UNINSTALLED;;
+	private int bundleState = 0;
 	private Transition bundleTransition = Transition.NOTRANSITION;;
 	
 
@@ -185,7 +185,6 @@ public class BundleStatus extends MultiStatus implements IBundleStatus {
 					if (null != bundle) {
 						symbolicName = bundle.getSymbolicName();
 						this.bundleId = bundle.getBundleId();
-						bundleState = bundle.getState();
 						bundleTransition = BundleManager.getTransition().getTransition(bundle);
 					} else {
 						IBundleProjectDescription pd = Activator.getDefault().getBundleDescription(project);

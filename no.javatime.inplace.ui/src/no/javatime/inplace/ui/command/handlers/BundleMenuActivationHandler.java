@@ -114,7 +114,7 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 			} else {
 				activateJob = new ActivateProjectJob(ActivateProjectJob.activateWorkspaceJobName, projects);
 			}
-				jobHandler(activateJob);
+			jobHandler(activateJob);
 		}
 	}
 

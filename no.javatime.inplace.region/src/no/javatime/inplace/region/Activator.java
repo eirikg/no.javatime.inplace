@@ -1,5 +1,6 @@
 package no.javatime.inplace.region;
 
+import no.javatime.inplace.dl.preferences.intface.DependencyOptions;
 import no.javatime.inplace.dl.preferences.intface.MessageOptions;
 import no.javatime.inplace.extender.provider.Extension;
 import no.javatime.inplace.region.events.BundleEventManager;
@@ -29,6 +30,7 @@ public class Activator extends AbstractUIPlugin {
 
 	private ServiceTracker<IBundleProjectService, IBundleProjectService> bundleProjectTracker;
 	private Extension<MessageOptions> messageOptions;
+	private Extension<DependencyOptions> dependencyOptions;
 
 	/**
 	 * Factory creating resolver hook objects for filtering and detection of duplicate bundle instances
@@ -55,6 +57,7 @@ public class Activator extends AbstractUIPlugin {
 		Activator.context.addFrameworkListener(eventManager);
 		Activator.context.addBundleListener(eventManager);
 		messageOptions = new Extension<>(MessageOptions.class);
+		dependencyOptions = new Extension<>(DependencyOptions.class);
 		bundleProjectTracker =  new ServiceTracker<IBundleProjectService, IBundleProjectService>
 				(context, IBundleProjectService.class.getName(), null);
 		bundleProjectTracker.open();
@@ -142,6 +145,14 @@ public class Activator extends AbstractUIPlugin {
 			throw new InPlaceException("invalid_service", MessageOptions.class.getName());			
 		}
 		return msgOpt;
+	}
+
+	public DependencyOptions getDependencyOptionsService() throws InPlaceException {
+		DependencyOptions dpOpt = dependencyOptions.getService();
+		if (null == dpOpt) {
+			throw new InPlaceException("invalid_service", DependencyOptions.class.getName());			
+		}
+		return dpOpt;
 	}
 
 	/**

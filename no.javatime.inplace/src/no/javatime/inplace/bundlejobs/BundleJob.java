@@ -22,10 +22,11 @@ import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundlemanager.BundleJobManager;
 import no.javatime.inplace.bundleproject.BundleProjectSettings;
 import no.javatime.inplace.bundleproject.ProjectProperties;
-import no.javatime.inplace.dependencies.BundleClosures;
 import no.javatime.inplace.dl.preferences.intface.CommandOptions;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
+import no.javatime.inplace.region.closure.BuildErrorClosure;
+import no.javatime.inplace.region.closure.BundleClosures;
 import no.javatime.inplace.region.closure.BundleSorter;
 import no.javatime.inplace.region.closure.CircularReferenceException;
 import no.javatime.inplace.region.closure.ProjectSorter;
@@ -258,6 +259,7 @@ public abstract class BundleJob extends JobStatus {
 		}
 		return dependencyOptions;
 	}
+
 	/**
 	 * Reinstalls the specified bundle projects. Failures to reinstall are added to the job status list. Only specified
 	 * bundle projects in state INSTALLED are re-installed.
@@ -370,11 +372,17 @@ public abstract class BundleJob extends JobStatus {
 					sleep(sleepTime);
 				localMonitor.subTask(UninstallJob.uninstallSubtaskName + bundle.getSymbolicName());
 				try {
-					bundleCommand.uninstall(bundle, unregister);
+					bundleCommand.uninstall(bundle, false);					
 				} catch (InPlaceException e) {
 					result = addError(e, e.getLocalizedMessage(), bundle.getBundleId());
 				} finally {
 					localMonitor.worked(1);
+				}
+			}
+			refresh(bundles, new SubProgressMonitor(monitor, 1));
+			if (unregister) {
+				for (Bundle bundle : bundles) {
+					bundleCommand.unregisterBundleProject(bundle);
 				}
 			}
 		}
@@ -789,6 +797,7 @@ public abstract class BundleJob extends JobStatus {
 		Collection<Bundle> activatedBundles = bundleRegion.getActivatedBundles();
 		Collection<Bundle> bundlesToResolve = bs.sortDeclaredRequiringBundles(bundles, activatedBundles);
 		// The resolver always include bundles with the same symbolic name in the resolve process
+		// TODO Add these when duplicates are detected. See who uses this method. NB -> Now excluded for update job
 		Map<IProject, Bundle> duplicates = bundleRegion.getSymbolicNameDuplicates(
 				bundleRegion.getBundleProjects(bundlesToResolve), activatedBundles, true);
 		if (duplicates.size() > 0) {
@@ -813,11 +822,19 @@ public abstract class BundleJob extends JobStatus {
 				sleep(sleepTime);
 			localMonitor.subTask(resolveTaskName);
 			if (!bundleCommand.resolve(bundlesToResolve)) {
-				ProjectSorter bs = new ProjectSorter();
 				Collection<IProject> projectsToResolve = bundleRegion.getBundleProjects(bundlesToResolve);
 				// Error closures are also removed in the resolver hook
-				Collection<IProject> pErrorClosures = bs.getRequiringBuildErrorClosure(projectsToResolve);
-				projectsToResolve.removeAll(pErrorClosures);
+				BuildErrorClosure be = new BuildErrorClosure(projectsToResolve, Transition.RESOLVE);
+				if (be.hasBuildErrors()) {
+					Collection<Bundle> buildErrClosure = be.getBundleErrorClosures(true);
+					projectsToResolve.removeAll(buildErrClosure);
+					if (InPlace.get().msgOpt().isBundleOperations()) {
+						IBundleStatus bundleStatus = be.getProjectErrorClosureStatus(true);
+						if (null != bundleStatus) {
+							addTrace(bundleStatus);			
+						}
+					}
+				}
 				Collection<Bundle> notResolvedBundles = new ArrayList<Bundle>();
 				Collection<IProject> notResolvedProjects = new ArrayList<IProject>();
 				IBundleStatus startStatus = null;
@@ -972,58 +989,6 @@ public abstract class BundleJob extends JobStatus {
 		} catch (InPlaceException e) {
 			String msg = ExceptionMessage.getInstance().formatString("error_resolve_class_path", project);
 			result = addError(e, msg);
-		}
-		return result;
-	}
-
-	/**
-	 * Remove all projects with build errors and their requiring and providing projects (build error closures) from the
-	 * specified dependency closures. This extracts a path of requiring and providing bundles to/from each error bundle.
-	 * <p>
-	 * Remove build error closures bundles from the specified initial bundle set and the bundle and project dependency
-	 * closures
-	 * <p>
-	 * Issue a warning for all build error dependency closures.
-	 * 
-	 * @param initialBundleSet initial bundles to search for build errors in
-	 * @param bDepClosures bundles dependency closures (requiring bundles to initial set)
-	 * @param pDepClosures projects dependency closures (requiring projects to initial set)
-	 * 
-	 * @return status object describing the result of removing build errors with {@code StatusCode.OK} if no failure,
-	 *         otherwise one of the failure codes are returned. If more than one bundle fails, status of the last failed
-	 *         bundle is returned. All failures are added to the job status list
-	 * @throws OperationCanceledException if the specified initial set of bundles becomes empty after bundle error
-	 *           closures is removed
-	 */
-	protected IBundleStatus removeBuildErrorClosures(Collection<Bundle> initialBundleSet,
-			Collection<Bundle> bDepClosures, Collection<IProject> pDepClosures) throws OperationCanceledException {
-		IBundleStatus result = createStatus();
-
-		// Get all projects with build errors and their requiring projects from dependency closures
-		ProjectSorter ps = new ProjectSorter();
-		Collection<IProject> pErrorDepClosures = ps.getRequiringBuildErrorClosure(pDepClosures, true);
-		if (pErrorDepClosures.size() > 0) {
-			Collection<Bundle> bErrorDepClosures = bundleRegion.getBundles(pErrorDepClosures);
-			bDepClosures.removeAll(bErrorDepClosures);
-			initialBundleSet.removeAll(bErrorDepClosures);
-			// Construct the warning message and the requiring part
-			String msg = BundleProjectState.formatBuildErrorsFromClosure(pErrorDepClosures, getName());
-			// Get the providing projects to projects with errors from dependency closures
-			BundleSorter bs = new BundleSorter();
-			Collection<Bundle> bProvDepClosures = bs.sortProvidingBundles(bErrorDepClosures, bDepClosures);
-			bProvDepClosures.removeAll(bErrorDepClosures);
-			if (bProvDepClosures.size() > 0) {
-				// Construct the providing part of the warning message
-				Collection<IProject> errorProjects = BundleProjectState.getBuildErrors(pErrorDepClosures);
-				errorProjects.addAll(BundleProjectState.hasBuildState(pErrorDepClosures));
-				msg += ' ' + WarnMessage.getInstance().formatString("providing_bundles",
-						bundleRegion.formatBundleList(bProvDepClosures, true));
-				initialBundleSet.removeAll(bProvDepClosures);
-				bDepClosures.removeAll(bProvDepClosures);
-			}
-			if (null != msg) {
-				result = addBuildError(msg, null);
-			}
 		}
 		return result;
 	}

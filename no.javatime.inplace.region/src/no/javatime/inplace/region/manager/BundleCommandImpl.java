@@ -112,12 +112,12 @@ public class BundleCommandImpl implements BundleCommand {
 	}
 
 	@Override
-	public Bundle install(IProject project, Boolean register) throws InPlaceException,
+	public Bundle install(IProject project, Boolean activate) throws InPlaceException,
 			DuplicateBundleException, ProjectLocationException {
 
 		Bundle bundle = bundleRegion.get(project);
 		if (null == bundleRegion.get(project)) {
-			registerBundleNode(project, bundle, register);
+			registerBundleNode(project, bundle, activate);
 		}
 		if (null == bundle) {
 			bundle = install(project);
@@ -268,9 +268,8 @@ public class BundleCommandImpl implements BundleCommand {
 	@Override
 	public void refresh(final Collection<Bundle> bundles) throws InPlaceException {
 
-		if (bundles.size() == 0 || !bundleRegion.isBundleWorkspaceActivated()) {
-			// TODO Issue a warning in the log
-			return;
+		if (null == bundles || bundles.size() == 0) { 
+			return; // Ok to return when no bundles to refresh
 		}
 		try {
 			for (Bundle bundle : bundles) {
@@ -741,8 +740,13 @@ public class BundleCommandImpl implements BundleCommand {
 		BundleState state = bundleRegion.getActiveState(bundle);
 		IProject project = null;
 		try {
-			project = bundleRegion.getBundleProject(bundle);
-			state.uninstall(bundleRegion.getBundleNode(bundle));
+			BundleNode node = bundleRegion.getBundleNode(bundle);
+			if (null == node) {
+				bundle.uninstall();
+				throw new InPlaceException("bundle_unregistered", bundle);
+			}
+			project = node.getProject();
+			state.uninstall(node);
 			bundleTransition.setTransition(bundle, Transition.UNINSTALL);
 			bundle.uninstall();
 		} catch (IllegalStateException e) {
@@ -778,9 +782,10 @@ public class BundleCommandImpl implements BundleCommand {
 	}
 
 	@Override
-	public void registerBundle(IProject project, Bundle bundle, Boolean activateBundle) {
-		registerBundleNode(project, bundle, activateBundle);
+	public void registerBundleProject(IProject project, Bundle bundle, boolean activateBundle) {
+		registerBundleProjectNode(project, bundle, activateBundle);		
 	}
+
 	/**
 	 * Register a project and its associated workspace bundle in the workspace region. The bundle must be
 	 * registered during or after it is installed but before it is resolved. The bundle is set to state
@@ -793,7 +798,7 @@ public class BundleCommandImpl implements BundleCommand {
 	 * @return the new or existing bundle node or null if any of the bundle or projects parameters are null
 	 */
 	public BundleNode registerBundleNode(IProject project, Bundle bundle, Boolean activateBundle) {
-
+	
 		BundleNode node = bundleRegion.getBundleNode(project);
 		try {
 			// Register the bundle with its project and initialize state to stateless
@@ -808,36 +813,7 @@ public class BundleCommandImpl implements BundleCommand {
 		return node;
 	}
 
-	/**
-	 * Unregister a workspace bundle from the workspace region. The bundle must be unregistered after it is
-	 * uninstalled. The activation status is set to false and the bundle is removed from it associated project
-	 * 
-	 * @param bundle bundle to unregister form the workspace region.
-	 */
-	@Override
-	public void unregisterBundle(Bundle bundle) {
-		BundleNode node = bundleRegion.getBundleNode(bundle);
-		if (null != node) {
-			node.setBundleId(null);
-			node.setActivated(false);
-		}
-	}
-	
-	@Override
-	public void registerBundleProject(IProject project, Bundle bundle, boolean activateBundle) {
-		registerBundleProjectNode(project, bundle, activateBundle);		
-	}
-	
-	@Override
-	public boolean isBundleProjectRegistered(IProject project) {
-		BundleNode node = bundleRegion.getBundleNode(project);
-		if (null != node) {
-			return true;
-		}
-		return false;
-	}	
-	
-	public BundleNode registerBundleProjectNode(IProject project, Bundle bundle, Boolean activateBundle) {
+	private BundleNode registerBundleProjectNode(IProject project, Bundle bundle, Boolean activateBundle) {
 		BundleNode node = null;
 		// Do not register the bundle more than once
 		try {
@@ -848,6 +824,30 @@ public class BundleCommandImpl implements BundleCommand {
 		return node;
 	}
 
+	@Override
+	public boolean isBundleProjectRegistered(IProject project) {
+		BundleNode node = bundleRegion.getBundleNode(project);
+		if (null != node) {
+			return true;
+		}
+		return false;
+	}
+
+	/**
+	 * Unregister a workspace bundle from the workspace region. The bundle must be unregistered after it is
+	 * uninstalled. The activation status is set to false and the bundle is removed from it associated project
+	 * 
+	 * @param bundle bundle to unregister form the workspace region.
+	 */
+	@Override
+	public void unregisterBundleProject(Bundle bundle) {
+		BundleNode node = bundleRegion.getBundleNode(bundle);
+		if (null != node) {
+			node.setBundleId(null);
+			node.setActivated(false);
+		}
+	}
+	
 	@Override
 	public void unregisterBundleProject(IProject project) {
 		bundleRegion.remove(project);

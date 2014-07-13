@@ -2,7 +2,6 @@ package no.javatime.inplace.region.project;
 
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
@@ -19,9 +18,7 @@ import no.javatime.util.messages.Message;
 import no.javatime.util.messages.TraceMessage;
 import no.javatime.util.messages.WarnMessage;
 
-import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IProject;
-import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
@@ -98,85 +95,6 @@ public class BundleProjectState {
 		return false;
 	}
 
-	/**
-	 * Check if there are build errors from the most recent build.
-	 * 
-	 * @return cancel list of projects with errors or an empty list
-	 * @throws InPlaceException if one of the specified projects does not exist or is closed
-	 */
-	public static Collection<IProject> getBuildErrors(Collection<IProject> projects) throws InPlaceException {
-		Collection<IProject> errors = new LinkedHashSet<IProject>();
-		for (IProject project : projects) {
-			if (hasBuildErrors(project)) {
-				errors.add(project);
-			}
-		}
-		return errors;
-	}
-
-	/**
-	 * Check if the compilation state of an {@link IJavaProject} has errors.
-	 * 
-	 * @param project the {@link IJavaProject} to check for errors
-	 * @return <code>true</code> if the project has compilation errors (or has never been built),
-	 *         <code>false</code> otherwise
-	 * @throws InPlaceException if project does not exist or is closed
-	 */
-	public static boolean hasBuildErrors(IProject project) throws InPlaceException {
-	
-		try {
-			if (null != project && project.isAccessible()) {
-				IMarker[] problems = project.findMarkers(IMarker.PROBLEM, true, IResource.DEPTH_INFINITE);
-				// check if any of these have a severity attribute that indicates an error
-				for (int problemsIndex = 0; problemsIndex < problems.length; problemsIndex++) {
-					if (IMarker.SEVERITY_ERROR == problems[problemsIndex].getAttribute(IMarker.SEVERITY,
-							IMarker.SEVERITY_INFO)) {
-						return true;
-					}
-				}
-			}
-		} catch (CoreException e) {
-			throw new InPlaceException(e, "has_build_errors", project);
-		}
-		return false;
-	}
-
-	/**
-	 * Checks if the project has build state
-	 * 
-	 * @param project to check for build state
-	 * @return true if the project has build state, otherwise false
-	 */
-	public static boolean hasBuildState(IProject project) throws InPlaceException {
-	
-		if (null == project) {
-			throw new InPlaceException("null_project_build_state");
-		}
-		if (project.isAccessible()) {
-			IJavaProject javaProject = getJavaProject(project.getName());
-			if (javaProject.hasBuildState()) {
-				return true;
-			}
-		}
-		return false;
-	}
-
-	/**
-	 * Check if the specified projects have build state
-	 * 
-	 * @param projects to check for build state
-	 * @return Set of projects missing build state among the specified projects or an empty set
-	 */
-	public static Collection<IProject> hasBuildState(Collection<IProject> projects) {
-		Collection<IProject> missingBuildState = new LinkedHashSet<IProject>();
-		for (IProject project : projects) {
-			if (!hasBuildState(project)) {
-				missingBuildState.add(project);
-			}
-		}
-		return missingBuildState;
-	}
-
 	public static Boolean isFragment(IProject project) throws InPlaceException {
 	
 		IBundleProjectDescription bundleProjDesc = Activator.getDefault().getBundleDescription(project);
@@ -251,29 +169,6 @@ public class BundleProjectState {
 			}
 		}
 		return sb.toString();
-	}
-
-	/**
-	 * Format and report projects with build errors and their requiring projects
-	 * 
-	 * @param errorClosure error closures containing projects with build errors and their requiring projects
-	 * @return null if no errors, otherwise the error message
-	 */
-	static public String formatBuildErrorsFromClosure(Collection<IProject> errorClosure, String name) {
-		String msg = null;
-		if (errorClosure.size() > 0) {
-			Collection<IProject> errorProjects = getBuildErrors(errorClosure);
-			errorProjects.addAll(hasBuildState(errorClosure));
-			Collection<IProject> closure = new ArrayList<IProject>(errorClosure);
-			closure.removeAll(errorProjects);
-			if (closure.size() > 0) {
-				msg = WarnMessage.getInstance().formatString("build_errors_with_requring", name,
-						formatProjectList(errorProjects), formatProjectList(closure));
-			} else if (errorClosure.size() > 0) {
-				msg = WarnMessage.getInstance().formatString("build_errors", name, formatProjectList(errorProjects));
-			}
-		}
-		return msg;
 	}
 
 	/**

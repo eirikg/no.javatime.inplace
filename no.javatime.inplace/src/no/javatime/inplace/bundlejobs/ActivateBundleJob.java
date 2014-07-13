@@ -15,19 +15,22 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 
 import no.javatime.inplace.InPlace;
+import no.javatime.inplace.bundlemanager.BundleJobManager;
 import no.javatime.inplace.bundleproject.BundleProjectSettings;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Operation;
 import no.javatime.inplace.msg.Msg;
+import no.javatime.inplace.region.closure.BuildErrorClosure;
 import no.javatime.inplace.region.closure.BundleSorter;
 import no.javatime.inplace.region.closure.CircularReferenceException;
 import no.javatime.inplace.region.closure.ProjectSorter;
-import no.javatime.inplace.region.manager.BundleTransition.TransitionError;
 import no.javatime.inplace.region.manager.BundleManager;
+import no.javatime.inplace.region.manager.BundleTransition.Transition;
+import no.javatime.inplace.region.manager.BundleTransition.TransitionError;
 import no.javatime.inplace.region.manager.InPlaceException;
-import no.javatime.inplace.region.project.ManifestOptions;
 import no.javatime.inplace.region.project.BundleProjectState;
+import no.javatime.inplace.region.project.ManifestOptions;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
@@ -73,8 +76,10 @@ import org.osgi.framework.Bundle;
  * providing capabilities to an activated bundle is scheduled for activation in the internal resolver hook and the
  * requiring activated bundles are excluded from the resolve list and then resolved when the deactivated project is
  * activated.
- * 
- * 
+ * <p>
+ * This job is only run at startup of the IDE and when the workspace is activated (after
+ * project(s) are activated.
+ *   
  * @see ActivateProjectJob
  * @see DeactivateJob
  * 
@@ -199,7 +204,7 @@ public class ActivateBundleJob extends BundleJob {
 		// At least one project must be activated (nature enabled) for workspace bundles to be activated
 		if (BundleProjectState.isProjectWorkspaceActivated()) {
 			// If this is the first set of workspace project(s) that have been activated no bundle(s) have been activated yet
-			// and all deactivated bundles should be installed in an activated workspace (except erroneous bundles)
+			// and all deactivated bundles should be installed in an activated workspace
 			if (!bundleRegion.isBundleWorkspaceActivated()) {
 				addPendingProjects(ProjectProperties.getPlugInProjects());
 			} else {
@@ -209,6 +214,12 @@ public class ActivateBundleJob extends BundleJob {
 						addPendingProject(project);
 					}
 				}
+			}
+			activatedBundles = install(getPendingProjects(), monitor);
+			if (!getLastStatus().isOK()) {
+				DeactivateJob daj = new DeactivateJob(DeactivateJob.deactivateJobName, getPendingProjects());
+				BundleJobManager.addBundleJob(daj, 0);			
+				return addStatus(new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID, Msg.INSTALL_ERROR));
 			}
 			// Add providing projects and remove projects with build errors, cycles, duplicates and affected
 			// dependent projects before installing
@@ -225,8 +236,9 @@ public class ActivateBundleJob extends BundleJob {
 				}
 			}
 			// All circular references, closed and non-existing projects should have been discarded by now
-			removeErrorClosures(projectSorter, activatedBundles);
-			activatedBundles = install(getPendingProjects(), monitor);
+			handleDuplicates(projectSorter, activatedBundles);
+			// Build errors are not critical
+			removeBuildErrorClosures(projectSorter, activatedBundles);
 		}
 		// No projects are activated or no activated bundle projects have been installed
 		if (null == activatedBundles || activatedBundles.size() == 0) {
@@ -273,6 +285,41 @@ public class ActivateBundleJob extends BundleJob {
 		start(activatedBundles, Closure.PROVIDING, new SubProgressMonitor(monitor, 1));
 		return getLastStatus();
 	}
+	
+	private IBundleStatus removeBuildErrorClosures(ProjectSorter projectSorter, Collection<Bundle> activatedBundles)
+			throws InPlaceException, CircularReferenceException {
+
+		IBundleStatus status = createStatus();
+		Collection<IProject> projectErrorClosures = null;
+		try {
+			BuildErrorClosure be = new BuildErrorClosure(getPendingProjects(), Transition.ACTIVATE_BUNDLE);
+			if (be.hasBuildErrors()) {
+				projectErrorClosures = be.getProjectErrorClosures(true);
+				removePendingProjects(projectErrorClosures);
+				if (null != activatedBundles) {
+					Collection<Bundle> bundleErrorClosure = bundleRegion.getBundles(projectErrorClosures);
+					activatedBundles.removeAll(bundleErrorClosure);
+				}
+				if (InPlace.get().msgOpt().isBundleOperations()) {
+					IBundleStatus bundleStatus = be.getProjectErrorClosureStatus(true);
+					if (null != bundleStatus) {
+						addTrace(bundleStatus);			
+					}
+				}
+			}
+		} catch (CircularReferenceException e) {
+			projectErrorClosures = BuildErrorClosure.getBuildErrors(getPendingProjects());
+			projectErrorClosures.addAll(BuildErrorClosure.hasBuildState(getPendingProjects()));
+			if (projectErrorClosures.size() > 0) {
+				removePendingProjects(projectErrorClosures);
+				if (null != activatedBundles) {
+					Collection<Bundle> bundleErrorClosure = bundleRegion.getBundles(projectErrorClosures);
+					activatedBundles.removeAll(bundleErrorClosure);
+				}
+			}
+		}
+		return status;
+	}
 
 	/**
 	 * Remove build error closure bundles from the set of activated projects. If there are no activated projects left the
@@ -286,42 +333,21 @@ public class ActivateBundleJob extends BundleJob {
 	 * @throws InPlaceException if one of the specified projects does not exist or is closed
 	 * @throws CircularReferenceException if cycles are detected among the specified projects
 	 */
-	private IBundleStatus removeErrorClosures(ProjectSorter projectSorter, Collection<Bundle> installedBundles)
+	private IBundleStatus handleDuplicates(ProjectSorter projectSorter, Collection<Bundle> installedBundles)
 			throws InPlaceException, CircularReferenceException {
 
 		IBundleStatus status = createStatus();
-		Collection<IProject> projectErrorClosures = null;
-		try {
-			projectErrorClosures = projectSorter.getRequiringBuildErrorClosure(getPendingProjects());
-			if (projectErrorClosures.size() > 0) {
-				String msg = BundleProjectState.formatBuildErrorsFromClosure(projectErrorClosures, getName());
-				if (null != msg) {
-					status = addBuildError(msg, null);
-				}
-				removePendingProjects(projectErrorClosures);
-			}
-			bundleTransition.removeTransitionError(TransitionError.DUPLICATE);
-			removeExternalDuplicates(getPendingProjects(), null, null);
-			Collection<IProject> duplicates = removeWorkspaceDuplicates(getPendingProjects(), null, null,
-					ProjectProperties.getInstallableProjects(), duplicateMessage);
-			if (null != duplicates) {
-				Collection<IProject> installedRequirers = projectSorter.sortRequiringProjects(duplicates, true);
-				if (installedRequirers.size() > 0) {
-					removePendingProjects(installedRequirers);
-				}
-			}
-
-		} catch (CircularReferenceException e) {
-			projectErrorClosures = BundleProjectState.getBuildErrors(getPendingProjects());
-			projectErrorClosures.addAll(BundleProjectState.hasBuildState(getPendingProjects()));
-			if (projectErrorClosures.size() > 0) {
-				removePendingProjects(projectErrorClosures);
-				if (null != installedBundles) {
-					Collection<Bundle> bundleErrorClosure = bundleRegion.getBundles(projectErrorClosures);
-					installedBundles.removeAll(bundleErrorClosure);
-				}
+		bundleTransition.removeTransitionError(TransitionError.DUPLICATE);
+		removeExternalDuplicates(getPendingProjects(), null, null);
+		Collection<IProject> duplicates = removeWorkspaceDuplicates(getPendingProjects(), null, null,
+				ProjectProperties.getInstallableProjects(), duplicateMessage);
+		if (null != duplicates) {
+			Collection<IProject> installedRequirers = projectSorter.sortRequiringProjects(duplicates, true);
+			if (installedRequirers.size() > 0) {
+				removePendingProjects(installedRequirers);
 			}
 		}
+
 		return status;
 	}
 

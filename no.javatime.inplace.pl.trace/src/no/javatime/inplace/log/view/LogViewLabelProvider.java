@@ -109,20 +109,21 @@ public class LogViewLabelProvider extends LabelProvider implements ITableLabelPr
 						return entry.getMessage();
 					}
 				case 1 :
-					// Don't display plug-in id of root entries
-					if (entry.getPluginId() == null || 
-							(entry.getParent(entry) == null && entry.hasChildren())) {
+					if (entry.getPluginId() == null || entry.hasChildren()) {
 						return "";
 					} else {
 						return entry.getPluginId();
 					}
 				case 2 :
-					return entry.getBundleState();
+					if (entry.hasChildren()) {
+						return "";
+					} else {
+						return entry.getBundleState();						
+					}
 				case 3 :
 					return dateFormat.format(entry.getDate());
 			}
 		}
-
 		return ""; //$NON-NLS-1$
 	}
 

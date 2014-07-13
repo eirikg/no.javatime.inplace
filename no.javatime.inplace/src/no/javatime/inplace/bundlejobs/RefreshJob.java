@@ -15,8 +15,10 @@ import java.util.LinkedHashSet;
 
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
+import no.javatime.inplace.region.closure.BuildErrorClosure;
 import no.javatime.inplace.region.closure.CircularReferenceException;
 import no.javatime.inplace.region.manager.BundleManager;
+import no.javatime.inplace.region.manager.BundleTransition.Transition;
 import no.javatime.inplace.region.manager.InPlaceException;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
@@ -125,19 +127,20 @@ public class RefreshJob extends BundleJob {
 	}
 
 	/**
-	 * Refresh bundles. Bundles in state ACYIVE and STARTING stopped, refreshed and started. Calculates
-	 * dependency closures according to dependency options and always adds providing bundles.
+	 * Refresh bundles. Bundles in state ACYIVE and STARTING are stopped, refreshed and started. Calculates
+	 * dependency closures according to dependency options and always adds requiring bundles.
 	 * 
 	 * @param monitor the progress monitor to use for reporting progress and job cancellation.
 	 * @return status object describing the result of refreshing with {@code StatusCode.OK} if no failure,
 	 *         otherwise one of the failure codes are returned. If more than one bundle fails, status of the
 	 *         last failed bundle is returned. All failures are added to the job status list
 	 * @throws OperationCanceledException after stop and refresh
+	 * @throws InterruptedException if job is being interrupted
+	 * @throws CircularReferenceException if cycles are detected in the project graph
 	 */
-	private IBundleStatus refreshBundles(IProgressMonitor monitor) throws InPlaceException, InterruptedException {
+	private IBundleStatus refreshBundles(IProgressMonitor monitor) throws InPlaceException, InterruptedException, CircularReferenceException {
 
 		// Stopped bundles are started after refresh
-		Collection<Bundle> bundlesToRestart = new LinkedHashSet<Bundle>();
 		Collection<Bundle> initialBundleSet = bundleRegion.getBundles(getPendingProjects());
 		// Include requiring bundles in refresh
 		Collection<Bundle> bundlesToRefresh = getBundlesToResolve(initialBundleSet);
@@ -146,14 +149,26 @@ public class RefreshJob extends BundleJob {
 			String msg = ErrorMessage.getInstance().formatString("bundle_errors_refresh", bundleRegion.formatBundleList(errorBundles, false));
 			addError(null, msg);
 		}
-		// TODO Not needed when refreshing?
-		removeBuildErrorClosures(initialBundleSet, bundlesToRefresh, bundleRegion.getBundleProjects(bundlesToRefresh));
+
+		BuildErrorClosure be = new BuildErrorClosure(bundleRegion.getBundleProjects(bundlesToRefresh), Transition.REFRESH);
+		if (be.hasBuildErrors()) {
+			Collection<Bundle> buildErrClosure = be.getBundleErrorClosures(true);
+			bundlesToRefresh.removeAll(buildErrClosure);
+			IBundleStatus bundleStatus = be.getProjectErrorClosureStatus(true);
+			if (null != bundleStatus) {
+				addStatus(bundleStatus);			
+			}
+		}
+		Collection<Bundle> bundlesToRestart = new LinkedHashSet<Bundle>();		
 		for (Bundle bundle : bundlesToRefresh) {
 			if ((bundle.getState() & (Bundle.ACTIVE | Bundle.STARTING)) != 0) {
 				bundlesToRestart.add(bundle);
 			}
 		}
 		stop(bundlesToRestart, null, new SubProgressMonitor(monitor, 1));
+		if (monitor.isCanceled()) {
+			throw new OperationCanceledException();
+		}
 		if (monitor.isCanceled()) {
 			throw new OperationCanceledException();
 		}

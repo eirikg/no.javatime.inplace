@@ -123,6 +123,16 @@ public interface BundleRegion {
 	public Collection<Bundle> getBundles(int state);
 
 	/**
+	 * Return all specified bundles with the specified state(s).
+	 * 
+	 * @param bundles bundles to check for the specified state
+	 * @param state a bundle state obtained from on or more of the {@Bundle} state constants except
+	 *          {@linkplain Bundle#UNINSTALLED}
+	 * @return all bundles that matches the specified state(s) or an empty set
+	 */
+	public Collection<Bundle> getBundles(Collection<Bundle> bundles, int state);
+
+	/**
 	 * Get associated projects for all installed (activated and not activated) bundles
 	 * 
 	 * @return associated projects for all installed bundles
@@ -223,12 +233,21 @@ public interface BundleRegion {
 	 * 
 	 * @param bundle the bundle to activate or deactivate
 	 * @param status if status is {@code true} activate the bundle. If {@code false} deactivate the bundle
-	 * @return the key of the bundle as a concatenation of the symbolic name and the bundle version or
-	 *         {@code null} if the bundle does not exist in the region.
+	 * @return true if the activation setting was performed or {@code false} if the bundle does not exist in the region.
 	 */
-	public String setActivation(Bundle bundle, Boolean status);
+	public boolean setActivation(Bundle bundle, Boolean status);
 
 	/**
+	 * If the specified status parameter is {@code true} activate the bundle. If the status parameter is
+	 * {@code false}, deactivate the bundle.
+	 * 
+	 * @param project the project associated with the bundle (bundle project) to activate or deactivate
+	 * @param status if status is {@code true} activate the bundle. If {@code false} deactivate the bundle
+	 * @return true if the activation setting was performed or {@code false} if the bundle does not exist in the region.
+	 */
+	public boolean setActivation(IProject project, Boolean status);
+	
+		/**
 	 * Concatenates symbolic name and bundle version (<symbolic name>_<version>). If the bundle is not
 	 * {@code null} the specified bundle is used to get the symbolic key, otherwise the specified project is
 	 * used. If both are {@code null} or the key could not be obtained an empty string is returned.
@@ -253,14 +272,14 @@ public interface BundleRegion {
 	 * @param disable set true to indicate that the auto build is not switched on.
 	 * @return true if auto build were set. Otherwise false
 	 */
-	public boolean isAutoBuild(boolean disable);
+	public boolean isAutoBuildActivated(boolean disable);
 
 	/**
 	 * Set if auto build changes to true.
 	 * 
 	 * @param autoBuild true if auto build is switched on. Otherwise false
 	 */
-	public void setAutoBuild(boolean autoBuild);
+	public void setAutoBuildChanged(boolean autoBuild);
 
 	/**
 	 * Formats the collection as a comma separated list.

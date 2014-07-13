@@ -14,10 +14,12 @@ import java.util.Collection;
 
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundleproject.ProjectProperties;
+import no.javatime.inplace.region.closure.BuildErrorClosure;
 import no.javatime.inplace.region.closure.CircularReferenceException;
 import no.javatime.inplace.region.closure.ProjectSorter;
-import no.javatime.inplace.region.manager.BundleTransition.TransitionError;
 import no.javatime.inplace.region.manager.BundleManager;
+import no.javatime.inplace.region.manager.BundleTransition.Transition;
+import no.javatime.inplace.region.manager.BundleTransition.TransitionError;
 import no.javatime.inplace.region.manager.InPlaceException;
 import no.javatime.inplace.region.project.BundleProjectState;
 import no.javatime.inplace.region.status.BundleStatus;
@@ -155,19 +157,23 @@ public class InstallJob extends BundleJob {
 	 *         {@code IBundleStatus} status with a {@code StatusCode.BUILDERROR} if there are projects with
 	 *         build errors and there are no pending projects left. If there are build errors they are added to
 	 *         the job status list.
+	 * @throws InPlaceException if one of the specified projects does not exist or is closed
 	 */
-	private IBundleStatus removeErrorClosures(ProjectSorter projectSorter, Collection<Bundle> installedBundles) {
+	private IBundleStatus removeErrorClosures(ProjectSorter projectSorter, Collection<Bundle> installedBundles) throws InPlaceException {
 
 		IBundleStatus status = createStatus();
 		Collection<IProject> projectErrorClosures = null;
 		try {
-			projectErrorClosures = projectSorter.getRequiringBuildErrorClosure(getPendingProjects());
-			if (projectErrorClosures.size() > 0) {
-				String msg = BundleProjectState.formatBuildErrorsFromClosure(projectErrorClosures, getName());
-				if (null != msg) {
-					status = addBuildError(msg, null);
-				}
+			BuildErrorClosure be = new BuildErrorClosure(getPendingProjects(), Transition.INSTALL);
+			if (be.hasBuildErrors()) {
+				projectErrorClosures = be.getProjectErrorClosures(true);
 				removePendingProjects(projectErrorClosures);
+				if (InPlace.get().msgOpt().isBundleOperations()) {
+					IBundleStatus bundleStatus = be.getProjectErrorClosureStatus(true);
+					if (null != bundleStatus) {
+						addTrace(bundleStatus);			
+					}
+				}
 			}
 			bundleTransition.removeTransitionError(TransitionError.DUPLICATE);
 			removeExternalDuplicates(getPendingProjects(), null, null);
@@ -181,8 +187,8 @@ public class InstallJob extends BundleJob {
 			}
 
 		} catch (CircularReferenceException e) {
-			projectErrorClosures = BundleProjectState.getBuildErrors(getPendingProjects());
-			projectErrorClosures.addAll(BundleProjectState.hasBuildState(getPendingProjects()));
+			projectErrorClosures = BuildErrorClosure.getBuildErrors(getPendingProjects());
+			projectErrorClosures.addAll(BuildErrorClosure.hasBuildState(getPendingProjects()));
 			if (projectErrorClosures.size() > 0) {
 				removePendingProjects(projectErrorClosures);
 				if (null != installedBundles) {
@@ -193,5 +199,4 @@ public class InstallJob extends BundleJob {
 		}
 		return status;
 	}
-
 }

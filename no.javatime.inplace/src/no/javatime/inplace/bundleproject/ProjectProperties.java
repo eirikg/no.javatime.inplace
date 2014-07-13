@@ -22,7 +22,6 @@ import no.javatime.inplace.region.project.BundleProjectState;
 import no.javatime.inplace.region.project.ManifestOptions;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
-import no.javatime.util.messages.WarnMessage;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarker;
@@ -319,7 +318,7 @@ public class ProjectProperties {
 	}
 
 	public static boolean hasManifestBuildErrors(IProject project) throws InPlaceException {
-
+		
 		try {
 			if (!BundleProjectSettings.hasManifest(project)) {
 				return true;
@@ -340,61 +339,6 @@ public class ProjectProperties {
 		}
 		return false;
 	}
-
-	/**
-	 * If one or more of the workspace projects have build errors, issue a warning and return the error closure.
-	 * Adds a job build error if one or more projects have build errors.
-	 * 
-	 * @param projectScope set of projects to search for errors in. If scope is null or empty, search in all
-	 *          activated projects
-	 * @param activated if true only consider activated bundles. If false consider all projects
-	 * @return projects with errors and their requiring projects (error closure) or an empty collection
-	 */
-	static public Collection<IProject> reportBuildErrorClosure(Collection<IProject> projectScope, String name) {
-		ProjectSorter ps = new ProjectSorter();
-		if (null == projectScope || projectScope.size() == 0) {
-			projectScope = getInstallableProjects();
-		}
-		Collection<IProject> errorClosure = ps.getRequiringBuildErrorClosure(projectScope);
-		String msg = BundleProjectState.formatBuildErrorsFromClosure(errorClosure, name);
-		if (null != msg) {
-			String warnMsg = WarnMessage.getInstance().formatString(WarnMessage.defKey, msg);
-			StatusManager.getManager().handle(new BundleStatus(StatusCode.WARNING, InPlace.PLUGIN_ID, warnMsg),
-					StatusManager.LOG);
-		}
-		return errorClosure;
-	}
-
-	/**
-	 * If one or more of the workspace projects have build errors, issue a warning and return the error closure.
-	 * Adds a job build error if one or more projects have build errors.
-	 * 
-	 * @param projectScope set of projects to search for errors in. If scope is null or empty, search in all
-	 *          activated projects
-	 * @param activated if true only consider activated bundles. If false consider all projects
-	 * @return projects with errors and their requiring projects (error closure) or an empty collection
-	 */
-	static public Collection<IProject> reportBuildErrorClosure(Collection<IProject> projectScope,
-			Boolean activated, String name) {
-
-		ProjectSorter bs = new ProjectSorter();
-		if (null == projectScope || projectScope.size() == 0) {
-			if (activated) {
-				projectScope = BundleProjectState.getActivatedProjects();
-			} else {
-				projectScope = getCandidateProjects();
-			}
-		}
-		Collection<IProject> errorClosure = bs.getRequiringBuildErrorClosure(projectScope, activated);
-		String msg = BundleProjectState.formatBuildErrorsFromClosure(errorClosure, name);
-		if (null != msg) {
-			String warnMsg = WarnMessage.getInstance().formatString(WarnMessage.defKey, msg);
-			StatusManager.getManager().handle(new BundleStatus(StatusCode.WARNING, InPlace.PLUGIN_ID, warnMsg),
-					StatusManager.LOG);
-		}
-		return errorClosure;
-	}
-
 	/**
 	 * A delegate for checking if auto build is enabled
 	 * 

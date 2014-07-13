@@ -60,7 +60,7 @@ public class LogWriter implements SynchronousLogListener, LogFilter {
 	}
 	//Constants for rotating log file
 	/** The default size a log file can grow before it is rotated */
-	private static final int DEFAULT_LOG_SIZE = 1000;
+	private static final int DEFAULT_LOG_SIZE = 500;
 	/** The default number of backup log files */
 	private static final int DEFAULT_LOG_FILES = 10;
 	/** The minimum size limit for log rotation */
@@ -73,7 +73,7 @@ public class LogWriter implements SynchronousLogListener, LogFilter {
 	/** The system property used to specify the maximim number of backup log files to use */
 	private static final String PROP_LOG_FILE_MAX = "eclipse.log.backup.max"; //$NON-NLS-1$
 	/** The extension used for log files */
-	private static final String LOG_EXT = ".log"; //$NON-NLS-1$
+	private static final String LOG_EXT = ".bundle.log"; //$NON-NLS-1$
 	/** The extension markup to use for backup log files*/
 	private static final String BACKUP_MARK = ".bak_"; //$NON-NLS-1$
 
@@ -307,7 +307,7 @@ public class LogWriter implements SynchronousLogListener, LogFilter {
 	}
 // --- Begin writing TraceLogEntry --
 
-	private synchronized void log(BundleLogEntryImpl traceLogEntry) {
+	public synchronized void log(BundleLogEntryImpl traceLogEntry) {
 		if (traceLogEntry == null)
 			return;
 		if (!isLoggable(traceLogEntry.getSeverity()))
@@ -323,7 +323,7 @@ public class LogWriter implements SynchronousLogListener, LogFilter {
 			writer.flush();
 		} catch (Exception e) {
 			// any exceptions during logging should be caught 
-			System.err.println("An exception occurred while writing to the platform log:");//$NON-NLS-1$
+			System.err.println("An exception occurred while writing to the bundle log:");//$NON-NLS-1$
 			e.printStackTrace(System.err);
 			System.err.println("Logging to the console instead.");//$NON-NLS-1$
 			//we failed to write, so dump log entry to console instead
@@ -425,7 +425,7 @@ public class LogWriter implements SynchronousLogListener, LogFilter {
 	 * @throws IOException if any error occurs writing to the log
 	 */
 	private void writeStack(BundleLogEntryImpl entry) throws IOException {
-		Throwable t = null; /* entry.getThrowable(); */
+		Throwable t = entry.getThrowable();
 		if (t != null) {
 			String stack = getStackTrace(t);
 			write(STACK);

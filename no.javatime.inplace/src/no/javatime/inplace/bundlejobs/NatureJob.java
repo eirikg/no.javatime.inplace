@@ -113,11 +113,14 @@ public abstract class NatureJob extends BundleJob {
 					sleep(sleepTime);
 				localMonitor.subTask(NatureJob.disableNatureSubTaskName + project.getName());
 				if (BundleProjectState.isProjectActivated(project)) {
-					toggleNatureActivation(project, new SubProgressMonitor(monitor, 1));
-					bundleTransition.clearTransitionError(project);
 					if (getOptionsService().isUpdateDefaultOutPutFolder()) {
 						BundleProjectSettings.removeOutputLocationFromClassPath(project);
 					}
+					// Deactivate project
+					toggleNatureActivation(project, new SubProgressMonitor(monitor, 1));
+					// Deactivate bundle
+					bundleRegion.setActivation(project, false);
+					bundleTransition.clearTransitionError(project);
 				}
 			} catch (InPlaceException e) {
 				addError(e, e.getLocalizedMessage(), project);
@@ -145,7 +148,6 @@ public abstract class NatureJob extends BundleJob {
 
 		IBundleStatus result = new BundleStatus(StatusCode.OK, InPlace.PLUGIN_ID, "");
 		SubMonitor localMonitor = SubMonitor.convert(monitor, projectsToActivate.size());
-		boolean isAutoBuilding = ProjectProperties.isAutoBuilding();
 
 		for (IProject project : projectsToActivate) {
 			try {
@@ -171,21 +173,18 @@ public abstract class NatureJob extends BundleJob {
 						result = addError(e, e.getLocalizedMessage(), project);
 					}
 					boolean isInstalled = null != bundle ? true : false;
+					// Wait to set the bundle as activated to after it is installed 
 					bundleCommand.registerBundleProject(project, bundle, isInstalled);
 					// Adopt any external operations on bundle in an active workspace
 					bundleTransition.removePending(project, Transition.EXTERNAL);
 					if (isInstalled) {
-						// If auto build is off or a manual build is performed tag the bundle for update
-						if (!isAutoBuilding) {
-							bundleTransition.addPending(project, Transition.UPDATE);
-						}
-						// Tag the bundle to be started after update
-						bundleTransition.addPending(project, Transition.START);
+						// Always tag with update when installed.The post build listener
+						// does not always receive all projects after they have been marked by
+						// the JavaTimeBuilder after a project has been nature enabled 
+						bundleTransition.addPending(project, Transition.UPDATE);
 					} else {
-						if (!isAutoBuilding) {
 						// Assure that the bundle is activated when installed 
-							bundleTransition.addPending(project, Transition.ACTIVATE_BUNDLE);
-						}
+						bundleTransition.addPending(project, Transition.ACTIVATE_BUNDLE);
 					}
 				}
 			} catch (InPlaceException e) {

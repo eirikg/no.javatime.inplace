@@ -14,12 +14,13 @@ import java.util.Collection;
 
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundleproject.ProjectProperties;
-import no.javatime.inplace.dependencies.BundleClosures;
+import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.msg.Msg;
+import no.javatime.inplace.region.closure.BundleClosures;
 import no.javatime.inplace.region.closure.CircularReferenceException;
-import no.javatime.inplace.region.closure.ProjectSorter;
-import no.javatime.inplace.region.manager.BundleTransition.Transition;
 import no.javatime.inplace.region.manager.BundleManager;
+import no.javatime.inplace.region.manager.BundleTransition.Transition;
+import no.javatime.inplace.region.manager.BundleTransition.TransitionError;
 import no.javatime.inplace.region.manager.InPlaceException;
 import no.javatime.inplace.region.project.BundleProjectState;
 import no.javatime.inplace.region.status.BundleStatus;
@@ -30,7 +31,6 @@ import no.javatime.util.messages.ErrorMessage;
 import no.javatime.util.messages.ExceptionMessage;
 import no.javatime.util.messages.Message;
 import no.javatime.util.messages.UserMessage;
-import no.javatime.util.messages.WarnMessage;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
@@ -124,6 +124,8 @@ public class ActivateProjectJob extends NatureJob {
 			BundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg);
 			multiStatus.add(e.getStatusList());
 			addStatus(multiStatus);
+			// Remove error on the duplicates that are deactivated
+			BundleManager.getTransition().removeTransitionError(TransitionError.CYCLE);
 		} catch (InPlaceException e) {
 			String msg = ExceptionMessage.getInstance().formatString("terminate_job_with_errors", getName());
 			addError(e, msg);
@@ -158,7 +160,7 @@ public class ActivateProjectJob extends NatureJob {
 	 * @return status object describing the result of activating with {@code StatusCode.OK} if no failure,
 	 *         otherwise one of the failure codes are returned. If more than one bundle fails, status of the
 	 *         last failed bundle is returned. All failures are added to the job status list
-	 * @throws InPlaceException when failing to enable nature
+	 * @throws InPlaceException when failing to enable nature or if one of the specified projects does not exist or is closed
 	 * @throws CircularReferenceException if cycles are detected in the project graph
 	 * @see #getStatusList()
 	 */
@@ -170,16 +172,11 @@ public class ActivateProjectJob extends NatureJob {
 			if (!result.hasStatus(StatusCode.OK) && !result.hasStatus(StatusCode.INFO)) {
 				return result;
 			}
-			// Bundle order is of no importance when nature enabling projects
-			ProjectSorter projectSorter = new ProjectSorter();
-			result = removeBuildErrorClosures(projectSorter);
-			if (!result.hasStatus(StatusCode.OK) && pendingProjects() == 0) {
-				String msg = WarnMessage.getInstance().formatString("terminate_with_errors", getName());
-				return createMultiStatus(new BundleStatus(StatusCode.WARNING, InPlace.PLUGIN_ID, msg));
-			}
-			BundleClosures pd = new BundleClosures();
-			Collection<IProject> projects = pd.projectActivation(getPendingProjects(), false);
-			resetPendingProjects(projects);
+			// Include dependent projects to activate according to dependency options
+			BundleClosures closures = new BundleClosures();
+			Collection<IProject> pendingProjects = closures.projectActivation(getPendingProjects(), false);
+			resetPendingProjects(pendingProjects);
+			
 			activateNature(getPendingProjects(), new SubProgressMonitor(monitor, 1));
 			// An activate project job triggers an update job when the workspace is activated and
 			// an activate bundle job when the workspace is deactivated
@@ -208,14 +205,8 @@ public class ActivateProjectJob extends NatureJob {
 	}
 
 	/**
-	 * Prepares the workspace for activation by stopping and uninstalling all workspace bundles and then adding
-	 * the uninstalled bundles to the projects to activate.
-	 * <p>
-	 * Note that it is not allowed (possible) to uninstall a bundle from an external source in an activated
-	 * workspace, so clearing the workspace will only happen when the workspace is being activated and bundles
-	 * have been installed from an external source.
-	 * <p>
-	 * This is strictly not necessary but leaves a clean workspace as a starting point.
+	 * Initialize the workspace by stopping and uninstalling all workspace bundles and then adding
+	 * the uninstalled bundles as pending projects. This only happens if the workspace is deactivated
 	 * 
 	 * @param monitor report progress on stop and uninstall bundle operations
 	 * @return status object with {@code StatusCode.OK}. Otherwise the last failure code is returned. All
@@ -223,18 +214,16 @@ public class ActivateProjectJob extends NatureJob {
 	 * @throws OperationCanceledException If user cancel job after uninstalling the bundles
 	 * @throws CircularReferenceException if cycles are detected in the project graph
 	 */
-	private IBundleStatus initWorkspace(IProgressMonitor monitor) 
+	public IBundleStatus initWorkspace(IProgressMonitor monitor) 
 			throws OperationCanceledException, InterruptedException, CircularReferenceException {
 
-		// The bundles are registered in the workspace region when installed from an external source		
-		final Collection<Bundle> bundlesToActivate = bundleRegion.getBundles();
-
-		if (!BundleProjectState.isProjectWorkspaceActivated() && bundlesToActivate.size() > 0) {
-			uninstallBundles(bundlesToActivate, monitor);
-			if (monitor.isCanceled()) {
-				throw new OperationCanceledException();
-			}
-			Collection<IProject> projectsToActivate = bundleRegion.getBundleProjects(bundlesToActivate);
+		// Installed bundles are always registered in the workspace region (e.g.e when installed from an external source)		
+		final Collection<Bundle> installedBundles = bundleRegion.getBundles();
+		
+		// If the workspace is deactivated and there are registered bundles they are uninstalled but not unregistered 
+		if (!BundleProjectState.isProjectWorkspaceActivated() && installedBundles.size() > 0) {	
+			uninstallBundles(installedBundles, monitor);
+			Collection<IProject> projectsToActivate = bundleRegion.getBundleProjects(installedBundles);
 			// Subtract installed projects already pending
 			projectsToActivate.removeAll(getPendingProjects());
 			if (projectsToActivate.size() > 0) {
@@ -246,6 +235,7 @@ public class ActivateProjectJob extends NatureJob {
 		}
 		return getLastStatus();
 	}
+
 
 	/**
 	 * Uninstalls the specified bundles.
@@ -262,7 +252,7 @@ public class ActivateProjectJob extends NatureJob {
 	private IBundleStatus uninstallBundles(Collection<Bundle> bundlesToUninstall, IProgressMonitor monitor)
 			throws OperationCanceledException, InterruptedException, CircularReferenceException {
 		int entrySize = statusList();
-		IBundleStatus status = stop(bundlesToUninstall, null, new SubProgressMonitor(monitor, 1));
+		IBundleStatus status = stop(bundlesToUninstall, Closure.REQUIRING, new SubProgressMonitor(monitor, 1));
 		if (monitor.isCanceled()) {
 			throw new OperationCanceledException();
 		}
@@ -277,42 +267,6 @@ public class ActivateProjectJob extends NatureJob {
 						bundleRegion.formatBundleList(bundlesToUninstall, true));
 		}
 		return statusList() > entrySize ? getLastStatus() : status;
-	}
-
-	/**
-	 * Detect and report build errors and remove build error closure bundles from projects to nature enable.
-	 * 
-	 * @param ps topological sort of error closure
-	 * @return status object describing the result of removing build errors with {@code StatusCode.OK} if no
-	 *         failure, otherwise one of the failure codes are returned. If more than one bundle fails, status
-	 *         of the last failed bundle is returned. All failures are added to the job status list
-	 * @throws OperationCanceledException if projects to nature enable becomes empty after bundle error closure
-	 *           is removed
-	 */
-	private IBundleStatus removeBuildErrorClosures(ProjectSorter bs) throws OperationCanceledException {
-
-		IBundleStatus result = createStatus();
-
-		Collection<IProject> projectErrorClosures = bs.getRequiringBuildErrorClosure(getPendingProjects(), false);
-		if (projectErrorClosures.size() > 0) {
-			String msg = BundleProjectState.formatBuildErrorsFromClosure(projectErrorClosures, getName());
-			if (null != msg) {
-				result = addBuildError(msg, null);
-			}
-			removePendingProjects(projectErrorClosures);
-			// Remove delayed activated projects to update waiting for this project with errors to be activated
-			Collection<IProject> delayedProjects = bundleTransition.getPendingProjects(
-					bundleRegion.getBundleProjects(true), Transition.UPDATE);
-			if (delayedProjects.size() > 0) {
-				String delayedMsg = WarnMessage.getInstance().formatString("build_errors_delayed",
-						UpdateJob.updateJobName, BundleProjectState.formatProjectList(delayedProjects));
-				for (IProject delayedProject : delayedProjects) {
-					bundleTransition.removePending(delayedProject, Transition.UPDATE);
-				}
-				result = addBuildError(delayedMsg, null);
-			}
-		}
-		return result;
 	}
 
 	/**

@@ -350,73 +350,82 @@ public class BundleNode {
 	/**
 	 * Textual representation of the transition for the bundle at the specified location. The location is the
 	 * same as used when the bundle was installed.
-	 * 
+	 * @param format TODO
+	 * @param caption TODO
 	 * @param location of the bundle
+	 * 
 	 * @return the name of the transition or an empty string if no transition is found at the specified location
 	 * @see Bundle#getLocation()
 	 * @see BundleCommandImpl#getBundleLocationIdentifier(org.eclipse.core.resources.IProject)
 	 */
-	static public String getTransitionName(Transition transition) {
-		String typeName = "NO TRANSITION";
-		if (null == transition) {
-			return typeName;
+	static public String getTransitionName(Transition transition, boolean format, boolean caption) {
+
+		String typeName = "NO_TRANSITION";
+
+		if (null != transition) {
+			switch (transition) {
+			case ACTIVATE_BUNDLE:
+				typeName = "ACTIVATE_BUNDLE";
+				break;
+			case INSTALL:
+				typeName = "INSTALL";
+				break;
+			case STOP:
+				typeName = "STOP";
+				break;
+			case UNINSTALL:
+				typeName = "UNINSTALL";
+				break;
+			case RESOLVE:
+				typeName = "RESOLVE";
+				break;
+			case UNRESOLVE:
+				typeName = "UNRESOLVE";
+				break;
+			case LAZY_LOAD:
+			case START:
+				typeName = "START";
+				break;
+			case UPDATE_ON_ACTIVATE:
+				typeName = "UPDATE_ON_ACTIVATE";
+				break;
+			case DEACTIVATE:
+				typeName = "DEACTIVATE";
+				break;
+			case RESET:
+				typeName = "RESET";
+				break;
+			case REFRESH:
+				typeName = "REFRESH";
+				break;
+			case EXTERNAL:
+				typeName = "EXTERNAL";
+				break;
+			case UPDATE:
+				typeName = "UPDATE";
+				break;
+			case BUILD:
+				typeName = "BUILD";
+				break;
+			case UPDATE_CLASSPATH:
+				typeName = "UPDATE_CLASSPATH";
+				break;
+			case REMOVE_CLASSPATH:
+				typeName = "REMOVE_CLASSPATH";
+				break;
+			case UPDATE_ACTIVATION_POLICY:
+				typeName = "UPDATE_ACTIVATION_POLICY";
+				break;
+			case NOTRANSITION:
+			default:
+			}
 		}
-		switch (transition) {
-		case ACTIVATE_BUNDLE:
-			typeName = "ACTIVATE_BUNDLE";
-			break;
-		case INSTALL:
-			typeName = "INSTALL";
-			break;
-		case STOP:
-			typeName = "STOP";
-			break;
-		case UNINSTALL:
-			typeName = "UNINSTALL";
-			break;
-		case RESOLVE:
-			typeName = "RESOLVE";
-			break;
-		case UNRESOLVE:
-			typeName = "UNRESOLVE";
-			break;
-		case LAZY_LOAD:
-		case START:
-			typeName = "START";
-			break;
-		case UPDATE_ON_ACTIVATE:
-			typeName = "UPDATE_ON_ACTIVATE";
-			break;
-		case DEACTIVATE:
-			typeName = "DEACTIVATE";
-			break;
-		case RESET:
-			typeName = "RESET";
-			break;
-		case REFRESH:
-			typeName = "REFRESH";
-			break;
-		case EXTERNAL:
-			typeName = "EXTERNAL";
-			break;
-		case UPDATE:
-			typeName = "UPDATE";
-			break;
-		case BUILD:
-			typeName = "BUILD";
-			break;
-		case UPDATE_CLASSPATH:
-			typeName = "UPDATE_CLASSPATH";
-			break;
-		case REMOVE_CLASSPATH:
-			typeName = "REMOVE_CLASSPATH";
-			break;
-		case UPDATE_ACTIVATION_POLICY:
-			typeName = "UPDATE_ACTIVATION_POLICY";
-			break;
-		case NOTRANSITION:
-		default:
-			return typeName;
+		if (format) {
+			typeName = typeName.replace('_', ' ');
+			typeName = typeName.toLowerCase();
+			if (caption) {
+				typeName = typeName.substring(0,1).toUpperCase() + typeName.substring(1);
+			}
 		}
 		return typeName;
 	}

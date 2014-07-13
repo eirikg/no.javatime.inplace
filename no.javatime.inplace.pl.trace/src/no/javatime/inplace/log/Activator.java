@@ -52,7 +52,8 @@ public class Activator extends AbstractUIPlugin {
 
 	private static Activator plugin;
 	private static BundleContext context;
-	
+	private LogWriter logWriter;
+
 	private ServiceTracker<ExtendedLogService, ExtendedLogService> extendedLogServiceTracker;
 	private ServiceTracker<ExtendedLogReaderService, ExtendedLogReaderService> extendedLogReaderServiceTracker;
 	private ServiceTracker<EnvironmentInfo, EnvironmentInfo> environmentInfoServiceTracker;
@@ -77,7 +78,7 @@ public class Activator extends AbstractUIPlugin {
 		Activator.context = context;
 		plugin = this;
 
-		bundleProjectTracker =  new ServiceTracker<IBundleProjectService, IBundleProjectService>
+		bundleProjectTracker = new ServiceTracker<IBundleProjectService, IBundleProjectService>
 				(context, IBundleProjectService.class.getName(), null);
 		bundleProjectTracker.open();
 
@@ -90,7 +91,7 @@ public class Activator extends AbstractUIPlugin {
 		String bundleLogViewImpl = dictionary.get(BundleLogView.BUNDLE_LOG_VIEW_HEADER);
 		Extender.<BundleLogView>register(bundle, BundleLogView.class, bundleLogViewImpl);
 	  
-		LogWriter logWriter = new LogWriter(getLogFile(), BUNDLE_LOGGER_NAME);
+		logWriter = new LogWriter(getLogFile(), BUNDLE_LOGGER_NAME);
 		ExtendedLogReaderService readerService = getLogReaderService(); 
 		readerService.addLogListener(logWriter, logWriter);
 	}
@@ -102,8 +103,11 @@ public class Activator extends AbstractUIPlugin {
 	public void stop(BundleContext context) throws Exception {
 		bundleProjectTracker.close();
 		bundleProjectTracker = null;		
-		extendedLogServiceTracker.close();
-		extendedLogReaderServiceTracker.close();
+		if (null != extendedLogReaderServiceTracker
+				&& null != extendedLogServiceTracker) {
+			extendedLogServiceTracker.close();
+			extendedLogReaderServiceTracker.close();
+		}
 		plugin = null;
 		Activator.context = null;
 		super.stop(context);
@@ -116,7 +120,11 @@ public class Activator extends AbstractUIPlugin {
 	public static BundleContext getContext() {
 		return context;
 	}
-	
+
+	public LogWriter getLogWriter() {
+		return logWriter;
+	}
+
 	public File getLogFile() {
 		return fInputFile;
 	}

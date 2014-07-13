@@ -20,9 +20,9 @@ import java.util.Map;
 import java.util.Set;
 
 import no.javatime.inplace.InPlace;
-import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
-import no.javatime.inplace.msg.Msg;
+import no.javatime.inplace.region.closure.BuildErrorClosure;
+import no.javatime.inplace.region.closure.BundleClosures;
 import no.javatime.inplace.region.closure.BundleSorter;
 import no.javatime.inplace.region.closure.CircularReferenceException;
 import no.javatime.inplace.region.manager.BundleCommandImpl;
@@ -54,7 +54,7 @@ import org.osgi.framework.Bundle;
  * after a build of activated bundle projects. The scheduled bundles are updated and together with their
  * requiring bundles, unresolved, resolved, optionally refreshed and started as part of the update process.
  * <p>
- * Bundles are stopped and started again after update and resolve if ACTIVE/STARTING before update or refresh
+ * Bundles are stopped and started again after update and resolve if ACTIVE/STARTING before update or refreshed
  * and resolved if in state RESOLVE when the job is scheduled.
  * <p>
  * Plug-ins are usually singletons, and it is a requirement, if the plug-in contributes to the UI. When
@@ -173,42 +173,70 @@ public class UpdateJob extends BundleJob {
 	 * @throws InterruptedIOException 
 	 */
 	private IBundleStatus update(IProgressMonitor monitor) throws InPlaceException, InterruptedException, CoreException {
-			
-		// (1) Collect any additional bundles to update
-		// Update all bundles that are part of an activation process when the update on build option is switched off
-		Collection<IProject> activateProjects = bundleTransition.getPendingProjects(
-				bundleRegion.getBundleProjects(true), Transition.UPDATE_ON_ACTIVATE);
-		if (activateProjects.size() > 0) {
-			for (IProject project : activateProjects) {
-				bundleTransition.removePending(project, Transition.UPDATE_ON_ACTIVATE);
-				addPendingProject(project);
-			}
-		} 
-		// This is an optimization to reduce the number of update jobs, by including pending projects
-		// waiting for the next update job. See post build listener for delayed projects on update
-		if (getOptionsService().isUpdateOnBuild()) {
-			addPendingProjects(bundleTransition.getPendingProjects(bundleRegion.getBundleProjects(true),
-					Transition.UPDATE));
-		}
+
+		// (1) Collect any additional bundles to update and the requiring closure to stop, resolve/refresh and start
+
 		Collection<Bundle> bundlesToUpdate = bundleRegion.getBundles(getPendingProjects());
+		Collection<Bundle> activatedBundles = bundleRegion.getActivatedBundles();
 
-		// (2) Include requiring bundles to resolve (and optionally refresh) due to changes in projects to update
-		Collection<Bundle> bundlesToRefresh = getBundlesToResolve(bundlesToUpdate);
-
-		// (3) Reduce the set of bundles to update and refresh due to bundles with errors
-		removeErrorBundles(getPendingProjects(), bundlesToUpdate, bundlesToRefresh);
-		if (bundlesToUpdate.size() == 0 || 
-				bundleTransition.getPendingProjects(getPendingProjects(), Transition.UPDATE).size() == 0) {
-			if (InPlace.get().msgOpt().isBundleOperations()) {
-				addTrace(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, Msg.NO_BUNDLES_TO_UPDATE_INFO));
+		// If auto build has been switched off and than switched on, include all bundles that have been built
+		if (bundleRegion.isAutoBuildActivated(true)) {
+			Collection<Bundle> pendingBundles = 
+					bundleTransition.getPendingBundles(activatedBundles, Transition.UPDATE);
+			pendingBundles.removeAll(bundlesToUpdate);
+			if (pendingBundles.size() > 0) {
+				bundlesToUpdate.addAll(pendingBundles);
+				addPendingProjects(bundleRegion.getBundleProjects(pendingBundles));
 			}
+		}
+
+		// Get the requiring closure of bundles to update.
+		// The bundles in this closure are stopped before update and resolved/refreshed and started after update 
+		BundleClosures bc = new BundleClosures();
+		Collection<Bundle> bundleClosure = 
+				bc.bundleDeactivation(Closure.REQUIRING, bundlesToUpdate, activatedBundles);
+		// Necessary to get the latest updated version of a coherent set (closure) of running bundles
+		Collection<Bundle> pendingBundles = bundleTransition.getPendingBundles(bundleClosure, Transition.UPDATE);
+		pendingBundles.removeAll(bundlesToUpdate);
+		if (pendingBundles.size() > 0) {
+			bundlesToUpdate.addAll(pendingBundles);
+			addPendingProjects(bundleRegion.getBundleProjects(pendingBundles));
+		}
+
+		// (2) Reduce the set of bundles to update due to build errors
+		BuildErrorClosure be = new BuildErrorClosure(getPendingProjects(), Transition.UPDATE);
+		if (be.hasBuildErrors()) {
+			Collection<Bundle> bundleErrClosure = be.getBundleErrorClosures(true);
+			bundlesToUpdate.removeAll(bundleErrClosure);
+			removePendingProjects(bundleRegion.getBundleProjects(bundleErrClosure));
+			bundleClosure.removeAll(bundleErrClosure);
+			// Don't send build errors to the error log
+			if (InPlace.get().msgOpt().isBundleOperations()) {
+				IBundleStatus bundleStatus = be.getProjectErrorClosureStatus(true);
+				if (null != bundleStatus) {
+					addTrace(bundleStatus);			
+				}
+			}
+		}		
+
+		// (3) Reduce the set of bundles to update and refresh due to duplicates
+		//		Collection<Bundle> bundlesToRefresh = getBundlesToResolve(bundlesToUpdate);
+		//		removeDuplicates(getPendingProjects(), bundlesToUpdate, bundlesToRefresh);
+
+		Collection<IProject> duplicateProjects = removeExternalDuplicates(getPendingProjects(), bundleClosure, currentExternalInstance);
+		if (null != duplicateProjects) {
+			bundlesToUpdate.removeAll(bundleRegion.getBundles(duplicateProjects));
+		}
+
+		if (!bundleTransition.containsPending(bundlesToUpdate, Transition.UPDATE, false)) {
 			return getLastStatus();
 		}
-		// (4): Collect all bundles to restart after update and refresh
+
+		// (4) Collect all bundles to restart after update and refresh
 		Collection<Bundle> bundlesToRestart = new LinkedHashSet<Bundle>();
-		// ACTIVE (and STARTING) bundles are restored to their current state or as directed by operations assigned
+		// ACTIVE (and STARTING) bundles are restored to their current state or as directed by pending operations assigned
 		// to the bundle. Activated bundles in state INSTALLED (this indicates a corrected bundle error) are started
-		for (Bundle bundle : bundlesToRefresh) {
+		for (Bundle bundle : bundleClosure) {
 			if (bundleTransition.containsPending(bundle, Transition.START, Boolean.TRUE)
 					|| (bundle.getState() & (Bundle.ACTIVE | Bundle.STARTING | Bundle.INSTALLED)) != 0) {
 				bundlesToRestart.add(bundle);
@@ -219,33 +247,32 @@ public class UpdateJob extends BundleJob {
 		if (monitor.isCanceled()) {
 			throw new OperationCanceledException();
 		}
-		// (6) Update remaining bundles
+		// (6) Update bundles
 		Collection<IBundleStatus> errorStatusList = updateByReference(bundlesToUpdate, new SubProgressMonitor(
 				monitor, 1));
 		// (7) Report any update errors
-		handleUpdateExceptions(errorStatusList, bundlesToRefresh);
+		handleUpdateExceptions(errorStatusList, bundleClosure);
 		if (monitor.isCanceled()) {
 			throw new OperationCanceledException();
 		}
-		// (8) Refresh or resolve updated bundles and their requiring bundles
-		if (bundlesToRefresh.size() > 0) {
+		// (8) Refresh or resolve updated bundles and their closures
+		if (bundleClosure.size() > 0) {
 			// Also resolve/refresh and start all activated bundles in state installed and their requiring bundles
 			Collection<Bundle> installedBundles = bundleRegion.getBundles(Bundle.INSTALLED);
-			installedBundles.removeAll(bundlesToRefresh);
+			installedBundles.removeAll(bundleClosure);
 			installedBundles.removeAll(bundleRegion.getDeactivatedBundles());
 			if (installedBundles.size() > 0) {
 				BundleSorter bs = new BundleSorter();
-				Collection<Bundle> activatedBundles = bundleRegion.getActivatedBundles();
 				Collection<Bundle> installedBundlesToRefresh = bs.sortDeclaredRequiringBundles(installedBundles,
 						activatedBundles);
-				bundlesToRefresh.addAll(installedBundlesToRefresh);
+				bundleClosure.addAll(installedBundlesToRefresh);
 				bundlesToRestart.addAll(installedBundlesToRefresh);
 			}
 
 			if (getOptionsService().isRefreshOnUpdate()) {
-				refresh(bundlesToRefresh, new SubProgressMonitor(monitor, 1));
+				refresh(bundleClosure, new SubProgressMonitor(monitor, 1));
 			} else {
-				Collection<Bundle> notResolvedBundles = resolve(bundlesToRefresh, new SubProgressMonitor(monitor, 1));
+				Collection<Bundle> notResolvedBundles = resolve(bundleClosure, new SubProgressMonitor(monitor, 1));
 				if (notResolvedBundles.size() > 0) {
 					// This should include dependency closures, so no dependent bundles should be started
 					bundlesToRestart.removeAll(notResolvedBundles);
@@ -354,20 +381,19 @@ public class UpdateJob extends BundleJob {
 	private static String currentExternalInstance = ErrorMessage.getInstance().formatString("current_revision_of_jar_duplicate");
 	private static String currentWorkspaceInstance= ErrorMessage.getInstance().formatString("current_revision_of_ws_duplicate");
 
-	private void removeErrorBundles(Collection<IProject> projectsToUpdate, Collection<Bundle> bundlesToUpdate,
+	private void removeDuplicates(Collection<IProject> projectsToUpdate, Collection<Bundle> bundlesToUpdate,
 			Collection<Bundle> bDepClosures) throws OperationCanceledException {
 
-		Collection<IProject> pDepClosures = bundleRegion.getBundleProjects(bDepClosures);
-		removeBuildErrorClosures(bundlesToUpdate, bDepClosures, pDepClosures);
 		Collection<IProject> duplicateProjects = removeExternalDuplicates(projectsToUpdate, bDepClosures, currentExternalInstance);
 		if (null != duplicateProjects) {
 			bundlesToUpdate.removeAll(bundleRegion.getBundles(duplicateProjects));
 		}
-		duplicateProjects = removeWorkspaceDuplicates(projectsToUpdate, bDepClosures, null, ProjectProperties.getInstallableProjects(), 
-				currentWorkspaceInstance);
-		if (null != duplicateProjects) {
-			bundlesToUpdate.removeAll(bundleRegion.getBundles(duplicateProjects));
-		}
+// TODO detected by the update operation. do some more testing here
+//		duplicateProjects = removeWorkspaceDuplicates(projectsToUpdate, bDepClosures, null, ProjectProperties.getInstallableProjects(), 
+//				currentWorkspaceInstance);
+//		if (null != duplicateProjects) {
+//			bundlesToUpdate.removeAll(bundleRegion.getBundles(duplicateProjects));
+//		}
 	}
 
 	/**

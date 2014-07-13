@@ -21,8 +21,8 @@ import java.util.StringTokenizer;
 import no.javatime.inplace.log.dl.AbstractEntry;
 import no.javatime.inplace.log.dl.LogSession;
 import no.javatime.inplace.log.msg.Messages;
-import no.javatime.inplace.region.manager.BundleTransition.Transition;
 import no.javatime.inplace.region.manager.BundleManager;
+import no.javatime.inplace.region.manager.BundleTransition.Transition;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
 
@@ -49,6 +49,7 @@ public class BundleLogEntryImpl extends AbstractEntry implements BundleLogEntry 
 	private Date fDate;
 	private String message;
 	private String stack;
+	private Throwable throwable;
 	private LogSession session;
 	private int bundleState;
 	private Transition bundleTransition;
@@ -143,6 +144,11 @@ public class BundleLogEntryImpl extends AbstractEntry implements BundleLogEntry 
 	public String getMessage() {
 		return message;
 	}
+
+	public Throwable getThrowable() {
+		return throwable;
+	}
+
 
 	/**
 	 * Returns the stack trace for this entry or <code>null</code> if there is no stack trace
@@ -369,7 +375,7 @@ public class BundleLogEntryImpl extends AbstractEntry implements BundleLogEntry 
 	}
 
 	public String getBundleTransition() {
-		return BundleManager.getTransition().getTransitionName(bundleTransition);
+		return BundleManager.getTransition().getTransitionName(bundleTransition, false, false);
 	}
 	
 	public int getBundleStateId() {
@@ -462,7 +468,7 @@ public class BundleLogEntryImpl extends AbstractEntry implements BundleLogEntry 
 		fDateString = LOCAL_SDF.format(fDate);
 		message = status.getMessage();
 		this.session = session;
-		Throwable throwable = status.getException();
+		throwable = status.getException();
 		if (throwable != null) {
 			StringWriter swriter = new StringWriter();
 			PrintWriter pwriter = new PrintWriter(swriter);

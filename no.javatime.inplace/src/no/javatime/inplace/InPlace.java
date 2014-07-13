@@ -20,7 +20,7 @@ import no.javatime.inplace.bundlejobs.BundleJob;
 import no.javatime.inplace.bundlejobs.BundleJobListener;
 import no.javatime.inplace.bundlejobs.DeactivateJob;
 import no.javatime.inplace.bundlejobs.UninstallJob;
-import no.javatime.inplace.bundlejobs.UpdateScheduler;
+import no.javatime.inplace.bundlejobs.UpdateJob;
 import no.javatime.inplace.bundlejobs.events.BundleJobEvent;
 import no.javatime.inplace.bundlejobs.events.BundleJobEventListener;
 import no.javatime.inplace.bundlemanager.BundleJobManager;
@@ -37,7 +37,6 @@ import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.manager.BundleCommandImpl;
 import no.javatime.inplace.region.manager.BundleManager;
 import no.javatime.inplace.region.manager.BundleRegion;
-import no.javatime.inplace.region.manager.BundleTransition;
 import no.javatime.inplace.region.manager.BundleTransition.Transition;
 import no.javatime.inplace.region.manager.InPlaceException;
 import no.javatime.inplace.region.manager.ProjectLocationException;
@@ -216,18 +215,18 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 			// Remove resource listeners as soon as possible to prevent scheduling of new bundle jobs
 			removeResourceListeners();
 			shutDownBundles();
-			removeDynamicExtensions();
 		} finally {
 			extenderBundleTracker.close();
 			extenderBundleTracker = null;
 			bundleProjectTracker.close();
 			bundleProjectTracker = null;		
-			Job.getJobManager().removeJobChangeListener(jobChangeListener);
 			BundleJobManager.removeBundleJobListener(get());
 			if (autoBuildCommand.isDefined()) {
 				autoBuildCommand.removeCommandListener(this);
 			}
 			BundleManager.removeBundleTransitionListener(externalTransitionListener);
+			Job.getJobManager().removeJobChangeListener(jobChangeListener);
+			removeDynamicExtensions();
 			super.stop(context);
 			plugin = null;
 			InPlace.context = null;
@@ -274,15 +273,6 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 		return bundleProjectService;
 	}
 
-	public BundleLog getTraceContainerService() throws InPlaceException {
-
-		BundleLog trace = traceService.getService();
-		if (null == trace) {
-			throw new InPlaceException("invalid_service", BundleLog.class.getName());			
-		}
-		return trace;
-	}
-
 	public CommandOptions getCommandOptionsService() throws InPlaceException {
 
 		CommandOptions cmdOpt = commandOptions.getService();
@@ -309,7 +299,6 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 		return dpOpt;
 	}
 
-
 	public BundleLog getTraceService() throws InPlaceException {
 
 		BundleLog trace = traceService.getService();
@@ -320,7 +309,7 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 	}
 	
 	public String trace(IBundleStatus status) {
-		BundleLog t = getTraceContainerService();
+		BundleLog t = getTraceService();
 		return t.trace(status);		
 	}
 	
@@ -341,27 +330,37 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 		savePluginSettings(true, false);
 		if (BundleProjectState.isProjectWorkspaceActivated()) {
 			try {
-				BundleJob shutdDownJob = null;
+				BundleJob shutDownJob = null;
 				Collection<IProject> projects = BundleProjectState.getActivatedProjects();
 				if (getCommandOptionsService().isDeactivateOnExit()) {
-					shutdDownJob = new DeactivateJob(DeactivateJob.deactivateOnshutDownJobName);
+					projects = BundleProjectState.getActivatedProjects();
+					shutDownJob = new DeactivateJob(DeactivateJob.deactivateOnshutDownJobName);
 				} else {
-					shutdDownJob = new UninstallJob(UninstallJob.shutDownJobName);
+					projects = ProjectProperties.getPlugInProjects();
+					shutDownJob = new UninstallJob(UninstallJob.shutDownJobName);
+					((UninstallJob) shutDownJob).unregisterBundleProject(true);
 				}
-				shutdDownJob.addPendingProjects(projects);
-				shutdDownJob.setUser(false);
-				shutdDownJob.schedule();
+				shutDownJob.addPendingProjects(projects);
+				shutDownJob.setUser(false);
+				shutDownJob.schedule();
 				IJobManager jobManager = Job.getJobManager();
 				// Wait for build and bundle jobs
 				jobManager.join(BundleJob.FAMILY_BUNDLE_LIFECYCLE, null);
 				jobManager.join(ResourcesPlugin.FAMILY_AUTO_BUILD, null);
 				jobManager.join(ResourcesPlugin.FAMILY_MANUAL_BUILD, null);
-				if (shutdDownJob.getStatusList().size() > 0) {
+				if (shutDownJob.getStatusList().size() > 0) {
+					final IBundleStatus multiStatus = 
+							shutDownJob.createMultiStatus(new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID, shutDownJob.getName()));
+					// The custom or standard status handler is not invoked at shutdown
+					Runnable trace = new Runnable() {
+						public void run() {
+							trace(multiStatus);
+						}
+					};	
+					trace.run();
+
 					System.err.println(Msg.BEGIN_SHUTDOWN_ERROR);
-					Collection<IBundleStatus> statusList = shutdDownJob.getStatusList();	
-					for (IBundleStatus status : statusList) {
-						printStatus(status);
-					}
+					printStatus(multiStatus);
 					System.err.println(Msg.END_SHUTDOWN_ERROR);
 				}
 			} catch (InPlaceException e) {
@@ -448,22 +447,13 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 		try {
 			if (autoBuildCmd.isDefined() && !ProjectProperties.isAutoBuilding()) {
 				if (getCommandOptionsService().isUpdateOnBuild()) {
-					BundleTransition bundleTransition = BundleJobManager.getTransition();
-					BundleJobManager.getRegion().setAutoBuild(true);
-					Collection<IProject> activatedProjects = BundleProjectState.getActivatedProjects();
-					Collection<IProject> pendingProjects = bundleTransition.getPendingProjects(
-							activatedProjects, Transition.BUILD);
-					Collection<IProject> pendingProjectsToUpdate = bundleTransition.getPendingProjects(
-							activatedProjects, Transition.UPDATE);
-					if (pendingProjectsToUpdate.size() > 0) {
-						pendingProjects.addAll(pendingProjectsToUpdate);
-					}
-					if (pendingProjects.size() > 0) {
-						UpdateScheduler.scheduleUpdateJob(pendingProjects, 1000);
-					}
+					BundleJobManager.getRegion().setAutoBuildChanged(true);
+					// Wait for builder to star. The post build listener does not
+					// always receive all projects to update when auto build is switched on
+					BundleJobManager.addBundleJob(new UpdateJob(UpdateJob.updateJobName), 1000);
 				}
 			} else {
-				BundleJobManager.getRegion().setAutoBuild(false);			
+				BundleJobManager.getRegion().setAutoBuildChanged(false);			
 			}
 		} catch (InPlaceException e) {
 			StatusManager.getManager().handle(

@@ -10,9 +10,7 @@
  *******************************************************************************/
 package no.javatime.inplace.builder;
 
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Map.Entry;
+import java.util.Collection;
 
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundlejobs.ActivateBundleJob;
@@ -99,14 +97,14 @@ public class PostBuildListener implements IResourceChangeListener {
 	private BundleCommand bundleCommand = BundleJobManager.getCommand();
 	private BundleRegion bundleRegion = BundleJobManager.getRegion();
 	private BundleTransition bundleTransition = BundleJobManager.getTransition();
-
+	private static int delay = 0;
 	/**
 	 * Schedules bundle jobs for changed projects. Removed and closed projects are handled in the
 	 * {@link PreChangeListener}
 	 */
 	@Override
 	public void resourceChanged(IResourceChangeEvent event) {
-
+		
 		// Nothing to do in a deactivated workspace where all bundle projects are uninstalled
 		if (!BundleProjectState.isProjectWorkspaceActivated()) {
 			return;
@@ -203,7 +201,13 @@ public class PostBuildListener implements IResourceChangeListener {
 	 */
 	private boolean scheduleJob(BundleJob job) {
 		if (null != job && job.hasPendingProjects()) {
-			BundleJobManager.addBundleJob(job, 0);
+			if (job instanceof ActivateBundleJob) {
+				// Build all pending projects before activating 
+				if (InPlace.get().getCommandOptionsService().isUpdateOnBuild()) {
+					delay = 1000;
+				}
+			}
+			BundleJobManager.addBundleJob(job, delay);
 			return true;
 		}
 		return false;
@@ -257,8 +261,9 @@ public class PostBuildListener implements IResourceChangeListener {
 			// with an update on activate transition and should be updated
 			try {
 				if (InPlace.get().getCommandOptionsService().isUpdateOnBuild()
-						|| bundleTransition.containsPending(project, Transition.UPDATE_ON_ACTIVATE, Boolean.FALSE)) {
-					UpdateScheduler.addChangedProject(project, updateJob, activateProjectJob);
+						|| bundleTransition.containsPending(project, Transition.UPDATE_ON_ACTIVATE, Boolean.TRUE)) {
+					// Not using UpdateScheduler.addChangedProject(...); This is now handled in the resolver hook
+					updateJob.addPendingProject(project);
 					isPending = true;
 				}
 			} catch (InPlaceException e) {
@@ -386,24 +391,20 @@ public class PostBuildListener implements IResourceChangeListener {
 
 	/**
 	 * Add activated projects that have been built to the bundle log
+	 * 
 	 * @see JavaTimeBuilder
 	 */
 	private void traceBuilds() {
 		if (InPlace.get().msgOpt().isBundleOperations()) {
-			Map<IProject, IBundleStatus> builds = JavaTimeBuilder.getBuilds();
+			Collection<IBundleStatus> builds = JavaTimeBuilder.getBuilds();
 			if (!builds.isEmpty()) {
 				IBundleStatus mStatus = new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, Msg.BUILD_HEADER_TRACE);
-				Iterator<Entry<IProject, IBundleStatus>> it = builds.entrySet().iterator();
-				while (it.hasNext()) {
-					Map.Entry<IProject, IBundleStatus> entry = it.next();
-					IBundleStatus status = entry.getValue();
-					mStatus.add(status);
-				}			
-				JavaTimeBuilder.clearBuilds();
+				for (IBundleStatus status : builds) {
+					mStatus.add(status);					
+				}
 				InPlace.get().trace(mStatus);
 			}
-		} else {
-			JavaTimeBuilder.clearBuilds();
 		}
+		JavaTimeBuilder.clearBuilds();
 	}
 }

@@ -15,9 +15,9 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 
 import no.javatime.inplace.InPlace;
-import no.javatime.inplace.dependencies.BundleClosures;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Operation;
+import no.javatime.inplace.region.closure.BundleClosures;
 import no.javatime.inplace.region.closure.BundleSorter;
 import no.javatime.inplace.region.closure.CircularReferenceException;
 import no.javatime.inplace.region.manager.BundleManager;

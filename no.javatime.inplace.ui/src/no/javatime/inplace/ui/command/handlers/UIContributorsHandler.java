@@ -10,8 +10,13 @@
  *******************************************************************************/
 package no.javatime.inplace.ui.command.handlers;
 
+import no.javatime.inplace.bundlejobs.DeactivateJob;
+import no.javatime.inplace.bundlemanager.BundleJobManager;
+import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.dl.preferences.intface.CommandOptions;
 import no.javatime.inplace.region.manager.InPlaceException;
+import no.javatime.inplace.ui.Activator;
+import no.javatime.inplace.ui.msg.Msg;
 
 /**
  * Checked menu item allowing/disallowing activating bundles with ui contributions
@@ -24,15 +29,25 @@ public class UIContributorsHandler extends AbstractOptionsHandler {
 	protected void storeValue(Boolean value) throws InPlaceException {
 		CommandOptions cmdStore = getOptionsService();
 		cmdStore.setIsAllowUIContributions(value);
+		Activator.getDisplay().asyncExec(new Runnable() {
+			@Override
+			public void run() {
+				BundleMenuActivationHandler.updateBundleListPage(ProjectProperties
+						.toJavaProjects(ProjectProperties.getInstallableProjects()));
+			}			
+		});
+		if (!value) {
+			DeactivateJob daj = 
+					new DeactivateJob(Msg.DEACTIVATE_UI_CONTRIBOTRS_JOB, ProjectProperties.getUIContributors());			
+			BundleJobManager.addBundleJob(daj, 0);
+		}
 	}
-
 
 	@Override
 	protected boolean getStoredValue() throws InPlaceException {
 		CommandOptions cmdStore = getOptionsService();
 		return cmdStore.isAllowUIContributions();
 	}
-
 
 	@Override
 	protected String getCommandId() {

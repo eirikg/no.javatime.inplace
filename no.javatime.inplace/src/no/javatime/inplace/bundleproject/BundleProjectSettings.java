@@ -505,23 +505,23 @@ public class BundleProjectSettings {
 			}
 		}
 		return true;
-	}
+	}	
 
 	/**
 	 * Check for existence of a manifest file at the default location in the specified project
 	 * 
 	 * @param project to check for the existence of a manifest file at the default location
 	 * @return true if the manifest file exist at the default location and false otherwise
-	 * @see #MANIFEST_RELATIVE_PATH
-	 * @see #MANIFEST_FILE_NAME
+	 * @see BundleProjectSettings#MANIFEST_RELATIVE_PATH
+	 * @see BundleProjectSettings#MANIFEST_FILE_NAME
 	 */
 	public static Boolean hasManifest(IProject project) {
 		if (null != project && project.isAccessible()) {
-			IFile manifestFile = project.getFile(MANIFEST_RELATIVE_PATH + MANIFEST_FILE_NAME);
+			IFile manifestFile = project.getFile(BundleProjectSettings.MANIFEST_RELATIVE_PATH + BundleProjectSettings.MANIFEST_FILE_NAME);
 			if (manifestFile.exists()) {
 				return true;
 			}
 		}
 		return false;
-	}	
+	}
 }

@@ -33,6 +33,7 @@ public class Msg extends NLS {
 	public static String EXTERNAL_BUNDLE_OPERATION_TRACE;
 	public static String DISABLE_NATURE_TRACE;
 	public static String ENABLE_NATURE_TRACE;
+	public static String UNDEFINED_CONTEXT_ERROR_TRACE;
 	
 	// Build trace operations
 	public static String BUILD_HEADER_TRACE;
@@ -43,27 +44,32 @@ public class Msg extends NLS {
 	public static String BUILD_ERROR_UPDATE_TRACE;
 	public static String BUILD_ERROR_TRACE;
 	public static String USING_CURRENT_REVISION_TRACE;
-	public static String REQUIRING_BUNDLES_TRACE;
 	
 	// Bundle job names
 	public static String ACTIVATE_PROJECTS_JOB;
 	public static String ACTIVATE_WORKSPACE_JOB;
-	
+
 	// Errors
 	public static String BEGIN_SHUTDOWN_ERROR;
 	public static String END_SHUTDOWN_ERROR;
+	public static String INSTALL_ERROR;
 	
 	// Warnings
 	public static String EXTERNAL_UNINSTALL_WARN;
 	public static String REQUIRING_BUNDLES_WARN;
-
+	public static String DEACTIVATE_BUILD_WARN;
+	public static String DELAYED_BUILD_WARN;
+	
 	// Dialog and View messages
 	public static String DEACTIVATE_QUESTION_DLG;
 	public static String DEACTIVATE_QUESTION_REQ_DLG;
 	
 	// Info messages
 	public static String ACTIVATED_BUNDLES_INFO;
-	public static String NO_BUNDLES_TO_UPDATE_INFO;
+	public static String IMPLICIT_ACTIVATION_INFO;
+	public static String DELAYED_RESOLVE_INFO;
+	public static String DELAYED_UPDATE_INFO;
+	public static String SYSTEM_EXIT_INFO;
 	
 	private static final String BUNDLE_NAME = "no.javatime.inplace.msg.messages"; //$NON-NLS-1$
 

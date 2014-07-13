@@ -66,6 +66,28 @@ public abstract class JobStatus extends WorkspaceJob implements BundleTransition
 	// List of historic status objects
 	private List<IBundleStatus> logStatusList = new ArrayList<IBundleStatus>();
 	
+	/**
+	 * Runs the bundle(s) status operation.
+	 * <p>
+	 * Note that the internal {@code JobManager} class logs status unconditionally to the {@code LogView} if a
+	 * job returns a status object with {@code IStatus.ERROR} or {@code IStatus.WARNING}
+	 * 
+	 * @return a {@code BundleStatus} object with {@code BundleStatusCode.OK} if job terminated normally and no
+	 *         status objects have been added to this job status list, or {@code BundleStatusCode.JOBINFO} if
+	 *         any status objects have been added to the job status list. The status list may be obtained from this
+	 *         job by accessing {@linkplain #getStatusList()}.
+	 */
+	@Override
+	public IBundleStatus runInWorkspace(IProgressMonitor monitor) throws CoreException {
+		if (getStatusList().size() > 0) {
+			return new BundleStatus(StatusCode.JOBINFO, InPlace.PLUGIN_ID, null);
+		}
+		return new BundleStatus(StatusCode.OK, InPlace.PLUGIN_ID, null);
+	}
+	
+	/**
+	 * Adds trace messages to this job according to transition type
+	 */
 	@Override
 	public void bundleTransitionChanged(BundleTransitionEvent event) {
 		if (!InPlace.get().msgOpt().isBundleOperations()) {
@@ -75,7 +97,7 @@ public abstract class JobStatus extends WorkspaceJob implements BundleTransition
 		Transition transition = event.getTransition();
 		IProject project = event.getProject();
 		IBundleProjectDescription bundleProjDesc = null;
-		
+	
 		switch (transition) {
 		case RESOLVE:
 			IBundleStatus status = addTrace(Msg.RESOLVE_BUNDLE_OPERATION_TRACE, new Object[] 
@@ -137,25 +159,6 @@ public abstract class JobStatus extends WorkspaceJob implements BundleTransition
 		default:
 			break;
 		}
-	}
-
-	/**
-	 * Runs the bundle(s) status operation.
-	 * <p>
-	 * Note that the internal {@code JobManager} class logs status unconditionally to the {@code LogView} if a
-	 * job returns a status object with {@code IStatus.ERROR} or {@code IStatus.WARNING}
-	 * 
-	 * @return a {@code BundleStatus} object with {@code BundleStatusCode.OK} if job terminated normally and no
-	 *         status objects have been added to this job status list, or {@code BundleStatusCode.JOBINFO} if
-	 *         any status objects have been added to the job status list. The status list may be obtained from this
-	 *         job by accessing {@linkplain #getStatusList()}.
-	 */
-	@Override
-	public IBundleStatus runInWorkspace(IProgressMonitor monitor) throws CoreException {
-		if (getStatusList().size() > 0) {
-			return new BundleStatus(StatusCode.JOBINFO, InPlace.PLUGIN_ID, null);
-		}
-		return new BundleStatus(StatusCode.OK, InPlace.PLUGIN_ID, null);
 	}
 
 	/**
@@ -243,7 +246,7 @@ public abstract class JobStatus extends WorkspaceJob implements BundleTransition
 				project = (IProject) bundleProject;
 				bundle = bundleRegion.get(project);
 			}
-		}		
+		}
 		return addTrace(NLS.bind(key, substitutions), bundle, project);
 	}
 	

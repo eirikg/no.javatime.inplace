@@ -103,7 +103,7 @@ import org.osgi.framework.BundleListener;
  * Maintains a bundle details page view and a bundle list page view with bundle properties and status information.
  * <p>
  * Local menus and a tool bar is provided for executing bundle operations, toggle activation policy on a bundle, open
- * manifest editor, flip between list and details page and and show/hide bundle CONSOLE and message view.
+ * manifest editor, flip between list and details page and and show/hide bundle console and message view.
  * <p>
  * Pages are updated with bundle status information received from job, bundle and resource listeners
  */
@@ -555,7 +555,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 				return; // External bundle
 			}
 			Transition transition = bundleTransition.getTransition(project);
-			// Only consider error transitions, external commands and on demand loading of bundles
+			// Only consider external commands and on demand loading of bundles
 			if (transition == Transition.EXTERNAL || (transition == Transition.LAZY_LOAD)) {
 				showProjectInfo();
 			}

@@ -13,17 +13,17 @@ package no.javatime.inplace.ui.command.contributions;
 import java.util.ArrayList;
 import java.util.Collection;
 
-import no.javatime.inplace.log.intface.BundleLogView;
 import no.javatime.inplace.bundlejobs.ActivateProjectJob;
 import no.javatime.inplace.bundlemanager.BundleJobManager;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.dialogs.OpenProjectHandler;
 import no.javatime.inplace.extender.provider.Extension;
+import no.javatime.inplace.log.intface.BundleLogView;
 import no.javatime.inplace.pl.dependencies.intface.DependencyDialog;
 import no.javatime.inplace.region.manager.BundleCommand;
 import no.javatime.inplace.region.manager.BundleRegion;
-import no.javatime.inplace.region.manager.InPlaceException;
 import no.javatime.inplace.region.manager.BundleTransition.Transition;
+import no.javatime.inplace.region.manager.InPlaceException;
 import no.javatime.inplace.region.project.BundleProjectState;
 import no.javatime.inplace.region.project.ManifestOptions;
 import no.javatime.inplace.region.status.BundleStatus;
@@ -251,13 +251,11 @@ public class BundleMainCommandsContributionItems extends BundleCommandsContribut
 
 	private CommandContributionItem addRefreshPending(Collection<IProject> activatedProjects) {
 		
-		BundleRegion bundleRegion = BundleJobManager.getRegion();
-
-		// Calculate number of projects to update
+		// Calculate number of projects to refresh
 		if (activatedProjects.size() > 0) {
 			int nRefresh = 0;
 			for (IProject project : activatedProjects) {
-				Bundle bundle = bundleRegion.get(project);
+				Bundle bundle = BundleJobManager.getRegion().get(project);
 				// Uninstalled
 				if (null == bundle) {
 					continue;

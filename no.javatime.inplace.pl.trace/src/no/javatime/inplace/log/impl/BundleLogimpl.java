@@ -6,6 +6,7 @@ import no.javatime.inplace.log.intface.BundleLog;
 import no.javatime.inplace.region.status.IBundleStatus;
 
 import org.eclipse.equinox.log.Logger;
+import org.eclipse.ui.IWorkbench;
 import org.osgi.framework.Bundle;
 
 public class BundleLogimpl implements BundleLog {
@@ -90,9 +91,21 @@ public class BundleLogimpl implements BundleLog {
 		if (null == bundle) {
 			bundle = Activator.getContext().getBundle();
 		}
-		Logger logger = Activator.getDefault().getLogger(bundle);
 		String msg = status.getMessage();
-		logger.log(status, LogWriter.getLevel(status), msg, status.getException());
+		// Do not use the ExtendedLogReaderService while the workbench is closing
+		// It logs the root message (in the log listener) to the error log in addition
+		// to the trace status object to be logged
+		IWorkbench workbench = Activator.getDefault().getWorkbench();
+		if (null != workbench && workbench.isClosing()) {
+			// Write directly to the log file
+			LogWriter logWriter = Activator.getDefault().getLogWriter();
+			if (null != logWriter) {
+				logWriter.log(new BundleLogEntryImpl(status));
+			}
+		} else {
+			Logger logger = Activator.getDefault().getLogger(bundle);
+			logger.log(status, LogWriter.getLevel(status), msg, status.getException());
+		}
 		return msg;
 	}
 	

@@ -18,9 +18,9 @@ import java.util.Map;
 import java.util.Set;
 
 import no.javatime.inplace.region.Activator;
+import no.javatime.inplace.region.closure.BuildErrorClosure;
 import no.javatime.inplace.region.closure.BundleDependencies;
 import no.javatime.inplace.region.closure.CircularReferenceException;
-import no.javatime.inplace.region.closure.ProjectSorter;
 import no.javatime.inplace.region.events.TransitionEvent;
 import no.javatime.inplace.region.manager.BundleManager;
 import no.javatime.inplace.region.manager.BundleRegion;
@@ -30,11 +30,11 @@ import no.javatime.inplace.region.manager.BundleWorkspaceRegionImpl;
 import no.javatime.inplace.region.project.BundleProjectState;
 import no.javatime.inplace.region.state.BundleStateFactory;
 import no.javatime.inplace.region.status.BundleStatus;
+import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import no.javatime.util.messages.Category;
 import no.javatime.util.messages.ExceptionMessage;
 import no.javatime.util.messages.TraceMessage;
-import no.javatime.util.messages.UserMessage;
 import no.javatime.util.messages.WarnMessage;
 
 import org.eclipse.core.resources.IProject;
@@ -78,6 +78,8 @@ class BundleResolveHandler implements ResolverHook {
 	// Groups of singletons
 	private Map<Bundle, Set<Bundle>> groups = null;
 	private Collection<Long> resolved = new LinkedHashSet<Long>();
+	private BundleRegion bundleRegion = BundleManager.getRegion();
+	private BundleTransition bundleTransition = BundleManager.getTransition();
 
 	@Override
 	public void filterMatches(BundleRequirement r, Collection<BundleCapability> candidates) {
@@ -101,12 +103,12 @@ class BundleResolveHandler implements ResolverHook {
 			return;
 		}
 		
-		Collection<BundleRevision> deactivatedBundles = new LinkedHashSet<BundleRevision>();
-		Collection<BundleRevision> activatedBundles = new LinkedHashSet<BundleRevision>();
 		Collection<Bundle> bundles = BundleManager.getRegion().getBundles();
 		if (bundles.size() == 0) {
 			return;
 		}
+		Collection<BundleRevision> deactivatedBundles = new LinkedHashSet<BundleRevision>();
+		Collection<BundleRevision> activatedBundles = new LinkedHashSet<BundleRevision>();
 		// Restrict the scope to workspace bundles
 		Collection<BundleRevision> workspaceCandidates = BundleDependencies
 				.getRevisionsFrom(bundles);
@@ -151,96 +153,39 @@ class BundleResolveHandler implements ResolverHook {
 			resolved.add(bundleId);
 		}
 	}
-	// Replacement of activateDependentBundles
-	// Version without scheduling a bundle job. The job is scheduled in the job listener
-	public Collection<BundleRevision> activateProvidingProjects (Collection<BundleRevision> activatedBundleRevisions,
-			Collection<BundleRevision> deactivatedBundleRevisions) {
 
+	/**
+	 * Filters out activated candidate bundles that has requirements on deactivated candidate bundles.
+	 * <p>
+	 * A pending transition for later activation is assigned to deactivated candidate bundles providing 
+	 * capabilities to activated candidate bundles.
+	 * .   
+	 * 
+	 * @param activatedRevs all activated candidate workspace bundles
+	 * @param deactivatedRevs all deactivated candidate workspace bundles
+	 * @return all activated bundles that requires capabilities from deactivated bundles or an empty collection
+	 *         if no such requirements exist
+	 */
+	private Collection<BundleRevision> activateProvidingProjects (Collection<BundleRevision> activatedRevs,
+			Collection<BundleRevision> deactivatedRevs) {
+		
+		// Activated bundles requiring capabilities from deactivated bundles
 		Collection<BundleRevision> bundlesToNotResolve = new LinkedHashSet<BundleRevision>();
 
-		// Does the set of activated bundles to resolve have requirements on this non activated (installed) candidate bundle
-		for (BundleRevision deactivatedBundleRevision : deactivatedBundleRevisions) {
-			Bundle deactivatedBundle = deactivatedBundleRevision.getBundle();
-			Collection<Bundle> activatedRequireres = 
-					BundleManager.getCommand().getDependencyClosure(Collections.<Bundle>singletonList(deactivatedBundle)); 
-			// Remove self from activated requiring bundles
-			activatedRequireres.remove(deactivatedBundle);
-			if (!activatedRequireres.isEmpty()) {
-				BundleRegion bundleRegion = BundleManager.getRegion();
-				BundleManager.getTransition().addPending(deactivatedBundleRevision.getBundle(), Transition.ACTIVATE_PROJECT);					
-				for (Bundle activatedRequirer : activatedRequireres) {
-					bundlesToNotResolve.add(BundleManager.getCommand().getCurrentRevision(activatedRequirer));
-					// Tag as not resolved and adjust state
-					BundleManager.getTransition().addPending(activatedRequirer, Transition.UPDATE_ON_ACTIVATE);
-					BundleTransition transition = BundleManager.getTransition();
-					transition.setTransition(bundleRegion.getBundleProject(activatedRequirer), Transition.INSTALL);
-					BundleWorkspaceRegionImpl.INSTANCE.setActiveState(activatedRequirer, BundleStateFactory.INSTANCE.installedState);
-				}
-
-				if (Category.getState(Category.infoMessages)) {
-					IProject deactivatedProject = bundleRegion.getBundleProject(deactivatedBundleRevision
-							.getBundle());
-					String activatedBundleList = formatBundleRevisionList(activatedBundleRevisions);
-					UserMessage.getInstance().getString("implicit_activation", activatedBundleList, deactivatedProject.getName());
-					UserMessage.getInstance().getString("delayed_resolve", activatedBundleList, deactivatedProject.getName());
-				}
+		// Does any bundles in the set of activated bundles to resolve have requirements on any deactivated candidate bundles
+		for (BundleRevision deactivatedRev : deactivatedRevs) {
+			// Note this is transitive. Activated bundles dependent on an activated bundle which is dependent 
+			// on a deactivated bundle is included in the list of activated requiring bundle revisions
+			Collection<BundleRevision> activatedReqs = 
+					BundleDependencies.getRequiringBundles(deactivatedRev, activatedRevs, null, new LinkedHashSet<BundleRevision>());
+			if (activatedReqs.size() > 0) {
+				// Inform others that this bundle project should be activated
+				bundleTransition.addPending(deactivatedRev.getBundle(), Transition.ACTIVATE_PROJECT);					
+				bundlesToNotResolve.addAll(rollbackState(activatedReqs));
 			}
 		}
 		return bundlesToNotResolve;
 	}
-	
-	/**
-	 * Schedule an activate project job for deactivated bundles providing capabilities to activated bundles.
-	 * 
-	 * @param activatedBundleRevisions all activated workspace bundles
-	 * @param deactivatedBundleRevisions all deactivated workspace bundles
-	 * @return all activated bundles that requires capabilities from deactivated bundles or an empty collection
-	 *         if no such requirements exist
-	 */
-//	public Collection<BundleRevision> activateDependentBundles(Collection<BundleRevision> activatedBundleRevisions,
-//			Collection<BundleRevision> deactivatedBundleRevisions) {
-//
-//		Collection<IProject> projectsToActivate = null;
-//		Collection<BundleRevision> bundlesToNotResolve = new LinkedHashSet<BundleRevision>();
-//
-//		for (BundleRevision deactivatedBundleRevision : deactivatedBundleRevisions) {
-//			// Does the set of activated bundles have requirements on this non
-//			// activated (installed) candidate bundle
-//			Collection<BundleRevision> activatedRequireres = BundleDependencies.getRequiringBundles(
-//					deactivatedBundleRevision, activatedBundleRevisions, null, new LinkedHashSet<BundleRevision>());
-//			if (!activatedRequireres.isEmpty()) {
-//				BundleRegion bundleRegion = BundleManager.getRegion();
-//				for (BundleRevision activatedRequirer : activatedRequireres) {
-//					Bundle activatedRequirerBundle = activatedRequirer.getBundle();
-//					// Tag as not resolved and adjust state
-//					BundleTransition transition = BundleManager.getTransition();
-//					transition.setTransition(bundleRegion.getBundleProject(activatedRequirerBundle), Transition.INSTALL);
-//					BundleWorkspaceRegionImpl.INSTANCE.setActiveState(activatedRequirerBundle, BundleStateFactory.INSTANCE.installedState);
-//				}
-//				if (null == projectsToActivate) {
-//					projectsToActivate = new LinkedHashSet<IProject>();
-//				}
-//				projectsToActivate.add(bundleRegion.getBundleProject(deactivatedBundleRevision.getBundle()));
-//				bundlesToNotResolve.addAll(activatedRequireres);
-//				if (Category.getState(Category.infoMessages)) {
-//					Collection<IProject> activatedProjects = bundleRegion.getBundleProjects(BundleDependencies
-//							.getBundlesFrom(activatedRequireres));
-//					IProject deactivatedProject = bundleRegion.getBundleProject(deactivatedBundleRevision
-//							.getBundle());
-//					UserMessage.getInstance().getString("implicit_activation",
-//							BundleProjectState.formatProjectList(activatedProjects), deactivatedProject.getName());
-//					UserMessage.getInstance().getString("delayed_resolve",
-//							BundleProjectState.formatProjectList(activatedProjects), deactivatedProject.getName());
-//				}
-//			}
-//		}
-//		if (null != projectsToActivate) {
-//			ActivateProjectJob activateProjectJob = new ActivateProjectJob(
-//					ActivateProjectJob.activateProjectsJobName, projectsToActivate);
-//			BundleJobManager.addBundleJob(activateProjectJob, 0);
-//		}
-//		return bundlesToNotResolve;
-//	}
 
 	/**
 	 * Get all bundles with build errors and their closures.
@@ -249,16 +194,16 @@ class BundleResolveHandler implements ResolverHook {
 	 * @param deactivatedBundles all deactivated workspace bundles
 	 * @return all bundles with errors and their closures
 	 */
-	public Collection<BundleRevision> getErrorClosure(Collection<BundleRevision> activatedBundles,
+	private Collection<BundleRevision> getErrorClosure(Collection<BundleRevision> activatedBundles,
 			Collection<BundleRevision> deactivatedBundles) {
 
 		// Add activated bundles dependent on deactivated bundles with build errors to the not resolve list
-		ProjectSorter bs = new ProjectSorter();
 		Collection<IProject> deactivatedProjects = BundleManager.getRegion().getBundleProjects(BundleDependencies
 				.getBundlesFrom(deactivatedBundles));
-		Collection<IProject> deactivatedErrorProjects = BundleProjectState.getBuildErrors(deactivatedProjects);
-		deactivatedErrorProjects.addAll(BundleProjectState.hasBuildState(deactivatedProjects));
+		Collection<IProject> deactivatedErrorProjects = BuildErrorClosure.getBuildErrors(deactivatedProjects);
+		deactivatedErrorProjects.addAll(BuildErrorClosure.hasBuildState(deactivatedProjects));
 		Collection<BundleRevision> notResolveList = new LinkedHashSet<BundleRevision>();
+		
 		if (deactivatedErrorProjects.size() > 0) {
 			for (IProject deactivatedErrorProject : deactivatedErrorProjects) {
 				Bundle deactivatedErrorBundle = BundleManager.getRegion().get(deactivatedErrorProject);
@@ -289,19 +234,21 @@ class BundleResolveHandler implements ResolverHook {
 		}
 		// Add activated bundles dependent on other activated bundles with build errors to the not resolve list
 		try {
-			Collection<IProject> projectScope = BundleManager.getRegion().getBundleProjects(BundleDependencies
-					.getBundlesFrom(activatedBundles));
-			Collection<IProject> projectErrorClosure = bs.getRequiringBuildErrorClosure(projectScope, true);
-			if (projectErrorClosure.size() > 0) {
-				String msg = BundleProjectState.formatBuildErrorsFromClosure(projectErrorClosure, "Resolve");
-				if (null != msg) {
-					String warnMsg = WarnMessage.getInstance().formatString(WarnMessage.defKey, msg);
-					StatusManager.getManager().handle(new BundleStatus(StatusCode.WARNING, Activator.PLUGIN_ID, warnMsg),
-							StatusManager.LOG);
+			Collection<BundleRevision> newActivatedBundles = new LinkedHashSet<>(activatedBundles);
+			newActivatedBundles.removeAll(notResolveList);
+			Collection<IProject> activatedProjects = BundleManager.getRegion().getBundleProjects(BundleDependencies
+					.getBundlesFrom(newActivatedBundles));
+			BuildErrorClosure be = new BuildErrorClosure(activatedProjects, Transition.RESOLVE);
+			if (be.hasBuildErrors()) {
+				Collection<Bundle> buildErrClosure = be.getBundleErrorClosures(true);
+				notResolveList.addAll(BundleDependencies.getRevisionsFrom(buildErrClosure));
+				if (Activator.getDefault().msgOpt().isBundleOperations()) {
+					IBundleStatus bundleStatus = be.getProjectErrorClosureStatus(true);
+					if (null != bundleStatus) {
+						StatusManager.getManager().handle(bundleStatus, StatusManager.LOG);
+					}
 				}
-				Collection<Bundle> bundles = BundleManager.getRegion().getBundles(projectErrorClosure);
-				notResolveList.addAll(BundleDependencies.getRevisionsFrom(bundles));
-			}
+			}		
 		} catch (CircularReferenceException e) {
 			if (null != e.getBundles()) {
 				Collection<BundleRevision> activatedErrorBundlerevisions = BundleDependencies.getRevisionsFrom(e
@@ -314,9 +261,29 @@ class BundleResolveHandler implements ResolverHook {
 			multiStatus.add(e.getStatusList());
 			StatusManager.getManager().handle(multiStatus, StatusManager.LOG);
 		}
-		return notResolveList;
+		return rollbackState(notResolveList);
 	}
 
+	/**
+	 * Set bundle and transition states to installed for the specified list of bundle revisions
+	 * 
+	 * @param notResolveList bundles to roll back to state installed
+	 * @return the specified list to revert or an empty list if the specified list is null
+	 */
+	private Collection<BundleRevision> rollbackState(Collection<BundleRevision> notResolveList) {
+
+		if (null == notResolveList) {
+			return Collections.<BundleRevision>emptySet();
+		}
+		if (notResolveList.size() > 0) {
+			for (BundleRevision notResolveRev : notResolveList) {
+				Bundle notResloveBundle = notResolveRev.getBundle();
+				bundleTransition.setTransition(bundleRegion.getBundleProject(notResloveBundle), Transition.INSTALL);
+				BundleWorkspaceRegionImpl.INSTANCE.setActiveState(notResloveBundle, BundleStateFactory.INSTANCE.installedState);
+			}
+		}
+		return notResolveList;
+	}
 	/**
 	 * See also: The Resolve Operation Resolver Hook Service Specification Version 1.0, at page 316 in BundleJobManager
 	 * Service Platform Release 4, Version 4.3
@@ -387,19 +354,12 @@ class BundleResolveHandler implements ResolverHook {
 
 	@Override
 	public void end() {
-		// Collection<Bundle> resolvedBundles = BundleDependencies.getBundlesFrom(resolved);
-
+		BundleRegion bundleRegion = BundleManager.getRegion();
 		for (Long bundleId : resolved) {
-//			if ((bundle.getState() & (Bundle.RESOLVED | Bundle.STARTING)) != 0 
-//					&& BundleJobManager.getTransition().getTransition(bundle) != Transition.RESOLVE) {
-			// if resolve is invoked directly the transition is added from the resolve command
-//			if (BundleJobManager.getTransition().getTransition(bundle) != Transition.RESOLVE) {
-//			Bundle bundle = InPlace.getContext().getBundle(bundleId);
-			Bundle bundle = BundleManager.getRegion().get(bundleId);	
+			Bundle bundle = bundleRegion.get(bundleId);	
 			if (null != bundle) {
 				BundleManager.addBundleTransition(new TransitionEvent(bundle, Transition.RESOLVE));
 			}
-//			}
 		}
 		resolved.clear();
 		groups = null;
@@ -424,7 +384,7 @@ class BundleResolveHandler implements ResolverHook {
 	}
 
 	/**
-	 * Constructs a string of symbolic names based on a collection of bundles.
+	 * Constructs a comma separated string of symbolic names from a collection of bundles.
 	 * 
 	 * @param bundles to format
 	 * @return a comma separated list of symbolic names

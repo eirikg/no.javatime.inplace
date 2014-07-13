@@ -14,33 +14,29 @@ import java.util.HashSet;
 import java.util.Set;
 
 import no.javatime.inplace.InPlace;
+import no.javatime.inplace.bundlejobs.BundleJob;
+import no.javatime.inplace.dialogs.OpenProjectHandler;
+import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
-import no.javatime.inplace.bundlejobs.BundleJob;
-import no.javatime.inplace.dialogs.OpenProjectHandler;
-import no.javatime.util.messages.Category;
-import no.javatime.util.messages.ErrorMessage;
 import no.javatime.util.messages.ExceptionMessage;
-import no.javatime.util.messages.UserMessage;
-import no.javatime.util.messages.WarnMessage;
 
 import org.eclipse.core.commands.common.NotDefinedException;
 import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.Status;
 import org.eclipse.ui.statushandlers.StatusAdapter;
 import org.eclipse.ui.statushandlers.StatusManager;
 import org.eclipse.ui.statushandlers.StatusManager.INotificationTypes;
 import org.eclipse.ui.statushandlers.WorkbenchErrorHandler;
 
 /**
- * Overrides logging of status of type {@link IBundleStatus}, set interrupt and cancel status on the running
- * bundle job when fatal errors occurs and send customized messages if undefined contexts for action sets
- * related to dynamic bundles occur. Undefined contexts are handled in {@link ActionSetContexts} as a
+ * Overrides logging of status object of type {@link IBundleStatus} and forwards status objects of type
+ * {@code IStatus} to the standard status handler. Logs any undefined contexts for action sets
+ * related to dynamic bundles to the bundle log. Undefined contexts are handled in {@link ActionSetContexts} as a
  * workaround for known context bugs. A safety mechanism is to output any missed undefined context here.
  * <p>
- * The command for toggling line break points is never defined when bundles are resolved and is suppressed in
- * the status handler. This undefined context is not known to have any influence on the behavior of the toggle
+ * The command for toggling line break points is never defined when bundles are resolved.
+ * This undefined context is not known to have any influence on the behavior of the toggle
  * line break point command. It uses the same context definition as toggle break point.
  * 
  */
@@ -68,55 +64,71 @@ public class StatusHandler extends WorkbenchErrorHandler {
 		else
 			return false;
 	}
-
+	
+	/**
+	 * Log status objects of type {@code IBundleStatus} to the bundle log and
+	 * all errors to the error log. Other errors of type {@code IStatus} are forwarded 
+	 * to the standard status handler 
+	 * <p>
+	 * A special case is undefined context errors, which is sent to the bundle log.
+	 */
 	@Override
 	public void handle(StatusAdapter statusAdapter, int style) {
 
+		IStatus status = statusAdapter.getStatus();
 		StatusAdapter[] adapters = new StatusAdapter[] { statusAdapter };
 		StatusManager.getManager().fireNotification(INotificationTypes.HANDLED, adapters);
-		IStatus status = statusAdapter.getStatus();
 		StatusManager.getManager().addLoggedStatus(status);
 		if (isContextError(status, style)) {
 			return;
 		}
-		if (!status.isOK()) {
-			Throwable t = status.getException();
-			if (null != t && t instanceof VirtualMachineError) {
-				// Fatal error from other sources in the workbench. 
-				// Interrupt job an send additional messages to message view
-				interruptBundleJob();
-				if (!(status instanceof BundleStatus)) {
-					ErrorMessage.getInstance().handleMessage(status.getMessage());
-					ErrorMessage.getInstance().handleMessage(t.getMessage());
-					String info = "You can use the System.exit button in the Bundle Console";
-					ErrorMessage.getInstance().handleMessage(info);
-				}
+		Throwable exception = status.getException();
+		if (null != exception && exception instanceof VirtualMachineError) {
+			// Interrupt job an send additional messages to the error log
+			interruptBundleJob();
+			IBundleStatus criticalErrorStatus = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, exception.getMessage(), exception);
+			criticalErrorStatus.add(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, Msg.SYSTEM_EXIT_INFO));				
+			criticalErrorStatus.add(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, status.getMessage()));				
+			InPlace.get().getLog().log(criticalErrorStatus);
+			return;
+		}
+		if (status instanceof BundleStatus) {
+			if (InPlace.get().msgOpt().isBundleOperations()) {
+				InPlace.get().trace((BundleStatus) status);
 			}
-			if (status instanceof BundleStatus) {
-				// Get the bundle status from a bundle job
-				BundleStatus bundleStatus = (BundleStatus) status;
-				// Send a message to the message view
-				if ((style & (StatusManager.LOG)) != 0) {
-					if (bundleStatus.hasStatus(StatusCode.ERROR)) {
-						ErrorMessage.getInstance().handleMessage(status.getMessage());
-					} else if (bundleStatus.hasStatus(StatusCode.WARNING)
-							|| bundleStatus.hasStatus(StatusCode.BUILDERROR)) {
-						WarnMessage.getInstance().handleMessage(status.getMessage());
-					} else if (bundleStatus.hasStatus(StatusCode.CANCEL)) {
-						UserMessage.getInstance().handleMessage(status.getMessage());
-					} else if (bundleStatus.hasStatus(StatusCode.INFO)) {
-						UserMessage.getInstance().handleMessage(status.getMessage());
-					}
-				}
-				InPlace.get().getLog().log(status);
-			} else {
-				super.handle(statusAdapter, style);
-			}
-		} else {
 			InPlace.get().getLog().log(status);
+		} else {
+			super.handle(statusAdapter, style);
 		}
 	}
 
+	/**
+	 * Log undefined context errors to the bundle log
+	 * @param status the status object to log 
+	 * @param style the standard status handler style constants 
+	 * @return true if e context error is logged. Otherwise false
+	 */
+	private boolean isContextError(IStatus status, int style) {
+		Throwable exception = status.getException();
+		if (null != exception && (style & StatusManager.LOG) == StatusManager.LOG) {
+			if (exception instanceof NotDefinedException || exception instanceof Exception) {
+				String msg = status.getMessage();
+				if (contextErrors.contains(msg)) {
+					if (InPlace.get().msgOpt().isBundleOperations()) {
+						// Also related to Bug 279332
+						String bugInfoMsg = Msg.UNDEFINED_CONTEXT_ERROR_TRACE;
+						IBundleStatus undefinedContextStatus = new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, bugInfoMsg);
+						IBundleStatus errorStatus = new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID, msg, exception);
+						undefinedContextStatus.add(errorStatus);
+						InPlace.get().trace(undefinedContextStatus);
+					}
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+	
 	/**
 	 * Set the interrupt flag and send cancel to the current bundle job running
 	 * 
@@ -152,37 +164,7 @@ public class StatusHandler extends WorkbenchErrorHandler {
 		}
 		return false;
 	}
-
-	private boolean isContextError(IStatus status, int style) {
-		String msg = status.getMessage();
-		Throwable exception = status.getException();
-		if (null != exception && (style & StatusManager.LOG) == StatusManager.LOG) {
-			if (exception instanceof NotDefinedException) {
-				if (contextErrors.contains(msg)) {
-					if (Category.getState(Category.bindingMessages)) {
-						// Also related to Bug 279332
-						String currentPrefix = ExceptionMessage.getInstance().setPrefixMsg("[Bug 295662 - Contexts] ");
-						InPlace.get().getLog().log(
-								new Status(IStatus.ERROR, InPlace.PLUGIN_ID, msg, exception));
-						ExceptionMessage.getInstance().setPrefixMsg(currentPrefix);
-					}
-					return true;
-				}
-			} else if (exception instanceof Exception) {
-				if (contextErrors.contains(msg)) {
-					if (Category.getState(Category.bindingMessages)) {
-						String currentprefix = ExceptionMessage.getInstance().setPrefixMsg("[Bug 295662 - Contexts] ");
-						InPlace.get().getLog().log(
-								new Status(IStatus.ERROR, InPlace.PLUGIN_ID, msg, exception));
-						ExceptionMessage.getInstance().setPrefixMsg(currentprefix);
-					}
-					return true;
-				}
-			}
-		}
-		return false;
-	}
-
+	
 	/**
 	 * Extracts the extension id from an undefined context exception
 	 * 

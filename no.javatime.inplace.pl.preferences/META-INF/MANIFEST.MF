@@ -9,5 +9,6 @@ Require-Bundle: org.eclipse.ui,
 Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Import-Package: no.javatime.inplace.dl.preferences.intface,
  no.javatime.inplace.extender.provider,
- no.javatime.inplace.region.manager
+ no.javatime.inplace.region.manager,
+ no.javatime.inplace.region.status
 Bundle-ActivationPolicy: lazy

@@ -1,16 +1,15 @@
-package no.javatime.inplace.dependencies;
+package no.javatime.inplace.region.closure;
 
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 
-import no.javatime.inplace.InPlace;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Operation;
-import no.javatime.inplace.region.closure.BundleSorter;
-import no.javatime.inplace.region.closure.CircularReferenceException;
-import no.javatime.inplace.region.closure.ProjectSorter;
+import no.javatime.inplace.region.Activator;
+import no.javatime.inplace.region.manager.BundleManager;
+import no.javatime.inplace.region.manager.BundleRegion;
 import no.javatime.inplace.region.manager.InPlaceException;
 
 import org.eclipse.core.resources.IProject;
@@ -39,7 +38,8 @@ import org.osgi.framework.Bundle;
  */
 public class BundleClosures {
 
-	
+	private final BundleRegion bundleRegion = BundleManager.getRegion();
+	private int level = Bundle.UNINSTALLED;
 	/**
 	 * Topological sort of projects according to the current dependency option (closure). Providing projects to the specified initial set 
 	 * are always included. In addition requiring projects are included if the requiring on activate option is set.
@@ -54,7 +54,7 @@ public class BundleClosures {
 	public Collection<IProject> projectActivation(Collection<IProject> initialSet, boolean activated) 
 			throws CircularReferenceException, InPlaceException {
 		
-		DependencyOptions opt = InPlace.get().getDependencyOptionsService();
+		DependencyOptions opt = Activator.getDefault().getDependencyOptionsService();
 		Closure closure = opt.get(Operation.ACTIVATE_PROJECT);
 		return projectActivation(closure, initialSet, activated);
 	}
@@ -77,12 +77,24 @@ public class BundleClosures {
 		
 		ProjectSorter ps = new ProjectSorter();
 		Collection<IProject> resultSet = null;		
-		DependencyOptions opt = InPlace.get().getDependencyOptionsService();
+		DependencyOptions opt = Activator.getDefault().getDependencyOptionsService();
 		
 		if (null != closure && null != initialSet && initialSet.size() > 0) { 
 			if (!opt.isAllowed(Operation.ACTIVATE_PROJECT, closure) ) {
 				throw new InPlaceException("illegal_closure_exception", closure.name(), Operation.ACTIVATE_PROJECT.name());
 			}
+			// Bundle dependencies has priority over project dependencies
+//			Collection<Bundle> scope = null;
+//			if (activated) {
+//				scope = bundleRegion.getActivatedBundles();
+//			} else {
+//				scope = bundleRegion.getBundles();
+//			}
+//			Collection<Bundle> initialBundleSet = bundleRegion.getBundles(initialSet);
+//			if (isInstalled(initialBundleSet, scope)) {
+//				Collection<Bundle> bundles = bundleActivation(closure, initialBundleSet, scope);
+//				return bundleRegion.getBundleProjects(bundles);
+//			}
 			switch (closure) {
 			case PROVIDING:
 				// Sort projects in dependency order when providing option (default)is set
@@ -118,7 +130,7 @@ public class BundleClosures {
 	 */
 	public Collection<IProject> projectDeactivation(Collection<IProject> initialSet, boolean activated) 
 			throws CircularReferenceException, InPlaceException {
-		DependencyOptions opt = InPlace.get().getDependencyOptionsService();
+		DependencyOptions opt = Activator.getDefault().getDependencyOptionsService();
 		Closure closure = opt.get(Operation.DEACTIVATE_PROJECT);
 		return projectDeactivation(closure, initialSet, activated);
 	}
@@ -141,12 +153,26 @@ public class BundleClosures {
 		
 		ProjectSorter ps = new ProjectSorter();
 		Collection<IProject> resultSet = null;		
-		DependencyOptions opt = InPlace.get().getDependencyOptionsService();
+		DependencyOptions opt = Activator.getDefault().getDependencyOptionsService();
 		
 		if (null != closure && null != initialSet && initialSet.size() > 0) { 
 			if (!opt.isAllowed(Operation.DEACTIVATE_PROJECT, closure) ) {
 				throw new InPlaceException("illegal_closure_exception", closure.name(), Operation.DEACTIVATE_PROJECT.name());
 			}
+			
+			// Bundle dependencies has priority over project dependencies
+//			Collection<Bundle> scope = null;
+//			if (activated) {
+//				scope = bundleRegion.getActivatedBundles();
+//			} else {
+//				scope = bundleRegion.getBundles();
+//			}
+//			Collection<Bundle> initialBundleSet = bundleRegion.getBundles(initialSet);
+//			if (isInstalled(initialBundleSet, scope)) {
+//				Collection<Bundle> bundles = bundleDeactivation(closure, initialBundleSet, scope);
+//				return bundleRegion.getBundleProjects(bundles);
+//			}
+//			
 			switch (closure) {
 			case REQUIRING:
 				// Sort projects in dependency order when requiring option (default) is set
@@ -180,7 +206,7 @@ public class BundleClosures {
 	 */
 	public Collection<Bundle> bundleActivation(Collection<Bundle> initialSet, Collection<Bundle> scope) 
 			throws CircularReferenceException, InPlaceException {
-		DependencyOptions opt = InPlace.get().getDependencyOptionsService();
+		DependencyOptions opt = Activator.getDefault().getDependencyOptionsService();
 		Closure closure = opt.get(Operation.ACTIVATE_BUNDLE);
 		return bundleActivation(closure, initialSet, scope);
 
@@ -201,37 +227,63 @@ public class BundleClosures {
 			throws CircularReferenceException, InPlaceException {
 
 		BundleSorter bs = new BundleSorter();
-		DependencyOptions opt = InPlace.get().getDependencyOptionsService();
+		DependencyOptions opt = Activator.getDefault().getDependencyOptionsService();
 		Collection<Bundle> resultSet = null;
 		
 		if (null != closure && null != initialSet && initialSet.size() > 0 && null != scope && scope.size() > 0) {
 			if (!opt.isAllowed(Operation.ACTIVATE_BUNDLE, closure) ) {
 				throw new InPlaceException("illegal_closure_exception", closure.name(), Operation.ACTIVATE_BUNDLE.name());
 			}
-			switch (closure) {
-			case PROVIDING:
-				resultSet = bs.sortProvidingBundles(initialSet, scope);
-				break;
-			case REQUIRING:
-				resultSet = bs.sortRequiringBundles(initialSet, scope);
-				break;
-			case REQUIRING_AND_PROVIDING:
-				resultSet = bs.sortRequiringBundles(initialSet, scope);
-				resultSet = bs.sortProvidingBundles(resultSet, scope);
-				break;
-			case PARTIAL_GRAPH:
-				resultSet = partialGraph(initialSet, scope, true);
-				break;
-			case SINGLE:
-				resultSet = bs.sortProvidingBundles(initialSet, initialSet);
-				break;
-			default:
-				resultSet = Collections.<Bundle>emptySet();
-				break;
+			// Dynamic dependencies has priority over declared dependencies
+			if (isResolved(initialSet, scope)) {
+				switch (closure) {
+				case PROVIDING:
+					resultSet = bs.sortProvidingBundles(initialSet, scope);
+					break;
+				case REQUIRING:
+					resultSet = bs.sortRequiringBundles(initialSet, scope);
+					break;
+				case REQUIRING_AND_PROVIDING:
+					resultSet = bs.sortRequiringBundles(initialSet, scope);
+					resultSet = bs.sortProvidingBundles(resultSet, scope);
+					break;
+				case PARTIAL_GRAPH:
+					resultSet = partialGraph(initialSet, scope, true, true);
+					break;
+				case SINGLE:
+					resultSet = bs.sortProvidingBundles(initialSet, initialSet);
+					break;
+				default:
+					resultSet = Collections.<Bundle>emptySet();
+					break;
+				}
+			} else {
+				switch (closure) {
+				case PROVIDING:
+					resultSet = bs.sortDeclaredProvidingBundles(initialSet, scope);
+					break;
+				case REQUIRING:
+					resultSet = bs.sortDeclaredRequiringBundles(initialSet, scope);
+					break;
+				case REQUIRING_AND_PROVIDING:
+					resultSet = bs.sortDeclaredRequiringBundles(initialSet, scope);
+					resultSet = bs.sortDeclaredProvidingBundles(resultSet, scope);
+					break;
+				case PARTIAL_GRAPH:
+					resultSet = partialGraph(initialSet, scope, true, false);
+					break;
+				case SINGLE:
+					resultSet = bs.sortDeclaredProvidingBundles(initialSet, initialSet);
+					break;
+				default:
+					resultSet = Collections.<Bundle>emptySet();
+					break;
+				}
 			}
 		} else {
 			resultSet = Collections.<Bundle>emptySet();			
 		}
+
 		return resultSet;
 	}
 
@@ -247,7 +299,7 @@ public class BundleClosures {
 	 */
 	public Collection<Bundle> bundleDeactivation(Collection<Bundle> initialSet, Collection<Bundle> scope) 
 			throws CircularReferenceException, InPlaceException {
-		DependencyOptions opt = InPlace.get().getDependencyOptionsService();
+		DependencyOptions opt = Activator.getDefault().getDependencyOptionsService();
 		Closure closure = opt.get(Operation.DEACTIVATE_BUNDLE);
 		return bundleDeactivation(closure, initialSet, scope);
 		
@@ -270,33 +322,58 @@ public class BundleClosures {
 
 		BundleSorter bs = new BundleSorter();
 		bs.setAllowCycles(true);
-		DependencyOptions opt = InPlace.get().getDependencyOptionsService();
+		DependencyOptions opt = Activator.getDefault().getDependencyOptionsService();
 		Collection<Bundle> resultSet = null;
 
 		if (null != closure && null != initialSet && initialSet.size() > 0 && null != scope && scope.size() > 0) {
 			if (!opt.isAllowed(Operation.DEACTIVATE_BUNDLE, closure) ) {
 				throw new InPlaceException("illegal_closure_exception", closure.name(), Operation.DEACTIVATE_BUNDLE.name());
 			}
-			switch (closure) {
-			case PROVIDING:
-				resultSet = bs.sortProvidingBundles(initialSet, scope);
-				break;
-			case REQUIRING:
-				resultSet = bs.sortRequiringBundles(initialSet, scope);
-				break;
-			case PROVIDING_AND_REQURING:
-				resultSet = bs.sortProvidingBundles(initialSet, scope);
-				resultSet = bs.sortRequiringBundles(resultSet, scope);
-				break;
-			case PARTIAL_GRAPH:
-				resultSet = partialGraph(initialSet, scope, false);
-				break;
-			case SINGLE:
-				resultSet = bs.sortRequiringBundles(initialSet, initialSet);
-				break;
-			default:
-				resultSet = Collections.<Bundle>emptySet();
-				break;
+			// Dynamic dependencies has priority over declared dependencies
+			if (isResolved(initialSet, scope)){
+				switch (closure) {
+				case PROVIDING:
+					resultSet = bs.sortProvidingBundles(initialSet, scope);
+					break;
+				case REQUIRING:
+					resultSet = bs.sortDeclaredRequiringBundles(initialSet, scope);
+					break;
+				case PROVIDING_AND_REQURING:
+					resultSet = bs.sortProvidingBundles(initialSet, scope);
+					resultSet = bs.sortRequiringBundles(resultSet, scope);
+					break;
+				case PARTIAL_GRAPH:
+					resultSet = partialGraph(initialSet, scope, false, true);
+					break;
+				case SINGLE:
+					resultSet = bs.sortRequiringBundles(initialSet, initialSet);
+					break;
+				default:
+					resultSet = Collections.<Bundle>emptySet();
+					break;
+				}
+			} else {
+				switch (closure) {
+				case PROVIDING:
+					resultSet = bs.sortDeclaredProvidingBundles(initialSet, scope);
+					break;
+				case REQUIRING:
+					resultSet = bs.sortDeclaredRequiringBundles(initialSet, scope);
+					break;
+				case PROVIDING_AND_REQURING:
+					resultSet = bs.sortDeclaredProvidingBundles(initialSet, scope);
+					resultSet = bs.sortDeclaredRequiringBundles(resultSet, scope);
+					break;
+				case PARTIAL_GRAPH:
+					resultSet = partialGraph(initialSet, scope, false, false);
+					break;
+				case SINGLE:
+					resultSet = bs.sortDeclaredRequiringBundles(initialSet, initialSet);
+					break;
+				default:
+					resultSet = Collections.<Bundle>emptySet();
+					break;
+				}
 			}
 		} else {
 			return Collections.<Bundle>emptySet();
@@ -338,10 +415,11 @@ public class BundleClosures {
 	 * @param initialSet the set of start projects to include in the topological sort. Must not be null or empty 
 	 * @param scope the set of bundles to consider as candidates in the result graph. Must not be null or empty
 	 * @param requiring sort in requiring order and then in providing order if true and in opposite order if false
+	 * @param isResolved if true only sort resolved and started bundles. If false include istalled bundles in the sort
 	 * @return the result graph of the topological sort 
 	 * @throws CircularReferenceException if cycles are detected in the bundle graph
 	 */
-	protected Collection<Bundle> partialGraph(Collection<Bundle> initialSet, Collection<Bundle> scope, boolean requiring) throws CircularReferenceException {
+	protected Collection<Bundle> partialGraph(Collection<Bundle> initialSet, Collection<Bundle> scope, boolean requiring, boolean isResolved) throws CircularReferenceException {
 		
 		BundleSorter bs = new BundleSorter();
 		Collection<Bundle> resultSet = new LinkedHashSet<Bundle>(initialSet);
@@ -349,13 +427,46 @@ public class BundleClosures {
 		do {
 			count = resultSet.size();
 			if (requiring) {
-				resultSet = bs.sortRequiringBundles(resultSet, scope);
-				resultSet = bs.sortProvidingBundles(resultSet, scope);
+				if (isResolved) {
+					resultSet = bs.sortRequiringBundles(resultSet, scope);
+					resultSet = bs.sortProvidingBundles(resultSet, scope);					
+				} else {
+					resultSet = bs.sortDeclaredRequiringBundles(resultSet, scope);
+					resultSet = bs.sortDeclaredProvidingBundles(resultSet, scope);
+				}
 			} else {
-				resultSet = bs.sortProvidingBundles(resultSet, scope);
-				resultSet = bs.sortRequiringBundles(resultSet, scope);				
+				if (isResolved) {
+					resultSet = bs.sortProvidingBundles(resultSet, scope);
+					resultSet = bs.sortRequiringBundles(resultSet, scope);					
+				} else {
+					resultSet = bs.sortDeclaredProvidingBundles(resultSet, scope);
+					resultSet = bs.sortDeclaredRequiringBundles(resultSet, scope);
+				}
 			}
 		} while (resultSet.size() > count);		
 		return resultSet;
+	}
+	
+
+	private boolean isInstalled(Collection<Bundle> initialBundleSet, Collection<Bundle> scope) {
+		
+		return bundleRegion.isBundleWorkspaceActivated();
+//		if (initialBundleSet.size() > 0 && scope.size() > 0) {
+//			if (bundleRegion.getBundles(initialBundleSet, Bundle.UNINSTALLED).size() == 0 
+//					&& bundleRegion.getBundles(scope, Bundle.UNINSTALLED).size() == 0) {
+//				return true;
+//			}
+//		}
+//		return false;
+	}
+
+	private boolean isResolved(Collection<Bundle> initialBundleSet, Collection<Bundle> scope) {
+//		if (initialBundleSet.size() > 0 && scope.size() > 0) {
+//			if (bundleRegion.getBundles(initialBundleSet, Bundle.UNINSTALLED | Bundle.INSTALLED).size() == 0 
+//					&& bundleRegion.getBundles(scope, Bundle.UNINSTALLED | Bundle.INSTALLED).size() == 0) {
+//				return true;
+//			}
+//		}
+		return false;
 	}
 }

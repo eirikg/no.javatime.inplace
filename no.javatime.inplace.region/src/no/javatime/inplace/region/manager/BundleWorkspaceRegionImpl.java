@@ -56,9 +56,9 @@ public class BundleWorkspaceRegionImpl implements BundleRegion {
 	/**
 	 * Internal hash of bundle nodes. Viewed as a DAG when used in combination with the OSGI wiring API.
 	 * <p>
-	 * Bundle id is the key and can't change while a bundle is installed. Insertions and removals are done
-	 * indirectly through bundle jobs when bundles are installed and uninstalled. Bundle jobs does not run
-	 * concurrently. Reads outweighs structural modifications.
+	 * {@code IProject} is the key and does not change during an IDE session. Nodes are registered (insertions)
+	 * when projects are nature enabled and optionally unregistered (removals) when bundles are uninstalled. Reads 
+	 * outweighs structural modifications.
 	 */
 	private Map<IProject, BundleNode> bundleNodes = new ConcurrentHashMap<IProject, BundleNode>(initialCapacity, 1);
 
@@ -66,7 +66,7 @@ public class BundleWorkspaceRegionImpl implements BundleRegion {
 		super();
 	}
 	
-	public boolean isAutoBuild(boolean disable) {
+	public boolean isAutoBuildActivated(boolean disable) {
 		boolean autoBuild = this.autoBuild;
 		if (disable) {
 			this.autoBuild = false;
@@ -74,7 +74,7 @@ public class BundleWorkspaceRegionImpl implements BundleRegion {
 		return autoBuild;
 	}
 
-	public void setAutoBuild(boolean autoBuild) {
+	public void setAutoBuildChanged(boolean autoBuild) {
 		this.autoBuild = autoBuild;
 	}
 
@@ -282,6 +282,16 @@ public class BundleWorkspaceRegionImpl implements BundleRegion {
 		return bundles;
 	}
 
+	public Collection<Bundle> getBundles(Collection<Bundle> bundles, int state) {
+		Collection<Bundle> bundleStates = new ArrayList<Bundle>();
+		for (Bundle bundle : bundles) {
+				if (null != bundle && (bundle.getState() & (state)) != 0) {
+					bundleStates.add(bundle);
+				}
+		}
+		return bundleStates;
+	}
+
 	@Override
 	public Collection<Bundle> getBundles() {
 		Collection<Bundle> bundles = new LinkedHashSet<Bundle>();
@@ -443,13 +453,22 @@ public class BundleWorkspaceRegionImpl implements BundleRegion {
 	}
 
 	@Override
-	public String setActivation(Bundle bundle, Boolean status) {
+	public boolean setActivation(Bundle bundle, Boolean status) {
 		BundleNode node = getNode(bundle);
 		if (null != node) {
 			node.setActivated(status);
-			return node.getSymbolicKey();
+			return true;
 		}
-		return null;
+		return false;
+	}
+
+	public boolean setActivation(IProject project, Boolean status) {
+		BundleNode node = getNode(project);
+		if (null != node) {
+			node.setActivated(status);
+			return true;
+		}
+		return false;
 	}
 
 	@Override
@@ -533,6 +552,24 @@ public class BundleWorkspaceRegionImpl implements BundleRegion {
 			}
 		}
 		return pendingProjects; 
+	}
+
+	/**
+	 * Get all bundles among the specified bundles that contains the specified pending transition
+	 * 
+	 * @param bundles to check for having the specified transition
+	 * @param command or transition to check for in the specified projects
+	 * @return all bundles among the specified bundles containing the specified transition or an empty
+	 *         collection
+	 */
+	Collection<Bundle> getPendingBundles(Collection<Bundle> bundles, Transition command) {
+		Collection<Bundle> pendingBundles = new LinkedHashSet<Bundle>();
+		for (Bundle bundle : bundles) {
+			if (containsPendingCommand(bundle, command, false)) {
+				pendingBundles.add(bundle);
+			}
+		}
+		return pendingBundles; 
 	}
 
 	/**
@@ -654,11 +691,11 @@ public class BundleWorkspaceRegionImpl implements BundleRegion {
 	/**
 	 * Record the bundle and its associated project. The project may or may not be activated
 	 * 
-	 * @param project associated with the bundle. If there is a bundle there must be a project.
-	 * @param bundle to record. The bundle id. is the key and must not be null.
-	 * @param activate true if project is activated and false if not
+	 * @param project project to register. Must not be null
+	 * @param bundle the bundle to register. May be null
+	 * @param activate true if bundle is activated and false if not
 	 * @return the new or updated bundle node
-	 * @throws InPlaceException if the specified project or bundle parameter is null
+	 * @throws InPlaceException if the specified project parameter is null
 	 */
 	protected BundleNode put(IProject project, Bundle bundle, Boolean activate) throws InPlaceException {
 		if (null == project) {

@@ -15,7 +15,7 @@ import java.util.LinkedHashSet;
 
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundlemanager.BundleJobManager;
-import no.javatime.inplace.bundleproject.ProjectProperties;
+import no.javatime.inplace.region.closure.BuildErrorClosure;
 import no.javatime.inplace.region.closure.CircularReferenceException;
 import no.javatime.inplace.region.closure.ProjectSorter;
 import no.javatime.inplace.region.manager.BundleTransition.Transition;
@@ -185,11 +185,18 @@ public class ResetJob {
 					 */
 					@Override
 					public IBundleStatus runInWorkspace(IProgressMonitor monitor) {
-
 						try {
-							if (ProjectProperties.reportBuildErrorClosure(getPendingProjects(), getName()).size() > 0) {
+							BuildErrorClosure be = new BuildErrorClosure(getPendingProjects(), Transition.UNINSTALL);
+							if (be.hasBuildErrors()) {
+								Collection<IProject> buildErrClosure = be.getProjectErrorClosures(true);
+								removePendingProjects(buildErrClosure);
+								IBundleStatus bundleStatus = be.getProjectErrorClosureStatus(true);
+								if (null != bundleStatus) {
+									addStatus(bundleStatus);			
+								}
 								throw new OperationCanceledException();
 							}
+							unregisterBundleProject(true);
 							// Uninstall the bundles
 							super.runInWorkspace(monitor);
 						} catch (OperationCanceledException e) {
@@ -261,14 +268,16 @@ public class ResetJob {
 						try {
 							// Wait for the uninstall job to finish before activating the bundles
 							getJobManager().join(uninstallFamily, null);
-							if (ProjectProperties.reportBuildErrorClosure(getPendingProjects(), getName()).size() > 0) {
+							BuildErrorClosure be = new BuildErrorClosure(getPendingProjects(), Transition.ACTIVATE_BUNDLE);
+							if (be.hasBuildErrors()) {
+								Collection<IProject> buildErrClosure = be.getProjectErrorClosures(true);
+								removePendingProjects(buildErrClosure);
+								IBundleStatus bundleStatus = be.getProjectErrorClosureStatus(true);
+								if (null != bundleStatus) {
+									addStatus(bundleStatus);			
+								}
 								throw new OperationCanceledException();
 							}
-//							ProjectSorter bs = new ProjectSorter();
-//							// The uninstall job uninstalls requiring bundles so the activate job have to install them again
-//							replacePendingProjects(bs.sortRequiringProjects(getPendingProjects()));
-							// Activate the bundles
-							//install(getPendingProjects(), monitor);
 							super.runInWorkspace(monitor);
 							for (IProject project : getPendingProjects()) {
 								BundleJobManager.getTransition().removePending(project, Transition.UPDATE);

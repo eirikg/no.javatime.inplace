@@ -6,8 +6,8 @@ import no.javatime.inplace.bundlejobs.ActivateBundleJob;
 import no.javatime.inplace.bundlemanager.BundleJobManager;
 import no.javatime.inplace.bundleproject.BundleProjectSettings;
 import no.javatime.inplace.region.manager.BundleTransition;
-import no.javatime.inplace.region.manager.ProjectLocationException;
 import no.javatime.inplace.region.manager.BundleTransition.Transition;
+import no.javatime.inplace.region.manager.ProjectLocationException;
 import no.javatime.inplace.region.project.BundleProjectState;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
@@ -46,7 +46,7 @@ public class StartUp implements IStartup {
 				// Restore bundles to state from previous session
 				bundleStartUpActivation(activatedProjects);
 			} else {
-				setTransitionStates();
+				setTransitionStates(activatedProjects);
 			}
 		} finally {
 			// Add resource listeners as as early as possible after scheduling bundle start up activation
@@ -62,7 +62,7 @@ public class StartUp implements IStartup {
 	 */
 	private void bundleStartUpActivation(Collection<IProject> activatedProjects) {
 		ActivateBundleJob activateJob = new ActivateBundleJob(ActivateBundleJob.activateStartupJobName,
-				BundleProjectState.getActivatedProjects());
+				activatedProjects);
 		activateJob.setUseStoredState(true);
 		BundleJobManager.addBundleJob(activateJob, 0);
 	}
@@ -70,8 +70,13 @@ public class StartUp implements IStartup {
 	/**
 	 * Set the transition for all deactivated projects to {@code Transition#UNINSTALL}. If a project has
 	 * never been activated the default state for the transition will be {@code Transition#NOTRANSITION} 
+	 * @param activatedProjects TODO
 	 */
-	private void setTransitionStates() {
+	private void setTransitionStates(Collection<IProject> activatedProjects) {
+//		if (activatedProjects.size() == 0) {
+//			InPlace.get().savePluginSettings(true, false);
+//			return;
+//		}
 		IEclipsePreferences store = InPlace.getEclipsePreferenceStore();
 		if (null != store) {
 			BundleTransition  bundleTransition = BundleJobManager.getTransition();

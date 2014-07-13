@@ -81,12 +81,15 @@ public class ErrorMessage extends Message {
 
 	public void handleMessage(String msg) {
 
+		if (null == msg) {
+			msg = "";
+		}
 		if (Category.DEBUG) {
   		StackTraceElement frame = getCallerMetaInfo();
   		getString("log_stack_frame", frame.getClassName(), frame.getMethodName());
   		// getString("extended_log", frame.getClassName(), frame.getMethodName(), msg);
 		}
-		if (!msg.isEmpty()) {
+		if (msg.isEmpty()) {
 			getString("log_message", msg);
 		}
 	}

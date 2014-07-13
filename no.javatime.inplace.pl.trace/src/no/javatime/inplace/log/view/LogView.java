@@ -836,8 +836,8 @@ public class LogView extends ViewPart implements SynchronousLogListener, LogFilt
 			dialog.setFilterPath(fDirectory);
 		String path = dialog.open();
 		if (path != null) {
-			if (path.indexOf('.') == -1 && !path.endsWith(".log")) //$NON-NLS-1$
-				path += ".log"; //$NON-NLS-1$
+			if (path.indexOf('.') == -1 && !path.endsWith("bundle.log")) //$NON-NLS-1$
+				path += "bundle.log"; //$NON-NLS-1$
 			File outputFile = new Path(path).toFile();
 			fDirectory = outputFile.getParent();
 			if (outputFile.exists()) {

@@ -3,30 +3,28 @@ package no.javatime.inplace.bundlejobs;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedHashSet;
 import java.util.Map;
 
 import no.javatime.inplace.InPlace;
+import no.javatime.inplace.bundlemanager.BundleJobManager;
+import no.javatime.inplace.bundleproject.ProjectProperties;
+import no.javatime.inplace.dialogs.OpenProjectHandler;
+import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.closure.CircularReferenceException;
 import no.javatime.inplace.region.closure.ProjectSorter;
 import no.javatime.inplace.region.manager.BundleRegion;
 import no.javatime.inplace.region.manager.BundleTransition;
-import no.javatime.inplace.region.manager.InPlaceException;
 import no.javatime.inplace.region.manager.BundleTransition.Transition;
 import no.javatime.inplace.region.manager.BundleTransition.TransitionError;
+import no.javatime.inplace.region.manager.InPlaceException;
 import no.javatime.inplace.region.project.BundleProjectState;
 import no.javatime.inplace.region.status.BundleStatus;
+import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
-import no.javatime.inplace.bundlemanager.BundleJobManager;
-import no.javatime.inplace.bundleproject.ProjectProperties;
-import no.javatime.inplace.dependencies.BundleClosures;
-import no.javatime.inplace.dialogs.OpenProjectHandler;
-import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
-import no.javatime.util.messages.Category;
-import no.javatime.util.messages.UserMessage;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.WorkspaceJob;
+import org.eclipse.osgi.util.NLS;
 import org.eclipse.ui.statushandlers.StatusManager;
 import org.osgi.framework.Bundle;
 
@@ -36,28 +34,24 @@ public class UpdateScheduler {
 		if (projects.size() > 0) {
 			UpdateJob updateJob = new UpdateJob(UpdateJob.updateJobName);;
 			ActivateProjectJob activateProjectJob = new ActivateProjectJob(ActivateProjectJob.activateProjectsJobName);
-			Collection<IProject> initialSet = new LinkedHashSet<>();
-			// Include pending projects to update in partial graph of projects to update  
-			initialSet.addAll(BundleJobManager.getTransition().getPendingProjects(projects, Transition.UPDATE));			
-			initialSet.addAll(projects);
-			BundleClosures bc = new BundleClosures();
-			Collection<IProject> projectsToUpdate = bc.projectActivation(Closure.PARTIAL_GRAPH, initialSet, true);
-
-			for (IProject project : projectsToUpdate) {
-				if (BundleProjectState.isProjectActivated(project)) {
-					addChangedProject(project, updateJob, activateProjectJob);
+			for (IProject project : projects) {
+				if (BundleProjectState.isProjectActivated(project) &&
+						BundleJobManager.getTransition().containsPending(project, Transition.UPDATE, false)) {
+						// This is now handled in the bundle resolver hook
+						// addChangedProject(project, updateJob, activateProjectJob);
+						updateJob.addPendingProject(project);
 				}
 			}
 			ActivateBundleJob postActivateBundleJob = null;
 			if (updateJob.pendingProjects() > 0) {
 				postActivateBundleJob = resolveduplicates(activateProjectJob, null, updateJob);
 			}
-			
+			// TODO Can be removed when not using addChangedProject(project, updateJob, activateProjectJob);
 			if (activateProjectJob.pendingProjects() > 0) {
 				// Update all projects together with the deactivated providers to activate
 				try {
 					if (!InPlace.get().getCommandOptionsService().isUpdateOnBuild()) {
-						for (IProject project : projectsToUpdate) {
+						for (IProject project : projects) {
 							BundleJobManager.getTransition().addPending(project, Transition.UPDATE_ON_ACTIVATE);					
 						}
 					}
@@ -82,7 +76,7 @@ public class UpdateScheduler {
 	 * projects. If there are deactivated providers to the specified project they are added to the specified
 	 * activate project job and the project is ignored. The ignored project will then be updated together with
 	 * the deactivated providers when they are activated and updated (delayed update).
-	 * 
+	 *  
 	 * @param project to add to the specified update job or to be ignored
 	 * @param updateJob to add the specified project to
 	 * @param activateProjectJob if there are deactivated projects to this project they are added to the
@@ -102,9 +96,12 @@ public class UpdateScheduler {
 		} else {
 			updated = false;
 			activateProjectJob.addPendingProjects(projects);
-			if (Category.getState(Category.infoMessages)) {
-				UserMessage.getInstance().getString("implicit_activation", project.getName(),
-						BundleProjectState.formatProjectList(projects));
+			if (InPlace.get().msgOpt().isBundleOperations()) {
+				String msg = NLS.bind(Msg.IMPLICIT_ACTIVATION_INFO, project.getName(), BundleProjectState.formatProjectList(projects));
+				IBundleStatus status = new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, msg);
+				msg = NLS.bind(Msg.DELAYED_UPDATE_INFO, project.getName(), BundleProjectState.formatProjectList(projects));
+				status.add(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, msg));
+				activateProjectJob.addTrace(status);
 			}
 		}
 		return updated;
@@ -115,7 +112,7 @@ public class UpdateScheduler {
 	 * project is not part of the result set.
 	 * 
 	 * @param project initial project for the traversal
-	 * @return ordered providing dependency closure. An empty graph is valid.
+	 * @return ordered providing dependency closure or an empty set if there are no deactivated providers
 	 */
 	public static Collection<IProject> getDeactivatedProviders(IProject project) {
 		Collection<IProject> providingProjects = null;

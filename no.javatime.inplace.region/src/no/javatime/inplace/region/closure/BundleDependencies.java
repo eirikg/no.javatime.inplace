@@ -302,7 +302,7 @@ public class BundleDependencies {
 	 * @param requirers are a set of bundles who may have requirements on the {@code provider} bundle
 	 * @param parent is the direct parent of the {@code requirer} parameter. Parent may be null
 	 * @param visited are all bundle revisions that has requirements on them. Parameter may be empty.
-	 * @return all bundles that have requirements on a provider bundle
+	 * @return all bundles that have requirements on a provider bundle or an empty set
 	 * @see #getRequiringBundles(BundleRevision, Collection, BundleRevision, Collection)
 	 */
 	public static Collection<BundleRevision> getRequiringBundles(BundleRevision provider,

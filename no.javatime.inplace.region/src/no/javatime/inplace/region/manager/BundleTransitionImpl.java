@@ -30,14 +30,14 @@ public class BundleTransitionImpl implements BundleTransition {
 	public String getTransitionName(IProject project) throws ProjectLocationException {
 		BundleNode bn = ws.getBundleNode(project);
 		if (null == bn) {
-			return BundleNode.getTransitionName(Transition.NOTRANSITION);
+			return BundleNode.getTransitionName(Transition.NOTRANSITION, false, false);
 		}
-		return BundleNode.getTransitionName(bn.getTransition());
+		return BundleNode.getTransitionName(bn.getTransition(), false, false);
 	}
 
 	@Override
-	public String getTransitionName(Transition transition) {
-		return BundleNode.getTransitionName(transition);
+	public String getTransitionName(Transition transition, boolean format, boolean caption) {
+		return BundleNode.getTransitionName(transition, format, caption);
 	}
 
 	@Override
@@ -120,6 +120,10 @@ public class BundleTransitionImpl implements BundleTransition {
 			return TransitionError.NOERROR;
 		}
 		BundleNode bn = ws.getBundleNode(bundle);
+		// TODO NB! check why bundle node becomes null. Happens sometimes on uninstall at shutdown
+		if (null == bn) {
+			return TransitionError.NOERROR;			
+		}
 		return bn.getTransitionError();
 	}
 	
@@ -239,6 +243,15 @@ public class BundleTransitionImpl implements BundleTransition {
 		return ws.containsPendingCommand(project, operation, remove);
 	}
 
+	public boolean containsPending(Collection<Bundle> bundles, Transition operation, boolean remove) {
+		for (Bundle bundle : bundles) {
+			if(ws.containsPendingCommand(bundle, operation, remove)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	@Override
 	public boolean containsPending(Bundle bundle, Transition operation, boolean remove) {
 		return ws.containsPendingCommand(bundle, operation, remove);
@@ -257,6 +270,11 @@ public class BundleTransitionImpl implements BundleTransition {
 	@Override
 	public Collection<IProject> getPendingProjects(Collection<IProject> projects, BundleTransition.Transition command) {
 		return ws.getPendingProjects(projects, command);
+	}
+
+	@Override
+	public Collection<Bundle> getPendingBundles(Collection<Bundle> bundles, BundleTransition.Transition command) {
+		return ws.getPendingBundles(bundles, command);
 	}
 
 	@Override

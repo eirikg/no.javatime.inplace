@@ -29,7 +29,7 @@ public interface BundleCommand {
 	public BundleResolveHookFactory getResolverHookFactory();
 
 	/**
-	 * Installs the workspace bundle project and if the register parameter is true records the installed bundle 
+	 * Installs the workspace bundle project and if the activate parameter is true records the installed bundle 
 	 * along with the project and activation status as a workspace bundle in the bundle workspace region.
 	 * <p>
 	 * The activation status of a project can be obtained from
@@ -41,7 +41,8 @@ public interface BundleCommand {
 	 * If already installed return the existing {@code bundle} object.
 	 * 
 	 * @param project install a workspace bundle finding the bundle location identifier based on this project
-	 * @param register true to register the bundle as a workspace region bundle
+	 * @param activate true to register the bundle as an activated  workspace region bundle. If false the 
+	 * bundle is registered as a deactivated bundle
 	 * @return the installed bundle object
 	 * @throws InPlaceException if the specified project is null, the location of the specified project could
 	 *           not be found or any of the {@link BundleContext#installBundle(String, InputStream)} exceptions
@@ -53,7 +54,7 @@ public interface BundleCommand {
 	 * @see #registerBundleNode(IProject, Bundle, Boolean)
 	 * @see BundleEventManager#bundleChanged(BundleEvent)
 	 */
-	public Bundle install(IProject project, Boolean register) throws InPlaceException, DuplicateBundleException;
+	public Bundle install(IProject project, Boolean activate) throws InPlaceException, DuplicateBundleException;
 
 	/**
 	 * Resolves the specified set of bundles. If no bundles are specified, then the Framework will attempt to
@@ -160,7 +161,7 @@ public interface BundleCommand {
 	 * 
 	 * @param bundle the bundle object to uninstall
 	 * @param unregister if true the bundle project will be unregistered. The bundle must be registered again when installed 
-	 * @return the bundle object of the uninstalled bundle
+	 * @return the bundle project of the uninstalled bundle or null if the bundle project is not registered
 	 * @throws InPlaceException if bundle is null or any of the {@link Bundle#uninstall()} exceptions
 	 */
 	public IProject uninstall(Bundle bundle, Boolean unregister) throws InPlaceException, ProjectLocationException;
@@ -170,7 +171,7 @@ public interface BundleCommand {
 	 * as workspace bundle
 	 *  
 	 * @param bundle the bundle object to uninstall
-	 * @return the bundle object of the uninstalled bundle
+	 * @return the bundle project of the uninstalled bundle or null if the bundle project is not registered
 	 * @throws InPlaceException if bundle is null or any of the {@link Bundle#uninstall()} exceptions
 	 */
 	public IProject uninstall(Bundle bundle) throws InPlaceException;
@@ -261,24 +262,46 @@ public interface BundleCommand {
 	 */
 	public List<BundleRevision> getBundleRevisions(Bundle bundle) throws InPlaceException;
 	
-	public void registerBundle(IProject project, Bundle bundle, Boolean activateBundle);
-
-	public void unregisterBundle(Bundle bundle);
-
 	/**
-	 * Register the specified project as a workspace region project.
-	 * @param project to activate
+	 * Register the specified project as a workspace region bundle project.
+	 * <p>
+	 * If not registered at install time the bundle project is registered automatically when
+	 * installed. When the same project is registered multiple times the bundle and the activation
+	 * status is updated and any additional information about the bundle project is kept.
+	 * 
+	 * @param project project to register. Must not be null
+	 * @param bundle bundle to register. May be null
+	 * @param acivateBundle true to mark the bundle as activated and false to mark the bundle as
+	 * deactivated. It is not possible to resolve a deactivated bundle.
+	 * @see #unregisterBundleProject(IProject)
 	 */
 	public void registerBundleProject(IProject project, Bundle bundle, boolean activateBundle);
 
 	/**
-	 * Unregister the specified workspace region project.
-	 * @param project to deactivate
+	 * Unregister the specified workspace region bundle project.
+	 * <p>
+	 * Except for the install operation a bundle project must be registered before 
+	 * any OSGi life cycle operations are invoked
+	 * 
+	 * @param bundle bundle project to unregister
+	 * @see #registerBundleProject(IProject, Bundle, boolean)
+	 */
+	public void unregisterBundleProject(Bundle bundle);
+
+	/**
+	 * Unregister the specified workspace region bundle project.
+	 * <p>
+	 * Except for the install operation a bundle project must be registered before 
+	 * any OSGi life cycle operations are invoked
+	 * 
+	 * @param project bundle project to unregister
+	 * @see #registerBundleProject(IProject, Bundle, boolean)
 	 */
 	public void unregisterBundleProject(IProject project);
 
 	/**
 	 * Check if the specified project is registered as a workspace bundle project
+	 * 
 	 * @param project to check for registration as a workspace bundle project 
 	 * @return true if bundle project is registered as a bundle project and false if not
 	 */

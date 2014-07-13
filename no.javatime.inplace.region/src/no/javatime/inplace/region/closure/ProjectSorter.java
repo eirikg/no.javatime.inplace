@@ -16,9 +16,7 @@ import java.util.LinkedHashSet;
 
 import no.javatime.inplace.region.Activator;
 import no.javatime.inplace.region.manager.BundleManager;
-import no.javatime.inplace.region.manager.BundleTransition;
 import no.javatime.inplace.region.manager.BundleTransition.TransitionError;
-import no.javatime.inplace.region.manager.InPlaceException;
 import no.javatime.inplace.region.project.BundleProjectState;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
@@ -61,8 +59,8 @@ public class ProjectSorter extends BaseSorter {
 	}
 
 	/**
-	 * Topological sort in referenced project order among all valid workspace projects Initial set of specified projects
-	 * are included in the result set.
+	 * Topological sort in referenced project order among all valid workspace projects. 
+	 * The initial set of specified projects are included in the result set.
 	 * 
 	 * @param projects a collection of start projects included in the result set
 	 * @return collection of projects in referenced sort order
@@ -310,67 +308,6 @@ public class ProjectSorter extends BaseSorter {
 			circularException.addToStatusList(new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, msg, null));
 			circularException.addProjects(projects);
 		}
-	}
-
-	/**
-	 * Filters out all projects with build errors and their requiring projects from the specified project scope. Performs
-	 * a topological sort of all projects with build errors in requiring project order.
-	 * 
-	 * @param projectScope of projects to check for build errors
-	 * @param activated if true only consider activated projects. If false only consider deactivated projects
-	 * @return projects and their requiring projects or an empty set if no errors where found
-	 * @throws CircularReferenceException if cycles are detected among the specified projects
-	 * @throws InPlaceException if one of the specified projects does not exist or is closed
-	 * @see #sortRequiringProjects(Collection)
-	 */
-	public Collection<IProject> getRequiringBuildErrorClosure(Collection<IProject> projectScope,
-			Boolean activated) throws CircularReferenceException, InPlaceException {
-		Collection<IProject> projects = new LinkedHashSet<IProject>(projectScope);
-		if (activated) {
-			projects.retainAll(BundleManager.getRegion().getBundleProjects(true));
-		} else {
-			projects.removeAll(BundleManager.getRegion().getBundleProjects(true));
-		}
-		return getRequiringBuildErrorClosure(projects);
-	}
-
-	/**
-	 * Filters out all projects with build errors and their requiring projects from the specified project scope. Performs
-	 * a topological sort of all projects with build errors in requiring project order.
-	 * 
-	 * @param projectScope of projects to check for build errors
-	 * @return projects with build errors and their requiring projects or an empty set if no errors where found
-	 * @throws InPlaceException if one of the specified projects does not exist or is closed
-	 * @throws CircularReferenceException if cycles are detected among the specified projects
-	 * @see #sortRequiringProjects(Collection)
-	 */
-	public Collection<IProject> getRequiringBuildErrorClosure(Collection<IProject> projectScope)
-			throws InPlaceException, CircularReferenceException {
-
-		projectOrder = new LinkedHashSet<IProject>();
-		circularException = null;
-		Collection<IProject> errorProjects = null;
-		errorProjects = BundleProjectState.getBuildErrors(projectScope);
-		errorProjects.addAll(BundleProjectState.hasBuildState(projectScope));
-		if (errorProjects.size() > 0) {
-			// Always include projects requiring capabilities from projects with build errors in error list
-			sortRequiringProjects(errorProjects);
-			if (null != circularException) {
-				throw circularException;
-			}
-			BundleTransition bundleTransition = BundleManager.getTransition();
-			for (IProject errorProject : projectOrder) {
-				if (BundleProjectState.isProjectActivated(errorProject)) {
-					if (errorProjects.contains(errorProject)) {
-						bundleTransition.setTransitionError(errorProject, TransitionError.BUILD);
-					} else {
-						bundleTransition.setTransitionError(errorProject, TransitionError.DEPENDENCY);
-					}
-				}
-			}
-			return projectOrder;
-		}
-		return Collections.<IProject>emptySet();
 	}
 
 	/**

@@ -30,6 +30,13 @@ import org.eclipse.ui.menus.UIElement;
 import org.eclipse.ui.statushandlers.StatusManager;
 import org.osgi.service.prefs.BackingStoreException;
 
+/**
+ * Abstract menu handler class to for menu options.
+ * <p>
+ * Concrete classes specifies the command id and loads and store the relevant command option 
+ * @see CommandOptions
+ *
+ */
 public abstract class AbstractOptionsHandler extends AbstractHandler implements IElementUpdater {
 
 	public static String stateId = "org.eclipse.ui.commands.toggleState";
@@ -74,6 +81,9 @@ public abstract class AbstractOptionsHandler extends AbstractHandler implements 
 		return Activator.getDefault().getCommandOptionsService();
 	}
 	
+	/**
+	 * Sync state with store and update the state
+	 */
 	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		try {
@@ -118,6 +128,7 @@ public abstract class AbstractOptionsHandler extends AbstractHandler implements 
 	 * The is enabled method is called before the menu is shown. If the stored state is different from the
 	 * state of this command, update the command state and broadcast the change to update the checked state
 	 * of the UI element. This may also happen if the stored value has been updated elsewhere. 
+	 * @return always return true 
 	 */
 	@Override
 	public boolean isEnabled() {
@@ -130,7 +141,7 @@ public abstract class AbstractOptionsHandler extends AbstractHandler implements 
 				Boolean stateVal = (Boolean) state.getValue();
 				Boolean storeVal = getStoredValue();
 				// Values may be different if stored  value has been changed elsewhere (e.g. preference page)
-				// If different update checked menu element before the menu becomes visible by broadcasting the change 
+				// If different update checked menu element before the menu becomes visible and broadcasting the change 
 				if (!stateVal.equals(storeVal)) {
 					state.setValue(storeVal);
 					service.refreshElements(command.getId(), null);
@@ -138,7 +149,10 @@ public abstract class AbstractOptionsHandler extends AbstractHandler implements 
 			}
 		return true;
 	}
-
+	
+	/**
+	 * @return always return true
+	 */
 	@Override
 	public boolean isHandled() {
 		return true;

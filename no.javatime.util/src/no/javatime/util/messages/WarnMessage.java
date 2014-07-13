@@ -86,6 +86,9 @@ public class WarnMessage extends Message {
 	*/
 	public void handleMessage(String msg) {
 
+		if (null == msg) {
+			msg = "";
+		}
 		if (Category.DEBUG) {
 			StackTraceElement frame = getCallerMetaInfo();
 			getString("log_stack_frame", frame.getClassName(), frame.getMethodName());

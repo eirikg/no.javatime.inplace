@@ -3,9 +3,9 @@ package no.javatime.inplace.pl.preferences.page;
 import no.javatime.inplace.dl.preferences.intface.CommandOptions;
 import no.javatime.inplace.pl.preferences.PreferencePlActivator;
 import no.javatime.inplace.pl.preferences.msg.Msg;
+import no.javatime.inplace.region.status.BundleStatus;
+import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 
-import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.preferences.AbstractPreferenceInitializer;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.ui.statushandlers.StatusManager;
@@ -41,7 +41,7 @@ public class PreferenceInitializer extends AbstractPreferenceInitializer {
 
 		} catch (IllegalStateException e) {
 			StatusManager.getManager().handle(
-					new Status(IStatus.ERROR, PreferencePlActivator.PLUGIN_ID, Msg.INIT_DEFAULT_PREF_PAGE_ERROR, e),
+					new BundleStatus(StatusCode.ERROR, PreferencePlActivator.PLUGIN_ID, Msg.INIT_DEFAULT_PREF_PAGE_ERROR, e),
 					StatusManager.LOG);
 		}
 	}

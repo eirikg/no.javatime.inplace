@@ -17,17 +17,18 @@ import java.util.Date;
 import no.javatime.inplace.bundlemanager.BundleJobManager;
 import no.javatime.inplace.bundleproject.BundleProjectSettings;
 import no.javatime.inplace.bundleproject.ProjectProperties;
+import no.javatime.inplace.region.closure.BuildErrorClosure;
 import no.javatime.inplace.region.closure.BundleSorter;
 import no.javatime.inplace.region.closure.CircularReferenceException;
 import no.javatime.inplace.region.closure.ProjectSorter;
 import no.javatime.inplace.region.manager.BundleCommand;
 import no.javatime.inplace.region.manager.BundleTransition;
-import no.javatime.inplace.region.manager.InPlaceException;
-import no.javatime.inplace.region.manager.ProjectLocationException;
 import no.javatime.inplace.region.manager.BundleTransition.Transition;
 import no.javatime.inplace.region.manager.BundleTransition.TransitionError;
-import no.javatime.inplace.region.project.ManifestOptions;
+import no.javatime.inplace.region.manager.InPlaceException;
+import no.javatime.inplace.region.manager.ProjectLocationException;
 import no.javatime.inplace.region.project.BundleProjectState;
+import no.javatime.inplace.region.project.ManifestOptions;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import no.javatime.inplace.ui.Activator;
@@ -241,9 +242,9 @@ public class BundleProperties {
 		BundleTransition bundleTransition = BundleJobManager.getTransition();
 
 		try {
-			if (!BundleProjectState.hasBuildState(project)) {
+			if (!BuildErrorClosure.hasBuildState(project)) {
 				return "Missing Build State";
-			} else if (BundleProjectState.hasBuildErrors(project)) {
+			} else if (BuildErrorClosure.hasBuildErrors(project)) {
 				return "Build Problems";
 			} else if (bundleTransition.containsPending(project, Transition.BUILD, false)) {
 				return "Build Pending";
@@ -302,7 +303,7 @@ public class BundleProperties {
 			return BundleJobManager.getTransition().getTransitionName(project);
 		} catch (ProjectLocationException e) {
 		}
-		return BundleJobManager.getTransition().getTransitionName(Transition.NOTRANSITION);
+		return BundleJobManager.getTransition().getTransitionName(Transition.NOTRANSITION, false, false);
 	}
 
 	/**
@@ -365,7 +366,7 @@ public class BundleProperties {
 			}
 		} catch (InPlaceException e) {
 			// Don't spam this meassage.
-			if (!ProjectProperties.hasManifestBuildErrors(project) && BundleProjectState.hasBuildState(project)) {
+			if (!ProjectProperties.hasManifestBuildErrors(project) && BuildErrorClosure.hasBuildState(project)) {
 				String msg = ErrorMessage.getInstance().formatString("error_get_policy", project.getName());
 				StatusManager.getManager().handle(
 						new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, msg, e), StatusManager.LOG);

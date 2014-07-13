@@ -12,17 +12,17 @@ package no.javatime.inplace.ui.command.contributions;
 
 import java.util.ArrayList;
 
-import no.javatime.inplace.log.intface.BundleLogView;
 import no.javatime.inplace.bundlemanager.BundleJobManager;
 import no.javatime.inplace.bundleproject.BundleProjectSettings;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.dialogs.OpenProjectHandler;
 import no.javatime.inplace.extender.provider.Extension;
+import no.javatime.inplace.log.intface.BundleLogView;
 import no.javatime.inplace.pl.dependencies.intface.DependencyDialog;
-import no.javatime.inplace.region.manager.InPlaceException;
 import no.javatime.inplace.region.manager.BundleTransition.Transition;
-import no.javatime.inplace.region.project.ManifestOptions;
+import no.javatime.inplace.region.manager.InPlaceException;
 import no.javatime.inplace.region.project.BundleProjectState;
+import no.javatime.inplace.region.project.ManifestOptions;
 import no.javatime.inplace.ui.command.handlers.BundleMenuActivationHandler;
 import no.javatime.inplace.ui.views.BundleView;
 import no.javatime.util.messages.Message;

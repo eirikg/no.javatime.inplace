@@ -12,10 +12,14 @@ package no.javatime.inplace.bundlejobs;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundlemanager.BundleJobManager;
 import no.javatime.inplace.bundleproject.ProjectProperties;
+import no.javatime.inplace.msg.Msg;
+import no.javatime.inplace.region.closure.CircularReferenceException;
+import no.javatime.inplace.region.closure.ProjectSorter;
 import no.javatime.inplace.region.manager.BundleTransition;
 import no.javatime.inplace.region.manager.BundleTransition.Transition;
 import no.javatime.inplace.region.project.BundleProjectState;
@@ -32,6 +36,7 @@ import org.eclipse.core.runtime.jobs.IJobChangeEvent;
 import org.eclipse.core.runtime.jobs.IJobManager;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.core.runtime.jobs.JobChangeAdapter;
+import org.eclipse.osgi.util.NLS;
 import org.eclipse.ui.statushandlers.StatusManager;
 
 /**
@@ -103,42 +108,48 @@ public class BundleJobListener extends JobChangeAdapter {
 	}
 	
 	/**
-	 * Report messages, exceptions, errors and warnings added by bundle jobs.
+	 * Log errors and bundle log bundle jobs.
 	 */
 	@Override
 	public void done(IJobChangeEvent event) {
-		Job job = event.getJob();
+		final Job job = event.getJob();
 		if (job instanceof BundleJob) {
 			Message.getInstance().flush();
-			BundleJob bundleJob = (BundleJob) job;
+			final BundleJob bundleJob = (BundleJob) job;
 			if (InPlace.get().msgOpt().isBundleOperations()) {
-				Collection<IBundleStatus> statusList = bundleJob.getTraceList();
-				if (statusList.size() > 0) {
-					IBundleStatus mStatus = new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, bundleJob.getName());
-					for (IBundleStatus status : statusList) {
-						mStatus.add(status);
-					}
-					// TODO run in separate thread
-					InPlace.get().trace(mStatus);
+				final Collection<IBundleStatus> traceList = bundleJob.getTraceList();
+				if (traceList.size() > 0) {
+					Runnable trace = new Runnable() {
+						public void run() {
+							IBundleStatus multiStatus = new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, bundleJob.getName());
+							for (IBundleStatus status : traceList) {
+								multiStatus.add(status);
+							}					
+							InPlace.get().trace(multiStatus);								
+						}
+					};	
+					trace.run();
 				}
 			}			
 			Collection<IBundleStatus> statusList = logCancelStatus(bundleJob);	
 			if (statusList.size() > 0) {
 				String rootMsg = WarnMessage.getInstance().formatString("end_job_root_message", bundleJob.getName());
-				IBundleStatus multiStatus = bundleJob.createMultiStatus(new BundleStatus(StatusCode.ERROR,
-						InPlace.PLUGIN_ID, rootMsg));
-				InPlace.get().trace(multiStatus);				
+				IBundleStatus multiStatus = new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID, rootMsg);						
+				for (IBundleStatus status : statusList) {
+					multiStatus.add(status);
+				}
+				// The custom or the standard status handler is not invoked
+				// when the workbench is closing. It logs directly to the error log
 				StatusManager.getManager().handle(multiStatus, StatusManager.LOG);
 			}
 			if (InPlace.get().msgOpt().isBundleOperations()) {
 				if (Category.DEBUG)
 					getBundlesJobRunState(bundleJob);
-//				TraceMessage.getInstance().getString("end_job", job.getName());					
 			}
 			schedulePendingOperations(bundleJob);
 		}
 	}
-	
+
 	private void schedulePendingOperations(BundleJob job) {
 
 		BundleTransition bundleTransition = BundleJobManager.getTransition();
@@ -151,6 +162,25 @@ public class BundleJobListener extends JobChangeAdapter {
 		if (projectsToActivate.size() > 0) {
 			bundleJob = new ActivateProjectJob(ActivateProjectJob.activateProjectsJobName, projectsToActivate);			
 			bundleTransition.removePending(projectsToActivate, Transition.ACTIVATE_PROJECT);
+			if (InPlace.get().msgOpt().isBundleOperations()) {
+				try {
+					ProjectSorter projectSorter = new ProjectSorter();
+					// Inform about already activated projects that have requirements on deactivated projects 
+					for (IProject deactivatedProject : projectsToActivate) {
+						Collection<IProject> activatedProjects = 
+								projectSorter.sortRequiringProjects(Collections.<IProject>singletonList(deactivatedProject), true);
+						activatedProjects.remove(deactivatedProject);
+						if (activatedProjects.size() > 0) {
+							String msg = NLS.bind(Msg.IMPLICIT_ACTIVATION_INFO, BundleProjectState.formatProjectList(activatedProjects), deactivatedProject.getName());
+							IBundleStatus status = new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, msg);
+							msg = NLS.bind(Msg.DELAYED_RESOLVE_INFO, BundleProjectState.formatProjectList(activatedProjects), deactivatedProject.getName());
+							status.add(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, msg));
+							bundleJob.addTrace(status);
+						}
+					}
+				} catch (CircularReferenceException e) {
+				}
+			}
 			BundleJobManager.addBundleJob(bundleJob, 0);
 		}
 		

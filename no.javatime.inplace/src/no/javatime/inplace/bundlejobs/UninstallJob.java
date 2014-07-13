@@ -147,6 +147,9 @@ public class UninstallJob extends NatureJob {
 	private IBundleStatus uninstall(IProgressMonitor monitor) throws InterruptedException{
 
 		Collection<Bundle> pendingBundles = bundleRegion.getBundles(getPendingProjects());
+		if (pendingBundles.size() == 0) {
+			return getLastStatus();
+		}
 		BundleSorter bs = new BundleSorter();
 		bs.setAllowCycles(Boolean.TRUE);
 		Collection<Bundle> bundlesToUninstall = null;
@@ -158,9 +161,6 @@ public class UninstallJob extends NatureJob {
 		uninstall(bundlesToUninstall, new SubProgressMonitor(monitor, 1), unregisterBundleProject);
 		if (monitor.isCanceled()) {
 			throw new OperationCanceledException();
-		}
-		if (!unregisterBundleProject) {
-			refresh(bundlesToUninstall, new SubProgressMonitor(monitor, 1));
 		}
 		return getLastStatus();
 	}
