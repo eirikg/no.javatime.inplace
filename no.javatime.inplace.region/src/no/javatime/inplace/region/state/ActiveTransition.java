@@ -170,11 +170,7 @@ public class ActiveTransition {
 		}
 		State state = transit.get(location);
 		if (null != state) {
-			if (state.error == TransitionError.NOERROR) {
-				return false;
-			} else {
-				return true;
-			}
+			return state.error == TransitionError.NOERROR ? false : true;
 		}
 		return false;
 	}

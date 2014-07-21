@@ -152,9 +152,9 @@ public class RefreshJob extends BundleJob {
 
 		BuildErrorClosure be = new BuildErrorClosure(bundleRegion.getBundleProjects(bundlesToRefresh), Transition.REFRESH);
 		if (be.hasBuildErrors()) {
-			Collection<Bundle> buildErrClosure = be.getBundleErrorClosures(true);
+			Collection<Bundle> buildErrClosure = be.getBundleErrorClosures();
 			bundlesToRefresh.removeAll(buildErrClosure);
-			IBundleStatus bundleStatus = be.getProjectErrorClosureStatus(true);
+			IBundleStatus bundleStatus = be.getProjectErrorClosureStatus();
 			if (null != bundleStatus) {
 				addStatus(bundleStatus);			
 			}

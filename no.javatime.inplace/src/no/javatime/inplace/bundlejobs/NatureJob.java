@@ -112,7 +112,7 @@ public abstract class NatureJob extends BundleJob {
 				if (Category.getState(Category.progressBar))
 					sleep(sleepTime);
 				localMonitor.subTask(NatureJob.disableNatureSubTaskName + project.getName());
-				if (BundleProjectState.isProjectActivated(project)) {
+				if (BundleProjectState.isNatureEnabled(project)) {
 					if (getOptionsService().isUpdateDefaultOutPutFolder()) {
 						BundleProjectSettings.removeOutputLocationFromClassPath(project);
 					}
@@ -152,7 +152,7 @@ public abstract class NatureJob extends BundleJob {
 		for (IProject project : projectsToActivate) {
 			try {
 				localMonitor.subTask(NatureJob.enableNatureSubTaskName + project.getName());
-				if (ProjectProperties.isBundleCandidate(project) && !BundleProjectState.isProjectActivated(project)) {
+				if (ProjectProperties.isBundleCandidate(project) && !BundleProjectState.isNatureEnabled(project)) {
 					// Set the JavaTime nature
 					toggleNatureActivation(project, new SubProgressMonitor(monitor, 1));
 					result = resolveBundleClasspath(project);

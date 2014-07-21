@@ -202,7 +202,7 @@ public class ActivateBundleJob extends BundleJob {
 		Collection<Bundle> activatedBundles = null;
 		ProjectSorter projectSorter = new ProjectSorter();
 		// At least one project must be activated (nature enabled) for workspace bundles to be activated
-		if (BundleProjectState.isProjectWorkspaceActivated()) {
+		if (BundleProjectState.isWorkspaceNatureEnabled()) {
 			// If this is the first set of workspace project(s) that have been activated no bundle(s) have been activated yet
 			// and all deactivated bundles should be installed in an activated workspace
 			if (!bundleRegion.isBundleWorkspaceActivated()) {
@@ -275,7 +275,7 @@ public class ActivateBundleJob extends BundleJob {
 		if (getName().equals(ActivateBundleJob.activateStartupJobName)
 				&& (null != BundleProjectSettings.inDevelopmentMode() || getOptionsService().isUpdateDefaultOutPutFolder())) {
 			for (Bundle bundle : activatedBundles) {
-				resolveBundleClasspath(bundleRegion.getBundleProject(bundle));
+				resolveBundleClasspath(bundleRegion.getRegisteredBundleProject(bundle));
 			}
 		}
 		if (monitor.isCanceled()) {
@@ -294,14 +294,14 @@ public class ActivateBundleJob extends BundleJob {
 		try {
 			BuildErrorClosure be = new BuildErrorClosure(getPendingProjects(), Transition.ACTIVATE_BUNDLE);
 			if (be.hasBuildErrors()) {
-				projectErrorClosures = be.getProjectErrorClosures(true);
+				projectErrorClosures = be.getProjectErrorClosures();
 				removePendingProjects(projectErrorClosures);
 				if (null != activatedBundles) {
 					Collection<Bundle> bundleErrorClosure = bundleRegion.getBundles(projectErrorClosures);
 					activatedBundles.removeAll(bundleErrorClosure);
 				}
 				if (InPlace.get().msgOpt().isBundleOperations()) {
-					IBundleStatus bundleStatus = be.getProjectErrorClosureStatus(true);
+					IBundleStatus bundleStatus = be.getProjectErrorClosureStatus();
 					if (null != bundleStatus) {
 						addTrace(bundleStatus);			
 					}
@@ -320,7 +320,7 @@ public class ActivateBundleJob extends BundleJob {
 		}
 		return status;
 	}
-
+	// TODO Change method comment
 	/**
 	 * Remove build error closure bundles from the set of activated projects. If there are no activated projects left the
 	 * error closures are added to the status list. Otherwise the error closures are only removed from the set of pending

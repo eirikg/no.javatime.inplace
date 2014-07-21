@@ -167,48 +167,6 @@ public class BundleTransitionImpl implements BundleTransition {
 		return bn.removeTransitionError(transitionError);
 	}
 
-//	Collection<Bundle> removeTransitionErrorClosures(Collection<Bundle> initialBundleSet,
-//			Collection<Bundle> bDepClosures, Collection<IProject> pDepClosures) {
-//
-//		Collection<Bundle> bErrorDepClosures = null;
-//		Collection<Bundle> errorBundles = new ArrayList<Bundle>();
-//		for (Bundle errorBundle : initialBundleSet) {
-//			IProject errorProject = BundleManager.getRegion().getProject(errorBundle);
-//			TransitionError transitionError = getError(errorBundle);
-//			if (null != errorProject && ( transitionError == TransitionError.DUPLICATE 
-//					|| transitionError == TransitionError.CYCLE)) {
-//				errorBundles.add(errorBundle);
-//			}
-//		}
-//		if (errorBundles.size() > 0) {
-//			// Get all projects with errors and their requiring projects from dependency closures
-//			ProjectSorter ps = new ProjectSorter();
-//			Collection<IProject> pErrorDepClosures = ps.sortRequiringProjects(BundleManager.getRegion().getProjects(errorBundles));
-//			if (pErrorDepClosures.size() > 0) {
-//				if (null != pDepClosures) {
-//					pDepClosures.removeAll(pErrorDepClosures);
-//				}
-//				bErrorDepClosures = BundleManager.getRegion().getBundles(pErrorDepClosures);
-//				if (bErrorDepClosures.size() > 0) {
-//					if (null != bDepClosures) {
-//						bDepClosures.removeAll(bErrorDepClosures);
-//					}
-//					initialBundleSet.removeAll(bErrorDepClosures);
-//				}
-//			}
-//		}
-//		return bErrorDepClosures;
-//	}
-
-	@Override
-	public void initTransition(IProject project) throws ProjectLocationException {
-		BundleNode bn = ws.getBundleNode(project);
-		if (null == bn) {
-			return;
-		}		
-		bn.setTransition(Transition.UNINSTALL);
-	}
-
 	@Override
 	public Transition setTransition(IProject project, Transition transition) throws ProjectLocationException {
 		BundleNode bn = ws.getBundleNode(project);

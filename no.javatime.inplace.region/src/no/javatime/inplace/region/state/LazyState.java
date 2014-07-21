@@ -21,6 +21,6 @@ public class LazyState extends BundleState {
 
 	public void refresh(BundleNode bundleNode) throws InPlaceException {
 		bundleNode.setCurrentState(BundleStateFactory.INSTANCE.resolvedState);
-		bundleNode.getCurrentState().refresh(bundleNode);
+		bundleNode.getState().refresh(bundleNode);
 	}
 }

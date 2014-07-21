@@ -50,23 +50,26 @@ import org.eclipse.core.runtime.SubProgressMonitor;
 import org.osgi.framework.Bundle;
 
 /**
- * Job to update modified bundles after a build of activated projects. The job is automatically scheduled
- * after a build of activated bundle projects. The scheduled bundles are updated and together with their
- * requiring bundles, unresolved, resolved, optionally refreshed and started as part of the update process.
+ * Job to update modified bundles after a build of activated projects. The job is automatically
+ * scheduled after a build of activated bundle projects. The scheduled bundles are updated and
+ * together with their requiring bundles, unresolved, resolved, optionally refreshed and started as
+ * part of the update process.
  * <p>
- * Bundles are stopped and started again after update and resolve if ACTIVE/STARTING before update or refreshed
- * and resolved if in state RESOLVE when the job is scheduled.
+ * Bundles are stopped and started again after update and resolve if ACTIVE/STARTING before update
+ * or refreshed and resolved if in state RESOLVE when the job is scheduled.
  * <p>
- * Plug-ins are usually singletons, and it is a requirement, if the plug-in contributes to the UI. When
- * resolving bundles, a collision may occur with earlier resolved bundles with the same symbolic name. In
- * these cases the duplicate (the earlier resolved bundle) is removed in the resolving process.
+ * Plug-ins are usually singletons, and it is a requirement, if the plug-in contributes to the UI.
+ * When resolving bundles, a collision may occur with earlier resolved bundles with the same
+ * symbolic name. In these cases the duplicate (the earlier resolved bundle) is removed in the
+ * resolving process.
  * <p>
- * In case a bundle to be updated is dependent on other not activated bundles, it is handled in the resolver
- * hook. The resolver hook is visited by the framework during resolve.
+ * In case a bundle to be updated is dependent on other not activated bundles, it is handled in the
+ * resolver hook. The resolver hook is visited by the framework during resolve.
  */
 public class UpdateJob extends BundleJob {
 
-	final private static String updateSubTaskName = Message.getInstance().formatString("update_subtask_name");
+	final private static String updateSubTaskName = Message.getInstance().formatString(
+			"update_subtask_name");
 
 	/**
 	 * Construct an update job with a given name
@@ -102,10 +105,10 @@ public class UpdateJob extends BundleJob {
 	/**
 	 * Runs the bundle(s) update operation.
 	 * 
-	 * @return a {@code BundleStatus} object with {@code BundleStatusCode.OK} if job terminated normally and no
-	 *         status objects have been added to this job status list and {@code BundleStatusCode.ERROR} if the
-	 *         job fails or {@code BundleStatusCode.JOBINFO} if any status objects have been added to the job
-	 *         status list.
+	 * @return a {@code BundleStatus} object with {@code BundleStatusCode.OK} if job terminated
+	 * normally and no status objects have been added to this job status list and
+	 * {@code BundleStatusCode.ERROR} if the job fails or {@code BundleStatusCode.JOBINFO} if any
+	 * status objects have been added to the job status list.
 	 */
 	@Override
 	public IBundleStatus runInWorkspace(IProgressMonitor monitor) {
@@ -114,7 +117,7 @@ public class UpdateJob extends BundleJob {
 			monitor.beginTask(Message.getInstance().formatString("update_task_name"), getTicks());
 			BundleManager.addBundleTransitionListener(this);
 			update(monitor);
-		} catch(InterruptedException e) {
+		} catch (InterruptedException e) {
 			String msg = ExceptionMessage.getInstance().formatString("interrupt_job", getName());
 			addError(e, msg);
 		} catch (OperationCanceledException e) {
@@ -126,7 +129,8 @@ public class UpdateJob extends BundleJob {
 			multiStatus.add(e.getStatusList());
 			addStatus(multiStatus);
 		} catch (InPlaceException e) {
-			String msg = ExceptionMessage.getInstance().formatString("terminate_job_with_errors", getName());
+			String msg = ExceptionMessage.getInstance().formatString("terminate_job_with_errors",
+					getName());
 			addError(e, msg);
 		} catch (NullPointerException e) {
 			String msg = ExceptionMessage.getInstance().formatString("npe_job", getName());
@@ -150,39 +154,45 @@ public class UpdateJob extends BundleJob {
 	}
 
 	/**
-	 * Updates pending bundles with the JavaTime nature that have been built, due to changes in source.
+	 * Updates pending bundles with the JavaTime nature that have been built, due to changes in
+	 * source.
 	 * <p>
 	 * <ol>
 	 * <li>All bundles scheduled for update have been activated and are in least in state INSTALLED
-	 * <li>Active (ACTIVE/STARTING) bundles are stopped in dependency order and moved to state RESOLVED
-	 * <li>Any active requiring bundles of pending bundles to update are stopped before update and started after
-	 * update
-	 * <li>Duplicate candidates are registered in the resolver hook visited by the framework while updating
+	 * <li>Active (ACTIVE/STARTING) bundles are stopped in dependency order and moved to state
+	 * RESOLVED
+	 * <li>Any active requiring bundles of pending bundles to update are stopped before update and
+	 * started after update
+	 * <li>Duplicate candidates are registered in the resolver hook visited by the framework while
+	 * updating
 	 * <li>All bundles are updated and refreshed or resolved if auto refresh is off
 	 * <li>Pending bundles in state ACTIVE/STARTING before update are started in dependency order.
 	 * <li>Pending bundles in state INSTALLED before update are started.
 	 * </ol>
 	 * <p>
-	 * Both update and refresh starts bundles if they are active on beforehand. Stop bundles before, calling
-	 * update and optionally refresh and start them afterwards.
+	 * Both update and refresh starts bundles if they are active on beforehand. Stop bundles before,
+	 * calling update and optionally refresh and start them afterwards.
 	 * 
 	 * @param monitor It is the caller's responsibility to call done() on the given monitor.
-	 * @return status object describing the result of updating with {@code StatusCode.OK} if no failure,
-	 *         otherwise one of the failure codes are returned. If more than one bundle fails, status of the
-	 *         last failed bundle is returned. All failures are added to the job status list
-	 * @throws InterruptedIOException 
+	 * @return status object describing the result of updating with {@code StatusCode.OK} if no
+	 * failure, otherwise one of the failure codes are returned. If more than one bundle fails, status
+	 * of the last failed bundle is returned. All failures are added to the job status list
+	 * @throws InterruptedIOException
 	 */
-	private IBundleStatus update(IProgressMonitor monitor) throws InPlaceException, InterruptedException, CoreException {
+	private IBundleStatus update(IProgressMonitor monitor) throws InPlaceException,
+			InterruptedException, CoreException {
 
-		// (1) Collect any additional bundles to update and the requiring closure to stop, resolve/refresh and start
+		// (1) Collect any additional bundles to update and the requiring closure to stop,
+		// resolve/refresh and start
 
 		Collection<Bundle> bundlesToUpdate = bundleRegion.getBundles(getPendingProjects());
 		Collection<Bundle> activatedBundles = bundleRegion.getActivatedBundles();
 
-		// If auto build has been switched off and than switched on, include all bundles that have been built
+		// If auto build has been switched off and than switched on, include all bundles that have been
+		// built
 		if (bundleRegion.isAutoBuildActivated(true)) {
-			Collection<Bundle> pendingBundles = 
-					bundleTransition.getPendingBundles(activatedBundles, Transition.UPDATE);
+			Collection<Bundle> pendingBundles = bundleTransition.getPendingBundles(activatedBundles,
+					Transition.UPDATE);
 			pendingBundles.removeAll(bundlesToUpdate);
 			if (pendingBundles.size() > 0) {
 				bundlesToUpdate.addAll(pendingBundles);
@@ -191,12 +201,14 @@ public class UpdateJob extends BundleJob {
 		}
 
 		// Get the requiring closure of bundles to update.
-		// The bundles in this closure are stopped before update and resolved/refreshed and started after update 
+		// The bundles in this closure are stopped before update and resolved/refreshed and started
+		// after update
 		BundleClosures bc = new BundleClosures();
-		Collection<Bundle> bundleClosure = 
-				bc.bundleDeactivation(Closure.REQUIRING, bundlesToUpdate, activatedBundles);
+		Collection<Bundle> bundleClosure = bc.bundleDeactivation(Closure.REQUIRING, bundlesToUpdate,
+				activatedBundles);
 		// Necessary to get the latest updated version of a coherent set (closure) of running bundles
-		Collection<Bundle> pendingBundles = bundleTransition.getPendingBundles(bundleClosure, Transition.UPDATE);
+		Collection<Bundle> pendingBundles = bundleTransition.getPendingBundles(bundleClosure,
+				Transition.UPDATE);
 		pendingBundles.removeAll(bundlesToUpdate);
 		if (pendingBundles.size() > 0) {
 			bundlesToUpdate.addAll(pendingBundles);
@@ -206,24 +218,25 @@ public class UpdateJob extends BundleJob {
 		// (2) Reduce the set of bundles to update due to build errors
 		BuildErrorClosure be = new BuildErrorClosure(getPendingProjects(), Transition.UPDATE);
 		if (be.hasBuildErrors()) {
-			Collection<Bundle> bundleErrClosure = be.getBundleErrorClosures(true);
+			Collection<Bundle> bundleErrClosure = be.getBundleErrorClosures();
 			bundlesToUpdate.removeAll(bundleErrClosure);
 			removePendingProjects(bundleRegion.getBundleProjects(bundleErrClosure));
 			bundleClosure.removeAll(bundleErrClosure);
 			// Don't send build errors to the error log
 			if (InPlace.get().msgOpt().isBundleOperations()) {
-				IBundleStatus bundleStatus = be.getProjectErrorClosureStatus(true);
+				IBundleStatus bundleStatus = be.getProjectErrorClosureStatus();
 				if (null != bundleStatus) {
-					addTrace(bundleStatus);			
+					addTrace(bundleStatus);
 				}
 			}
-		}		
+		}
 
 		// (3) Reduce the set of bundles to update and refresh due to duplicates
-		//		Collection<Bundle> bundlesToRefresh = getBundlesToResolve(bundlesToUpdate);
-		//		removeDuplicates(getPendingProjects(), bundlesToUpdate, bundlesToRefresh);
+		// Collection<Bundle> bundlesToRefresh = getBundlesToResolve(bundlesToUpdate);
+		// removeDuplicates(getPendingProjects(), bundlesToUpdate, bundlesToRefresh);
 
-		Collection<IProject> duplicateProjects = removeExternalDuplicates(getPendingProjects(), bundleClosure, currentExternalInstance);
+		Collection<IProject> duplicateProjects = removeExternalDuplicates(getPendingProjects(),
+				bundleClosure, currentExternalInstance);
 		if (null != duplicateProjects) {
 			bundlesToUpdate.removeAll(bundleRegion.getBundles(duplicateProjects));
 		}
@@ -234,8 +247,9 @@ public class UpdateJob extends BundleJob {
 
 		// (4) Collect all bundles to restart after update and refresh
 		Collection<Bundle> bundlesToRestart = new LinkedHashSet<Bundle>();
-		// ACTIVE (and STARTING) bundles are restored to their current state or as directed by pending operations assigned
-		// to the bundle. Activated bundles in state INSTALLED (this indicates a corrected bundle error) are started
+		// ACTIVE (and STARTING) bundles are restored to their current state or as directed by pending
+		// operations assigned to the bundle. Activated bundles in state INSTALLED (this indicates a
+		// corrected bundle error or an activation of the bundle) are started after update
 		for (Bundle bundle : bundleClosure) {
 			if (bundleTransition.containsPending(bundle, Transition.START, Boolean.TRUE)
 					|| (bundle.getState() & (Bundle.ACTIVE | Bundle.STARTING | Bundle.INSTALLED)) != 0) {
@@ -248,8 +262,8 @@ public class UpdateJob extends BundleJob {
 			throw new OperationCanceledException();
 		}
 		// (6) Update bundles
-		Collection<IBundleStatus> errorStatusList = updateByReference(bundlesToUpdate, new SubProgressMonitor(
-				monitor, 1));
+		Collection<IBundleStatus> errorStatusList = updateByReference(bundlesToUpdate,
+				new SubProgressMonitor(monitor, 1));
 		// (7) Report any update errors
 		handleUpdateExceptions(errorStatusList, bundleClosure);
 		if (monitor.isCanceled()) {
@@ -257,14 +271,15 @@ public class UpdateJob extends BundleJob {
 		}
 		// (8) Refresh or resolve updated bundles and their closures
 		if (bundleClosure.size() > 0) {
-			// Also resolve/refresh and start all activated bundles in state installed and their requiring bundles
+			// Also resolve/refresh and start all activated bundles in state installed and their requiring
+			// bundles
 			Collection<Bundle> installedBundles = bundleRegion.getBundles(Bundle.INSTALLED);
 			installedBundles.removeAll(bundleClosure);
 			installedBundles.removeAll(bundleRegion.getDeactivatedBundles());
 			if (installedBundles.size() > 0) {
 				BundleSorter bs = new BundleSorter();
-				Collection<Bundle> installedBundlesToRefresh = bs.sortDeclaredRequiringBundles(installedBundles,
-						activatedBundles);
+				Collection<Bundle> installedBundlesToRefresh = bs.sortDeclaredRequiringBundles(
+						installedBundles, activatedBundles);
 				bundleClosure.addAll(installedBundlesToRefresh);
 				bundlesToRestart.addAll(installedBundlesToRefresh);
 			}
@@ -272,7 +287,8 @@ public class UpdateJob extends BundleJob {
 			if (getOptionsService().isRefreshOnUpdate()) {
 				refresh(bundleClosure, new SubProgressMonitor(monitor, 1));
 			} else {
-				Collection<Bundle> notResolvedBundles = resolve(bundleClosure, new SubProgressMonitor(monitor, 1));
+				Collection<Bundle> notResolvedBundles = resolve(bundleClosure, new SubProgressMonitor(
+						monitor, 1));
 				if (notResolvedBundles.size() > 0) {
 					// This should include dependency closures, so no dependent bundles should be started
 					bundlesToRestart.removeAll(notResolvedBundles);
@@ -294,7 +310,7 @@ public class UpdateJob extends BundleJob {
 				Bundle bundle = bundleError.getBundle();
 				if (null != bundle) {
 					try {
-						IProject project = bundleRegion.getBundleProject(bundle);
+						IProject project = bundleRegion.getRegisteredBundleProject(bundle);
 						Throwable updExp = bundleError.getException();
 						if (null != updExp && updExp instanceof DuplicateBundleException) {
 							bundleTransition.setTransitionError(project, TransitionError.DUPLICATE);
@@ -303,13 +319,14 @@ public class UpdateJob extends BundleJob {
 						}
 					} catch (ProjectLocationException e) {
 						if (null == status) {
-							String msg = ExceptionMessage.getInstance().formatString("error_setting_bundle_error");
+							String msg = ExceptionMessage.getInstance()
+									.formatString("error_setting_bundle_error");
 							status = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg, null);
 						}
-						IProject project = bundleRegion.getBundleProject(bundle);
+						IProject project = bundleRegion.getRegisteredBundleProject(bundle);
 						if (null != project) {
-							status.add(new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, project,
-									project.getName(), e));
+							status.add(new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, project, project
+									.getName(), e));
 						}
 					}
 				}
@@ -326,14 +343,16 @@ public class UpdateJob extends BundleJob {
 	 * 
 	 * @param bundles to update
 	 * @param monitor monitor the progress monitor to use for reporting progress to the user.
-	 * @return status object describing the result of updating with {@code StatusCode.OK} if no failure,
-	 *         otherwise one of the failure codes are returned. If more than one bundle fails, status of the
-	 *         last failed bundle is returned. All failures are added to the job status list
+	 * @return status object describing the result of updating with {@code StatusCode.OK} if no
+	 * failure, otherwise one of the failure codes are returned. If more than one bundle fails, status
+	 * of the last failed bundle is returned. All failures are added to the job status list
 	 * @see BundleCommandImpl#update(Bundle)
 	 */
-	private Collection<IBundleStatus> updateByReference(Collection<Bundle> bundles, SubProgressMonitor monitor) {
+	private Collection<IBundleStatus> updateByReference(Collection<Bundle> bundles,
+			SubProgressMonitor monitor) {
 
-		// Contains duplicate candidate bundles to be removed in the resolver hook in case of singleton collisions
+		// Contains duplicate candidate bundles to be removed in the resolver hook in case of singleton
+		// collisions
 		Map<Bundle, Set<Bundle>> duplicateInstanceGroups = new HashMap<Bundle, Set<Bundle>>();
 		Set<Bundle> duplicateInstanceCandidates = new LinkedHashSet<Bundle>();
 		Collection<IBundleStatus> statusList = null;
@@ -344,16 +363,18 @@ public class UpdateJob extends BundleJob {
 					localMonitor.subTask(updateSubTaskName + bundle.getSymbolicName());
 					if (Category.getState(Category.progressBar))
 						sleep(sleepTime);
-					// Set conditions in the resolver hook for removal of duplicates to avoid singleton collisions
+					// Set conditions in the resolver hook for removal of duplicates to avoid singleton
+					// collisions
 					duplicateInstanceCandidates.add(bundle);
 					duplicateInstanceGroups.put(bundle, duplicateInstanceCandidates);
-					bundleCommand.getResolverHookFactory().setGroups(duplicateInstanceGroups);					
+					bundleCommand.getResolverHookFactory().setGroups(duplicateInstanceGroups);
 					bundleCommand.update(bundle);
 				} catch (DuplicateBundleException e) {
-					handleDuplicateException(bundleRegion.getBundleProject(bundle), e, null);
-					String msg = ErrorMessage.getInstance().formatString("duplicate_error", bundle.getSymbolicName(),
-							bundle.getVersion().toString());
-					IBundleStatus result = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, bundle.getBundleId(), msg, e);
+					handleDuplicateException(bundleRegion.getRegisteredBundleProject(bundle), e, null);
+					String msg = ErrorMessage.getInstance().formatString("duplicate_error",
+							bundle.getSymbolicName(), bundle.getVersion().toString());
+					IBundleStatus result = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID,
+							bundle.getBundleId(), msg, e);
 					if (null == statusList) {
 						statusList = new LinkedHashSet<IBundleStatus>();
 					}
@@ -373,32 +394,39 @@ public class UpdateJob extends BundleJob {
 			}
 		}
 		if (null == statusList) {
-			return Collections.<IBundleStatus>emptySet();
+			return Collections.<IBundleStatus> emptySet();
 		} else {
 			return statusList;
 		}
 	}
-	private static String currentExternalInstance = ErrorMessage.getInstance().formatString("current_revision_of_jar_duplicate");
-	private static String currentWorkspaceInstance= ErrorMessage.getInstance().formatString("current_revision_of_ws_duplicate");
 
-	private void removeDuplicates(Collection<IProject> projectsToUpdate, Collection<Bundle> bundlesToUpdate,
-			Collection<Bundle> bDepClosures) throws OperationCanceledException {
+	private static String currentExternalInstance = ErrorMessage.getInstance().formatString(
+			"current_revision_of_jar_duplicate");
+	private static String currentWorkspaceInstance = ErrorMessage.getInstance().formatString(
+			"current_revision_of_ws_duplicate");
 
-		Collection<IProject> duplicateProjects = removeExternalDuplicates(projectsToUpdate, bDepClosures, currentExternalInstance);
+	private void removeDuplicates(Collection<IProject> projectsToUpdate,
+			Collection<Bundle> bundlesToUpdate, Collection<Bundle> bDepClosures)
+			throws OperationCanceledException {
+
+		Collection<IProject> duplicateProjects = removeExternalDuplicates(projectsToUpdate,
+				bDepClosures, currentExternalInstance);
 		if (null != duplicateProjects) {
 			bundlesToUpdate.removeAll(bundleRegion.getBundles(duplicateProjects));
 		}
-// TODO detected by the update operation. do some more testing here
-//		duplicateProjects = removeWorkspaceDuplicates(projectsToUpdate, bDepClosures, null, ProjectProperties.getInstallableProjects(), 
-//				currentWorkspaceInstance);
-//		if (null != duplicateProjects) {
-//			bundlesToUpdate.removeAll(bundleRegion.getBundles(duplicateProjects));
-//		}
+		// TODO detected by the update operation. do some more testing here
+		// duplicateProjects = removeWorkspaceDuplicates(projectsToUpdate, bDepClosures, null,
+		// ProjectProperties.getInstallableProjects(),
+		// currentWorkspaceInstance);
+		// if (null != duplicateProjects) {
+		// bundlesToUpdate.removeAll(bundleRegion.getBundles(duplicateProjects));
+		// }
 	}
 
 	/**
-	 * Formats and log exceptions specified in the status list. Removes all bundles and their requiring bundles
-	 * with an update exception from being refreshed by removing them from the specified bundles to refresh
+	 * Formats and log exceptions specified in the status list. Removes all bundles and their
+	 * requiring bundles with an update exception from being refreshed by removing them from the
+	 * specified bundles to refresh
 	 * 
 	 * @param errorStatusList bundles with an status object to remove from bundles to refresh
 	 * @param bundlesTorRefresh is the bundles to refresh
@@ -412,8 +440,8 @@ public class UpdateJob extends BundleJob {
 				Bundle bundle = bundleStatus.getBundle();
 				if (null != bundle) {
 					BundleSorter bs = new BundleSorter();
-					Collection<Bundle> affectedBundles = bs.sortDeclaredRequiringBundles(Collections.singleton(bundle),
-							bundlesTorRefresh);
+					Collection<Bundle> affectedBundles = bs.sortDeclaredRequiringBundles(
+							Collections.singleton(bundle), bundlesTorRefresh);
 					bundles.addAll(affectedBundles);
 				}
 			}
@@ -422,14 +450,15 @@ public class UpdateJob extends BundleJob {
 	}
 
 	/**
-	 * Detect circular symbolic name collisions and order the specified collection of bundles based on existing
-	 * and new symbolic keys (symbolic name and version) before they are updated.
+	 * Detect circular symbolic name collisions and order the specified collection of bundles based on
+	 * existing and new symbolic keys (symbolic name and version) before they are updated.
 	 * <p>
-	 * Bundles must be ordered when a bundle changes its symbolic key to the same symbolic key as an other
-	 * bundle to update, and this other bundle at the same time changes its symbolic key to a new value. The
-	 * other bundle must then be updated first to avoid that the first bundle becomes a duplicate of the other
-	 * bundle. A special case, called a circular name collision, occurs if the other bundle in addition changes
-	 * it symbolic key to the same as the current (or existing) symbolic key of the first bundle.
+	 * Bundles must be ordered when a bundle changes its symbolic key to the same symbolic key as an
+	 * other bundle to update, and this other bundle at the same time changes its symbolic key to a
+	 * new value. The other bundle must then be updated first to avoid that the first bundle becomes a
+	 * duplicate of the other bundle. A special case, called a circular name collision, occurs if the
+	 * other bundle in addition changes it symbolic key to the same as the current (or existing)
+	 * symbolic key of the first bundle.
 	 * 
 	 * 
 	 * @param bundlesToUpdate collection of bundles to update
@@ -444,7 +473,7 @@ public class UpdateJob extends BundleJob {
 			return bundlesToUpdate;
 		}
 		for (Bundle bundle : bundlesToUpdate) {
-			IProject project = bundleRegion.getBundleProject(bundle);
+			IProject project = bundleRegion.getRegisteredBundleProject(bundle);
 			String newProjectKey = bundleRegion.getSymbolicKey(null, project);
 			String oldBundleKey = bundleRegion.getSymbolicKey(bundle, null);
 			if (newProjectKey.length() == 0 || oldBundleKey.length() == 0) {
@@ -462,10 +491,11 @@ public class UpdateJob extends BundleJob {
 					continue;
 				}
 				String collisionBundleKey = bundleRegion.getSymbolicKey(collisionBundle, null);
-				// Existing symbolic key of the other bundle is the same as the new symbolic key of this bundle
+				// Existing symbolic key of the other bundle is the same as the new symbolic key of this
+				// bundle
 				if (collisionBundleKey.equals(newProjectKey)) {
-					String msg = ErrorMessage.getInstance().formatString("circular_names", bundle, newProjectKey,
-							collisionBundle, bundleRegion.getSymbolicKey(null, collisionProject));
+					String msg = ErrorMessage.getInstance().formatString("circular_names", bundle,
+							newProjectKey, collisionBundle, bundleRegion.getSymbolicKey(null, collisionProject));
 					if (null == status) {
 						status = addError(null, msg);
 					} else {
@@ -483,7 +513,6 @@ public class UpdateJob extends BundleJob {
 		}
 		return sortedBundlesToUpdate;
 	}
-
 
 	/**
 	 * Number of ticks used by this job.

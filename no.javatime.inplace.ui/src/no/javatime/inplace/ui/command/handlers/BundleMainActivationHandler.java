@@ -39,7 +39,7 @@ public class BundleMainActivationHandler extends BundleMenuActivationHandler {
 		}
 		
 		if (parameterId.equals(BundleMainCommandsContributionItems.deactivateParamId)) {
-		 Collection<IProject> javaTimeProjects = BundleProjectState.getActivatedProjects();
+		 Collection<IProject> javaTimeProjects = BundleProjectState.getNatureEnabledProjects();
 		 deactivateHandler(javaTimeProjects);
 		} else if (parameterId.equals(BundleMainCommandsContributionItems.activateParamId)) {
 			Collection<IProject> projects = ProjectProperties.getCandidateProjects();
@@ -47,7 +47,7 @@ public class BundleMainActivationHandler extends BundleMenuActivationHandler {
 		} else if (parameterId.equals(BundleMainCommandsContributionItems.startParamId)) {
 
 			Collection<Bundle> startProjects = new LinkedHashSet<Bundle>(); 
-			for (IProject project : BundleProjectState.getActivatedProjects()) {
+			for (IProject project : BundleProjectState.getNatureEnabledProjects()) {
 				Bundle bundle = BundleJobManager.getRegion().get(project);
 				if (null == bundle) {
 					continue;
@@ -63,7 +63,7 @@ public class BundleMainActivationHandler extends BundleMenuActivationHandler {
 			}
 		} else if (parameterId.equals(BundleMainCommandsContributionItems.stopParamId)) {
 			Collection<Bundle> stopProjects = new LinkedHashSet<Bundle>(); 
-			for (IProject project : BundleProjectState.getActivatedProjects()) {
+			for (IProject project : BundleProjectState.getNatureEnabledProjects()) {
 				Bundle bundle = BundleJobManager.getRegion().get(project);
     		int state = BundleJobManager.getCommand().getState(bundle);
     		if (Bundle.ACTIVE == state || Bundle.STARTING == state) {
@@ -75,13 +75,13 @@ public class BundleMainActivationHandler extends BundleMenuActivationHandler {
 				stopHandler(projects);
 			}
 		} else if (parameterId.equals(BundleMainCommandsContributionItems.refreshParamId)) {
-			Collection<IProject> projects = BundleProjectState.getActivatedProjects();
+			Collection<IProject> projects = BundleProjectState.getNatureEnabledProjects();
 			refreshHandler(projects);
 		} else if (parameterId.equals(BundleMainCommandsContributionItems.refreshPendingParamId)) {
-			Collection<IProject> projects = BundleProjectState.getActivatedProjects();
+			Collection<IProject> projects = BundleProjectState.getNatureEnabledProjects();
 			refreshHandler(projects);
 		} else if (parameterId.equals(BundleMainCommandsContributionItems.updateParamId)) {
-			Collection<IProject> projects = BundleProjectState.getActivatedProjects();
+			Collection<IProject> projects = BundleProjectState.getNatureEnabledProjects();
 			Collection<IProject> projectsToUpdate = 
 					BundleJobManager.getTransition().getPendingProjects(projects, BundleTransition.Transition.UPDATE);			
 			updateHandler(projectsToUpdate);

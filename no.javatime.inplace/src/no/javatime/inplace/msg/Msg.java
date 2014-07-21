@@ -34,7 +34,8 @@ public class Msg extends NLS {
 	public static String DISABLE_NATURE_TRACE;
 	public static String ENABLE_NATURE_TRACE;
 	public static String UNDEFINED_CONTEXT_ERROR_TRACE;
-	
+	public static String JOB_NAME_TRACE;
+
 	// Build trace operations
 	public static String BUILD_HEADER_TRACE;
 	public static String NO_RESOURCE_DELTA_BUILD_TRACE;
@@ -53,18 +54,18 @@ public class Msg extends NLS {
 	public static String BEGIN_SHUTDOWN_ERROR;
 	public static String END_SHUTDOWN_ERROR;
 	public static String INSTALL_ERROR;
-	
 	// Warnings
 	public static String EXTERNAL_UNINSTALL_WARN;
 	public static String REQUIRING_BUNDLES_WARN;
-	public static String DEACTIVATE_BUILD_WARN;
 	public static String DELAYED_BUILD_WARN;
+	public static String RENAME_PROJECT_WARN;
 	
 	// Dialog and View messages
 	public static String DEACTIVATE_QUESTION_DLG;
 	public static String DEACTIVATE_QUESTION_REQ_DLG;
 	
 	// Info messages
+	public static String OPERATION_BUILD_ERROR_INFO;
 	public static String ACTIVATED_BUNDLES_INFO;
 	public static String IMPLICIT_ACTIVATION_INFO;
 	public static String DELAYED_RESOLVE_INFO;

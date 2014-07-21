@@ -16,6 +16,7 @@ import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.msg.Msg;
+import no.javatime.inplace.region.closure.BuildErrorClosure;
 import no.javatime.inplace.region.closure.BundleClosures;
 import no.javatime.inplace.region.closure.CircularReferenceException;
 import no.javatime.inplace.region.manager.BundleManager;
@@ -176,7 +177,20 @@ public class ActivateProjectJob extends NatureJob {
 			BundleClosures closures = new BundleClosures();
 			Collection<IProject> pendingProjects = closures.projectActivation(getPendingProjects(), false);
 			resetPendingProjects(pendingProjects);
-			
+
+			// Do not activate projects with build errors
+			BuildErrorClosure be = new BuildErrorClosure(getPendingProjects(),Transition.ACTIVATE_PROJECT);
+			be.setSortLevel(Bundle.UNINSTALLED, false);
+			if (be.hasBuildErrors()) {
+				Collection<IProject> errorClosure = be.getProjectErrorClosures();
+				removePendingProjects(errorClosure);
+				if (InPlace.get().msgOpt().isBundleOperations()) {
+					IBundleStatus bundleStatus = be.getProjectErrorClosureStatus();
+					if (null != bundleStatus) {
+						addTrace(bundleStatus);
+					}
+				}
+			}
 			activateNature(getPendingProjects(), new SubProgressMonitor(monitor, 1));
 			// An activate project job triggers an update job when the workspace is activated and
 			// an activate bundle job when the workspace is deactivated
@@ -184,7 +198,7 @@ public class ActivateProjectJob extends NatureJob {
 			// should be updated as part of the activation process
 			if (!getOptionsService().isUpdateOnBuild() && bundleRegion.isBundleWorkspaceActivated()) {
 				for (IProject project : getPendingProjects()) {
-					if (BundleProjectState.isProjectActivated(project)) {
+					if (BundleProjectState.isNatureEnabled(project)) {
 						bundleTransition.addPending(project, Transition.UPDATE_ON_ACTIVATE);
 					}
 				}
@@ -221,9 +235,9 @@ public class ActivateProjectJob extends NatureJob {
 		final Collection<Bundle> installedBundles = bundleRegion.getBundles();
 		
 		// If the workspace is deactivated and there are registered bundles they are uninstalled but not unregistered 
-		if (!BundleProjectState.isProjectWorkspaceActivated() && installedBundles.size() > 0) {	
-			uninstallBundles(installedBundles, monitor);
+		if (!BundleProjectState.isWorkspaceNatureEnabled() && installedBundles.size() > 0) {	
 			Collection<IProject> projectsToActivate = bundleRegion.getBundleProjects(installedBundles);
+			uninstallBundles(installedBundles, monitor);
 			// Subtract installed projects already pending
 			projectsToActivate.removeAll(getPendingProjects());
 			if (projectsToActivate.size() > 0) {

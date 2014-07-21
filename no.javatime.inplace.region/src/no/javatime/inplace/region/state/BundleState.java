@@ -32,7 +32,10 @@ public abstract class BundleState {
 	
 	public Bundle getBundle(BundleNode bundleNode) {
 		if (null != bundleNode) {
-			return Activator.getContext().getBundle(bundleNode.getBundleId());
+			Long bundleId = bundleNode.getBundleId();
+			if (null != bundleId) {
+				return Activator.getContext().getBundle(bundleId);
+			}
 		}
 		return null;
 	}
@@ -74,11 +77,17 @@ public abstract class BundleState {
 	}
 
 	public String errorState(BundleNode bundleNode) {
-		return error(bundleNode, "Illegal state.", bundleNode.getCurrentState().getClass());
+		return error(bundleNode, "Illegal state.", bundleNode.getState().getClass());
 	}
 
 	public String error(BundleNode bundleNode, String msg, Class<? extends BundleState> newState) {
-		return TraceMessage.getInstance().getString("state_error",
-				newState.getSimpleName(),getBundle(bundleNode));
+		Bundle bundle = getBundle(bundleNode);
+		if (null != bundle) {
+			return TraceMessage.getInstance().getString("state_error",
+				newState.getSimpleName(), bundle);
+		} else {
+			return TraceMessage.getInstance().getString("state_error",
+					newState.getSimpleName(), bundleNode.getProject());			
+		}
 	}
 }

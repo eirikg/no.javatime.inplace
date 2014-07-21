@@ -35,7 +35,7 @@ public class UpdateScheduler {
 			UpdateJob updateJob = new UpdateJob(UpdateJob.updateJobName);;
 			ActivateProjectJob activateProjectJob = new ActivateProjectJob(ActivateProjectJob.activateProjectsJobName);
 			for (IProject project : projects) {
-				if (BundleProjectState.isProjectActivated(project) &&
+				if (BundleProjectState.isNatureEnabled(project) &&
 						BundleJobManager.getTransition().containsPending(project, Transition.UPDATE, false)) {
 						// This is now handled in the bundle resolver hook
 						// addChangedProject(project, updateJob, activateProjectJob);

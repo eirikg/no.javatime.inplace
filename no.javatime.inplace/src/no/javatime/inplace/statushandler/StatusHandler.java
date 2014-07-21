@@ -96,7 +96,10 @@ public class StatusHandler extends WorkbenchErrorHandler {
 			if (InPlace.get().msgOpt().isBundleOperations()) {
 				InPlace.get().trace((BundleStatus) status);
 			}
-			InPlace.get().getLog().log(status);
+			// Do not send info messages to the error log
+			if (((BundleStatus)status).getStatusCode() != StatusCode.INFO) {
+				InPlace.get().getLog().log(status);
+			}
 		} else {
 			super.handle(statusAdapter, style);
 		}

@@ -17,11 +17,11 @@ import java.util.Map;
 
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundlemanager.BundleJobManager;
-import no.javatime.inplace.bundleproject.BundleProjectSettings;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.closure.BuildErrorClosure;
 import no.javatime.inplace.region.closure.CircularReferenceException;
+import no.javatime.inplace.region.closure.ProjectDependencies;
 import no.javatime.inplace.region.closure.ProjectSorter;
 import no.javatime.inplace.region.manager.BundleCommand;
 import no.javatime.inplace.region.manager.BundleManager;
@@ -32,6 +32,7 @@ import no.javatime.inplace.region.manager.BundleTransition.TransitionError;
 import no.javatime.inplace.region.manager.InPlaceException;
 import no.javatime.inplace.region.manager.ProjectLocationException;
 import no.javatime.inplace.region.project.BundleProjectState;
+import no.javatime.inplace.region.project.ManifestOptions;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
@@ -111,7 +112,7 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 					if (Category.DEBUG && Category.getState(Category.build))
 						TraceMessage.getInstance().getString("changed_resource", resource.getName());
 				}
-				if (resource instanceof IFile && resource.getName().endsWith(BundleProjectSettings.MANIFEST_FILE_NAME)) {
+				if (resource instanceof IFile && resource.getName().endsWith(ManifestOptions.MANIFEST_FILE_NAME)) {
 					if (Category.DEBUG && Category.getState(Category.build))
 						TraceMessage.getInstance().getString("changed_resource", resource.getName());
 				}
@@ -130,7 +131,7 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 				if (Category.DEBUG && Category.getState(Category.build))
 					TraceMessage.getInstance().getString("full_build_resource", resource.getName());
 			}
-			if (resource instanceof IFile && resource.getName().endsWith(BundleProjectSettings.MANIFEST_FILE_NAME)) {
+			if (resource instanceof IFile && resource.getName().endsWith(ManifestOptions.MANIFEST_FILE_NAME)) {
 				if (Category.DEBUG && Category.getState(Category.build))
 					TraceMessage.getInstance().getString("full_build_resource", resource.getName());
 			}
@@ -191,7 +192,7 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 					}
 					// When an activated project is imported or opened, install in an activated workspace before
 					// deactivating the bundle
-					if (BundleProjectState.getActivatedProjects().size() > 1) {
+					if (BundleProjectState.getNatureEnabledProjects().size() > 1) {
 						bundleTransition.addPending(project, Transition.INSTALL);
 					}
 				}
@@ -289,22 +290,24 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 		BuildErrorClosure be = null;
 		boolean cycle = false;
 		try {
-			// Use same closure rules as update 
-			be = new BuildErrorClosure(Collections.<IProject>singletonList(project), Transition.UPDATE);
-			// Get the closures to reveal any cycles 
-			if (be.getBuildErrors().size() > 0) {
-				if (BuildErrorClosure.hasBuildErrors(project)|| !BuildErrorClosure.hasBuildState(project)) {
-					BundleManager.getTransition().setTransitionError(project, TransitionError.BUILD);
+			ProjectDependencies.getProvidingProjects(project);
+			ProjectDependencies.getRequiringProjects(project);
+			try {
+				// Use same closure rules as update 
+				be = new BuildErrorClosure(Collections.<IProject>singletonList(project), Transition.UPDATE);
+				// Get the closures to reveal any cycles 
+				if (be.getBuildErrors().size() > 0) {
+					if (BuildErrorClosure.hasBuildErrors(project)|| !BuildErrorClosure.hasBuildState(project)) {
+						BundleManager.getTransition().setTransitionError(project, TransitionError.BUILD);
+					}
 				}
+			} catch (CircularReferenceException e) {
+				String msg = ExceptionMessage.getInstance().formatString("circular_reference_termination");
+				IBundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, project, msg, null);
+				multiStatus.add(e.getStatusList());
+				StatusManager.getManager().handle(multiStatus, StatusManager.LOG);
+				cycle = true;
 			}
-		} catch (CircularReferenceException e) {
-			String msg = ExceptionMessage.getInstance().formatString("circular_reference_termination");
-			IBundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, project, msg, null);
-			multiStatus.add(e.getStatusList());
-			StatusManager.getManager().handle(multiStatus, StatusManager.LOG);
-			cycle = true;
-		}
-		try {
 			if (!cycle && InPlace.get().msgOpt().isBundleOperations()) {
 				String msg = null;
 				Bundle bundle = BundleJobManager.getRegion().get(project);
@@ -315,7 +318,7 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 				}
 				IBundleStatus buildStatus = new BundleStatus(StatusCode.BUILDERROR, bundle,project, msg, null);
 				if (be.hasBuildErrors()) {
-					IBundleStatus errorStatus = be.getProjectErrorClosureStatus(true);
+					IBundleStatus errorStatus = be.getProjectErrorClosureStatus();
 					buildStatus.add(errorStatus);
 					if (null != bundle && (bundle.getState() & (Bundle.INSTALLED | Bundle.UNINSTALLED)) == 0) {
 						msg = NLS.bind(Msg.USING_CURRENT_REVISION_TRACE, bundle);

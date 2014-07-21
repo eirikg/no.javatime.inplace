@@ -127,7 +127,7 @@ public class BundleListLabelProvider extends LabelProvider implements ITableLabe
 				}
 				Bundle bundle = ((BundleProperties) element).getBundle();
 				IProject project = ((BundleProperties) element).getProject();
-				boolean isProjectActivated = BundleProjectState.isProjectActivated(project);
+				boolean isProjectActivated = BundleProjectState.isNatureEnabled(project);
 				BundleCommand bundleCommand = BundleJobManager.getCommand();
 				BundleTransition bundleTransition = BundleJobManager.getTransition();
 				try {

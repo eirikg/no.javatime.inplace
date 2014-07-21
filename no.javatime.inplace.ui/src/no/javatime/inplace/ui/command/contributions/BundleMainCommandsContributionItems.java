@@ -62,7 +62,7 @@ public class BundleMainCommandsContributionItems extends BundleCommandsContribut
 		ArrayList<ContributionItem> contributions = new ArrayList<ContributionItem>();
 
 		Collection<IProject> candidateProjects = ProjectProperties.getCandidateProjects();
-		Collection<IProject> activatedProjects = BundleProjectState.getActivatedProjects();
+		Collection<IProject> activatedProjects = BundleProjectState.getNatureEnabledProjects();
 		CommandContributionItem contribution;
 
 		// Busy running bundle jobs. Show a limited set of contributors

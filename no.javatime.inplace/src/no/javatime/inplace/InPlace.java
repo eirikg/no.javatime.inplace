@@ -34,6 +34,7 @@ import no.javatime.inplace.extender.provider.Extender;
 import no.javatime.inplace.extender.provider.Extension;
 import no.javatime.inplace.log.intface.BundleLog;
 import no.javatime.inplace.msg.Msg;
+import no.javatime.inplace.region.closure.BuildErrorClosure;
 import no.javatime.inplace.region.manager.BundleCommandImpl;
 import no.javatime.inplace.region.manager.BundleManager;
 import no.javatime.inplace.region.manager.BundleRegion;
@@ -327,15 +328,23 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 	public void shutDownBundles() {
 		// Send output to standard console when shutting down
 		BundleConsoleFactory.getConsole().setSystemOutToIDEDefault();
-		savePluginSettings(true, false);
-		if (BundleProjectState.isProjectWorkspaceActivated()) {
+		if (BundleProjectState.isWorkspaceNatureEnabled()) {
 			try {
 				BundleJob shutDownJob = null;
-				Collection<IProject> projects = BundleProjectState.getActivatedProjects();
+				Collection<IProject> projects = BundleProjectState.getNatureEnabledProjects();
 				if (getCommandOptionsService().isDeactivateOnExit()) {
-					projects = BundleProjectState.getActivatedProjects();
 					shutDownJob = new DeactivateJob(DeactivateJob.deactivateOnshutDownJobName);
 				} else {
+					BuildErrorClosure be = new BuildErrorClosure(projects, Transition.DEACTIVATE);
+					if (be.hasBuildErrors()) {
+						Collection<IProject> errorClosure = be.getProjectErrorClosures();
+						DeactivateJob deactivateErrorClosureJob = 
+								new DeactivateJob(DeactivateJob.deactivateOnshutDownJobName, errorClosure);						
+						deactivateErrorClosureJob.setUser(false);
+						deactivateErrorClosureJob.schedule();
+					} else {
+						savePluginSettings(true, false);
+					}
 					projects = ProjectProperties.getPlugInProjects();
 					shutDownJob = new UninstallJob(UninstallJob.shutDownJobName);
 					((UninstallJob) shutDownJob).unregisterBundleProject(true);
@@ -439,7 +448,7 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 			return;
 		}
 		IWorkbench workbench = getWorkbench();
-		if (!BundleProjectState.isProjectWorkspaceActivated() || 
+		if (!BundleProjectState.isWorkspaceNatureEnabled() || 
 				(null != workbench && workbench.isClosing())) {
 			return;
 		}
@@ -609,8 +618,8 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 			return; // Use existing values
 		}
 		if (allResolve) {
-			if (BundleProjectState.isProjectWorkspaceActivated()) {
-				for (IProject project : BundleProjectState.getActivatedProjects()) {
+			if (BundleProjectState.isWorkspaceNatureEnabled()) {
+				for (IProject project : BundleProjectState.getNatureEnabledProjects()) {
 					try {
 						String symbolicKey = bundleRegion.getSymbolicKey(null, project);
 						if (symbolicKey.isEmpty()) {
@@ -645,7 +654,7 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 				for (IProject project : BundleProjectState.getProjects()) {
 					try {					
 						Transition transition = BundleJobManager.getTransition().getTransition(project);
-						if (!BundleProjectState.isProjectActivated(project) && 
+						if (!BundleProjectState.isNatureEnabled(project) && 
 								transition == Transition.UNINSTALL) {
 							String symbolicKey = bundleRegion.getSymbolicKey(null, project);
 							if (symbolicKey.isEmpty()) {

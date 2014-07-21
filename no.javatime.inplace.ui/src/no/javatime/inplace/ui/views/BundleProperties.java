@@ -227,7 +227,7 @@ public class BundleProperties {
 	}
 
 	public String getActivationMode() {
-		boolean activated = BundleProjectState.isProjectActivated(project);
+		boolean activated = BundleProjectState.isNatureEnabled(project);
 		if (activated) {
 			return "Activated";
 		} else {
@@ -237,7 +237,7 @@ public class BundleProperties {
 
 	public String getBundleStatus() {
 
-		boolean isProjectActivated = BundleProjectState.isProjectActivated(project);
+		boolean isProjectActivated = BundleProjectState.isNatureEnabled(project);
 		BundleCommand bundleCommand = BundleJobManager.getCommand();
 		BundleTransition bundleTransition = BundleJobManager.getTransition();
 

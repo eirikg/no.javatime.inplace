@@ -95,7 +95,7 @@ public class InstallJob extends BundleJob {
 		try {
 			monitor.beginTask(installTaskName, 1);
 			BundleManager.addBundleTransitionListener(this);
-		if (BundleProjectState.isProjectWorkspaceActivated()) {
+		if (BundleProjectState.isWorkspaceNatureEnabled()) {
 				if (!bundleRegion.isBundleWorkspaceActivated()) {
 					// First nature activated projects. Activate the workspace
 					addPendingProjects(ProjectProperties.getPlugInProjects());
@@ -166,10 +166,10 @@ public class InstallJob extends BundleJob {
 		try {
 			BuildErrorClosure be = new BuildErrorClosure(getPendingProjects(), Transition.INSTALL);
 			if (be.hasBuildErrors()) {
-				projectErrorClosures = be.getProjectErrorClosures(true);
+				projectErrorClosures = be.getProjectErrorClosures();
 				removePendingProjects(projectErrorClosures);
 				if (InPlace.get().msgOpt().isBundleOperations()) {
-					IBundleStatus bundleStatus = be.getProjectErrorClosureStatus(true);
+					IBundleStatus bundleStatus = be.getProjectErrorClosureStatus();
 					if (null != bundleStatus) {
 						addTrace(bundleStatus);			
 					}

@@ -66,11 +66,11 @@ public class ProjectSorter extends BaseSorter {
 	 * @return collection of projects in referenced sort order
 	 * @throws CircularReferenceException if cycles are detected in the project graph
 	 */
-	public Collection<IProject> sortRequiringProjects(Collection<IProject> projects)
+	public Collection<IProject> sortRequiringProjects(final Collection<IProject> projects)
 			throws CircularReferenceException {
 		projectOrder = new LinkedHashSet<IProject>();
 		circularException = null;
-		for (IProject project : projects) {
+		for (final IProject project : projects) {
 			visitRequiringProject(project, null, new LinkedHashSet<IProject>());
 		}
 		if (null != circularException) {
@@ -88,7 +88,7 @@ public class ProjectSorter extends BaseSorter {
 	 * @param parent a requiring project to the {@code child} project parameter. May be null.
 	 * @param visited is a list of projects in the current call stack (used for detecting cycles)
 	 */
-	protected void visitRequiringProject(IProject child, IProject parent, Collection<IProject> visited) {
+	protected void visitRequiringProject(final IProject child, final IProject parent, final Collection<IProject> visited) {
 
 		// Has this start bundle element been visited before (not through recursion)
 		if (!projectOrder.contains(child)) {
@@ -116,11 +116,11 @@ public class ProjectSorter extends BaseSorter {
 	 * @return collection of projects in referenced sort order
 	 * @throws CircularReferenceException if cycles are detected in the project graph
 	 */
-	public Collection<IProject> sortRequiringProjects(Collection<IProject> projects, Boolean natureEnabled)
+	public Collection<IProject> sortRequiringProjects(final Collection<IProject> projects, final Boolean natureEnabled)
 			throws CircularReferenceException {
 		projectOrder = new LinkedHashSet<IProject>();
 		circularException = null;
-		for (IProject project : projects) {
+		for (final IProject project : projects) {
 			visitRequiringProject(project, null, natureEnabled, new LinkedHashSet<IProject>());
 		}
 		if (null != circularException) {
@@ -139,8 +139,8 @@ public class ProjectSorter extends BaseSorter {
 	 * @param natureEnabled if true only consider activated projects and only deactivated projects if false
 	 * @param visited is a list of projects in the current call stack (used for detecting cycles)
 	 */
-	protected void visitRequiringProject(IProject child, IProject parent, Boolean natureEnabled,
-			Collection<IProject> visited) {
+	protected void visitRequiringProject(final IProject child, final IProject parent, final Boolean natureEnabled,
+			final Collection<IProject> visited) {
 
 		// Has this start bundle element been visited before (not through recursion)
 		if (!projectOrder.contains(child)) {
@@ -152,7 +152,7 @@ public class ProjectSorter extends BaseSorter {
 			visited.add(child);
 			Collection<IProject> requirers = ProjectDependencies.getRequiringProjects(child);
 			for (IProject requirer : requirers) {
-				if (natureEnabled.equals(BundleProjectState.isProjectActivated(requirer))) {
+				if (natureEnabled.equals(BundleProjectState.isNatureEnabled(requirer))) {
 					visitRequiringProject(requirer, child, natureEnabled, visited);
 				}
 			}
@@ -168,11 +168,11 @@ public class ProjectSorter extends BaseSorter {
 	 * @return collection of projects in referencing sort order
 	 * @throws CircularReferenceException if cycles are detected in the project graph
 	 */
-	public Collection<IProject> sortProvidingProjects(Collection<IProject> projects)
+	public Collection<IProject> sortProvidingProjects(final Collection<IProject> projects)
 			throws CircularReferenceException {
 		projectOrder = new LinkedHashSet<IProject>();
 		circularException = null;
-		for (IProject project : projects) {
+		for (final IProject project : projects) {
 			visitProvidingProject(project, null, new LinkedHashSet<IProject>());
 		}
 		if (null != circularException) {
@@ -190,7 +190,7 @@ public class ProjectSorter extends BaseSorter {
 	 * @param parent a providing project to the {@code child} project parameter. May be null.
 	 * @param visited is a list of projects in the current call stack (used for detecting cycles)
 	 */
-	protected void visitProvidingProject(IProject child, IProject parent, Collection<IProject> visited) {
+	protected void visitProvidingProject(final IProject child, final IProject parent, final Collection<IProject> visited) {
 
 		// Has this start bundle element been visited before (not through recursion)
 		if (!projectOrder.contains(child)) {
@@ -218,11 +218,11 @@ public class ProjectSorter extends BaseSorter {
 	 * @return collection of projects in referencing sort order
 	 * @throws CircularReferenceException if cycles are detected in the project graph. All Cycles are detected.
 	 */
-	public Collection<IProject> sortProvidingProjects(Collection<IProject> projects, Boolean natureEnabled)
+	public Collection<IProject> sortProvidingProjects(final Collection<IProject> projects, final Boolean natureEnabled)
 			throws CircularReferenceException {
 		projectOrder = new LinkedHashSet<IProject>();
 		circularException = null;
-		for (IProject project : projects) {
+		for (final IProject project : projects) {
 			visitProvidingProject(project, null, natureEnabled, new LinkedHashSet<IProject>());
 		}
 		if (null != circularException) {
@@ -241,8 +241,8 @@ public class ProjectSorter extends BaseSorter {
 	 * @param natureEnabled if true only consider activated projects and only deactivated projects if false
 	 * @param visited is a list of projects in the current call stack (used for detecting cycles)
 	 */
-	protected void visitProvidingProject(IProject child, IProject parent, Boolean natureEnabled,
-			Collection<IProject> visited) {
+	protected void visitProvidingProject(final IProject child, final IProject parent, final Boolean natureEnabled,
+			final Collection<IProject> visited) {
 
 		// Has this start bundle element been visited before (not through recursion)
 		if (!projectOrder.contains(child)) {
@@ -254,7 +254,7 @@ public class ProjectSorter extends BaseSorter {
 			visited.add(child); // Overlook self providing
 			Collection<IProject> providers = ProjectDependencies.getProvidingProjects(child);
 			for (IProject provider : providers) {
-				if (natureEnabled.equals(BundleProjectState.isProjectActivated(provider))) {
+				if (natureEnabled.equals(BundleProjectState.isNatureEnabled(provider))) {
 					visitProvidingProject(provider, child, natureEnabled, visited);
 				}
 			}
@@ -269,7 +269,7 @@ public class ProjectSorter extends BaseSorter {
 	 * @param child project that refers to the parent project parameter
 	 * @param parent project that refers to the child project parameter
 	 */
-	protected void handleProjectCycle(IProject child, IProject parent) {
+	protected void handleProjectCycle(final IProject child, final IProject parent) {
 		boolean directRecursion = false;
 		// Self reference
 		if (parent == child) {

@@ -43,10 +43,30 @@ public class BundleNode {
 	private IProject project; // The link between the bundle and the project (bundle project)
 	private Long bundleId; // Keep the id instead of the bundle object
 	private Boolean activated; // True when project is nature enabled and bundle has been installed
-	private BundleState currentState; // Based on commands on bundle nodes (workspace region bundles)
-	private Transition transition;
-	private TransitionError transitionError;
+	private BundleState state; // Based on commands on bundle nodes (workspace region bundles)
+	private Transition transition; // Current or last executed transition on bundle
+	private TransitionError transitionError; // Last error caused by a transition
 	
+	/**
+	 * Creates a bundle node with a one-to-one relationship between a project and a bundle, called a bundle
+	 * project. The bundle id is stored instead of the bundle object in the node. Initially the bundle node has
+	 * no state and initialized to {@link no.javatime.inplace.region.state.StateLess}
+	 * 
+	 * @param bundle must not be null
+	 * @param project must not be null
+	 * @param activate should be true if the project is nature enabled (implies that the project is activated)
+	 */
+	public BundleNode(Bundle bundle, IProject project, Boolean activate) {
+		this.project = project;
+		this.activated = activate;
+		if (null != bundle) {
+			this.bundleId = bundle.getBundleId();
+		}
+		this.state = BundleStateFactory.INSTANCE.stateLess;
+		transition = Transition.NOTRANSITION;
+		transitionError = TransitionError.NOERROR;
+	}
+
 	public Transition getTransition() {
 		return transition;
 	}
@@ -67,11 +87,7 @@ public class BundleNode {
 	}
 	
 	public boolean hasTransitionError() {
-		if (transitionError == TransitionError.NOERROR) {
-			return false;
-		} else {
-			return true;
-		}
+		return transitionError == TransitionError.NOERROR ? false : true;
 	}
 
 	public boolean clearTransitionError() {
@@ -91,35 +107,15 @@ public class BundleNode {
 	 * 
 	 * @return the current state of this bundle node or null if no state has been assigned yet.
 	 */
-	public BundleState getCurrentState() {
-		return currentState;
-	}
-
-	/**
-	 * Creates a bundle node with a one-to-one relationship between a project and a bundle, called a bundle
-	 * project. The bundle id is stored instead of the bundle object in the node. Initially the bundle node has
-	 * no state and initialized to {@link no.javatime.inplace.region.state.StateLess}
-	 * 
-	 * @param bundle must not be null
-	 * @param project must not be null
-	 * @param activate should be true if the project is nature enabled (implies that the project is activated)
-	 */
-	public BundleNode(Bundle bundle, IProject project, Boolean activate) {
-		this.project = project;
-		this.activated = activate;
-		if (null != bundle) {
-			this.bundleId = bundle.getBundleId();
-		}
-		this.currentState = BundleStateFactory.INSTANCE.stateLess;
-		transition = Transition.NOTRANSITION;
-		transitionError = TransitionError.NOERROR;
+	public BundleState getState() {
+		return state;
 	}
 
 	/**
 	 * Assigns a state treated as the current state of this bundle node. The external attribute of the state
 	 * is not altered.
 	 * 
-	 * @param currentState the current state of this bundle as any valid sub class of type {@code State}
+	 * @param state the current state of this bundle as any valid sub class of type {@code State}
 	 * @see BundleState
 	 */
 	public void setCurrentState(BundleState currentState) {
@@ -128,14 +124,14 @@ public class BundleNode {
 				Bundle bundle = Activator.getContext().getBundle(bundleId);
 				if (null != bundle) {
 					TraceMessage.getInstance().getString("state_change", Activator.getContext().getBundle(bundleId),
-							this.currentState.getClass().getSimpleName(), currentState.getClass().getSimpleName());
+							this.state.getClass().getSimpleName(), currentState.getClass().getSimpleName());
 				} else {
 					TraceMessage.getInstance().getString("state_change", project.getName(),
-							this.currentState.getClass().getSimpleName(), currentState.getClass().getSimpleName());
+							this.state.getClass().getSimpleName(), currentState.getClass().getSimpleName());
 				}
 			}
 		}
-		this.currentState = currentState;
+		this.state = currentState;
 	}
 
 	/**
@@ -364,9 +360,6 @@ public class BundleNode {
 
 		if (null != transition) {
 			switch (transition) {
-			case ACTIVATE_BUNDLE:
-				typeName = "ACTIVATE_BUNDLE";
-				break;
 			case INSTALL:
 				typeName = "INSTALL";
 				break;
@@ -404,6 +397,12 @@ public class BundleNode {
 			case UPDATE:
 				typeName = "UPDATE";
 				break;
+			case ACTIVATE_BUNDLE:
+				typeName = "ACTIVATE_BUNDLE";
+				break;
+			case ACTIVATE_PROJECT:
+				typeName = "ACTIVATE_PROJECT";
+				break;
 			case BUILD:
 				typeName = "BUILD";
 				break;
@@ -415,6 +414,9 @@ public class BundleNode {
 				break;
 			case UPDATE_ACTIVATION_POLICY:
 				typeName = "UPDATE_ACTIVATION_POLICY";
+				break;
+			case RENAME:
+				typeName = "RENAME";
 				break;
 			case NOTRANSITION:
 			default:

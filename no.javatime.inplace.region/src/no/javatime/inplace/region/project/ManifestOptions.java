@@ -22,7 +22,7 @@ import java.util.jar.Manifest;
 
 import no.javatime.inplace.region.manager.InPlaceException;
 import no.javatime.inplace.region.manager.ProjectLocationException;
-import no.javatime.util.messages.Message;
+import no.javatime.inplace.region.msg.Msg;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
@@ -44,7 +44,15 @@ import org.osgi.framework.Constants;
  */
 public class ManifestOptions {
 
-	final public static String MANIFEST_FILE_NAME = Message.getInstance().formatString("manifest_file_name");
+	/**
+	 * Path to manifest file relative to workspace root
+	 */
+	final public static String MANIFEST_RELATIVE_PATH = Msg.MANIFEST_FILE_RELATIVE_PATH_REF; 
+
+	/**
+	 * Standard file name of the manifest file
+	 */
+	final public static String MANIFEST_FILE_NAME =  Msg.MANIFEST_FILE_NAME_REF; // Message.getInstance().formatString("manifest_file_name");
 
 	private static void setActivationPolicy(Collection<IProject> projects, Boolean eagerActivation) {
 		if (null == projects) {

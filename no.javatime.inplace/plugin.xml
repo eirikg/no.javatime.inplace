@@ -52,8 +52,26 @@
             class="no.javatime.inplace.StartUp">
       </startup>
    </extension>
+   <extension
+         point="org.eclipse.ltk.core.refactoring.renameParticipants">
+      <renameParticipant
+            class="no.javatime.inplace.builder.ResourceRenameParticipant"
+            id="no.javatime.inplace.builder.renameProjectParticipant"
+            name="Rename Java Project">
+ 		<enablement>
+	      <with variable="affectedNatures">
+	      <iterate operator="or">
+	          <equals value="no.javatime.inplace.builder.javatimenature"/>
+	        </iterate>
+	      </with>
+      <with variable="element">
+        <instanceof value="org.eclipse.core.resources.IResource"/>
+      </with>
+    </enablement>
+      </renameParticipant>
+   </extension>
 <!-- ================================================================================= -->
-<!-- Implented as a dynamic extension                                                  -->
+<!-- Implemented as a dynamic extension                                                  -->
 <!-- ================================================================================= -->
 <!--
          <extension

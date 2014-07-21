@@ -3,9 +3,9 @@ package no.javatime.inplace.region;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions;
 import no.javatime.inplace.dl.preferences.intface.MessageOptions;
 import no.javatime.inplace.extender.provider.Extension;
-import no.javatime.inplace.region.events.BundleEventManager;
 import no.javatime.inplace.region.manager.InPlaceException;
 import no.javatime.inplace.region.resolver.BundleResolveHookFactory;
+import no.javatime.inplace.region.state.BundleEventManager;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;

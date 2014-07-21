@@ -318,7 +318,7 @@ public abstract class BundleJob extends JobStatus {
 					sleep(sleepTime);
 				progress.subTask(installSubtaskName + project.getName());
 				// Get the activation status of the corresponding project
-				Boolean activated = BundleProjectState.isProjectActivated(project);
+				Boolean activated = BundleProjectState.isNatureEnabled(project);
 				bundle = bundleCommand.install(project, activated);
 				// Project must be activated and bundle must be successfully installed to be activated
 				if (null != bundle && activated) {
@@ -372,6 +372,7 @@ public abstract class BundleJob extends JobStatus {
 					sleep(sleepTime);
 				localMonitor.subTask(UninstallJob.uninstallSubtaskName + bundle.getSymbolicName());
 				try {
+					// Unregister after refresh
 					bundleCommand.uninstall(bundle, false);					
 				} catch (InPlaceException e) {
 					result = addError(e, e.getLocalizedMessage(), bundle.getBundleId());
@@ -380,7 +381,11 @@ public abstract class BundleJob extends JobStatus {
 				}
 			}
 			refresh(bundles, new SubProgressMonitor(monitor, 1));
-			if (unregister) {
+			if (unregister) {	
+				for (Bundle bundle : bundles) {
+					bundleCommand.unregisterBundleProject(bundleRegion.getRegisteredBundleProject(bundle));
+				}
+			}	else {
 				for (Bundle bundle : bundles) {
 					bundleCommand.unregisterBundleProject(bundle);
 				}
@@ -503,7 +508,7 @@ public abstract class BundleJob extends JobStatus {
 								Integer.toString(timeoutVal), bundle);
 						IBundleStatus errStat = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg, e);
 						msg = WarnMessage.getInstance().formatString("timeout_termination", bundle);
-						createMultiStatus(errStat, addWarning(null, msg, BundleJobManager.getRegion().getBundleProject(bundle)));
+						createMultiStatus(errStat, addWarning(null, msg, BundleJobManager.getRegion().getRegisteredBundleProject(bundle)));
 						stopCurrentBundleOperation(monitor);						
 					} else if (null != cause && cause instanceof BundleException) {
 						stopCurrentBundleOperation(monitor);						
@@ -586,7 +591,7 @@ public abstract class BundleJob extends JobStatus {
 								Integer.toString(timeoutVal), bundle);
 						IBundleStatus errStat = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg, e);
 						msg = WarnMessage.getInstance().formatString("timeout_termination", bundle);
-						createMultiStatus(errStat, addWarning(null, msg, BundleJobManager.getRegion().getBundleProject(bundle)));
+						createMultiStatus(errStat, addWarning(null, msg, BundleJobManager.getRegion().getRegisteredBundleProject(bundle)));
 						stopCurrentBundleOperation(monitor);						
 					} else if (null != cause && cause instanceof BundleException) {
 						stopCurrentBundleOperation(monitor);						
@@ -624,7 +629,7 @@ public abstract class BundleJob extends JobStatus {
 		if (null != bundle) {
 			if (getOptionsService().isDeactivateOnTerminate() && null == deactivateTask) {
 				deactivateTask = new DeactivateJob(DeactivateJob.deactivateJobName);
-				deactivateTask.addPendingProject(bundleRegion.getBundleProject(bundle));
+				deactivateTask.addPendingProject(bundleRegion.getRegisteredBundleProject(bundle));
 			}
 			Thread thread = BundleThread.getThread(bundle);
 			if (null != thread) {
@@ -649,7 +654,7 @@ public abstract class BundleJob extends JobStatus {
 					}
 				}
 			} else {
-				String transitioNname = bundleTransition.getTransitionName(bundleRegion.getBundleProject(bundle));
+				String transitioNname = bundleTransition.getTransitionName(bundleRegion.getRegisteredBundleProject(bundle));
 				String msg = UserMessage.getInstance().formatString("failed_to_get_thread", bundle, transitioNname);
 				IBundleStatus status = new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, bundle, msg, null);
 				if (getOptionsService().isTimeOut()) {
@@ -705,7 +710,7 @@ public abstract class BundleJob extends JobStatus {
 					}
 				}
 			} else {
-				String transitioNname = bundleTransition.getTransitionName(bundleRegion.getBundleProject(bundle));
+				String transitioNname = bundleTransition.getTransitionName(bundleRegion.getRegisteredBundleProject(bundle));
 				if (getOptionsService().isTimeOut()) {
 					String msg = UserMessage.getInstance().formatString("after_timeout_stop_task", bundle, threadName, transitioNname);
 					addStatus(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, bundle, msg, null));
@@ -826,10 +831,10 @@ public abstract class BundleJob extends JobStatus {
 				// Error closures are also removed in the resolver hook
 				BuildErrorClosure be = new BuildErrorClosure(projectsToResolve, Transition.RESOLVE);
 				if (be.hasBuildErrors()) {
-					Collection<Bundle> buildErrClosure = be.getBundleErrorClosures(true);
+					Collection<Bundle> buildErrClosure = be.getBundleErrorClosures();
 					projectsToResolve.removeAll(buildErrClosure);
 					if (InPlace.get().msgOpt().isBundleOperations()) {
-						IBundleStatus bundleStatus = be.getProjectErrorClosureStatus(true);
+						IBundleStatus bundleStatus = be.getProjectErrorClosureStatus();
 						if (null != bundleStatus) {
 							addTrace(bundleStatus);			
 						}
@@ -841,7 +846,7 @@ public abstract class BundleJob extends JobStatus {
 				for (IProject project : projectsToResolve) {
 					Bundle bundle = bundleRegion.get(project);
 					// Bundle may be rejected by the resolver hook due to dependencies on deactivated bundles
-					if (BundleProjectState.isProjectActivated(project)) {
+					if (BundleProjectState.isNatureEnabled(project)) {
 						int state = bundleCommand.getState(bundle);
 						if ((state & (Bundle.UNINSTALLED | Bundle.INSTALLED)) != 0) {
 							notResolvedBundles.add(bundle);
@@ -920,7 +925,7 @@ public abstract class BundleJob extends JobStatus {
 			try {
 				if ((bundle.getState() & (Bundle.RESOLVED | Bundle.STOPPING | Bundle.STARTING)) != 0) {
 					// Check for the output folder path in the cached version of the bundle
-					IPath path = BundleProjectSettings.getDefaultOutputLocation(bundleRegion.getBundleProject(bundle));
+					IPath path = BundleProjectSettings.getDefaultOutputLocation(bundleRegion.getRegisteredBundleProject(bundle));
 					if (!ManifestOptions.verifyPathInClassPath(bundle, path)) {
 						if (null == errorBundles) {
 							bs = new BundleSorter();
@@ -930,7 +935,7 @@ public abstract class BundleJob extends JobStatus {
 						errorBundles = bs.sortRequiringBundles(errorBundles);
 						String msg = null;
 						// Check if the not cached output folder path exist in the manifest file
-						Boolean binExist = BundleProjectSettings.isOutputFolderInBundleClassPath(bundleRegion.getBundleProject(bundle));
+						Boolean binExist = BundleProjectSettings.isOutputFolderInBundleClassPath(bundleRegion.getRegisteredBundleProject(bundle));
 						if (binExist) {
 							msg = ErrorMessage.getInstance().formatString("missing_classpath_bundle_loaded", bundle);
 						} else {
@@ -952,7 +957,7 @@ public abstract class BundleJob extends JobStatus {
 					}
 				}
 			} catch (InPlaceException e) {
-				addError(e, bundleRegion.getBundleProject(bundle));
+				addError(e, bundleRegion.getRegisteredBundleProject(bundle));
 			} finally {
 				if (null != errorBundles) {
 					errorBundles.clear();
@@ -1002,7 +1007,7 @@ public abstract class BundleJob extends JobStatus {
 				.sortDeclaredProvidingBundles(initialBundleSet, workspaceBundles);
 		Collection<Bundle> bundles = null;
 		for (Bundle errorBundle : bErrorDepClosures) {
-			IProject errorProject = bundleRegion.getBundleProject(errorBundle);
+			IProject errorProject = bundleRegion.getRegisteredBundleProject(errorBundle);
 			TransitionError transitionError = bundleTransition.getError(errorBundle);
 			if (null != errorProject
 					&& (transitionError == TransitionError.DUPLICATE || transitionError == TransitionError.CYCLE)) {

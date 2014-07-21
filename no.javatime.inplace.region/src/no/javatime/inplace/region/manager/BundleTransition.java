@@ -125,6 +125,10 @@ public interface BundleTransition {
 		 * Used when the activation policy is toggled
 		 */
 		UPDATE_ACTIVATION_POLICY,
+		/**
+		 * Rename of project with the JavaTime nature enabled
+		 */
+		RENAME,
 		/** 
 		 * No transition defined. This is also the case if a transition is canceled or rejected 
 		 */
@@ -154,17 +158,6 @@ public interface BundleTransition {
 	 * specified project could not be found
 	 */
 	Transition getTransition(IProject project) throws ProjectLocationException;
-
-	/**
-	 * Initialize the bundle project by assigning {@code Transition#UNINSTALL} to the specified bundle
-	 * project. If not initialized the transitions defaults to {@code Transition#NOTRANSITION}
-	 * 
-	 * @param project project to initialize
-	 * @throws ProjectLocationException if the specified project is null or the location of the
-	 * specified project could not be found
-	 * @see Transition
-	 */
-	void initTransition(IProject project) throws ProjectLocationException;
 
 	/**
 	 * Get the textual representation of the transition on the specified bundle project

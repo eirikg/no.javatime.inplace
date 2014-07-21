@@ -10,13 +10,12 @@ import java.util.LinkedHashSet;
 import no.javatime.inplace.region.Activator;
 import no.javatime.inplace.region.manager.InPlaceException;
 import no.javatime.inplace.region.manager.ProjectLocationException;
+import no.javatime.inplace.region.msg.Msg;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import no.javatime.util.messages.Category;
 import no.javatime.util.messages.ExceptionMessage;
-import no.javatime.util.messages.Message;
 import no.javatime.util.messages.TraceMessage;
-import no.javatime.util.messages.WarnMessage;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IWorkspace;
@@ -26,6 +25,7 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.JavaCore;
+import org.eclipse.osgi.util.NLS;
 import org.eclipse.pde.core.project.IBundleProjectDescription;
 import org.eclipse.pde.core.project.IHostDescription;
 import org.eclipse.ui.statushandlers.StatusManager;
@@ -36,10 +36,8 @@ public class BundleProjectState {
 	final public static String PLUGIN_NATURE_ID = "org.eclipse.pde.PluginNature";
 	final public static String JAVATIME_NATURE_ID = "no.javatime.inplace.builder.javatimenature";
 
-	final public static String BUNDLE_REF_LOC_SCHEME = Message.getInstance().formatString(
-			"bundle_identifier_reference_scheme");
-	final public static String BUNDLE_FILE_LOC_SCHEME = Message.getInstance().formatString(
-			"bundle_identifier_file_scheme");
+	final public static String BUNDLE_REF_LOC_SCHEME = Msg.BUNDLE_ID_REF_SCHEME_REF; 
+	final public static String BUNDLE_FILE_LOC_SCHEME = Msg.BUNDLE_ID_FILE_SCHEME_REF; 
 
 
 	/**
@@ -47,12 +45,12 @@ public class BundleProjectState {
 	 * 
 	 * @return a list of projects with the JavaTime nature or an empty collection
 	 */
-	public static Collection<IProject> getActivatedProjects() {
+	public static Collection<IProject> getNatureEnabledProjects() {
 	
 		Collection<IProject> projects = new LinkedHashSet<IProject>();
 	
 		for (IProject project : getProjects()) {
-			if (isProjectActivated(project)) {
+			if (isNatureEnabled(project)) {
 				projects.add(project);
 			}
 		}
@@ -68,7 +66,7 @@ public class BundleProjectState {
 		 * @see no.javatime.inplace.region.manager.BundleWorkspaceRegionImpl#isActivated(Long)
 		 * @see no.javatime.inplace.region.manager.BundleWorkspaceRegionImpl#isActivated(Bundle)
 		 */
-		public static Boolean isProjectActivated(IProject project) {
+		public static Boolean isNatureEnabled(IProject project) {
 			try {
 				if (null != project && project.isNatureEnabled(JAVATIME_NATURE_ID)) {
 					return true;
@@ -86,9 +84,9 @@ public class BundleProjectState {
 	 * 
 	 * @return true if at least one project is activated or false if no projects are activated
 	 */
-	public static Boolean isProjectWorkspaceActivated() {
+	public static Boolean isWorkspaceNatureEnabled() {
 		for (IProject project : getProjects()) {
-			if (isProjectActivated(project)) {
+			if (isNatureEnabled(project)) {
 				return true;
 			}
 		}
@@ -99,11 +97,7 @@ public class BundleProjectState {
 	
 		IBundleProjectDescription bundleProjDesc = Activator.getDefault().getBundleDescription(project);
 		IHostDescription host = bundleProjDesc.getHost();
-		if (null != host) {
-			return true;
-		} else {
-			return false;
-		}
+		return null != host ? true : false;
 	}
 
 	/**
@@ -238,7 +232,7 @@ public class BundleProjectState {
 						StatusManager.LOG);
 			} catch (CoreException e) {
 				// Ignore closed or non-existing project
-				String msg = WarnMessage.getInstance().formatString("project_missing_at_location", location);
+				String msg = NLS.bind(Msg.PROJECT_MISSING_AT_LOC_WARN, location);
 				StatusManager.getManager().handle(new BundleStatus(StatusCode.WARNING, Activator.PLUGIN_ID, msg, e),
 						StatusManager.LOG);
 			} catch (MalformedURLException e) {

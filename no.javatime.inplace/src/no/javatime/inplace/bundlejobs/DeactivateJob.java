@@ -168,20 +168,16 @@ public class DeactivateJob extends NatureJob {
 			CircularReferenceException, OperationCanceledException {
 
 		// Check if all projects are installed
-		Collection<IProject> installeableprojects = ProjectProperties.getInstallableProjects();
-		Collection<IProject> notRegProjects = null;
-		for (IProject project : installeableprojects) {
+		// TODO Optimize. Only get uninstalled bundles
+		Collection<IProject> installeableProjects = ProjectProperties.getInstallableProjects();
+		for (IProject project : installeableProjects) {
 			// If null the bundle is not installed
 			if (null == bundleRegion.get(project)) {
-				if (null == notRegProjects) {
-					notRegProjects = new LinkedHashSet<>();
-				}
-				notRegProjects.add(project);
+				deactivateNature(Collections.singletonList(project), new SubProgressMonitor(monitor, 1));
+				removePendingProject(project);
+				// Get a clean state before installing again
+				// bundleCommand.unregisterBundleProject(project);				
 			}
-		}
-		if (null != notRegProjects && notRegProjects.size() > 0) {
-			deactivateNature(notRegProjects, new SubProgressMonitor(monitor, 1));
-			removePendingProjects(notRegProjects);
 		}
 		BundleClosures closure = new BundleClosures();
 		Collection<IProject> pendingProjects = closure.projectDeactivation(getPendingProjects(), true);
@@ -190,16 +186,25 @@ public class DeactivateJob extends NatureJob {
 		if (InPlace.get().msgOpt().isBundleOperations()) {
 			BuildErrorClosure be = new BuildErrorClosure(getPendingProjects(), Transition.DEACTIVATE);
 			if (be.hasBuildErrors()) {
-				Collection<IProject> projectErrorClosures = be.getProjectErrorClosures(true);
-				String msg = NLS.bind(Msg.DEACTIVATE_BUILD_WARN, BundleProjectState.formatProjectList(projectErrorClosures));
-				addTrace(new BundleStatus(StatusCode.WARNING, InPlace.PLUGIN_ID, msg));
+				String msg = NLS.bind(Msg.OPERATION_BUILD_ERROR_INFO,
+						new Object[] {bundleTransition.getTransitionName(Transition.DEACTIVATE, true, true),
+						BundleProjectState.formatProjectList(be.getDirectAffectedProjects()),
+						BundleProjectState.formatProjectList(be.getBuildErrors())});
+				be.setBuildErrorHeaderMessage(msg);
+				IBundleStatus bundleStatus = be.getProjectErrorClosureStatus();
+				if (null != bundleStatus) {
+					addTrace(bundleStatus);
+				}
 			}
 		}
-
-		InPlace.get().savePluginSettings(true, true);
+		if (deactivateOnshutDownJobName.equals(getName())) {
+			InPlace.get().savePluginSettings(true, false);
+		} else {
+			InPlace.get().savePluginSettings(true, true);			
+		}
 		Collection<Bundle> pendingBundles = bundleRegion.getBundles(getPendingProjects()); 
 		// All not activated bundles are collectively either in state installed or in state uninstalled.
-		if (BundleProjectState.getActivatedProjects().size() <= pendingProjects()) {
+		if (bundleRegion.getActivatedBundles().size() <= pendingProjects()) {
 			// This is the last project(s) to deactivate, move all bundles to state uninstalled
 			Collection<Bundle> allBundles = bundleRegion.getBundles();
 			allBundles =  closure.bundleDeactivation(allBundles, allBundles);			

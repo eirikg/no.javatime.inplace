@@ -109,7 +109,7 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 		if (so.saveModifiedFiles()) {
 			OpenProjectHandler.waitOnBuilder();
 			ActivateProjectJob activateJob = null;
-			if (BundleProjectState.getActivatedProjects().size() > 0) {
+			if (BundleProjectState.getNatureEnabledProjects().size() > 0) {
 				activateJob = new ActivateProjectJob(ActivateProjectJob.activateProjectsJobName, projects);
 			} else {
 				activateJob = new ActivateProjectJob(ActivateProjectJob.activateWorkspaceJobName, projects);
@@ -125,7 +125,7 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 	 */
 	static public void deactivateHandler(Collection<IProject> projects) {
 		DeactivateJob deactivateJob = null;
-		if (BundleProjectState.getActivatedProjects().size() <= projects.size()) {
+		if (BundleProjectState.getNatureEnabledProjects().size() <= projects.size()) {
 			deactivateJob = new DeactivateJob(DeactivateJob.deactivateWorkspaceJobName, projects);			
 		} else {
 			deactivateJob = new DeactivateJob(DeactivateJob.deactivateJobName, projects);

@@ -27,6 +27,7 @@ import no.javatime.inplace.region.manager.BundleRegion;
 import no.javatime.inplace.region.manager.BundleTransition;
 import no.javatime.inplace.region.manager.BundleTransition.Transition;
 import no.javatime.inplace.region.manager.BundleWorkspaceRegionImpl;
+import no.javatime.inplace.region.msg.Msg;
 import no.javatime.inplace.region.project.BundleProjectState;
 import no.javatime.inplace.region.state.BundleStateFactory;
 import no.javatime.inplace.region.status.BundleStatus;
@@ -35,9 +36,9 @@ import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import no.javatime.util.messages.Category;
 import no.javatime.util.messages.ExceptionMessage;
 import no.javatime.util.messages.TraceMessage;
-import no.javatime.util.messages.WarnMessage;
 
 import org.eclipse.core.resources.IProject;
+import org.eclipse.osgi.util.NLS;
 import org.eclipse.ui.statushandlers.StatusManager;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.hooks.resolver.ResolverHook;
@@ -83,7 +84,6 @@ class BundleResolveHandler implements ResolverHook {
 
 	@Override
 	public void filterMatches(BundleRequirement r, Collection<BundleCapability> candidates) {
-		return;
 	}
 
 	/**
@@ -99,7 +99,7 @@ class BundleResolveHandler implements ResolverHook {
 	public void filterResolvable(Collection<BundleRevision> candidates) {
 
 		// Do not infer in a deactivated workspace
-		if (!BundleProjectState.isProjectWorkspaceActivated()) {
+		if (!BundleProjectState.isWorkspaceNatureEnabled()) {
 			return;
 		}
 		
@@ -225,7 +225,7 @@ class BundleResolveHandler implements ResolverHook {
 				}
 			}
 			if (notResolveList.size() > 0) {
-				String msg = WarnMessage.getInstance().formatString("build_error_on_deactivated_dependencies",
+				String msg = NLS.bind(Msg.BUILD_ERROR_ON_DEACTIVATED_DEP_WARN, 
 						BundleProjectState.formatProjectList(deactivatedErrorProjects),
 						BundleManager.getRegion().formatBundleList(BundleDependencies.getBundlesFrom(notResolveList), true));
 				StatusManager.getManager().handle(new BundleStatus(StatusCode.WARNING, Activator.PLUGIN_ID, msg),
@@ -240,10 +240,10 @@ class BundleResolveHandler implements ResolverHook {
 					.getBundlesFrom(newActivatedBundles));
 			BuildErrorClosure be = new BuildErrorClosure(activatedProjects, Transition.RESOLVE);
 			if (be.hasBuildErrors()) {
-				Collection<Bundle> buildErrClosure = be.getBundleErrorClosures(true);
+				Collection<Bundle> buildErrClosure = be.getBundleErrorClosures();
 				notResolveList.addAll(BundleDependencies.getRevisionsFrom(buildErrClosure));
 				if (Activator.getDefault().msgOpt().isBundleOperations()) {
-					IBundleStatus bundleStatus = be.getProjectErrorClosureStatus(true);
+					IBundleStatus bundleStatus = be.getProjectErrorClosureStatus();
 					if (null != bundleStatus) {
 						StatusManager.getManager().handle(bundleStatus, StatusManager.LOG);
 					}
@@ -278,7 +278,7 @@ class BundleResolveHandler implements ResolverHook {
 		if (notResolveList.size() > 0) {
 			for (BundleRevision notResolveRev : notResolveList) {
 				Bundle notResloveBundle = notResolveRev.getBundle();
-				bundleTransition.setTransition(bundleRegion.getBundleProject(notResloveBundle), Transition.INSTALL);
+				bundleTransition.setTransition(bundleRegion.getRegisteredBundleProject(notResloveBundle), Transition.INSTALL);
 				BundleWorkspaceRegionImpl.INSTANCE.setActiveState(notResloveBundle, BundleStateFactory.INSTANCE.installedState);
 			}
 		}

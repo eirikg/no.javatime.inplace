@@ -49,6 +49,8 @@ import org.eclipse.ui.statushandlers.StatusManager;
 import org.osgi.framework.Bundle;
 
 /**
+ * Listen to projects that have been built. This callback is also invoked when auto build is
+ * switched off. 
  * Schedules bundle jobs after a project is changed. This include created (create new, import and open),
  * renamed (rename and move), updated and projects being activated. Already activated projects that have been
  * changed are tagged with a pending bundle transition. The tag in combination with the state of the bundle
@@ -106,7 +108,7 @@ public class PostBuildListener implements IResourceChangeListener {
 	public void resourceChanged(IResourceChangeEvent event) {
 		
 		// Nothing to do in a deactivated workspace where all bundle projects are uninstalled
-		if (!BundleProjectState.isProjectWorkspaceActivated()) {
+		if (!BundleProjectState.isWorkspaceNatureEnabled()) {
 			return;
 		}
 		// After a build when source has changed and the project is pending for update and auto build is on

@@ -112,7 +112,7 @@ public class ExternalTransition implements BundleTransitionEventListener{
 				BundleJob bundleJob = null;
 				// Reactivate uninstalled bundle
 				if (autoDependencyAction == 0) {
-					if (BundleProjectState.isProjectActivated(project)) {
+					if (BundleProjectState.isNatureEnabled(project)) {
 						bundleJob = new ActivateBundleJob(ActivateBundleJob.activateJobName, project);
 						if (dependencies) {
 							// Bring workspace back to a consistent state before restoring
@@ -121,7 +121,7 @@ public class ExternalTransition implements BundleTransitionEventListener{
 							bundleJob.addPendingProjects(reqProjects);
 						}
 					} else {
-						if (!BundleProjectState.isProjectWorkspaceActivated()) {
+						if (!BundleProjectState.isWorkspaceNatureEnabled()) {
 							// External uninstall may have been issued on multiple bundles (uninstall A B)
 							bundleJob = new ActivateProjectJob(ActivateProjectJob.activateProjectsJobName, project);
 						} else {
@@ -132,9 +132,9 @@ public class ExternalTransition implements BundleTransitionEventListener{
 					// Deactivate workspace
 				} else if (autoDependencyAction == 1) {
 					// Deactivate workspace to obtain a consistent state between all workspace bundles
-					if (BundleProjectState.isProjectWorkspaceActivated()) {
+					if (BundleProjectState.isWorkspaceNatureEnabled()) {
 						bundleJob = new DeactivateJob(DeactivateJob.deactivateWorkspaceJobName);
-						bundleJob.addPendingProjects(BundleProjectState.getActivatedProjects());
+						bundleJob.addPendingProjects(BundleProjectState.getNatureEnabledProjects());
 					}
 				}
 				if (null != bundleJob) {

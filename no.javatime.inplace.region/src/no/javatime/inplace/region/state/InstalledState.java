@@ -3,10 +3,7 @@ package no.javatime.inplace.region.state;
 import no.javatime.inplace.region.manager.InPlaceException;
 
 /**
- * Bundle events sent by the framework: {@link org.osgi.framework.BundleEvent#INSTALLED}
- * Incoming transitions: install, uninstall, refresh, update
- * Loop transitions: update, refresh
- * Outgoing transitions: uninstall, resolve
+ * Defines the possible states a bundle can move to when in state installed
  */
 public class InstalledState extends BundleState {
 

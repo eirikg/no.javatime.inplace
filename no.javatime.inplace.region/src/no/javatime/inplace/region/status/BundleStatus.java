@@ -193,7 +193,11 @@ public class BundleStatus extends MultiStatus implements IBundleStatus {
 				}
 			}
 		}
-		setPlugin(symbolicName);
+		if (null == symbolicName) {
+			setPlugin(Activator.PLUGIN_ID);
+		} else {
+			setPlugin(symbolicName);
+		}
 		convertToSeverity(statusCode);
 		this.statusCode = statusCode;
 		this.project = project;		

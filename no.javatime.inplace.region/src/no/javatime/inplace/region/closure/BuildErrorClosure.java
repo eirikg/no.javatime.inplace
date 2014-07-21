@@ -34,25 +34,30 @@ import org.osgi.framework.Bundle;
  * <p>
  * The returned closure is the union of an error closure and a closure of the same type of the 
  * initial set of bundle projects specified together with the kind of transition the error closure should be calculated for.    
- *
+ * <p>
+ * Default is to use the bundle sort to get closures. Specify {@code Bundle.INSTALL} in the constructor to use project sort  
  */
 public class BuildErrorClosure {
 
-	final private EnumSet<Transition> activate = EnumSet.of(Transition.INSTALL, Transition.UPDATE,
+	final static private EnumSet<Transition> activate = EnumSet.of(Transition.INSTALL, Transition.UPDATE,
 			Transition.ACTIVATE_BUNDLE, Transition.ACTIVATE_PROJECT, Transition.RESOLVE,
 			Transition.REFRESH, Transition.BUILD);
 
-	final private EnumSet<Transition> deactivate = EnumSet.of(Transition.DEACTIVATE,
+	final static private EnumSet<Transition> deactivate = EnumSet.of(Transition.DEACTIVATE,
 			Transition.UNINSTALL, Transition.UNRESOLVE);
 
-	final private BundleRegion bundleRegion = BundleManager.getRegion();
-	final private BundleTransition bundleTransition = BundleManager.getTransition();
+	final static private BundleRegion bundleRegion = BundleManager.getRegion();
+	final static private BundleTransition bundleTransition = BundleManager.getTransition();
 
 	private Collection<IProject> initialProjects;
 	private Collection<IProject> projectClosures;
 	private Collection<IProject> errorProjects;
 	private Collection<IProject> errorClosures;
 	private Transition currentTransition;
+	private int sortLevel = Bundle.INSTALLED;
+	private boolean activated = true;
+	private String buildErrorheadermessage;
+	
 	final private BundleClosures bc = new BundleClosures();
 
 	public BuildErrorClosure(Collection<IProject> initialProjects, Transition transition) {
@@ -60,11 +65,16 @@ public class BuildErrorClosure {
 		this.currentTransition = transition;
 	}
 
+	public BuildErrorClosure(Collection<Bundle> initialBundles, Transition transition, int sortLevel) {
+		this.initialProjects = BundleManager.getRegion().getBundleProjects(initialBundles);
+		this.currentTransition = transition;
+		this.sortLevel = sortLevel;
+	}
+
 	/**
 	 * Calculate closures from the initial (starter) set projects.
 	 * <p>
 	 * Type of closure is determined by the transition type set at construction time.
-	 * 
 	 * @return closures constructed from the initial (starter) set of projects
 	 * @throws CircularReferenceException if cycles are detected in the project graph
 	 * @throws InPlaceException if failing to get the dependency options service or illegal
@@ -82,7 +92,6 @@ public class BuildErrorClosure {
 	 * Construct a closure for each project with build errors.
 	 * <p>
 	 * Type of closure is determined by the transition type set at construction time.
-	 * 
 	 * @return all closures of projects with build errors
 	 * @throws CircularReferenceException if cycles are detected in the project graph
 	 * @throws InPlaceException if failing to get the dependency options service or illegal
@@ -101,7 +110,6 @@ public class BuildErrorClosure {
 	 * Construct a set of closures based on the specified set of projects
 	 * <p>
 	 * Type of closure is determined by the specified transition type
-	 * 
 	 * @return all closures of the specified projects projects and the transition type. If the
 	 * specified projects is null an empty set is returned
 	 * @throws CircularReferenceException if cycles are detected in the project graph
@@ -115,31 +123,53 @@ public class BuildErrorClosure {
 			return Collections.<IProject> emptySet();
 		}
 		if (projects.size() > 0) {
-//			if (bundleRegion.isBundleWorkspaceActivated()) {
-//				Collection<Bundle> bundleClosures = bundleRegion.getBundles(projects);
-//				Collection<Bundle> activatedBundles = bundleRegion.getActivatedBundles();
-//				if (activate.contains(transition)) {
-//					bundleClosures = bc.bundleActivation(Closure.REQUIRING_AND_PROVIDING, bundleClosures,
-//							activatedBundles);
-//				} else if (deactivate.contains(transition)) {
-//					bundleClosures = bc.bundleDeactivation(Closure.PROVIDING_AND_REQURING, bundleClosures, activatedBundles);
-//				} else {
-//					bundleClosures = bc.bundleActivation(Closure.REQUIRING_AND_PROVIDING, bundleClosures,
-//							activatedBundles);
-//				}
-//				projects = bundleRegion.getBundleProjects(bundleClosures);
-//			} else {
+			if ((sortLevel & (Bundle.INSTALLED | Bundle.RESOLVED)) != 0) {
+				Collection<Bundle> bundleClosures = bundleRegion.getBundles(projects);
+				Collection<Bundle> activatedBundles = bundleRegion.getActivatedBundles();
 				if (activate.contains(transition)) {
-					projects = bc.projectActivation(Closure.REQUIRING_AND_PROVIDING, projects, true);
+					bundleClosures = bc.bundleActivation(Closure.REQUIRING_AND_PROVIDING, bundleClosures,
+							activatedBundles);
 				} else if (deactivate.contains(transition)) {
-					projects = bc.projectDeactivation(Closure.PROVIDING_AND_REQURING, projects, true);
+					bundleClosures = bc.bundleDeactivation(Closure.PROVIDING_AND_REQURING, bundleClosures, activatedBundles);
 				} else {
-					projects = bc.projectActivation(Closure.REQUIRING_AND_PROVIDING, projects, true);
+					bundleClosures = bc.bundleActivation(Closure.REQUIRING_AND_PROVIDING, bundleClosures,
+							activatedBundles);
 				}
-//			}
+				projects = bundleRegion.getBundleProjects(bundleClosures);
+			} else {
+				if (activate.contains(transition)) {
+					projects = bc.projectActivation(Closure.REQUIRING_AND_PROVIDING, projects, activated);
+				} else if (deactivate.contains(transition)) {
+					projects = bc.projectDeactivation(Closure.PROVIDING_AND_REQURING, projects, activated);
+				} else {
+					projects = bc.projectActivation(Closure.REQUIRING_AND_PROVIDING, projects, activated);
+				}
+			}
 		}
 		return projects;
 	}
+	
+	/**
+	 * Return the sort level that will be used when calculating error closures 
+	 * @return {@code Bundle.UNINSTALLED} if projects are sorted to find error closures and {@code Bundle.INSTALL}
+	 * to sort bundles
+	 */
+	public int getSortLevel() {
+		return sortLevel;
+	}
+	
+	/**
+	 * Set the sort level to use when calculating error closures
+	 * @param sortLevel Use {@code Bundle.UNINSTALLED} to sort projects when calculating error closures 
+	 * and {@code Bundle.INSTALL} to sort bundles
+	 * @param activated true to get error closures among activated projects 
+	 * and false to get error closures among deactivated projects
+	 */
+	public void setSortLevel(int sortLevel, boolean activated) {
+		this.sortLevel = sortLevel;
+		this.activated = activated; 
+	}
+
 
 	/**
 	 * Check all projects for build errors among the closures constructed from the initial (starter)
@@ -156,7 +186,6 @@ public class BuildErrorClosure {
 	/**
 	 * All projects with build errors that are member of the closure constructed for the initial
 	 * (starter) set of projects.
-	 * 
 	 * @return projects with build errors among the closures of the initial (starter) set of projects.
 	 * @see #getStartprojectsClosures()
 	 */
@@ -169,7 +198,7 @@ public class BuildErrorClosure {
 	}
 
 	/**
-	 * Find all projects among the initial (starter) set of projects that are member of the closures
+	 * Find all projects among the closures of the initial (starter) set of projects that are member of the closures
 	 * of projects with build errors
 	 * <p>
 	 * All closures of projects with build errors contains the requiring closure or the requiring and
@@ -177,89 +206,98 @@ public class BuildErrorClosure {
 	 * 
 	 * @return projects from the initial (starter) set which are members of the closure of projects
 	 * with build errors
-	 * @see #getErrorClosures()
+	 * @see #getBundleErrorClosures()
 	 */
-	private Collection<IProject> getExludeClosure() {
+	public Collection<IProject> getProjectErrorClosures() {
 
+		Collection<IProject> projects = null;
 		if (getBuildErrors().size() > 0) {
-			Collection<IProject> excludeSet = new LinkedHashSet<>(getErrorClosures());
-			//excludeSet.addAll(getStartprojectsClosures());
-			excludeSet.retainAll(getStartprojectsClosures());
-			return excludeSet;
-		}
-		return Collections.<IProject> emptySet();
-	}
-
-	/**
-	 * Find all projects among the initial (starter) set of projects that are member of the closures
-	 * of projects with build errors.
-	 * <p>
-	 * All closures of projects with build errors contains the requiring closure or the requiring and
-	 * providing closure if the include providing closure is set to true at construction time
-	 * 
-	 * @param activatedProjects if true only consider activated projects. If false, consider all
-	 * projects.
-	 * @return projects from the initial (starter) set which are members of the closure of projects
-	 * with build errors
-	 * @see #getBundleErrorClosures(boolean)
-	 */
-	public Collection<IProject> getProjectErrorClosures(boolean activatedProjects) {
-
-		Collection<IProject> projects = getExludeClosure();
-		if (projects.size() > 0) {
-			if (activatedProjects) {
-				projects.retainAll(BundleProjectState.getActivatedProjects());
-			}
+			projects = new LinkedHashSet<>(getErrorClosures());
+			projects.retainAll(getStartprojectsClosures());
+			return projects;
+		} else {
+			projects = Collections.<IProject> emptySet();
 		}
 		return projects;
 	}
 
 	/**
-	 * Find all bundle projects among the initial (starter) set of bundle projects that are member of
+	 * Find all bundle projects among the closures of the initial (starter) set of bundle projects that are member of
 	 * the closures of projects with build errors.
-	 * <p>
-	 * All closures of projects with build errors contains the requiring closure or the requiring and
-	 * providing closure if the include providing closure is set to true at construction time
 	 * 
-	 * @param activatedBundles if true only consider activated bundles. If false, consider all bundles
-	 * that are at least in state installed.
 	 * @return bundle projects from the initial (starter) set which are members of the closure of
 	 * projects with build errors
-	 * @see #getProjectErrorClosures(boolean)
+	 * @see #getProjectErrorClosures()
 	 */
-	public Collection<Bundle> getBundleErrorClosures(boolean activatedBundles) {
-		Collection<IProject> projects = getProjectErrorClosures(activatedBundles);
+	public Collection<Bundle> getBundleErrorClosures() {
+		Collection<IProject> projects = getProjectErrorClosures();
 		return bundleRegion.getBundles(projects);
+	}
+	
+	/**
+	 * Get all bundle projects among the initial (starter) set of bundle projects that are member of
+	 * the closures of projects with build errors.
+	 * 
+	 * @return
+	 */
+	public Collection<IProject> getDirectAffectedProjects() {
+
+		Collection<IProject> excludeClosure = getProjectErrorClosures();
+		if (excludeClosure.size() > 0) {
+			Collection<IProject> directAffectedProjects = new LinkedHashSet<>(initialProjects);
+			directAffectedProjects.retainAll(excludeClosure);
+		}
+		return excludeClosure;
+	}
+	
+	/**
+	 * Get the message text of the root build error message
+	 *  
+	 * @return the root build error message. If no message is
+	 * set return null.
+	 */
+	public String getBuildErrorHeaderMessage() {
+		return buildErrorheadermessage;	
+	}
+	/**
+	 * Set the message text of the root build error message
+	 * <p>
+	 * A default message is used if no message is set
+	 * 
+	 * @param message the root message of the build error message 
+	 */
+	public void setBuildErrorHeaderMessage(String message) {
+		this.buildErrorheadermessage = message;	
 	}
 
 	/**
 	 * Constructs a status object with information about which bundle projects to exclude based on the
 	 * calculated set of error closures and the initial (starter) set of projects.
 	 * <p>
-	 * Uses the {@linkplain #getProjectErrorClosures(boolean)} to determine which projects to exclude.
-	 * 
-	 * @param activatedProjects true to consider activate projects and false to consider all projects
+	 * Uses the {@linkplain #getProjectErrorClosures()} to determine which projects to exclude.
 	 * 
 	 * @return status object describing bundle projects to exclude based on the initial set of bundle
 	 * projects and the calculated error closures. Returns null if there are no build errors.
-	 * @see #getProjectErrorClosures(boolean)
-	 * @see #getBundleErrorClosures(boolean)
+	 * @see #getProjectErrorClosures()
+	 * @see #getBundleErrorClosures()
 	 */
-	public IBundleStatus getProjectErrorClosureStatus(boolean activatedProjects) {
+	public IBundleStatus getProjectErrorClosureStatus() {
 
 		IBundleStatus buildStatus = null;
-		Collection<IProject> excludeClosure = getProjectErrorClosures(activatedProjects);
-		if (excludeClosure.size() > 0) {
+		Collection<IProject> directAffectedProjects = getDirectAffectedProjects();
+		if (directAffectedProjects.size() > 0) {
 			Collection<IProject> errorProjects = getBuildErrors();
-			Collection<IProject> directAffectedProjects = new LinkedHashSet<>(initialProjects);
-			directAffectedProjects.retainAll(excludeClosure);
 			String name = bundleTransition.getTransitionName(currentTransition, true, false);
-			String msg = NLS.bind(
-					Msg.AWAITING_BUILD_INFO,
-					new Object[] { name, BundleProjectState.formatProjectList(directAffectedProjects),
-							BundleProjectState.formatProjectList(errorProjects)});
-			buildStatus = new BundleStatus(StatusCode.WARNING, Activator.PLUGIN_ID, msg, null);
-			if (bundleRegion.isBundleWorkspaceActivated()) {
+			String msg = getBuildErrorHeaderMessage();
+			if (null == msg) {
+				msg = NLS.bind(
+						Msg.AWAITING_BUILD_ERROR_INFO,
+						new Object[] { name, BundleProjectState.formatProjectList(directAffectedProjects),
+								BundleProjectState.formatProjectList(errorProjects)});
+			}
+			buildStatus = new BundleStatus(StatusCode.WARNING, Activator.PLUGIN_ID, 
+					msg, null);
+			if (bundleRegion.isBundleWorkspaceActivated() && activated) {
 				Collection<Bundle> activatedBundles = bundleRegion.getActivatedBundles();
 				for (IProject errorProject : errorProjects) {
 					Bundle errorBundle = bundleRegion.get(errorProject);
@@ -280,6 +318,26 @@ public class BuildErrorClosure {
 						buildStatus.add(new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, msg));
 					}
 				}
+			} else {
+				for (IProject errorProject : errorProjects) {
+					Collection<IProject> projectClosures = bc.projectActivation(Closure.PROVIDING, 
+							Collections.<IProject> singletonList(errorProject), activated);
+					projectClosures.remove(errorProject);
+					if (projectClosures.size() > 0) {
+						msg = NLS.bind(Msg.PROVIDING_BUNDLES_INFO, bundleRegion.getSymbolicNameFromManifest(errorProject),
+								BundleProjectState.formatProjectList(projectClosures));
+						buildStatus.add(new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, msg));
+					}
+					projectClosures = bc.projectDeactivation(Closure.REQUIRING, 
+							Collections.<IProject> singletonList(errorProject), activated);
+					projectClosures.remove(errorProject);
+					if (projectClosures.size() > 0) {
+						msg = NLS.bind(Msg.REQUIRING_BUNDLES_INFO, bundleRegion.getSymbolicNameFromManifest(errorProject),
+								BundleProjectState.formatProjectList(projectClosures));
+						buildStatus.add(new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, msg));
+					}
+				}
+				
 			}
 		}
 		return buildStatus;

@@ -19,11 +19,13 @@ import java.util.List;
 import no.javatime.inplace.region.Activator;
 import no.javatime.inplace.region.manager.BundleManager;
 import no.javatime.inplace.region.manager.InPlaceException;
+import no.javatime.inplace.region.msg.Msg;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
-import no.javatime.util.messages.WarnMessage;
+import no.javatime.util.messages.ExceptionMessage;
 
 import org.eclipse.core.runtime.Platform;
+import org.eclipse.osgi.util.NLS;
 import org.eclipse.ui.statushandlers.StatusManager;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.wiring.BundleCapability;
@@ -264,6 +266,9 @@ public class BundleDependencies {
 		Collection<BundleRequirement> requirements = requirer.getDeclaredRequirements(null);
 		for (BundleRequirement requirement : requirements) {
 			for (BundleRevision provider : providers) {
+				if (null == provider.getBundle()) {
+					throw new InPlaceException(ExceptionMessage.defKey, "## Missing capability :" + requirement.toString());
+				}
 				// Get the capabilities from all name spaces
 				for (BundleCapability capability : provider.getDeclaredCapabilities(null)) {
 					if (requirement.matches(capability)) {
@@ -388,11 +393,7 @@ public class BundleDependencies {
 		requiresFrom.add(provider);
 		Collection<Bundle> providers = null;
 		providers = getProvidingBundles(requirer, requiresFrom);
-		if (providers.size() == 0) {
-			return false;
-		} else {
-			return true;
-		}
+		return providers.size() == 0 ? false : true;
 	}
 
 	/**
@@ -460,13 +461,15 @@ public class BundleDependencies {
 	public static Collection<BundleRevision> getRevisionsFrom(Collection<Bundle> bundles) {
 		Collection<BundleRevision> bundleRevisions = new LinkedHashSet<BundleRevision>();
 		for (Bundle bundle : bundles) {
+			if (null == bundle) {
+				throw new InPlaceException(ExceptionMessage.defKey, "## Missing bundle");
+			}
 			BundleRevision br = bundle.adapt(BundleRevision.class);
 			if (null != br) {
 				bundleRevisions.add(br);
 			} else {
-				String msg = WarnMessage.getInstance().formatString("failed_to_adapt_to_revision", bundle);
-				StatusManager.getManager().handle(new BundleStatus(StatusCode.WARNING, Activator.PLUGIN_ID, msg),
-						StatusManager.LOG);
+				StatusManager.getManager().handle(new BundleStatus(StatusCode.WARNING, Activator.PLUGIN_ID, 
+						NLS.bind(Msg.ADAPT_TO_REVISION_WARN, bundle)), StatusManager.LOG);
 			}
 		}
 		return bundleRevisions;

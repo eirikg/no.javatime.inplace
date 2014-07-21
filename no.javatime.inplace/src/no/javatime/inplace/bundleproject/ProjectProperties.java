@@ -67,7 +67,7 @@ public class ProjectProperties {
 		for (IProject project : BundleProjectState.getProjects()) {
 			try {
 				if (project.isNatureEnabled(JavaCore.NATURE_ID) && project.isNatureEnabled(BundleProjectState.PLUGIN_NATURE_ID)
-						&& !BundleProjectState.isProjectActivated(project)) {
+						&& !BundleProjectState.isNatureEnabled(project)) {
 					projects.add(project);
 				}
 			} catch (CoreException e) {
@@ -166,7 +166,7 @@ public class ProjectProperties {
 	 */
 	public static Boolean isInstallable(IProject project) {
 
-		if (isBundleCandidate(project) || BundleProjectState.isProjectActivated(project)) {
+		if (isBundleCandidate(project) || BundleProjectState.isNatureEnabled(project)) {
 			return true;
 		}
 		return false;
@@ -183,7 +183,7 @@ public class ProjectProperties {
 	public static Boolean isBundleCandidate(IProject project) {
 		try {
 			if (project.hasNature(JavaCore.NATURE_ID) && project.isNatureEnabled(BundleProjectState.PLUGIN_NATURE_ID)
-					&& !BundleProjectState.isProjectActivated(project)) {
+					&& !BundleProjectState.isNatureEnabled(project)) {
 				if (InPlace.get().getCommandOptionsService().isAllowUIContributions()) {
 					return true;
 				} else {

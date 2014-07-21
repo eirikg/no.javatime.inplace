@@ -30,7 +30,6 @@ import no.javatime.inplace.region.project.ManifestOptions;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import no.javatime.util.messages.Category;
-import no.javatime.util.messages.Message;
 import no.javatime.util.messages.TraceMessage;
 import no.javatime.util.messages.UserMessage;
 import no.javatime.util.messages.WarnMessage;
@@ -60,15 +59,6 @@ import org.osgi.framework.Version;
 
 @SuppressWarnings("restriction")
 public class BundleProjectSettings {
-	/**
-	 * Path to manifest file relative to workspace root
-	 */
-	final public static String MANIFEST_RELATIVE_PATH = Message.getInstance().formatString(
-			"manifest_relative_path");
-	/**
-	 * Standard file name of the manifest file
-	 */
-	final public static String MANIFEST_FILE_NAME = Message.getInstance().formatString("manifest_file_name");
 
 	/**
 	 * Verify that the default output folder is part of the bundle class path header in the manifest
@@ -512,12 +502,12 @@ public class BundleProjectSettings {
 	 * 
 	 * @param project to check for the existence of a manifest file at the default location
 	 * @return true if the manifest file exist at the default location and false otherwise
-	 * @see BundleProjectSettings#MANIFEST_RELATIVE_PATH
-	 * @see BundleProjectSettings#MANIFEST_FILE_NAME
+	 * @see ManifestOptions#MANIFEST_RELATIVE_PATH
+	 * @see ManifestOptions#MANIFEST_FILE_NAME
 	 */
 	public static Boolean hasManifest(IProject project) {
 		if (null != project && project.isAccessible()) {
-			IFile manifestFile = project.getFile(BundleProjectSettings.MANIFEST_RELATIVE_PATH + BundleProjectSettings.MANIFEST_FILE_NAME);
+			IFile manifestFile = project.getFile(ManifestOptions.MANIFEST_RELATIVE_PATH + ManifestOptions.MANIFEST_FILE_NAME);
 			if (manifestFile.exists()) {
 				return true;
 			}

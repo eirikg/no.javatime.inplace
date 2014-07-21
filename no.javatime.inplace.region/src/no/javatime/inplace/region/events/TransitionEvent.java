@@ -14,14 +14,14 @@ public class TransitionEvent {
 	
 	public TransitionEvent (Bundle bundle, Transition transition) {
 		this.bundle = bundle;
-		this.project = BundleWorkspaceRegionImpl.INSTANCE.getBundleProject(bundle); // BundleManager.getRegion().getProject(bundle);
+		this.project = BundleWorkspaceRegionImpl.INSTANCE.getRegisteredBundleProject(bundle); 
 		this.transition = transition;
 	}
 
 	public TransitionEvent (IProject project, Transition transition) {
 		this.project = project;
 		// TODO Use interface and let workspaceimpl have package visibility
-		this.bundle =  BundleWorkspaceRegionImpl.INSTANCE.get(project); // BundleManager.getRegion().get(project);
+		this.bundle =  BundleWorkspaceRegionImpl.INSTANCE.get(project); 
 		this.transition = transition;
 	}
 	

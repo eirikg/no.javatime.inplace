@@ -97,7 +97,7 @@ public class BundleSorter extends BaseSorter {
 	 * @return collection of bundles in requiring sort order
 	 * @throws CircularReferenceException if cycles are detected in the bundle graph
 	 */
-	public Collection<Bundle> sortRequiringBundles(Collection<Bundle> bundles, Collection<Bundle> bundleScope)
+	public Collection<Bundle> sortRequiringBundles(final Collection<Bundle> bundles, final Collection<Bundle> bundleScope)
 			throws CircularReferenceException {
 		
 		/*
@@ -116,7 +116,7 @@ public class BundleSorter extends BaseSorter {
 			if (null == bundles) {
 				return bundleOrder;
 			}
-			for (Bundle bundle : bundles) {
+			for (final Bundle bundle : bundles) {
 				visitRequiringBundle(bundle, null, bundleScope, new LinkedHashSet<Bundle>());
 			}
 		}
@@ -138,16 +138,16 @@ public class BundleSorter extends BaseSorter {
 	 * @throws CircularReferenceException if cycles are detected in the bundle graph
 	 * @see #sortRequiringBundles(Collection, Collection)
 	 */
-	public Collection<Bundle> sortDeclaredRequiringBundles(Collection<Bundle> bundles,
-			Collection<Bundle> bundleScope) throws CircularReferenceException {
+	public Collection<Bundle> sortDeclaredRequiringBundles(final Collection<Bundle> bundles,
+			final Collection<Bundle> bundleScope) throws CircularReferenceException {
 		bundleOrder = new LinkedHashSet<Bundle>();
 		if (null == bundles) {
 			return bundleOrder;
 		}
 		circularException = null;
-		Collection<BundleRevision> bundleRevisionsScope = BundleDependencies.getRevisionsFrom(bundleScope);
-		Collection<BundleRevision> bundleRevisions = BundleDependencies.getRevisionsFrom(bundles);
-		for (BundleRevision bundleRevision : bundleRevisions) {
+		final Collection<BundleRevision> bundleRevisionsScope = BundleDependencies.getRevisionsFrom(bundleScope);
+		final Collection<BundleRevision> bundleRevisions = BundleDependencies.getRevisionsFrom(bundles);
+		for (final BundleRevision bundleRevision : bundleRevisions) {
 			visitRequiringBundle(bundleRevision, null, bundleRevisionsScope, new LinkedHashSet<BundleRevision>());
 		}
 		if (null != circularException) {
@@ -166,10 +166,10 @@ public class BundleSorter extends BaseSorter {
 	 * @param scope limit the set of bundles to search for dependencies relative to the workspace
 	 * @param visited is a list of bundles in the current call stack (used for detecting cycles)
 	 */
-	protected void visitRequiringBundle(BundleRevision child, BundleRevision parent,
-			Collection<BundleRevision> scope, Collection<BundleRevision> visited) {
+	protected void visitRequiringBundle(final BundleRevision child, final BundleRevision parent,
+			final Collection<BundleRevision> scope, final Collection<BundleRevision> visited) {
 
-		Bundle childBundle = child.getBundle();
+		final Bundle childBundle = child.getBundle();
 		// Has this start bundle element been visited before (not through recursion)
 		if (!bundleOrder.contains(childBundle)) {
 			// If visited before during this nested sequence of recursive calls, it's a cycle
@@ -182,8 +182,8 @@ public class BundleSorter extends BaseSorter {
 				return;
 			}
 			visited.add(child);
-			Collection<BundleRevision> requirers = BundleDependencies.getDirectRequiringBundles(child, scope);
-			for (BundleRevision requirer : requirers) {
+			final Collection<BundleRevision> requirers = BundleDependencies.getDirectRequiringBundles(child, scope);
+			for (final BundleRevision requirer : requirers) {
 				visitRequiringBundle(requirer, child, scope, visited);
 			}
 			bundleOrder.add(childBundle);
@@ -211,8 +211,8 @@ public class BundleSorter extends BaseSorter {
 				return;
 			}
 			visited.add(child);
-			Collection<Bundle> requirers = getDirectRequiringBundles(child, scope);
-			for (Bundle requirer : requirers) {
+			final Collection<Bundle> requirers = getDirectRequiringBundles(child, scope);
+			for (final Bundle requirer : requirers) {
 				visitRequiringBundle(requirer, child, scope, visited);
 			}
 			bundleOrder.add(child);
@@ -226,12 +226,12 @@ public class BundleSorter extends BaseSorter {
 	 * @param scope the scope of bundles to include in the result
 	 * @return set of neighboring bundles who require capabilities from the specified bundle
 	 */
-	public Collection<Bundle> getDirectRequiringBundles(Bundle bundle, Collection<Bundle> scope) {
+	public Collection<Bundle> getDirectRequiringBundles(final Bundle bundle, final Collection<Bundle> scope) {
 
 		if (null != bundle) {
 			BundleWiring wiredReqBundle = bundle.adapt(BundleWiring.class);
 			if (null != wiredReqBundle && wiredReqBundle.isInUse()) {
-				List<Bundle> requiredBundles = new ArrayList<Bundle>();
+				final List<Bundle> requiredBundles = new ArrayList<Bundle>();
 				// Get the capabilities from all name spaces
 				for (BundleWire wire : wiredReqBundle.getProvidedWires(null)) {
 					Bundle reqBundle = wire.getRequirerWiring().getBundle();
@@ -274,7 +274,7 @@ public class BundleSorter extends BaseSorter {
 	 * @return collection of bundles in providing sort order
 	 * @throws CircularReferenceException if cycles are detected in the bundle graph
 	 */
-	public Collection<Bundle> sortProvidingBundles(Collection<Bundle> bundles, Collection<Bundle> bundleScope)
+	public Collection<Bundle> sortProvidingBundles(final Collection<Bundle> bundles, final Collection<Bundle> bundleScope)
 			throws CircularReferenceException {
 		circularException = null;
 		removalPendingBundles = BundleManager.getCommand().getRemovalPending();
@@ -286,7 +286,7 @@ public class BundleSorter extends BaseSorter {
 			if (null == bundles) {
 				return bundleOrder;
 			}
-			for (Bundle bundle : bundles) {
+			for (final Bundle bundle : bundles) {
 				visitProvidingBundle(bundle, null, bundleScope, new LinkedHashSet<Bundle>());
 			}
 		}
@@ -308,7 +308,7 @@ public class BundleSorter extends BaseSorter {
 	 * @throws CircularReferenceException if cycles are detected in the bundle graph
 	 * @see #sortProvidingBundles(Collection, Collection)
 	 */
-	public Collection<Bundle> sortDeclaredProvidingBundles(Collection<Bundle> bundles, Collection<Bundle> bundleScope)
+	public Collection<Bundle> sortDeclaredProvidingBundles(final Collection<Bundle> bundles, final Collection<Bundle> bundleScope)
 			throws CircularReferenceException {
 
 		bundleOrder = new LinkedHashSet<Bundle>();
@@ -316,9 +316,9 @@ public class BundleSorter extends BaseSorter {
 			return bundleOrder;
 		}
 		circularException = null;
-		Collection<BundleRevision> bundleRevisionsScope = BundleDependencies.getRevisionsFrom(bundleScope);
-		Collection<BundleRevision> bundleRevisions = BundleDependencies.getRevisionsFrom(bundles);
-		for (BundleRevision bundleRevision : bundleRevisions) {
+		final Collection<BundleRevision> bundleRevisionsScope = BundleDependencies.getRevisionsFrom(bundleScope);
+		final Collection<BundleRevision> bundleRevisions = BundleDependencies.getRevisionsFrom(bundles);
+		for (final BundleRevision bundleRevision : bundleRevisions) {
 			visitProvidingBundle(bundleRevision, null, bundleRevisionsScope, new LinkedHashSet<BundleRevision>());
 		}
 		if (null != circularException) {
@@ -337,10 +337,10 @@ public class BundleSorter extends BaseSorter {
 	 * @param scope limit the set of bundles to search for dependencies relative to the workspace
 	 * @param visited is a list of bundles in the current call stack (used for detecting cycles)
 	 */
-	protected void visitProvidingBundle(BundleRevision child, BundleRevision parent,
-			Collection<BundleRevision> scope, Collection<BundleRevision> visited) {
+	protected void visitProvidingBundle(final BundleRevision child, final BundleRevision parent,
+			final Collection<BundleRevision> scope, final Collection<BundleRevision> visited) {
 
-		Bundle childBundle = child.getBundle();
+		final Bundle childBundle = child.getBundle();
 		// Has this start bundle element been visited before (not through recursion)
 		if (!bundleOrder.contains(childBundle)) {
 			// If visited before during this nested sequence of recursive calls, it's a cycle
@@ -355,7 +355,7 @@ public class BundleSorter extends BaseSorter {
 			visited.add(child);
 			Collection<BundleRevision> providers = null;
 			providers = BundleDependencies.getDirectProvidingBundles(child, scope);
-			for (BundleRevision provider : providers) {
+			for (final BundleRevision provider : providers) {
 				visitProvidingBundle(provider, child, scope, visited);
 			}
 			bundleOrder.add(childBundle);
@@ -385,7 +385,7 @@ public class BundleSorter extends BaseSorter {
 			visited.add(child);
 			Collection<Bundle> providers = null;
 			providers = getDirectProvidingBundles(child, scope);
-			for (Bundle provider : providers) {
+			for (final Bundle provider : providers) {
 				visitProvidingBundle(provider, child, scope, visited);
 			}
 			bundleOrder.add(child);
@@ -399,7 +399,7 @@ public class BundleSorter extends BaseSorter {
 	 * @param scope the scope of bundles to include in the result
 	 * @return set of neighboring bundles who provide capabilities to the specified bundle
 	 */
-	public Collection<Bundle> getDirectProvidingBundles(Bundle bundle, Collection<Bundle> scope) {
+	public Collection<Bundle> getDirectProvidingBundles(final Bundle bundle, final Collection<Bundle> scope) {
 
 		if (null != bundle) {
 			BundleWiring wiredProvBundle = bundle.adapt(BundleWiring.class);
@@ -428,7 +428,7 @@ public class BundleSorter extends BaseSorter {
 	 * @param child bundle that refers to the parent bundle parameter
 	 * @param parent bundle that refers to the child bundle parameter
 	 */
-	protected void handleBundleCycle(Bundle child, Bundle parent) {
+	protected void handleBundleCycle(final Bundle child, final Bundle parent) {
 		boolean directRecursion = false;
 		// Self reference
 		if (parent == child) {
@@ -475,19 +475,19 @@ public class BundleSorter extends BaseSorter {
 	 * @param fragmentBundle the fragment bundle attached to zero or more hosts
 	 * @return a list of hosts or an empty list
 	 */
-	public static Collection<Bundle> getHosts(Bundle fragmentBundle) {
+	public static Collection<Bundle> getHosts(final Bundle fragmentBundle) {
 
 		if (isFragment(fragmentBundle)) {
-			Collection<Bundle> hosts = new ArrayList<Bundle>();
-			BundleRevision br = fragmentBundle.adapt(BundleRevision.class);
-			BundleWiring bWiring = br.getWiring();
+			final Collection<Bundle> hosts = new ArrayList<Bundle>();
+			final BundleRevision br = fragmentBundle.adapt(BundleRevision.class);
+			final BundleWiring bWiring = br.getWiring();
 			if (null == bWiring) {
 				return Collections.<Bundle>emptySet();
 			}
-			Collection<BundleWire> wires = bWiring.getRequiredWires(BundleRevision.HOST_NAMESPACE);
+			final Collection<BundleWire> wires = bWiring.getRequiredWires(BundleRevision.HOST_NAMESPACE);
 			if (null != wires) {
-				for (BundleWire wire : wires) {
-					BundleWiring bw = wire.getProviderWiring();
+				for (final BundleWire wire : wires) {
+					final BundleWiring bw = wire.getProviderWiring();
 					if (null != bw) {
 						hosts.add(bw.getBundle());
 					}
@@ -504,18 +504,18 @@ public class BundleSorter extends BaseSorter {
 	 * @param bundle the bundle with zero or more attached fragments
 	 * @return a list of fragments or an empty list
 	 */
-	public static Collection<Bundle> getFragments(Bundle bundle) {
+	public static Collection<Bundle> getFragments(final Bundle bundle) {
 
-		Collection<Bundle> fragments = new ArrayList<Bundle>();
-		BundleRevision br = bundle.adapt(BundleRevision.class);
-		BundleWiring bWiring = br.getWiring();
+		final Collection<Bundle> fragments = new ArrayList<Bundle>();
+		final BundleRevision br = bundle.adapt(BundleRevision.class);
+		final BundleWiring bWiring = br.getWiring();
 		if (null == bWiring) {
 			return Collections.<Bundle>emptySet();
 		}
-		Collection<BundleWire> wires = bWiring.getProvidedWires(BundleRevision.HOST_NAMESPACE);
+		final Collection<BundleWire> wires = bWiring.getProvidedWires(BundleRevision.HOST_NAMESPACE);
 		if (null != wires) {
-			for (BundleWire wire : wires) {
-				BundleWiring bw = wire.getRequirerWiring();
+			for (final BundleWire wire : wires) {
+				final BundleWiring bw = wire.getRequirerWiring();
 				if (null != bw) {
 					fragments.add(bw.getBundle());
 				}

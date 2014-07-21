@@ -69,7 +69,7 @@ public class BundlePopUpCommandsContributionItems extends BundleCommandsContribu
 		} 
 		// Get project, activation status and the bundle project
 		IProject project = javaProject.getProject();
-		Boolean activated = BundleProjectState.isProjectActivated(project);
+		Boolean activated = BundleProjectState.isNatureEnabled(project);
 		Bundle bundle = BundleJobManager.getRegion().get(project);
 
 		// Busy running bundle jobs. Show a limited set of contributors

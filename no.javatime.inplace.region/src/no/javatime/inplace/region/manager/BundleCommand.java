@@ -4,9 +4,9 @@ import java.io.InputStream;
 import java.util.Collection;
 import java.util.List;
 
-import no.javatime.inplace.region.events.BundleEventManager;
 import no.javatime.inplace.region.project.BundleProjectState;
 import no.javatime.inplace.region.resolver.BundleResolveHookFactory;
+import no.javatime.inplace.region.state.BundleEventManager;
 
 import org.eclipse.core.resources.IProject;
 import org.osgi.framework.Bundle;
@@ -29,12 +29,18 @@ public interface BundleCommand {
 	public BundleResolveHookFactory getResolverHookFactory();
 
 	/**
-	 * Installs the workspace bundle project and if the activate parameter is true records the installed bundle 
-	 * along with the project and activation status as a workspace bundle in the bundle workspace region.
+	 * Installs the workspace bundle project and records the installed bundle 
+	 * along with the project (bundle project) and activation status as a 
+	 * workspace bundle in the bundle workspace region.
+	 * <p>
+	 * A bundle project is a registered project along with its associated bundle,
+	 * activation status of the bundle, any pending transitions, current or last
+	 * transition, any transition error and an internal bundle state
 	 * <p>
 	 * The activation status of a project can be obtained from
-	 * {@link BundleProjectState#isProjectActivated(IProject)
-	 * isProjectActivated(IProject)}.
+	 * {@link BundleProjectState#isNatureEnabled(IProject)
+	 * isProjectActivated(IProject)}. A project is activated before the bundle and
+	 * is said to be activated when assigned an internal nature.
 	 * <p>
 	 * The location identifier is obtained from {@link #getBundleLocationIdentifier(IProject)} .
 	 * <p>

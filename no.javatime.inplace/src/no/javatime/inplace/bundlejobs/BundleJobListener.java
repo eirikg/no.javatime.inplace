@@ -46,6 +46,8 @@ import org.eclipse.ui.statushandlers.StatusManager;
  * @see no.javatime.inplace.bundlejobs.JobStatus   
  */
 public class BundleJobListener extends JobChangeAdapter {
+
+	private long startTime;
 	
 	/**
 	 * Default constructor for jobs
@@ -75,9 +77,9 @@ public class BundleJobListener extends JobChangeAdapter {
 	public void running(IJobChangeEvent event) {
 		Job job = event.getJob();
 		if (job instanceof BundleJob) {
-//			if (InPlace.get().msgOpt().isBundleOperations()) {
-//				TraceMessage.getInstance().getString("start_job", job.getName());
-//			}
+			if (InPlace.get().msgOpt().isBundleOperations()) {
+				startTime = System.currentTimeMillis();
+			}
 		}
 	}
 	
@@ -117,11 +119,13 @@ public class BundleJobListener extends JobChangeAdapter {
 			Message.getInstance().flush();
 			final BundleJob bundleJob = (BundleJob) job;
 			if (InPlace.get().msgOpt().isBundleOperations()) {
+				final String endTime = Long.toString(System.currentTimeMillis() - startTime);
 				final Collection<IBundleStatus> traceList = bundleJob.getTraceList();
 				if (traceList.size() > 0) {
 					Runnable trace = new Runnable() {
 						public void run() {
-							IBundleStatus multiStatus = new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, bundleJob.getName());
+							String msg = NLS.bind(Msg.JOB_NAME_TRACE, bundleJob.getName(), endTime);
+							IBundleStatus multiStatus = new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, msg); 
 							for (IBundleStatus status : traceList) {
 								multiStatus.add(status);
 							}					
@@ -184,7 +188,7 @@ public class BundleJobListener extends JobChangeAdapter {
 			BundleJobManager.addBundleJob(bundleJob, 0);
 		}
 		
-		Collection<IProject> activatedProjects = BundleProjectState.getActivatedProjects();
+		Collection<IProject> activatedProjects = BundleProjectState.getNatureEnabledProjects();
 
 		Collection<IProject> projectsToRefresh = 
 				bundleTransition.getPendingProjects(activatedProjects, Transition.REFRESH);

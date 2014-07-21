@@ -127,8 +127,11 @@ public abstract class JobStatus extends WorkspaceJob implements BundleTransition
 					{bundle.getSymbolicName(), bundleCommand.getStateName(bundle), bundle.getLocation()}, bundle);
 			break;
 		case INSTALL:
-			addTrace(Msg.INSTALL_BUNDLE_OPERATION_TRACE, new Object[] 
-					{bundle.getSymbolicName(), bundleCommand.getStateName(bundle), bundle.getLocation()}, bundle);
+			// If null, the bundle project probably failed to install
+			if (null != bundle) {
+				addTrace(Msg.INSTALL_BUNDLE_OPERATION_TRACE, new Object[] 
+						{bundle.getSymbolicName(), bundleCommand.getStateName(bundle), bundle.getLocation()}, bundle);
+			}
 			break;
 		case UPDATE_CLASSPATH:
 			bundleProjDesc = InPlace.get().getBundleDescription(project);

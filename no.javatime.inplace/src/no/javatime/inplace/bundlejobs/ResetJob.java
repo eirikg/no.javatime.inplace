@@ -188,9 +188,9 @@ public class ResetJob {
 						try {
 							BuildErrorClosure be = new BuildErrorClosure(getPendingProjects(), Transition.UNINSTALL);
 							if (be.hasBuildErrors()) {
-								Collection<IProject> buildErrClosure = be.getProjectErrorClosures(true);
+								Collection<IProject> buildErrClosure = be.getProjectErrorClosures();
 								removePendingProjects(buildErrClosure);
-								IBundleStatus bundleStatus = be.getProjectErrorClosureStatus(true);
+								IBundleStatus bundleStatus = be.getProjectErrorClosureStatus();
 								if (null != bundleStatus) {
 									addStatus(bundleStatus);			
 								}
@@ -270,9 +270,9 @@ public class ResetJob {
 							getJobManager().join(uninstallFamily, null);
 							BuildErrorClosure be = new BuildErrorClosure(getPendingProjects(), Transition.ACTIVATE_BUNDLE);
 							if (be.hasBuildErrors()) {
-								Collection<IProject> buildErrClosure = be.getProjectErrorClosures(true);
+								Collection<IProject> buildErrClosure = be.getProjectErrorClosures();
 								removePendingProjects(buildErrClosure);
-								IBundleStatus bundleStatus = be.getProjectErrorClosureStatus(true);
+								IBundleStatus bundleStatus = be.getProjectErrorClosureStatus();
 								if (null != bundleStatus) {
 									addStatus(bundleStatus);			
 								}

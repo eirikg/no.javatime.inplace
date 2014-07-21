@@ -11,13 +11,32 @@ import org.osgi.framework.Bundle;
 public interface BundleRegion {
 
 	/**
-	 * Get the associated project of the specified bundle
+	 * Get the registered project associated with the specified bundle. Note that only projects
+	 * registered as workspace region bundle projects are searched.
+	 * <p>
+	 * There is no requirement that the bundle is registered to find a registered project 
+	 * <p>
+	 * If a project is not registered as bundle project manually using 
+	 * {@link BundleCommand#registerBundleProject(IProject, Bundle, boolean)} it will always
+	 * be registered by the {@link BundleCommand#install(IProject, Boolean)} command  
+	 * 
+	 * 
+	 * @param bundle the bundle associated with the project to return
+	 * @return the associated project of the specified bundle or null if no project is found
+	 * @see BundleCommand#registerBundleProject(IProject, Bundle, boolean)
+	 */
+	public IProject getRegisteredBundleProject(Bundle bundle);
+
+	/**
+	 * Get the associated project of the specified bundle. 
+	 * <p>
+	 * First search registered bundle projects than search the entire workspace for the project
 	 * 
 	 * @param bundle the bundle associated with the project to return
 	 * @return the associated project of the specified bundle or null if no project is found
 	 */
 	public IProject getBundleProject(Bundle bundle);
-
+	
 	/**
 	 * Get the project containing the specified symbolic name and version.
 	 * 
@@ -53,7 +72,7 @@ public interface BundleRegion {
 	 * @return true if at least one project is JavaTime nature enabled and its bundle project is not
 	 *         uninstalled. Otherwise false
 	 * @see BundleWorkspaceRegionImpl#isActivated(Bundle)
-	 * @see BundleProjectState#isProjectWorkspaceActivated()
+	 * @see BundleProjectState#isWorkspaceNatureEnabled()
 	 */
 	public Boolean isBundleWorkspaceActivated();
 
@@ -65,7 +84,7 @@ public interface BundleRegion {
 	 * @return true if the specified project is JavaTime nature enabled and its bundle project is not
 	 *         uninstalled. Otherwise false
 	 * @see BundleWorkspaceRegionImpl#isActivated(Bundle)
-	 * @see BundleProjectState#isProjectWorkspaceActivated()
+	 * @see BundleProjectState#isWorkspaceNatureEnabled()
 	 */
 	public Boolean isActivated(IProject bundleProject);
 
@@ -262,7 +281,8 @@ public interface BundleRegion {
 	 * Get the bundle associated with specifies project
 	 * 
 	 * @param project project with an associated bundle
-	 * @return the associated bundle of the specified project
+	 * @return the associated bundle of the specified project or null if the bundle is
+	 * not registered
 	 */
 	public Bundle get(IProject project);
 
