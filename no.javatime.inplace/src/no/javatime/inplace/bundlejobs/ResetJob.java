@@ -15,7 +15,9 @@ import java.util.LinkedHashSet;
 
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundlemanager.BundleJobManager;
+import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.region.closure.BuildErrorClosure;
+import no.javatime.inplace.region.closure.BuildErrorClosure.ActivationScope;
 import no.javatime.inplace.region.closure.CircularReferenceException;
 import no.javatime.inplace.region.closure.ProjectSorter;
 import no.javatime.inplace.region.manager.BundleTransition.Transition;
@@ -34,6 +36,7 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.jobs.Job;
+import org.osgi.framework.Bundle;
 
 /**
  * Reset first uninstalls and then activates bundles to the same state as they had before the reset job.
@@ -186,11 +189,12 @@ public class ResetJob {
 					@Override
 					public IBundleStatus runInWorkspace(IProgressMonitor monitor) {
 						try {
-							BuildErrorClosure be = new BuildErrorClosure(getPendingProjects(), Transition.UNINSTALL);
+							BuildErrorClosure be = new BuildErrorClosure(getPendingProjects(), 
+									Transition.UNINSTALL, Closure.PROVIDING, Bundle.UNINSTALLED, ActivationScope.ALL);
 							if (be.hasBuildErrors()) {
-								Collection<IProject> buildErrClosure = be.getProjectErrorClosures();
+								Collection<IProject> buildErrClosure = be.getBuildErrorClosures();
 								removePendingProjects(buildErrClosure);
-								IBundleStatus bundleStatus = be.getProjectErrorClosureStatus();
+								IBundleStatus bundleStatus = be.getErrorClosureStatus();
 								if (null != bundleStatus) {
 									addStatus(bundleStatus);			
 								}
@@ -268,11 +272,12 @@ public class ResetJob {
 						try {
 							// Wait for the uninstall job to finish before activating the bundles
 							getJobManager().join(uninstallFamily, null);
-							BuildErrorClosure be = new BuildErrorClosure(getPendingProjects(), Transition.ACTIVATE_BUNDLE);
+							BuildErrorClosure be = new BuildErrorClosure(getPendingProjects(), Transition.ACTIVATE_BUNDLE, 
+									Closure.REQUIRING, Bundle.UNINSTALLED, ActivationScope.ALL);
 							if (be.hasBuildErrors()) {
-								Collection<IProject> buildErrClosure = be.getProjectErrorClosures();
+								Collection<IProject> buildErrClosure = be.getBuildErrorClosures();
 								removePendingProjects(buildErrClosure);
-								IBundleStatus bundleStatus = be.getProjectErrorClosureStatus();
+								IBundleStatus bundleStatus = be.getErrorClosureStatus();
 								if (null != bundleStatus) {
 									addStatus(bundleStatus);			
 								}

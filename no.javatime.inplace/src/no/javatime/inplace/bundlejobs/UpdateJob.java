@@ -21,7 +21,6 @@ import java.util.Set;
 
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
-import no.javatime.inplace.region.closure.BuildErrorClosure;
 import no.javatime.inplace.region.closure.BundleClosures;
 import no.javatime.inplace.region.closure.BundleSorter;
 import no.javatime.inplace.region.closure.CircularReferenceException;
@@ -188,8 +187,8 @@ public class UpdateJob extends BundleJob {
 		Collection<Bundle> bundlesToUpdate = bundleRegion.getBundles(getPendingProjects());
 		Collection<Bundle> activatedBundles = bundleRegion.getActivatedBundles();
 
-		// If auto build has been switched off and than switched on, include all bundles that have been
-		// built
+		// If auto build has been switched off and than switched on, 
+		// include all bundles that have been built
 		if (bundleRegion.isAutoBuildActivated(true)) {
 			Collection<Bundle> pendingBundles = bundleTransition.getPendingBundles(activatedBundles,
 					Transition.UPDATE);
@@ -200,9 +199,8 @@ public class UpdateJob extends BundleJob {
 			}
 		}
 
-		// Get the requiring closure of bundles to update.
-		// The bundles in this closure are stopped before update and resolved/refreshed and started
-		// after update
+		// (2) Get the requiring closure of bundles to update. The bundles in this closure 
+		// are stopped before update and resolved/refreshed and started after update
 		BundleClosures bc = new BundleClosures();
 		Collection<Bundle> bundleClosure = bc.bundleDeactivation(Closure.REQUIRING, bundlesToUpdate,
 				activatedBundles);
@@ -213,22 +211,6 @@ public class UpdateJob extends BundleJob {
 		if (pendingBundles.size() > 0) {
 			bundlesToUpdate.addAll(pendingBundles);
 			addPendingProjects(bundleRegion.getBundleProjects(pendingBundles));
-		}
-
-		// (2) Reduce the set of bundles to update due to build errors
-		BuildErrorClosure be = new BuildErrorClosure(getPendingProjects(), Transition.UPDATE);
-		if (be.hasBuildErrors()) {
-			Collection<Bundle> bundleErrClosure = be.getBundleErrorClosures();
-			bundlesToUpdate.removeAll(bundleErrClosure);
-			removePendingProjects(bundleRegion.getBundleProjects(bundleErrClosure));
-			bundleClosure.removeAll(bundleErrClosure);
-			// Don't send build errors to the error log
-			if (InPlace.get().msgOpt().isBundleOperations()) {
-				IBundleStatus bundleStatus = be.getProjectErrorClosureStatus();
-				if (null != bundleStatus) {
-					addTrace(bundleStatus);
-				}
-			}
 		}
 
 		// (3) Reduce the set of bundles to update and refresh due to duplicates

@@ -49,23 +49,27 @@ public class Msg extends NLS {
 	// Bundle job names
 	public static String ACTIVATE_PROJECTS_JOB;
 	public static String ACTIVATE_WORKSPACE_JOB;
+	public static String INIT_DEACTIVATED_WORKSPACE_JOB;
 
 	// Errors
 	public static String BEGIN_SHUTDOWN_ERROR;
 	public static String END_SHUTDOWN_ERROR;
 	public static String INSTALL_ERROR;
+
 	// Warnings
 	public static String EXTERNAL_UNINSTALL_WARN;
 	public static String REQUIRING_BUNDLES_WARN;
 	public static String DELAYED_BUILD_WARN;
 	public static String RENAME_PROJECT_WARN;
+	public static String INIT_WORKSPACE_STORE_WARN;
 	
 	// Dialog and View messages
 	public static String DEACTIVATE_QUESTION_DLG;
 	public static String DEACTIVATE_QUESTION_REQ_DLG;
 	
 	// Info messages
-	public static String OPERATION_BUILD_ERROR_INFO;
+	public static String DEACTIVATE_BUILD_ERROR_INFO;
+	public static String UPDATE_BUILD_ERROR_INFO;
 	public static String ACTIVATED_BUNDLES_INFO;
 	public static String IMPLICIT_ACTIVATION_INFO;
 	public static String DELAYED_RESOLVE_INFO;

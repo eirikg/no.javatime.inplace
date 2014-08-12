@@ -831,14 +831,8 @@ public class BundleCommandImpl implements BundleCommand {
 		return project;
 	}
 
-	/**
-	 * Unregister a workspace bundle from the workspace region. The bundle must be unregistered after it is
-	 * uninstalled. The activation status is set to false and the bundle is removed from it associated project
-	 * 
-	 * @param bundle bundle to unregister form the workspace region.
-	 */
 	@Override
-	public void unregisterBundleProject(Bundle bundle) {
+	public void unregisterBundle(Bundle bundle) {
 		
 		BundleNode node = bundleRegion.getBundleNode(bundle);
 		if (null != node) {

@@ -255,7 +255,7 @@ public abstract class BundleJob extends JobStatus {
 	
 	public DependencyOptions getDepOpt() {
 		if (null == dependencyOptions) {
-			dependencyOptions =InPlace.get().getDependencyOptionsService();
+			dependencyOptions = InPlace.get().getDependencyOptionsService();
 		}
 		return dependencyOptions;
 	}
@@ -349,8 +349,7 @@ public abstract class BundleJob extends JobStatus {
 	}
 
 	/**
-	 * Uninstalls the specified bundles. Errors are added to the job of bundles that fail to uninstall. Cycles in bundles
-	 * to stop are allowed.
+	 * Uninstall and refresh the specified bundles. Errors are added to this job for bundles that fail to uninstall.
 	 * 
 	 * @param bundles to uninstall
 	 * @param monitor monitor the progress monitor to use for reporting progress to the user.
@@ -387,7 +386,7 @@ public abstract class BundleJob extends JobStatus {
 				}
 			}	else {
 				for (Bundle bundle : bundles) {
-					bundleCommand.unregisterBundleProject(bundle);
+					bundleCommand.unregisterBundle(bundle);
 				}
 			}
 		}
@@ -829,12 +828,13 @@ public abstract class BundleJob extends JobStatus {
 			if (!bundleCommand.resolve(bundlesToResolve)) {
 				Collection<IProject> projectsToResolve = bundleRegion.getBundleProjects(bundlesToResolve);
 				// Error closures are also removed in the resolver hook
-				BuildErrorClosure be = new BuildErrorClosure(projectsToResolve, Transition.RESOLVE);
+				BuildErrorClosure be = new BuildErrorClosure(projectsToResolve, 
+						Transition.RESOLVE, Closure.REQUIRING);
 				if (be.hasBuildErrors()) {
-					Collection<Bundle> buildErrClosure = be.getBundleErrorClosures();
+					Collection<IProject> buildErrClosure = be.getBuildErrorClosures();
 					projectsToResolve.removeAll(buildErrClosure);
 					if (InPlace.get().msgOpt().isBundleOperations()) {
-						IBundleStatus bundleStatus = be.getProjectErrorClosureStatus();
+						IBundleStatus bundleStatus = be.getErrorClosureStatus();
 						if (null != bundleStatus) {
 							addTrace(bundleStatus);			
 						}

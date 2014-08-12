@@ -48,10 +48,7 @@ public class ResourceRenameParticipant extends RenameParticipant {
 				.getDeltaFactory();
 		IResourceDelta[] affectedProjects = deltaFactory.getDelta()
 				.getAffectedChildren();
-
 		return verifyProjectName(affectedProjects);
-		
-
 	}
 	/**
 	 * Lexical check of new project name. Send a warning to the bundle log if misspelled. 
@@ -88,8 +85,6 @@ public class ResourceRenameParticipant extends RenameParticipant {
 			OperationCanceledException {		
 		 return null;
 	}
-
-	
 
 	@Override
 	public String getName() {

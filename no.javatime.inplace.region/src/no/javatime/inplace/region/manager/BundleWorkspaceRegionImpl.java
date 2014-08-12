@@ -175,9 +175,9 @@ public class BundleWorkspaceRegionImpl implements BundleRegion {
 	 */
 	@Override
 	public Boolean isBundleWorkspaceActivated() {
-		
 		for (BundleNode node : projectNodes.values()) {
-			if (node.isActivated()) {
+			if (null != node.getBundle()) {
+//			if (node.isActivated()) {
 				return true;
 			}
 		}
@@ -228,8 +228,10 @@ public class BundleWorkspaceRegionImpl implements BundleRegion {
 	public Collection<IProject> getBundleProjects(Boolean activated) {
 		Collection<IProject> projects = new ArrayList<IProject>();
 		for (BundleNode node : projectNodes.values()) {
-			if (node.isActivated()) {
+			if (activated && node.isActivated()) {
 				projects.add(node.getProject());
+			} else if (!activated && !node.isActivated()) {
+				projects.add(node.getProject());				
 			}
 		}
 		return projects;
@@ -246,7 +248,7 @@ public class BundleWorkspaceRegionImpl implements BundleRegion {
 
 	@Override
 	public Collection<IProject> getBundleProjects(Collection<Bundle> bundles) {
-		Collection<IProject> projects = new ArrayList<IProject>();
+		Collection<IProject> projects = new LinkedHashSet<IProject>();
 		for (Bundle bundle : bundles) {
 			projects.add(getRegisteredBundleProject(bundle));
 		}
@@ -338,7 +340,7 @@ public class BundleWorkspaceRegionImpl implements BundleRegion {
 
 	@Override
 	public Collection<Bundle> getBundles(Collection<IProject> projects) {
-		Collection<Bundle> bundles = new LinkedHashSet<Bundle>();
+		Collection<Bundle> bundles = new LinkedHashSet<>();
 		for (IProject project : projects) {
 			Bundle bundle = get(project);
 			if (null != bundle) {

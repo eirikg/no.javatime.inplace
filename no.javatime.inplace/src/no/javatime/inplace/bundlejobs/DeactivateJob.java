@@ -20,6 +20,7 @@ import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.closure.BuildErrorClosure;
+import no.javatime.inplace.region.closure.BuildErrorClosure.ActivationScope;
 import no.javatime.inplace.region.closure.BundleClosures;
 import no.javatime.inplace.region.closure.CircularReferenceException;
 import no.javatime.inplace.region.manager.BundleManager;
@@ -43,14 +44,14 @@ import org.eclipse.osgi.util.NLS;
 import org.osgi.framework.Bundle;
 
 /**
- * Projects are deactivated by removing the JavaTime nature from the projects and moving them to state INSTALLED in an
- * activated workspace and state UNINSTALLED in a deactivated workspace.
+ * Projects are deactivated by removing the JavaTime nature from the projects and moving them to
+ * state INSTALLED in an activated workspace and state UNINSTALLED in a deactivated workspace.
  * <p>
- * If the workspace is deactivated (that is when the last bundle in the workspace is deactivated) all bundles are moved
- * to state UNINSTALLED.
+ * If the workspace is deactivated (that is when the last bundle in the workspace is deactivated)
+ * all bundles are moved to state UNINSTALLED.
  * <p>
- * Calculate closure of projects and add them as pending projects to this job before the projects are deactivated
- * according to the current dependency option.
+ * Calculate closure of projects and add them as pending projects to this job before the projects
+ * are deactivated according to the current dependency option.
  * 
  * @see no.javatime.inplace.bundlejobs.ActivateProjectJob
  * @see no.javatime.inplace.bundlejobs.ActivateBundleJob
@@ -58,7 +59,8 @@ import org.osgi.framework.Bundle;
 public class DeactivateJob extends NatureJob {
 
 	/** Standard name of an deactivate job */
-	final public static String deactivateJobName = Message.getInstance().formatString("deactivate_job_name");
+	final public static String deactivateJobName = Message.getInstance().formatString(
+			"deactivate_job_name");
 	final public static String deactivateWorkspaceJobName = Message.getInstance().formatString(
 			"deactivate_workspace_job_name");
 
@@ -66,7 +68,8 @@ public class DeactivateJob extends NatureJob {
 	final public static String deactivateOnshutDownJobName = Message.getInstance().formatString(
 			"deactivate_on_shutDown_job_name");
 	/** Used to name the set of operations needed to deactivate a bundle */
-	final private static String deactivateTask = Message.getInstance().formatString("deactivate_task_name");
+	final private static String deactivateTask = Message.getInstance().formatString(
+			"deactivate_task_name");
 
 	/**
 	 * Construct a deactivate job with a given name
@@ -100,9 +103,10 @@ public class DeactivateJob extends NatureJob {
 	/**
 	 * Runs the project(s) and bundle(s) deactivate operation.
 	 * 
-	 * @return a {@code BundleStatus} object with {@code BundleStatusCode.OK} if job terminated normally and no status
-	 *         objects have been added to this job status list and {@code BundleStatusCode.ERROR} if the job fails or
-	 *         {@code BundleStatusCode.JOBINFO} if any status objects have been added to the job status list.
+	 * @return a {@code BundleStatus} object with {@code BundleStatusCode.OK} if job terminated
+	 * normally and no status objects have been added to this job status list and
+	 * {@code BundleStatusCode.ERROR} if the job fails or {@code BundleStatusCode.JOBINFO} if any
+	 * status objects have been added to the job status list.
 	 */
 	@Override
 	public IBundleStatus runInWorkspace(IProgressMonitor monitor) {
@@ -123,7 +127,8 @@ public class DeactivateJob extends NatureJob {
 			String msg = UserMessage.getInstance().formatString("cancel_job", getName());
 			addCancelMessage(e, msg);
 		} catch (InPlaceException e) {
-			String msg = ExceptionMessage.getInstance().formatString("terminate_job_with_errors", getName());
+			String msg = ExceptionMessage.getInstance().formatString("terminate_job_with_errors",
+					getName());
 			addError(e, msg);
 		} catch (NullPointerException e) {
 			String msg = ExceptionMessage.getInstance().formatString("npe_job", getName());
@@ -144,30 +149,32 @@ public class DeactivateJob extends NatureJob {
 	}
 
 	/**
-	 * Deactivate added pending bundle projects by removing the JavaTime nature, and move all their bundles to state
-	 * installed or uninstalled. If there are other activated projects that requires capabilities from the set of initial
-	 * added projects they are automatically added as pending projects. Beside this, projects are added according to the
-	 * current dependency settings.
+	 * Deactivate added pending bundle projects by removing the JavaTime nature, and move all their
+	 * bundles to state installed or uninstalled. If there are other activated projects that requires
+	 * capabilities from the set of initial added projects they are automatically added as pending
+	 * projects. Beside this, projects are added according to the current dependency settings.
 	 * <p>
-	 * This deactivate method can be invoked either directly after pending projects are added or indirectly when scheduled
-	 * as a bundle job
+	 * This deactivate method can be invoked either directly after pending projects are added or
+	 * indirectly when scheduled as a bundle job
 	 * 
 	 * @param monitor monitor the progress monitor to use for reporting progress to the user.
-	 * @return status object describing the result of deactivating with {@code StatusCode.OK} if no failure, otherwise one
-	 *         of the failure codes are returned. If more than one bundle fails, status of the last failed bundle is
-	 *         returned. All failures are added to the job status list
+	 * @return status object describing the result of deactivating with {@code StatusCode.OK} if no
+	 * failure, otherwise one of the failure codes are returned. If more than one bundle fails, status
+	 * of the last failed bundle is returned. All failures are added to the job status list
 	 * @throws InPlaceException if one of the projects to deactivate does not exist or is closed
-	 * @throws InterruptedException if the deactivate process is interrupted internally or from an external source.
-	 *           Deactivate is also interrupted if a task running the stop method is terminated abnormally
+	 * @throws InterruptedException if the deactivate process is interrupted internally or from an
+	 * external source. Deactivate is also interrupted if a task running the stop method is terminated
+	 * abnormally
 	 * @throws CircularReferenceException if cycles are detected among the specified projects
-	 * @throws OperationCanceledException cancels at appropriate places on a cancel request from an external source
+	 * @throws OperationCanceledException cancels at appropriate places on a cancel request from an
+	 * external source
 	 * @see #addPendingProject(IProject)
 	 * @see #getStatusList()
 	 */
-	public IBundleStatus deactivate(IProgressMonitor monitor) throws InPlaceException, InterruptedException,
-			CircularReferenceException, OperationCanceledException {
+	public IBundleStatus deactivate(IProgressMonitor monitor) throws InPlaceException,
+			InterruptedException, CircularReferenceException, OperationCanceledException {
 
-		// Check if all projects are installed
+		// Disable nature of uninstalled projects
 		// TODO Optimize. Only get uninstalled bundles
 		Collection<IProject> installeableProjects = ProjectProperties.getInstallableProjects();
 		for (IProject project : installeableProjects) {
@@ -175,8 +182,6 @@ public class DeactivateJob extends NatureJob {
 			if (null == bundleRegion.get(project)) {
 				deactivateNature(Collections.singletonList(project), new SubProgressMonitor(monitor, 1));
 				removePendingProject(project);
-				// Get a clean state before installing again
-				// bundleCommand.unregisterBundleProject(project);				
 			}
 		}
 		BundleClosures closure = new BundleClosures();
@@ -184,30 +189,20 @@ public class DeactivateJob extends NatureJob {
 		resetPendingProjects(pendingProjects);
 
 		if (InPlace.get().msgOpt().isBundleOperations()) {
-			BuildErrorClosure be = new BuildErrorClosure(getPendingProjects(), Transition.DEACTIVATE);
-			if (be.hasBuildErrors()) {
-				String msg = NLS.bind(Msg.OPERATION_BUILD_ERROR_INFO,
-						new Object[] {bundleTransition.getTransitionName(Transition.DEACTIVATE, true, true),
-						BundleProjectState.formatProjectList(be.getDirectAffectedProjects()),
-						BundleProjectState.formatProjectList(be.getBuildErrors())});
-				be.setBuildErrorHeaderMessage(msg);
-				IBundleStatus bundleStatus = be.getProjectErrorClosureStatus();
-				if (null != bundleStatus) {
-					addTrace(bundleStatus);
-				}
-			}
+			deactivateBuildErrorClosure(getPendingProjects());
 		}
+		
 		if (deactivateOnshutDownJobName.equals(getName())) {
 			InPlace.get().savePluginSettings(true, false);
 		} else {
-			InPlace.get().savePluginSettings(true, true);			
+			InPlace.get().savePluginSettings(true, true);
 		}
-		Collection<Bundle> pendingBundles = bundleRegion.getBundles(getPendingProjects()); 
+		Collection<Bundle> pendingBundles = bundleRegion.getBundles(getPendingProjects());
 		// All not activated bundles are collectively either in state installed or in state uninstalled.
-		if (bundleRegion.getActivatedBundles().size() <= pendingProjects()) {
+		if (BundleProjectState.getNatureEnabledProjects().size() <= pendingProjects()) {
 			// This is the last project(s) to deactivate, move all bundles to state uninstalled
 			Collection<Bundle> allBundles = bundleRegion.getBundles();
-			allBundles =  closure.bundleDeactivation(allBundles, allBundles);			
+			allBundles = closure.bundleDeactivation(allBundles, allBundles);
 			try {
 				stop(pendingBundles, null, new SubProgressMonitor(monitor, 1));
 				uninstall(allBundles, new SubProgressMonitor(monitor, 1), false);
@@ -215,11 +210,10 @@ public class DeactivateJob extends NatureJob {
 					throw new OperationCanceledException();
 				}
 				deactivateNature(getPendingProjects(), new SubProgressMonitor(monitor, 1));
-				// TODO consider refreshing uninstalled bundles
-				//refresh(bundles, new SubProgressMonitor(monitor, 1));
 			} catch (InPlaceException e) {
-				String msg = ExceptionMessage.getInstance().formatString("deactivate_job_uninstalled_state",
-						getName(), bundleRegion.formatBundleList(allBundles, true));
+				String msg = ExceptionMessage.getInstance().formatString(
+						"deactivate_job_uninstalled_state", getName(),
+						bundleRegion.formatBundleList(allBundles, true));
 				addError(e, msg);
 			}
 		} else {
@@ -242,10 +236,11 @@ public class DeactivateJob extends NatureJob {
 							if (null != bundlesToResolve) {
 								bundlesToResolve = new LinkedHashSet<Bundle>();
 							}
-							bundlesToResolve.addAll(getBundlesToResolve(Collections.<Bundle>singletonList(bundle)));
+							bundlesToResolve.addAll(getBundlesToResolve(Collections
+									.<Bundle> singletonList(bundle)));
 						}
 					}
-					stop(bundlesToRestart,Closure.REQUIRING, new SubProgressMonitor(monitor, 1));
+					stop(bundlesToRestart, Closure.REQUIRING, new SubProgressMonitor(monitor, 1));
 				}
 
 				// Do not refresh bundles already in state installed
@@ -257,7 +252,8 @@ public class DeactivateJob extends NatureJob {
 				if (null != bundlesToResolve) {
 					pendingBundles.addAll(bundlesToResolve);
 				}
-				// Deactivated bundles will not be resolved (rejected by the resolver hook) during refresh and thus
+				// Deactivated bundles will not be resolved (rejected by the resolver hook) during refresh
+				// and thus
 				// enter state INSTALLED
 				refresh(pendingBundles, new SubProgressMonitor(monitor, 2));
 				if (monitor.isCanceled()) {
@@ -267,12 +263,31 @@ public class DeactivateJob extends NatureJob {
 					start(bundlesToRestart, Closure.PROVIDING, new SubProgressMonitor(monitor, 1));
 				}
 			} catch (InPlaceException e) {
-				String msg = ExceptionMessage.getInstance().formatString("deactivate_job_installed_state", getName(),
-						bundleRegion.formatBundleList(pendingBundles, true));
+				String msg = ExceptionMessage.getInstance().formatString("deactivate_job_installed_state",
+						getName(), bundleRegion.formatBundleList(pendingBundles, true));
 				addError(e, msg);
 			}
 		}
 		return getLastStatus();
+	}
+
+	private Collection<IProject> deactivateBuildErrorClosure(Collection<IProject> activatedProjects) {
+
+		BuildErrorClosure be = new BuildErrorClosure(activatedProjects, Transition.DEACTIVATE,
+				Closure.PROVIDING, Bundle.UNINSTALLED, ActivationScope.ALL);
+		if (be.hasBuildErrors()) {
+			Collection<IProject> buildErrorClosures = be.getBuildErrorClosures();
+			String msg = NLS.bind(Msg.DEACTIVATE_BUILD_ERROR_INFO,
+					new Object[] { BundleProjectState.formatProjectList(buildErrorClosures),
+					BundleProjectState.formatProjectList(be.getBuildErrors()) });
+			be.setBuildErrorHeaderMessage(msg);
+			IBundleStatus bundleStatus = be.getErrorClosureStatus();
+			if (null != bundleStatus) {
+				addTrace(bundleStatus);
+			}
+			return buildErrorClosures;
+		}
+		return Collections.<IProject>emptySet();
 	}
 
 	/**

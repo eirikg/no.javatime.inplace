@@ -9,18 +9,21 @@ import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundlemanager.BundleJobManager;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.dialogs.OpenProjectHandler;
+import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.msg.Msg;
+import no.javatime.inplace.region.closure.BuildErrorClosure;
+import no.javatime.inplace.region.closure.BuildErrorClosure.ActivationScope;
 import no.javatime.inplace.region.closure.CircularReferenceException;
 import no.javatime.inplace.region.closure.ProjectSorter;
 import no.javatime.inplace.region.manager.BundleRegion;
 import no.javatime.inplace.region.manager.BundleTransition;
 import no.javatime.inplace.region.manager.BundleTransition.Transition;
 import no.javatime.inplace.region.manager.BundleTransition.TransitionError;
-import no.javatime.inplace.region.manager.InPlaceException;
 import no.javatime.inplace.region.project.BundleProjectState;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
+import no.javatime.util.messages.ExceptionMessage;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.WorkspaceJob;
@@ -32,37 +35,17 @@ public class UpdateScheduler {
 
 	static public void scheduleUpdateJob(Collection<IProject> projects, long delay) {
 		if (projects.size() > 0) {
-			UpdateJob updateJob = new UpdateJob(UpdateJob.updateJobName);;
-			ActivateProjectJob activateProjectJob = new ActivateProjectJob(ActivateProjectJob.activateProjectsJobName);
+			UpdateJob updateJob = new UpdateJob(UpdateJob.updateJobName);
+			;
 			for (IProject project : projects) {
-				if (BundleProjectState.isNatureEnabled(project) &&
-						BundleJobManager.getTransition().containsPending(project, Transition.UPDATE, false)) {
-						// This is now handled in the bundle resolver hook
-						// addChangedProject(project, updateJob, activateProjectJob);
-						updateJob.addPendingProject(project);
+				if (BundleProjectState.isNatureEnabled(project)
+						&& BundleJobManager.getTransition().containsPending(project, Transition.UPDATE, false)) {
+					addChangedProject(project, updateJob);
 				}
 			}
 			ActivateBundleJob postActivateBundleJob = null;
 			if (updateJob.pendingProjects() > 0) {
-				postActivateBundleJob = resolveduplicates(activateProjectJob, null, updateJob);
-			}
-			// TODO Can be removed when not using addChangedProject(project, updateJob, activateProjectJob);
-			if (activateProjectJob.pendingProjects() > 0) {
-				// Update all projects together with the deactivated providers to activate
-				try {
-					if (!InPlace.get().getCommandOptionsService().isUpdateOnBuild()) {
-						for (IProject project : projects) {
-							BundleJobManager.getTransition().addPending(project, Transition.UPDATE_ON_ACTIVATE);					
-						}
-					}
-				} catch (InPlaceException e) {
-					StatusManager.getManager().handle(
-							new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, e.getMessage(), e),
-							StatusManager.LOG);			
-				}
-				jobHandler(activateProjectJob, delay);			
-			}	 else {
-				// No deactivated providers to activate
+				postActivateBundleJob = resolveduplicates(null, updateJob);
 				jobHandler(updateJob, delay);
 			}
 			if (null != postActivateBundleJob) {
@@ -72,100 +55,167 @@ public class UpdateScheduler {
 	}
 
 	/**
-	 * Adds the specified project to the specified update job if the project has no deactivated providing
-	 * projects. If there are deactivated providers to the specified project they are added to the specified
-	 * activate project job and the project is ignored. The ignored project will then be updated together with
-	 * the deactivated providers when they are activated and updated (delayed update).
-	 *  
-	 * @param project to add to the specified update job or to be ignored
-	 * @param updateJob to add the specified project to
-	 * @param activateProjectJob if there are deactivated projects to this project they are added to the
-	 *          activate project job
-	 * @return true if the specified project is added to the specified update job and false if not (meaning that there
-	 * are deactivated projects to the specified project added to the activate project job and the project is ignored)           
+	 * Adds the specified bundle project to the specified update job if the bundle project has no
+	 * illegal build error closures.
+	 * <p>
+	 * It is only activated bundle projects that are being updated. Bundle projects updated the first
+	 * time after being activated are in state installed. The bundle project may than be in any state
+	 * except uninstalled (not considering the temporary starting/stopping states) when being updated.
+	 * <p>
+	 * Build error closures that allows and prevents an update of an activated bundle project are:
+	 * <ol>
+	 * <li><b>Requiring update closures</b>
+	 * <p>
+	 * <br>
+	 * <b>Activated requiring closure.</b> An update is rejected when there exists activated bundles
+	 * with build errors requiring capabilities from the project to update. An update would imply a
+	 * resolve (and a stop/start if in state active) of the activated requiring bundles with build
+	 * errors. The preferred solution is to suspend the resolve and possibly a start to avoid the
+	 * framework to throw exceptions when an activated requiring bundle with build errors is started
+	 * as part of the update process (stop/resolve/start) or when started later on. From this follows
+	 * that there is nothing to gain by constructing a new revision (resolving or refreshing) of a
+	 * requiring bundle with build errors.
+	 * <p>
+	 * <br>
+	 * <b>Deactivated requiring closure.</b> Deactivated bundle projects with build errors requiring
+	 * capabilities from the project to update will not trigger an activation of the deactivated
+	 * bundles and as a consequence the bundles will not be resolved and are therefore allowed.
+	 * <p>
+	 * <br>
+	 * <li><b>Providing update closures</b>
+	 * <p>
+	 * <br>
+	 * <b>Deactivated providing closure.</b> Update is rejected when deactivated bundles with build
+	 * errors provides capabilities to a project to update. This would trigger an activation in the
+	 * resolver hook (update and resolve) of the providing bundle project(s) and result in errors of
+	 * the same type as in the <b>Activated requiring closure</b>.
+	 * <p>
+	 * <br>
+	 * <b>Activated providing closure.</b> It is legal to update the project when there are activated
+	 * bundles with build errors that provides capabilities to the project to update. The providing
+	 * bundles will not be affected (updated and resolved) when the project is updated. The project to
+	 * update will get wired to the current revision (that is from the last successful build, update
+	 * and resolve) of the activated bundles with build errors when resolved.
+	 * </ol>
+	 * 
+	 * @param bundleProject to add to the specified update job or to be ignored
+	 * @param updateJob the job to add the specified project to
+	 * @return true if the specified project is added to the specified update job and false if not
 	 */
-	static public boolean addChangedProject(IProject project, UpdateJob updateJob, ActivateProjectJob activateProjectJob) {
+	static public boolean addChangedProject(IProject bundleProject, UpdateJob updateJob) {
 
-		boolean updated = true;
-		// If this project has providing projects that are deactivated they are scheduled for activation
-		// and update. This project is delayed for update until the providing projects are updated as
-		// part of the scheduled activation process
-		Collection<IProject> projects = getDeactivatedProviders(project);
-		if (projects.size() == 0) {
-			updateJob.addPendingProject(project);
-		} else {
-			updated = false;
-			activateProjectJob.addPendingProjects(projects);
-			if (InPlace.get().msgOpt().isBundleOperations()) {
-				String msg = NLS.bind(Msg.IMPLICIT_ACTIVATION_INFO, project.getName(), BundleProjectState.formatProjectList(projects));
-				IBundleStatus status = new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, msg);
-				msg = NLS.bind(Msg.DELAYED_UPDATE_INFO, project.getName(), BundleProjectState.formatProjectList(projects));
-				status.add(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, msg));
-				activateProjectJob.addTrace(status);
+		boolean update = true;
+		// Do not update when there are activated requiring projects or deactivated proving projects with build errors
+
+		// Activated requiring closure. Activated bundles with build errors requiring
+		// capabilities from the project to update
+		try {			
+			BuildErrorClosure be = new BuildErrorClosure(
+					Collections.<IProject> singletonList(bundleProject), Transition.UPDATE, Closure.REQUIRING);
+			if (be.hasBuildErrors()) {
+				if (InPlace.get().msgOpt().isBundleOperations()) {
+					String msg = NLS.bind(Msg.UPDATE_BUILD_ERROR_INFO, new Object[] { bundleProject.getName(),
+							BundleProjectState.formatProjectList(be.getBuildErrors()) });
+					be.setBuildErrorHeaderMessage(msg);
+					IBundleStatus bundleStatus = be.getErrorClosureStatus();
+					if (null != bundleStatus) {
+						StatusManager.getManager().handle(bundleStatus, StatusManager.LOG);
+					}
+				}
+				update = false;
 			}
+			// Deactivated providing closure. Deactivated projects with build errors providing capabilities to project to update
+			be = new BuildErrorClosure(Collections.<IProject> singletonList(bundleProject),
+					Transition.UPDATE, Closure.PROVIDING, Bundle.UNINSTALLED, ActivationScope.DEACTIVATED);
+			if (be.hasBuildErrors()) {
+				if (InPlace.get().msgOpt().isBundleOperations()) {
+					String msg = NLS.bind(Msg.UPDATE_BUILD_ERROR_INFO, new Object[] { bundleProject.getName(),
+							BundleProjectState.formatProjectList(be.getBuildErrors()) });
+					be.setBuildErrorHeaderMessage(msg);
+					IBundleStatus bundleStatus = be.getErrorClosureStatus();
+					if (null != bundleStatus) {
+						StatusManager.getManager().handle(bundleStatus, StatusManager.LOG);
+					}
+				}
+				update = false;
+			}
+			if (update) {
+				updateJob.addPendingProject(bundleProject);
+			}
+		} catch (CircularReferenceException e) {
+			String msg = ExceptionMessage.getInstance().formatString("circular_reference_termination");
+			IBundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, bundleProject, msg, null);
+			multiStatus.add(e.getStatusList());
+			StatusManager.getManager().handle(multiStatus, StatusManager.LOG);
+			update = false;
 		}
-		return updated;
+		return update;
 	}
 
 	/**
-	 * Get the providing dependency closure for deactivated projects of the specified project. The specified
-	 * project is not part of the result set.
+	 * Get the providing dependency closure for deactivated projects of the specified project. The
+	 * specified project is not part of the result set.
 	 * 
 	 * @param project initial project for the traversal
-	 * @return ordered providing dependency closure or an empty set if there are no deactivated providers
+	 * @return ordered providing dependency closure or an empty set if there are no deactivated
+	 * providers
 	 */
 	public static Collection<IProject> getDeactivatedProviders(IProject project) {
 		Collection<IProject> providingProjects = null;
 		try {
 			ProjectSorter projectSorter = new ProjectSorter();
-			providingProjects = projectSorter.sortProvidingProjects(Collections.<IProject>singletonList(project), false);
+			providingProjects = projectSorter.sortProvidingProjects(
+					Collections.<IProject> singletonList(project), false);
 			providingProjects.remove(project);
 		} catch (CircularReferenceException e) {
-			return Collections.<IProject>emptySet();
+			return Collections.<IProject> emptySet();
 		}
 		return providingProjects;
 	}
-	
+
 	public static ActivateBundleJob getInstalledRequirers(UpdateJob updateJob) {
 		ActivateBundleJob postActivateBundleJob = null;
 		BundleRegion bundleRegion = BundleJobManager.getRegion();
 		ProjectSorter ps = new ProjectSorter();
-		Collection<IProject> installedRequirers = ps.sortRequiringProjects(updateJob.getPendingProjects(), true);
+		Collection<IProject> installedRequirers = ps.sortRequiringProjects(
+				updateJob.getPendingProjects(), true);
 		if (installedRequirers.size() > 0) {
 			for (IProject project : installedRequirers) {
 				Bundle bundle = bundleRegion.get(project);
-				if (null != bundle && (BundleJobManager.getCommand().getState(bundle) & (Bundle.INSTALLED | Bundle.UNINSTALLED)) != 0) {
+				if (null != bundle
+						&& (BundleJobManager.getCommand().getState(bundle) & (Bundle.INSTALLED | Bundle.UNINSTALLED)) != 0) {
 					if (null == postActivateBundleJob) {
 						postActivateBundleJob = new ActivateBundleJob(ActivateBundleJob.activateJobName);
 					}
-					postActivateBundleJob.addPendingProject(project);					
+					postActivateBundleJob.addPendingProject(project);
 				}
 			}
 		}
 		return postActivateBundleJob;
 	}
-	
+
 	/**
-	 * The purpose is to automatically install and update bundles that are no longer duplicates due to changes
-	 * in projects to update.
+	 * The purpose is to automatically install and update bundles that are no longer duplicates due to
+	 * changes in projects to update.
 	 * <p>
-	 * Bundles are added to the specified update job or added to the returned bundle activation job when the
-	 * following conditions are satisfied:
+	 * Bundles are added to the specified update job or added to the returned bundle activation job
+	 * when the following conditions are satisfied:
 	 * <ol>
 	 * <li>There exist activated duplicate bundles in the workspace
-	 * <li>There are bundles to update that have changed their symbolic key (symbolic name and/or version)
+	 * <li>There are bundles to update that have changed their symbolic key (symbolic name and/or
+	 * version)
 	 * <li>There are unmodified projects with the same symbolic key as in the bundles to update
 	 * </ol>
 	 * 
-	 * @param activateProjectJob job activating projects
 	 * @param activateBundleJob job activating bundles
 	 * @param updateJob job updating bundles
-	 * @return An activate bundle job with uninstalled duplicate bundles added or null if no uninstalled
-	 *         duplicates exist with the same symbolic key as any of the bundles with changed symbolic keys to
-	 *         update
+	 * 
+	 * @return An activate bundle job with uninstalled duplicate bundles added or null if no
+	 * uninstalled duplicates exist with the same symbolic key as any of the bundles with changed
+	 * symbolic keys to update
 	 */
-	public static ActivateBundleJob resolveduplicates(ActivateProjectJob activateProjectJob,
-			ActivateBundleJob activateBundleJob, UpdateJob updateJob) {
+	public static ActivateBundleJob resolveduplicates(ActivateBundleJob activateBundleJob,
+			UpdateJob updateJob) {
 
 		ActivateBundleJob postActivateBundleJob = null;
 		BundleRegion bundleRegion = BundleJobManager.getRegion();
@@ -178,7 +228,8 @@ public class UpdateScheduler {
 		// Get projects that have changed their symbolic key (symbolic name and/or the version)
 		Map<IProject, String> symbolicKeymap = getModifiedSymbolicKey(updateJob.getPendingProjects());
 		if (symbolicKeymap.size() > 0) {
-			// Install/update and update all projects that are duplicates to the current symbolic key (before this
+			// Install/update and update all projects that are duplicates to the current symbolic key
+			// (before this
 			// update) of changed bundles
 			Collection<IProject> projects = ProjectProperties.getInstallableProjects();
 			projects.removeAll(symbolicKeymap.keySet());
@@ -201,21 +252,23 @@ public class UpdateScheduler {
 						}
 					} else {
 						bundleTransition.addPending(project, Transition.UPDATE);
-						UpdateScheduler.addChangedProject(project, updateJob, activateProjectJob);
+						UpdateScheduler.addChangedProject(project, updateJob);
 					}
 				}
 			}
 		}
 		return postActivateBundleJob;
 	}
+
 	/**
-	 * Find and return project symbolic key (symbolic name and version) pairs among the specified projects where
-	 * the cached symbolic key of the associated bundle is different from the symbolic key in manifest.
+	 * Find and return project symbolic key (symbolic name and version) pairs among the specified
+	 * projects where the cached symbolic key of the associated bundle is different from the symbolic
+	 * key in manifest.
 	 * <p>
 	 * 
 	 * @param projects to search for different symbolic keys in
-	 * @return A map of project and cached symbolic key pairs for all specified projects that have different
-	 *         symbolic keys
+	 * @return A map of project and cached symbolic key pairs for all specified projects that have
+	 * different symbolic keys
 	 */
 	static public Map<IProject, String> getModifiedSymbolicKey(Collection<IProject> projects) {
 
@@ -238,23 +291,21 @@ public class UpdateScheduler {
 		return symbolicKeymap;
 	}
 
-
 	/**
-	 * Default way to schedule jobs, with no delay, saving files before schedule, 
-	 * waiting on builder to finish, no progress dialog, run the job via the bundle view 
-	 * if visible showing a half busy cursor and also displaying the job name in the 
-	 * content bar of the bundle view
+	 * Default way to schedule jobs, with no delay, saving files before schedule, waiting on builder
+	 * to finish, no progress dialog, run the job via the bundle view if visible showing a half busy
+	 * cursor and also displaying the job name in the content bar of the bundle view
 	 * 
 	 * @param job to schedule
 	 * @param delay number of msecs to wait before starting the job
 	 */
 	static public void jobHandler(WorkspaceJob job, long delay) {
-	
-			OpenProjectHandler so = new OpenProjectHandler();
-			if (so.saveModifiedFiles()) {
-				OpenProjectHandler.waitOnBuilder();
-				BundleJobManager.addBundleJob(job, delay);
-			}
+
+		OpenProjectHandler so = new OpenProjectHandler();
+		if (so.saveModifiedFiles()) {
+			OpenProjectHandler.waitOnBuilder();
+			BundleJobManager.addBundleJob(job, delay);
+		}
 	}
 
 }

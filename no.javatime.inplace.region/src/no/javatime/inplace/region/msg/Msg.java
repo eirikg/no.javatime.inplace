@@ -19,10 +19,12 @@ public class Msg extends NLS {
 	public static String PROVIDING_BUNDLES_INFO;
 	public static String REQUIRING_BUNDLES_INFO;
 	public static String AWAITING_BUILD_ERROR_INFO;
+	public static String NO_BUILD_ERROR_INFO;
 	public static String EXT_BUNDLE_OP_ORIGIN_INFO;
 	public static String EXT_BUNDLE_OP_INFO;
 	public static String ON_DEMAND_LOAD_BUNDLE_INFO;
 	public static String INCOMPLETE_BUNDLE_OP_INFO;
+	
 	// Location references
 	public static String BUNDLE_ID_REF_SCHEME_REF;
 	public static String BUNDLE_ID_FILE_SCHEME_REF;
@@ -34,5 +36,4 @@ public class Msg extends NLS {
 	static {
 		NLS.initializeMessages(BUNDLE_NAME, Msg.class);
 	}
-
 }

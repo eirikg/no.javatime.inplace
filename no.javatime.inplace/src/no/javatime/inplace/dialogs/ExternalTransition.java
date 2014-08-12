@@ -108,7 +108,7 @@ public class ExternalTransition implements BundleTransitionEventListener{
 							new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, e.getMessage(), e),
 							StatusManager.LOG);			
 				}
-				bundleCommand.unregisterBundleProject(bundle);
+				bundleCommand.unregisterBundle(bundle);
 				BundleJob bundleJob = null;
 				// Reactivate uninstalled bundle
 				if (autoDependencyAction == 0) {

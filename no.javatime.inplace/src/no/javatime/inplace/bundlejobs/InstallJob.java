@@ -14,6 +14,7 @@ import java.util.Collection;
 
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundleproject.ProjectProperties;
+import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.region.closure.BuildErrorClosure;
 import no.javatime.inplace.region.closure.CircularReferenceException;
 import no.javatime.inplace.region.closure.ProjectSorter;
@@ -164,12 +165,13 @@ public class InstallJob extends BundleJob {
 		IBundleStatus status = createStatus();
 		Collection<IProject> projectErrorClosures = null;
 		try {
-			BuildErrorClosure be = new BuildErrorClosure(getPendingProjects(), Transition.INSTALL);
+			BuildErrorClosure be = new BuildErrorClosure(getPendingProjects(), 
+					Transition.INSTALL, Closure.REQUIRING);
 			if (be.hasBuildErrors()) {
-				projectErrorClosures = be.getProjectErrorClosures();
+				projectErrorClosures = be.getBuildErrorClosures();
 				removePendingProjects(projectErrorClosures);
 				if (InPlace.get().msgOpt().isBundleOperations()) {
-					IBundleStatus bundleStatus = be.getProjectErrorClosureStatus();
+					IBundleStatus bundleStatus = be.getErrorClosureStatus();
 					if (null != bundleStatus) {
 						addTrace(bundleStatus);			
 					}

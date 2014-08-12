@@ -200,6 +200,17 @@ public class BundleNode {
 	public final Bundle getBundle(Long bundleId) {
 		return Activator.getContext().getBundle(bundleId);
 	}
+
+	/**
+	 * Get the bundle object from the registered bundle
+	 * @return the bundle object or null
+	 */
+	public final Bundle getBundle() {
+		if (null != bundleId) {
+			return Activator.getContext().getBundle(bundleId);
+		}
+		return null;
+	}
 	
 	public final void removeBundle() {
 		bundleId = null;

@@ -72,12 +72,14 @@ public class ProjectDependencies {
 	/**
 	 * Get direct references of projects from this project. Self is not included in the requiring projects.
 	 * <p>
-	 * Closed and non existing projects are ignored
+	 * Note that non accessible (closed and non existing projects) are ignored. This implies that projects
+	 * closures involving non accessible projects that requires this project are incomplete 
 	 * 
 	 * @param project the initial project
 	 * @param project the providing project
 	 * @return requiring projects. Never null. 
 	 * @throws InPlaceException if test for the plug in nature fails
+	 * @see IProject#getReferencingProjects()
 	 */
 	public static Collection<IProject> getRequiringProjects(IProject project) 
 			throws InPlaceException {
@@ -102,7 +104,8 @@ public class ProjectDependencies {
 	/**
 	 * Calculates transitive references of projects from this project. Self is included in the requiring projects.
 	 * <p>
-	 * Closed and non existing projects are ignored
+	 * Note that non accessible (closed and non existing projects) are ignored. This implies that projects
+	 * closures involving non accessible projects that requires this project are incomplete 
 	 * 
 	 * @param project the initial project
 	 * @param projects are the set of detected requiring projects. The parameter is typically an empty collection. 

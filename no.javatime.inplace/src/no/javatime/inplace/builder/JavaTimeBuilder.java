@@ -18,6 +18,7 @@ import java.util.Map;
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundlemanager.BundleJobManager;
 import no.javatime.inplace.bundleproject.ProjectProperties;
+import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.closure.BuildErrorClosure;
 import no.javatime.inplace.region.closure.CircularReferenceException;
@@ -177,9 +178,11 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 				if (InPlace.get().msgOpt().isBundleOperations()) {
 					String msg = NLS.bind(Msg.NO_RESOURCE_DELTA_BUILD_TRACE, 
 							new Object[] {project.getName()});
-					IBundleStatus status = new BundleStatus(StatusCode.INFO,bundle, project, msg, null);
+					IBundleStatus status = new BundleStatus(StatusCode.INFO, bundle, project, msg, null);
 					builds.add(status);
 				}
+				// TODO NB Test
+				return null;
 			}
 
 			// Activated project is imported, opened or has new requirements on UI plug-in(s), when UI plug-ins are
@@ -294,7 +297,8 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 			ProjectDependencies.getRequiringProjects(project);
 			try {
 				// Use same closure rules as update 
-				be = new BuildErrorClosure(Collections.<IProject>singletonList(project), Transition.UPDATE);
+				be = new BuildErrorClosure(Collections.<IProject>singletonList(project), Transition.UPDATE, 
+						Closure.REQUIRING);
 				// Get the closures to reveal any cycles 
 				if (be.getBuildErrors().size() > 0) {
 					if (BuildErrorClosure.hasBuildErrors(project)|| !BuildErrorClosure.hasBuildState(project)) {
@@ -318,7 +322,10 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 				}
 				IBundleStatus buildStatus = new BundleStatus(StatusCode.BUILDERROR, bundle,project, msg, null);
 				if (be.hasBuildErrors()) {
-					IBundleStatus errorStatus = be.getProjectErrorClosureStatus();
+					String buildMsg = NLS.bind(Msg.UPDATE_BUILD_ERROR_INFO,
+							new Object[] {project.getName(), BundleProjectState.formatProjectList(be.getBuildErrors())});
+					be.setBuildErrorHeaderMessage(buildMsg);
+					IBundleStatus errorStatus = be.getErrorClosureStatus();
 					buildStatus.add(errorStatus);
 					if (null != bundle && (bundle.getState() & (Bundle.INSTALLED | Bundle.UNINSTALLED)) == 0) {
 						msg = NLS.bind(Msg.USING_CURRENT_REVISION_TRACE, bundle);

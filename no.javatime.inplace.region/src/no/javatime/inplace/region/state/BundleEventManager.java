@@ -216,7 +216,7 @@ public class BundleEventManager implements FrameworkListener, SynchronousBundleL
 					bundleTransition.setTransitionError(bundle, TransitionError.UNINSTALL);
 				} else {
 					// Remove the externally uninstalled bundle from the workspace region
-					bundleCommand.unregisterBundleProject(bundle);
+					bundleCommand.unregisterBundle(bundle);
 				}
 				undefinedTransitions(event);
 			}
