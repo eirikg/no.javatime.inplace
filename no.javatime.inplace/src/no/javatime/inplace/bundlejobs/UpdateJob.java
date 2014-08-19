@@ -21,6 +21,7 @@ import java.util.Set;
 
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
+import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.closure.BundleClosures;
 import no.javatime.inplace.region.closure.BundleSorter;
 import no.javatime.inplace.region.closure.CircularReferenceException;
@@ -38,7 +39,6 @@ import no.javatime.util.messages.Category;
 import no.javatime.util.messages.ErrorMessage;
 import no.javatime.util.messages.ExceptionMessage;
 import no.javatime.util.messages.Message;
-import no.javatime.util.messages.UserMessage;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
@@ -46,6 +46,7 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.core.runtime.SubProgressMonitor;
+import org.eclipse.osgi.util.NLS;
 import org.osgi.framework.Bundle;
 
 /**
@@ -67,6 +68,8 @@ import org.osgi.framework.Bundle;
  */
 public class UpdateJob extends BundleJob {
 
+	final private static String updateTaskName = Message.getInstance().formatString(
+			"update_task_name");
 	final private static String updateSubTaskName = Message.getInstance().formatString(
 			"update_subtask_name");
 
@@ -113,15 +116,14 @@ public class UpdateJob extends BundleJob {
 	public IBundleStatus runInWorkspace(IProgressMonitor monitor) {
 
 		try {
-			monitor.beginTask(Message.getInstance().formatString("update_task_name"), getTicks());
+			monitor.beginTask(updateTaskName, getTicks());
 			BundleManager.addBundleTransitionListener(this);
 			update(monitor);
 		} catch (InterruptedException e) {
 			String msg = ExceptionMessage.getInstance().formatString("interrupt_job", getName());
 			addError(e, msg);
 		} catch (OperationCanceledException e) {
-			String msg = UserMessage.getInstance().formatString("cancel_job", getName());
-			addCancelMessage(e, msg);
+			addCancelMessage(e, NLS.bind(Msg.CANCEL_JOB_INFO, getName()));
 		} catch (CircularReferenceException e) {
 			String msg = ExceptionMessage.getInstance().formatString("circular_reference", getName());
 			BundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg);
@@ -187,7 +189,7 @@ public class UpdateJob extends BundleJob {
 		Collection<Bundle> bundlesToUpdate = bundleRegion.getBundles(getPendingProjects());
 		Collection<Bundle> activatedBundles = bundleRegion.getActivatedBundles();
 
-		// If auto build has been switched off and than switched on, 
+		// If auto build has been switched off and than switched on,
 		// include all bundles that have been built
 		if (bundleRegion.isAutoBuildActivated(true)) {
 			Collection<Bundle> pendingBundles = bundleTransition.getPendingBundles(activatedBundles,
@@ -199,7 +201,7 @@ public class UpdateJob extends BundleJob {
 			}
 		}
 
-		// (2) Get the requiring closure of bundles to update. The bundles in this closure 
+		// (2) Get the requiring closure of bundles to update. The bundles in this closure
 		// are stopped before update and resolved/refreshed and started after update
 		BundleClosures bc = new BundleClosures();
 		Collection<Bundle> bundleClosure = bc.bundleDeactivation(Closure.REQUIRING, bundlesToUpdate,
@@ -368,7 +370,7 @@ public class UpdateJob extends BundleJob {
 					}
 					statusList.add(result);
 				} finally {
-					// Resolver hook has been visited during update.
+					// TODO Check again if resolver hook has been visited during update.
 					duplicateInstanceGroups.clear();
 					duplicateInstanceCandidates.clear();
 					localMonitor.worked(1);

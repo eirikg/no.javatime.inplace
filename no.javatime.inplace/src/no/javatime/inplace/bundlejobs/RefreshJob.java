@@ -15,6 +15,7 @@ import java.util.LinkedHashSet;
 
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
+import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.closure.BuildErrorClosure;
 import no.javatime.inplace.region.closure.BuildErrorClosure.ActivationScope;
 import no.javatime.inplace.region.closure.CircularReferenceException;
@@ -27,13 +28,13 @@ import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import no.javatime.util.messages.ErrorMessage;
 import no.javatime.util.messages.ExceptionMessage;
 import no.javatime.util.messages.Message;
-import no.javatime.util.messages.UserMessage;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.SubProgressMonitor;
+import org.eclipse.osgi.util.NLS;
 import org.osgi.framework.Bundle;
 
 /**
@@ -99,8 +100,7 @@ public class RefreshJob extends BundleJob {
 			String msg = ExceptionMessage.getInstance().formatString("interrupt_job", getName());
 			addError(e, msg);
 		} catch (OperationCanceledException e) {
-			String msg = UserMessage.getInstance().formatString("cancel_job", getName());
-			addCancelMessage(e, msg);
+			addCancelMessage(e, NLS.bind(Msg.CANCEL_JOB_INFO, getName()));
 		} catch (CircularReferenceException e) {
 			String msg = ExceptionMessage.getInstance().formatString("circular_reference", getName());
 			BundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg);
@@ -150,18 +150,8 @@ public class RefreshJob extends BundleJob {
 			String msg = ErrorMessage.getInstance().formatString("bundle_errors_refresh", bundleRegion.formatBundleList(errorBundles, false));
 			addError(null, msg);
 		}
-		// If there are any activated bundles with build errors, terminate to avoid
-		// the resolver to try to resolve bundles with build errors
-		Collection<IProject> projectsToRefresh = bundleRegion.getBundleProjects(bundlesToRefresh);
-		BuildErrorClosure be = new BuildErrorClosure(projectsToRefresh, 
-				Transition.REFRESH, Closure.REQUIRING, Bundle.RESOLVED, ActivationScope.ACTIVATED);
-		if (be.hasBuildErrors()) {
-			Collection<IProject> buildErrClosures = be.getBuildErrorClosures();
-			bundlesToRefresh.removeAll(bundleRegion.getBundles(buildErrClosures));
-			IBundleStatus bundleStatus = be.getErrorClosureStatus();
-			if (InPlace.get().msgOpt().isBundleOperations()) {
-				addStatus(bundleStatus);			
-			}
+
+		if (containsBuildErrorClosures(bundlesToRefresh)) {
 			throw new OperationCanceledException();
 		}
 		Collection<Bundle> bundlesToRestart = new LinkedHashSet<Bundle>();		
@@ -185,7 +175,46 @@ public class RefreshJob extends BundleJob {
 				new SubProgressMonitor(monitor, 1));
 		return getLastStatus();
 	}
+	
+	/**
+	 * If there are any activated bundles with build errors, terminate to avoid
+	 * the resolver to try to resolve bundles with build errors
+	 * 
+	 * @param bundlesToRefresh bundles to check for error closures. Error closures are removed
+	 * from this collection of bundles to refresh
+	 * @return true if any build error closures are detected. Otherwise false
+	 */
+	private boolean containsBuildErrorClosures(Collection<Bundle> bundlesToRefresh) {
+		boolean containsErrorClosures = false;
 
+		Collection<IProject> projectsToRefresh = bundleRegion.getBundleProjects(bundlesToRefresh);
+		BuildErrorClosure be = new BuildErrorClosure(projectsToRefresh, 
+				Transition.REFRESH, Closure.REQUIRING, Bundle.RESOLVED, ActivationScope.ACTIVATED);
+		if (be.hasBuildErrors()) {
+			Collection<IProject> buildErrClosures = be.getBuildErrorClosures();
+			bundlesToRefresh.removeAll(bundleRegion.getBundles(buildErrClosures));
+			IBundleStatus bundleStatus = be.getErrorClosureStatus();
+			if (InPlace.get().msgOpt().isBundleOperations()) {
+				addStatus(bundleStatus);			
+			}
+			containsErrorClosures = true;
+		}
+		if (!containsErrorClosures) {
+			be = new BuildErrorClosure(projectsToRefresh, 
+					Transition.REFRESH, Closure.PROVIDING, Bundle.RESOLVED, ActivationScope.ACTIVATED);
+			if (be.hasBuildErrors()) {
+				Collection<IProject> buildErrClosures = be.getBuildErrorClosures();
+				bundlesToRefresh.removeAll(bundleRegion.getBundles(buildErrClosures));
+				IBundleStatus bundleStatus = be.getErrorClosureStatus();
+				if (InPlace.get().msgOpt().isBundleOperations()) {
+					addStatus(bundleStatus);			
+				}
+				containsErrorClosures = true;
+			}
+		}
+		
+		return containsErrorClosures;
+	}
 	/**
 	 * Number of ticks used by this job.
 	 * 

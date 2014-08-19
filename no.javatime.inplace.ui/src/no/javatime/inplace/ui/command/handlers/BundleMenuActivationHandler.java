@@ -11,43 +11,35 @@
 package no.javatime.inplace.ui.command.handlers;
 
 import java.util.Collection;
-import java.util.Collections;
 
 import no.javatime.inplace.bundlejobs.ActivateProjectJob;
 import no.javatime.inplace.bundlejobs.BundleJob;
 import no.javatime.inplace.bundlejobs.DeactivateJob;
 import no.javatime.inplace.bundlejobs.InstallJob;
+import no.javatime.inplace.bundlejobs.TogglePolicyJob;
 import no.javatime.inplace.bundlejobs.RefreshJob;
 import no.javatime.inplace.bundlejobs.ResetJob;
 import no.javatime.inplace.bundlejobs.StartJob;
 import no.javatime.inplace.bundlejobs.StopJob;
+import no.javatime.inplace.bundlejobs.UpdateBundleClassPathJob;
 import no.javatime.inplace.bundlejobs.UpdateScheduler;
 import no.javatime.inplace.bundlemanager.BundleJobManager;
-import no.javatime.inplace.bundleproject.BundleProjectSettings;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.dialogs.OpenProjectHandler;
 import no.javatime.inplace.extender.provider.Extension;
 import no.javatime.inplace.log.intface.BundleLogView;
 import no.javatime.inplace.pl.dependencies.intface.DependencyDialog;
-import no.javatime.inplace.region.manager.BundleManager;
-import no.javatime.inplace.region.manager.BundleRegion;
-import no.javatime.inplace.region.manager.BundleTransition.Transition;
 import no.javatime.inplace.region.manager.InPlaceException;
 import no.javatime.inplace.region.project.BundleProjectState;
 import no.javatime.inplace.region.status.BundleStatus;
-import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import no.javatime.inplace.ui.Activator;
 import no.javatime.inplace.ui.command.contributions.BundleCommandsContributionItems;
-import no.javatime.inplace.ui.msg.Msg;
 import no.javatime.inplace.ui.views.BundleProperties;
 import no.javatime.inplace.ui.views.BundleView;
 import no.javatime.util.messages.Category;
-import no.javatime.util.messages.ErrorMessage;
 import no.javatime.util.messages.ExceptionMessage;
 import no.javatime.util.messages.Message;
-import no.javatime.util.messages.UserMessage;
-import no.javatime.util.messages.WarnMessage;
 import no.javatime.util.messages.views.BundleConsoleFactory;
 
 import org.eclipse.core.commands.AbstractHandler;
@@ -56,9 +48,7 @@ import org.eclipse.core.commands.State;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.WorkspaceJob;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
-import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.ui.IPackagesViewPart;
@@ -75,7 +65,6 @@ import org.eclipse.ui.handlers.RegistryToggleState;
 import org.eclipse.ui.navigator.CommonNavigator;
 import org.eclipse.ui.statushandlers.StatusManager;
 import org.eclipse.ui.wizards.IWizardDescriptor;
-import org.osgi.framework.Bundle;
 
 /**
  * Executes bundle menu commands for one or more projects. The bundle commands are
@@ -168,8 +157,8 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 	}
 
 	/**
-	 * Schedules an update job for the specified projects and an activate job for
-	 * deactivated projects providing capabilities to projects to update
+	 * Schedules an update job for the specified projects. Projects members in any build error
+	 * closure will not updated.
 	 * 
 	 * @param projects bundle projects to update
 	 */
@@ -237,56 +226,8 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 		OpenProjectHandler so = new OpenProjectHandler();
 		if (so.saveModifiedFiles()) {
 			OpenProjectHandler.waitOnBuilder();		
-			WorkspaceJob togglePolicyJob = new BundleJob(Message.getInstance().formatString("toggle_policy_job_name")) {
-				@Override
-				public IBundleStatus runInWorkspace(IProgressMonitor monitor) throws CoreException {
-				
-					BundleManager.addBundleTransitionListener(this);
-					for (IProject project : projects) {
-							try {					
-								BundleProjectSettings.toggleActivationPolicy(project);
-								BundleRegion bundleRegion = BundleJobManager.getRegion();
-								// No bundle jobs (which updates the bundle view) are run when the project(s) are deactivated or auto build is off
-								Bundle bundle = bundleRegion.get(project);
-								if (!ProjectProperties.isAutoBuilding()) {
-									if (bundleRegion.isActivated(bundle)) {
-										String msg = WarnMessage.getInstance().formatString("policy_updated_auto_build_off", project.getName());	
-										addWarning(null, msg, project);
-									} 
-								}
-								try {
-									if (Category.getState(Category.infoMessages) && !Activator.getDefault().getCommandOptionsService().isUpdateOnBuild()) {
-										if (bundleRegion.isActivated(bundle)) {
-											UserMessage.getInstance().getString("autoupdate_off", project.getName());
-										}
-									}
-								} catch (InPlaceException e) {
-									addError(e, project);
-								}
-								if (null != bundle) {
-									if ((bundle.getState() & (Bundle.INSTALLED)) != 0) {
-										reInstall(Collections.<IProject>singletonList(project), new SubProgressMonitor(monitor, 1));
-									} else if ((bundle.getState() & (Bundle.RESOLVED)) != 0) { 
-										// Do not start bundle if in state resolve when toggling policy
-										BundleJobManager.getTransition().addPending(bundle, Transition.RESOLVE);
-									}
-								}
-							} catch (InPlaceException e) {
-								String msg = ExceptionMessage.getInstance().formatString("error_set_policy", project.getName());
-								addError(e, msg, project);
-							}
-						}
-					try {
-						return super.runInWorkspace(monitor);
-					} catch (CoreException e) {
-						String msg = ErrorMessage.getInstance().formatString("error_end_job", getName());
-						return new BundleStatus(StatusCode.ERROR, Activator.PLUGIN_ID, msg, e);
-					} finally {
-						BundleManager.removeBundleTransitionListener(this);
-					}
-				}
-			};
-			BundleJobManager.addBundleJob(togglePolicyJob, 0);
+			TogglePolicyJob pj = new TogglePolicyJob(TogglePolicyJob.policyJobName, projects);
+			BundleJobManager.addBundleJob(pj, 0);
 		}
 	}
 
@@ -304,48 +245,10 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 		}
 		if (so.saveModifiedFiles()) {
 			OpenProjectHandler.waitOnBuilder();
-			final ResetJob resetJob = new ResetJob();
-			WorkspaceJob updateBundleClassPathJob = new BundleJob(Msg.UPDATE_BUNDLE_CLASS_PATH_JOB) {
-				
-				@Override
-				public IBundleStatus runInWorkspace(IProgressMonitor monitor) throws CoreException {
-					
-					BundleManager.addBundleTransitionListener(this);
-					for (IProject project : projects) {
-						try {
-							if (!ProjectProperties.hasManifestBuildErrors(project)) {
-								if (addToPath) {
-									if (BundleProjectSettings.addOutputLocationToBundleClassPath(project)) {
-										resetJob.addPendingProject(project);
-									} 
-								} else {
-									if (BundleProjectSettings.removeOutputLocationFromClassPath(project)) {
-										resetJob.addPendingProject(project);
-									}
-								}
-							}
-						} catch (InPlaceException e) {
-							String msg = ErrorMessage.getInstance().formatString("error_set_classpath", project.getName());
-							addError(e, msg, project);
-						}
-					}
-					try {
-						return super.runInWorkspace(monitor);
-					} catch (CoreException e) {
-						String msg = ErrorMessage.getInstance().formatString("error_end_job", getName());
-						return new BundleStatus(StatusCode.ERROR, Activator.PLUGIN_ID, msg, e);
-					} finally {
-						BundleManager.removeBundleTransitionListener(this);
-					}
-				}
-			};
-			BundleJobManager.addBundleJob(updateBundleClassPathJob, 0);
-			if (projects.size() > 0 && !ProjectProperties.isAutoBuilding()) {
-				if (Category.getState(Category.infoMessages)) {
-					UserMessage.getInstance().getString("atobuild_of_reset");
-				}
-				resetJob.reset(ResetJob.resetJobName);		
-			}
+			UpdateBundleClassPathJob updBundleClasspath = 
+					new UpdateBundleClassPathJob(UpdateBundleClassPathJob.updateBundleClassJobName, projects);
+			updBundleClasspath.setAddToPath(addToPath);
+			BundleJobManager.addBundleJob(updBundleClasspath, 0);
 		}
 	}
 

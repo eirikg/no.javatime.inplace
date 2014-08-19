@@ -6,7 +6,8 @@ public class Msg extends NLS {
 
 	// Error messages
 	public static String SYSTEM_BUNDLE_ERROR;
-
+	public static String INTERNAL_STATE_WARN;
+	
 	// Warning messages 	
 	public static String REQUIRING_BUNDLES_BUILD_ERROR_WARN;
 	public static String BUILD_ERROR_WARN;
@@ -22,7 +23,6 @@ public class Msg extends NLS {
 	public static String NO_BUILD_ERROR_INFO;
 	public static String EXT_BUNDLE_OP_ORIGIN_INFO;
 	public static String EXT_BUNDLE_OP_INFO;
-	public static String ON_DEMAND_LOAD_BUNDLE_INFO;
 	public static String INCOMPLETE_BUNDLE_OP_INFO;
 	
 	// Location references

@@ -1,5 +1,6 @@
 package no.javatime.inplace.region.state;
 
+import no.javatime.inplace.region.manager.BundleTransition.Transition;
 import no.javatime.inplace.region.manager.InPlaceException;
 
 /**
@@ -16,6 +17,7 @@ public class StateLess extends BundleState {
 	 * only transition from an entry position.
 	 */
 	public void install(BundleNode bundleNode) throws InPlaceException {
-		bundleNode.setCurrentState(BundleStateFactory.INSTANCE.installedState);	
+		bundleNode.begin(Transition.INSTALL, StateFactory.INSTANCE.installedState);
+//		bundleNode.setCurrentState(StateFactory.INSTANCE.installedState);	
 	}
 }

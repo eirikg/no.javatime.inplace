@@ -11,8 +11,6 @@
 package no.javatime.inplace.builder;
 
 import no.javatime.util.messages.Category;
-import no.javatime.util.messages.Message;
-import no.javatime.util.messages.Message.Output;
 import no.javatime.util.messages.TraceMessage;
 
 import org.eclipse.core.resources.IProject;
@@ -106,9 +104,9 @@ public class ProjectChangeListener implements IResourceChangeListener {
 		default:
 			break;
 		}
-		StringBuffer buf = new StringBuffer();
-		printResourcesChanged(delta, buf, 2);
-		Message.getInstance().getRawString(Message.defKey, Output.console, buf.toString());
+		StringBuffer buffer = new StringBuffer();
+		printResourcesChanged(delta, buffer, 2);
+		System.out.println(buffer.toString());
 	}
 
 	/** Handle a resource change against a folder */
@@ -265,14 +263,14 @@ public class ProjectChangeListener implements IResourceChangeListener {
 		default:
 		}
 		buffer.append(".\n");
-		Message.getInstance().getRawString(Message.defKey, Output.console, buffer.toString());
+		System.out.println(buffer.toString());
 	}
 
-	public static void printResourceChanges(IResourceDelta delta) {
+	public static void printResourceChanged(IResourceDelta delta) {
 		StringBuffer buffer = new StringBuffer(80);
 		if (delta != null)
 			printResourcesChanged(delta, buffer, 0);
-		Message.getInstance().getRawString(Message.defKey, Output.console, buffer.toString());
+		System.out.println(buffer.toString());
 	}
 	
 	public static void printEvent(IResourceChangeEvent event, IProject project) {

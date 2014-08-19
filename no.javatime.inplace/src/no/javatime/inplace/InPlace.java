@@ -54,7 +54,6 @@ import no.javatime.inplace.statushandler.ActionSetContexts;
 import no.javatime.inplace.statushandler.DynamicExtensionContribution;
 import no.javatime.util.messages.Category;
 import no.javatime.util.messages.ExceptionMessage;
-import no.javatime.util.messages.UserMessage;
 import no.javatime.util.messages.WarnMessage;
 import no.javatime.util.messages.views.BundleConsoleFactory;
 
@@ -475,14 +474,9 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 		// Add missing line break point command
 		DynamicExtensionContribution.INSTANCE.addToggleLineBreakPointCommand();
 		Boolean isInstalled = actionSetContexts.init();
-		if (isInstalled) {
-			if (Category.getState(Category.infoMessages)) {
-				UserMessage.getInstance().getString("command_action_sets");
-			}
-		} else {
-			String msg = WarnMessage.getInstance().formatString("not_installed_context_for_action_set");
+		if (!isInstalled) {
 			StatusManager.getManager().handle(
-					new BundleStatus(StatusCode.WARNING, InPlace.PLUGIN_ID, msg), StatusManager.LOG);
+					new BundleStatus(StatusCode.WARNING, InPlace.PLUGIN_ID, Msg.INSTALL_CONTEXT_FOR_ACTION_SET_WARN), StatusManager.LOG);
 		}
 	}
 

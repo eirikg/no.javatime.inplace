@@ -12,7 +12,6 @@ Export-Package: no.javatime.inplace.bundlejobs,
  no.javatime.inplace.bundlejobs.events,
  no.javatime.inplace.bundlemanager,
  no.javatime.inplace.bundleproject,
- no.javatime.inplace.dependencies,
  no.javatime.inplace.dialogs,
  no.javatime.inplace.statushandler
 Bundle-Vendor: JavaTime

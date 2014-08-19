@@ -16,10 +16,11 @@ public class Msg extends NLS {
 	public static String IS_AUTO_HANDLE_EXTERNAL_COMMANDS_LABEL;
 	public static String IS_ALLOW_UI_CONTRIBUTIONS_LABEL;
 	
-  public static String UPDATE_BUNDLE_CLASS_PATH_JOB; 
 	public static String ACTIVATE_JOB;
 	public static String DEACTIVATE_UI_CONTRIBOTRS_JOB;
-	
+
+	public static String REFRESH_HINT_INFO;
+
   private static final String BUNDLE_NAME = "no.javatime.inplace.ui.msg.UIMessages"; //$NON-NLS-1$
 
 	static {

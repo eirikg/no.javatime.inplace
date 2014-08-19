@@ -695,7 +695,7 @@ public class BundleWorkspaceRegionImpl implements BundleRegion {
 		return getNode(project);
 	}
 
-	public BundleState getActiveState(Bundle bundle) {
+	public BundleState getState(Bundle bundle) {
 		BundleNode node = getNode(bundle);
 		if (null != node) {
 			return node.getState();
@@ -703,7 +703,7 @@ public class BundleWorkspaceRegionImpl implements BundleRegion {
 		return null;
 	}
 
-	public void setActiveState(Bundle bundle, BundleState activeState) {
+	public void setState(Bundle bundle, BundleState activeState) {
 		BundleNode node = getNode(bundle);
 		if (null != node) {
 			node.setCurrentState(activeState);
@@ -726,7 +726,7 @@ public class BundleWorkspaceRegionImpl implements BundleRegion {
 			throw new InPlaceException("project_null_location");
 		}
 		BundleNode node = getNode(project);
-		// Update existing node
+		// Update node
 		if (null != node) {
 			node.setProject(project);
 			if (null != bundle) {
@@ -740,7 +740,7 @@ public class BundleWorkspaceRegionImpl implements BundleRegion {
 			if (Category.DEBUG && Category.getState(Category.dag)) {
 				TraceMessage.getInstance().getString("updated_node", projectNodes.get(project).getProject());
 			}
-			// Create new node
+			// Create node
 		} else {
 			node = new BundleNode(bundle, project, activate);
 			projectNodes.put(project, node);

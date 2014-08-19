@@ -16,6 +16,7 @@ import java.util.LinkedHashSet;
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundlemanager.BundleJobManager;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
+import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.closure.BuildErrorClosure;
 import no.javatime.inplace.region.closure.BuildErrorClosure.ActivationScope;
 import no.javatime.inplace.region.closure.CircularReferenceException;
@@ -28,14 +29,13 @@ import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import no.javatime.util.messages.ErrorMessage;
 import no.javatime.util.messages.ExceptionMessage;
 import no.javatime.util.messages.Message;
-import no.javatime.util.messages.TraceMessage;
-import no.javatime.util.messages.UserMessage;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.jobs.Job;
+import org.eclipse.osgi.util.NLS;
 import org.osgi.framework.Bundle;
 
 /**
@@ -204,8 +204,7 @@ public class ResetJob {
 							// Uninstall the bundles
 							super.runInWorkspace(monitor);
 						} catch (OperationCanceledException e) {
-							String msg = UserMessage.getInstance().formatString("cancel_job", getName());
-							addError(e, msg);
+							addCancelMessage(e, NLS.bind(Msg.CANCEL_JOB_INFO, getName()));
 							getJobManager().cancel(resetFamily);
 						} catch (CircularReferenceException e) {
 							String msg = ExceptionMessage.getInstance().formatString("circular_reference", getName());
@@ -288,8 +287,7 @@ public class ResetJob {
 								BundleJobManager.getTransition().removePending(project, Transition.UPDATE);
 							}
 						} catch (OperationCanceledException e) {
-							String msg = UserMessage.getInstance().formatString("cancel_job", getName());
-							addError(e, msg);
+							addCancelMessage(e, NLS.bind(Msg.CANCEL_JOB_INFO, getName()));
 							getJobManager().cancel(resetFamily);
 						} catch (InterruptedException e) {
 							String msg = ExceptionMessage.getInstance().formatString("interrupt_job", getName());
@@ -342,24 +340,15 @@ public class ResetJob {
 					InPlace.get().savePluginSettings(true, false);
 					GroupUninstall uninstallJob = new GroupUninstall(uninstallResetJobName, projectsToReset);
 					uninstallJob.setProgressGroup(groupMonitor, 1);
-					// uninstallJob.schedule();
-					if (InPlace.get().msgOpt().isBundleOperations()) {
-						TraceMessage.getInstance().getString("schedule_job", uninstallResetJobName);
-					}
 					BundleJobManager.addBundleJob(uninstallJob, 0);
 					GroupActivate activateBundleJob = new GroupActivate(ResetJob.activateResetJobName, projectsToReset);
 					activateBundleJob.setProgressGroup(groupMonitor, 1);
 					activateBundleJob.setUseStoredState(true);
-					// activateBundleJob.schedule();
-					if (InPlace.get().msgOpt().isBundleOperations()) {
-						TraceMessage.getInstance().getString("schedule_job", activateResetJobName);
-					}
 					BundleJobManager.addBundleJob(activateBundleJob, 0);
 					
 				} catch (OperationCanceledException e) {
 					getJobManager().cancel(resetFamily);
-					String msg = UserMessage.getInstance().formatString("cancel_job", getName());
-					return new BundleStatus(StatusCode.CANCEL, InPlace.PLUGIN_ID, (IProject) null, msg, e);
+					return addCancelMessage(e, NLS.bind(Msg.CANCEL_JOB_INFO, getName()));
 				} catch (CircularReferenceException e) {
 					String msg = ExceptionMessage.getInstance().formatString("circular_reference", getName());
 					BundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg);

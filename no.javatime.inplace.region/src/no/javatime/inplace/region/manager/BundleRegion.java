@@ -14,8 +14,6 @@ public interface BundleRegion {
 	 * Get the registered project associated with the specified bundle. Note that only projects
 	 * registered as workspace region bundle projects are searched.
 	 * <p>
-	 * There is no requirement that the bundle is registered to find a registered project 
-	 * <p>
 	 * If a project is not registered as bundle project manually using 
 	 * {@link BundleCommand#registerBundleProject(IProject, Bundle, boolean)} it will always
 	 * be registered by the {@link BundleCommand#install(IProject, Boolean)} command  

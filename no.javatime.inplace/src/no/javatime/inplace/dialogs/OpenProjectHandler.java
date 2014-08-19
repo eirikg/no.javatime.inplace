@@ -13,10 +13,12 @@ package no.javatime.inplace.dialogs;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 
+import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundlejobs.BundleJob;
+import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.project.BundleProjectState;
-import no.javatime.util.messages.Category;
-import no.javatime.util.messages.UserMessage;
+import no.javatime.inplace.region.status.BundleStatus;
+import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
@@ -29,6 +31,7 @@ import org.eclipse.debug.internal.ui.launchConfigurations.SaveScopeResourcesHand
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.MessageDialogWithToggle;
 import org.eclipse.jface.preference.IPreferenceStore;
+import org.eclipse.osgi.util.NLS;
 
 /**
  * Adaption of the save dialog before launching in Eclipse.
@@ -85,8 +88,9 @@ public class OpenProjectHandler extends SaveScopeResourcesHandler {
 		Job[] build = jobMan.find(ResourcesPlugin.FAMILY_AUTO_BUILD); 
 		if (build.length >= 1) {
 			try {
-				if (Category.getState(Category.infoMessages)) {
-					UserMessage.getInstance().getString("start_waiting_on_builder",  build[0].getName());
+				if (InPlace.get().msgOpt().isBundleOperations()) {
+					InPlace.get().trace(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, 
+							NLS.bind(Msg.WAITING_ON_JOB_INFO, build[0].getName())));
 				}
 				build[0].join();
 				waitOnBuilder();
@@ -104,8 +108,9 @@ public class OpenProjectHandler extends SaveScopeResourcesHandler {
 		Job[] bundleJobs = jobMan.find(BundleJob.FAMILY_BUNDLE_LIFECYCLE); 
 		if (bundleJobs.length >= 1) {
 			try {
-				if (Category.getState(Category.infoMessages)) {
-					UserMessage.getInstance().getString("start_waiting_on_builder",  bundleJobs[0].getName());
+				if (InPlace.get().msgOpt().isBundleOperations()) {
+					InPlace.get().trace(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, 
+							NLS.bind(Msg.WAITING_ON_JOB_INFO, bundleJobs[0].getName())));
 				}
 				bundleJobs[0].join();
 				waitOnBundleJob();

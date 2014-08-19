@@ -35,6 +35,7 @@ public class Msg extends NLS {
 	public static String ENABLE_NATURE_TRACE;
 	public static String UNDEFINED_CONTEXT_ERROR_TRACE;
 	public static String JOB_NAME_TRACE;
+	public static String ON_DEMAND_LOAD_BUNDLE_TRACE;
 
 	// Build trace operations
 	public static String BUILD_HEADER_TRACE;
@@ -50,6 +51,7 @@ public class Msg extends NLS {
 	public static String ACTIVATE_PROJECTS_JOB;
 	public static String ACTIVATE_WORKSPACE_JOB;
 	public static String INIT_DEACTIVATED_WORKSPACE_JOB;
+  public static String UPDATE_BUNDLE_CLASS_PATH_JOB; 
 
 	// Errors
 	public static String BEGIN_SHUTDOWN_ERROR;
@@ -62,7 +64,7 @@ public class Msg extends NLS {
 	public static String DELAYED_BUILD_WARN;
 	public static String RENAME_PROJECT_WARN;
 	public static String INIT_WORKSPACE_STORE_WARN;
-	
+	public static String INSTALL_CONTEXT_FOR_ACTION_SET_WARN;
 	// Dialog and View messages
 	public static String DEACTIVATE_QUESTION_DLG;
 	public static String DEACTIVATE_QUESTION_REQ_DLG;
@@ -75,6 +77,33 @@ public class Msg extends NLS {
 	public static String DELAYED_RESOLVE_INFO;
 	public static String DELAYED_UPDATE_INFO;
 	public static String SYSTEM_EXIT_INFO;
+	public static String CLASS_PATH_DEV_PARAM_INFO;
+	public static String REFRESH_HINT_INFO;
+	public static String CANCEL_JOB_INFO;
+	public static String BUILDER_OFF_LIST_INFO;
+	public static String BUILDER_OFF_INFO;
+	public static String NO_PROJECTS_TO_ACTIVATE_INFO;
+	public static String ADD_BUNDLES_TO_ACTIVATE_INFO;
+	public static String UNINSTALL_BEFORE_ACTIVATE_INFO;
+	public static String MISSING_CLASSPATH_BUNDLE_LOADED_INFO;
+	public static String MISSING_CLASSPATH_BUNDLE_INFO;
+	public static String MISSING_DEV_CLASSPATH_BUNDLE_INFO;
+	public static String THREAD_BLOCKED_INFO;
+	public static String THREAD_WAITING_INFO;
+	public static String FAILED_TO_GET_THREAD_INFO;
+	public static String NO_TASK_TO_STOP_INFO;
+	public static String DEACTIVATING_AFTER_TIMEOUT_STOP_TASK_INFO;
+	public static String DEACTIVATING_MANUAL_STOP_TASK_INFO;
+	public static String AFTER_TIMEOUT_STOP_TASK_INFO;
+	public static String MANUAL_STOP_TASK_INFO;
+	public static String CLASS_PATH_COMMON_INFO;
+	public static String WAITING_ON_JOB_INFO;
+	public static String CUSTOMIZED_STATUS_HANDLER_INFO;
+	public static String CUSTOMIZED_STATUS_HANDLER_CMD_LINE_INFO;
+	public static String STANDARD_STATUS_HANDLER_INFO;
+	public static String USE_CUSTOMIZED_STATUS_HANDLER_INFO;
+	public static String ATOBUILD_OFF_RESET_INFO;
+	public static String AUTOUPDATE_OFF_INFO;
 	
 	private static final String BUNDLE_NAME = "no.javatime.inplace.msg.messages"; //$NON-NLS-1$
 

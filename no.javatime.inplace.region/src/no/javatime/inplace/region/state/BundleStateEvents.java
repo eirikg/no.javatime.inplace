@@ -34,8 +34,6 @@ import org.eclipse.osgi.util.NLS;
 import org.eclipse.ui.statushandlers.StatusManager;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleEvent;
-import org.osgi.framework.FrameworkEvent;
-import org.osgi.framework.FrameworkListener;
 import org.osgi.framework.SynchronousBundleListener;
 
 /**
@@ -53,37 +51,20 @@ import org.osgi.framework.SynchronousBundleListener;
  * <p>
  * The design supports a concept of a region bounded bundle structure ({@link BundleWorkspaceRegionImpl}) acted on
  * by bundle operations ({@link BundleCommandImpl}), which in turn creates a result (events) to interpret and
- * react upon ({@code BundleEventManager}). This interrelationship is not interpreted as a sequence or a flow,
+ * react upon ({@code BundleStateEvents}). This interrelationship is not interpreted as a sequence or a flow,
  * although present, but as a structural coherence.
  * <p>
  */
-public class BundleEventManager implements FrameworkListener, SynchronousBundleListener {
+public class BundleStateEvents implements SynchronousBundleListener {
 
-	private BundleWorkspaceRegionImpl bundleRegion = BundleWorkspaceRegionImpl.INSTANCE;
-	BundleCommandImpl bundleCommand = BundleCommandImpl.INSTANCE;
-	BundleTransitionImpl bundleTransition = BundleTransitionImpl.INSTANCE;
+	private final BundleWorkspaceRegionImpl bundleRegion = BundleWorkspaceRegionImpl.INSTANCE;
+	private final BundleCommandImpl bundleCommand = BundleCommandImpl.INSTANCE;
+	private final BundleTransitionImpl bundleTransition = BundleTransitionImpl.INSTANCE;
 
 	/**
 	 * Default empty constructor.
 	 */
-	public BundleEventManager() {
-	}
-
-	/**
-	 * Trace events and report on framework errors.
-	 */
-	@Override
-	public void frameworkEvent(FrameworkEvent event) {
-
-		if (Category.getState(Category.bundleEvents)) {
-			TraceMessage.getInstance().getString("framework_event", BundleCommandImpl.INSTANCE.getStateName(event),
-					event.getBundle().getSymbolicName());
-		}
-		if ((event.getType() & (FrameworkEvent.ERROR)) != 0) {
-			StatusManager.getManager().handle(
-					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, event.getBundle().getBundleId(), null,
-							event.getThrowable()), StatusManager.LOG);
-		}
+	public BundleStateEvents() {
 	}
 
 	/**
@@ -149,7 +130,7 @@ public class BundleEventManager implements FrameworkListener, SynchronousBundleL
 				if (null == state || !(state instanceof InstalledState)) {
 					// Register the external installed workspace bundle
 					bundleNode = bundleCommand.registerBundleNode(project, bundle, BundleProjectState.isNatureEnabled(project));
-					state.install(bundleNode);
+					bundleNode.getState().install(bundleNode);
 					bundleNode.setTransition(Transition.EXTERNAL);
 					// Inform about external transition message
 					final String originName = bundleRegion.getSymbolicKey(event.getOrigin(), null);
@@ -165,7 +146,6 @@ public class BundleEventManager implements FrameworkListener, SynchronousBundleL
 		}
 		
 		/*
-		 * Incoming transitions with Installed as the current state: 
 		 * Previous state: Resolved. Possible transitions: Refresh, Update, Uninstall 
 		 * Comments: 
 		 * Refresh unresolves and resolves a bundle. If the bundle is already deactivated it is rejected by the 
@@ -174,18 +154,18 @@ public class BundleEventManager implements FrameworkListener, SynchronousBundleL
 		 */
 		case BundleEvent.UNRESOLVED: {
 			if ((state instanceof InstalledState)) {
-				// The bundle was initially uninstalled from state resolved. (Multiple states:
-				// Resolved-Installed-Uninstalled)
+				// The bundle was uninstalled from state resolved. 
+				// Multiple states: Resolved-Installed-Uninstalled
 				if (Transition.UNINSTALL == transition) {
 					state.uninstall(bundleNode);
-					// The bundle was initially refreshed from state resolved. (Multiple states:
-					// Resolved-Installed-Resolved)
+					// The bundle was refreshed from state resolved
+					// Multiple states: Resolved-Installed-Resolved)
 				} else if (Transition.REFRESH == transition) {
 					state.refresh(bundleNode);
 				}
 			} else {
-				bundleNode.setCurrentState(BundleStateFactory.INSTANCE.installedState);
-				undefinedTransitions(event);
+				bundleNode.setCurrentState(StateFactory.INSTANCE.installedState);
+				externalTransitions(event);
 			}
 			break;
 		}
@@ -197,8 +177,8 @@ public class BundleEventManager implements FrameworkListener, SynchronousBundleL
 		 */
 		case BundleEvent.UPDATED: {
 			if (!(state instanceof InstalledState)) {
-				bundleNode.setCurrentState(BundleStateFactory.INSTANCE.installedState);
-				undefinedTransitions(event);
+				bundleNode.setCurrentState(StateFactory.INSTANCE.installedState);
+				externalTransitions(event);
 			}
 			break;
 		}
@@ -209,7 +189,7 @@ public class BundleEventManager implements FrameworkListener, SynchronousBundleL
 		case BundleEvent.UNINSTALLED: {
 			if (!(state instanceof UninstalledState)) {
 				if (null != bundleNode) {
-					bundleNode.setCurrentState(BundleStateFactory.INSTANCE.uninstalledState);
+					bundleNode.setCurrentState(StateFactory.INSTANCE.uninstalledState);
 				}
 				// Uninstalling a bundle from an external source is not permitted in an activated workspace
 				if (BundleProjectState.isWorkspaceNatureEnabled()) {
@@ -218,17 +198,18 @@ public class BundleEventManager implements FrameworkListener, SynchronousBundleL
 					// Remove the externally uninstalled bundle from the workspace region
 					bundleCommand.unregisterBundle(bundle);
 				}
-				undefinedTransitions(event);
+				externalTransitions(event);
 			}
 			break;
 		}
 
 		/*
-		 * Enters state <<LAZY>>
+		 * When a lazy bundle is resolved it is moved to starting state
 		 */
 		case BundleEvent.LAZY_ACTIVATION: {
 			if (!(state instanceof LazyState)) {
-				bundleNode.setCurrentState(BundleStateFactory.INSTANCE.lazyState);
+				bundleNode.setCurrentState(StateFactory.INSTANCE.lazyState);
+				externalTransitions(event);
 			}
 			break;
 		}
@@ -237,21 +218,20 @@ public class BundleEventManager implements FrameworkListener, SynchronousBundleL
 		 * Framework publish this event before calling BundleActivator.start
 		 * <p>
 		 * Activates a bundle with eager activation policy. Lazy bundles are activated
-		 * by the framework due to "on demand" class loading.
+		 * implicit by the framework due to "on demand" class loading. To get a consistent
+		 * state machine a new transition and state is generated for lazy loaded bundles.
 		 */
 		case BundleEvent.STARTING: {
 			if (state instanceof LazyState) {
-				bundleNode.setCurrentState(BundleStateFactory.INSTANCE.activeState);
-				// Generate a transition on behalf of the framework and if the previous transition was
-				// from an external source it follows that this one is external too
-				bundleTransition.setTransition(bundle, Transition.LAZY_LOAD);
-				if (Category.getState(Category.infoMessages)) {
-					String msg = NLS.bind(Msg.ON_DEMAND_LOAD_BUNDLE_INFO, bundle, bundleCommand.getStateName(event));
-					StatusManager.getManager().handle(new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, msg), StatusManager.LOG);					
-				}
+				// Generate a transition on behalf of the framework.
+				// The internal state is now resolved (not starting) and the transition is refresh
+				// The start transition when in state resolved is the same as
+				bundleNode.begin(Transition.LAZY_LOAD, StateFactory.INSTANCE.lazyState);
+				//state.start(bundleNode);
+				BundleManager.addBundleTransition(new TransitionEvent(bundle, bundleNode.getTransition())); 
 			} else if (!(state instanceof ActiveState)) {
-				bundleNode.setCurrentState(BundleStateFactory.INSTANCE.activeState);
-				undefinedTransitions(event);
+				bundleNode.setCurrentState(StateFactory.INSTANCE.activeState);
+				externalTransitions(event);
 			}
 			break;
 		}
@@ -262,9 +242,16 @@ public class BundleEventManager implements FrameworkListener, SynchronousBundleL
 		 * Previous state: Starting. Possible transitions: Start
 		 */
 		case BundleEvent.STARTED: {
+			// Move from lazy to activated (see the starting event) for lazy bundles
+			if (state instanceof LazyState && bundleNode.isStateChanging()) {
+				bundleNode.commit(Transition.START, StateFactory.INSTANCE.activeState);
+				state = bundleNode.getState();
+				state.commit(bundleNode);
+				BundleManager.addBundleTransition(new TransitionEvent(bundle, bundleNode.getTransition())); 
+			}
 			if (!(state instanceof ActiveState)) {
-				bundleNode.setCurrentState(BundleStateFactory.INSTANCE.activeState);
-				undefinedTransitions(event);
+				bundleNode.setCurrentState(StateFactory.INSTANCE.activeState);
+				externalTransitions(event);
 			}
 			break;
 		}
@@ -275,31 +262,38 @@ public class BundleEventManager implements FrameworkListener, SynchronousBundleL
 		 * Previous state: Active. Possible transitions: Stop
 		 */
 		case BundleEvent.STOPPING:
+			break;
 
 		/*
-		 * Framework publish this event after calling BundleActivator.stop
+		 * The Framework publish this event after calling BundleActivator.stop or when a runtime
+		 * error occurs during start (incomplete transition)
 		 * <p>
-		 * This event is non deterministic in relation to external commands.
 		 * If the BundleActivator.start method throws an exception the framework publish a
 		 * STOPPED event but the internal transition was START (not STOP). This could also
 		 * be an external command stopping the bundle or starting the bundle throwing an exception
 		 * <p>
-		 * The solution is to assume an external command until the exception
-		 * is caught by the method that called the framework start method. If the transition 
-		 * was start the catch clause will set the transition to STOP, repealing the external
-		 * stop or external start command throwing an exception.  
-		 *  
-		 * Incoming transitions with Resolved as the current state: 
-		 * Previous state: Stopping. Possible transitions: Stop, Start
+		 * For eager activated bundles when a stopped event is published and the initial start
+		 * command was invoked internally just leave it. A roll back is issued by the start routine
+		 * which invoked the start command. For lazy loaded bundles roll back the 
+		 * start command generated in the starting event.
 		 */
 		case BundleEvent.STOPPED: {
-			if (transition == Transition.START) {
-				// If not an external command, an exception was thrown in the start method
-			} 
-			if (!(state instanceof ResolvedState)) {
+			// An external command or an exception thrown in the start method
+			if (transition == Transition.START || transition == Transition.LAZY_LOAD) {
+				if (bundleNode.isStateChanging()) {
+					if (transition == Transition.LAZY_LOAD) {					
+						// Previous state is resolved and current state is lazy load
+						//state.rollBack(bundleNode);
+						//state = bundleNode.getState();
+						bundleNode.commit(Transition.RESOLVE, StateFactory.INSTANCE.resolvedState);
+						state = bundleNode.getState();
+					}
+				}
+			} else if (!(state instanceof ResolvedState)) {
 				// Assume an external command
-				bundleNode.setCurrentState(BundleStateFactory.INSTANCE.resolvedState);
-				undefinedTransitions(event);
+				bundleNode.commit(Transition.STOP, StateFactory.INSTANCE.resolvedState);		
+				// bundleNode.setCurrentState(StateFactory.INSTANCE.resolvedState);
+				externalTransitions(event);
 			}
 			break;
 		}
@@ -312,28 +306,37 @@ public class BundleEventManager implements FrameworkListener, SynchronousBundleL
 		 * Starting by the framework
 		 */
 		case BundleEvent.RESOLVED: {
-			if (state instanceof ResolvedState) {
-				if (Transition.RESOLVE == transition) {
-					if (ManifestOptions.getlazyActivationPolicy(bundle)) {
-						bundleNode.setCurrentState(BundleStateFactory.INSTANCE.lazyState);
-					}
-				} else if (Transition.REFRESH == transition) {
-					if (ManifestOptions.getlazyActivationPolicy(bundle)) {
-						bundleNode.setCurrentState(BundleStateFactory.INSTANCE.lazyState);
-					}
-				}
-			} else {
+			// Refresh or resolve
+			if (!(state instanceof ResolvedState) && !(state instanceof LazyState)) {
 				if (ManifestOptions.getlazyActivationPolicy(bundle)) {
-					bundleNode.setCurrentState(BundleStateFactory.INSTANCE.lazyState);
+					bundleNode.commit(transition, StateFactory.INSTANCE.lazyState);
 				} else {
-					bundleNode.setCurrentState(BundleStateFactory.INSTANCE.resolvedState);
+					bundleNode.commit(transition, StateFactory.INSTANCE.resolvedState);
 				}
-				undefinedTransitions(event);
+				externalTransitions(event);
 			}
+//			if (state instanceof ResolvedState) {
+//				if (Transition.RESOLVE == transition) {
+//					if (ManifestOptions.getlazyActivationPolicy(bundle)) {
+//						bundleNode.setCurrentState(StateFactory.INSTANCE.lazyState);
+//					}
+//				} else if (Transition.REFRESH == transition) {
+//					if (ManifestOptions.getlazyActivationPolicy(bundle)) {
+//						bundleNode.setCurrentState(StateFactory.INSTANCE.lazyState);
+//					}
+//				}
+//			} else {
+//				if (ManifestOptions.getlazyActivationPolicy(bundle)) {
+//					bundleNode.setCurrentState(StateFactory.INSTANCE.lazyState);
+//				} else {
+//					bundleNode.setCurrentState(StateFactory.INSTANCE.resolvedState);
+//				}
+//				undefinedTransitions(event);
+//			}
 			break;
 		}
 		default: {
-			undefinedTransitions(event);
+			externalTransitions(event);
 		}
 		} // switch
 		// @formatter:on
@@ -356,7 +359,7 @@ public class BundleEventManager implements FrameworkListener, SynchronousBundleL
 	 * 
 	 * @param event bundle event after a bundle operation has been executed
 	 */
-	private void undefinedTransitions(BundleEvent event) {
+	private void externalTransitions(BundleEvent event) {
 		Bundle bundle = event.getBundle();
 		final String location = bundle.getLocation();
 		BundleCommandImpl bundleCommand = BundleCommandImpl.INSTANCE;

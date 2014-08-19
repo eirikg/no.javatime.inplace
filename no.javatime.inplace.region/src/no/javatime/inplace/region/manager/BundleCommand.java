@@ -6,7 +6,7 @@ import java.util.List;
 
 import no.javatime.inplace.region.project.BundleProjectState;
 import no.javatime.inplace.region.resolver.BundleResolveHookFactory;
-import no.javatime.inplace.region.state.BundleEventManager;
+import no.javatime.inplace.region.state.BundleStateEvents;
 
 import org.eclipse.core.resources.IProject;
 import org.osgi.framework.Bundle;
@@ -56,7 +56,7 @@ public interface BundleCommand {
 	 * specified project could not be found
 	 * @see #install(IProject)
 	 * @see #registerBundleNode(IProject, Bundle, Boolean)
-	 * @see BundleEventManager#bundleChanged(BundleEvent)
+	 * @see BundleStateEvents#bundleChanged(BundleEvent)
 	 */
 	public Bundle install(IProject project, Boolean activate) throws InPlaceException,
 			DuplicateBundleException;

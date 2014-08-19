@@ -25,6 +25,7 @@ import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.dl.preferences.intface.CommandOptions;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
+import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.closure.BuildErrorClosure;
 import no.javatime.inplace.region.closure.BundleClosures;
 import no.javatime.inplace.region.closure.BundleSorter;
@@ -48,7 +49,6 @@ import no.javatime.util.messages.Category;
 import no.javatime.util.messages.ErrorMessage;
 import no.javatime.util.messages.ExceptionMessage;
 import no.javatime.util.messages.Message;
-import no.javatime.util.messages.UserMessage;
 import no.javatime.util.messages.WarnMessage;
 
 import org.eclipse.core.resources.IProject;
@@ -61,6 +61,7 @@ import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.core.runtime.jobs.Job;
+import org.eclipse.osgi.util.NLS;
 import org.eclipse.ui.statushandlers.StatusManager;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
@@ -336,7 +337,7 @@ public abstract class BundleJob extends JobStatus {
 				IBundleStatus status = addError(e, e.getLocalizedMessage());
 				String msg = ErrorMessage.getInstance().formatString("project_location", project.getName());
 				status.add(new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID, project, msg, null));
-				msg = UserMessage.getInstance().formatString("refresh_hint", project.getName());
+				msg  = NLS.bind(Msg.REFRESH_HINT_INFO, project.getName()); 
 				status.add(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, project, msg, null));
 			} catch (InPlaceException e) {
 				String msg = ErrorMessage.getInstance().formatString("install_error_project", project.getName());
@@ -636,7 +637,7 @@ public abstract class BundleJob extends JobStatus {
 				State state = thread.getState();
 				BundleThread.stopThread(thread);
 				if (state == State.BLOCKED) {
-					String msg = UserMessage.getInstance().formatString("thread_blocked", threadName);
+					String msg = NLS.bind(Msg.THREAD_BLOCKED_INFO, threadName); 
 					IBundleStatus status = new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, bundle, msg, null);
 					if (getOptionsService().isTimeOut()) {
 						addStatus(status);
@@ -644,7 +645,7 @@ public abstract class BundleJob extends JobStatus {
 						StatusManager.getManager().handle(status, StatusManager.LOG);						
 					}
 				} else if (state == State.WAITING || state == State.TIMED_WAITING) {
-					String msg = UserMessage.getInstance().formatString("thread_waiting", threadName);
+					String msg = NLS.bind(Msg.THREAD_WAITING_INFO, threadName); 
 					IBundleStatus status = new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, bundle, msg, null);
 					if (getOptionsService().isTimeOut()) {
 						addStatus(status);
@@ -654,7 +655,7 @@ public abstract class BundleJob extends JobStatus {
 				}
 			} else {
 				String transitioNname = bundleTransition.getTransitionName(bundleRegion.getRegisteredBundleProject(bundle));
-				String msg = UserMessage.getInstance().formatString("failed_to_get_thread", bundle, transitioNname);
+				String msg = NLS.bind(Msg.FAILED_TO_GET_THREAD_INFO, bundle, transitioNname); 
 				IBundleStatus status = new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, bundle, msg, null);
 				if (getOptionsService().isTimeOut()) {
 					addStatus(status);						
@@ -663,8 +664,7 @@ public abstract class BundleJob extends JobStatus {
 				}					
 			}
 		} else {
-			String msg = UserMessage.getInstance().formatString("no_task_to_stop");
-			IBundleStatus status = new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, bundle, msg, null);
+			IBundleStatus status = new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, bundle, Msg.NO_TASK_TO_STOP_INFO, null);
 			if (getOptionsService().isTimeOut()) {
 				addStatus(status);
 			} else {
@@ -678,10 +678,10 @@ public abstract class BundleJob extends JobStatus {
 					if (getOptionsService().isDeactivateOnTerminate()) {
 						deactivateTask.deactivate(monitor);
 						if (getOptionsService().isTimeOut()) {
-							String msg = UserMessage.getInstance().formatString("deactivating_after_timeout_stop_task", bundle, threadName);
+							String msg = NLS.bind(Msg.DEACTIVATING_AFTER_TIMEOUT_STOP_TASK_INFO, bundle, threadName); 
 							addStatus(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, bundle, msg, null));
 						} else {
-							String msg = UserMessage.getInstance().formatString("deactivating_manual_stop_task", bundle, threadName);
+							String msg = NLS.bind(Msg.DEACTIVATING_MANUAL_STOP_TASK_INFO, bundle, threadName); 
 							StatusManager.getManager().handle(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, bundle, msg, null),
 									StatusManager.LOG);						
 						}
@@ -711,10 +711,10 @@ public abstract class BundleJob extends JobStatus {
 			} else {
 				String transitioNname = bundleTransition.getTransitionName(bundleRegion.getRegisteredBundleProject(bundle));
 				if (getOptionsService().isTimeOut()) {
-					String msg = UserMessage.getInstance().formatString("after_timeout_stop_task", bundle, threadName, transitioNname);
+					String msg = NLS.bind(Msg.AFTER_TIMEOUT_STOP_TASK_INFO, new Object[] {bundle, threadName, transitioNname}); 
 					addStatus(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, bundle, msg, null));
 				} else {
-					String msg = UserMessage.getInstance().formatString("manual_stop_task", bundle, threadName, transitioNname);
+					String msg = NLS.bind(Msg.MANUAL_STOP_TASK_INFO, new Object[] {bundle, threadName, transitioNname}); 
 					StatusManager.getManager().handle(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, bundle, msg, null),
 							StatusManager.LOG);						
 				}				
@@ -827,7 +827,6 @@ public abstract class BundleJob extends JobStatus {
 			localMonitor.subTask(resolveTaskName);
 			if (!bundleCommand.resolve(bundlesToResolve)) {
 				Collection<IProject> projectsToResolve = bundleRegion.getBundleProjects(bundlesToResolve);
-				// Error closures are also removed in the resolver hook
 				BuildErrorClosure be = new BuildErrorClosure(projectsToResolve, 
 						Transition.RESOLVE, Closure.REQUIRING);
 				if (be.hasBuildErrors()) {
@@ -949,9 +948,9 @@ public abstract class BundleJob extends JobStatus {
 							result.add(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, bundle.getBundleId(),msg, null));
 						}
 						if (binExist) {
-							msg = UserMessage.getInstance().formatString("missing_classpath_bundle_loaded_info", bundle);
+							msg = NLS.bind(Msg.MISSING_CLASSPATH_BUNDLE_LOADED_INFO, bundle); 
 						} else {
-							msg = UserMessage.getInstance().formatString("missing_classpath_bundle_info", bundle);
+							msg = Msg.MISSING_CLASSPATH_BUNDLE_INFO; 
 						}
 						result.add(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, bundle.getBundleId(), msg, null));
 					}
@@ -965,9 +964,8 @@ public abstract class BundleJob extends JobStatus {
 			}
 		}
 		if (!result.hasStatus(StatusCode.OK)) {
-			if (Category.getState(Category.infoMessages)) {
-				String msg = UserMessage.getInstance().formatString("missing_dev_classpath_bundle_info");
-				result.add(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, msg));
+			if (InPlace.get().msgOpt().isBundleOperations()) {
+				result.add(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, Msg.MISSING_DEV_CLASSPATH_BUNDLE_INFO));
 			}
 		}
 		return result;

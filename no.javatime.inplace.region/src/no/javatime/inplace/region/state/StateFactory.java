@@ -4,11 +4,11 @@ import java.util.HashMap;
 
 import org.osgi.framework.Bundle;
 
-public class BundleStateFactory {
+public class StateFactory {
 	
 	public static final int	STATELESS				= 0x00000000;
 	
-	public final static BundleStateFactory INSTANCE = new BundleStateFactory();
+	public final static StateFactory INSTANCE = new StateFactory();
 	
 	public final StateLess stateLess = new StateLess();
 	public final UninstalledState uninstalledState = new UninstalledState();
@@ -19,7 +19,7 @@ public class BundleStateFactory {
 	
 	private HashMap<Integer, BundleState> states = new HashMap<Integer, BundleState>();
 	
-	private BundleStateFactory() {
+	private StateFactory() {
 		states.put(STATELESS, stateLess);
 		states.put(Bundle.UNINSTALLED, uninstalledState);
 		states.put(Bundle.INSTALLED, installedState);

@@ -39,22 +39,26 @@ public class BundleNode {
 
 
 	// Initialize with no pending pendingCommands
-	private EnumSet<BundleTransition.Transition> pendingCommands = EnumSet.noneOf(BundleTransition.Transition.class);
+	private EnumSet<BundleTransition.Transition> pendingCommands = EnumSet.noneOf(Transition.class);
 	private IProject project; // The link between the bundle and the project (bundle project)
 	private Long bundleId; // Keep the id instead of the bundle object
 	private Boolean activated; // True when project is nature enabled and bundle has been installed
-	private BundleState state; // Based on commands on bundle nodes (workspace region bundles)
-	private Transition transition; // Current or last executed transition on bundle
+	private BundleState state; // Current state determined by the last transition
+	private BundleState prevState = StateFactory.INSTANCE.stateLess; // Previous state
+	private Transition transition; // Current or last executed transition on a bundle
+	private Transition prevTransition = Transition.NOTRANSITION; // Previous transition
 	private TransitionError transitionError; // Last error caused by a transition
-	
+	private TransitionError prevTransitionError; // Error caused by the previous transition
+	private boolean isStateChanging = false; // Set to true while executing a bundle command
+
 	/**
 	 * Creates a bundle node with a one-to-one relationship between a project and a bundle, called a bundle
 	 * project. The bundle id is stored instead of the bundle object in the node. Initially the bundle node has
 	 * no state and initialized to {@link no.javatime.inplace.region.state.StateLess}
 	 * 
-	 * @param bundle must not be null
+	 * @param bundle may be null
 	 * @param project must not be null
-	 * @param activate should be true if the project is nature enabled (implies that the project is activated)
+	 * @param activate should be true if the project is nature enabled and the bundle is installed
 	 */
 	public BundleNode(Bundle bundle, IProject project, Boolean activate) {
 		this.project = project;
@@ -62,7 +66,7 @@ public class BundleNode {
 		if (null != bundle) {
 			this.bundleId = bundle.getBundleId();
 		}
-		this.state = BundleStateFactory.INSTANCE.stateLess;
+		this.state = StateFactory.INSTANCE.stateLess;
 		transition = Transition.NOTRANSITION;
 		transitionError = TransitionError.NOERROR;
 	}
@@ -354,6 +358,82 @@ public class BundleNode {
 	public void removePendingCommands(EnumSet<BundleTransition.Transition> operations) {
 		this.pendingCommands.removeAll(operations);
 	}
+	
+	public void begin(Transition transition, BundleState state) {
+		this.transitionError = TransitionError.NOERROR;
+		this.prevTransition = this.transition;
+		this.prevState = this.state;
+		this.transition = transition;
+		this.state = state;
+		isStateChanging = true;
+	}
+
+	public void commit() {
+		isStateChanging = false;
+	}
+
+	public void commit(Transition transition, BundleState state) {
+		this.prevTransitionError = this.transitionError;
+		prevTransition = this.transition;
+		prevState = this.state;
+		this.transition = transition;
+		this.state = state;
+		isStateChanging = false;
+	}
+
+	public void rollBack() {
+		this.transitionError = this.prevTransitionError;
+		this.transition = this.prevTransition;
+		this.state = this.prevState;
+		isStateChanging = false;
+	}
+
+	public boolean isStateChanging() {
+		return isStateChanging;
+	}
+
+	
+//	public void begin(Transition transition, BundleState state) {
+//		this.prevTransition = this.transition;
+//		this.prevState = this.state;
+//		this.transition = transition;
+//		this.state = state;
+//	}
+//
+//	public void commit() {
+//		prevTransition = Transition.NOTRANSITION;
+//		prevState = StateFactory.INSTANCE.stateLess;
+//	}
+//
+//	public void commit(Transition transition, BundleState state) {
+//		this.transition = transition;
+//		this.state = state;
+//		prevTransition = Transition.NOTRANSITION;
+//		prevState = StateFactory.INSTANCE.stateLess;
+//	}
+//
+//	public void rollBack() {
+//		this.transition = this.prevTransition;
+//		this.state = this.prevState;
+//		prevTransition = Transition.NOTRANSITION;
+//		prevState = StateFactory.INSTANCE.stateLess;
+//	}
+
+//	public boolean isStateChanging() {
+//		if (null != prevState && null != prevTransition) {
+//			return true;
+//		}
+//		return false;
+//	}
+	
+	public BundleState getPrevState() {
+		return prevState;
+	}
+
+	public Transition getPrevTransition() {
+		return prevTransition;
+	}
+
 	/**
 	 * Textual representation of the transition for the bundle at the specified location. The location is the
 	 * same as used when the bundle was installed.

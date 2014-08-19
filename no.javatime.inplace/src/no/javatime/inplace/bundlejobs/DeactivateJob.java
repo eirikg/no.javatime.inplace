@@ -33,7 +33,6 @@ import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import no.javatime.util.messages.ErrorMessage;
 import no.javatime.util.messages.ExceptionMessage;
 import no.javatime.util.messages.Message;
-import no.javatime.util.messages.UserMessage;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
@@ -124,8 +123,7 @@ public class DeactivateJob extends NatureJob {
 			multiStatus.add(e.getStatusList());
 			addStatus(multiStatus);
 		} catch (OperationCanceledException e) {
-			String msg = UserMessage.getInstance().formatString("cancel_job", getName());
-			addCancelMessage(e, msg);
+			addCancelMessage(e, NLS.bind(Msg.CANCEL_JOB_INFO, getName()));
 		} catch (InPlaceException e) {
 			String msg = ExceptionMessage.getInstance().formatString("terminate_job_with_errors",
 					getName());

@@ -27,7 +27,6 @@ import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import no.javatime.util.messages.Category;
-import no.javatime.util.messages.Message;
 import no.javatime.util.messages.TraceMessage;
 import no.javatime.util.messages.WarnMessage;
 
@@ -40,20 +39,21 @@ import org.eclipse.osgi.util.NLS;
 import org.eclipse.ui.statushandlers.StatusManager;
 
 /**
- * Listen to state changes and report job status in bundle jobs. Bundle status objects added by bundle
- * jobs are reported by this bundle job  listener when jobs are done.
+ * Listen to state changes and report job status in bundle jobs. Bundle status objects added by
+ * bundle jobs are reported by this bundle job listener when jobs are done.
+ * 
  * @see no.javatime.inplace.region.status.IBundleStatus
- * @see no.javatime.inplace.bundlejobs.JobStatus   
+ * @see no.javatime.inplace.bundlejobs.JobStatus
  */
 public class BundleJobListener extends JobChangeAdapter {
 
 	private long startTime;
-	
+
 	/**
 	 * Default constructor for jobs
 	 */
 	public BundleJobListener() {
-  	super();
+		super();
 	}
 
 	/**
@@ -64,14 +64,14 @@ public class BundleJobListener extends JobChangeAdapter {
 		Job job = event.getJob();
 		if (job instanceof BundleJob) {
 			// This does not take dependent projects into account
-//			int pendingProjects = ((BundleJob) job).pendingProjects();
-//			Message.getInstance().setFlushInterval(pendingProjects*5);
+			// int pendingProjects = ((BundleJob) job).pendingProjects();
+			// Message.getInstance().setFlushInterval(pendingProjects*5);
 		}
 	}
 
 	/**
-	 * If the option to report on bundle operations is true, a message that
-	 * the job has started is forwarded.
+	 * If the option to report on bundle operations is true, a message that the job has started is
+	 * forwarded.
 	 */
 	@Override
 	public void running(IJobChangeEvent event) {
@@ -82,7 +82,7 @@ public class BundleJobListener extends JobChangeAdapter {
 			}
 		}
 	}
-	
+
 	/**
 	 * Signal that a bundle job is rescheduled, after waiting for another job.
 	 */
@@ -90,9 +90,9 @@ public class BundleJobListener extends JobChangeAdapter {
 	public void awake(IJobChangeEvent event) {
 		Job job = event.getJob();
 		if (job instanceof BundleJob) {
-//			if (InPlace.get().msgOpt().isBundleOperations()) {
-//				TraceMessage.getInstance().getString("awake_job", job.getName());
-//			}
+			// if (InPlace.get().msgOpt().isBundleOperations()) {
+			// TraceMessage.getInstance().getString("awake_job", job.getName());
+			// }
 		}
 	}
 
@@ -103,12 +103,12 @@ public class BundleJobListener extends JobChangeAdapter {
 	public void sleeping(IJobChangeEvent event) {
 		Job job = event.getJob();
 		if (job instanceof BundleJob) {
-//			if (InPlace.get().msgOpt().isBundleOperations()) {
-//				TraceMessage.getInstance().getString("sleep_job", job.getName());
-//			}
+			// if (InPlace.get().msgOpt().isBundleOperations()) {
+			// TraceMessage.getInstance().getString("sleep_job", job.getName());
+			// }
 		}
 	}
-	
+
 	/**
 	 * Log errors and bundle log bundle jobs.
 	 */
@@ -116,7 +116,6 @@ public class BundleJobListener extends JobChangeAdapter {
 	public void done(IJobChangeEvent event) {
 		final Job job = event.getJob();
 		if (job instanceof BundleJob) {
-			Message.getInstance().flush();
 			final BundleJob bundleJob = (BundleJob) job;
 			if (InPlace.get().msgOpt().isBundleOperations()) {
 				final String endTime = Long.toString(System.currentTimeMillis() - startTime);
@@ -125,20 +124,21 @@ public class BundleJobListener extends JobChangeAdapter {
 					Runnable trace = new Runnable() {
 						public void run() {
 							String msg = NLS.bind(Msg.JOB_NAME_TRACE, bundleJob.getName(), endTime);
-							IBundleStatus multiStatus = new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, msg); 
+							IBundleStatus multiStatus = new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, msg);
 							for (IBundleStatus status : traceList) {
 								multiStatus.add(status);
-							}					
-							InPlace.get().trace(multiStatus);								
+							}
+							InPlace.get().trace(multiStatus);
 						}
-					};	
+					};
 					trace.run();
 				}
-			}			
-			Collection<IBundleStatus> statusList = logCancelStatus(bundleJob);	
+			}
+			Collection<IBundleStatus> statusList = logCancelStatus(bundleJob);
 			if (statusList.size() > 0) {
-				String rootMsg = WarnMessage.getInstance().formatString("end_job_root_message", bundleJob.getName());
-				IBundleStatus multiStatus = new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID, rootMsg);						
+				String rootMsg = WarnMessage.getInstance().formatString("end_job_root_message",
+						bundleJob.getName());
+				IBundleStatus multiStatus = new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID, rootMsg);
 				for (IBundleStatus status : statusList) {
 					multiStatus.add(status);
 				}
@@ -160,24 +160,30 @@ public class BundleJobListener extends JobChangeAdapter {
 		BundleJob bundleJob = null;
 
 		Collection<IProject> deactivatedProjects = ProjectProperties.getCandidateProjects();
-
-		Collection<IProject> projectsToActivate = 
-				bundleTransition.getPendingProjects(deactivatedProjects, Transition.ACTIVATE_PROJECT);
+		// This usually comes from a delayed update when activated bundles to resolve depends on
+		// deactivated bundles
+		Collection<IProject> projectsToActivate = bundleTransition.getPendingProjects(
+				deactivatedProjects, Transition.ACTIVATE_PROJECT);
 		if (projectsToActivate.size() > 0) {
-			bundleJob = new ActivateProjectJob(ActivateProjectJob.activateProjectsJobName, projectsToActivate);			
+			bundleJob = new ActivateProjectJob(ActivateProjectJob.activateProjectsJobName,
+					projectsToActivate);
 			bundleTransition.removePending(projectsToActivate, Transition.ACTIVATE_PROJECT);
 			if (InPlace.get().msgOpt().isBundleOperations()) {
 				try {
 					ProjectSorter projectSorter = new ProjectSorter();
-					// Inform about already activated projects that have requirements on deactivated projects 
+					// Inform about already activated projects that have requirements on deactivated projects
 					for (IProject deactivatedProject : projectsToActivate) {
-						Collection<IProject> activatedProjects = 
-								projectSorter.sortRequiringProjects(Collections.<IProject>singletonList(deactivatedProject), true);
+						Collection<IProject> activatedProjects = projectSorter.sortRequiringProjects(
+								Collections.<IProject> singletonList(deactivatedProject), true);
 						activatedProjects.remove(deactivatedProject);
 						if (activatedProjects.size() > 0) {
-							String msg = NLS.bind(Msg.IMPLICIT_ACTIVATION_INFO, BundleProjectState.formatProjectList(activatedProjects), deactivatedProject.getName());
+							String msg = NLS.bind(Msg.IMPLICIT_ACTIVATION_INFO,
+									BundleProjectState.formatProjectList(activatedProjects),
+									deactivatedProject.getName());
 							IBundleStatus status = new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, msg);
-							msg = NLS.bind(Msg.DELAYED_RESOLVE_INFO, BundleProjectState.formatProjectList(activatedProjects), deactivatedProject.getName());
+							msg = NLS.bind(Msg.DELAYED_RESOLVE_INFO,
+									BundleProjectState.formatProjectList(activatedProjects),
+									deactivatedProject.getName());
 							status.add(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, msg));
 							bundleJob.addTrace(status);
 						}
@@ -187,31 +193,32 @@ public class BundleJobListener extends JobChangeAdapter {
 			}
 			BundleJobManager.addBundleJob(bundleJob, 0);
 		}
-		
+
 		Collection<IProject> activatedProjects = BundleProjectState.getNatureEnabledProjects();
 
-		Collection<IProject> projectsToRefresh = 
-				bundleTransition.getPendingProjects(activatedProjects, Transition.REFRESH);
+		Collection<IProject> projectsToRefresh = bundleTransition.getPendingProjects(activatedProjects,
+				Transition.REFRESH);
 		if (projectsToRefresh.size() > 0) {
-			bundleJob = new RefreshJob(RefreshJob.refreshJobName, projectsToRefresh);			
+			bundleJob = new RefreshJob(RefreshJob.refreshJobName, projectsToRefresh);
 			bundleTransition.removePending(projectsToRefresh, Transition.REFRESH);
 			BundleJobManager.addBundleJob(bundleJob, 0);
 		}
-		Collection<IProject> projectsToDeactivate = 
-				bundleTransition.getPendingProjects(activatedProjects, Transition.DEACTIVATE);
+		Collection<IProject> projectsToDeactivate = bundleTransition.getPendingProjects(
+				activatedProjects, Transition.DEACTIVATE);
 		if (projectsToDeactivate.size() > 0) {
 			bundleJob = new DeactivateJob(DeactivateJob.deactivateJobName, projectsToDeactivate);
 			bundleTransition.removePending(projectsToDeactivate, Transition.DEACTIVATE);
 			BundleJobManager.addBundleJob(bundleJob, 0);
 		}
 	}
-	
+
 	/**
 	 * If the bundle job has been cancelled, log it
+	 * 
 	 * @param bundleJob the job that may contain a cancel status
 	 * 
-	 * @return a copy of the status list with the cancel status removed from the status list or a copy of
-	 * the status list if it does not contain any cancel status 
+	 * @return a copy of the status list with the cancel status removed from the status list or a copy
+	 * of the status list if it does not contain any cancel status
 	 */
 	private Collection<IBundleStatus> logCancelStatus(BundleJob bundleJob) {
 
@@ -226,14 +233,15 @@ public class BundleJobListener extends JobChangeAdapter {
 		}
 		return statusList;
 	}
-	
+
 	/**
 	 * Trace that a bundle job is running if the job is in state {@code Job.RUNNING}.
+	 * 
 	 * @param bundleJob the bundle job to trace
 	 */
 	private void getBundlesJobRunState(BundleJob bundleJob) {
 		IJobManager jobMan = Job.getJobManager();
-		Job[] jobs = jobMan.find(BundleJob.FAMILY_BUNDLE_LIFECYCLE); 
+		Job[] jobs = jobMan.find(BundleJob.FAMILY_BUNDLE_LIFECYCLE);
 		for (int i = 0; i < jobs.length; i++) {
 			Job job = jobs[i];
 			if (job.getState() == Job.RUNNING) {

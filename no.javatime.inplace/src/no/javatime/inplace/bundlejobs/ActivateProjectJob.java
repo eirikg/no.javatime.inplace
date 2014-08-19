@@ -29,17 +29,16 @@ import no.javatime.inplace.region.project.BundleProjectState;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
-import no.javatime.util.messages.Category;
 import no.javatime.util.messages.ErrorMessage;
 import no.javatime.util.messages.ExceptionMessage;
 import no.javatime.util.messages.Message;
-import no.javatime.util.messages.UserMessage;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.SubProgressMonitor;
+import org.eclipse.osgi.util.NLS;
 import org.osgi.framework.Bundle;
 
 /**
@@ -121,8 +120,7 @@ public class ActivateProjectJob extends NatureJob {
 			String msg = ExceptionMessage.getInstance().formatString("interrupt_job", getName());
 			addError(e, msg);
 		} catch (OperationCanceledException e) {
-			String msg = UserMessage.getInstance().formatString("cancel_job", getName());
-			addCancelMessage(e, msg);
+			addCancelMessage(e, NLS.bind(Msg.CANCEL_JOB_INFO, getName()));
 		} catch (CircularReferenceException e) {
 			String msg = ExceptionMessage.getInstance().formatString("circular_reference", getName());
 			BundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg);
@@ -203,15 +201,16 @@ public class ActivateProjectJob extends NatureJob {
 			}
 			InPlace.get().savePluginSettings(true, true);
 		} else {
-			if (Category.getState(Category.infoMessages)) {
-				UserMessage.getInstance().getString("no_projects_to_activate");
+			if (InPlace.get().msgOpt().isBundleOperations()) {
+				InPlace.get().trace(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, Msg.NO_PROJECTS_TO_ACTIVATE_INFO));				
 			}
 			return getLastStatus();
 		}
-		if (Category.getState(Category.infoMessages) && !ProjectProperties.isAutoBuilding()) {
-			UserMessage.getInstance().getString("builder_off");
-			UserMessage.getInstance().getString("builder_off_list",
-					BundleProjectState.formatProjectList(getPendingProjects()));
+		if (InPlace.get().msgOpt().isBundleOperations() && !ProjectProperties.isAutoBuilding()) {
+			IBundleStatus status = new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, Msg.BUILDER_OFF_INFO); 
+			status.add(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, 
+					NLS.bind(Msg.BUILDER_OFF_LIST_INFO, BundleProjectState.formatProjectList(getPendingProjects()))));
+			InPlace.get().trace(status);
 		}
 		return getLastStatus();
 	}
@@ -304,9 +303,10 @@ public class ActivateProjectJob extends NatureJob {
 			projectsToActivate.removeAll(getPendingProjects());
 			if (projectsToActivate.size() > 0) {
 				addPendingProjects(projectsToActivate);
-				if (Category.getState(Category.infoMessages))
-					UserMessage.getInstance().getString("added_bundles_to_activate",
-							BundleProjectState.formatProjectList(projectsToActivate));
+				if (InPlace.get().msgOpt().isBundleOperations()) {
+					InPlace.get().trace(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, 
+							NLS.bind(Msg.ADD_BUNDLES_TO_ACTIVATE_INFO, BundleProjectState.formatProjectList(projectsToActivate))));				
+				}
 			}
 		}
 		return getLastStatus();
@@ -341,9 +341,10 @@ public class ActivateProjectJob extends NatureJob {
 			IBundleStatus multiStatus = new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID, msg);
 			status = createMultiStatus(multiStatus);
 		} else {
-			if (Category.getState(Category.infoMessages))
-				UserMessage.getInstance().getString("uninstall_before_activate",
-						bundleRegion.formatBundleList(bundlesToUninstall, true));
+			if (InPlace.get().msgOpt().isBundleOperations()) {
+				InPlace.get().trace(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, 
+						NLS.bind(Msg.UNINSTALL_BEFORE_ACTIVATE_INFO, bundleRegion.formatBundleList(bundlesToUninstall, true))));				
+			}
 		}
 		return statusList() > entrySize ? getLastStatus() : status;
 	}

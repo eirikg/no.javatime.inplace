@@ -31,16 +31,32 @@ import org.eclipse.osgi.util.NLS;
 import org.eclipse.ui.statushandlers.StatusManager;
 import org.osgi.framework.Bundle;
 
+/**
+ * Helper class for scheduling and adding projects to update jobs.
+ * <p>
+ * Duplicate projects that have become unique are scheduled for activation (and update). Projects
+ * that are identified as members in build errors closures are neither scheduled for update or added to
+ * any update job.
+ */
 public class UpdateScheduler {
 
+	/**
+	 * Schedules an update job for the specified projects. Projects that are members in build error
+	 * closures are not added to the update job. Uninstalled duplicate projects that now are unique -
+	 * by changing their symbolic name and/or version - are scheduled for activation.
+	 * <p>
+	 * Only activated projects with a pending update transition are scheduled for update
+	 * 
+	 * @param projects projects to schedule for update
+	 * @param delay number of milliseconds before starting the update job
+	 */
 	static public void scheduleUpdateJob(Collection<IProject> projects, long delay) {
 		if (projects.size() > 0) {
 			UpdateJob updateJob = new UpdateJob(UpdateJob.updateJobName);
-			;
 			for (IProject project : projects) {
 				if (BundleProjectState.isNatureEnabled(project)
 						&& BundleJobManager.getTransition().containsPending(project, Transition.UPDATE, false)) {
-					addChangedProject(project, updateJob);
+					addProjectToUpdateJob(project, updateJob);
 				}
 			}
 			ActivateBundleJob postActivateBundleJob = null;
@@ -94,28 +110,29 @@ public class UpdateScheduler {
 	 * <b>Activated providing closure.</b> It is legal to update the project when there are activated
 	 * bundles with build errors that provides capabilities to the project to update. The providing
 	 * bundles will not be affected (updated and resolved) when the project is updated. The project to
-	 * update will get wired to the current revision (that is from the last successful build, update
-	 * and resolve) of the activated bundles with build errors when resolved.
+	 * update will get wired to the current revision (that is from the last successful resolve) of the
+	 * activated bundles with build errors when resolved.
 	 * </ol>
 	 * 
 	 * @param bundleProject to add to the specified update job or to be ignored
 	 * @param updateJob the job to add the specified project to
 	 * @return true if the specified project is added to the specified update job and false if not
 	 */
-	static public boolean addChangedProject(IProject bundleProject, UpdateJob updateJob) {
+	static public boolean addProjectToUpdateJob(IProject bundleProject, UpdateJob updateJob) {
 
 		boolean update = true;
-		// Do not update when there are activated requiring projects or deactivated proving projects with build errors
+		// Do not update when there are activated requiring projects or deactivated proving projects
+		// with build errors
 
 		// Activated requiring closure. Activated bundles with build errors requiring
 		// capabilities from the project to update
-		try {			
+		try {
 			BuildErrorClosure be = new BuildErrorClosure(
 					Collections.<IProject> singletonList(bundleProject), Transition.UPDATE, Closure.REQUIRING);
 			if (be.hasBuildErrors()) {
 				if (InPlace.get().msgOpt().isBundleOperations()) {
-					String msg = NLS.bind(Msg.UPDATE_BUILD_ERROR_INFO, new Object[] { bundleProject.getName(),
-							BundleProjectState.formatProjectList(be.getBuildErrors()) });
+					String msg = NLS.bind(Msg.UPDATE_BUILD_ERROR_INFO, new Object[] {
+							bundleProject.getName(), BundleProjectState.formatProjectList(be.getBuildErrors()) });
 					be.setBuildErrorHeaderMessage(msg);
 					IBundleStatus bundleStatus = be.getErrorClosureStatus();
 					if (null != bundleStatus) {
@@ -124,13 +141,14 @@ public class UpdateScheduler {
 				}
 				update = false;
 			}
-			// Deactivated providing closure. Deactivated projects with build errors providing capabilities to project to update
+			// Deactivated providing closure. Deactivated projects with build errors providing
+			// capabilities to project to update
 			be = new BuildErrorClosure(Collections.<IProject> singletonList(bundleProject),
 					Transition.UPDATE, Closure.PROVIDING, Bundle.UNINSTALLED, ActivationScope.DEACTIVATED);
 			if (be.hasBuildErrors()) {
 				if (InPlace.get().msgOpt().isBundleOperations()) {
-					String msg = NLS.bind(Msg.UPDATE_BUILD_ERROR_INFO, new Object[] { bundleProject.getName(),
-							BundleProjectState.formatProjectList(be.getBuildErrors()) });
+					String msg = NLS.bind(Msg.UPDATE_BUILD_ERROR_INFO, new Object[] {
+							bundleProject.getName(), BundleProjectState.formatProjectList(be.getBuildErrors()) });
 					be.setBuildErrorHeaderMessage(msg);
 					IBundleStatus bundleStatus = be.getErrorClosureStatus();
 					if (null != bundleStatus) {
@@ -144,7 +162,8 @@ public class UpdateScheduler {
 			}
 		} catch (CircularReferenceException e) {
 			String msg = ExceptionMessage.getInstance().formatString("circular_reference_termination");
-			IBundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, bundleProject, msg, null);
+			IBundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID,
+					bundleProject, msg, null);
 			multiStatus.add(e.getStatusList());
 			StatusManager.getManager().handle(multiStatus, StatusManager.LOG);
 			update = false;
@@ -173,7 +192,8 @@ public class UpdateScheduler {
 		return providingProjects;
 	}
 
-	public static ActivateBundleJob getInstalledRequirers(UpdateJob updateJob) {
+	@SuppressWarnings("unused")
+	private ActivateBundleJob getInstalledRequirers(UpdateJob updateJob) {
 		ActivateBundleJob postActivateBundleJob = null;
 		BundleRegion bundleRegion = BundleJobManager.getRegion();
 		ProjectSorter ps = new ProjectSorter();
@@ -252,7 +272,7 @@ public class UpdateScheduler {
 						}
 					} else {
 						bundleTransition.addPending(project, Transition.UPDATE);
-						UpdateScheduler.addChangedProject(project, updateJob);
+						UpdateScheduler.addProjectToUpdateJob(project, updateJob);
 					}
 				}
 			}
@@ -270,7 +290,7 @@ public class UpdateScheduler {
 	 * @return A map of project and cached symbolic key pairs for all specified projects that have
 	 * different symbolic keys
 	 */
-	static public Map<IProject, String> getModifiedSymbolicKey(Collection<IProject> projects) {
+	private static Map<IProject, String> getModifiedSymbolicKey(Collection<IProject> projects) {
 
 		// Record projects that have changed their symbolic key (symbolic name and/or the version)
 		Map<IProject, String> symbolicKeymap = new HashMap<IProject, String>();
@@ -293,8 +313,8 @@ public class UpdateScheduler {
 
 	/**
 	 * Default way to schedule jobs, with no delay, saving files before schedule, waiting on builder
-	 * to finish, no progress dialog, run the job via the bundle view if visible showing a half busy
-	 * cursor and also displaying the job name in the content bar of the bundle view
+	 * to finish, no progress dialog and run the job via the bundle view if visible showing a half
+	 * busy cursor and also displaying the job name in the content bar of the bundle view
 	 * 
 	 * @param job to schedule
 	 * @param delay number of msecs to wait before starting the job

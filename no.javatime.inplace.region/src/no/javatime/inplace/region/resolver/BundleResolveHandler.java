@@ -26,7 +26,7 @@ import no.javatime.inplace.region.manager.BundleTransition;
 import no.javatime.inplace.region.manager.BundleTransition.Transition;
 import no.javatime.inplace.region.manager.BundleWorkspaceRegionImpl;
 import no.javatime.inplace.region.project.BundleProjectState;
-import no.javatime.inplace.region.state.BundleStateFactory;
+import no.javatime.inplace.region.state.BundleNode;
 import no.javatime.util.messages.Category;
 import no.javatime.util.messages.TraceMessage;
 
@@ -55,10 +55,10 @@ import org.osgi.framework.wiring.BundleRevision;
  * <b>Filtering bundles to resolve.</b>
  * <p>
  * In an activated workspace all bundles are at least in state INSTALLED, also those who are not
- * activated. The OSGI resolver suggest to resolve all installed bundles. The filtering
- * process excludes installed not activated bundles from being resolved. Also, if one or more
- * activated bundles have requirements on deactivated bundles the activated bundles are removed from
- * the candidate resolve list. The deactivated bundles are the marked as pending for activation.
+ * activated. The OSGI resolver suggest to resolve all installed bundles. The filtering process
+ * excludes installed not activated bundles from being resolved. Also, if one or more activated
+ * bundles have requirements on deactivated bundles the activated bundles are removed from the
+ * candidate resolve list. The deactivated bundles are the marked as pending for activation.
  * <p>
  * If a plug-in use extensions or implement extension-points it is required that the plug-in is a
  * singleton.
@@ -81,16 +81,16 @@ class BundleResolveHandler implements ResolverHook {
 	 * Remove bundle closures for deactivated bundles and activated bundles dependent on deactivated
 	 * bundles from the resolvable candidate list.
 	 * <p>
-	 * Deactivated bundles will be excluded (removed) from the resolve candidate list. If
-	 * an activated bundle is dependent on an installed (not activated) bundle, resolve of the
-	 * activated bundle is delayed and a pending activate transition is added to the deactivated
-	 * bundle project. Any additional dependencies on the bundle project to activate should be handled by
-	 * the activation job.
+	 * Deactivated bundles will be excluded (removed) from the resolve candidate list. If an activated
+	 * bundle is dependent on an installed (not activated) bundle, resolve of the activated bundle is
+	 * delayed and a pending activate transition is added to the deactivated bundle project. Any
+	 * additional dependencies on the bundle project to activate should be handled by the activation
+	 * job.
 	 */
 	@Override
 	public void filterResolvable(Collection<BundleRevision> candidates) {
 
-		// Do not infer in a deactivated workspace
+		// Do not infer when workspace is deactivated
 		if (!BundleProjectState.isWorkspaceNatureEnabled()) {
 			return;
 		}
@@ -100,9 +100,9 @@ class BundleResolveHandler implements ResolverHook {
 		}
 		Collection<BundleRevision> deactivatedBundles = new LinkedHashSet<BundleRevision>();
 		Collection<BundleRevision> activatedBundles = new LinkedHashSet<BundleRevision>();
-		// Restrict the scope to workspace bundles
+		// Restrict the scope of bundles to resolve to workspace bundles
 		Collection<BundleRevision> workspaceCandidates = BundleDependencies.getRevisionsFrom(bundles);
-		// Extract workspace candidate bundles from all candidate bundles
+		// Restrict workspace candidate bundles to candidate bundles closures to resolve
 		workspaceCandidates.retainAll(candidates);
 
 		// Split candidates in those activated and those deactivated
@@ -125,7 +125,7 @@ class BundleResolveHandler implements ResolverHook {
 		}
 		// Delay resolve for bundles dependent on deactivated bundles until deactivated bundles are
 		// activated
-		Collection<BundleRevision> dependentBundles = activateProvidingProjects(activatedBundles,
+		Collection<BundleRevision> dependentBundles = delayResolve(activatedBundles,
 				deactivatedBundles);
 		if (dependentBundles.size() > 0) {
 			candidates.removeAll(dependentBundles);
@@ -144,28 +144,29 @@ class BundleResolveHandler implements ResolverHook {
 	 * A pending transition for later activation is assigned to deactivated candidate bundles
 	 * providing capabilities to activated candidate bundles.
 	 * <p>
-	 * The bundle revision to not resolve will be updated together with the deactivated provider when
-	 * the provider is activated and updated (delayed update).
+	 * The bundle revision to not resolve will be resolved together with the deactivated provider when
+	 * the provider is activated, updated (delayed update) and resolved
 	 * <p>
 	 * Note the transitivity with respect to not resolved bundles and bundles to activate. Activated
 	 * bundles dependent on an activated bundle which again is dependent on a deactivated bundle is
 	 * included in the list of activated requiring bundle revisions to not resolve. From this follows
-	 * that deactivated bundles providing capabilities to a deactivated bundle providing capabilities
-	 * to an activated bundle are activated when the deactivated bundle in question is activated.
+	 * that deactivated bundles providing capabilities to other deactivated bundles providing
+	 * capabilities to an activated bundle are activated when the deactivated bundle in question is
+	 * activated.
 	 * 
 	 * @param activatedRevs all activated candidate workspace bundles
 	 * @param deactivatedRevs all deactivated candidate workspace bundles
 	 * @return all activated bundles that requires capabilities from deactivated bundles or an empty
 	 * collection if no such requirements exist
 	 */
-	private Collection<BundleRevision> activateProvidingProjects(
+	private Collection<BundleRevision> delayResolve(
 			Collection<BundleRevision> activatedRevs, Collection<BundleRevision> deactivatedRevs) {
 
 		// Activated bundles requiring capabilities from deactivated bundles
 		Collection<BundleRevision> bundlesToNotResolve = null;
 
-		// Does any bundles in the set of activated bundles to resolve have requirements on any
-		// deactivated candidate bundles
+		// Does any bundles in the set of activated candidate bundles to resolve have requirements on
+		// any deactivated candidate bundles
 		for (BundleRevision deactivatedRev : deactivatedRevs) {
 			Collection<BundleRevision> activatedReqs = BundleDependencies.getRequiringBundles(
 					deactivatedRev, activatedRevs, null, new LinkedHashSet<BundleRevision>());
@@ -173,9 +174,10 @@ class BundleResolveHandler implements ResolverHook {
 				if (null == bundlesToNotResolve) {
 					bundlesToNotResolve = new LinkedHashSet<BundleRevision>();
 				}
-				// Inform others that this bundle project should be activated
+				// Inform others (typically build and job listeners)that this bundle project should be
+				// activated
 				bundleTransition.addPending(deactivatedRev.getBundle(), Transition.ACTIVATE_PROJECT);
-				bundlesToNotResolve.addAll(rollbackState(activatedReqs));
+				bundlesToNotResolve.addAll(rollBackTransition(activatedReqs));
 			}
 		}
 		if (null != bundlesToNotResolve) {
@@ -190,7 +192,7 @@ class BundleResolveHandler implements ResolverHook {
 	 * @param notResolveList bundles to roll back to state installed
 	 * @return the specified list to revert or an empty list if the specified list is null
 	 */
-	private Collection<BundleRevision> rollbackState(Collection<BundleRevision> notResolveList) {
+	private Collection<BundleRevision> rollBackTransition(Collection<BundleRevision> notResolveList) {
 
 		if (null == notResolveList) {
 			return Collections.<BundleRevision> emptySet();
@@ -198,10 +200,8 @@ class BundleResolveHandler implements ResolverHook {
 		if (notResolveList.size() > 0) {
 			for (BundleRevision notResolveRev : notResolveList) {
 				Bundle notResloveBundle = notResolveRev.getBundle();
-				bundleTransition.setTransition(bundleRegion.getRegisteredBundleProject(notResloveBundle),
-						Transition.INSTALL);
-				BundleWorkspaceRegionImpl.INSTANCE.setActiveState(notResloveBundle,
-						BundleStateFactory.INSTANCE.installedState);
+				BundleNode node = BundleWorkspaceRegionImpl.INSTANCE.getBundleNode(notResloveBundle);
+				node.rollBack();
 			}
 		}
 		return notResolveList;

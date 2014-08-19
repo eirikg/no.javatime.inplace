@@ -133,6 +133,9 @@ public abstract class JobStatus extends WorkspaceJob implements BundleTransition
 						{bundle.getSymbolicName(), bundleCommand.getStateName(bundle), bundle.getLocation()}, bundle);
 			}
 			break;
+		case LAZY_LOAD:
+			addTrace(Msg.ON_DEMAND_LOAD_BUNDLE_TRACE, new Object[] {bundle}, bundle);
+			break;			
 		case UPDATE_CLASSPATH:
 			bundleProjDesc = InPlace.get().getBundleDescription(project);
 			addTrace(Msg.UPDATE_BUNDLE_CLASSPATH_TRACE, 

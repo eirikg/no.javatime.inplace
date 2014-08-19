@@ -237,7 +237,7 @@ public class BundleTransitionImpl implements BundleTransition {
 
 	@Override
 	public void addPending(Bundle bundle, Transition operation) {
-	ws.addPendingCommand(bundle, operation);
+		ws.addPendingCommand(bundle, operation);
 	}
 
 	@Override

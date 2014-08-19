@@ -37,7 +37,6 @@ import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import no.javatime.util.messages.Category;
 import no.javatime.util.messages.ErrorMessage;
 import no.javatime.util.messages.ExceptionMessage;
-import no.javatime.util.messages.UserMessage;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
@@ -45,6 +44,7 @@ import org.eclipse.core.resources.IResourceChangeEvent;
 import org.eclipse.core.resources.IResourceChangeListener;
 import org.eclipse.core.resources.IResourceDelta;
 import org.eclipse.core.resources.IncrementalProjectBuilder;
+import org.eclipse.osgi.util.NLS;
 import org.eclipse.ui.statushandlers.StatusManager;
 import org.osgi.framework.Bundle;
 
@@ -281,7 +281,7 @@ public class PostBuildListener implements IResourceChangeListener {
 								Boolean.TRUE)) {
 					// Not using UpdateScheduler.addChangedProject(...); This is now handled in the resolver
 					// hook
-					UpdateScheduler.addChangedProject(project, updateJob);
+					UpdateScheduler.addProjectToUpdateJob(project, updateJob);
 					ishandled = true;
 				}
 			} catch (InPlaceException e) {
@@ -402,7 +402,7 @@ public class PostBuildListener implements IResourceChangeListener {
 		} catch (ProjectLocationException e) {
 			String msg = ErrorMessage.getInstance().formatString("project_location", project.getName());
 			IBundleStatus status = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg, e);
-			msg = UserMessage.getInstance().formatString("refresh_hint", project.getName());
+			msg  = NLS.bind(Msg.REFRESH_HINT_INFO, project.getName()); 
 			status.add(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, project, msg, null));
 			StatusManager.getManager().handle(status, StatusManager.LOG);
 		}

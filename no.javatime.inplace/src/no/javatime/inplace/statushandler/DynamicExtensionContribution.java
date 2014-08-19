@@ -16,11 +16,11 @@ import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 
 import no.javatime.inplace.InPlace;
+import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.status.BundleStatus;
+import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
-import no.javatime.util.messages.Category;
 import no.javatime.util.messages.ErrorMessage;
-import no.javatime.util.messages.UserMessage;
 
 import org.eclipse.core.internal.registry.ExtensionRegistry;
 import org.eclipse.core.runtime.ContributorFactoryOSGi;
@@ -31,6 +31,7 @@ import org.eclipse.core.runtime.IExtensionRegistry;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.RegistryFactory;
+import org.eclipse.osgi.util.NLS;
 import org.eclipse.ui.statushandlers.StatusManager;
 import org.osgi.framework.Bundle;
 
@@ -107,12 +108,6 @@ public class DynamicExtensionContribution {
 		sb.append("</extension>");
 		sb.append("</plugin>");
 		Boolean extAdded = addExtension(sb.toString());
-		if (Category.getState(Category.infoMessages)) {
-			if (extAdded) {
-				UserMessage.getInstance().getString("debug_line_brakpoint_command",
-						eclipseToggleLineBreakPintExtension);
-			}
-		}
 		if (!extAdded) {
 			Bundle bundle = InPlace.get().getBundle();
 			String msg = ErrorMessage.getInstance().formatString("failed_to_add_status_debug_line_breakpoint_command",
@@ -177,15 +172,19 @@ public class DynamicExtensionContribution {
 						StatusManager.LOG);
 			}
 		}
-		if (Category.getState(Category.infoMessages)) {
+		if (InPlace.get().msgOpt().isBundleOperations()) {
 			if (extAdded) {
+				String msg = null;
 				if (!productId.equals(defaultProductId)) {
-					UserMessage.getInstance().getString("customized_status_handler", statusHandlerExtensionId, productId);
+					msg = NLS.bind(Msg.CUSTOMIZED_STATUS_HANDLER_INFO, statusHandlerExtensionId, productId);
+					InPlace.get().trace(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, msg));					
 				} else if (statusFromCommandline()) {
-					UserMessage.getInstance().getString("customized_status_handler_cmd_line", statusHandlerExtensionId, productId);					
+					msg = NLS.bind(Msg.CUSTOMIZED_STATUS_HANDLER_CMD_LINE_INFO, statusHandlerExtensionId, productId);
+					InPlace.get().trace(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, msg));
 				} else {
-					UserMessage.getInstance().getString("standard_status_handler");
-					UserMessage.getInstance().getString("use_customized_status_handler");
+					IBundleStatus status = new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, Msg.STANDARD_STATUS_HANDLER_INFO);
+					status.add(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, Msg.USE_CUSTOMIZED_STATUS_HANDLER_INFO));
+					InPlace.get().trace(status);
 				}
 			}
 		}

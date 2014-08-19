@@ -25,16 +25,15 @@ import no.javatime.inplace.region.project.BundleProjectState;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
-import no.javatime.util.messages.Category;
 import no.javatime.util.messages.ErrorMessage;
 import no.javatime.util.messages.ExceptionMessage;
-import no.javatime.util.messages.UserMessage;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.WorkspaceJob;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences;
+import org.eclipse.osgi.util.NLS;
 import org.eclipse.ui.IStartup;
 import org.eclipse.ui.statushandlers.StatusManager;
 import org.osgi.framework.Bundle;
@@ -53,10 +52,11 @@ public class StartUp implements IStartup {
 	 */
 	@Override
 	public void earlyStartup() {
-		if (Category.getState(Category.infoMessages)) {
+		if (InPlace.get().msgOpt().isBundleOperations()) {
 			String osgiDev = BundleProjectSettings.inDevelopmentMode();
 			if (null != osgiDev) {
-				UserMessage.getInstance().getString("class_path_dev_parameter", osgiDev);
+				String msg = NLS.bind(Msg.CLASS_PATH_DEV_PARAM_INFO, osgiDev);
+				InPlace.get().trace(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, msg));
 			}
 		}
 		try {

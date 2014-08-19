@@ -5,7 +5,7 @@ import no.javatime.inplace.dl.preferences.intface.MessageOptions;
 import no.javatime.inplace.extender.provider.Extension;
 import no.javatime.inplace.region.manager.InPlaceException;
 import no.javatime.inplace.region.resolver.BundleResolveHookFactory;
-import no.javatime.inplace.region.state.BundleEventManager;
+import no.javatime.inplace.region.state.BundleStateEvents;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
@@ -26,7 +26,7 @@ public class Activator extends AbstractUIPlugin {
 	private static Activator plugin;
 	private static BundleContext context;
 
-	private BundleEventManager eventManager = new BundleEventManager();;
+	private BundleStateEvents bundleEvents = new BundleStateEvents();;
 
 	private ServiceTracker<IBundleProjectService, IBundleProjectService> bundleProjectTracker;
 	private Extension<MessageOptions> messageOptions;
@@ -54,8 +54,7 @@ public class Activator extends AbstractUIPlugin {
 		plugin = this;
 		Activator.context = context;		
 		registerResolverHook();
-		Activator.context.addFrameworkListener(eventManager);
-		Activator.context.addBundleListener(eventManager);
+		Activator.context.addBundleListener(bundleEvents);
 		messageOptions = new Extension<>(MessageOptions.class);
 		dependencyOptions = new Extension<>(DependencyOptions.class);
 		bundleProjectTracker =  new ServiceTracker<IBundleProjectService, IBundleProjectService>
@@ -68,8 +67,7 @@ public class Activator extends AbstractUIPlugin {
 	 * @see org.eclipse.ui.plugin.AbstractUIPlugin#stop(org.osgi.framework.BundleContext)
 	 */
 	public void stop(BundleContext context) throws Exception {
-		Activator.context.removeFrameworkListener(eventManager);
-		Activator.context.removeBundleListener(eventManager);
+		Activator.context.removeBundleListener(bundleEvents);
 		bundleProjectTracker.close();
 		bundleProjectTracker = null;		
 		unregisterResolverHook();

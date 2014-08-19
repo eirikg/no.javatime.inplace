@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.Properties;
 
 import no.javatime.inplace.InPlace;
+import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.events.TransitionEvent;
 import no.javatime.inplace.region.manager.BundleManager;
 import no.javatime.inplace.region.manager.BundleTransition.Transition;
@@ -31,7 +32,6 @@ import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import no.javatime.util.messages.Category;
 import no.javatime.util.messages.TraceMessage;
-import no.javatime.util.messages.UserMessage;
 import no.javatime.util.messages.WarnMessage;
 
 import org.eclipse.core.internal.runtime.DevClassPathHelper;
@@ -48,6 +48,7 @@ import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.IPackageFragmentRoot;
 import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.osgi.util.ManifestElement;
+import org.eclipse.osgi.util.NLS;
 import org.eclipse.pde.core.project.IBundleClasspathEntry;
 import org.eclipse.pde.core.project.IBundleProjectDescription;
 import org.eclipse.pde.core.project.IBundleProjectService;
@@ -436,8 +437,9 @@ public class BundleProjectSettings {
 			url = new URL(osgiDev);
 		} catch (MalformedURLException e) {
 			// Using common comma-separated class path entries (dev=<class path entries>) for all bundles
-			if (Category.getState(Category.infoMessages)) {
-				UserMessage.getInstance().getString("class_path_common", osgiDev, symbolicName);
+			if (InPlace.get().msgOpt().isBundleOperations()) {
+				InPlace.get().trace(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, 
+						NLS.bind(Msg.CLASS_PATH_COMMON_INFO, osgiDev, symbolicName)));
 			}
 			String[] devDefaultClasspath = DevClassPathHelper.getDevClassPath(symbolicName);
 			boolean found = false;
@@ -477,10 +479,6 @@ public class BundleProjectSettings {
 		try {
 			os = new FileOutputStream(url.getPath());
 			props.store(os, null);
-			// Using and applying the class path to a properties file
-			if (Category.getState(Category.infoMessages)) {
-				UserMessage.getInstance().getString("class_path_per_bundle", classPath, symbolicName);
-			}
 		} catch (FileNotFoundException e) {
 			throw new InPlaceException(e, "classpath_file_not_found_error", symbolicName);
 		} catch (IOException e) {

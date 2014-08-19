@@ -19,9 +19,9 @@ import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import no.javatime.inplace.ui.Activator;
+import no.javatime.inplace.ui.msg.Msg;
 import no.javatime.util.messages.ErrorMessage;
 import no.javatime.util.messages.ExceptionMessage;
-import no.javatime.util.messages.UserMessage;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
@@ -29,6 +29,7 @@ import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jface.viewers.IStructuredContentProvider;
 import org.eclipse.jface.viewers.Viewer;
+import org.eclipse.osgi.util.NLS;
 import org.eclipse.ui.statushandlers.StatusManager;
 
 /**
@@ -146,7 +147,7 @@ class BundleContentProvider implements IStructuredContentProvider {
 		} catch (ProjectLocationException e) {
 			String msg = ErrorMessage.getInstance().formatString("project_location", project.getName());			
 			IBundleStatus status = new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, msg,e);
-			msg = UserMessage.getInstance().formatString("refresh_hint", project.getName());			
+			msg  = NLS.bind(Msg.REFRESH_HINT_INFO, project.getName()); 
 			status.add(new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, msg));
 			StatusManager.getManager().handle(status, StatusManager.LOG);
 			locationIdentifier = e.getLocalizedMessage();
