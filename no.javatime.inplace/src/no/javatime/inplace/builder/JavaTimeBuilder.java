@@ -307,7 +307,7 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 				}
 			} catch (CircularReferenceException e) {
 				String msg = ExceptionMessage.getInstance().formatString("circular_reference_termination");
-				IBundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, project, msg, null);
+				IBundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, project, msg, e);
 				multiStatus.add(e.getStatusList());
 				StatusManager.getManager().handle(multiStatus, StatusManager.LOG);
 				cycle = true;
