@@ -97,7 +97,6 @@ public class PreChangeListener implements IResourceChangeListener {
 						}
 						uninstallJob.addPendingProject(project);
 					}
-					uninstallJob.unregisterBundleProject(true);
 					BundleJobManager.addBundleJob(uninstallJob, 0);
 
 				} else {
