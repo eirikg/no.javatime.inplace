@@ -273,8 +273,6 @@ public class BundleProperties {
 				} else {
 					return "Bundle Problems";
 				}
-			} else if (bundleTransition.getTransition(project) == Transition.EXTERNAL) {
-				return "External Transition";
 			} else if (null != bundle && bundleCommand.getBundleRevisions(bundle).size() > 1) {
 				return "Refresh Pending" + " (" + getBundleRevisions() + ")";
 			} else if (isProjectActivated && (bundleCommand.getState(bundle) & (Bundle.RESOLVED)) != 0
