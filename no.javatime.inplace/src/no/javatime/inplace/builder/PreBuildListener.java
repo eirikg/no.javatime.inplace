@@ -13,6 +13,7 @@ package no.javatime.inplace.builder;
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundlemanager.BundleJobManager;
 import no.javatime.inplace.bundleproject.ProjectProperties;
+import no.javatime.inplace.region.manager.BundleManager;
 import no.javatime.inplace.region.manager.BundleTransition.Transition;
 import no.javatime.inplace.region.manager.InPlaceException;
 import no.javatime.inplace.region.project.BundleProjectState;
@@ -30,7 +31,7 @@ import org.eclipse.ui.statushandlers.StatusManager;
 /**
  * Listen to projects that are going to be built. This callback is also invoked when auto build is
  * switched off. Register a bundle as pending for build after workspace resources have been changed.
- * Listen to pre build notifications.
+ * Listen to pre build notifications. Also clears any errors (not build errors) on uninstalled bundle projects.
  */
 public class PreBuildListener implements IResourceChangeListener {
 
@@ -44,18 +45,20 @@ public class PreBuildListener implements IResourceChangeListener {
 	public void resourceChanged(IResourceChangeEvent event) {
 
 		// Nothing to do in a deactivated workspace where all bundle projects are uninstalled
-		if (!BundleProjectState.isWorkspaceNatureEnabled()) {
-			return;
-		}
 		IResourceDelta rootDelta = event.getDelta();
 		IResourceDelta[] projectDeltas = rootDelta.getAffectedChildren(IResourceDelta.ADDED
 				| IResourceDelta.CHANGED, IResource.NONE);
+		boolean isWSActivated = BundleProjectState.isWorkspaceNatureEnabled();
 		for (IResourceDelta projectDelta : projectDeltas) {
 			IResource projectResource = projectDelta.getResource();
 			if (projectResource.isAccessible() && (projectResource.getType() & (IResource.PROJECT)) != 0) {
 				IProject project = projectResource.getProject();
 				try {
-					if (!ProjectProperties.isAutoBuilding() && BundleProjectState.isNatureEnabled(project)) {
+					if (!isWSActivated) {
+						// Clear any errors detected from last activation that caused the workspace to be deactivated
+						// The error should be visible in a deactivated workspace until the project is built
+						BundleManager.getTransition().clearTransitionError(project);
+					} else if (!ProjectProperties.isAutoBuilding() && BundleProjectState.isNatureEnabled(project)) {
 						BundleJobManager.getTransition().addPending(project, Transition.BUILD);
 					}
 				} catch (InPlaceException e) {
