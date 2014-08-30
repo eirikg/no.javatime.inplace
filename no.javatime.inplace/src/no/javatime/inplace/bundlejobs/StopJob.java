@@ -152,7 +152,7 @@ public class StopJob extends BundleJob {
 	 * @throws CircularReferenceException if cycles are detected in the project graph
 	 */
 	private IBundleStatus stop(IProgressMonitor monitor) throws
-			InPlaceException, CoreException, InterruptedException, CircularReferenceException {
+	InPlaceException, CoreException, InterruptedException, CircularReferenceException {
 
 		Collection<Bundle> bundlesToStop = bundleRegion.getBundles(getPendingProjects());
 		Collection<Bundle> activatedBundles = bundleRegion.getActivatedBundles();
@@ -171,8 +171,9 @@ public class StopJob extends BundleJob {
 				if (requiringBundles.size() > 0) {
 					Collection<Bundle> providingBundles = bs.sortProvidingBundles(Collections.<Bundle>singletonList(bundle),
 							bundleRegion.getBundles(Bundle.RESOLVED | Bundle.STOPPING));
-					WarnMessage.getInstance().getString("has_stopped_requiring_bundles",
+					String msg =	WarnMessage.getInstance().formatString("has_stopped_requiring_bundles",
 							bundleRegion.formatBundleList(requiringBundles, true), bundleRegion.formatBundleList(providingBundles, true)); 
+					addTrace(new BundleStatus(StatusCode.WARNING, InPlace.PLUGIN_ID, msg));
 				}
 			}
 		}

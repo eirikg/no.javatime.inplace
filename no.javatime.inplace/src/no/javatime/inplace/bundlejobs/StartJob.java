@@ -188,7 +188,7 @@ public class StartJob extends BundleJob {
 		start(bundlesToStart, null, new SubProgressMonitor(
 				monitor, 1));
 		// Warn about missing providing closures in state RESOLVED
-		if (getDepOpt().get(Operation.ACTIVATE_BUNDLE, Closure.REQUIRING) 
+		if (getDepOpt().get(Operation.ACTIVATE_BUNDLE, Closure.REQUIRING)
 				|| getDepOpt().get(Operation.ACTIVATE_BUNDLE, Closure.SINGLE)) {
 			BundleSorter bs = new BundleSorter();
 			for (Bundle bundle : bundlesToStart) {
@@ -198,8 +198,9 @@ public class StartJob extends BundleJob {
 				if (providingBundles.size() > 0) {
 					Collection<Bundle> requiringBundles = bs.sortRequiringBundles(Collections.<Bundle>singletonList(bundle),
 							bundleRegion.getBundles(Bundle.ACTIVE | Bundle.STARTING));
-					WarnMessage.getInstance().getString("has_started_providing_bundles",
+					String msg = WarnMessage.getInstance().formatString("has_started_providing_bundles",
 							bundleRegion.formatBundleList(providingBundles, true), bundleRegion.formatBundleList(requiringBundles, true));
+					addTrace(new BundleStatus(StatusCode.WARNING, InPlace.PLUGIN_ID, msg));
 				}
 			}
 		}
