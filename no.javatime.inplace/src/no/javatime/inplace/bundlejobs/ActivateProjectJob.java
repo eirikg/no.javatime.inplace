@@ -171,6 +171,10 @@ public class ActivateProjectJob extends NatureJob {
 	private IBundleStatus activate(IProgressMonitor monitor) throws InPlaceException,
 			InterruptedException, CircularReferenceException {
 
+		if (!allowActivate()) {
+			return getLastStatus(); 
+		}
+		
 		if (pendingProjects() > 0) {
 			IBundleStatus result = initWorkspace(monitor);
 			if (!result.hasStatus(StatusCode.OK) && !result.hasStatus(StatusCode.INFO)) {
@@ -264,12 +268,12 @@ public class ActivateProjectJob extends NatureJob {
 	 */
 	private Collection<IProject> buildErrorClosure(Collection<IProject> projects) throws InPlaceException,
 			CircularReferenceException {
-
-		// Deactivated providing closure. In this case the scope is deactivated as long as we
-		// not are checking activated providing or requiring bundles with build errors
+		
+		// Deactivated providing closure. In this case the activation scope is deactivated as long as we
+		// are not checking activated providing or requiring bundles with build errors
 		// Activated requiring closure is not checked (see method comments)
 		// Note that the bundles to activate are not activated yet.
-		BuildErrorClosure be = new BuildErrorClosure(getPendingProjects(), Transition.ACTIVATE_PROJECT,
+		BuildErrorClosure be = new BuildErrorClosure(projects, Transition.ACTIVATE_PROJECT,
 				Closure.PROVIDING, Bundle.UNINSTALLED, ActivationScope.DEACTIVATED);
 		if (be.hasBuildErrors()) {
 			Collection<IProject> errorClosure = be.getBuildErrorClosures();
@@ -280,7 +284,31 @@ public class ActivateProjectJob extends NatureJob {
 		}
 		return Collections.<IProject> emptySet();
 	}
+	
+	/**
+	 * Uninstalled projects missing build state or with build errors in manifest prevents activation of any project
+	 */
+	private boolean allowActivate() {
 
+		if (!BundleProjectState.isWorkspaceNatureEnabled()) {			
+			Collection<IProject> errorProjects = BuildErrorClosure.getBuildErrors((ProjectProperties.getPlugInProjects()));
+			IBundleStatus multiStatus = new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID, Msg.FATAL_ACTIVATE_ERROR);
+			for (IProject project : errorProjects) {
+				if (!BuildErrorClosure.hasBuildState(project)) {
+					multiStatus.add(new BundleStatus(StatusCode.WARNING, InPlace.PLUGIN_ID, project, 
+							NLS.bind(Msg.BUILD_STATE_ERROR, project.getName()), null));
+				}	else if (BuildErrorClosure.hasManifestBuildErrors(project)) {
+					multiStatus.add(new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID, project, 
+							NLS.bind(Msg.MANIFEST_BUILD_ERROR, project.getName()), null));					
+				}
+			}
+			if (multiStatus.getChildren().length > 0) {
+				addStatus(multiStatus);
+				return false;				
+			}
+		}		
+		return true;
+	}
 	/**
 	 * Initialize the workspace by stopping and uninstalling all workspace bundles and then adding the
 	 * uninstalled bundles as pending projects. This only happens if the workspace is deactivated

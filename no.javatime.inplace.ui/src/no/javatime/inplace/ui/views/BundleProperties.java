@@ -364,7 +364,7 @@ public class BundleProperties {
 			}
 		} catch (InPlaceException e) {
 			// Don't spam this meassage.
-			if (!ProjectProperties.hasManifestBuildErrors(project) && BuildErrorClosure.hasBuildState(project)) {
+			if (!BuildErrorClosure.hasManifestBuildErrors(project) && BuildErrorClosure.hasBuildState(project)) {
 				String msg = ErrorMessage.getInstance().formatString("error_get_policy", project.getName());
 				StatusManager.getManager().handle(
 						new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, msg, e), StatusManager.LOG);

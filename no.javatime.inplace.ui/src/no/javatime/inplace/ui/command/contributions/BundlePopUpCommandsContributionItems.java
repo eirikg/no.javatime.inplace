@@ -14,11 +14,11 @@ import java.util.ArrayList;
 
 import no.javatime.inplace.bundlemanager.BundleJobManager;
 import no.javatime.inplace.bundleproject.BundleProjectSettings;
-import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.dialogs.OpenProjectHandler;
 import no.javatime.inplace.extender.provider.Extension;
 import no.javatime.inplace.log.intface.BundleLogView;
 import no.javatime.inplace.pl.dependencies.intface.DependencyDialog;
+import no.javatime.inplace.region.closure.BuildErrorClosure;
 import no.javatime.inplace.region.manager.BundleTransition.Transition;
 import no.javatime.inplace.region.manager.InPlaceException;
 import no.javatime.inplace.region.project.BundleProjectState;
@@ -225,7 +225,7 @@ public class BundlePopUpCommandsContributionItems extends BundleCommandsContribu
 
 	private CommandContributionItem addClassPath(IProject project) {
 		try {
-			if (!ProjectProperties.hasManifestBuildErrors(project)) {
+			if (!BuildErrorClosure.hasManifestBuildErrors(project)) {
 				if (!BundleProjectSettings.isOutputFolderInBundleClassPath(project)) {
 					return addContribution(menuId, dynamicPopUpCommandId, addClassPathLabel, addClassPathParamId,
 							CommandContributionItem.STYLE_PUSH, classPathImage);

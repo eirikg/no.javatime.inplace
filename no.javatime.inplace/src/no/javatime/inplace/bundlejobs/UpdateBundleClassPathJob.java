@@ -16,6 +16,7 @@ import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundleproject.BundleProjectSettings;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.msg.Msg;
+import no.javatime.inplace.region.closure.BuildErrorClosure;
 import no.javatime.inplace.region.manager.BundleManager;
 import no.javatime.inplace.region.manager.InPlaceException;
 import no.javatime.inplace.region.status.BundleStatus;
@@ -87,7 +88,7 @@ public class UpdateBundleClassPathJob extends BundleJob {
 			BundleManager.addBundleTransitionListener(this);
 			for (IProject project : getPendingProjects()) {
 				try {
-					if (!ProjectProperties.hasManifestBuildErrors(project)) {
+					if (!BuildErrorClosure.hasManifestBuildErrors(project)) {
 						if (addToPath) {
 							if (BundleProjectSettings.addOutputLocationToBundleClassPath(project)) {
 								resetJob.addPendingProject(project);

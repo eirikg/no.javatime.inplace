@@ -19,14 +19,10 @@ import no.javatime.inplace.region.closure.CircularReferenceException;
 import no.javatime.inplace.region.closure.ProjectSorter;
 import no.javatime.inplace.region.manager.InPlaceException;
 import no.javatime.inplace.region.project.BundleProjectState;
-import no.javatime.inplace.region.project.ManifestOptions;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 
-import org.eclipse.core.resources.IFile;
-import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IProject;
-import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.IWorkspaceDescription;
 import org.eclipse.core.resources.IWorkspaceRoot;
@@ -317,28 +313,6 @@ public class ProjectProperties {
 		return javaProjects;
 	}
 
-	public static boolean hasManifestBuildErrors(IProject project) throws InPlaceException {
-		
-		try {
-			if (!BundleProjectSettings.hasManifest(project)) {
-				return true;
-			}
-			IMarker[] problems = project.findMarkers(IMarker.PROBLEM, true, IResource.DEPTH_INFINITE);
-			// check if any of these have a severity attribute that indicates an error
-			for (int problemsIndex = 0; problemsIndex < problems.length; problemsIndex++) {
-				if (IMarker.SEVERITY_ERROR == problems[problemsIndex].getAttribute(IMarker.SEVERITY,
-						IMarker.SEVERITY_INFO)) {
-					IResource resource = problems[problemsIndex].getResource();
-					if (resource instanceof IFile && resource.getName().equals(ManifestOptions.MANIFEST_FILE_NAME)) {
-						return true;
-					}
-				}
-			}
-		} catch (CoreException e) {
-			throw new InPlaceException(e, "manifest_has_errors", project);
-		}
-		return false;
-	}
 	/**
 	 * A delegate for checking if auto build is enabled
 	 * 

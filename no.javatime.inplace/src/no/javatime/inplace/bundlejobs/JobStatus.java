@@ -491,7 +491,7 @@ public abstract class JobStatus extends WorkspaceJob implements BundleTransition
 	/**
 	 * Get all status information added by this job
 	 * 
-	 * @return a list of status objects where each status object describes the nature of the status
+	 * @return a list of status objects where each status object describes the nature of the status or an empty list
 	 */
 	public Collection<IBundleStatus> getStatusList() {
 		return errStatusList;

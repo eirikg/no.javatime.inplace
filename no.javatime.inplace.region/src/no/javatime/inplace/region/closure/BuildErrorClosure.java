@@ -13,10 +13,12 @@ import no.javatime.inplace.region.manager.BundleTransition.Transition;
 import no.javatime.inplace.region.manager.InPlaceException;
 import no.javatime.inplace.region.msg.Msg;
 import no.javatime.inplace.region.project.BundleProjectState;
+import no.javatime.inplace.region.project.ManifestOptions;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 
+import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
@@ -387,10 +389,14 @@ public class BuildErrorClosure {
 					Collections.<IProject> singletonList(errorProject), Closure.PROVIDING,
 					ActivationScope.ALL);
 			projectClosures.remove(errorProject);
+			String errProjectIdent = bundleRegion.getSymbolicNameFromManifest(errorProject);
+			if (null == errProjectIdent) {
+				errProjectIdent = errorProject.getName();
+				errProjectIdent += " (P)";
+			}
 			if (projectClosures.size() > 0) {
 				msg = NLS.bind(Msg.PROVIDING_BUNDLES_INFO,
-						bundleRegion.getSymbolicNameFromManifest(errorProject),
-						BundleProjectState.formatProjectList(projectClosures));
+						errProjectIdent, BundleProjectState.formatProjectList(projectClosures));
 				buildStatus.add(new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, msg));
 			}
 			projectClosures = getBundleProjectClosures(
@@ -399,8 +405,7 @@ public class BuildErrorClosure {
 			projectClosures.remove(errorProject);
 			if (projectClosures.size() > 0) {
 				msg = NLS.bind(Msg.REQUIRING_BUNDLES_INFO,
-						bundleRegion.getSymbolicNameFromManifest(errorProject),
-						BundleProjectState.formatProjectList(projectClosures));
+						errProjectIdent, BundleProjectState.formatProjectList(projectClosures));
 				buildStatus.add(new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, msg));
 			}
 		}
@@ -487,28 +492,57 @@ public class BuildErrorClosure {
 		return false;
 	}
 
+
 	/**
-	 * Test method
+	 * Check for existence and build errors in the manifest file in the specified project
+	 * <p>
+	 * Assumes that the manifest file is located at the default location
 	 * 
-	 * @return the build error closures
-	 * @throws InPlaceException
-	 * @throws CircularReferenceException
+	 * @param project to check for the existence and build errors in the manifest file at the default location
+	 * @return true if the manifest file does not exist or contains build errors and false otherwise
+	 * @throws InPlaceException if a core exception occurs. The exception contains a status object describing the failure
+	 * @see #hasManifest(IProject)
+	 * @see ManifestOptions#MANIFEST_RELATIVE_PATH
+	 * @see ManifestOptions#MANIFEST_FILE_NAME
 	 */
-	public Collection<IProject> verifyBuildErrorClosures() throws InPlaceException,
-			CircularReferenceException {
-		Collection<IProject> errorClosures = new LinkedHashSet<>();
-		for (IProject project : initialProjects) {
-			Collection<IProject> projectClosures = getBundleProjectClosures(
-					Collections.<IProject> singletonList(project), closure, activationScope);
-			Collection<IProject> errors = getBuildErrors(projectClosures);
-			errors.addAll(hasBuildState(projectClosures));
-			if (errors.size() > 0) {
-				errors = getBundleProjectClosures(errors, Closure.REQUIRING, activationScope);
-				errors.retainAll(projectClosures);
-				errorClosures.addAll(errors);
+	public static boolean hasManifestBuildErrors(IProject project) throws InPlaceException {
+		
+		try {
+			if (!hasManifest(project)) {
+				return true;
+			}
+			IMarker[] problems = project.findMarkers(IMarker.PROBLEM, true, IResource.DEPTH_INFINITE);
+			// check if any of these have a severity attribute that indicates an error
+			for (int problemsIndex = 0; problemsIndex < problems.length; problemsIndex++) {
+				if (IMarker.SEVERITY_ERROR == problems[problemsIndex].getAttribute(IMarker.SEVERITY,
+						IMarker.SEVERITY_INFO)) {
+					IResource resource = problems[problemsIndex].getResource();
+					if (resource instanceof IFile && resource.getName().equals(ManifestOptions.MANIFEST_FILE_NAME)) {
+						return true;
+					}
+				}
+			}
+		} catch (CoreException e) {
+			throw new InPlaceException(e, "manifest_has_errors", project);
+		}
+		return false;
+	}
+
+	/**
+	 * Check for existence of a manifest file at the default location in the specified project
+	 * 
+	 * @param project to check for the existence of a manifest file at the default location
+	 * @return true if the manifest file exist at the default location and false otherwise
+	 * @see ManifestOptions#MANIFEST_RELATIVE_PATH
+	 * @see ManifestOptions#MANIFEST_FILE_NAME
+	 */
+	public static Boolean hasManifest(IProject project) {
+		if (null != project && project.isAccessible()) {
+			IFile manifestFile = project.getFile(ManifestOptions.MANIFEST_RELATIVE_PATH + ManifestOptions.MANIFEST_FILE_NAME);
+			if (manifestFile.exists()) {
+				return true;
 			}
 		}
-		System.out.println("new error closure: " + BundleProjectState.formatProjectList(errorClosures));
-		return errorClosures;
+		return false;
 	}
 }

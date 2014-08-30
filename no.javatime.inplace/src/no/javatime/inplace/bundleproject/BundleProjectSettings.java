@@ -22,6 +22,7 @@ import java.util.Properties;
 
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.msg.Msg;
+import no.javatime.inplace.region.closure.BuildErrorClosure;
 import no.javatime.inplace.region.events.TransitionEvent;
 import no.javatime.inplace.region.manager.BundleManager;
 import no.javatime.inplace.region.manager.BundleTransition.Transition;
@@ -35,7 +36,6 @@ import no.javatime.util.messages.TraceMessage;
 import no.javatime.util.messages.WarnMessage;
 
 import org.eclipse.core.internal.runtime.DevClassPathHelper;
-import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.IWorkspaceRoot;
@@ -68,7 +68,7 @@ public class BundleProjectSettings {
 	 * @return true if the default output folder is contained in the class path for the specified project
 	 */
 	public static Boolean isOutputFolderInBundleClassPath(IProject project) throws InPlaceException {
-		if (!hasManifest(project)) {
+		if (!BuildErrorClosure.hasManifest(project)) {
 			throw new InPlaceException("no_manifest_found_project", project.getName());
 		}
 
@@ -164,7 +164,7 @@ public class BundleProjectSettings {
 	 */
 	public static Boolean addOutputLocationToBundleClassPath(IProject project) throws InPlaceException {
 		try {
-			if (!hasManifest(project)) {
+			if (!BuildErrorClosure.hasManifest(project)) {
 				throw new InPlaceException("no_manifest_found_project", project.getName());
 			}
 			IBundleProjectDescription bundleProjDesc = InPlace.get().getBundleDescription(project);
@@ -231,7 +231,7 @@ public class BundleProjectSettings {
 		boolean removed = false;
 
 		try {
-			if (!hasManifest(project)) {
+			if (!BuildErrorClosure.hasManifest(project)) {
 				throw new InPlaceException("no_manifest_found_project", project.getName());
 			}
 			IBundleProjectDescription bundleProjDesc = InPlace.get().getBundleDescription(project);
@@ -493,23 +493,5 @@ public class BundleProjectSettings {
 			}
 		}
 		return true;
-	}	
-
-	/**
-	 * Check for existence of a manifest file at the default location in the specified project
-	 * 
-	 * @param project to check for the existence of a manifest file at the default location
-	 * @return true if the manifest file exist at the default location and false otherwise
-	 * @see ManifestOptions#MANIFEST_RELATIVE_PATH
-	 * @see ManifestOptions#MANIFEST_FILE_NAME
-	 */
-	public static Boolean hasManifest(IProject project) {
-		if (null != project && project.isAccessible()) {
-			IFile manifestFile = project.getFile(ManifestOptions.MANIFEST_RELATIVE_PATH + ManifestOptions.MANIFEST_FILE_NAME);
-			if (manifestFile.exists()) {
-				return true;
-			}
-		}
-		return false;
 	}
 }

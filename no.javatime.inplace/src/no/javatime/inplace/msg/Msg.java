@@ -59,7 +59,10 @@ public class Msg extends NLS {
 	public static String END_SHUTDOWN_ERROR;
 	public static String INSTALL_ERROR;
 	public static String SYMBOLIC_NAME_ERROR;
-
+	public static String FATAL_ACTIVATE_ERROR;
+	public static String MANIFEST_BUILD_ERROR;
+	public static String BUILD_STATE_ERROR;
+	public static String END_JOB_ROOT_ERROR;
 	// Warnings
 	public static String EXTERNAL_UNINSTALL_WARN;
 	public static String REQUIRING_BUNDLES_WARN;
@@ -67,10 +70,7 @@ public class Msg extends NLS {
 	public static String RENAME_PROJECT_WARN;
 	public static String INIT_WORKSPACE_STORE_WARN;
 	public static String INSTALL_CONTEXT_FOR_ACTION_SET_WARN;
-	// Dialog and View messages
-	public static String DEACTIVATE_QUESTION_DLG;
-	public static String DEACTIVATE_QUESTION_REQ_DLG;
-	
+
 	// Info messages
 	public static String DEACTIVATE_BUILD_ERROR_INFO;
 	public static String UPDATE_BUILD_ERROR_INFO;
@@ -109,6 +109,10 @@ public class Msg extends NLS {
 	public static String CONDITIONAL_START_BUNDLE_INFO;
 	public static String UNINSTALLED_REQUIRING_BUNDLES_INFO;
 
+	// Dialog and View messages
+	public static String DEACTIVATE_QUESTION_DLG;
+	public static String DEACTIVATE_QUESTION_REQ_DLG;
+	
 	private static final String BUNDLE_NAME = "no.javatime.inplace.msg.messages"; //$NON-NLS-1$
 
 	static {

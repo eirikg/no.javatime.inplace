@@ -131,7 +131,7 @@ public class BundlePopUpActivationHandler extends BundleMenuActivationHandler im
 				element.setChecked(!isLazy);
 			} catch (InPlaceException e) {
 				// Don't spam this meassage.
-				if (!ProjectProperties.hasManifestBuildErrors(project) && BuildErrorClosure.hasBuildState(project)) {	
+				if (!BuildErrorClosure.hasManifestBuildErrors(project) && BuildErrorClosure.hasBuildState(project)) {	
 					String msg = ExceptionMessage.getInstance().formatString("error_set_policy", javaProject.getProject().getName());
 					StatusManager.getManager().handle(new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, msg, e),
 							StatusManager.LOG);
