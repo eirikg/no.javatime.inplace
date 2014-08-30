@@ -301,7 +301,7 @@
             class="no.javatime.inplace.ui.views.BundleView"
             icon="icons/gear_list_title.png"
             id="no.javatime.inplace.ui.views.BundleView"
-            name="Bundle"
+            name="Bundle View"
             restorable="true">
       </view>
    </extension>
