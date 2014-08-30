@@ -1,13 +1,14 @@
 package no.javatime.inplace.region.state;
 
 import no.javatime.inplace.region.manager.BundleTransition.Transition;
-import no.javatime.inplace.region.manager.InPlaceException;
 import no.javatime.inplace.region.project.ManifestOptions;
 
+import org.osgi.framework.BundleEvent;
+
 /**
- * Begins a set of transitions specified by the standard OSGi state machine with
- * {@link org.osgi.framework.Bundle#RESOLVED RESOLVED} as the current state.
- * Each method in this class represents a valid transition for a bundle in state resolved
+ * Begins a set of outgoing transitions specified by the standard OSGi state machine with
+ * {@link org.osgi.framework.Bundle#RESOLVED RESOLVED} as the current state. Each method in this
+ * class represents a valid transition for a bundle in state resolved
  */
 public class ResolvedState extends BundleState {
 
@@ -18,63 +19,52 @@ public class ResolvedState extends BundleState {
 	/**
 	 * Begins an uninstall transition with installed as the terminal state
 	 * <p>
-	 * There is no explicit command to unresolve (move from state RESOLVED to INSTALLED) a bundle.
-	 * Uninstalling a bundle in state resolved generates an
-	 * {@link org.osgi.framework.BundleEvent#UNRESOLVED UNRESOLVED} bundle event in
-	 * {@link BundleStateEvents#bundleChanged(org.osgi.framework.BundleEvent)}. This transition is
-	 * generated from this unresolved event and indirectly by the uninstall command.
+	 * Uninstalling a bundle from state resolved is a two step process. First this transition
+	 * moves the bundle to state install. The uninstall command generates an unresolved event in
+	 * {@link BundleStateEvents#bundleChanged(org.osgi.framework.BundleEvent) BundleStateEvents}.
+	 * This event triggers an uninstall transition with state installed as the initial state and
+	 * state uninstalled as the terminal state.
 	 * 
 	 * @param bundleNode saves and updates the current transition and state of the bundle
-	 * @see BundleStateEvents#bundleChanged(org.osgi.framework.BundleEvent)
 	 */
-	public void uninstall(BundleNode bundleNode) throws InPlaceException {
+	public void uninstall(BundleNode bundleNode) {
 		bundleNode.begin(Transition.UNINSTALL, StateFactory.INSTANCE.installedState);
-	}
-
-	/**
-	 * Begins a resolve transition with resolved as the terminal state
-	 * <p>
-	 * The terminal state of a bundle in state resolved is resolveed independent of the activation
-	 * policy of the bundle
-	 * 
-	 * @param bundleNode saves and updates the current transition and state of the bundle
-	 */
-	public void resolve(BundleNode bundleNode) throws InPlaceException {
-		bundleNode.begin(Transition.RESOLVE, StateFactory.INSTANCE.resolvedState);
 	}
 
 	/**
 	 * Begins a refresh transition with installed as the terminal state
 	 * <p>
-	 * If a bundle project is deactivated in an activated workspace the bundle will first be
-	 * unresolved (moved to state INSTALLED) by refresh but will not be resolved (by design ignored by
-	 * the resolver hook) again during refresh. For activated bundle projects the bundle will be
-	 * unresolved and then resolved again during refresh reentering state RESOLVED.
+	 * Refresh is comprised of two transitions. The first transition is unresolve and performed by this
+	 * refresh transition and then resolved again during refresh reentering state resolved. The
+	 * resolve transition is triggered by the {@link BundleEvent#UNRESOLVED} event.
 	 * 
 	 * @param bundleNode saves and updates the current transition and state of the bundle
 	 */
-	public void refresh(BundleNode bundleNode) throws InPlaceException {
+	public void refresh(BundleNode bundleNode) {
 		bundleNode.begin(Transition.REFRESH, StateFactory.INSTANCE.installedState);
 	}
 
 	/**
 	 * Begins an update transition with installed as the terminal state
+	 * <p>
+	 * The bundle is unresolved before update
 	 * 
 	 * @param bundleNode saves and updates the current transition and state of the bundle
 	 */
-	public void update(BundleNode bundleNode) throws InPlaceException {
+	public void update(BundleNode bundleNode) {
 		bundleNode.begin(Transition.UPDATE, StateFactory.INSTANCE.installedState);
 	}
 
 	/**
-	 * Begins a start transition with state starting as the terminal state if the activation policy is
-	 * lazy and active as the terminal state if the policy is eager
+	 * Begins a start transition with state active as the terminal state 
+	 * if the activation policy is eager and state starting if the activation 
+	 * policy is lazy
 	 * 
 	 * @param bundleNode saves and updates the current transition and state of the bundle
 	 */
-	public void start(BundleNode bundleNode) throws InPlaceException {
-		if (ManifestOptions.getlazyActivationPolicy(getBundle(bundleNode))) {
-			bundleNode.begin(Transition.LAZY_LOAD, StateFactory.INSTANCE.lazyState);
+	public void start(BundleNode bundleNode) {
+		if (ManifestOptions.getlazyActivationPolicy(bundleNode.getBundle())) {
+			bundleNode.begin(Transition.LAZY_ACTIVATE, StateFactory.INSTANCE.startingState);
 		} else {
 			bundleNode.begin(Transition.START, StateFactory.INSTANCE.activeState);
 		}

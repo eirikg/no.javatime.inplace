@@ -10,6 +10,6 @@ public class ActiveState extends BundleState {
 	}
 
 	public void stop(BundleNode bundleNode) throws InPlaceException {
-		bundleNode.begin(Transition.STOP, StateFactory.INSTANCE.resolvedState);
+		bundleNode.begin(Transition.STOP, StateFactory.INSTANCE.stoppingState);
 	}
 }

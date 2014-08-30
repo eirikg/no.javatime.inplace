@@ -251,8 +251,7 @@ public class DeactivateJob extends NatureJob {
 					pendingBundles.addAll(bundlesToResolve);
 				}
 				// Deactivated bundles will not be resolved (rejected by the resolver hook) during refresh
-				// and thus
-				// enter state INSTALLED
+				// and thus enter state INSTALLED
 				refresh(pendingBundles, new SubProgressMonitor(monitor, 2));
 				if (monitor.isCanceled()) {
 					throw new OperationCanceledException();

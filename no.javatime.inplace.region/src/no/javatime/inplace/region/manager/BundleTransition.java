@@ -46,7 +46,7 @@ public interface BundleTransition {
 		/**
 		 * Set as active when a bundle is started with lazy policy
 		 */
-		LAZY_LOAD,
+		LAZY_ACTIVATE,
 		/**
 		 * Used when activating (install, resolve and/or refresh and optionally starting) a bundle
 		 */

@@ -556,7 +556,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 			}
 			Transition transition = bundleTransition.getTransition(project);
 			// Only consider external commands and on demand loading of bundles
-			if (transition == Transition.EXTERNAL || (transition == Transition.LAZY_LOAD)) {
+			if (transition == Transition.EXTERNAL || (transition == Transition.LAZY_ACTIVATE)) {
 				showProjectInfo();
 			}
 		} catch (ProjectLocationException e) {

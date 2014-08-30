@@ -142,19 +142,6 @@ public interface BundleCommand {
 	public Bundle update(Bundle bundle) throws InPlaceException, DuplicateBundleException;
 
 	/**
-	 * Refresh the specified set of bundles asynchronously.
-	 * 
-	 * @param bundles to refresh. Must not be null.
-	 * @param listener to be notified when refresh has been completed
-	 * @throws InPlaceException when the framework wiring object is null, the bundle was created with
-	 * another framework wiring object than the current or if a security permission is missing. See
-	 * {@link FrameworkWiring#refreshBundles(Collection, FrameworkListener...)} for details.
-	 * @see FrameworkWiring#refreshBundles(Collection, FrameworkListener...)
-	 */
-	public void refresh(Collection<Bundle> bundles, FrameworkListener listener)
-			throws InPlaceException;
-
-	/**
 	 * Refresh the specified set of bundles synchronously.
 	 * 
 	 * @param bundles to refresh. Must not be null.

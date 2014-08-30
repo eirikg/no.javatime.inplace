@@ -14,8 +14,9 @@ public class StateFactory {
 	public final UninstalledState uninstalledState = new UninstalledState();
 	public final InstalledState installedState = new InstalledState();
 	public final ResolvedState resolvedState = new ResolvedState();
-	public final LazyState lazyState = new LazyState();
+	public final StartingState startingState = new StartingState();
 	public final ActiveState activeState = new ActiveState();
+	public final StoppingState stoppingState = new StoppingState();
 	
 	private HashMap<Integer, BundleState> states = new HashMap<Integer, BundleState>();
 	
@@ -24,10 +25,18 @@ public class StateFactory {
 		states.put(Bundle.UNINSTALLED, uninstalledState);
 		states.put(Bundle.INSTALLED, installedState);
 		states.put(Bundle.RESOLVED, resolvedState);
-		states.put(Bundle.STARTING, lazyState);
+		states.put(Bundle.STARTING, startingState);
 		states.put(Bundle.ACTIVE, activeState);		
+		states.put(Bundle.STOPPING, stoppingState);				
 	}
-
+	
+	/**
+	 * Returns the state class representing one of the state constants
+	 * specified in {@link Bundle}
+	 * 
+	 * @param stateConstant one of the {@link Bundle} state constants 
+	 * @return the state class corresponding to the specified {@link Bundle} constant
+	 */
 	public BundleState get(Integer stateConstant) {
 		return states.get(stateConstant);
 	}

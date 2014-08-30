@@ -6,14 +6,15 @@ public class Msg extends NLS {
 
 	// Error messages
 	public static String SYSTEM_BUNDLE_ERROR;
-	public static String INTERNAL_STATE_WARN;
-	
+	public static String SYMBOLIC_NAME_ERROR;
+
 	// Warning messages 	
 	public static String REQUIRING_BUNDLES_BUILD_ERROR_WARN;
 	public static String BUILD_ERROR_WARN;
 	public static String ADAPT_TO_REVISION_WARN;
 	public static String BUILD_ERROR_ON_DEACTIVATED_DEP_WARN;
 	public static String PROJECT_MISSING_AT_LOC_WARN;
+	public static String INTERNAL_STATE_WARN;
 	
 	// Information messages
 	public static String CLOSURE_INFO;
@@ -24,7 +25,8 @@ public class Msg extends NLS {
 	public static String EXT_BUNDLE_OP_ORIGIN_INFO;
 	public static String EXT_BUNDLE_OP_INFO;
 	public static String INCOMPLETE_BUNDLE_OP_INFO;
-	
+	public static String NOT_RESOLVING_INFO;
+
 	// Location references
 	public static String BUNDLE_ID_REF_SCHEME_REF;
 	public static String BUNDLE_ID_FILE_SCHEME_REF;

@@ -265,9 +265,13 @@ public class BuildErrorClosure {
 	 * 
 	 * @return true if there are any projects with build errors among the calculated closures based on
 	 * the initial (starter) set of projects specified at construction time
+	 * @throws CircularReferenceException if cycles are detected in the project graph
+	 * @throws InPlaceException if failing to get the dependency options service or illegal
+	 * operation/closure combination
 	 * @see #getBuildErrors()
 	 */
-	public boolean hasBuildErrors() {
+	public boolean hasBuildErrors() throws CircularReferenceException,
+			InPlaceException {
 		return getBuildErrors().size() > 0 ? true : false;
 	}
 
@@ -276,9 +280,13 @@ public class BuildErrorClosure {
 	 * (starter) set of projects.
 	 * 
 	 * @return projects with build errors among the closures of the initial (starter) set of projects.
+	 * @throws CircularReferenceException if cycles are detected in the project graph
+	 * @throws InPlaceException if failing to get the dependency options service or illegal
+	 * operation/closure combination
 	 * @see #hasBuildErrors()
 	 */
-	public Collection<IProject> getBuildErrors() {
+	public Collection<IProject> getBuildErrors() throws CircularReferenceException,
+	InPlaceException {
 		if (null == errorProjects) {
 			errorProjects = getBuildErrors(getProjectClosures());
 			errorProjects.addAll(hasBuildState(getProjectClosures()));
@@ -350,10 +358,14 @@ public class BuildErrorClosure {
 	 * closures based on the initial set of bundle projects and the calculated error closures. Returns
 	 * a status object with {@code StatusCode.OK} along with the list of the project closures if there
 	 * are no build errors.
+	 * @throws CircularReferenceException if cycles are detected in the project graph
+	 * @throws InPlaceException if failing to get the dependency options service or illegal
+	 * operation/closure combination
 	 * @see #getBuildErrorClosures()
 	 * @see #getProjectClosures()
 	 */
-	public IBundleStatus getErrorClosureStatus() {
+	public IBundleStatus getErrorClosureStatus() throws InPlaceException,
+			CircularReferenceException {
 
 		Collection<IProject> buildErrors = getBuildErrors();
 		if (buildErrors.size() == 0) {
@@ -370,8 +382,6 @@ public class BuildErrorClosure {
 							BundleProjectState.formatProjectList(buildErrors) });
 		}
 		IBundleStatus buildStatus = new BundleStatus(StatusCode.WARNING, Activator.PLUGIN_ID, msg, null);
-		buildStatus.add(new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, "Closure: "
-				+ closure.name() + " Activation scope: " + activationScope.name()));
 		for (IProject errorProject : buildErrors) {
 			Collection<IProject> projectClosures = getBundleProjectClosures(
 					Collections.<IProject> singletonList(errorProject), Closure.PROVIDING,

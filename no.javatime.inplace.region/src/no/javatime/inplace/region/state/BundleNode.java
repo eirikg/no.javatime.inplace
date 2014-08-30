@@ -26,35 +26,36 @@ import org.eclipse.core.resources.IProject;
 import org.osgi.framework.Bundle;
 
 /**
- * Stores a bundle project defined as a conditional one-to-one relationship between a bundle and a project.
- * The activation status and any pending bundle commands are maintained along with the bundle (bundle id)
- * and the project (project object).
+ * Stores a bundle project defined as a conditional one-to-one relationship between a bundle and a
+ * project. The activation status and any pending bundle commands are maintained along with the
+ * bundle (bundle id) and the project (project object).
  * <p>
- * Possible keys to identify a bundle node are bundle object, symbolic name and version, bundle identifier,
- * its associated project object or name and lastly the the location identifier of the project or bundle.
+ * Possible keys to identify a bundle node are bundle object, symbolic name and version, bundle
+ * identifier, its associated project object or name and lastly the the location identifier of the
+ * project or bundle.
  * <p>
- * The bundle identifier is stored internally in the bundle node instead of the bundle object itself.
+ * The bundle identifier is stored internally in the bundle node instead of the bundle object
+ * itself.
  */
 public class BundleNode {
-
 
 	// Initialize with no pending pendingCommands
 	private EnumSet<BundleTransition.Transition> pendingCommands = EnumSet.noneOf(Transition.class);
 	private IProject project; // The link between the bundle and the project (bundle project)
 	private Long bundleId; // Keep the id instead of the bundle object
 	private Boolean activated; // True when project is nature enabled and bundle has been installed
-	private BundleState state; // Current state determined by the last transition
+	private BundleState state = StateFactory.INSTANCE.stateLess; // Current state determined by the last transition
 	private BundleState prevState = StateFactory.INSTANCE.stateLess; // Previous state
-	private Transition transition; // Current or last executed transition on a bundle
+	private Transition transition = Transition.NOTRANSITION;; // Current or last executed transition on a bundle
 	private Transition prevTransition = Transition.NOTRANSITION; // Previous transition
-	private TransitionError transitionError; // Last error caused by a transition
-	private TransitionError prevTransitionError; // Error caused by the previous transition
+	private TransitionError transitionError = TransitionError.NOERROR; // Last error caused by a transition
+	private TransitionError prevTransitionError = TransitionError.NOERROR; // Error caused by the previous transition
 	private boolean isStateChanging = false; // Set to true while executing a bundle command
 
 	/**
-	 * Creates a bundle node with a one-to-one relationship between a project and a bundle, called a bundle
-	 * project. The bundle id is stored instead of the bundle object in the node. Initially the bundle node has
-	 * no state and initialized to {@link no.javatime.inplace.region.state.StateLess}
+	 * Creates a bundle node with a one-to-one relationship between a project and a bundle, called a
+	 * bundle project. The bundle id is stored instead of the bundle object in the node. Initially the
+	 * bundle node has no state and initialized to {@link no.javatime.inplace.region.state.StateLess}
 	 * 
 	 * @param bundle may be null
 	 * @param project must not be null
@@ -66,9 +67,6 @@ public class BundleNode {
 		if (null != bundle) {
 			this.bundleId = bundle.getBundleId();
 		}
-		this.state = StateFactory.INSTANCE.stateLess;
-		transition = Transition.NOTRANSITION;
-		transitionError = TransitionError.NOERROR;
 	}
 
 	public Transition getTransition() {
@@ -80,16 +78,16 @@ public class BundleNode {
 		this.transition = transition;
 		return tmp;
 	}
-	
+
 	public boolean setTransitionError(TransitionError transitionError) {
 		this.transitionError = transitionError;
 		return true;
 	}
-	
+
 	public TransitionError getTransitionError() {
 		return transitionError;
 	}
-	
+
 	public boolean hasTransitionError() {
 		return transitionError == TransitionError.NOERROR ? false : true;
 	}
@@ -98,7 +96,7 @@ public class BundleNode {
 		this.transitionError = TransitionError.NOERROR;
 		return true;
 	}
-	
+
 	public boolean removeTransitionError(TransitionError transitionError) {
 		if (this.transitionError == transitionError) {
 			this.transitionError = TransitionError.NOERROR;
@@ -106,6 +104,7 @@ public class BundleNode {
 		}
 		return false;
 	}
+
 	/**
 	 * Get the current {@code State} of this bundle node.
 	 * 
@@ -116,8 +115,51 @@ public class BundleNode {
 	}
 
 	/**
-	 * Assigns a state treated as the current state of this bundle node. The external attribute of the state
-	 * is not altered.
+	 * Check if the specified state is the same as the current state for this bundle node
+	 * 
+	 * @param state the state to compare for equality with the current state of this
+	 * bundle node 
+	 * @return true if the specified state is equal to the current state of this bundle
+	 * node, otherwise false
+	 */
+	public boolean isState(Class<? extends BundleState> stateClass) {
+		return (stateClass.isAssignableFrom(state.getClass()));
+	}
+	
+
+	/**
+	 * Check if the specified transition and state is the same as the current transition and state
+	 * combination for this bundle node
+	 * 
+	 * @param transition the transition to compare for equality with the current transition of this
+	 * bundle node
+	 * @param state the state to compare for equality with the current state of this
+	 * bundle node 
+	 * @return true if the specified transition and state is equal to the current transition and state of this bundle
+	 * node, otherwise false
+	 */
+	public boolean isState(Transition transition, Class<? extends BundleState> stateClass) {
+		if (this.transition == transition) {
+			return (stateClass.isAssignableFrom(state.getClass()));
+		}
+		return false;
+	}
+
+	/**
+	 * Check if the specified transition is the same as the current transition for this bundle node
+	 * 
+	 * @param transition the transition to compare for equality with the current transition of this
+	 * bundle node
+	 * @return true if the specified transition is equal to the current transition of this bundle
+	 * node, otherwise false
+	 */
+	public boolean isTransition(Transition transition) {
+		return this.transition == transition;
+	}
+
+	/**
+	 * Assigns a state treated as the current state of this bundle node. The external attribute of the
+	 * state is not altered.
 	 * 
 	 * @param state the current state of this bundle as any valid sub class of type {@code State}
 	 * @see BundleState
@@ -127,8 +169,9 @@ public class BundleNode {
 			if (null != bundleId) {
 				Bundle bundle = Activator.getContext().getBundle(bundleId);
 				if (null != bundle) {
-					TraceMessage.getInstance().getString("state_change", Activator.getContext().getBundle(bundleId),
-							this.state.getClass().getSimpleName(), currentState.getClass().getSimpleName());
+					TraceMessage.getInstance().getString("state_change",
+							Activator.getContext().getBundle(bundleId), this.state.getClass().getSimpleName(),
+							currentState.getClass().getSimpleName());
 				} else {
 					TraceMessage.getInstance().getString("state_change", project.getName(),
 							this.state.getClass().getSimpleName(), currentState.getClass().getSimpleName());
@@ -141,8 +184,8 @@ public class BundleNode {
 	/**
 	 * The symbolic key of the bundle is the concatenation of the symbolic name and the version
 	 * 
-	 * @return the key of the bundle as a concatenation of the symbolic name and the bundle version or null
-	 * if the bundle is missing
+	 * @return the key of the bundle as a concatenation of the symbolic name and the bundle version or
+	 * null if the bundle is missing
 	 * @throws InPlaceException if there exists a bundle id and the bundle could not be retrieved
 	 */
 	public final String getSymbolicKey() throws InPlaceException {
@@ -157,8 +200,9 @@ public class BundleNode {
 	}
 
 	/**
-	 * Formats the key as symbolic name_version If bundle is not null the cached version is fetched, otherwise
-	 * the referenced version from manifest is read. At least one of the specified parameters must not be null
+	 * Formats the key as symbolic name_version If bundle is not null the cached version is fetched,
+	 * otherwise the referenced version from manifest is read. At least one of the specified
+	 * parameters must not be null
 	 * 
 	 * @param bundle to format the key from
 	 * @param project to format the key from
@@ -195,9 +239,10 @@ public class BundleNode {
 	public final Long getBundleId() {
 		return bundleId;
 	}
-	
+
 	/**
 	 * Get the bundle object from the specified bundle id
+	 * 
 	 * @param bundleId the id used to retrieve the bundle object
 	 * @return the bundle object or null
 	 */
@@ -207,6 +252,7 @@ public class BundleNode {
 
 	/**
 	 * Get the bundle object from the registered bundle
+	 * 
 	 * @return the bundle object or null
 	 */
 	public final Bundle getBundle() {
@@ -215,10 +261,11 @@ public class BundleNode {
 		}
 		return null;
 	}
-	
+
 	public final void removeBundle() {
 		bundleId = null;
 	}
+
 	/**
 	 * The unique bundle id of the bundle
 	 * 
@@ -304,7 +351,8 @@ public class BundleNode {
 	 * Check if the node contains one of the specified operations
 	 * 
 	 * @param operations a collection of operations to check against
-	 * @return true if one of the specified operations is associated with this bundle node. Otherwise false.
+	 * @return true if one of the specified operations is associated with this bundle node. Otherwise
+	 * false.
 	 */
 	public boolean containsPendingCommand(EnumSet<BundleTransition.Transition> operations) {
 		for (BundleTransition.Transition op : operations) {
@@ -323,7 +371,7 @@ public class BundleNode {
 	 * @return true if this operation is associated with this bundle node
 	 */
 	public boolean containsPendingCommand(BundleTransition.Transition operation, boolean remove) {
-		// TODO if (remove) return remove() else return contains() 
+		// TODO if (remove) return remove() else return contains()
 		boolean hasOperation = pendingCommands.contains(operation);
 		if (remove) {
 			pendingCommands.remove(operation);
@@ -335,7 +383,8 @@ public class BundleNode {
 	 * Check if the node contains all of the specified operations
 	 * 
 	 * @param operations a collection of operations to check against
-	 * @return true if all the specified operations is associated with this bundle node. Otherwise false.
+	 * @return true if all the specified operations is associated with this bundle node. Otherwise
+	 * false.
 	 */
 	public boolean containsPendingCommands(EnumSet<BundleTransition.Transition> operations) {
 		return this.pendingCommands.containsAll(operations);
@@ -358,7 +407,7 @@ public class BundleNode {
 	public void removePendingCommands(EnumSet<BundleTransition.Transition> operations) {
 		this.pendingCommands.removeAll(operations);
 	}
-	
+
 	public void begin(Transition transition, BundleState state) {
 		this.transitionError = TransitionError.NOERROR;
 		this.prevTransition = this.transition;
@@ -392,40 +441,39 @@ public class BundleNode {
 		return isStateChanging;
 	}
 
-	
-//	public void begin(Transition transition, BundleState state) {
-//		this.prevTransition = this.transition;
-//		this.prevState = this.state;
-//		this.transition = transition;
-//		this.state = state;
-//	}
-//
-//	public void commit() {
-//		prevTransition = Transition.NOTRANSITION;
-//		prevState = StateFactory.INSTANCE.stateLess;
-//	}
-//
-//	public void commit(Transition transition, BundleState state) {
-//		this.transition = transition;
-//		this.state = state;
-//		prevTransition = Transition.NOTRANSITION;
-//		prevState = StateFactory.INSTANCE.stateLess;
-//	}
-//
-//	public void rollBack() {
-//		this.transition = this.prevTransition;
-//		this.state = this.prevState;
-//		prevTransition = Transition.NOTRANSITION;
-//		prevState = StateFactory.INSTANCE.stateLess;
-//	}
+	// public void begin(Transition transition, BundleState state) {
+	// this.prevTransition = this.transition;
+	// this.prevState = this.state;
+	// this.transition = transition;
+	// this.state = state;
+	// }
+	//
+	// public void commit() {
+	// prevTransition = Transition.NOTRANSITION;
+	// prevState = StateFactory.INSTANCE.stateLess;
+	// }
+	//
+	// public void commit(Transition transition, BundleState state) {
+	// this.transition = transition;
+	// this.state = state;
+	// prevTransition = Transition.NOTRANSITION;
+	// prevState = StateFactory.INSTANCE.stateLess;
+	// }
+	//
+	// public void rollBack() {
+	// this.transition = this.prevTransition;
+	// this.state = this.prevState;
+	// prevTransition = Transition.NOTRANSITION;
+	// prevState = StateFactory.INSTANCE.stateLess;
+	// }
 
-//	public boolean isStateChanging() {
-//		if (null != prevState && null != prevTransition) {
-//			return true;
-//		}
-//		return false;
-//	}
-	
+	// public boolean isStateChanging() {
+	// if (null != prevState && null != prevTransition) {
+	// return true;
+	// }
+	// return false;
+	// }
+
 	public BundleState getPrevState() {
 		return prevState;
 	}
@@ -435,13 +483,15 @@ public class BundleNode {
 	}
 
 	/**
-	 * Textual representation of the transition for the bundle at the specified location. The location is the
-	 * same as used when the bundle was installed.
+	 * Textual representation of the transition for the bundle at the specified location. The location
+	 * is the same as used when the bundle was installed.
+	 * 
 	 * @param format TODO
 	 * @param caption TODO
 	 * @param location of the bundle
 	 * 
-	 * @return the name of the transition or an empty string if no transition is found at the specified location
+	 * @return the name of the transition or an empty string if no transition is found at the
+	 * specified location
 	 * @see Bundle#getLocation()
 	 * @see BundleCommandImpl#getBundleLocationIdentifier(org.eclipse.core.resources.IProject)
 	 */
@@ -466,7 +516,7 @@ public class BundleNode {
 			case UNRESOLVE:
 				typeName = "UNRESOLVE";
 				break;
-			case LAZY_LOAD:
+			case LAZY_ACTIVATE:
 			case START:
 				typeName = "START";
 				break;
@@ -517,7 +567,7 @@ public class BundleNode {
 			typeName = typeName.replace('_', ' ');
 			typeName = typeName.toLowerCase();
 			if (caption) {
-				typeName = typeName.substring(0,1).toUpperCase() + typeName.substring(1);
+				typeName = typeName.substring(0, 1).toUpperCase() + typeName.substring(1);
 			}
 		}
 		return typeName;

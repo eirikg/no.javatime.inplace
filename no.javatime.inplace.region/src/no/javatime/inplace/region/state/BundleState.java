@@ -1,7 +1,6 @@
 package no.javatime.inplace.region.state;
 
 import no.javatime.inplace.region.Activator;
-import no.javatime.inplace.region.events.TransitionEvent;
 import no.javatime.inplace.region.manager.BundleCommandImpl;
 import no.javatime.inplace.region.manager.BundleManager;
 import no.javatime.inplace.region.manager.BundleTransition.Transition;
@@ -34,7 +33,7 @@ public abstract class BundleState {
 		errorState(bundleNode);
 	}
 
-	public void starting(BundleNode bundleNode) throws InPlaceException {
+	public void lazyLoad(BundleNode bundleNode) throws InPlaceException {
 		errorState(bundleNode);
 	}
 
@@ -73,8 +72,11 @@ public abstract class BundleState {
 	 * An external bundle command has been executed on a workspace bundle
 	 * @param bundleNode the current bundle node
 	 * @param event information about the external command
+	 * @param state new state according to the state machine when an external transition has been issued 
+	 * @param transition new transition according to the state machine when an external transition has been issued
 	 */
-	public void external(BundleNode bundleNode, BundleEvent event) {
+	public void external(BundleNode bundleNode, BundleEvent event, BundleState state, Transition transition) {
+		
 		Bundle bundle = event.getBundle();
 		final String location = bundle.getLocation();
 		BundleCommandImpl bundleCommand = BundleCommandImpl.INSTANCE;
@@ -82,17 +84,18 @@ public abstract class BundleState {
 		final String symbolicName = BundleManager.getRegion().getSymbolicKey(bundle, null);
 		final String stateName = bundleCommand.getStateName(event);
 		if (bundleTransition.getError(bundle) == TransitionError.INCOMPLETE) {
-			String msg = NLS.bind(Msg.INCOMPLETE_BUNDLE_OP_INFO, new Object[] {symbolicName, stateName,
-					location});
-			StatusManager.getManager().handle(new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, msg), StatusManager.LOG);				
+			if (Activator.getDefault().msgOpt().isBundleOperations()) {
+				String msg = NLS.bind(Msg.INCOMPLETE_BUNDLE_OP_INFO, new Object[] {symbolicName, stateName,
+						location});
+				StatusManager.getManager().handle(new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, msg), StatusManager.LOG);				
+			}
 		} else {
-			TransitionError error = bundleTransition.getError(bundle);
-			bundleTransition.setTransition(bundle, Transition.EXTERNAL);
-			bundleTransition.setTransitionError(bundle, error);
-			BundleManager.addBundleTransition(new TransitionEvent(bundle, Transition.EXTERNAL));
-			String msg = NLS.bind(Msg.EXT_BUNDLE_OP_INFO, new Object[] {symbolicName, stateName,
-					location});
-			StatusManager.getManager().handle(new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, msg), StatusManager.LOG);
+			bundleNode.commit(transition, state);
+			if (Activator.getDefault().msgOpt().isBundleOperations()) {
+				String msg = NLS.bind(Msg.EXT_BUNDLE_OP_INFO, new Object[] {symbolicName, stateName,
+						location});
+				StatusManager.getManager().handle(new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, bundle, msg, null), StatusManager.LOG);
+			}
 		}
 	}
 
@@ -111,9 +114,10 @@ public abstract class BundleState {
 			bundleProjectName = bundleNode.getProject().getName();
 		}
 		String msg = NLS.bind(Msg.INTERNAL_STATE_WARN, new Object[] { 
-				bundleNode.getPrevState().getClass().getSimpleName(), bundleNode.getState().getClass().getSimpleName(),
+				BundleNode.getTransitionName(bundleNode.getPrevTransition(), true, true),
+				bundleNode.getPrevState().getClass().getSimpleName(), 
 				BundleNode.getTransitionName(bundleNode.getTransition(), true, true), 
-				BundleNode.getTransitionName(bundleNode.getPrevTransition(), true, true), 
+				bundleNode.getState().getClass().getSimpleName(),
 				bundleProjectName });
 		if (null != bundle) {
 			StatusManager.getManager().handle(

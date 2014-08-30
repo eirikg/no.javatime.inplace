@@ -258,8 +258,12 @@ public class ActivateProjectJob extends NatureJob {
 	 * 
 	 * @param projects projects to activate with possible illegal build error closures
 	 * @return set of build error closures
+	 * @throws CircularReferenceException if cycles are detected in the project graph
+	 * @throws InPlaceException if failing to get the dependency options service or illegal
+	 * operation/closure combination
 	 */
-	private Collection<IProject> buildErrorClosure(Collection<IProject> projects) {
+	private Collection<IProject> buildErrorClosure(Collection<IProject> projects) throws InPlaceException,
+			CircularReferenceException {
 
 		// Deactivated providing closure. In this case the scope is deactivated as long as we
 		// not are checking activated providing or requiring bundles with build errors
@@ -330,7 +334,7 @@ public class ActivateProjectJob extends NatureJob {
 			IProgressMonitor monitor) throws OperationCanceledException, InterruptedException,
 			CircularReferenceException {
 		int entrySize = statusList();
-		IBundleStatus status = stop(bundlesToUninstall, Closure.REQUIRING, new SubProgressMonitor(
+		IBundleStatus status = stop(bundlesToUninstall, null, new SubProgressMonitor(
 				monitor, 1));
 		if (monitor.isCanceled()) {
 			throw new OperationCanceledException();

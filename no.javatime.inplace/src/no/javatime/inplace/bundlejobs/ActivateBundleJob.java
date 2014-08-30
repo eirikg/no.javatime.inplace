@@ -38,7 +38,6 @@ import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import no.javatime.util.messages.ErrorMessage;
 import no.javatime.util.messages.ExceptionMessage;
 import no.javatime.util.messages.Message;
-import no.javatime.util.messages.WarnMessage;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
@@ -448,11 +447,12 @@ public class ActivateBundleJob extends BundleJob {
 								}
 								// The activated and requiring bundle will be started
 								if ((reqState & (Bundle.UNINSTALLED)) != 0) {
-									String msg = WarnMessage.getInstance().formatString(
-											"has_uninstalled_requiring_bundles",
-											bundleRegion.formatBundleList(reqBundles, true),
-											bundleRegion.getSymbolicKey(bundle, null));
-									addWarning(null, msg, null);
+									if (InPlace.get().msgOpt().isBundleOperations()) {
+										String msg = NLS.bind(Msg.UNINSTALLED_REQUIRING_BUNDLES_INFO, 
+												new Object[] {bundleRegion.formatBundleList(reqBundles, true), 
+												bundleRegion.getSymbolicKey(bundle, null)});
+										addTrace(msg, bundle, null);
+									}
 									startBundle = true;
 									break;
 								}
@@ -465,8 +465,9 @@ public class ActivateBundleJob extends BundleJob {
 									|| getDepOpt().get(Operation.ACTIVATE_BUNDLE, Closure.SINGLE)) {
 								bundles.remove(bundle); // Do not start this bundle
 							} else {
-								String msg = WarnMessage.getInstance().formatString("starting_bundle", bundle);
-								addWarning(null, msg, null);
+								if (InPlace.get().msgOpt().isBundleOperations()) {
+									addTrace(NLS.bind(Msg.CONDITIONAL_START_BUNDLE_INFO, bundle), bundle, null);
+								}
 							}
 						} else {
 							bundles.remove(bundle); // Do not start this bundle

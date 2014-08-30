@@ -23,19 +23,20 @@ public class Msg extends NLS {
 	public static String TOGGLE_ACTIVATION_POLICY_TRACE;
 	
 	// Bundle trace operations
-	public static String START_BUNDLE_OPERATION_TRACE;
-	public static String STOP_BUNDLE_OPERATION_TRACE;
-	public static String REFRESH_BUNDLE_OPERATION_TRACE;
-	public static String RESOLVE_BUNDLE_OPERATION_TRACE;
-	public static String UNINSTALL_BUNDLE_OPERATION_TRACE;
-	public static String INSTALL_BUNDLE_OPERATION_TRACE;
-	public static String UPDATE_BUNDLE_OPERATION_TRACE;
-	public static String EXTERNAL_BUNDLE_OPERATION_TRACE;
+	public static String START_BUNDLE_OP_TRACE;
+	public static String STOP_BUNDLE_OP_TRACE;
+	public static String REFRESH_BUNDLE_OP_TRACE;
+	public static String RESOLVE_BUNDLE_OP_TRACE;
+	public static String UNINSTALL_BUNDLE_OP_TRACE;
+	public static String INSTALL_BUNDLE_OP_TRACE;
+	public static String UPDATE_BUNDLE_OP_TRACE;
+	public static String LAZY_ACTIVATE_BUNDLE_OP_TRACE;
+	public static String ON_DEMAND_BUNDLE_START_OP_TRACE;
+	public static String EXTERNAL_BUNDLE_OP_TRACE;
 	public static String DISABLE_NATURE_TRACE;
 	public static String ENABLE_NATURE_TRACE;
 	public static String UNDEFINED_CONTEXT_ERROR_TRACE;
 	public static String JOB_NAME_TRACE;
-	public static String ON_DEMAND_LOAD_BUNDLE_TRACE;
 
 	// Build trace operations
 	public static String BUILD_HEADER_TRACE;
@@ -57,6 +58,7 @@ public class Msg extends NLS {
 	public static String BEGIN_SHUTDOWN_ERROR;
 	public static String END_SHUTDOWN_ERROR;
 	public static String INSTALL_ERROR;
+	public static String SYMBOLIC_NAME_ERROR;
 
 	// Warnings
 	public static String EXTERNAL_UNINSTALL_WARN;
@@ -104,7 +106,9 @@ public class Msg extends NLS {
 	public static String USE_CUSTOMIZED_STATUS_HANDLER_INFO;
 	public static String ATOBUILD_OFF_RESET_INFO;
 	public static String AUTOUPDATE_OFF_INFO;
-	
+	public static String CONDITIONAL_START_BUNDLE_INFO;
+	public static String UNINSTALLED_REQUIRING_BUNDLES_INFO;
+
 	private static final String BUNDLE_NAME = "no.javatime.inplace.msg.messages"; //$NON-NLS-1$
 
 	static {

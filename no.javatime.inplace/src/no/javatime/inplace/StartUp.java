@@ -169,7 +169,7 @@ public class StartUp implements IStartup {
 							try {
 								String symbolicKey = bundleRegion.getSymbolicKey(null, project);
 								int state = store.getInt(symbolicKey, Transition.INSTALL.ordinal());
-								// Don't register the project if there are no transition history
+								// Don't register the project if there is no transition history
 								if (state == Transition.UNINSTALL.ordinal()) {
 									bundleCommand.registerBundleProject(project, null, false);
 									bundleTransition.setTransition(project, Transition.UNINSTALL);

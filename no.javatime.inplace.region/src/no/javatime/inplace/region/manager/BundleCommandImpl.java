@@ -35,7 +35,6 @@ import no.javatime.inplace.region.resolver.BundleResolveHookFactory;
 import no.javatime.inplace.region.state.BundleNode;
 import no.javatime.inplace.region.state.BundleState;
 import no.javatime.inplace.region.state.BundleStateEvents;
-import no.javatime.inplace.region.state.StateFactory;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import no.javatime.util.messages.Category;
@@ -187,49 +186,44 @@ public class BundleCommandImpl implements BundleCommand {
 	protected Bundle install(IProject project) throws InPlaceException, DuplicateBundleException,
 			ProjectLocationException {
 
-		String locationIdentifier = bundleRegion.getBundleLocationIdentifier(project);
 		Bundle bundle = null;
 		InputStream is = null;
-
+		String locationIdentifier = null;
 		final BundleNode bundleNode = bundleRegion.getBundleNode(project);
-		final BundleState state = bundleNode.getState();
+		
 		try {
+			final BundleState state = bundleNode.getState();
+			state.install(bundleNode);	
+			locationIdentifier = bundleRegion.getBundleLocationIdentifier(project);
 			URL bundleReference = new URL(locationIdentifier);
 			is = bundleReference.openStream();
-			state.install(bundleNode);	
 			bundle = Activator.getContext().installBundle(locationIdentifier, is);
 			state.commit(bundleNode);
 		} catch (MalformedURLException e) {
 			bundleTransition.setTransitionError(project);
-			bundleNode.setCurrentState(StateFactory.INSTANCE.uninstalledState);
 			throw new InPlaceException(e, "bundle_install_malformed_error", locationIdentifier);
 		} catch (IOException e) {
 			bundleTransition.setTransitionError(project);
-			bundleNode.setCurrentState(StateFactory.INSTANCE.uninstalledState);
 			throw new InPlaceException(e, "bundle_install_error", locationIdentifier);
 		} catch (NullPointerException npe) {
 			bundleTransition.setTransitionError(project);
-			bundleNode.setCurrentState(StateFactory.INSTANCE.uninstalledState);
 			if (Category.DEBUG && Activator.getDefault().msgOpt().isBundleOperations())
 				TraceMessage.getInstance().getString("npe_error_install_bundle", locationIdentifier,
 						npe.getLocalizedMessage());
 			throw new InPlaceException(npe, "bundle_install_npe_error", locationIdentifier);
 		} catch (IllegalStateException e) {
 			bundleTransition.setTransitionError(project);
-			bundleNode.setCurrentState(StateFactory.INSTANCE.uninstalledState);
 			if (Category.DEBUG && Activator.getDefault().msgOpt().isBundleOperations())
 				TraceMessage.getInstance().getString("error_install_bundle", locationIdentifier,
 						e.getLocalizedMessage());
 			throw new InPlaceException(e, "bundle_state_error", locationIdentifier);
 		} catch (SecurityException e) {
 			bundleTransition.setTransitionError(project);
-			bundleNode.setCurrentState(StateFactory.INSTANCE.uninstalledState);
 			if (Category.DEBUG && Activator.getDefault().msgOpt().isBundleOperations())
 				TraceMessage.getInstance().getString("error_install_bundle", locationIdentifier,
 						e.getLocalizedMessage());
 			throw new InPlaceException(e, "bundle_security_error", locationIdentifier);
 		} catch (BundleException e) {
-			bundleNode.setCurrentState(StateFactory.INSTANCE.uninstalledState);
 			if (Category.DEBUG && Activator.getDefault().msgOpt().isBundleOperations())
 				TraceMessage.getInstance().getString("error_install_bundle", locationIdentifier,
 						e.getLocalizedMessage());
@@ -240,7 +234,11 @@ public class BundleCommandImpl implements BundleCommand {
 				bundleTransition.setTransitionError(project);
 				throw new InPlaceException(e, "bundle_install_error", locationIdentifier);
 			}
-		} finally {
+		} catch (ProjectLocationException e) {
+			bundleTransition.setTransitionError(project);
+			throw e;
+		}
+		finally {
 			try {
 				if (null != is) {
 					is.close();
@@ -251,6 +249,9 @@ public class BundleCommandImpl implements BundleCommand {
 				if (null != bundle) {
 					BundleManager.addBundleTransition(new TransitionEvent(project, bundleTransition
 							.getTransition(project)));
+				}
+				if (bundleNode.hasTransitionError()) {
+					bundleNode.rollBack();
 				}
 			}
 		}
@@ -280,23 +281,14 @@ public class BundleCommandImpl implements BundleCommand {
 			for (Bundle bundle : bundles) {
 				BundleNode node = bundleRegion.getBundleNode(bundle);
 				node.getState().resolve(node);
-				//bundleTransition.setTransition(bundle, Transition.RESOLVE);
-				// bundleRegion.getState(bundle).resolve(bundleRegion.getBundleNode(bundle));
 			}
 			resolved = frameworkWiring.resolveBundles(bundles);
-			if (resolved) {
-				for (Bundle bundle : bundles) {
-					BundleNode node = bundleRegion.getBundleNode(bundle);
-					node.getState().commit(node);
-				}
-			} else {
+			if (!resolved) {
 				for (Bundle bundle : bundles) {
 					BundleNode node = bundleRegion.getBundleNode(bundle);
 					int state = getState(bundle);
 					if ((state & (Bundle.UNINSTALLED | Bundle.INSTALLED)) != 0) {
-						node.rollBack();
-					} else {
-						node.getState().commit(node);
+						node.setTransitionError(TransitionError.ERROR);
 					}
 				}
 			}
@@ -304,9 +296,9 @@ public class BundleCommandImpl implements BundleCommand {
 			// Resolved and unresolved bundles are traced and reported in the resolver hook
 		} catch (SecurityException e) {
 			for (Bundle bundle : bundles) {
-				if ((getState(bundle) & (Bundle.INSTALLED)) != 0) {
-					bundleTransition.setTransitionError(bundle);
-					bundleRegion.setState(bundle, StateFactory.INSTANCE.installedState);
+				if ((getState(bundle) & (Bundle.UNINSTALLED | Bundle.INSTALLED)) != 0) {
+					BundleNode node = bundleRegion.getBundleNode(bundle);
+					node.setTransitionError(TransitionError.EXCEPTION);
 				}
 			}
 			if (Category.DEBUG && Activator.getDefault().msgOpt().isBundleOperations())
@@ -315,9 +307,9 @@ public class BundleCommandImpl implements BundleCommand {
 			throw new InPlaceException(e, "bundles_security_error", bundleRegion.formatBundleList(bundles, true));
 		} catch (IllegalArgumentException e) {
 			for (Bundle bundle : bundles) {
-				if ((getState(bundle) & (Bundle.INSTALLED)) != 0) {
-					bundleTransition.setTransitionError(bundle);
-					bundleRegion.setState(bundle, StateFactory.INSTANCE.installedState);
+				if ((getState(bundle) & (Bundle.UNINSTALLED | Bundle.INSTALLED)) != 0) {
+					BundleNode node = bundleRegion.getBundleNode(bundle);
+					node.setTransitionError(TransitionError.EXCEPTION);
 				}
 			}
 			if (Category.DEBUG && Activator.getDefault().msgOpt().isBundleOperations())
@@ -325,6 +317,17 @@ public class BundleCommandImpl implements BundleCommand {
 						bundleRegion.formatBundleList(bundles, true));
 			throw new InPlaceException(e, "bundles_argument_resolve_bundle", bundleRegion.formatBundleList(bundles,
 					true));
+		} finally {
+			// The last step (after unresolve) in resolve is resolve. Force a resolve trace
+			for (Bundle bundle : bundles) {
+				BundleNode node = bundleRegion.getBundleNode(bundle);
+				BundleManager.addBundleTransition(new TransitionEvent(bundle, Transition.RESOLVE));
+				if (node.hasTransitionError()) {
+					node.rollBack();
+				} else {
+					node.getState().commit(node);
+				}
+			}
 		}
 	}
 
@@ -343,14 +346,11 @@ public class BundleCommandImpl implements BundleCommand {
 		if (null == bundles || bundles.size() == 0) { 
 			return; // Ok to return when no bundles to refresh
 		}
-		try {
+		try { // wait block
 			for (Bundle bundle : bundles) {
 				if (BundleManager.getRegion().exist(bundle)) {
 					BundleNode node = bundleRegion.getBundleNode(bundle);
 					node.getState().refresh(node);
-//
-//					bundleTransition.setTransition(bundle, Transition.REFRESH);
-//					bundleRegion.getState(bundle).refresh(bundleRegion.getBundleNode(bundle));
 				}
 			}
 			// Used to notify that refresh has finished in the framework event handler
@@ -358,7 +358,7 @@ public class BundleCommandImpl implements BundleCommand {
 			synchronized (this) {
 				this.refreshed = false;
 			}
-			try {
+			try { // refresh block
 				frameworkWiring.refreshBundles(bundles, new FrameworkListener() {
 					@Override
 					public void frameworkEvent(FrameworkEvent event) {
@@ -367,20 +367,17 @@ public class BundleCommandImpl implements BundleCommand {
 							TraceMessage.getInstance().getString("framework_event", BundleCommandImpl.INSTANCE.getStateName(event),
 									event.getBundle().getSymbolicName());
 						}
+						
 						if ((event.getType() & (FrameworkEvent.ERROR)) != 0) {
 							for (Bundle bundle : bundles) {
 								BundleNode node = bundleRegion.getBundleNode(bundle);
-								node.getState().rollBack(node);
+								node.setTransitionError(TransitionError.ERROR);
 							}
 							StatusManager.getManager().handle(
 									new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, event.getBundle().getBundleId(), null,
 											event.getThrowable()), StatusManager.LOG);
-						} else {
-							for (Bundle bundle : bundles) {
-								BundleNode node = bundleRegion.getBundleNode(bundle);
-								node.getState().commit(node);
-							}
 						}
+						
 						synchronized (thisBundleCommand) { // Notify to proceed
 							if (Category.DEBUG && Category.getState(Category.listeners))
 								TraceMessage.getInstance().getString("notify_refresh_finished",
@@ -393,7 +390,7 @@ public class BundleCommandImpl implements BundleCommand {
 			} catch (SecurityException e) {
 				for (Bundle bundle : bundles) {
 					BundleNode node = bundleRegion.getBundleNode(bundle);
-					node.getState().rollBack(node);					
+					node.setTransitionError(TransitionError.EXCEPTION);
 				}
 				if (Category.DEBUG && Activator.getDefault().msgOpt().isBundleOperations())
 					TraceMessage.getInstance().getString("security_error_refresh_bundles",
@@ -403,7 +400,7 @@ public class BundleCommandImpl implements BundleCommand {
 			} catch (IllegalArgumentException e) {
 				for (Bundle bundle : bundles) {
 					BundleNode node = bundleRegion.getBundleNode(bundle);
-					node.getState().rollBack(node);					
+					node.setTransitionError(TransitionError.EXCEPTION);
 				}
 				if (Category.DEBUG && Activator.getDefault().msgOpt().isBundleOperations())
 					TraceMessage.getInstance().getString("argument_error_refresh_bundles",
@@ -411,7 +408,6 @@ public class BundleCommandImpl implements BundleCommand {
 				throw new InPlaceException(e, "bundles_argument_refresh_bundle", bundleRegion.formatBundleList(bundles,
 						true));
 			}
-			
 			synchronized (this) {
 				while (!this.refreshed) {					
 					if (Category.DEBUG && Category.getState(Category.listeners))
@@ -427,67 +423,14 @@ public class BundleCommandImpl implements BundleCommand {
 				TraceMessage.getInstance().getString("continuing_after_refresh",
 						BundleCommandImpl.class.getSimpleName());
 			for (Bundle bundle : bundles) {
-				try {
-					BundleManager.addBundleTransition(new TransitionEvent(bundle, bundleTransition
-							.getTransition(bundleRegion.getRegisteredBundleProject(bundle))));
-				} catch (ProjectLocationException e) {
-					throw new InPlaceException(e, "bundle_refresh_error", bundle);
-				}
-			}
-		}
-	}
-
-	/**
-	 * Refresh the specified set of bundles asynchronously
-	 * 
-	 * @param bundles to refresh. Must not be null.
-	 * @param listener to be notified when refresh has been completed
-	 * @throws InPlaceException when the framework wiring object is null, the bundle was created with another
-	 *           framework wiring object than the current or if a security permission is missing. See
-	 *           {@link FrameworkWiring#refreshBundles(Collection, FrameworkListener...)} for details.
-	 * @see FrameworkWiring#refreshBundles(Collection, FrameworkListener...)
-	 */
-	@Override
-	public void refresh(Collection<Bundle> bundles, FrameworkListener listener) throws InPlaceException {
-		if (null == frameworkWiring) {
-			if (Category.DEBUG && Activator.getDefault().msgOpt().isBundleOperations())
-				TraceMessage.getInstance().getString("null_admin_bundle");
-			throw new InPlaceException("null_framework");
-		}
-		try {
-			for (Bundle bundle : bundles) {
-				if (Category.DEBUG && Activator.getDefault().msgOpt().isBundleOperations())
-					TraceMessage.getInstance().getString("refresh_bundle", bundle);
-				if (BundleManager.getRegion().exist(bundle)) {
-					BundleNode node = bundleRegion.getBundleNode(bundle);
+				BundleNode node = bundleRegion.getBundleNode(bundle);
+				BundleManager.addBundleTransition(new TransitionEvent(bundle, Transition.REFRESH));
+				if (node.hasTransitionError()) {
+					node.rollBack();
+				} else {
 					node.getState().commit(node);
 				}
 			}
-			frameworkWiring.refreshBundles(bundles, listener);
-		} catch (SecurityException e) {
-			for (Bundle bundle : bundles) {
-				if ((getState(bundle) & (Bundle.INSTALLED)) != 0) {
-					BundleNode node = bundleRegion.getBundleNode(bundle);
-					node.getState().rollBack(node);					
-				}
-			}
-			if (Category.DEBUG && Activator.getDefault().msgOpt().isBundleOperations())
-				TraceMessage.getInstance().getString("security_error_refresh_bundles",
-						bundleRegion.formatBundleList(bundles, true));
-			throw new InPlaceException(e, "framework_bundle_security_error", bundleRegion.formatBundleList(bundles,
-					true));
-		} catch (IllegalArgumentException e) {
-			for (Bundle bundle : bundles) {
-				if ((getState(bundle) & (Bundle.INSTALLED)) != 0) {
-					BundleNode node = bundleRegion.getBundleNode(bundle);
-					node.getState().rollBack(node);					
-				}
-			}
-			if (Category.DEBUG && Activator.getDefault().msgOpt().isBundleOperations())
-				TraceMessage.getInstance().getString("argument_error_refresh_bundles",
-						bundleRegion.formatBundleList(bundles, true));
-			throw new InPlaceException(e, "bundles_argument_refresh_bundle", bundleRegion.formatBundleList(bundles,
-					true));
 		}
 	}
 
@@ -677,39 +620,39 @@ public class BundleCommandImpl implements BundleCommand {
 				bundle.stop(Bundle.STOP_TRANSIENT);
 			}
 		} catch (IllegalStateException e) {
-			bundleTransition.setTransitionError(bundle, TransitionError.EXCEPTION);
+			node.setTransitionError(TransitionError.EXCEPTION);
 			if (Category.DEBUG && Activator.getDefault().msgOpt().isBundleOperations())
 				TraceMessage.getInstance().getString("state_error_stop_bundle", bundle, e.getLocalizedMessage());
 			throw new InPlaceException(e, "bundle_state_error", bundle);
 		} catch (SecurityException e) {
-			bundleTransition.setTransitionError(bundle, TransitionError.EXCEPTION);
+			node.setTransitionError(TransitionError.EXCEPTION);
 			if (Category.DEBUG && Activator.getDefault().msgOpt().isBundleOperations())
 				TraceMessage.getInstance().getString("security_error_stop_bundle", bundle, e.getLocalizedMessage());
 			throw new InPlaceException(e, "bundle_security_error", bundle);
 		} catch (BundleException e) {
 			if (null != e.getCause() && (e.getCause() instanceof ThreadDeath)) {
-				bundleTransition.setTransitionError(bundle, TransitionError.INCOMPLETE);
+				node.setTransitionError(TransitionError.INCOMPLETE);
 				String msg = ExceptionMessage.getInstance().formatString("bundle_task_stop_terminate", bundle);
 				throw new IllegalStateException(msg, e);
 			}
-			bundleTransition.setTransitionError(bundle, TransitionError.EXCEPTION);
+			node.setTransitionError(TransitionError.EXCEPTION);
 			if (e.getType() == BundleException.STATECHANGE_ERROR)  {
 				throw new BundleStateChangeException(e, "bundle_statechange_error", bundle);							
 			}	else {
 				throw new InPlaceException(e, "bundle_stop_error", bundle);
 			}
 		} finally {
+			BundleManager.addBundleTransition(new TransitionEvent(bundle, node.getTransition())); 
 			// The framework moves the bundle to state resolve for both 
 			// successful and incomplete (exceptions) stop commands   
-			node.getState().commit(node);
+			if (node.hasTransitionError()) {
+				node.getState().rollBack(node);
+			} else {
+				node.getState().commit(node);
+			}
 			msec = System.currentTimeMillis() - startTime;
 			if (!(bundleTransition.getError(bundle) == TransitionError.STATECHANGE)) {
 				currentBundle = null;
-			}
-		try {
-			BundleManager.addBundleTransition(new TransitionEvent(bundle, node.getTransition())); 
-			} catch (ProjectLocationException e) {
-				throw new InPlaceException(e, "bundle_stop_error", bundle);
 			}
 		}
 	}
@@ -758,37 +701,31 @@ public class BundleCommandImpl implements BundleCommand {
 			URL bundlereference = new URL(location);
 			is = bundlereference.openStream();
 			bundle.update(is);
-			state.commit(node);
 		} catch (MalformedURLException e) {
-			bundleTransition.setTransitionError(bundle);
-			bundleRegion.setState(bundle, state);
+			node.setTransitionError(TransitionError.EXCEPTION);
 			throw new InPlaceException(e, "bundle_update_malformed_error", location);
 		} catch (IOException e) {
-			bundleTransition.setTransitionError(bundle);
-			bundleRegion.setState(bundle, state);
+			node.setTransitionError(TransitionError.EXCEPTION);
 			throw new InPlaceException(e, "io_exception_update", bundle, location);
 		} catch (IllegalStateException e) {
-			bundleTransition.setTransitionError(bundle);
-			bundleRegion.setState(bundle, state);
+			node.setTransitionError(TransitionError.EXCEPTION);
 			if (Category.DEBUG && Activator.getDefault().msgOpt().isBundleOperations())
 				TraceMessage.getInstance().getString("state_error_update_bundle", bundle, e.getLocalizedMessage());
 			throw new InPlaceException(e, "bundle_state_error", bundle);
 		} catch (SecurityException e) {
-			bundleTransition.setTransitionError(bundle);
-			bundleRegion.setState(bundle, state);
+			node.setTransitionError(TransitionError.EXCEPTION);
 			if (Category.DEBUG && Activator.getDefault().msgOpt().isBundleOperations())
 				TraceMessage.getInstance().getString("security_error_update_bundle", bundle, e.getLocalizedMessage());
 			throw new InPlaceException(e, "bundle_security_error", bundle);
 		} catch (BundleException e) {
-			bundleRegion.setState(bundle, state);
 			if (Category.DEBUG && Activator.getDefault().msgOpt().isBundleOperations())
 				TraceMessage.getInstance().getString("error_update_bundle", bundle.getSymbolicName(),
 						e.getLocalizedMessage());
 			if (e.getType() == BundleException.DUPLICATE_BUNDLE_ERROR) {
-				bundleTransition.setTransitionError(bundle, TransitionError.DUPLICATE);
+				node.setTransitionError(TransitionError.DUPLICATE);
 				throw new DuplicateBundleException(e, "duplicate_bundle_update_error", location, bundle);
 			} else {
-				bundleTransition.setTransitionError(bundle);
+				node.setTransitionError(TransitionError.EXCEPTION);
 				throw new InPlaceException(e, "bundle_update_error", bundle);
 			}
 		} finally {
@@ -799,11 +736,11 @@ public class BundleCommandImpl implements BundleCommand {
 			} catch (IOException e) {
 				throw new InPlaceException(e, "io_exception_update", bundle, location);
 			} finally {
-				try {
-					BundleManager.addBundleTransition(new TransitionEvent(bundle, bundleTransition
-							.getTransition(bundleRegion.getRegisteredBundleProject(bundle))));
-				} catch (ProjectLocationException e) {
-					throw new InPlaceException(e, "bundle_update_error", bundle);
+				BundleManager.addBundleTransition(new TransitionEvent(bundle, node.getTransition())); 
+				if (node.hasTransitionError()) {
+					node.getState().rollBack(node);
+				} else {
+					node.getState().commit(node);
 				}
 			}
 		}
@@ -842,36 +779,30 @@ public class BundleCommandImpl implements BundleCommand {
 			project = node.getProject();
 			state.uninstall(node);
 			bundle.uninstall();
-			state.commit(node);
 		} catch (IllegalStateException e) {
-			bundleTransition.setTransitionError(bundle);
-			bundleRegion.setState(bundle, state);
+			node.setTransitionError(TransitionError.EXCEPTION);
 			if (Category.DEBUG && Activator.getDefault().msgOpt().isBundleOperations())
 				TraceMessage.getInstance().getString("state_error_uninstall_bundle", bundle, e.getLocalizedMessage());
 			throw new InPlaceException(e, "bundle_state_error", bundle);
 		} catch (SecurityException e) {
-			bundleTransition.setTransitionError(bundle);
-			bundleRegion.setState(bundle, state);
+			node.setTransitionError(TransitionError.EXCEPTION);
 			if (Category.DEBUG && Activator.getDefault().msgOpt().isBundleOperations())
 				TraceMessage.getInstance().getString("security_error_uninstall_bundle", bundle,
 						e.getLocalizedMessage());
 			throw new InPlaceException(e, "bundle_security_error", bundle);
 		} catch (BundleException e) {
-			bundleTransition.setTransitionError(bundle);
-			bundleRegion.setState(bundle, state);
+			node.setTransitionError(TransitionError.EXCEPTION);
 			if (Category.DEBUG && Activator.getDefault().msgOpt().isBundleOperations())
 				TraceMessage.getInstance().getString("error_uninstall_bundle", bundle, e.getLocalizedMessage());
 			throw new InPlaceException(e, "bundle_uninstall_error", bundle);
 		} finally {
-			try {
-				if (null != project) {
-					Transition transition = bundleTransition.getTransition(project);
-					if (null != transition) {
-						BundleManager.addBundleTransition(new TransitionEvent(bundle, transition));
-					}
+			BundleManager.addBundleTransition(new TransitionEvent(bundle, Transition.UNINSTALL)); 
+			if (null != node) {
+				if (node.hasTransitionError()) {
+					node.getState().rollBack(node);
+				} else {
+					node.getState().commit(node);
 				}
-			} catch (ProjectLocationException e) {
-				throw new InPlaceException(e, "bundle_uninstall_error", bundle);
 			}
 		}
 		return project;

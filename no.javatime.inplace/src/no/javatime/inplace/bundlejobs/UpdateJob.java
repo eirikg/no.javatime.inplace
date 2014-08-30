@@ -201,24 +201,31 @@ public class UpdateJob extends BundleJob {
 			}
 		}
 
-		// (2) Get the requiring closure of bundles to update. The bundles in this closure
-		// are stopped before update and resolved/refreshed and started after update
-		BundleClosures bc = new BundleClosures();
-		Collection<Bundle> bundleClosure = bc.bundleDeactivation(Closure.REQUIRING, bundlesToUpdate,
-				activatedBundles);
-		// Necessary to get the latest updated version of a coherent set (closure) of running bundles
-		Collection<Bundle> pendingBundles = bundleTransition.getPendingBundles(bundleClosure,
-				Transition.UPDATE);
-		pendingBundles.removeAll(bundlesToUpdate);
-		if (pendingBundles.size() > 0) {
-			bundlesToUpdate.addAll(pendingBundles);
-			addPendingProjects(bundleRegion.getBundleProjects(pendingBundles));
+		Collection<Bundle> bundleClosure = null;
+		// (2) Get any requiring closure of bundles to update and refresh 
+		if (getOptionsService().isRefreshOnUpdate()) {
+			// Get the requiring closure of bundles to update. The bundles in this closure
+			// are stopped before update, bound to the current revision of the updated bundles during refresh
+			// and then started again
+			BundleClosures bc = new BundleClosures();
+			bundleClosure = bc.bundleDeactivation(Closure.REQUIRING, bundlesToUpdate,
+					activatedBundles);
+			// Necessary to get the latest updated version of a coherent set (closure) of running bundles
+			Collection<Bundle> pendingBundles = bundleTransition.getPendingBundles(bundleClosure,
+					Transition.UPDATE);
+			pendingBundles.removeAll(bundlesToUpdate);
+			if (pendingBundles.size() > 0) {
+				bundlesToUpdate.addAll(pendingBundles);
+				addPendingProjects(bundleRegion.getBundleProjects(pendingBundles));
+			}
+		} else {
+			// The requiring closure will be bound to the previous revision of the bundles to update and resolve
+			bundleClosure = bundlesToUpdate;
 		}
 
 		// (3) Reduce the set of bundles to update and refresh due to duplicates
 		// Collection<Bundle> bundlesToRefresh = getBundlesToResolve(bundlesToUpdate);
 		// removeDuplicates(getPendingProjects(), bundlesToUpdate, bundlesToRefresh);
-
 		Collection<IProject> duplicateProjects = removeExternalDuplicates(getPendingProjects(),
 				bundleClosure, currentExternalInstance);
 		if (null != duplicateProjects) {

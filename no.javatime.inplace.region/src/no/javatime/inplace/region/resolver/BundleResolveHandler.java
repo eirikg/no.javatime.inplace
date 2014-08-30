@@ -19,17 +19,20 @@ import java.util.Set;
 
 import no.javatime.inplace.region.Activator;
 import no.javatime.inplace.region.closure.BundleDependencies;
-import no.javatime.inplace.region.events.TransitionEvent;
 import no.javatime.inplace.region.manager.BundleManager;
 import no.javatime.inplace.region.manager.BundleRegion;
 import no.javatime.inplace.region.manager.BundleTransition;
 import no.javatime.inplace.region.manager.BundleTransition.Transition;
 import no.javatime.inplace.region.manager.BundleWorkspaceRegionImpl;
+import no.javatime.inplace.region.msg.Msg;
 import no.javatime.inplace.region.project.BundleProjectState;
 import no.javatime.inplace.region.state.BundleNode;
+import no.javatime.inplace.region.status.BundleStatus;
+import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import no.javatime.util.messages.Category;
 import no.javatime.util.messages.TraceMessage;
 
+import org.eclipse.ui.statushandlers.StatusManager;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.hooks.resolver.ResolverHook;
 import org.osgi.framework.wiring.BundleCapability;
@@ -69,7 +72,6 @@ class BundleResolveHandler implements ResolverHook {
 
 	// Groups of singletons
 	private Map<Bundle, Set<Bundle>> groups = null;
-	private Collection<Long> resolved = new LinkedHashSet<Long>();
 	private BundleRegion bundleRegion = BundleManager.getRegion();
 	private BundleTransition bundleTransition = BundleManager.getTransition();
 
@@ -104,16 +106,26 @@ class BundleResolveHandler implements ResolverHook {
 		Collection<BundleRevision> workspaceCandidates = BundleDependencies.getRevisionsFrom(bundles);
 		// Restrict workspace candidate bundles to candidate bundles closures to resolve
 		workspaceCandidates.retainAll(candidates);
-
+		boolean isExternal = true;
 		// Split candidates in those activated and those deactivated
 		for (BundleRevision workspaceCandidate : workspaceCandidates) {
-			if (BundleManager.getRegion().isActivated(workspaceCandidate.getBundle())) {
+			Bundle bundle = workspaceCandidate.getBundle();
+			BundleNode node = BundleWorkspaceRegionImpl.INSTANCE.getBundleNode(bundle);
+			if (node.isStateChanging()) {
+				isExternal = false;
+			}
+			if (node.isActivated()) {
 				activatedBundles.add(workspaceCandidate);
 			} else {
 				deactivatedBundles.add(workspaceCandidate);
 			}
 		}
-
+		if (Activator.getDefault().msgOpt().isBundleOperations()) {
+			if (isExternal && !deactivatedBundles.isEmpty() && activatedBundles.isEmpty()) {
+				StatusManager.getManager().handle(
+						new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, Msg.NOT_RESOLVING_INFO), StatusManager.LOG);
+			}
+		}
 		// If no deactivated bundles, all error free bundles are activated and will be resolved
 		if (!deactivatedBundles.isEmpty()) {
 			candidates.removeAll(deactivatedBundles);
@@ -129,11 +141,6 @@ class BundleResolveHandler implements ResolverHook {
 				deactivatedBundles);
 		if (dependentBundles.size() > 0) {
 			candidates.removeAll(dependentBundles);
-		}
-		// Record bundles to resolve
-		for (BundleRevision bundleRevision : candidates) {
-			Long bundleId = bundleRevision.getBundle().getBundleId();
-			resolved.add(bundleId);
 		}
 	}
 
@@ -249,14 +256,6 @@ class BundleResolveHandler implements ResolverHook {
 
 	@Override
 	public void end() {
-
-		for (Long bundleId : resolved) {
-			Bundle bundle = bundleRegion.get(bundleId);
-			if (null != bundle) {
-				BundleManager.addBundleTransition(new TransitionEvent(bundle, Transition.RESOLVE));
-			}
-		}
-		resolved.clear();
 		groups = null;
 	}
 

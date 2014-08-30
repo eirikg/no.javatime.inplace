@@ -428,7 +428,7 @@ public class BundleProjectSettings {
 	public static boolean setDevClasspath(String symbolicName, String classPath) throws InPlaceException {
 
 		String osgiDev = inDevelopmentMode();
-		if (null == osgiDev) {
+		if (null == osgiDev || null == symbolicName || null == classPath) {
 			return false;
 			// throw new InPlaceException("classpath_property_error", symbolicName);
 		}

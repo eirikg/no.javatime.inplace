@@ -984,7 +984,12 @@ public abstract class BundleJob extends JobStatus {
 		IBundleStatus result = new BundleStatus(StatusCode.OK, InPlace.PLUGIN_ID, "");
 
 		try {
-			BundleProjectSettings.setDevClasspath(BundleProjectSettings.getSymbolicNameFromManifest(project), BundleProjectSettings
+			String symbolicName = BundleProjectSettings.getSymbolicNameFromManifest(project);
+			if (null == symbolicName) {
+				String msg = NLS.bind(Msg.SYMBOLIC_NAME_ERROR, project.getName());
+				result = addError(null, msg);
+			}
+			BundleProjectSettings.setDevClasspath(symbolicName, BundleProjectSettings
 					.getDefaultOutputLocation(project).toString());
 			if (getOptionsService().isUpdateDefaultOutPutFolder()) {
 				BundleProjectSettings.addOutputLocationToBundleClassPath(project);
