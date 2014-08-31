@@ -12,7 +12,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 
 import no.javatime.inplace.extender.Activator;
-import no.javatime.util.messages.Category;
 
 import org.osgi.framework.Bundle;
 import org.osgi.framework.ServiceReference;
@@ -343,7 +342,7 @@ public class Extender<T> {
 	public void closeServiceTracker() {
 //		synchronized (tracker) {
 			if (null != tracker && tracker.getTrackingCount() != -1) {
-				System.out.println("Closing tracker for: " + getExtensionInterfaceName());
+//				System.out.println("Closing tracker for: " + getExtensionInterfaceName());
 				tracker.close();
 				tracker = null;
 			}
@@ -539,8 +538,7 @@ public class Extender<T> {
 						requesters.add(regBId);
 					}
 					Object extensionImplObject = getExtensionBundle().getBundleContext().getService(serviceRef);
-					if (Category.DEBUG)
-						printServiceregInfo(serviceRef);
+					// printServiceregInfo(serviceRef);
 					if (null == extensionImplObject) {
 						throw new ExtenderException("failed_to_get_service", interfaceName, cls);
 					}
