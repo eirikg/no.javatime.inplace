@@ -12,6 +12,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 
 import no.javatime.inplace.extender.Activator;
+import no.javatime.util.messages.Category;
 
 import org.osgi.framework.Bundle;
 import org.osgi.framework.ServiceReference;
@@ -538,7 +539,8 @@ public class Extender<T> {
 						requesters.add(regBId);
 					}
 					Object extensionImplObject = getExtensionBundle().getBundleContext().getService(serviceRef);
-					printServiceregInfo(serviceRef);
+					if (Category.DEBUG)
+						printServiceregInfo(serviceRef);
 					if (null == extensionImplObject) {
 						throw new ExtenderException("failed_to_get_service", interfaceName, cls);
 					}
