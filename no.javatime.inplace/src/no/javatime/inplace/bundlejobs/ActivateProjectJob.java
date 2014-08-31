@@ -12,6 +12,7 @@ package no.javatime.inplace.bundlejobs;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundleproject.ProjectProperties;
@@ -171,25 +172,25 @@ public class ActivateProjectJob extends NatureJob {
 	private IBundleStatus activate(IProgressMonitor monitor) throws InPlaceException,
 			InterruptedException, CircularReferenceException {
 
-		if (!allowActivate()) {
-			return getLastStatus(); 
-		}
-		
 		if (pendingProjects() > 0) {
-			IBundleStatus result = initWorkspace(monitor);
-			if (!result.hasStatus(StatusCode.OK) && !result.hasStatus(StatusCode.INFO)) {
-				return result;
-			}
 			// Include dependent projects to activate according to dependency options
 			BundleClosures closures = new BundleClosures();
 			// As a minimum (mandatory) these closures include providing deactivated projects
 			Collection<IProject> pendingProjects = closures
 					.projectActivation(getPendingProjects(), false);
 			resetPendingProjects(pendingProjects);
-
+			// Remove any build error closures from projects to activate
 			Collection<IProject> errorClosure = buildErrorClosure(getPendingProjects());
 			if (errorClosure.size() > 0) {
 				removePendingProjects(errorClosure);
+				if (pendingProjects() == 0) {
+					return getLastStatus();
+				}
+			}
+			// Uninstall any installed bundles before activating workspace
+			IBundleStatus result = initWorkspace(monitor);
+			if (!result.hasStatus(StatusCode.OK) && !result.hasStatus(StatusCode.INFO)) {
+				return result;
 			}
 			activateNature(getPendingProjects(), new SubProgressMonitor(monitor, 1));
 			// An activate project job triggers an update job when the workspace is activated and
@@ -206,27 +207,31 @@ public class ActivateProjectJob extends NatureJob {
 			InPlace.get().savePluginSettings(true, true);
 		} else {
 			if (InPlace.get().msgOpt().isBundleOperations()) {
-				InPlace.get().trace(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, Msg.NO_PROJECTS_TO_ACTIVATE_INFO));				
+				InPlace.get().trace(
+						new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, Msg.NO_PROJECTS_TO_ACTIVATE_INFO));
 			}
 			return getLastStatus();
 		}
 		if (InPlace.get().msgOpt().isBundleOperations() && !ProjectProperties.isAutoBuilding()) {
-			IBundleStatus status = new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, Msg.BUILDER_OFF_INFO); 
-			status.add(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, 
-					NLS.bind(Msg.BUILDER_OFF_LIST_INFO, BundleProjectState.formatProjectList(getPendingProjects()))));
+			IBundleStatus status = new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID,
+					Msg.BUILDER_OFF_INFO);
+			status.add(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, NLS.bind(
+					Msg.BUILDER_OFF_LIST_INFO, BundleProjectState.formatProjectList(getPendingProjects()))));
 			InPlace.get().trace(status);
 		}
 		return getLastStatus();
 	}
 
 	/**
-	 * Find and return illegal build error closures among the specified deactivated projects to
-	 * activate.
+	 * Find and return build error closures among the specified deactivated projects to activate.
+	 * Missing build state or build errors in manifest are considered fatal (install may fail) and
+	 * prevents the workspace from activation.
 	 * <p>
 	 * All specified deactivated projects to activate are collectively either in state uninstalled
 	 * (deactivated workspace) or installed (activated workspace).
 	 * <p>
-	 * Build error closures that allows and prevents an activation of a deactivated bundle project are:
+	 * Build error closures that allows and prevents an activation of a deactivated bundle project
+	 * are:
 	 * <ol>
 	 * <li><b>Requiring activate closures</b>
 	 * <p>
@@ -266,9 +271,31 @@ public class ActivateProjectJob extends NatureJob {
 	 * @throws InPlaceException if failing to get the dependency options service or illegal
 	 * operation/closure combination
 	 */
-	private Collection<IProject> buildErrorClosure(Collection<IProject> projects) throws InPlaceException,
-			CircularReferenceException {
-		
+	private Collection<IProject> buildErrorClosure(Collection<IProject> projects)
+			throws InPlaceException, CircularReferenceException {
+
+		 // Uninstalled projects missing build state or with build errors in manifest prevents activation
+		 // of any project
+		if (!BundleProjectState.isWorkspaceNatureEnabled()) {
+			Collection<IProject> errorProjects = BuildErrorClosure.getBuildErrors((ProjectProperties
+					.getPlugInProjects()));
+			IBundleStatus multiStatus = new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID,
+					Msg.FATAL_ACTIVATE_ERROR);
+			for (IProject project : errorProjects) {
+				if (!BuildErrorClosure.hasBuildState(project)) {
+					multiStatus.add(new BundleStatus(StatusCode.WARNING, InPlace.PLUGIN_ID, project, NLS
+							.bind(Msg.BUILD_STATE_ERROR, project.getName()), null));
+				} else if (BuildErrorClosure.hasManifestBuildErrors(project)) {
+					multiStatus.add(new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID, project, NLS.bind(
+							Msg.MANIFEST_BUILD_ERROR, project.getName()), null));
+				}
+			}
+			if (multiStatus.getChildren().length > 0) {
+				addStatus(multiStatus);
+				return new LinkedHashSet<IProject>(projects);
+			}
+		}
+
 		// Deactivated providing closure. In this case the activation scope is deactivated as long as we
 		// are not checking activated providing or requiring bundles with build errors
 		// Activated requiring closure is not checked (see method comments)
@@ -284,31 +311,7 @@ public class ActivateProjectJob extends NatureJob {
 		}
 		return Collections.<IProject> emptySet();
 	}
-	
-	/**
-	 * Uninstalled projects missing build state or with build errors in manifest prevents activation of any project
-	 */
-	private boolean allowActivate() {
 
-		if (!BundleProjectState.isWorkspaceNatureEnabled()) {			
-			Collection<IProject> errorProjects = BuildErrorClosure.getBuildErrors((ProjectProperties.getPlugInProjects()));
-			IBundleStatus multiStatus = new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID, Msg.FATAL_ACTIVATE_ERROR);
-			for (IProject project : errorProjects) {
-				if (!BuildErrorClosure.hasBuildState(project)) {
-					multiStatus.add(new BundleStatus(StatusCode.WARNING, InPlace.PLUGIN_ID, project, 
-							NLS.bind(Msg.BUILD_STATE_ERROR, project.getName()), null));
-				}	else if (BuildErrorClosure.hasManifestBuildErrors(project)) {
-					multiStatus.add(new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID, project, 
-							NLS.bind(Msg.MANIFEST_BUILD_ERROR, project.getName()), null));					
-				}
-			}
-			if (multiStatus.getChildren().length > 0) {
-				addStatus(multiStatus);
-				return false;				
-			}
-		}		
-		return true;
-	}
 	/**
 	 * Initialize the workspace by stopping and uninstalling all workspace bundles and then adding the
 	 * uninstalled bundles as pending projects. This only happens if the workspace is deactivated
@@ -336,8 +339,10 @@ public class ActivateProjectJob extends NatureJob {
 			if (projectsToActivate.size() > 0) {
 				addPendingProjects(projectsToActivate);
 				if (InPlace.get().msgOpt().isBundleOperations()) {
-					InPlace.get().trace(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, 
-							NLS.bind(Msg.ADD_BUNDLES_TO_ACTIVATE_INFO, BundleProjectState.formatProjectList(projectsToActivate))));				
+					InPlace.get().trace(
+							new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, NLS.bind(
+									Msg.ADD_BUNDLES_TO_ACTIVATE_INFO,
+									BundleProjectState.formatProjectList(projectsToActivate))));
 				}
 			}
 		}
@@ -362,8 +367,7 @@ public class ActivateProjectJob extends NatureJob {
 			IProgressMonitor monitor) throws OperationCanceledException, InterruptedException,
 			CircularReferenceException {
 		int entrySize = statusList();
-		IBundleStatus status = stop(bundlesToUninstall, null, new SubProgressMonitor(
-				monitor, 1));
+		IBundleStatus status = stop(bundlesToUninstall, null, new SubProgressMonitor(monitor, 1));
 		if (monitor.isCanceled()) {
 			throw new OperationCanceledException();
 		}
@@ -374,8 +378,10 @@ public class ActivateProjectJob extends NatureJob {
 			status = createMultiStatus(multiStatus);
 		} else {
 			if (InPlace.get().msgOpt().isBundleOperations()) {
-				InPlace.get().trace(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, 
-						NLS.bind(Msg.UNINSTALL_BEFORE_ACTIVATE_INFO, bundleRegion.formatBundleList(bundlesToUninstall, true))));				
+				InPlace.get().trace(
+						new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, NLS.bind(
+								Msg.UNINSTALL_BEFORE_ACTIVATE_INFO,
+								bundleRegion.formatBundleList(bundlesToUninstall, true))));
 			}
 		}
 		return statusList() > entrySize ? getLastStatus() : status;
