@@ -17,7 +17,7 @@ import org.eclipse.jface.action.Action;
 import org.eclipse.ui.console.IConsole;
 
 /**
- * Action to close the bundle console.
+ * Action to shut down the VM.
  */
 public class ShutDownJVMAction extends Action {
 

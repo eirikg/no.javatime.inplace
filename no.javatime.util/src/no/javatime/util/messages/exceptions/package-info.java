@@ -9,9 +9,7 @@
  * 	JavaTime project, Eirik Gronsund - initial implementation
  *******************************************************************************/
 /**
-This package contains various exception classes used by JavaTime. Contains exception
-classes for logging of exceptions and messages and display of messages in the standard
-JavaTime message view.
+This package contains a few basic exception classes.
 
 The classes inherits from the unchecked {@link java.lang.RuntimeException} class.
 <p>

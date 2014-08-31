@@ -2,20 +2,6 @@
 <?eclipse version="3.2"?>
 <plugin>
    <extension
-         point="org.eclipse.ui.views">
-      <category
-            id="no.javatime.category"
-            name="InPlace">
-      </category>
-      <view
-            category="no.javatime.category"
-            class="no.javatime.util.messages.views.MessageView"
-            icon="icons/message_view.gif"
-            id="no.javatime.util.messages.views.MessageView"
-            name="Messages">
-      </view>
-   </extension>
-   <extension
          point="org.eclipse.ui.console.consolePageParticipants">
       <consolePageParticipant
             class="no.javatime.util.messages.views.BundleConsolePageParticipant"

@@ -12,21 +12,19 @@ package no.javatime.util.messages;
 
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
-import java.util.logging.Level;
 
+import no.javatime.util.Activator;
+
+import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Status;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.ui.statushandlers.StatusManager;
 
 /**
- * This is a specialization for accessing error messages. By default all
- * accessed strings are forwarded to the
- * {@link no.javatime.util.messages.log.MessageLog}. The more general class for
- * access of key/value pairs can be found in {@link Message}.
- * <p>
- * There are other classes in this package for different specialized or
- * categorized messages.
- * </p>
+ * Access warning messages. The more general class for access of key/value pairs can be found in
+ * {@link Message}.
  */
 public class WarnMessage extends Message {
 
@@ -41,8 +39,7 @@ public class WarnMessage extends Message {
 	public static final String WARN_PROPERTIES_FILE_NAME = "no.javatime.util.messages.warnmessages"; //$NON-NLS-1$
 
 	/**
-	 * Assignment of the "errormessages.properties" property file as a resource
-	 * bundle
+	 * Assignment of the "errormessages.properties" property file as a resource bundle
 	 */
 	private static ResourceBundle warnBundle = null;
 
@@ -59,12 +56,12 @@ public class WarnMessage extends Message {
 			ignoreInStackFrame(ID);
 		} catch (MissingResourceException e) {
 			// Use inline text. Resource bundle may be missing.
-			String msg = ID + ": Can not find Property file " + WARN_PROPERTIES_FILE_NAME + 
-			". It may have been deleted or moved.";
-			getLogger().log(getLogger().getLevel(), msg, e);
-			outputView(null, msg);
+			String msg = ID + ": Can not find Property file " + WARN_PROPERTIES_FILE_NAME
+					+ ". It may have been deleted or moved.";
+			IStatus status = new Status(IStatus.ERROR, Activator.PLUGIN_ID, msg, e);
+			StatusManager.getManager().handle(status, StatusManager.LOG);
 		}
-}
+	}
 
 	/**
 	 * This access the singleton
@@ -79,11 +76,10 @@ public class WarnMessage extends Message {
 	}
 
 	/*
-	public void handleWarningMessage(String msg) {
-		handleWarningMessage(msg);
-
-	}
-	*/
+	 * public void handleWarningMessage(String msg) { handleWarningMessage(msg);
+	 * 
+	 * }
+	 */
 	public void handleMessage(String msg) {
 
 		if (null == msg) {
@@ -96,12 +92,12 @@ public class WarnMessage extends Message {
 		}
 		getString("log_message", msg);
 	}
-	
+
 	@Override
 	protected String getString(final String key) {
-		return getString(key, warnBundle, WARN_PROPERTIES_FILE_NAME );
+		return getString(key, warnBundle, WARN_PROPERTIES_FILE_NAME);
 	}
-	
+
 	@Override
 	protected String getPrefixMsg(String extendedPrefix) {
 		return getPrefixMsg(warnBundle, extendedPrefix);
@@ -113,21 +109,7 @@ public class WarnMessage extends Message {
 	}
 
 	@Override
-	public String outputLog(String exdendedPrefix, String msg) {
-		return outputLog(exdendedPrefix, Level.WARNING, msg);
-	}
-
-	@Override
-	public String  outputConsole(String key, String msg) {		
+	public String outputConsole(String key, String msg) {
 		return outputConsole(key, msg, warnBundle);
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public String outputView(String key, String msg) {
-		
-		return outputView(key, msg, warnBundle);
 	}
 }

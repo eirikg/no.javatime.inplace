@@ -12,22 +12,19 @@ package no.javatime.util.messages;
 
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
-import java.util.logging.Level;
 
+import no.javatime.util.Activator;
+
+import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Status;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.widgets.Display;
-
+import org.eclipse.ui.statushandlers.StatusManager;
 
 /**
- * This is a specialization for accessing error messages. By default all
- * accessed strings are forwarded to the
- * {@link no.javatime.util.messages.log.MessageLog}. The more general class for
- * access of key/value pairs can be found in {@link Message}.
- * <p>
- * There are other classes in this package for different specialized or
- * categorized messages.
- * </p>
+ * Access error messages.The more general class for access of key/value pairs can be found in
+ * {@link Message}.
  */
 public class ErrorMessage extends Message {
 
@@ -42,8 +39,7 @@ public class ErrorMessage extends Message {
 	public static final String ERROR_PROPERTIES_FILE_NAME = "no.javatime.util.messages.errormessages"; //$NON-NLS-1$
 
 	/**
-	 * Assignment of the "errormessages.properties" property file as a resource
-	 * bundle
+	 * Assignment of the "errormessages.properties" property file as a resource bundle
 	 */
 	private static ResourceBundle errorBundle = null;
 
@@ -60,12 +56,12 @@ public class ErrorMessage extends Message {
 			ignoreInStackFrame(ID);
 		} catch (MissingResourceException e) {
 			// Use inline text. Resource bundle may be missing.
-			String msg = ID + ": Can not find Property file " + ERROR_PROPERTIES_FILE_NAME + 
-			". It may have been deleted or moved.";
-			getLogger().log(getLogger().getLevel(), msg, e);
-			outputView(null, msg);
+			String msg = ID + ": Can not find Property file " + ERROR_PROPERTIES_FILE_NAME
+					+ ". It may have been deleted or moved.";
+			IStatus status = new Status(IStatus.ERROR, Activator.PLUGIN_ID, msg, e);
+			StatusManager.getManager().handle(status, StatusManager.LOG);
 		}
-}
+	}
 
 	/**
 	 * This access the singleton
@@ -85,9 +81,9 @@ public class ErrorMessage extends Message {
 			msg = "";
 		}
 		if (Category.DEBUG) {
-  		StackTraceElement frame = getCallerMetaInfo();
-  		getString("log_stack_frame", frame.getClassName(), frame.getMethodName());
-  		// getString("extended_log", frame.getClassName(), frame.getMethodName(), msg);
+			StackTraceElement frame = getCallerMetaInfo();
+			getString("log_stack_frame", frame.getClassName(), frame.getMethodName());
+			// getString("extended_log", frame.getClassName(), frame.getMethodName(), msg);
 		}
 		if (msg.isEmpty()) {
 			getString("log_message", msg);
@@ -99,9 +95,9 @@ public class ErrorMessage extends Message {
 	 */
 	@Override
 	protected String getString(final String key) {
-		return getString(key, errorBundle, ERROR_PROPERTIES_FILE_NAME );
+		return getString(key, errorBundle, ERROR_PROPERTIES_FILE_NAME);
 	}
-	
+
 	/**
 	 * {@inheritDoc}
 	 */
@@ -109,15 +105,10 @@ public class ErrorMessage extends Message {
 	protected String getPrefixMsg(String extendedPrefix) {
 		return getPrefixMsg(errorBundle, extendedPrefix);
 	}
-	
+
 	@Override
 	protected Color getFontColor(Display display) {
 		return display.getSystemColor(SWT.COLOR_RED);
-	}
-
-	@Override
-	public String outputLog(String exdendedPrefix, String msg) {
-		return outputLog(exdendedPrefix, Level.SEVERE, msg);
 	}
 
 	/**
@@ -126,14 +117,5 @@ public class ErrorMessage extends Message {
 	@Override
 	public String outputConsole(String key, String msg) {
 		return outputConsole(key, msg, errorBundle);
-	}
-	
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public String outputView(String key, String msg) {
-		
-		return outputView(key, msg, errorBundle);
 	}
 }

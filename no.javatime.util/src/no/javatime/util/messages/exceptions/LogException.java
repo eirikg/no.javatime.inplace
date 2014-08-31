@@ -10,13 +10,10 @@
  *******************************************************************************/
 package no.javatime.util.messages.exceptions;
 
-import java.util.logging.Level;
-
 import no.javatime.util.messages.ExceptionMessage;
-import no.javatime.util.messages.log.MessageLog;
 
 /**
- * Exception which log a message in the log.
+ * Mediator without any functionality. For future use.
  */
 public class LogException extends BaseException {
 
@@ -41,8 +38,6 @@ public class LogException extends BaseException {
 	 */
 	public LogException(Throwable tex) {
 		super(tex);
-		MessageLog logger = ExceptionMessage.getInstance().getLogger();
-		logger.throwing(tex);
 	}
 
 	/**
@@ -54,10 +49,6 @@ public class LogException extends BaseException {
 	 */
 	public LogException(Throwable tex, String key, Object... substitutions) {
 		super(ExceptionMessage.getInstance().formatString(key, substitutions), tex);
-
-		StackTraceElement frame = getCallerMetaInfo();
-		MessageLog logger = ExceptionMessage.getInstance().getLogger();
-		logger.logp(Level.SEVERE, frame.getClassName(), frame.getMethodName(), getMessage(), tex);
 	}
 
 	/**
@@ -68,9 +59,5 @@ public class LogException extends BaseException {
 	 */
 	public LogException(String key, Object... substitutions) {
 		super(ExceptionMessage.getInstance().formatString(key, substitutions));
-
-		StackTraceElement frame = getCallerMetaInfo();
-		MessageLog logger = ExceptionMessage.getInstance().getLogger();
-		logger.logp(Level.SEVERE, frame.getClassName(), frame.getMethodName(), getMessage(), this);
 	}
 }

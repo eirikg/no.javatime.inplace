@@ -15,20 +15,19 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
-import java.util.logging.Level;
 
+import no.javatime.util.Activator;
+
+import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Status;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.ui.statushandlers.StatusManager;
 
 /**
- * This is a specialization for accessing messages used by exception handlers.
- * By default all accessed strings are forwarded to the
- * {@link no.javatime.util.messages.log.MessageLog}. The more general class for
- * access of key/value pairs can be found in {@link Message}.
- * <p>
- * There are other classes for different specialized or categorized messages.
- * </p>
+ * Access messages used by exception handlers. The more general
+ * class for access of key/value pairs can be found in {@link Message}.
  */
 public class ExceptionMessage extends Message {
 
@@ -59,10 +58,10 @@ public class ExceptionMessage extends Message {
 			ignoreInStackFrame(ID);
 		} catch (MissingResourceException e) {
 			// Use inline text. Resource bundle may be missing.
-			String msg = ID + ": Can not find Property file " + EXCEPTION_PROPERTIES_FILE_NAME + 
-			". It may have been deleted or moved.";
-			getLogger().log(getLogger().getLevel(), msg, e);
-			outputView(null, msg);
+			String msg = ID + ": Can not find Property file " + EXCEPTION_PROPERTIES_FILE_NAME
+					+ ". It may have been deleted or moved.";
+			IStatus status = new Status(IStatus.ERROR, Activator.PLUGIN_ID, msg, e);
+			StatusManager.getManager().handle(status, StatusManager.LOG);
 		}
 	}
 
@@ -77,12 +76,13 @@ public class ExceptionMessage extends Message {
 		}
 		return instance;
 	}
-	
+
 	/**
-	 * Formats exception and forwards it to output device(s) defined for
-	 * {@code ExceptionMessage} by calling {@code #getString(String, Object...)}
+	 * Formats exception and forwards it to output device(s) defined for {@code ExceptionMessage} by
+	 * calling {@code #getString(String, Object...)}
 	 * <p>
 	 * If output is defined as log, the log service listener determines the output devices
+	 * 
 	 * @param msg exception message .
 	 */
 	public void handleMessage(String msg) {
@@ -90,10 +90,11 @@ public class ExceptionMessage extends Message {
 	}
 
 	/**
-	 * Formats exception and forwards it to output device(s) defined for
-	 * {@code ExceptionMessage} by calling {@code #getString(String, Object...)}
+	 * Formats exception and forwards it to output device(s) defined for {@code ExceptionMessage} by
+	 * calling {@code #getString(String, Object...)}
 	 * <p>
 	 * If output is defined as log, the log service listener determines the output device(s)
+	 * 
 	 * @param t the exception. May be null.
 	 * @param msg error message added to the exception. May be null
 	 */
@@ -112,37 +113,39 @@ public class ExceptionMessage extends Message {
 		}
 		if (null != t) {
 			for (String exceptionMessage : getChaindedExceptionMessages(t)) {
-				getString("log_message", exceptionMessage);				
+				getString("log_message", exceptionMessage);
 			}
 		}
 	}
 
 	/**
 	 * Forwards the exception to the log service with error log level
+	 * 
 	 * @param t the exception. May be null.
 	 * @param msg error message added to the exception. May be null
 	 */
 	// TODO See Logmessage
-//	public void logServiceException(Throwable t, String msg) {
-//		ExtendedLogService logService = getLogService();
-//		if (null != logService) {
-//			logService.log(LogService.LOG_ERROR, msg, t);
-//		} else {
-//			msg += getChainedException(t);
-//			outputLog(null, msg);
-//		}
-//	}
+	// public void logServiceException(Throwable t, String msg) {
+	// ExtendedLogService logService = getLogService();
+	// if (null != logService) {
+	// logService.log(LogService.LOG_ERROR, msg, t);
+	// } else {
+	// msg += getChainedException(t);
+	// outputLog(null, msg);
+	// }
+	// }
 
 	/**
 	 * {@inheritDoc}
 	 */
 	@Override
 	protected String getString(final String key) {
-		return getString(key, exceptionBundle, EXCEPTION_PROPERTIES_FILE_NAME );
+		return getString(key, exceptionBundle, EXCEPTION_PROPERTIES_FILE_NAME);
 	}
-		
+
 	/**
 	 * Traverse all chained exceptions and retrieve their messages
+	 * 
 	 * @param e the messages in the chained exception to return
 	 * @return the messages in the chained exception concatenated in a string.
 	 */
@@ -159,22 +162,23 @@ public class ExceptionMessage extends Message {
 		return msgBuf.toString();
 	}
 
-	/** Adds all nested messages in a chained exception to a list.
+	/**
+	 * Adds all nested messages in a chained exception to a list.
 	 * 
 	 * @param e The topmost exception in a chain
 	 * @return a list of all messages in a chained exception or an empty list
 	 */
-	public List<String> getChaindedExceptionMessages(Throwable e) {	
+	public List<String> getChaindedExceptionMessages(Throwable e) {
 		List<String> tMsgs = new ArrayList<String>();
 		if (null != e && null != e.getLocalizedMessage()) {
 			tMsgs.add(e.getLocalizedMessage());
-  		Throwable t = e.getCause();
-  		while (null != t) {
-  			if (null != t.getLocalizedMessage()) {
-  				tMsgs.add(t.getLocalizedMessage());
-  			}
+			Throwable t = e.getCause();
+			while (null != t) {
+				if (null != t.getLocalizedMessage()) {
+					tMsgs.add(t.getLocalizedMessage());
+				}
 				t = t.getCause();
-  		}
+			}
 		}
 		return tMsgs;
 	}
@@ -191,11 +195,6 @@ public class ExceptionMessage extends Message {
 	protected Color getFontColor(Display display) {
 		return display.getSystemColor(SWT.COLOR_RED);
 	}
-	
-	@Override
-	public String outputLog(String exdendedPrefix, String msg) {
-		return outputLog(exdendedPrefix, Level.SEVERE, msg);
-	}
 
 	/**
 	 * {@inheritDoc}
@@ -203,13 +202,5 @@ public class ExceptionMessage extends Message {
 	@Override
 	public String outputConsole(String key, String msg) {
 		return outputConsole(key, msg, exceptionBundle);
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public String outputView(String key, String msg) {
-		return outputView(key, msg, exceptionBundle);
 	}
 }

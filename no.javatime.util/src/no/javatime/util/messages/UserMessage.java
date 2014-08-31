@@ -13,13 +13,15 @@ package no.javatime.util.messages;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
 
+import no.javatime.util.Activator;
+
+import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Status;
+import org.eclipse.ui.statushandlers.StatusManager;
+
 /**
- * This is a specialization for accessing user messages. The more general class
- * for access of key/value pairs can be found in {@link Message}.
- * <p>
- * There are other classes in this package for different specialized or
- * categorized messages.
- * </p>
+ * Access user messages. The more general class for access of key/value pairs can be found in
+ * {@link Message}.
  */
 public class UserMessage extends Message {
 
@@ -31,13 +33,11 @@ public class UserMessage extends Message {
 	/**
 	 * Name of the properties file. File extension is implicit
 	 */
-	public static final String USER_PROPERTIES_FILE_NAME = 
-		// FileLocation.DATA_SUBFOLDER + "usermessages"; //$NON-NLS-1$
-		"no.javatime.util.messages.usermessages"; //$NON-NLS-1$
+	public static final String USER_PROPERTIES_FILE_NAME = "no.javatime.util.messages.usermessages"; //$NON-NLS-1$
 
 	// Assignment of the "usermessages.properties" property file as a resource
 	// bundle
-	private static ResourceBundle userBundle = null; 
+	private static ResourceBundle userBundle = null;
 
 	private static UserMessage instance = null;
 
@@ -53,15 +53,16 @@ public class UserMessage extends Message {
 			ignoreInStackFrame(ID);
 		} catch (MissingResourceException e) {
 			// Use inline text. Resource bundle may be missing.
-			String msg = ID + ": Can not find Property file " + USER_PROPERTIES_FILE_NAME + 
-			". It may have been deleted or moved.";
-			getLogger().log(getLogger().getLevel(), msg, e);
-			outputView(null, msg);
+			String msg = ID + ": Can not find Property file " + USER_PROPERTIES_FILE_NAME
+					+ ". It may have been deleted or moved.";
+			IStatus status = new Status(IStatus.ERROR, Activator.PLUGIN_ID, msg, e);
+			StatusManager.getManager().handle(status, StatusManager.LOG);
 		}
 	}
 
 	/**
 	 * This access the singleton
+	 * 
 	 * @return the instance of the <code>UserMessage</class>
 	 */
 	public synchronized static UserMessage getInstance() {
@@ -76,9 +77,9 @@ public class UserMessage extends Message {
 	 */
 	@Override
 	protected String getString(final String key) {
-		return getString(key, userBundle, USER_PROPERTIES_FILE_NAME );
+		return getString(key, userBundle, USER_PROPERTIES_FILE_NAME);
 	}
-	
+
 	/**
 	 * {@inheritDoc}
 	 */
@@ -93,14 +94,5 @@ public class UserMessage extends Message {
 	@Override
 	public String outputConsole(String key, String msg) {
 		return outputConsole(key, msg, userBundle);
-	}
-	
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public String outputView(String key, String msg) {
-		
-		return outputView(key, msg, userBundle);
 	}
 }

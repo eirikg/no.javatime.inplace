@@ -60,7 +60,7 @@ public abstract class BaseException extends RuntimeException {
 
 			if (frameName.equals(ID) || frameName.equals(BaseException.ID)
 					|| frameName.equals(LogException.ID)
-					|| frameName.equals(ViewException.ID)) {
+					|| frameName.equals(ResourceException.ID)) {
 				break;
 			}
 			ix++;
@@ -72,7 +72,7 @@ public abstract class BaseException extends RuntimeException {
 
 			if (!frameName.equals(ID) && !frameName.equals(BaseException.ID)
 					&& !frameName.equals(LogException.ID)
-					&& !frameName.equals(ViewException.ID)) {
+					&& !frameName.equals(ResourceException.ID)) {
 				// Found a relevant frame.
 				return frame;
 			}

@@ -9,10 +9,7 @@
  * 	JavaTime project, Eirik Gronsund - initial implementation
  *******************************************************************************/
 /**
- * <ol>
- * <li>Provides a bundle console page in the generic console view for redirection of standard output 
- * <li>Displays bundle trace messages and messages from bind manager in a message view collected by a message container.
- * </ol>
+A bundle console page in the generic console view for redirection of standard output 
 <p>
 
  <!-- <h2>Package Specification</h2> -->

@@ -16,13 +16,19 @@ import java.util.MissingResourceException;
 import java.util.ResourceBundle;
 
 import no.javatime.util.Activator;
-import no.javatime.util.messages.exceptions.ViewException;
 
+import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 import org.eclipse.core.runtime.preferences.InstanceScope;
+import org.eclipse.ui.statushandlers.StatusManager;
 import org.osgi.service.prefs.BackingStoreException;
 
 /**
+ * This class is typically used in conjunction with one of the getString methods
+ * in the different message classes in this package to suppress/show categories of
+ * messages.
+ * <p>
  * A category is an unique string which is defined when this class is
  * instantiated or one of the predefined categories are used. A category may be
  * true or false.
@@ -38,15 +44,9 @@ import org.osgi.service.prefs.BackingStoreException;
  * static access methods the last set value is returned for the category
  * specified.
  * <p>
- * This class is typically used in conjunction with one of the getString methods
- * in the different message classes in this package to suppress categories of
- * messages.
- * <p>
  * When instantiating the memory cost is a string object (the category) a
  * boolean, and an entry of the string object and its corresponding boolean
  * value in a category map.
- * 
- * @see Message#getString(String, Category, Object...)
  */
 public class Category extends Message {
 
@@ -60,8 +60,10 @@ public class Category extends Message {
 		try {
 			categoryBundle = ResourceBundle.getBundle(CATEGORY_PROPERTIES_FILE_NAME);
 		} catch (MissingResourceException e) {
-			throw new ViewException(e, "resource_exception", Category.class.getName(),
-					CATEGORY_PROPERTIES_FILE_NAME);
+			String msg = ID + ": Can not find Property file " + CATEGORY_PROPERTIES_FILE_NAME //$NON-NLS-1$
+					+ ". It may have been deleted or moved."; //$NON-NLS-1$
+			IStatus status = new Status(IStatus.ERROR, Activator.PLUGIN_ID, msg, e);
+			StatusManager.getManager().handle(status, StatusManager.LOG);
 		}
 	}
 
@@ -300,13 +302,6 @@ public class Category extends Message {
 		return outputConsole(key, msg, categoryBundle);
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public String outputView(String key, String msg) {
-		return outputView(key, msg, categoryBundle);
-	}
 
 	/**
 	 * Save various setting through the preference service
