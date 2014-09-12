@@ -13,6 +13,7 @@ package no.javatime.inplace.builder;
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundlemanager.BundleJobManager;
 import no.javatime.inplace.bundleproject.ProjectProperties;
+import no.javatime.inplace.region.events.TransitionEvent;
 import no.javatime.inplace.region.manager.BundleManager;
 import no.javatime.inplace.region.manager.BundleTransition.Transition;
 import no.javatime.inplace.region.manager.InPlaceException;
@@ -58,8 +59,14 @@ public class PreBuildListener implements IResourceChangeListener {
 						// Clear any errors detected from last activation that caused the workspace to be deactivated
 						// The error should be visible in a deactivated workspace until the project is built
 						BundleManager.getTransition().clearTransitionError(project);
-					} else if (!ProjectProperties.isAutoBuilding() && BundleProjectState.isNatureEnabled(project)) {
-						BundleJobManager.getTransition().addPending(project, Transition.BUILD);
+					} else { 
+						if (BundleProjectState.isNatureEnabled(project)) {
+							if (!ProjectProperties.isAutoBuilding()) {
+								BundleJobManager.getTransition().addPending(project, Transition.BUILD);
+							} else {
+								BundleManager.addBundleTransition(new TransitionEvent(project, Transition.BUILD));								
+							}
+						}
 					}
 				} catch (InPlaceException e) {
 					String msg = ExceptionMessage.getInstance().formatString("preparing_osgi_command",

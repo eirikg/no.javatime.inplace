@@ -19,6 +19,9 @@ import no.javatime.inplace.bundlejobs.BundleJob;
 import no.javatime.inplace.bundlemanager.BundleJobManager;
 import no.javatime.inplace.bundleproject.BundleProjectSettings;
 import no.javatime.inplace.bundleproject.ProjectProperties;
+import no.javatime.inplace.region.events.BundleTransitionEvent;
+import no.javatime.inplace.region.events.BundleTransitionEventListener;
+import no.javatime.inplace.region.manager.BundleManager;
 import no.javatime.inplace.region.manager.BundleRegion;
 import no.javatime.inplace.region.manager.BundleTransition;
 import no.javatime.inplace.region.manager.BundleTransition.Transition;
@@ -107,7 +110,7 @@ import org.osgi.framework.BundleListener;
  * <p>
  * Pages are updated with bundle status information received from job, bundle and resource listeners
  */
-public class BundleView extends ViewPart implements ISelectionListener, BundleListener,
+public class BundleView extends ViewPart implements ISelectionListener, BundleListener, BundleTransitionEventListener,
 		IResourceChangeListener, IJobChangeListener, IAdaptable {
 
 	public static String ID = BundleView.class.getName();
@@ -332,6 +335,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 		// Bundles, bundle jobs and resource listeners to update bundle status in pages
 		Activator.getContext().addBundleListener(this);
 		Job.getJobManager().addJobChangeListener(this);
+		BundleManager.addBundleTransitionListener(this);
 		ResourcesPlugin.getWorkspace().addResourceChangeListener(
 				this,
 				IResourceChangeEvent.PRE_CLOSE | IResourceChangeEvent.PRE_DELETE | IResourceChangeEvent.POST_BUILD
@@ -418,6 +422,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 		Activator.getContext().removeBundleListener(this);
 		ResourcesPlugin.getWorkspace().removeResourceChangeListener(this);
 		Job.getJobManager().removeJobChangeListener(this);
+		BundleManager.removeBundleTransitionListener(this);
 		super.dispose();
 	}
 
@@ -616,6 +621,23 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 			// Create, Rename, Import, Close, Open, Move, Delete, Build
 		} else if ((eventType & (IResourceChangeEvent.POST_CHANGE)) != 0) {
 			showProjectInfo();
+		}
+	}
+	
+	/**
+	 * Update content description when building projects
+	 */
+	@Override
+	public void bundleTransitionChanged(BundleTransitionEvent event) {
+		final Transition transition = event.getTransition();
+		// This transition is only received when the workspace is activated
+		if (transition == Transition.BUILD) {
+			pagebook.getDisplay().asyncExec(new Runnable() {
+				@Override
+				public void run() {
+					setContentDescription("Building bundle project(s) ..."); //$NON-NLS-1$
+				}
+			});			
 		}
 	}
 

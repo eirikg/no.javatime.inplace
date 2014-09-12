@@ -18,5 +18,5 @@ import java.util.EventListener;
  *
  */
 public interface BundleTransitionEventListener extends EventListener {
-	public void bundleTransitionChanged(BundleTransitionEvent evt);
+	public void bundleTransitionChanged(BundleTransitionEvent event);
 }

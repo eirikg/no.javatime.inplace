@@ -12,7 +12,9 @@ package no.javatime.inplace.region.events;
 
 import java.util.EventObject;
 
+import no.javatime.inplace.region.manager.BundleWorkspaceRegionImpl;
 import no.javatime.inplace.region.manager.BundleTransition.Transition;
+import no.javatime.inplace.region.state.BundleNode;
 
 import org.eclipse.core.resources.IProject;
 import org.osgi.framework.Bundle;
@@ -37,5 +39,16 @@ public class BundleTransitionEvent extends EventObject {
 	}	
 	public IProject getProject() {
 		return transitionEvent.getProject();
+	}
+	
+	public boolean isStateChanging() {
+		IProject project = transitionEvent.getProject(); 
+		if (null != project) {			
+			BundleNode bn = BundleWorkspaceRegionImpl.INSTANCE.getBundleNode(project); 
+			if (null != bn) {
+				return bn.isStateChanging();
+			}			
+		}
+		return false;
 	}
 }

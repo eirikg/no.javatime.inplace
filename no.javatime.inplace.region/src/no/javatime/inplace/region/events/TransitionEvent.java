@@ -20,7 +20,6 @@ public class TransitionEvent {
 
 	public TransitionEvent (IProject project, Transition transition) {
 		this.project = project;
-		// TODO Use interface and let workspaceimpl have package visibility
 		this.bundle =  BundleWorkspaceRegionImpl.INSTANCE.get(project); 
 		this.transition = transition;
 	}

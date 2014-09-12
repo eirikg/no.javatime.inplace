@@ -149,7 +149,6 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 			BundleCommand bundleCommand = BundleJobManager.getCommand();
 			// Build is no longer pending. Remove as early as possible
 			// Also removed in the post build listener
-			bundleTransition.removePending(project, Transition.BUILD);
 			bundleTransition.removeTransitionError(project, TransitionError.BUILD);
 			if (Category.DEBUG && Category.getState(Category.build))
 				TraceMessage.getInstance().getString("start_build");
@@ -175,6 +174,7 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 				}
 			}
 			if (null != resourceDelta && resourceDelta.length == 0) { // no change since last build
+				bundleTransition.removePending(project, Transition.BUILD);
 				if (InPlace.get().msgOpt().isBundleOperations()) {
 					String msg = NLS.bind(Msg.NO_RESOURCE_DELTA_BUILD_TRACE, 
 							new Object[] {project.getName()});
