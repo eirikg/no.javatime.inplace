@@ -8,13 +8,12 @@
  * Contributors:
  * 	JavaTime project, Eirik Gronsund - initial implementation
  *******************************************************************************/
-package no.javatime.util.messages.views;
+package no.javatime.inplace.pl.console.view;
 
 import java.io.Console;
 import java.io.PrintStream;
 
-import no.javatime.util.Activator;
-import no.javatime.util.messages.Category;
+import no.javatime.inplace.pl.console.Activator;
 
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.ui.console.ConsolePlugin;
@@ -104,7 +103,7 @@ public class BundleConsole extends MessageConsole {
 			systemOut = new PrintStream(newMessageStream(), true);
 			systemErr = new PrintStream(newMessageStream(), true);
 			initialized = true;
-			if (Category.getState(Category.systemOut)) {
+			if (Activator.getDefault().getMsgOpt().isSystemOutBundleConsole()) {
 				setSystemOutToBundleConsole();
 			} else {
 				setSystemOutToIDEDefault();

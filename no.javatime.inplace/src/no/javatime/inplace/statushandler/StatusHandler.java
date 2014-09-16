@@ -93,7 +93,7 @@ public class StatusHandler extends WorkbenchErrorHandler {
 			return;
 		}
 		if (status instanceof BundleStatus) {
-			if (InPlace.get().msgOpt().isBundleOperations()) {
+			if (InPlace.get().getMsgOpt().isBundleOperations()) {
 				InPlace.get().trace((BundleStatus) status);
 			}
 			// Do not send info messages to the error log
@@ -117,7 +117,7 @@ public class StatusHandler extends WorkbenchErrorHandler {
 			if (exception instanceof NotDefinedException || exception instanceof Exception) {
 				String msg = status.getMessage();
 				if (contextErrors.contains(msg)) {
-					if (InPlace.get().msgOpt().isBundleOperations()) {
+					if (InPlace.get().getMsgOpt().isBundleOperations()) {
 						// Also related to Bug 279332
 						String bugInfoMsg = Msg.UNDEFINED_CONTEXT_ERROR_TRACE;
 						IBundleStatus undefinedContextStatus = new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, bugInfoMsg);

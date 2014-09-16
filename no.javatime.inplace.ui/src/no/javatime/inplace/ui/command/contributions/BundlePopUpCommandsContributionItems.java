@@ -17,6 +17,7 @@ import no.javatime.inplace.bundleproject.BundleProjectSettings;
 import no.javatime.inplace.dialogs.OpenProjectHandler;
 import no.javatime.inplace.extender.provider.Extension;
 import no.javatime.inplace.log.intface.BundleLogView;
+import no.javatime.inplace.pl.console.intface.BundleConsoleFactory;
 import no.javatime.inplace.pl.dependencies.intface.DependencyDialog;
 import no.javatime.inplace.region.closure.BuildErrorClosure;
 import no.javatime.inplace.region.manager.BundleTransition.Transition;
@@ -26,8 +27,6 @@ import no.javatime.inplace.region.project.ManifestOptions;
 import no.javatime.inplace.ui.command.handlers.BundleMenuActivationHandler;
 import no.javatime.inplace.ui.views.BundleView;
 import no.javatime.util.messages.Message;
-import no.javatime.util.messages.views.BundleConsole;
-import no.javatime.util.messages.views.BundleConsoleFactory;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.jdt.core.IJavaProject;
@@ -269,12 +268,17 @@ public class BundlePopUpCommandsContributionItems extends BundleCommandsContribu
 	}
 
 	private CommandContributionItem addToggleConsoleView() {
-		if (!BundleConsoleFactory.isConsoleViewVisible()) {
+		Extension<BundleConsoleFactory> ext = new Extension<>(BundleConsoleFactory.class);
+		BundleConsoleFactory bundleConsoleService = ext.getService();
+		if (null == bundleConsoleService) {
+			throw new InPlaceException("failed_to_get_service_for_interface", BundleConsoleFactory.class.getName());
+		}	
+		if (!bundleConsoleService.isConsoleViewVisible()) {
 			return addContribution(menuId, dynamicPopUpCommandId, showConsolePage, consoleParamId,
-					CommandContributionItem.STYLE_PUSH, BundleConsole.consoleViewImage);
+					CommandContributionItem.STYLE_PUSH, bundleConsoleService.getConsoleViewImage());
 		} else {
 			return addContribution(menuId, dynamicPopUpCommandId, hideConsolePage, consoleParamId,
-					CommandContributionItem.STYLE_PUSH, BundleConsole.consoleViewImage);
+					CommandContributionItem.STYLE_PUSH, bundleConsoleService.getConsoleViewImage());
 		}
 	}
 
@@ -286,10 +290,10 @@ public class BundlePopUpCommandsContributionItems extends BundleCommandsContribu
 		}
 		if (!viewService.isVisible()) {
 			return addContribution(menuId, dynamicPopUpCommandId, showMessageView, messageViewParamId,
-					CommandContributionItem.STYLE_PUSH, viewService.getMessageViewImage());
+					CommandContributionItem.STYLE_PUSH, viewService.getLogViewImage());
 		} else {
 			return addContribution(menuId, dynamicPopUpCommandId, hideMessageView, messageViewParamId,
-					CommandContributionItem.STYLE_PUSH, viewService.getMessageViewImage());
+					CommandContributionItem.STYLE_PUSH, viewService.getLogViewImage());
 		}
 	}
 

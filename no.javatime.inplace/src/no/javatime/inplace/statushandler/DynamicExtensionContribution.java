@@ -172,7 +172,7 @@ public class DynamicExtensionContribution {
 						StatusManager.LOG);
 			}
 		}
-		if (InPlace.get().msgOpt().isBundleOperations()) {
+		if (InPlace.get().getMsgOpt().isBundleOperations()) {
 			if (extAdded) {
 				String msg = null;
 				if (!productId.equals(defaultProductId)) {

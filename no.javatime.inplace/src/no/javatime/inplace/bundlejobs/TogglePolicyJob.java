@@ -102,7 +102,7 @@ public class TogglePolicyJob extends BundleJob {
 						}
 					}
 					try {
-						if (InPlace.get().msgOpt().isBundleOperations()
+						if (InPlace.get().getMsgOpt().isBundleOperations()
 								&& !InPlace.get().getCommandOptionsService().isUpdateOnBuild()) {
 							if (bundleRegion.isActivated(bundle)) {
 								addInfoMessage(NLS.bind(Msg.AUTOUPDATE_OFF_INFO, project.getName()));

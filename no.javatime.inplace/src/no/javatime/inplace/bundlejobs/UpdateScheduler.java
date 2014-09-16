@@ -130,7 +130,7 @@ public class UpdateScheduler {
 			BuildErrorClosure be = new BuildErrorClosure(
 					Collections.<IProject> singletonList(bundleProject), Transition.UPDATE, Closure.REQUIRING);
 			if (be.hasBuildErrors()) {
-				if (InPlace.get().msgOpt().isBundleOperations()) {
+				if (InPlace.get().getMsgOpt().isBundleOperations()) {
 					String msg = NLS.bind(Msg.UPDATE_BUILD_ERROR_INFO, new Object[] {
 							bundleProject.getName(), BundleProjectState.formatProjectList(be.getBuildErrors()) });
 					be.setBuildErrorHeaderMessage(msg);
@@ -146,7 +146,7 @@ public class UpdateScheduler {
 			be = new BuildErrorClosure(Collections.<IProject> singletonList(bundleProject),
 					Transition.UPDATE, Closure.PROVIDING, Bundle.UNINSTALLED, ActivationScope.DEACTIVATED);
 			if (be.hasBuildErrors()) {
-				if (InPlace.get().msgOpt().isBundleOperations()) {
+				if (InPlace.get().getMsgOpt().isBundleOperations()) {
 					String msg = NLS.bind(Msg.UPDATE_BUILD_ERROR_INFO, new Object[] {
 							bundleProject.getName(), BundleProjectState.formatProjectList(be.getBuildErrors()) });
 					be.setBuildErrorHeaderMessage(msg);

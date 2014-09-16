@@ -93,7 +93,7 @@ public abstract class JobStatus extends WorkspaceJob implements BundleTransition
 	 */
 	@Override
 	public void bundleTransitionChanged(BundleTransitionEvent event) {
-		if (!InPlace.get().msgOpt().isBundleOperations()) {
+		if (!InPlace.get().getMsgOpt().isBundleOperations()) {
 			return;
 		}
 		Bundle bundle = event.getBundle();

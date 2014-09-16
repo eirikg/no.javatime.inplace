@@ -170,7 +170,7 @@ public class InstallJob extends BundleJob {
 			if (be.hasBuildErrors()) {
 				projectErrorClosures = be.getBuildErrorClosures();
 				removePendingProjects(projectErrorClosures);
-				if (InPlace.get().msgOpt().isBundleOperations()) {
+				if (InPlace.get().getMsgOpt().isBundleOperations()) {
 					IBundleStatus bundleStatus = be.getErrorClosureStatus();
 					if (null != bundleStatus) {
 						addTrace(bundleStatus);			

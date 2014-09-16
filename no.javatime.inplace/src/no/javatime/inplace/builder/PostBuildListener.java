@@ -415,7 +415,7 @@ public class PostBuildListener implements IResourceChangeListener {
 	 * @see JavaTimeBuilder
 	 */
 	private void traceBuilds() {
-		if (InPlace.get().msgOpt().isBundleOperations()) {
+		if (InPlace.get().getMsgOpt().isBundleOperations()) {
 			Collection<IBundleStatus> builds = JavaTimeBuilder.getBuilds();
 			if (!builds.isEmpty()) {
 				IBundleStatus mStatus = new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID,

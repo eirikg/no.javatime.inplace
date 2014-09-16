@@ -12,8 +12,6 @@ package no.javatime.util;
 
 import no.javatime.util.messages.Category;
 import no.javatime.util.messages.WarnMessage;
-import no.javatime.util.messages.views.BundleConsole;
-import no.javatime.util.messages.views.BundleConsoleFactory;
 
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
@@ -47,7 +45,6 @@ public class Activator extends AbstractUIPlugin {
 
 	public static Activator plugin;
 	private static BundleContext context;
-	private BundleConsole bundleConsole = null;
 	// Get the workbench window from UI thread
 	private IWorkbenchWindow workBenchWindow = null;
 
@@ -67,9 +64,6 @@ public class Activator extends AbstractUIPlugin {
 		plugin = this;
 		Activator.context = context;
 		loadPluginSettings(true);
-
-		bundleConsole = BundleConsoleFactory.findConsole(CONSOLE_NAME);
-
 	}
 
 	/**
@@ -81,10 +75,6 @@ public class Activator extends AbstractUIPlugin {
 		savePluginSettings(true);
 		plugin = null;
 		super.stop(context);
-	}
-
-	public BundleConsole getBundleConsole() {
-		return bundleConsole;
 	}
 
 	/**
@@ -205,8 +195,6 @@ public class Activator extends AbstractUIPlugin {
 		}
 		prefs.putBoolean(Category.bundleEvents, Category.getState(Category.bundleEvents));
 		prefs.putBoolean(Category.bundleOperations, Category.getState(Category.bundleOperations));
-		prefs.putBoolean(Category.infoMessages, Category.getState(Category.infoMessages));
-		prefs.putBoolean(Category.systemOut, Category.getState(Category.systemOut));
 		try {
 			if (flush) {
 				prefs.flush();
@@ -240,12 +228,6 @@ public class Activator extends AbstractUIPlugin {
 		}
 		Category.setState(Category.bundleEvents,
 				prefs.getBoolean(Category.bundleEvents, Category.getState(Category.bundleEvents)));
-		// Category.setState(Category.bundleOperations,
-		// prefs.getBoolean(Category.bundleOperations, Category.getState(Category.bundleOperations)));
-		Category.setState(Category.infoMessages,
-				prefs.getBoolean(Category.infoMessages, Category.getState(Category.infoMessages)));
-		Category.setState(Category.systemOut,
-				prefs.getBoolean(Category.systemOut, Category.getState(Category.systemOut)));
 	}
 
 }

@@ -17,7 +17,8 @@ public class MessageOptionsImpl implements MessageOptions {
 	private static final boolean defIsBundleEvents = false;
 	private final static boolean defIsBundleOperations = false;
 	private final static boolean defIsInfoMesages = false;
-
+	private final static boolean defIsSystemout = true;
+	
 	protected BundleContext bundleContext;
 	private Preferences wrapper;
 
@@ -84,6 +85,20 @@ public class MessageOptionsImpl implements MessageOptions {
 	@Override
 	public boolean getDefaultInfoMessages() {
 		return defIsInfoMesages;
+	}
+
+	@Override
+	public void setIsSystemOutBundleConsole(boolean systemOut) {
+		getPrefs().putBoolean(IS_SYSTEM_OUT, systemOut);		
+	}
+	@Override
+	public boolean isSystemOutBundleConsole() {
+		return getPrefs().getBoolean(IS_SYSTEM_OUT, getDefaultSystemOut());
+	}
+
+	@Override
+	public boolean getDefaultSystemOut() {
+		return defIsSystemout;
 	}
 
 	@Override

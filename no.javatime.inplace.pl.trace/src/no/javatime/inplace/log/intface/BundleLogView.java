@@ -16,7 +16,7 @@ public interface BundleLogView {
 	 * Get the default image for the message view as an image descriptor
 	 * @return the default image for the message view
 	 */
-	public ImageDescriptor getMessageViewImage();
+	public ImageDescriptor getLogViewImage();
 
 	/**
 	 * Show the view if it is not visible.

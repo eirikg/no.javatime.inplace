@@ -62,7 +62,7 @@ public class BundleJobListener extends JobChangeAdapter {
 	public void running(IJobChangeEvent event) {
 		Job job = event.getJob();
 		if (job instanceof BundleJob) {
-			if (InPlace.get().msgOpt().isBundleOperations()) {
+			if (InPlace.get().getMsgOpt().isBundleOperations()) {
 				startTime = System.currentTimeMillis();
 			}
 		}
@@ -76,7 +76,7 @@ public class BundleJobListener extends JobChangeAdapter {
 		final Job job = event.getJob();
 		if (job instanceof BundleJob) {
 			final BundleJob bundleJob = (BundleJob) job;
-			if (InPlace.get().msgOpt().isBundleOperations()) {
+			if (InPlace.get().getMsgOpt().isBundleOperations()) {
 				final Collection<IBundleStatus> traceList = bundleJob.getTraceList();
 				if (traceList.size() > 0) {
 					Runnable trace = new Runnable() {
@@ -105,7 +105,7 @@ public class BundleJobListener extends JobChangeAdapter {
 				StatusManager.getManager().handle(multiStatus, StatusManager.LOG);
 			}
 			if (Category.DEBUG) {
-				if (InPlace.get().msgOpt().isBundleOperations()) {
+				if (InPlace.get().getMsgOpt().isBundleOperations()) {
 					getBundlesJobRunState(bundleJob);
 				}
 			}
@@ -153,7 +153,7 @@ public class BundleJobListener extends JobChangeAdapter {
 			bundleJob = new ActivateProjectJob(ActivateProjectJob.activateProjectsJobName,
 					projectsToActivate);
 			bundleTransition.removePending(projectsToActivate, Transition.ACTIVATE_PROJECT);
-			if (InPlace.get().msgOpt().isBundleOperations()) {
+			if (InPlace.get().getMsgOpt().isBundleOperations()) {
 				try {
 					ProjectSorter projectSorter = new ProjectSorter();
 					// Inform about already activated projects that have requirements on deactivated projects

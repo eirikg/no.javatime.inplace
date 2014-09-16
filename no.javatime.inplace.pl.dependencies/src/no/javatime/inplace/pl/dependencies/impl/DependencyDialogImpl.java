@@ -1,4 +1,4 @@
-package no.javatime.inplace.pl.dependencies.dialogs;
+package no.javatime.inplace.pl.dependencies.impl;
 
 import java.util.EnumSet;
 

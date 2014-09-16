@@ -8,19 +8,26 @@
  * Contributors:
  * 	JavaTime project, Eirik Gronsund - initial implementation
  *******************************************************************************/
+package no.javatime.inplace.pl.console.view;
+
+import no.javatime.inplace.pl.console.impl.BundleConsoleFactoryImpl;
+
+import org.eclipse.ui.console.IConsole;
+import org.eclipse.ui.console.actions.CloseConsoleAction;
+
 /**
-A bundle console page in the generic console view for redirection of standard output 
-<p>
-
- <!-- <h2>Package Specification</h2> -->
-
- <!-- <h2>Related Documentation</h2> -->
-
- <!-- Put @see and @since tags down here. -->
- @see no.javatime.util.messages.Message Message API specification
-
- @since JTR 0.0.1
+ * Action to close the bundle console.
  */
-package no.javatime.util.messages.views;
+public class BundleConsoleRemoveAction extends CloseConsoleAction {
 
-
+  public BundleConsoleRemoveAction(IConsole console) {
+      super(console);
+  }
+  
+  /**
+   * @see BundleConsoleFactoryImpl#closeConsole()
+   */
+  public void run() {
+      BundleConsoleFactoryImpl.closeConsole();
+  }
+}

@@ -16,7 +16,7 @@ public class BundleLogViewImpl implements BundleLogView {
 
 	public static String MESSAGE_VIEW_ID = "no.javatime.inplace.log.view";
 
-	public ImageDescriptor getMessageViewImage() {
+	public ImageDescriptor getLogViewImage() {
 		return LogView.messageViewImage;
 	}
 

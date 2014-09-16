@@ -166,7 +166,7 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 				resourceDelta = delta
 						.getAffectedChildren(IResourceDelta.ADDED | IResourceDelta.CHANGED, IResource.NONE);
 			} else if (kind != FULL_BUILD) { // null delta when not a full build imply an unspecified change
-				if (InPlace.get().msgOpt().isBundleOperations()) {
+				if (InPlace.get().getMsgOpt().isBundleOperations()) {
 					String msg = NLS.bind(Msg.NO_RESOURCE_DELTA_BUILD_AVAILABLE_TRACE, 
 							new Object[] {project.getName()});
 					IBundleStatus status = new BundleStatus(StatusCode.INFO,bundle, project, msg, null);
@@ -175,7 +175,7 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 			}
 			if (null != resourceDelta && resourceDelta.length == 0) { // no change since last build
 				bundleTransition.removePending(project, Transition.BUILD);
-				if (InPlace.get().msgOpt().isBundleOperations()) {
+				if (InPlace.get().getMsgOpt().isBundleOperations()) {
 					String msg = NLS.bind(Msg.NO_RESOURCE_DELTA_BUILD_TRACE, 
 							new Object[] {project.getName()});
 					IBundleStatus status = new BundleStatus(StatusCode.INFO, bundle, project, msg, null);
@@ -246,7 +246,7 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 	}
 
 	protected void fullBuild(final IProgressMonitor monitor) throws CoreException {
-		if (InPlace.get().msgOpt().isBundleOperations()){
+		if (InPlace.get().getMsgOpt().isBundleOperations()){
 			IProject project = getProject();
 			Bundle bundle = BundleJobManager.getRegion().get(project);
 			String msg = NLS.bind(Msg.FULL_BUILD_TRACE, 
@@ -259,7 +259,7 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 	}
 
 	protected void incrementalBuild(IResourceDelta delta, IProgressMonitor monitor) throws CoreException {
-		if (InPlace.get().msgOpt().isBundleOperations()) {
+		if (InPlace.get().getMsgOpt().isBundleOperations()) {
 			IProject project = getProject();
 			Bundle bundle = BundleJobManager.getRegion().get(project);
 			String msg = NLS.bind(Msg.INCREMENTAL_BUILD_TRACE, 
@@ -312,7 +312,7 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 				StatusManager.getManager().handle(multiStatus, StatusManager.LOG);
 				cycle = true;
 			}
-			if (!cycle && InPlace.get().msgOpt().isBundleOperations()) {
+			if (!cycle && InPlace.get().getMsgOpt().isBundleOperations()) {
 				String msg = null;
 				Bundle bundle = BundleJobManager.getRegion().get(project);
 				if (InPlace.get().getCommandOptionsService().isUpdateOnBuild()) {

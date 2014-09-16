@@ -206,13 +206,13 @@ public class ActivateProjectJob extends NatureJob {
 			}
 			InPlace.get().savePluginSettings(true, true);
 		} else {
-			if (InPlace.get().msgOpt().isBundleOperations()) {
+			if (InPlace.get().getMsgOpt().isBundleOperations()) {
 				InPlace.get().trace(
 						new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, Msg.NO_PROJECTS_TO_ACTIVATE_INFO));
 			}
 			return getLastStatus();
 		}
-		if (InPlace.get().msgOpt().isBundleOperations() && !ProjectProperties.isAutoBuilding()) {
+		if (InPlace.get().getMsgOpt().isBundleOperations() && !ProjectProperties.isAutoBuilding()) {
 			IBundleStatus status = new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID,
 					Msg.BUILDER_OFF_INFO);
 			status.add(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, NLS.bind(
@@ -304,7 +304,7 @@ public class ActivateProjectJob extends NatureJob {
 				Closure.PROVIDING, Bundle.UNINSTALLED, ActivationScope.DEACTIVATED);
 		if (be.hasBuildErrors()) {
 			Collection<IProject> errorClosure = be.getBuildErrorClosures();
-			if (InPlace.get().msgOpt().isBundleOperations()) {
+			if (InPlace.get().getMsgOpt().isBundleOperations()) {
 				addTrace(be.getErrorClosureStatus());
 			}
 			return errorClosure;
@@ -338,7 +338,7 @@ public class ActivateProjectJob extends NatureJob {
 			projectsToActivate.removeAll(getPendingProjects());
 			if (projectsToActivate.size() > 0) {
 				addPendingProjects(projectsToActivate);
-				if (InPlace.get().msgOpt().isBundleOperations()) {
+				if (InPlace.get().getMsgOpt().isBundleOperations()) {
 					InPlace.get().trace(
 							new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, NLS.bind(
 									Msg.ADD_BUNDLES_TO_ACTIVATE_INFO,
@@ -377,7 +377,7 @@ public class ActivateProjectJob extends NatureJob {
 			IBundleStatus multiStatus = new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID, msg);
 			status = createMultiStatus(multiStatus);
 		} else {
-			if (InPlace.get().msgOpt().isBundleOperations()) {
+			if (InPlace.get().getMsgOpt().isBundleOperations()) {
 				InPlace.get().trace(
 						new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, NLS.bind(
 								Msg.UNINSTALL_BEFORE_ACTIVATE_INFO,

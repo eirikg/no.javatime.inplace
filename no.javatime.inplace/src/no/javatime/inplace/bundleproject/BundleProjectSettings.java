@@ -437,7 +437,7 @@ public class BundleProjectSettings {
 			url = new URL(osgiDev);
 		} catch (MalformedURLException e) {
 			// Using common comma-separated class path entries (dev=<class path entries>) for all bundles
-			if (InPlace.get().msgOpt().isBundleOperations()) {
+			if (InPlace.get().getMsgOpt().isBundleOperations()) {
 				InPlace.get().trace(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, 
 						NLS.bind(Msg.CLASS_PATH_COMMON_INFO, osgiDev, symbolicName)));
 			}

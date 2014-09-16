@@ -43,6 +43,14 @@ public class Activator extends AbstractUIPlugin {
 		super.start(context);
 		plugin = this;
 		dependencyOptions = new Extension<>(DependencyOptions.class);
+
+		// The service (extender) should be registered by the bundle using this extension
+		/*
+		Bundle bundle = context.getBundle();
+		Dictionary<String, String> dictionary = bundle.getHeaders();		
+		String depDlgClassName = dictionary.get(DependencyDialog.DEPENDENCY_DIALOG_HEADER);
+		Extender.register(bundle, DependencyDialog.class, depDlgClassName);
+		*/
 	}
 
 	/*
@@ -56,6 +64,7 @@ public class Activator extends AbstractUIPlugin {
 	}
 
 	public DependencyOptions getDependencyOptionsService() throws InPlaceException {
+		
 		DependencyOptions dpOpt = dependencyOptions.getService();
 		if (null == dpOpt) {
 			throw new InPlaceException(Msg.INVALID_OPTIONS_SERVICE_EXCEPTION, DependencyOptions.class.getName());			

@@ -9,6 +9,7 @@ public interface MessageOptions {
 	public static final String IS_BUNDLE_EVENTS = "isBundleEvents";
 	public static final String IS_BUNDLE_OPERATIONS = "isBundleOperations";
 	public static final String IS_INFO_MESSAGES = "isInfoMessages";
+	public static final String IS_SYSTEM_OUT = "isSystemOut";
 
 	/**
 	 * Whether to enable tracing of bundle events or not
@@ -72,6 +73,29 @@ public interface MessageOptions {
 	 * @param infoMessages set to true to enable informational messages and false to not
 	 */
 	public abstract void setIsInfoMessages(boolean infoMessages);
+
+	/**
+	 * Whether to redirect system out and system err to IDE default or the bundle console
+	 * 
+	 * @return true directs output to bundle console and false to IDE default  
+	 */
+	public abstract boolean isSystemOutBundleConsole();
+	
+	/**
+	 * Default for redirecting system out and system err to IDE default or the bundle console
+	 * 
+	 * @return true if default directs output to bundle console and false to IDE default  
+	 */
+	public boolean getDefaultSystemOut();
+
+	/**
+	 * Set whether system out and system err should be directed to the bundle console or to IDE default
+	 * 
+	 * @param systemOut true if system out and system err should be directed to the bundle console and
+	 * false to direct the output to IDE default
+	 */
+	public abstract void setIsSystemOutBundleConsole(boolean systemOut);
+	
 
 	/**
 	 * Flush all changes to OSGi preference store

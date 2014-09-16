@@ -832,7 +832,7 @@ public abstract class BundleJob extends JobStatus {
 				if (be.hasBuildErrors()) {
 					Collection<IProject> buildErrClosure = be.getBuildErrorClosures();
 					projectsToResolve.removeAll(buildErrClosure);
-					if (InPlace.get().msgOpt().isBundleOperations()) {
+					if (InPlace.get().getMsgOpt().isBundleOperations()) {
 						IBundleStatus bundleStatus = be.getErrorClosureStatus();
 						if (null != bundleStatus) {
 							addTrace(bundleStatus);			
@@ -964,7 +964,7 @@ public abstract class BundleJob extends JobStatus {
 			}
 		}
 		if (!result.hasStatus(StatusCode.OK)) {
-			if (InPlace.get().msgOpt().isBundleOperations()) {
+			if (InPlace.get().getMsgOpt().isBundleOperations()) {
 				result.add(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, Msg.MISSING_DEV_CLASSPATH_BUNDLE_INFO));
 			}
 		}

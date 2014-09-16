@@ -16,11 +16,11 @@ import no.javatime.inplace.bundlejobs.ActivateProjectJob;
 import no.javatime.inplace.bundlejobs.BundleJob;
 import no.javatime.inplace.bundlejobs.DeactivateJob;
 import no.javatime.inplace.bundlejobs.InstallJob;
-import no.javatime.inplace.bundlejobs.TogglePolicyJob;
 import no.javatime.inplace.bundlejobs.RefreshJob;
 import no.javatime.inplace.bundlejobs.ResetJob;
 import no.javatime.inplace.bundlejobs.StartJob;
 import no.javatime.inplace.bundlejobs.StopJob;
+import no.javatime.inplace.bundlejobs.TogglePolicyJob;
 import no.javatime.inplace.bundlejobs.UpdateBundleClassPathJob;
 import no.javatime.inplace.bundlejobs.UpdateScheduler;
 import no.javatime.inplace.bundlemanager.BundleJobManager;
@@ -28,6 +28,7 @@ import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.dialogs.OpenProjectHandler;
 import no.javatime.inplace.extender.provider.Extension;
 import no.javatime.inplace.log.intface.BundleLogView;
+import no.javatime.inplace.pl.console.intface.BundleConsoleFactory;
 import no.javatime.inplace.pl.dependencies.intface.DependencyDialog;
 import no.javatime.inplace.region.manager.InPlaceException;
 import no.javatime.inplace.region.project.BundleProjectState;
@@ -40,7 +41,6 @@ import no.javatime.inplace.ui.views.BundleView;
 import no.javatime.util.messages.Category;
 import no.javatime.util.messages.ExceptionMessage;
 import no.javatime.util.messages.Message;
-import no.javatime.util.messages.views.BundleConsoleFactory;
 
 import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.Command;
@@ -372,10 +372,15 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 	 * Toggles between showing and hiding the message CONSOLE view
 	 */
 	protected void consoleHandler(Collection<IProject> projects) {
-		if (!BundleConsoleFactory.isConsoleViewVisible()) {
-			BundleConsoleFactory.showConsoleView();
+		Extension<BundleConsoleFactory> ext = new Extension<>(BundleConsoleFactory.class);
+		BundleConsoleFactory bundleConsoleService = ext.getService();
+		if (null == bundleConsoleService) {
+			throw new InPlaceException("failed_to_get_service_for_interface", BundleConsoleFactory.class.getName());
+		}	
+		if (!bundleConsoleService.isConsoleViewVisible()) {
+			bundleConsoleService.showConsoleView();
 		} else {
-			BundleConsoleFactory.closeConsoleView();
+			bundleConsoleService.closeConsoleView();
 		}
 	}
 

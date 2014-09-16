@@ -88,7 +88,7 @@ public class OpenProjectHandler extends SaveScopeResourcesHandler {
 		Job[] build = jobMan.find(ResourcesPlugin.FAMILY_AUTO_BUILD); 
 		if (build.length >= 1) {
 			try {
-				if (InPlace.get().msgOpt().isBundleOperations()) {
+				if (InPlace.get().getMsgOpt().isBundleOperations()) {
 					InPlace.get().trace(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, 
 							NLS.bind(Msg.WAITING_ON_JOB_INFO, build[0].getName())));
 				}
@@ -108,7 +108,7 @@ public class OpenProjectHandler extends SaveScopeResourcesHandler {
 		Job[] bundleJobs = jobMan.find(BundleJob.FAMILY_BUNDLE_LIFECYCLE); 
 		if (bundleJobs.length >= 1) {
 			try {
-				if (InPlace.get().msgOpt().isBundleOperations()) {
+				if (InPlace.get().getMsgOpt().isBundleOperations()) {
 					InPlace.get().trace(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, 
 							NLS.bind(Msg.WAITING_ON_JOB_INFO, bundleJobs[0].getName())));
 				}

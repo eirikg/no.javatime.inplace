@@ -8,7 +8,6 @@ import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.osgi.framework.BundleContext;
-import org.osgi.util.tracker.ServiceTracker;
 
 /**
  * The activator class controls the plug-in life cycle
@@ -21,7 +20,6 @@ public class PreferencePlActivator extends AbstractUIPlugin {
 	// The shared instance
 	private static PreferencePlActivator plugin;
 	private static BundleContext context;
-	private ServiceTracker<CommandOptions, CommandOptions> optionsStoretracker;
 
 	private Extension<CommandOptions> commandOptions;
 
@@ -40,9 +38,6 @@ public class PreferencePlActivator extends AbstractUIPlugin {
 		plugin = this;
 		PreferencePlActivator.context = context;
 		commandOptions = new Extension<>(CommandOptions.class);
-		optionsStoretracker = new ServiceTracker<CommandOptions, CommandOptions>
-			(getContext(), CommandOptions.class.getName(), null);
-		optionsStoretracker.open();
 	}
 
 	/*
@@ -51,7 +46,6 @@ public class PreferencePlActivator extends AbstractUIPlugin {
 	 */
 	public void stop(BundleContext context) throws Exception {
 		super.stop(context);
-		optionsStoretracker.close();
 		plugin = null;
 		PreferencePlActivator.context = null;
 	}

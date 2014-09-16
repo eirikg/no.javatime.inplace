@@ -37,6 +37,7 @@ import no.javatime.inplace.extender.provider.Extender;
 import no.javatime.inplace.extender.provider.Extension;
 import no.javatime.inplace.log.intface.BundleLog;
 import no.javatime.inplace.msg.Msg;
+import no.javatime.inplace.pl.console.intface.BundleConsoleFactory;
 import no.javatime.inplace.region.closure.BuildErrorClosure;
 import no.javatime.inplace.region.closure.BuildErrorClosure.ActivationScope;
 import no.javatime.inplace.region.closure.CircularReferenceException;
@@ -55,7 +56,6 @@ import no.javatime.inplace.statushandler.DynamicExtensionContribution;
 import no.javatime.util.messages.Category;
 import no.javatime.util.messages.ExceptionMessage;
 import no.javatime.util.messages.WarnMessage;
-import no.javatime.util.messages.views.BundleConsoleFactory;
 
 import org.eclipse.core.commands.Command;
 import org.eclipse.core.commands.CommandEvent;
@@ -168,7 +168,8 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 	private Extension<DependencyOptions> dependencyOptions;
 	private Extension<CommandOptions> commandOptions;
 	private Extension<MessageOptions> messageOptions;
-	private Extension<BundleLog> traceService;
+	private Extension<BundleLog> bundleLog;
+	Extension<BundleConsoleFactory> bundleConsoleFactory;
 
 	public InPlace() {
 	}
@@ -179,19 +180,18 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 		plugin = this;
 		InPlace.context = context;
 		extenderBundleTrackerCustomizer = new ExtenderBundleTracker();
-		// int trackStates = Bundle.ACTIVE | Bundle.STARTING | Bundle.STOPPING | Bundle.RESOLVED |
-		// Bundle.INSTALLED | Bundle.UNINSTALLED;
-		extenderBundleTracker = new BundleTracker<Extender<?>>(context,
-				Bundle.ACTIVE | Bundle.STARTING, extenderBundleTrackerCustomizer);
+		extenderBundleTracker = new BundleTracker<Extender<?>>(context, Bundle.ACTIVE,
+				extenderBundleTrackerCustomizer);
 		extenderBundleTracker.open();
 		String refreshBSNResult = context.getProperty(REFRESH_DUPLICATE_BSN);
 		allowRefreshDuplicateBSN = Boolean.TRUE.toString().equals(
 				refreshBSNResult != null ? refreshBSNResult : Boolean.TRUE.toString());
 
-		traceService = new Extension<>(BundleLog.class);
+		bundleLog = new Extension<>(BundleLog.class);
 		commandOptions = new Extension<>(CommandOptions.class);
 		dependencyOptions = new Extension<>(DependencyOptions.class);
 		messageOptions = new Extension<>(MessageOptions.class);
+		bundleConsoleFactory = new Extension<>(BundleConsoleFactory.class);
 
 		bundleProjectTracker = new ServiceTracker<IBundleProjectService, IBundleProjectService>(
 				context, IBundleProjectService.class.getName(), null);
@@ -287,7 +287,7 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 		return cmdOpt;
 	}
 
-	public MessageOptions msgOpt() throws InPlaceException {
+	public MessageOptions getMsgOpt() throws InPlaceException {
 
 		MessageOptions msgOpt = messageOptions.getService();
 		if (null == msgOpt) {
@@ -306,11 +306,29 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 
 	public BundleLog getTraceService() throws InPlaceException {
 
-		BundleLog trace = traceService.getService();
+		BundleLog trace = bundleLog.getService();
 		if (null == trace) {
 			throw new InPlaceException("invalid_service", BundleLog.class.getName());
 		}
 		return trace;
+	}
+
+	/**
+	 * Return the bundle console service view
+	 * 
+	 * @return null if failed to obtain the service
+	 */
+	public BundleConsoleFactory getBundleConsoleService() {
+
+		BundleConsoleFactory bundleConsoleFactoryService = bundleConsoleFactory.getService();
+		if (null != bundleConsoleFactoryService) {
+			try {
+				throw new InPlaceException("invalid_service", BundleConsoleFactory.class.getName());
+			} catch (InPlaceException e) {
+				// ignore
+			}
+		}
+		return bundleConsoleFactoryService;
 	}
 
 	public String trace(IBundleStatus status) {
@@ -324,7 +342,11 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 	 */
 	public void shutDownBundles() {
 		// Send output to standard console when shutting down
-		BundleConsoleFactory.getConsole().setSystemOutToIDEDefault();
+		BundleConsoleFactory bundleConsoleService = getBundleConsoleService();
+		// Ignore and send to current setting if null
+		if (null != bundleConsoleService) {
+			bundleConsoleService.setSystemOutToIDEDefault();
+		}
 		if (BundleProjectState.isWorkspaceNatureEnabled()) {
 			try {
 				BundleJob shutDownJob = null;
@@ -424,12 +446,13 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 	 */
 	private Collection<IProject> deactivateBuildErrorClosures(Collection<IProject> activatedProjects) {
 
-		DeactivateJob deactivateErrorClosureJob = new DeactivateJob(DeactivateJob.deactivateOnshutDownJobName);
+		DeactivateJob deactivateErrorClosureJob = new DeactivateJob(
+				DeactivateJob.deactivateOnshutDownJobName);
 		try {
 			// Deactivated and activated providing closure. Deactivated and activated projects with build
 			// errors providing capabilities to project to resolve (and start) at startup
-			BuildErrorClosure be = new BuildErrorClosure(activatedProjects, Transition.DEACTIVATE, Closure.PROVIDING,
-					Bundle.UNINSTALLED, ActivationScope.ALL);
+			BuildErrorClosure be = new BuildErrorClosure(activatedProjects, Transition.DEACTIVATE,
+					Closure.PROVIDING, Bundle.UNINSTALLED, ActivationScope.ALL);
 			if (be.hasBuildErrors()) {
 				Collection<IProject> errorClosure = be.getBuildErrorClosures();
 				deactivateErrorClosureJob.addPendingProjects(errorClosure);
@@ -444,7 +467,7 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 			multiStatus.add(e.getStatusList());
 			StatusManager.getManager().handle(multiStatus, StatusManager.LOG);
 		}
-		return Collections.<IProject>emptySet();
+		return Collections.<IProject> emptySet();
 	}
 
 	/**
@@ -476,7 +499,8 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 		Boolean isInstalled = actionSetContexts.init();
 		if (!isInstalled) {
 			StatusManager.getManager().handle(
-					new BundleStatus(StatusCode.WARNING, InPlace.PLUGIN_ID, Msg.INSTALL_CONTEXT_FOR_ACTION_SET_WARN), StatusManager.LOG);
+					new BundleStatus(StatusCode.WARNING, InPlace.PLUGIN_ID,
+							Msg.INSTALL_CONTEXT_FOR_ACTION_SET_WARN), StatusManager.LOG);
 		}
 	}
 

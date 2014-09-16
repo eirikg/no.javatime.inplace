@@ -99,8 +99,6 @@ public class Category extends Message {
 	public static final String bundleEvents = "bundleEvents";
 	public static final String bundleOperations = "bundleOperations";
 	public static final String bindingMessages = "bindingMessages";
-	public static final String infoMessages = "infoMessages";
-	public static final String systemOut = "systemOut";
 	
 	// Extended dynamic prefixes to error, warning, exception, log and user messages
 	public static final String dynamicPrefix = "dynamicPrefix";
@@ -131,8 +129,6 @@ public class Category extends Message {
 		categories.put(bundleEvents, (get(bundleEvents, categoryBundle).startsWith(enable.toString()) ? enable : disable));
 		categories.put(bundleOperations, (get(bundleOperations, categoryBundle).startsWith(enable.toString()) ? enable : disable));
 		categories.put(bindingMessages, (get(bindingMessages, categoryBundle).startsWith(enable.toString()) ? enable : disable));
-		categories.put(infoMessages, (get(infoMessages, categoryBundle).startsWith(enable.toString()) ? enable : disable));
-		categories.put(systemOut, (get(systemOut, categoryBundle).startsWith(enable.toString()) ? enable : disable));
 		categories.put(dynamicPrefix, (get(dynamicPrefix, categoryBundle).startsWith(enable.toString()) ? enable : disable));
 	}
 	

@@ -8,7 +8,7 @@
  * Contributors:
  * 	JavaTime project, Eirik Gronsund - initial implementation
  *******************************************************************************/
-package no.javatime.util.messages.views;
+package no.javatime.inplace.pl.console.view;
 
 import org.eclipse.jface.action.IToolBarManager;
 import org.eclipse.ui.console.IConsole;

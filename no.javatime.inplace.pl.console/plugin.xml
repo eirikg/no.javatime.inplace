@@ -4,18 +4,18 @@
    <extension
          point="org.eclipse.ui.console.consolePageParticipants">
       <consolePageParticipant
-            class="no.javatime.util.messages.views.BundleConsolePageParticipant"
-            id="no.javatime.util.messages.views.MessageConsolePageParticipant">
+            class="no.javatime.inplace.pl.console.view.BundleConsolePageParticipant"
+            id="no.javatime.inplace.pl.console.view.MessageConsolePageParticipant">
          <enablement>
             <instanceof
-                  value="no.javatime.util.messages.views.BundleConsole">
+                  value="no.javatime.inplace.pl.console.view.BundleConsole">
             </instanceof></enablement>
       </consolePageParticipant>
    </extension>
    <extension
          point="org.eclipse.ui.console.consoleFactories">
       <consoleFactory
-            class="no.javatime.util.messages.views.BundleConsoleFactory"
+            class="no.javatime.inplace.pl.console.impl.BundleConsoleFactoryImpl"
             icon="icons/console_view.gif"
             label="Bundle Console">
       </consoleFactory>

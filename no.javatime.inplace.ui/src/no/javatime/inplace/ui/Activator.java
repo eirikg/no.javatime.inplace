@@ -88,7 +88,7 @@ public class Activator extends AbstractUIPlugin implements BundleJobEventListene
 		try {			
 			extenderBundleTrackerCustomizer = new ExtenderBundleTracker();
 			// int trackStates = Bundle.ACTIVE | Bundle.STARTING | Bundle.STOPPING | Bundle.RESOLVED | Bundle.INSTALLED | Bundle.UNINSTALLED;
-			extenderBundleTracker = new BundleTracker<Extender<?>>(context, Bundle.ACTIVE | Bundle.STARTING, extenderBundleTrackerCustomizer);
+			extenderBundleTracker = new BundleTracker<Extender<?>>(context, Bundle.ACTIVE, extenderBundleTrackerCustomizer);
 			extenderBundleTracker.open();
 			BundleJobManager.addBundleJobListener(Activator.getDefault());
 			commandOptions = new Extension<>(CommandOptions.class);

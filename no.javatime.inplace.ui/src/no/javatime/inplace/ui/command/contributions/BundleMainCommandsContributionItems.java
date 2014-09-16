@@ -19,7 +19,7 @@ import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.dialogs.OpenProjectHandler;
 import no.javatime.inplace.extender.provider.Extension;
 import no.javatime.inplace.log.intface.BundleLogView;
-import no.javatime.inplace.pl.dependencies.intface.DependencyDialog;
+import no.javatime.inplace.pl.console.intface.BundleConsoleFactory;
 import no.javatime.inplace.region.manager.BundleCommand;
 import no.javatime.inplace.region.manager.BundleRegion;
 import no.javatime.inplace.region.manager.BundleTransition.Transition;
@@ -33,8 +33,6 @@ import no.javatime.inplace.ui.msg.Msg;
 import no.javatime.inplace.ui.views.BundleView;
 import no.javatime.util.messages.Message;
 import no.javatime.util.messages.WarnMessage;
-import no.javatime.util.messages.views.BundleConsole;
-import no.javatime.util.messages.views.BundleConsoleFactory;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.jface.action.ContributionItem;
@@ -322,12 +320,17 @@ public class BundleMainCommandsContributionItems extends BundleCommandsContribut
 	}
 
 	private CommandContributionItem addToggleConsoleView() {
-		if (!BundleConsoleFactory.isConsoleViewVisible()) {
+		Extension<BundleConsoleFactory> ext = new Extension<>(BundleConsoleFactory.class);
+		BundleConsoleFactory bundleConsoleService = ext.getService();
+		if (null == bundleConsoleService) {
+			throw new InPlaceException("failed_to_get_service_for_interface", BundleConsoleFactory.class.getName());
+		}	
+		if (!bundleConsoleService.isConsoleViewVisible()) {
 			return addContribution(menuId, dynamicMainCommandId, showConsolePage, consoleParamId,
-					CommandContributionItem.STYLE_PUSH, BundleConsole.consoleViewImage);
+					CommandContributionItem.STYLE_PUSH, bundleConsoleService.getConsoleViewImage());
 		} else {
 			return addContribution(menuId, dynamicMainCommandId, hideConsolePage, consoleParamId,
-					CommandContributionItem.STYLE_PUSH, BundleConsole.consoleViewImage);
+					CommandContributionItem.STYLE_PUSH, bundleConsoleService.getConsoleViewImage());
 		}
 	}
 
@@ -335,14 +338,14 @@ public class BundleMainCommandsContributionItems extends BundleCommandsContribut
 		Extension<BundleLogView> ext = new Extension<>(BundleLogView.class);
 		BundleLogView viewService = ext.getService();
 		if (null == viewService) {
-			throw new InPlaceException("failed_to_get_service_for_interface", DependencyDialog.class.getName());
+			throw new InPlaceException("failed_to_get_service_for_interface", BundleLogView.class.getName());
 		}
 		if (!viewService.isVisible()) {
 			return addContribution(menuId, dynamicMainCommandId, showMessageView, messageViewParamId,
-					CommandContributionItem.STYLE_PUSH, viewService.getMessageViewImage());
+					CommandContributionItem.STYLE_PUSH, viewService.getLogViewImage());
 		} else {
 			return addContribution(menuId, dynamicMainCommandId, hideMessageView, messageViewParamId,
-					CommandContributionItem.STYLE_PUSH, viewService.getMessageViewImage());
+					CommandContributionItem.STYLE_PUSH, viewService.getLogViewImage());
 		}
 	}
 }

@@ -106,7 +106,7 @@ public class UpdateBundleClassPathJob extends BundleJob {
 				}
 			}
 			if (pendingProjects() > 0 && !ProjectProperties.isAutoBuilding()) {
-				if (InPlace.get().msgOpt().isBundleOperations()) {
+				if (InPlace.get().getMsgOpt().isBundleOperations()) {
 					addInfoMessage(Msg.ATOBUILD_OFF_RESET_INFO);
 				}
 				resetJob.reset(ResetJob.resetJobName);

@@ -52,7 +52,7 @@ public class StartUp implements IStartup {
 	 */
 	@Override
 	public void earlyStartup() {
-		if (InPlace.get().msgOpt().isBundleOperations()) {
+		if (InPlace.get().getMsgOpt().isBundleOperations()) {
 			String osgiDev = BundleProjectSettings.inDevelopmentMode();
 			if (null != osgiDev) {
 				String msg = NLS.bind(Msg.CLASS_PATH_DEV_PARAM_INFO, osgiDev);

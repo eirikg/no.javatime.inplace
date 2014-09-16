@@ -271,7 +271,7 @@ public class ActivateBundleJob extends BundleJob {
 			}
 		}
 		if (bundlesToResolve.size() == 0) {
-			if (InPlace.get().msgOpt().isBundleOperations())
+			if (InPlace.get().getMsgOpt().isBundleOperations())
 				addTrace(Msg.ACTIVATED_BUNDLES_INFO, new Object[] { bundleRegion.formatBundleList(
 						activatedBundles, true) }, InPlace.getContext().getBundle());
 			return getLastStatus();
@@ -314,7 +314,7 @@ public class ActivateBundleJob extends BundleJob {
 			if (be.hasBuildErrors()) {
 				projectErrorClosures = be.getBuildErrorClosures();
 				activatedProjects.removeAll(projectErrorClosures);
-				if (InPlace.get().msgOpt().isBundleOperations()) {
+				if (InPlace.get().getMsgOpt().isBundleOperations()) {
 					addTrace(be.getErrorClosureStatus());
 				}
 			}
@@ -326,7 +326,7 @@ public class ActivateBundleJob extends BundleJob {
 				} else {
 					projectErrorClosures = be.getBuildErrorClosures();
 				}
-				if (InPlace.get().msgOpt().isBundleOperations()) {
+				if (InPlace.get().getMsgOpt().isBundleOperations()) {
 					addTrace(be.getErrorClosureStatus());
 				}
 			}
@@ -447,7 +447,7 @@ public class ActivateBundleJob extends BundleJob {
 								}
 								// The activated and requiring bundle will be started
 								if ((reqState & (Bundle.UNINSTALLED)) != 0) {
-									if (InPlace.get().msgOpt().isBundleOperations()) {
+									if (InPlace.get().getMsgOpt().isBundleOperations()) {
 										String msg = NLS.bind(Msg.UNINSTALLED_REQUIRING_BUNDLES_INFO, 
 												new Object[] {bundleRegion.formatBundleList(reqBundles, true), 
 												bundleRegion.getSymbolicKey(bundle, null)});
@@ -465,7 +465,7 @@ public class ActivateBundleJob extends BundleJob {
 									|| getDepOpt().get(Operation.ACTIVATE_BUNDLE, Closure.SINGLE)) {
 								bundles.remove(bundle); // Do not start this bundle
 							} else {
-								if (InPlace.get().msgOpt().isBundleOperations()) {
+								if (InPlace.get().getMsgOpt().isBundleOperations()) {
 									addTrace(NLS.bind(Msg.CONDITIONAL_START_BUNDLE_INFO, bundle), bundle, null);
 								}
 							}

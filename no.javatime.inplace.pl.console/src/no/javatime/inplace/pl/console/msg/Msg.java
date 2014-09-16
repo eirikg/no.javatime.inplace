@@ -10,7 +10,7 @@
  *     Jacek Pospychala <jacek.pospychala@pl.ibm.com> - bugs 202583, 207344
  *     Benjamin Cabe <benjamin.cabe@anyware-tech.com> - bug 218648 
  *******************************************************************************/
-package no.javatime.util.msg;
+package no.javatime.inplace.pl.console.msg;
 
 import org.eclipse.osgi.util.NLS;
 
@@ -21,7 +21,7 @@ public class Msg extends NLS {
 	public static String SYSTEM_EXIT_BUTTON_TXT;
 	public static String SYSTEM_EXIT_ACTION_TOOLTIP;
 	
-	private static final String BUNDLE_NAME = "no.javatime.util.msg.messages"; //$NON-NLS-1$
+	private static final String BUNDLE_NAME = "no.javatime.inplace.pl.console.msg.messages"; //$NON-NLS-1$
 
 	static {
 		NLS.initializeMessages(BUNDLE_NAME, Msg.class);

@@ -186,7 +186,7 @@ public class DeactivateJob extends NatureJob {
 		Collection<IProject> pendingProjects = closure.projectDeactivation(getPendingProjects(), true);
 		resetPendingProjects(pendingProjects);
 
-		if (InPlace.get().msgOpt().isBundleOperations()) {
+		if (InPlace.get().getMsgOpt().isBundleOperations()) {
 			deactivateBuildErrorClosure(getPendingProjects());
 		}
 		

@@ -8,10 +8,11 @@
  * Contributors:
  * 	JavaTime project, Eirik Gronsund - initial implementation
  *******************************************************************************/
-package no.javatime.util.messages.views;
+package no.javatime.inplace.pl.console.view;
 
-import no.javatime.util.Activator;
-import no.javatime.util.messages.Message;
+import no.javatime.inplace.pl.console.Activator;
+import no.javatime.inplace.pl.console.impl.BundleConsoleFactoryImpl;
+import no.javatime.inplace.pl.console.msg.Msg;
 
 import org.eclipse.jface.action.Action;
 import org.eclipse.ui.console.IConsole;
@@ -21,16 +22,15 @@ import org.eclipse.ui.console.IConsole;
  */
 public class ShutDownJVMAction extends Action {
 
-  public ShutDownJVMAction(IConsole console) {
-    	super(Message.getInstance().formatString("system_exit_button"), //$NON-NLS-1$
-      		Activator.getImageDescriptor("icons/stop.gif"));  //$NON-NLS-1$
-      setToolTipText(Message.getInstance().formatString("system_exit_action_tooltip")); //$NON-NLS-1$
-  }
-  
-  /**
-   * @see BundleConsoleFactory#shutDown()
-   */
-  public void run() {
-      BundleConsoleFactory.shutDown();
-  }
+	public ShutDownJVMAction(IConsole console) {
+		super(Msg.SYSTEM_EXIT_BUTTON_TXT, Activator.getImageDescriptor("icons/stop.gif")); //$NON-NLS-1$
+		setToolTipText(Msg.SYSTEM_EXIT_ACTION_TOOLTIP);
+	}
+
+	/**
+	 * @see BundleConsoleFactoryImpl#shutDown()
+	 */
+	public void run() {
+		BundleConsoleFactoryImpl.shutDown();
+	}
 }

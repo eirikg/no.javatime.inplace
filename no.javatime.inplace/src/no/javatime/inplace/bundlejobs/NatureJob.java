@@ -220,7 +220,7 @@ public abstract class NatureJob extends BundleJob {
 						System.arraycopy(natures, i + 1, newNatures, i, natures.length - i - 1);
 						description.setNatureIds(newNatures);
 						project.setDescription(description, null);
-						if (InPlace.get().msgOpt().isBundleOperations()) {
+						if (InPlace.get().getMsgOpt().isBundleOperations()) {
 							Bundle bundle = bundleRegion.get(project);
 							if (null == bundle) {
 								addTrace(Msg.DISABLE_NATURE_TRACE, new Object[] {project.getName()}, project);
@@ -239,7 +239,7 @@ public abstract class NatureJob extends BundleJob {
 				newNatures[natures.length] = JavaTimeNature.JAVATIME_NATURE_ID;
 				description.setNatureIds(newNatures);
 				project.setDescription(description, null);
-				if (InPlace.get().msgOpt().isBundleOperations()) {
+				if (InPlace.get().getMsgOpt().isBundleOperations()) {
 					Bundle bundle = bundleRegion.get(project);
 					if (null == bundle) {
 						addTrace(Msg.ENABLE_NATURE_TRACE, new Object[] {project.getName()}, project);
