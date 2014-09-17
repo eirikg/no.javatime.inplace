@@ -16,7 +16,11 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
@@ -658,11 +662,21 @@ public class BundleCommandImpl implements BundleCommand {
 		if (bundle == null) {
 			throw new InPlaceException("null_bundle_update");
 		}
+		// Contains duplicate candidate bundles to be removed in the resolver hook in case of singleton
+		// collisions
+		Map<Bundle, Set<Bundle>> duplicateInstanceGroups = new HashMap<Bundle, Set<Bundle>>();
+		Set<Bundle> duplicateInstanceCandidates = new LinkedHashSet<Bundle>();
+
 		String location = null;
 		BundleNode node = bundleRegion.getBundleNode(bundle);
 		BundleState state = node.getState();
 		try {
 			state.update(node);
+			// Set conditions in the resolver hook for removal of duplicates to avoid singleton
+			// collisions
+			duplicateInstanceCandidates.add(bundle);
+			duplicateInstanceGroups.put(bundle, duplicateInstanceCandidates);
+			getResolverHookFactory().setGroups(duplicateInstanceGroups);
 			location = bundle.getLocation();
 			URL bundlereference = new URL(location);
 			is = bundlereference.openStream();
@@ -701,6 +715,9 @@ public class BundleCommandImpl implements BundleCommand {
 				} else {
 					node.getState().commit(node);
 				}
+				// TODO Check again if resolver hook has been visited during update.
+				duplicateInstanceGroups.clear();
+				duplicateInstanceCandidates.clear();
 			}
 		}
 		return bundle;

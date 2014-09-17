@@ -17,7 +17,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
-import java.util.Set;
 
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
@@ -342,10 +341,6 @@ public class UpdateJob extends BundleJob {
 	private Collection<IBundleStatus> updateByReference(Collection<Bundle> bundles,
 			SubProgressMonitor monitor) {
 
-		// Contains duplicate candidate bundles to be removed in the resolver hook in case of singleton
-		// collisions
-		Map<Bundle, Set<Bundle>> duplicateInstanceGroups = new HashMap<Bundle, Set<Bundle>>();
-		Set<Bundle> duplicateInstanceCandidates = new LinkedHashSet<Bundle>();
 		Collection<IBundleStatus> statusList = null;
 		SubMonitor localMonitor = SubMonitor.convert(monitor, bundles.size());
 		for (Bundle bundle : getUpdateOrder(bundles)) {
@@ -354,11 +349,6 @@ public class UpdateJob extends BundleJob {
 					localMonitor.subTask(updateSubTaskName + bundle.getSymbolicName());
 					if (Category.getState(Category.progressBar))
 						sleep(sleepTime);
-					// Set conditions in the resolver hook for removal of duplicates to avoid singleton
-					// collisions
-					duplicateInstanceCandidates.add(bundle);
-					duplicateInstanceGroups.put(bundle, duplicateInstanceCandidates);
-					bundleCommand.getResolverHookFactory().setGroups(duplicateInstanceGroups);
 					bundleCommand.update(bundle);
 				} catch (DuplicateBundleException e) {
 					handleDuplicateException(bundleRegion.getRegisteredBundleProject(bundle), e, null);
@@ -377,9 +367,6 @@ public class UpdateJob extends BundleJob {
 					}
 					statusList.add(result);
 				} finally {
-					// TODO Check again if resolver hook has been visited during update.
-					duplicateInstanceGroups.clear();
-					duplicateInstanceCandidates.clear();
 					localMonitor.worked(1);
 				}
 			}
