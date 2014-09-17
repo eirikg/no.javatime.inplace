@@ -8,7 +8,8 @@
  * Contributors:
  * 	JavaTime project, Eirik Gronsund - initial implementation
  *******************************************************************************/
-package no.javatime.util.messages.exceptions;
+package no.javatime.inplace.region.manager;
+
 
 /**
  * Utility and convenience methods for use by exception classes sub classing
@@ -58,9 +59,7 @@ public abstract class BaseException extends RuntimeException {
 			StackTraceElement frame = stack[ix];
 			String frameName = frame.getClassName();
 
-			if (frameName.equals(ID) || frameName.equals(BaseException.ID)
-					|| frameName.equals(LogException.ID)
-					|| frameName.equals(ResourceException.ID)) {
+			if (frameName.equals(ID) || frameName.equals(BaseException.ID)) {
 				break;
 			}
 			ix++;
@@ -70,9 +69,7 @@ public abstract class BaseException extends RuntimeException {
 			StackTraceElement frame = stack[ix];
 			String frameName = frame.getClassName();
 
-			if (!frameName.equals(ID) && !frameName.equals(BaseException.ID)
-					&& !frameName.equals(LogException.ID)
-					&& !frameName.equals(ResourceException.ID)) {
+			if (!frameName.equals(ID) && !frameName.equals(BaseException.ID)) {
 				// Found a relevant frame.
 				return frame;
 			}

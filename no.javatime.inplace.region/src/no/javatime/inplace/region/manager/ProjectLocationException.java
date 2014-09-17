@@ -10,9 +10,9 @@
  *******************************************************************************/
 package no.javatime.inplace.region.manager;
 
-import no.javatime.util.messages.exceptions.LogException;
+import no.javatime.util.messages.ExceptionMessage;
 
-public class ProjectLocationException extends LogException {
+public class ProjectLocationException extends BaseException {
 
 	private static final long serialVersionUID = -3357911740963379729L;
 
@@ -20,11 +20,11 @@ public class ProjectLocationException extends LogException {
 		super();	
 	}
 	public ProjectLocationException(Throwable tex, String key, Object ... substitutions) {
-		super(tex, key, substitutions);
+		super(ExceptionMessage.getInstance().formatString(key, substitutions), tex);
 	}
 	
 	public ProjectLocationException(String key, Object ... substitutions) {
-		super(key, substitutions);
+		super(ExceptionMessage.getInstance().formatString(key, substitutions));
 	}
 	
 	

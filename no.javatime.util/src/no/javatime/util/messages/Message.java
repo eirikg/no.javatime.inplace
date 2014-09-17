@@ -17,7 +17,6 @@ import java.util.ResourceBundle;
 import java.util.Set;
 
 import no.javatime.util.Activator;
-import no.javatime.util.messages.exceptions.ResourceException;
 
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;

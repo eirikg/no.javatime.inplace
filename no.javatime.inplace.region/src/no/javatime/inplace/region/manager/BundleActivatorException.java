@@ -10,9 +10,9 @@
  *******************************************************************************/
 package no.javatime.inplace.region.manager;
 
-import no.javatime.util.messages.exceptions.LogException;
+import no.javatime.util.messages.ExceptionMessage;
 
-public class BundleActivatorException extends LogException {
+public class BundleActivatorException extends BaseException {
 	
 	private static final long serialVersionUID = 5769222856646228959L;
 
@@ -20,11 +20,11 @@ public class BundleActivatorException extends LogException {
 		super();	
 	}
 	public BundleActivatorException(Throwable tex, String key, Object ... substitutions) {
-		super(tex, key, substitutions);
+		super(ExceptionMessage.getInstance().formatString(key, substitutions), tex);
 	}
 	
 	public BundleActivatorException(String key, Object ... substitutions) {
-		super(key, substitutions);
+		super(ExceptionMessage.getInstance().formatString(key, substitutions));
 	}
 	
 	

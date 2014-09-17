@@ -8,14 +8,15 @@
  * Contributors:
  * 	JavaTime project, Eirik Gronsund - initial implementation
  *******************************************************************************/
-package no.javatime.util.messages.exceptions;
+package no.javatime.util.messages;
+
 
 
 /**
  * Uses the exception messages property file to get the exception message text
  * based on resource bundle keys 
  */
-public class ResourceException extends LogException {
+public class ResourceException extends RuntimeException {
 	
 	/**
 	 * Unique ID of this class
@@ -35,7 +36,7 @@ public class ResourceException extends LogException {
 	 * @param substitutions message strings to insert into the retrieved messages
 	 */
 	public ResourceException(Exception e, String key, Object ... substitutions) {
-		super(e, key, substitutions);
+		super(ExceptionMessage.getInstance().formatString(key, substitutions), e);
 	}
 
 	/**
@@ -45,6 +46,6 @@ public class ResourceException extends LogException {
 	 * @param substitutions message strings to insert into the retrieved messages
 	 */
 	public ResourceException(String key, Object ... substitutions) {
-		super(key, substitutions);
+		super(ExceptionMessage.getInstance().formatString(key, substitutions));
 	}
 }

@@ -13,7 +13,6 @@ Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Import-Package: no.javatime.inplace.dl.preferences.intface,
  no.javatime.inplace.extender.provider,
  no.javatime.util.messages,
- no.javatime.util.messages.exceptions,
  org.eclipse.jdt.core
 Export-Package: no.javatime.inplace.region.closure;
   uses:="no.javatime.inplace.region.status,
