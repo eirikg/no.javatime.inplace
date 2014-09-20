@@ -293,6 +293,8 @@ public class BundleProperties {
 			}
 		} catch (ProjectLocationException e) {
 			return "Project Location Problem";
+		} catch (InPlaceException e) {
+			return "Bundle adapt Problem";
 		}
 	}
 

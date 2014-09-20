@@ -66,6 +66,7 @@ public class BundleProjectSettings {
 	 * 
 	 * @param project containing the class path
 	 * @return true if the default output folder is contained in the class path for the specified project
+	 * @throws InPlaceException if the manifest file is missing or the projects description could not be obtained
 	 */
 	public static Boolean isOutputFolderInBundleClassPath(IProject project) throws InPlaceException {
 		if (!BuildErrorClosure.hasManifest(project)) {

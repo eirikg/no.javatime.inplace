@@ -15,16 +15,17 @@ import java.util.ArrayList;
 import no.javatime.inplace.bundlemanager.BundleJobManager;
 import no.javatime.inplace.bundleproject.BundleProjectSettings;
 import no.javatime.inplace.dialogs.OpenProjectHandler;
-import no.javatime.inplace.extender.provider.Extension;
-import no.javatime.inplace.log.intface.BundleLogView;
-import no.javatime.inplace.pl.console.intface.BundleConsoleFactory;
-import no.javatime.inplace.pl.dependencies.intface.DependencyDialog;
+import no.javatime.inplace.extender.provider.ExtenderException;
 import no.javatime.inplace.region.closure.BuildErrorClosure;
 import no.javatime.inplace.region.manager.BundleTransition.Transition;
 import no.javatime.inplace.region.manager.InPlaceException;
 import no.javatime.inplace.region.project.BundleProjectState;
 import no.javatime.inplace.region.project.ManifestOptions;
+import no.javatime.inplace.region.status.BundleStatus;
+import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
+import no.javatime.inplace.ui.Activator;
 import no.javatime.inplace.ui.command.handlers.BundleMenuActivationHandler;
+import no.javatime.inplace.ui.msg.Msg;
 import no.javatime.inplace.ui.views.BundleView;
 import no.javatime.util.messages.Message;
 
@@ -35,23 +36,25 @@ import org.eclipse.jface.action.IContributionItem;
 import org.eclipse.jface.action.Separator;
 import org.eclipse.ui.IWorkbenchActionConstants;
 import org.eclipse.ui.menus.CommandContributionItem;
+import org.eclipse.ui.statushandlers.StatusManager;
 import org.osgi.framework.Bundle;
 
-
 /**
- * Build the context sensitive pop-up menu 
+ * Build the context sensitive pop-up menu
  */
 public class BundlePopUpCommandsContributionItems extends BundleCommandsContributionItems {
 
-	public static String dynamicPopUpCommandId = "no.javatime.inplace.command.dynamicitems.popup";
 	public static String menuId = "no.javatime.inplace.command.contributions.dynamicitems.popup";
+	public static String dynamicPopUpCommandId = "no.javatime.inplace.command.dynamicitems.popup";
 
-	private static String addClassPathLabel = Message.getInstance().formatString("add_classpath_label_popup"); //$NON-NLS-1$
-	private static String removeClassPathLabel = Message.getInstance().formatString("remove_classpath_label_popup"); //$NON-NLS-1$
+	private static String addClassPathLabel = Message.getInstance().formatString(
+			"add_classpath_label_popup"); //$NON-NLS-1$
+	private static String removeClassPathLabel = Message.getInstance().formatString(
+			"remove_classpath_label_popup"); //$NON-NLS-1$
 
 	// Activation policy per bundle
-	public static String policyParamId = Message.getInstance().formatString("policy_menu_parameter");
-	private static String eagerLabel = Message.getInstance().formatString("eager_activation_label");
+	public final static String policyParamId = "Policy";
+	private final static String eagerLabel = Message.getInstance().formatString("eager_activation_label");
 
 	public BundlePopUpCommandsContributionItems() {
 		super();
@@ -61,106 +64,78 @@ public class BundlePopUpCommandsContributionItems extends BundleCommandsContribu
 	protected IContributionItem[] getContributionItems() {
 
 		ArrayList<ContributionItem> contributions = new ArrayList<ContributionItem>();
-		CommandContributionItem contribution = null;
 		IJavaProject javaProject = BundleMenuActivationHandler.getSelectedJavaProject();
 		if (null == javaProject) {
 			return new IContributionItem[0];
-		} 
-		// Get project, activation status and the bundle project
-		IProject project = javaProject.getProject();
-		Boolean activated = BundleProjectState.isNatureEnabled(project);
-		Bundle bundle = BundleJobManager.getRegion().get(project);
-
-		// Busy running bundle jobs. Show a limited set of contributors
-		if (OpenProjectHandler.getBundlesJobRunState()) {
-			contribution = addStopOperation(menuId, dynamicPopUpCommandId);
-			if (null != contribution) {
-				contributions.add(contribution);				
-			}
-			contributions.add(addInterrupt(menuId, dynamicPopUpCommandId));
-			contributions.add(new Separator(IWorkbenchActionConstants.MB_ADDITIONS));
-			contribution = addRefresh(activated, bundle);
-			if (null != contribution) {
-				contributions.add(contribution);
-			}
-			contribution = addReset(activated, bundle);
-			if (null != contribution) {
-				contributions.add(contribution);
+		}
+		try {
+			// Get project, activation status and the bundle project
+			IProject project = javaProject.getProject();
+			Boolean activated = BundleProjectState.isNatureEnabled(project);
+			Bundle bundle = BundleJobManager.getRegion().get(project);
+			// Busy running bundle jobs.
+			if (OpenProjectHandler.getBundlesJobRunState()) {
+				// Do not add contributions for bundles that are dependent on their current state
+				contribute(addStopOperation(menuId, dynamicPopUpCommandId), contributions);
+				contribute(addInterrupt(menuId, dynamicPopUpCommandId), contributions);
+			} else {
+				contribute(addActivate(activated, project, bundle), contributions);
+				contribute(addDeactivate(activated, project, bundle), contributions);
+				contribute(addStart(activated, bundle), contributions);
+				contribute(addStop(activated, bundle), contributions);
+				contribute(addUpdate(activated, project, bundle), contributions);
+				contribute(addRefresh(activated, bundle), contributions);
+				contribute(addReset(activated, bundle), contributions);
 			}
 			contributions.add(new Separator(IWorkbenchActionConstants.MB_ADDITIONS));
-			contribution = addShowBundleView();
-			if (null != contribution) {
-				contributions.add(contribution);
-			}
-			contributions.add(addToggleConsoleView());
-			contributions.add(addToggleMessageView());
-			IContributionItem[] contributionArray = contributions
-					.toArray(new ContributionItem[contributions.size()]);
-			return contributionArray;
+			contribute(addToggleBundleView(), contributions);
+			contribute(addToggleBundleConsoleView(menuId, dynamicPopUpCommandId), contributions);
+			contribute(addToggleBundleLogView(menuId, dynamicPopUpCommandId), contributions);
+			contributions.add(new Separator(IWorkbenchActionConstants.MB_ADDITIONS));
+			contribute(addClassPath(project), contributions);
+			contribute(addEagerActivation(), contributions);
+		} catch (InPlaceException | ExtenderException e) {
+			StatusManager.getManager()
+					.handle(
+							new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID,
+									Msg.ADD_CONTRIBUTION_ERROR, e), StatusManager.LOG);
 		}
-		
-		if (!activated) {
-			contribution = addActivate(activated, project, bundle);
-			if (null != contribution) {
-				contributions.add(contribution);
-			}
-		} else {
-			contribution = addDeactivate(activated, project, bundle);
-			if (null != contribution) {
-				contributions.add(contribution);
-			}
-		}
-		contribution = addStart(activated, bundle);
-		if (null != contribution) {
-			contributions.add(contribution);
-		}
-		contribution = addStop(activated, bundle);
-		if (null != contribution) {
-			contributions.add(contribution);
-		}
-		contribution = addUpdate(activated, project, bundle);
-		if (null != contribution) {
-			contributions.add(contribution);
-		}		
-		contribution = addRefresh(activated, bundle);
-		if (null != contribution) {
-			contributions.add(contribution);
-		}
-		contribution = addReset(activated, bundle);
-		if (null != contribution) {
-			contributions.add(contribution);
-		}
-		contributions.add(new Separator(IWorkbenchActionConstants.MB_ADDITIONS));
-		contribution = addShowBundleView();
-		if (null != contribution) {
-			contributions.add(contribution);
-		}
-		contributions.add(addToggleConsoleView());
-		contributions.add(addToggleMessageView());
-		contributions.add(new Separator(IWorkbenchActionConstants.MB_ADDITIONS));
-		contribution = addClassPath(project);
-		if (null != contribution) {
-			contributions.add(contribution);
-		}
-		contributions.add(addEagerActivation());
-		IContributionItem[] contributionArray = contributions.toArray(new ContributionItem[contributions.size()]);
+		IContributionItem[] contributionArray = contributions
+				.toArray(new ContributionItem[contributions.size()]);
 		return contributionArray;
-
 	}
 
+	/**
+	 * Adds a contribution to activate a bundle project if the specified activate parameter is false.
+	 * 
+	 * @param activated the activation status of the bundle project
+	 * @param project project to activate
+	 * @param bundle bundle corresponding to the project
+	 * @return a contribution to activate the bundle project or null if the specified activate
+	 * parameter is true
+	 */
 	private CommandContributionItem addActivate(Boolean activated, IProject project, Bundle bundle) {
 		String label;
 		String stateName = " (";
 		if (!activated) {
 			stateName += BundleJobManager.getCommand().getStateName(bundle) + ")";
-			label = activateParamId;
+			label = activateProjectParamId;
 			label += " " + stateName;
-			return addContribution(menuId, dynamicPopUpCommandId, label, activateParamId,
+			return createContibution(menuId, dynamicPopUpCommandId, label, activateProjectParamId,
 					CommandContributionItem.STYLE_PUSH, activateImage);
 		}
 		return null;
 	}
 
+	/**
+	 * Adds a contribution to deactivate a bundle project if the specified activate parameter is true.
+	 * 
+	 * @param activated the activation status of the bundle project
+	 * @param project project to deactivate
+	 * @param bundle bundle corresponding to the project
+	 * @return a contribution to deactivate the bundle project or null if the specified activate
+	 * parameter is false
+	 */
 	private CommandContributionItem addDeactivate(Boolean activated, IProject project, Bundle bundle) {
 		String label;
 		String stateName = " (";
@@ -168,137 +143,170 @@ public class BundlePopUpCommandsContributionItems extends BundleCommandsContribu
 			stateName += BundleJobManager.getCommand().getStateName(bundle) + ")";
 			label = deactivateParamId;
 			label += " " + stateName;
-			return addContribution(menuId, dynamicPopUpCommandId, label, deactivateParamId,
+			return createContibution(menuId, dynamicPopUpCommandId, label, deactivateParamId,
 					CommandContributionItem.STYLE_PUSH, deactivateImage);
 		}
 		return null;
 	}
 
-	private CommandContributionItem addStart(Boolean activated, Bundle bundle) {
-		if (null != bundle && activated) {
-			int state = bundle.getState();
-			if (!ManifestOptions.isFragment(bundle) && (state & (Bundle.INSTALLED | Bundle.RESOLVED | Bundle.STOPPING)) != 0) {
-				return addContribution(menuId, dynamicPopUpCommandId, startParamId, startParamId,
-						CommandContributionItem.STYLE_PUSH, startImage);
+	/**
+	 * Adds a contribution to start the specified bundle if the bundle is activated and not in state
+	 * active.
+	 * 
+	 * @param activated the activation status of the bundle project
+	 * @param bundle the bundle to start
+	 * @return a contribution to start the bundle or null if it is not activated or already in state
+	 * active
+	 * @throws InPlaceException if the specified bundle is null or a security violation
+	 */
+	private CommandContributionItem addStart(Boolean activated, Bundle bundle)
+			throws InPlaceException {
+		if (activated) {
+			if (!ManifestOptions.isFragment(bundle)) {
+				if ((bundle.getState() & (Bundle.INSTALLED | Bundle.RESOLVED | Bundle.STOPPING)) != 0) {
+					return createContibution(menuId, dynamicPopUpCommandId, startParamId, startParamId,
+							CommandContributionItem.STYLE_PUSH, startImage);
+				}
 			}
 		}
 		return null;
 	}
 
+	/**
+	 * Adds a contribution to stop the specified bundle if the bundle is activated and in state
+	 * active.
+	 * 
+	 * @param activated the activation status of the bundle project
+	 * @param bundle the bundle to stop
+	 * @return a contribution to stop the bundle or null if it is not activated, not in state active
+	 * or the bundle is null
+	 */
 	private CommandContributionItem addStop(Boolean activated, Bundle bundle) {
 		if (null != bundle && activated) {
-			int state = bundle.getState();
-			if ((state & (Bundle.ACTIVE | Bundle.STARTING)) != 0) {
-				return addContribution(menuId, dynamicPopUpCommandId, stopParamId, stopParamId,
+			if ((bundle.getState() & (Bundle.ACTIVE | Bundle.STARTING)) != 0) {
+				return createContibution(menuId, dynamicPopUpCommandId, stopParamId, stopParamId,
 						CommandContributionItem.STYLE_PUSH, stopImage);
 			}
 		}
 		return null;
 	}
 
-	private CommandContributionItem addRefresh(Boolean activated, Bundle bundle) {
+	/**
+	 * Adds a contribution to refresh the specified bundle if the bundle is activated and has more
+	 * than one revision
+	 * 
+	 * @param activated the activation status of the bundle project
+	 * @param bundle the bundle to refresh
+	 * @return a contribution to refresh the bundle or null if it is not activated, has only one
+	 * revision or the bundle is null
+	 * @throws InPlaceException if the bundle is null or a proper adapt permission is missing
+	 */
+	private CommandContributionItem addRefresh(Boolean activated, Bundle bundle)
+			throws InPlaceException {
 
 		// Conditional enabling of refresh
-		if (null != bundle && activated && BundleJobManager.getCommand().getBundleRevisions(bundle).size() > 1) {
-			return addContribution(menuId, dynamicPopUpCommandId, refreshParamId, refreshParamId,
+		if (activated && BundleJobManager.getCommand().getBundleRevisions(bundle).size() > 1) {
+			return createContibution(menuId, dynamicPopUpCommandId, refreshParamId, refreshParamId,
 					CommandContributionItem.STYLE_PUSH, refreshImage);
 		}
 		return null;
 	}
 
+	/**
+	 * Adds a contribution to update the specified bundle if the bundle is activated and and has a
+	 * pending update transition attached to it
+	 * 
+	 * @param activated the activation status of the bundle project
+	 * @param bundle the bundle to update
+	 * @return a contribution to update the bundle or null if it is not activated or no pending update
+	 * transition
+	 */
 	private CommandContributionItem addUpdate(Boolean activated, IProject project, Bundle bundle) {
-		if (null != bundle && activated && BundleJobManager.getTransition().containsPending(project, Transition.UPDATE, Boolean.FALSE)) {
-			return addContribution(menuId, dynamicPopUpCommandId, updateParamId, updateParamId,
+		if (null != bundle
+				&& activated
+				&& BundleJobManager.getTransition().containsPending(project, Transition.UPDATE,
+						Boolean.FALSE)) {
+			return createContibution(menuId, dynamicPopUpCommandId, updateParamId, updateParamId,
 					CommandContributionItem.STYLE_PUSH, updateImage);
 		}
 		return null;
 	}
 
+	/**
+	 * Adds a contribution to reset the specified bundle if the bundle is activated
+	 * 
+	 * @param activated the activation status of the bundle project
+	 * @param bundle the bundle to reset
+	 * @return a contribution to update the bundle or null if it is not activated
+	 */
 	private CommandContributionItem addReset(Boolean activated, Bundle bundle) {
 		if (null != bundle && activated) {
-			return addContribution(menuId, dynamicPopUpCommandId, resetParamId, resetParamId,
+			return createContibution(menuId, dynamicPopUpCommandId, resetParamId, resetParamId,
 					CommandContributionItem.STYLE_PUSH, resetImage);
 		}
 		return null;
 	}
 
-	private CommandContributionItem addClassPath(IProject project) {
-		try {
-			if (!BuildErrorClosure.hasManifestBuildErrors(project)) {
-				if (!BundleProjectSettings.isOutputFolderInBundleClassPath(project)) {
-					return addContribution(menuId, dynamicPopUpCommandId, addClassPathLabel, addClassPathParamId,
-							CommandContributionItem.STYLE_PUSH, classPathImage);
-				} else {
-					return addContribution(menuId, dynamicPopUpCommandId, removeClassPathLabel, removeClassPathParamId,
-							CommandContributionItem.STYLE_PUSH, classPathImage);				
-				}
+	/**
+	 * Adds a contribution to add or remove the default output folder
+	 * 
+	 * @param project The project that contains or is missing the default output folder
+	 * @return a contribution to add or remove the default output folder on the specified project or
+	 * null if there are any build errors in the manifest
+	 * @throws InPlaceException if a core exception occurs, manifest file is missing or the project
+	 * description could not be obtained
+	 */
+	private CommandContributionItem addClassPath(IProject project) throws InPlaceException {
+
+		if (!BuildErrorClosure.hasManifestBuildErrors(project)) {
+			if (!BundleProjectSettings.isOutputFolderInBundleClassPath(project)) {
+				return createContibution(menuId, dynamicPopUpCommandId, addClassPathLabel,
+						addClassPathParamId, CommandContributionItem.STYLE_PUSH, classPathImage);
+			} else {
+				return createContibution(menuId, dynamicPopUpCommandId, removeClassPathLabel,
+						removeClassPathParamId, CommandContributionItem.STYLE_PUSH, classPathImage);
 			}
-		} catch (InPlaceException e) {
-			return null; // Menu item not displayed
 		}
 		return null;
 	}
+
 	/**
-	 * When bundle view is hidden return a contribution item offering to open the view and vice versa if the
-	 * view is open and there is no active project. If the view is open and the list page is active with a selected project return a
-	 * contribution item offering to show the details page and vice versa if the details page is active.
+	 * When bundle view is hidden return a contribution item offering to open the view and vice versa
+	 * if the view is open and there is no active project. If the view is open and the list page is
+	 * active with a selected project return a contribution item offering to show the details page and
+	 * vice versa if the details page is active.
 	 * 
-	 * @return contribution item offering to show or hide the bundle view or show the list or the details page
-	 *         in an open view with an active project.
+	 * @return contribution item offering to show or hide the bundle view or show the list or the
+	 * details page in an open view with an active project.
 	 */
-	private CommandContributionItem addShowBundleView() {
+	private CommandContributionItem addToggleBundleView() {
 		if (!Message.isViewVisible(BundleView.ID)) {
-			return addContribution(menuId, dynamicPopUpCommandId, showBundleView, bundleViewParamId,
+			return createContibution(menuId, dynamicPopUpCommandId, showBundleView, bundleViewParamId,
 					CommandContributionItem.STYLE_PUSH, bundleListImage);
 		} else {
 			// Flip list and details bundle page
 			BundleView bundleView = getBundleView();
 			if (null != bundleView) {
 				if (bundleView.isListPageActive()) {
-					return addContribution(menuId, dynamicPopUpCommandId, showBundleDetailsPage,
+					return createContibution(menuId, dynamicPopUpCommandId, showBundleDetailsPage,
 							bundleViewParamId, CommandContributionItem.STYLE_PUSH, bundleDetailsImage);
 				} else {
-					return addContribution(menuId, dynamicPopUpCommandId, showBundleListPage, bundleViewParamId,
-							CommandContributionItem.STYLE_PUSH, bundleListImage);
+					return createContibution(menuId, dynamicPopUpCommandId, showBundleListPage,
+							bundleViewParamId, CommandContributionItem.STYLE_PUSH, bundleListImage);
 				}
 			}
 		}
-		return addContribution(menuId, dynamicPopUpCommandId, hideBundleView, bundleViewParamId,
+		return createContibution(menuId, dynamicPopUpCommandId, hideBundleView, bundleViewParamId,
 				CommandContributionItem.STYLE_PUSH, bundleListImage);
 	}
 
-	private CommandContributionItem addToggleConsoleView() {
-		Extension<BundleConsoleFactory> ext = new Extension<>(BundleConsoleFactory.class);
-		BundleConsoleFactory bundleConsoleService = ext.getService();
-		if (null == bundleConsoleService) {
-			throw new InPlaceException("failed_to_get_service_for_interface", BundleConsoleFactory.class.getName());
-		}	
-		if (!bundleConsoleService.isConsoleViewVisible()) {
-			return addContribution(menuId, dynamicPopUpCommandId, showConsolePage, consoleParamId,
-					CommandContributionItem.STYLE_PUSH, bundleConsoleService.getConsoleViewImage());
-		} else {
-			return addContribution(menuId, dynamicPopUpCommandId, hideConsolePage, consoleParamId,
-					CommandContributionItem.STYLE_PUSH, bundleConsoleService.getConsoleViewImage());
-		}
-	}
-
-	private CommandContributionItem addToggleMessageView() {
-		Extension<BundleLogView> ext = new Extension<>(BundleLogView.class);
-		BundleLogView viewService = ext.getService();
-		if (null == viewService) {
-			throw new InPlaceException("failed_to_get_service_for_interface", DependencyDialog.class.getName());
-		}
-		if (!viewService.isVisible()) {
-			return addContribution(menuId, dynamicPopUpCommandId, showMessageView, messageViewParamId,
-					CommandContributionItem.STYLE_PUSH, viewService.getLogViewImage());
-		} else {
-			return addContribution(menuId, dynamicPopUpCommandId, hideMessageView, messageViewParamId,
-					CommandContributionItem.STYLE_PUSH, viewService.getLogViewImage());
-		}
-	}
-
+	/**
+	 * Creates a contribution with a check style to change the activation policy of the current bundle
+	 * 
+	 * @return a contribution to change activation policy
+	 */
 	private CommandContributionItem addEagerActivation() {
-		return addContribution(menuId, dynamicPopUpCommandId, eagerLabel, policyParamId,
+		return createContibution(menuId, dynamicPopUpCommandId, eagerLabel, policyParamId,
 				CommandContributionItem.STYLE_CHECK, null);
 	}
 }

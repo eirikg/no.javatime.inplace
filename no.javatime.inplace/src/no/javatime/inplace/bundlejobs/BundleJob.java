@@ -618,7 +618,7 @@ public abstract class BundleJob extends JobStatus {
 	/**
 	 * Stop the current start or stop bundle operation 
 	 * 
-	 * @throws InPlaceException if the options service not could be acquired
+	 * @throws InPlaceException if failing to get the command options service
 	 */
 	public void stopCurrentBundleOperation(IProgressMonitor monitor) throws InPlaceException {
 

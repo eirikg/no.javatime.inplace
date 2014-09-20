@@ -15,20 +15,32 @@ import java.util.LinkedHashSet;
 
 import no.javatime.inplace.bundlemanager.BundleJobManager;
 import no.javatime.inplace.bundleproject.ProjectProperties;
+import no.javatime.inplace.extender.provider.ExtenderException;
+import no.javatime.inplace.region.manager.BundleCommand;
+import no.javatime.inplace.region.manager.BundleRegion;
 import no.javatime.inplace.region.manager.BundleTransition;
+import no.javatime.inplace.region.manager.InPlaceException;
 import no.javatime.inplace.region.project.BundleProjectState;
+import no.javatime.inplace.region.status.BundleStatus;
+import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
+import no.javatime.inplace.ui.Activator;
 import no.javatime.inplace.ui.command.contributions.BundleCommandsContributionItems;
 import no.javatime.inplace.ui.command.contributions.BundleMainCommandsContributionItems;
+import no.javatime.inplace.ui.msg.Msg;
 
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.resources.IProject;
+import org.eclipse.ui.statushandlers.StatusManager;
 import org.osgi.framework.Bundle;
 
 /**
- * Handles in-place main menu for java projects.
+ * Execute menu selections from the main menu
  */
 public class BundleMainActivationHandler extends BundleMenuActivationHandler {
+
+	private final static BundleRegion region = BundleJobManager.getRegion();
+	private final static BundleCommand command = BundleJobManager.getCommand();
 
 	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
@@ -37,76 +49,100 @@ public class BundleMainActivationHandler extends BundleMenuActivationHandler {
 		if (null == parameterId) {
 			return null;
 		}
-		
-		if (parameterId.equals(BundleMainCommandsContributionItems.deactivateParamId)) {
-		 Collection<IProject> javaTimeProjects = BundleProjectState.getNatureEnabledProjects();
-		 deactivateHandler(javaTimeProjects);
-		} else if (parameterId.equals(BundleMainCommandsContributionItems.activateParamId)) {
-			Collection<IProject> projects = ProjectProperties.getCandidateProjects();
-			activateProjectHandler(projects);
-		} else if (parameterId.equals(BundleMainCommandsContributionItems.startParamId)) {
-
-			Collection<Bundle> startProjects = new LinkedHashSet<Bundle>(); 
-			for (IProject project : BundleProjectState.getNatureEnabledProjects()) {
-				Bundle bundle = BundleJobManager.getRegion().get(project);
-				if (null == bundle) {
-					continue;
+		try {
+			switch (parameterId) {
+			case BundleCommandsContributionItems.deactivateParamId:
+				deactivateHandler(BundleProjectState.getNatureEnabledProjects());
+				break;
+			case BundleCommandsContributionItems.activateProjectParamId:
+				activateProjectHandler(ProjectProperties.getCandidateProjects());
+				break;
+			case BundleCommandsContributionItems.startParamId:
+				Collection<Bundle> startProjects = new LinkedHashSet<Bundle>(); 
+				for (IProject project : BundleProjectState.getNatureEnabledProjects()) {
+					Bundle bundle = region.get(project);
+					if (null == bundle) {
+						continue;
+					}
+					int state = command.getState(bundle);
+					if (Bundle.INSTALLED == state || Bundle.RESOLVED == state|| Bundle.STOPPING == state) {
+						startProjects.add(bundle);
+					}
 				}
-				int state = BundleJobManager.getCommand().getState(bundle);
-				if (Bundle.INSTALLED == state || Bundle.RESOLVED == state|| Bundle.STOPPING == state) {
-					startProjects.add(bundle);
+				if (startProjects.size() > 0) {
+					startHandler(region.getBundleProjects(startProjects));
 				}
+				break;
+			case BundleCommandsContributionItems.stopParamId:
+				Collection<Bundle> stopProjects = new LinkedHashSet<Bundle>(); 
+				for (IProject project : BundleProjectState.getNatureEnabledProjects()) {
+					Bundle bundle = region.get(project);
+					int state = command.getState(bundle);
+					if (Bundle.ACTIVE == state || Bundle.STARTING == state) {
+						stopProjects.add(bundle);
+					}
+				}
+				if (stopProjects.size() > 0) {
+					stopHandler(region.getBundleProjects(stopProjects));
+				}
+				break;
+			case BundleCommandsContributionItems.refreshParamId:
+				refreshHandler(BundleProjectState.getNatureEnabledProjects());
+				break;
+			case BundleCommandsContributionItems.refreshPendingParamId:
+				Collection<Bundle> refreshProjects = new LinkedHashSet<Bundle>(); 
+				for (IProject project : BundleProjectState.getNatureEnabledProjects()) {
+					Bundle bundle = region.get(project);
+					if (command.getBundleRevisions(bundle).size() > 1) {
+						refreshProjects.add(bundle);
+					}
+				}
+				if (refreshProjects.size() > 0) {
+					refreshHandler(region.getBundleProjects(refreshProjects));
+				}
+				break;
+			case BundleCommandsContributionItems.updateParamId:
+				Collection<IProject> projectsToUpdate = 
+				BundleJobManager.getTransition().getPendingProjects(BundleProjectState.getNatureEnabledProjects(), 
+						BundleTransition.Transition.UPDATE);			
+				updateHandler(projectsToUpdate);
+				break;
+			case BundleCommandsContributionItems.resetParamId:
+				resetHandler(ProjectProperties.getInstallableProjects());
+				break;
+			case BundleCommandsContributionItems.bundleViewParamId:
+				bundleViewHandler(ProjectProperties.getInstallableProjects());
+				break;
+			case BundleCommandsContributionItems.bundleConsolePageParamId:
+				bundleConsoleHandler();
+				break;
+			case BundleCommandsContributionItems.bundleLogViewParamId:
+				bundleLogViewViewHandler();
+				break;
+			case BundleCommandsContributionItems.addClassPathParamId:
+				updateClassPathHandler(ProjectProperties.getPlugInProjects(), true);
+				break;
+			case BundleCommandsContributionItems.removeClassPathParamId:
+				updateClassPathHandler(ProjectProperties.getPlugInProjects(), false);
+				break;
+			case BundleCommandsContributionItems.dependencyDialogParamId:
+				dependencyDialogHandler();
+				break;
+			case BundleCommandsContributionItems.interruptParamId:
+				interruptHandler();
+				break;
+			case BundleCommandsContributionItems.stopOperationParamId:
+				stopOperationHandler();
+				break;
+			default:
+				break;
 			}
-			if (startProjects.size() > 0) {
-				Collection<IProject> projects = BundleJobManager.getRegion().getBundleProjects(startProjects);
-				startHandler(projects);
-			}
-		} else if (parameterId.equals(BundleMainCommandsContributionItems.stopParamId)) {
-			Collection<Bundle> stopProjects = new LinkedHashSet<Bundle>(); 
-			for (IProject project : BundleProjectState.getNatureEnabledProjects()) {
-				Bundle bundle = BundleJobManager.getRegion().get(project);
-    		int state = BundleJobManager.getCommand().getState(bundle);
-    		if (Bundle.ACTIVE == state || Bundle.STARTING == state) {
-    			stopProjects.add(bundle);
-    		}
-			}
-			if (stopProjects.size() > 0) {
-				Collection<IProject> projects = BundleJobManager.getRegion().getBundleProjects(stopProjects);
-				stopHandler(projects);
-			}
-		} else if (parameterId.equals(BundleMainCommandsContributionItems.refreshParamId)) {
-			Collection<IProject> projects = BundleProjectState.getNatureEnabledProjects();
-			refreshHandler(projects);
-		} else if (parameterId.equals(BundleMainCommandsContributionItems.refreshPendingParamId)) {
-			Collection<IProject> projects = BundleProjectState.getNatureEnabledProjects();
-			refreshHandler(projects);
-		} else if (parameterId.equals(BundleMainCommandsContributionItems.updateParamId)) {
-			Collection<IProject> projects = BundleProjectState.getNatureEnabledProjects();
-			Collection<IProject> projectsToUpdate = 
-					BundleJobManager.getTransition().getPendingProjects(projects, BundleTransition.Transition.UPDATE);			
-			updateHandler(projectsToUpdate);
-		} else if (parameterId.equals(BundleMainCommandsContributionItems.resetParamId)) {
-			Collection<IProject> projects = ProjectProperties.getInstallableProjects();
-			resetHandler(projects);
-		} else if (parameterId.equals(BundleMainCommandsContributionItems.bundleViewParamId)) {
-			bundleViewHandler(ProjectProperties.getInstallableProjects());
-		} else if (parameterId.equals(BundleMainCommandsContributionItems.consoleParamId)) {
-			consoleHandler(ProjectProperties.getInstallableProjects());
-		} else if (parameterId.equals(BundleMainCommandsContributionItems.messageViewParamId)) {
-			messageViewHandler();
-		} else if (parameterId.equals(BundleCommandsContributionItems.addClassPathParamId)) {
-			Collection<IProject> projects = ProjectProperties.getPlugInProjects();
-			updateClassPathHandler(projects, true);
-		} else if (parameterId.equals(BundleCommandsContributionItems.removeClassPathParamId)) {
-			Collection<IProject> projects = ProjectProperties.getPlugInProjects();
-			updateClassPathHandler(projects, false);
-		} else if (parameterId.equals(BundleCommandsContributionItems.partialDependenciesParamId)) {
-			dependencyHandler();
-		}	else if (parameterId.equals(BundleCommandsContributionItems.inerruptParamId)) {
-			interruptHandler();
-		}	else if (parameterId.equals(BundleCommandsContributionItems.stopOperationParamId)) {
-			stopOperation();
-		}	
+		} catch (InPlaceException | ExtenderException e) {
+			StatusManager.getManager()
+			.handle(
+					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID,
+							Msg.ADD_MENU_EXEC_ERROR, e), StatusManager.LOG);
+		}
 		return null; 
 	}
 	

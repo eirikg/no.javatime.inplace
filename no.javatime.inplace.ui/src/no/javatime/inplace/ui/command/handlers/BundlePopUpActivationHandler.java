@@ -10,19 +10,19 @@
  *******************************************************************************/
 package no.javatime.inplace.ui.command.handlers;
 
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 
 import no.javatime.inplace.bundleproject.BundleProjectSettings;
-import no.javatime.inplace.bundleproject.ProjectProperties;
+import no.javatime.inplace.extender.provider.ExtenderException;
 import no.javatime.inplace.region.closure.BuildErrorClosure;
 import no.javatime.inplace.region.manager.InPlaceException;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import no.javatime.inplace.ui.Activator;
-import no.javatime.inplace.ui.command.contributions.BundleMainCommandsContributionItems;
+import no.javatime.inplace.ui.command.contributions.BundleCommandsContributionItems;
 import no.javatime.inplace.ui.command.contributions.BundlePopUpCommandsContributionItems;
+import no.javatime.inplace.ui.msg.Msg;
 import no.javatime.util.messages.ExceptionMessage;
 import no.javatime.util.messages.WarnMessage;
 
@@ -53,8 +53,7 @@ public class BundlePopUpActivationHandler extends BundleMenuActivationHandler im
 		}
 		// Get project from selected item
 		IStructuredSelection selection = (IStructuredSelection) HandlerUtil.getCurrentSelection(event);
-		IStructuredSelection ss = selection;
-		Object object = ss.getFirstElement();		
+		Object object = selection.getFirstElement();		
 		IProject project = null;
 		if (null != object) {
 			project = (IProject) Platform.getAdapterManager().getAdapter(object, IProject.class);
@@ -76,40 +75,65 @@ public class BundlePopUpActivationHandler extends BundleMenuActivationHandler im
 				project = jProject.getProject();
 			}
 		}
-		Collection<IProject> projects = Collections.<IProject>singletonList(project);		
-		if (parameterId.equals(BundlePopUpCommandsContributionItems.installParamId)) {
-			installHandler(ProjectProperties.getPlugInProjects());
-		} else if (parameterId.equals(BundleMainCommandsContributionItems.activateParamId)) {
-			activateProjectHandler(projects);
-		}	else if (parameterId.equals(BundleMainCommandsContributionItems.deactivateParamId)) {
-			deactivateHandler(projects);
-		} else if (parameterId.equals(BundlePopUpCommandsContributionItems.refreshParamId)) {
-			refreshHandler(projects);
-		} else if (parameterId.equals(BundlePopUpCommandsContributionItems.updateParamId)) {
-			updateHandler(projects);
-		} else if (parameterId.equals(BundlePopUpCommandsContributionItems.resetParamId)) {
-			resetHandler(projects);
-		} else if (parameterId.equals(BundlePopUpCommandsContributionItems.startParamId)) {
-			startHandler(projects);
-		} else if (parameterId.equals(BundlePopUpCommandsContributionItems.stopParamId)) {
-			stopHandler(projects);
-		} else if (parameterId.equals(BundlePopUpCommandsContributionItems.bundleViewParamId)) {
-			bundleViewHandler(projects);
-		} else if (parameterId.equals(BundlePopUpCommandsContributionItems.consoleParamId)) {
-			consoleHandler(projects);
-		} else if (parameterId.equals(BundleMainCommandsContributionItems.messageViewParamId)) {
-			messageViewHandler();
-		} else if (parameterId.equals(BundlePopUpCommandsContributionItems.policyParamId)) {
-			policyHandler(projects);
-		} else if (parameterId.equals(BundlePopUpCommandsContributionItems.addClassPathParamId)) {
-			updateClassPathHandler(projects, true);
-		} else if (parameterId.equals(BundlePopUpCommandsContributionItems.removeClassPathParamId)) {
-			updateClassPathHandler(projects, false);
-		}	else if (parameterId.equals(BundlePopUpCommandsContributionItems.inerruptParamId)) {
-			interruptHandler();
-		}	else if (parameterId.equals(BundlePopUpCommandsContributionItems.stopOperationParamId)) {
-			stopOperation();
-		}				
+		try {
+			switch (parameterId) {
+			case BundleCommandsContributionItems.installParamId:
+				installHandler(Collections.<IProject>singletonList(project));			
+				break;
+			case BundleCommandsContributionItems.activateProjectParamId:
+				activateProjectHandler(Collections.<IProject>singletonList(project));
+				break;
+			case BundleCommandsContributionItems.deactivateParamId:
+				deactivateHandler(Collections.<IProject>singletonList(project));
+				break;
+			case BundleCommandsContributionItems.refreshParamId:
+				refreshHandler(Collections.<IProject>singletonList(project));
+				break;
+			case BundleCommandsContributionItems.updateParamId:
+				updateHandler(Collections.<IProject>singletonList(project));
+				break;
+			case BundleCommandsContributionItems.resetParamId:
+				resetHandler(Collections.<IProject>singletonList(project));
+				break;
+			case BundleCommandsContributionItems.startParamId:
+				startHandler(Collections.<IProject>singletonList(project));
+				break;
+			case BundleCommandsContributionItems.stopParamId:
+				stopHandler(Collections.<IProject>singletonList(project));
+				break;
+			case BundleCommandsContributionItems.bundleViewParamId:
+				bundleViewHandler(Collections.<IProject>singletonList(project));
+				break;
+			case BundleCommandsContributionItems.bundleConsolePageParamId:
+				bundleConsoleHandler();
+				break;
+			case BundleCommandsContributionItems.bundleLogViewParamId:
+				bundleLogViewViewHandler();
+				break;
+			case BundlePopUpCommandsContributionItems.policyParamId:
+				policyHandler(Collections.<IProject>singletonList(project));
+				break;
+			case BundleCommandsContributionItems.addClassPathParamId:
+				updateClassPathHandler(Collections.<IProject>singletonList(project), true);
+				break;
+			case BundleCommandsContributionItems.removeClassPathParamId:
+				updateClassPathHandler(Collections.<IProject>singletonList(project), true);
+				break;
+			case BundleCommandsContributionItems.interruptParamId:
+				interruptHandler();
+				break;
+			case BundleCommandsContributionItems.stopOperationParamId:
+				stopOperationHandler();
+				break;
+			default:
+				break;
+			}
+		} catch (InPlaceException | ExtenderException e) {
+			StatusManager.getManager()
+			.handle(
+					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID,
+							Msg.ADD_MENU_EXEC_ERROR, e), StatusManager.LOG);
+		}
 		return null;
 	}
 

@@ -1,5 +1,6 @@
 package no.javatime.inplace.region.manager;
 
+import no.javatime.inplace.extender.provider.ExtenderException;
 import no.javatime.inplace.extender.provider.Introspector;
 import no.javatime.inplace.region.Activator;
 
@@ -22,7 +23,7 @@ public class BundleThread {
 	private final static String lunaBundleImplClassName = "org.eclipse.osgi.container.Module";
 	private final static String getStateChangeownerMethodName = "getStateChangeOwner";
 	//Juno and Kepler (OSGi R5)
-	private final static String keplerBundleImplClassName = "org.eclipse.osgi.framework.internal.core.BundleHost";
+	private final static String preLunaBundleImplClassName = "org.eclipse.osgi.framework.internal.core.BundleHost";
 	private final static String getStateChangingMethodName = "getStateChanging";
 
 	/**
@@ -54,20 +55,17 @@ public class BundleThread {
 			methodName = getStateChangeownerMethodName; 
 			systemClass = loadSystemBundleClass(lunaBundleImplClassName);
 			if (null == systemClass) {
-				systemClass = loadSystemBundleClass(keplerBundleImplClassName);
+				systemClass = loadSystemBundleClass(preLunaBundleImplClassName);
 				methodName = getStateChangingMethodName; 
 			}
 			if (null != systemClass && null != bundle) {
 				Object systemObject = bundle.adapt(systemClass);
 				if (null != systemObject) {
 					thread = (Thread) Introspector.invoke(methodName, systemClass, (Class[]) null, systemObject, (Object[]) null);					
-					//thread = (Thread) invoke(methodName, systemClass, (Class[]) null, systemObject, (Object[]) null);
 				}
 			}
-			// Just return null when failing
-		} catch (InPlaceException e) {
-		} catch (SecurityException e) {
-		} catch (IllegalStateException e) {
+		} catch (ExtenderException | SecurityException e) {
+			// Return null when failing
 		}
 		return thread;
 	}

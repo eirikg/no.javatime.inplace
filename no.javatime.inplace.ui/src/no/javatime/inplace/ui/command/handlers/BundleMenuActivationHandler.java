@@ -26,6 +26,7 @@ import no.javatime.inplace.bundlejobs.UpdateScheduler;
 import no.javatime.inplace.bundlemanager.BundleJobManager;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.dialogs.OpenProjectHandler;
+import no.javatime.inplace.extender.provider.ExtenderException;
 import no.javatime.inplace.extender.provider.Extension;
 import no.javatime.inplace.log.intface.BundleLogView;
 import no.javatime.inplace.pl.console.intface.BundleConsoleFactory;
@@ -56,6 +57,7 @@ import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.wizard.IWizard;
 import org.eclipse.jface.wizard.WizardDialog;
+import org.eclipse.swt.SWTException;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchPart;
@@ -68,7 +70,7 @@ import org.eclipse.ui.wizards.IWizardDescriptor;
 
 /**
  * Executes bundle menu commands for one or more projects. The bundle commands are
- * common for the bundle main menu and context pop-up menu.
+ * common for the bundle main menu and bundle pop-up menus.
  */
 public abstract class BundleMenuActivationHandler extends AbstractHandler {
 
@@ -113,6 +115,7 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 	 * @param projects to deactivate
 	 */
 	static public void deactivateHandler(Collection<IProject> projects) {
+
 		DeactivateJob deactivateJob = null;
 		if (BundleProjectState.getNatureEnabledProjects().size() <= projects.size()) {
 			deactivateJob = new DeactivateJob(DeactivateJob.deactivateWorkspaceJobName, projects);			
@@ -150,10 +153,9 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 	 * @param projects of bundle projects to refresh
 	 */
 	static public void refreshHandler(Collection<IProject> projects) {
-		if (projects.size() > 0) {
-			RefreshJob refreshJob = new RefreshJob(RefreshJob.refreshJobName, projects);
-			jobHandler(refreshJob);
-		}
+
+		RefreshJob refreshJob = new RefreshJob(RefreshJob.refreshJobName, projects);
+		jobHandler(refreshJob);
 	}
 
 	/**
@@ -163,6 +165,7 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 	 * @param projects bundle projects to update
 	 */
 	static public void updateHandler(Collection<IProject> projects) {
+
 		UpdateScheduler.scheduleUpdateJob(projects, 0);
 	}
 		
@@ -172,6 +175,7 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 	 * @param projects to reset
 	 */
 	static public void resetHandler(final Collection<IProject> projects) {
+
 		OpenProjectHandler so = new OpenProjectHandler();
 		if (so.saveModifiedFiles()) {
 			OpenProjectHandler.waitOnBuilder();
@@ -184,37 +188,44 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 	 * Interrupts the current running bundle job
 	 */
 	protected  void interruptHandler() {
-		BundleJob job = OpenProjectHandler.getRunningBundleJob();
-		if (null != job) {
-			Thread thread = job.getThread();
-			if (null != thread) {
-				// Requires that the user code (e.g. in the start method) is aware of interrupts
-				thread.interrupt();
+		
+		OpenProjectHandler so = new OpenProjectHandler();
+		if (so.saveModifiedFiles()) {
+			BundleJob job = OpenProjectHandler.getRunningBundleJob();
+			if (null != job) {
+				Thread thread = job.getThread();
+				if (null != thread) {
+					// Requires that the user code (e.g. in the start method) is aware of interrupts
+					thread.interrupt();
+				}
 			}
 		}
 	}
 	
 	/**
-	 * Stops the current thread running the start and stop operation 
+	 * Stops the current thread running the start and stop operation if the
+	 * option for terminating endless start and stop operations is set to manual.
+	 * <p>
+	 * If the option for terminating endless start and stop operations is set to 
+	 * time out, the operation will be terminated automatically on time out
+	 * @throws InPlaceException if failing to get the command options service
 	 */
-	protected void stopOperation() {
-		Activator.getDisplay().asyncExec(new Runnable() {
-			@Override
-			public void run() {
-				try {
+	protected void stopOperationHandler() throws InPlaceException {
+		
+		OpenProjectHandler so = new OpenProjectHandler();
+		if (so.saveModifiedFiles()) {
+			Activator.getDisplay().asyncExec(new Runnable() {
+				@Override
+				public void run() {
 					if (!Activator.getDefault().getCommandOptionsService().isTimeOut()) {
 						BundleJob job = OpenProjectHandler.getRunningBundleJob();
 						if (null != job && BundleJob.isStateChanging()) {			
 							job.stopCurrentBundleOperation(new NullProgressMonitor());
 						}
 					}
-				} catch (IllegalStateException e) {
-					// Also caught by the bundle API
-				} catch (InPlaceException e) {
-					// Ignore
 				}
-			}
-		});
+			});
+		}
 	}
 	
 	/**
@@ -223,6 +234,7 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 	 * @param projects of bundles containing the activation policy
 	 */
 	protected void policyHandler(final Collection<IProject> projects) {
+
 		OpenProjectHandler so = new OpenProjectHandler();
 		if (so.saveModifiedFiles()) {
 			OpenProjectHandler.waitOnBuilder();		
@@ -239,10 +251,8 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 	 * @param addToPath add default output folder if true and remove default output folder if false
 	 */
 	public static void updateClassPathHandler(final Collection<IProject> projects, final boolean addToPath) {
+
 		OpenProjectHandler so = new OpenProjectHandler();
-		if (null == projects || projects.size() == 0) {
-			return;
-		}
 		if (so.saveModifiedFiles()) {
 			OpenProjectHandler.waitOnBuilder();
 			UpdateBundleClassPathJob updBundleClasspath = 
@@ -254,34 +264,31 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 
 	/**
 	 * Displays the closure options dependency dialog
+	 * 
+	 * @throws ExtenderException if failing to get the extender for the bundle console view
+	 * @throws InPlaceException if failing to get the extension service for the bundle console view
 	 */
-	protected void dependencyHandler() {
+	protected void dependencyDialogHandler() throws InPlaceException, ExtenderException {
 
-		try {
-			Extension<DependencyDialog> ext = new Extension<>(DependencyDialog.class);
-			DependencyDialog depService = ext.getService();
-			if (null == depService) {
-				throw new InPlaceException("failed_to_get_service_for_interface", DependencyDialog.class.getName());
-			}
-			depService.open();
-			// new DependencyDialogExtension().openAsService();
-		} catch (InPlaceException e){
-			StatusManager.getManager().handle(
-					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),
-					StatusManager.LOG);						
-		}		
+		Extension<DependencyDialog> ext = new Extension<>(DependencyDialog.class);
+		DependencyDialog depService = ext.getService();
+		if (null == depService) {
+			throw new InPlaceException("failed_to_get_service_for_interface", DependencyDialog.class.getName());
+		}
+		depService.open();
 	}
 	
 	/**
 	 * Shows the bundle view if it is hidden and hides it if it is open and there is no 
 	 * selected project (in list page or a details page) in the view. 
 	 * If visible, show details page if one project is specified and selected in the list page and 
-	 * the list page if multiple projects are specified and the details page is active.
+	 * show the list page if multiple projects are specified and the details page is active.
 	 * 
 	 * @param projects to display in the bundle view
 	 */
 	@SuppressWarnings("restriction")
 	protected void bundleViewHandler(Collection<IProject> projects) {
+
 		if (!Message.isViewVisible(BundleView.ID)) {
 			Message.showView(BundleView.ID);
 			updateBundleListPage(ProjectProperties.toJavaProjects(ProjectProperties.getInstallableProjects()));
@@ -316,28 +323,34 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 		// No projects open, start the new bundle wizard 
 		openWizard(org.eclipse.pde.internal.ui.wizards.plugin.NewPluginProjectWizard.PLUGIN_POINT);
 	}
-
+	
+	/**
+	 * Opens wizard specified by the wizard id parameter
+	 * <p>
+	 * Candidate wizards are new, import and export wizards
+	 * @param id the wizard id of the wizard to open
+	 */
 	public static void openWizard(String id) { 
 
-		// First see if this is a "new wizard". 
+		// First: search for "new wizard". 
 		IWizardDescriptor descriptor = PlatformUI.getWorkbench().getNewWizardRegistry().findWizard(id); 
-		// If not check if it is an "import wizard". 
+		// Second: search for "import wizard". 
 		if  (descriptor == null) {   
 			descriptor = PlatformUI.getWorkbench().getImportWizardRegistry().findWizard(id); 
 		} 
-		// Or maybe an export wizard 
+		// Third: search for  "export wizard" 
 		if  (descriptor == null) {   
 			descriptor = PlatformUI.getWorkbench().getExportWizardRegistry().findWizard(id); 
 		} 
 		try  {   
-			// Then if we have a wizard, open it.   
+			// Open the wizard   
 			if  (descriptor != null) {     
 				IWizard wizard = descriptor.createWizard();     
 				WizardDialog wd = new  WizardDialog(Activator.getDisplay().getActiveShell(), wizard);     
 				wd.setTitle(wizard.getWindowTitle());     
 				wd.open();   
 			} 
-		} catch  (CoreException e) {   
+		} catch  (CoreException | SWTException e) {   
 			String msg = ExceptionMessage.getInstance().formatString("error_open_create_bundle_wizard", e);
 			StatusManager.getManager().handle(new BundleStatus(StatusCode.ERROR, Activator.PLUGIN_ID, msg),
 					StatusManager.LOG);
@@ -347,12 +360,12 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 	/**
 	 * Updates project status information in the list page in the bundle view for the specified projects
 	 * 
-	 * @param projects to refresh
+	 * @param projects to refresh. Must not be null.
 	 */
 	static public void updateBundleListPage(final Collection<IJavaProject> projects) {
 
 		final Display display = Activator.getDisplay();
-		if (null == display || null == projects) {
+		if (null == display) {
 			return;
 		}
 		display.asyncExec(new Runnable() {
@@ -369,9 +382,13 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 	}
 
 	/**
-	 * Toggles between showing and hiding the message CONSOLE view
+	 * Toggles between showing and hiding the bundle console view
+	 * 
+	 * @throws ExtenderException if failing to get the extender for the bundle console view
+	 * @throws InPlaceException if failing to get the extension service for the bundle console view
 	 */
-	protected void consoleHandler(Collection<IProject> projects) {
+	protected void bundleConsoleHandler() throws InPlaceException, ExtenderException {
+
 		Extension<BundleConsoleFactory> ext = new Extension<>(BundleConsoleFactory.class);
 		BundleConsoleFactory bundleConsoleService = ext.getService();
 		if (null == bundleConsoleService) {
@@ -385,9 +402,13 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 	}
 
 	/**
-	 * Toggles between showing and hiding the message view
+	 * Toggles between showing and hiding the bundle log view
+	 * 
+	 * @throws ExtenderException if failing to get the extender for the bundle log view
+	 * @throws InPlaceException if failing to get the extension service for the bundle log view
 	 */
-	protected void messageViewHandler() {
+	protected void bundleLogViewViewHandler() throws InPlaceException, ExtenderException {
+
 		Extension<BundleLogView> ext = new Extension<>(BundleLogView.class);
 		BundleLogView viewService = ext.getService();
 		if (null == viewService) {
@@ -437,6 +458,7 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 	 * @return The selected Java project or null if selection is empty
 	 */
 	public static IJavaProject getSelectedJavaProject(ISelection selection) {
+
 		// Get the java project from the selection
 		IJavaProject javaProject = null;
 		if (selection instanceof IStructuredSelection) {
@@ -507,7 +529,14 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 		return null;
 	}
 
+	/**
+	 * Get the selected plug-in project from a selection in package explorer,
+	 * project explorer or bundle list page.
+	 * @param selection to get the selected project from
+	 * @return The selected project or null if selection is empty
+	 */
 	public static IProject getSelectedProject(ISelection selection) {
+
 		// Get the java project from the selection
 		IProject project = null;
 		if (selection instanceof IStructuredSelection) {
@@ -536,12 +565,12 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 	 * @param job to schedule
 	 */
 	static public void jobHandler(WorkspaceJob job) {
-	
-			OpenProjectHandler so = new OpenProjectHandler();
-			if (so.saveModifiedFiles()) {
-				OpenProjectHandler.waitOnBuilder();
-				BundleJobManager.addBundleJob(job, 0);
-			}
+
+		OpenProjectHandler so = new OpenProjectHandler();
+		if (so.saveModifiedFiles()) {
+			OpenProjectHandler.waitOnBuilder();
+			BundleJobManager.addBundleJob(job, 0);
+		}
 	}
 
 	/**
@@ -554,6 +583,7 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 	 * command or state of the checked menu entry could not be obtained
 	 */
 	static public Command setCheckedMenuEntry(String categoryId, String commandId) {
+
 		Command command = null;
 		ICommandService commandService = (ICommandService) PlatformUI.getWorkbench().getService(
 				ICommandService.class);
@@ -570,5 +600,4 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 		}
 		return command;
 	}
-
 }

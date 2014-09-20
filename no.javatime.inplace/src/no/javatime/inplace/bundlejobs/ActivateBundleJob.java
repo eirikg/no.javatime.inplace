@@ -302,6 +302,7 @@ public class ActivateBundleJob extends BundleJob {
 		return getLastStatus();
 	}
 
+	@SuppressWarnings("unused")
 	private IBundleStatus removeBuildErrorClosures(Collection<Bundle> activatedBundles)
 			throws InPlaceException, CircularReferenceException {
 

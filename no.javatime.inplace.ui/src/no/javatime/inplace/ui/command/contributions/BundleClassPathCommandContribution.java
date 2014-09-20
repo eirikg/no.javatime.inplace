@@ -22,35 +22,42 @@ import org.eclipse.jface.action.IContributionItem;
 import org.eclipse.ui.menus.CommandContributionItem;
 import org.eclipse.ui.statushandlers.StatusManager;
 
-public class BundleClassPathCommandContribution extends BundleCommandsContributionItems {
+/**
+ * Adds contributions for collectively adding and removing default output folder in a set of bundles
+ * 
+ */
+public class BundleClassPathCommandContribution extends BundleMainCommandsContributionItems {
 
 	private String menuIdClasspath = "no.javatime.inplace.command.contributions.dynamicitems.main.classpath";
-	
-	private static String addClassPathLabel = Message.getInstance().formatString("add_classpath_label_main"); //$NON-NLS-1$
-	private static String removeClassPathLabel = Message.getInstance().formatString("remove_classpath_label_main"); //$NON-NLS-1$
+
+	private static String addClassPathLabel = Message.getInstance().formatString(
+			"add_classpath_label_main"); //$NON-NLS-1$
+	private static String removeClassPathLabel = Message.getInstance().formatString(
+			"remove_classpath_label_main"); //$NON-NLS-1$
 
 	@Override
 	protected IContributionItem[] getContributionItems() {
+
 		ArrayList<ContributionItem> contributions = new ArrayList<ContributionItem>();
 
-		// Only allow for activated projects
-		// ArrayList<ContributionItem> classPathContributions =	addClassPath(activatedProjects);
-		// Allow for all plug-in projects		
-		ArrayList<ContributionItem> classPathContributions =	addClassPath(ProjectProperties.getPlugInProjects());
+		ArrayList<ContributionItem> classPathContributions = addClassPath(ProjectProperties
+				.getPlugInProjects());
 		if (null != classPathContributions) {
 			contributions.addAll(classPathContributions);
-			IContributionItem[] contributionArray = contributions.toArray(new ContributionItem[contributions.size()]);
-			return contributionArray;
 		}
-		return null;
+		IContributionItem[] contributionArray = contributions.toArray(new ContributionItem[contributions.size()]);
+		return contributionArray;
 	}
-	
+
 	/**
-	 * All bundles missing the output folder in classpath
+	 * Creates one contribution for the number of bundles among the specified projects that are missing
+	 * the default output folder and one contribution for the number of bundles containing the default
+	 * output folder in their manifest
 	 * 
-	 * @param projects
-	 * @return
-	 */	
+	 * @param projects collection of projects to search for default output folder in manifest
+	 * @return one contribution for bundles with default output folder in manifest and one for those
+	 * missing the default output folder
+	 */
 	private ArrayList<ContributionItem> addClassPath(Collection<IProject> projects) {
 
 		ArrayList<ContributionItem> contributions = new ArrayList<ContributionItem>();
@@ -79,24 +86,28 @@ public class BundleClassPathCommandContribution extends BundleCommandsContributi
 			if (null != errProjects) {
 				Extension<MessageOptions> msgOpt = new Extension<>(MessageOptions.class);
 				MessageOptions optServicet = msgOpt.getService();
-				if (null != optServicet && (optServicet.isInfoMessages() || optServicet.isBundleEvents() || optServicet.isBundleOperations())) {
-					String msg = WarnMessage.getInstance().formatString("error_not_update_classpath", BundleProjectState.formatProjectList(errProjects));
-					StatusManager.getManager().handle(
-							new BundleStatus(StatusCode.ERROR, Activator.PLUGIN_ID, msg, null), StatusManager.LOG);						
+				if (null != optServicet
+						&& (optServicet.isInfoMessages() || optServicet.isBundleEvents() || optServicet
+								.isBundleOperations())) {
+					String msg = WarnMessage.getInstance().formatString("error_not_update_classpath",
+							BundleProjectState.formatProjectList(errProjects));
+					StatusManager.getManager()
+							.handle(new BundleStatus(StatusCode.ERROR, Activator.PLUGIN_ID, msg, null),
+									StatusManager.LOG);
 				}
 			}
 			if (nAdd > 0) {
 				String updateLabel = formatLabel(addClassPathLabel, nAdd, Boolean.FALSE);
-				contributions.add(addContribution(menuIdClasspath, dynamicMainCommandId, updateLabel, addClassPathParamId,
-						CommandContributionItem.STYLE_PUSH, classPathImage));
+				contributions.add(createContibution(menuIdClasspath, dynamicMainCommandId, updateLabel,
+						addClassPathParamId, CommandContributionItem.STYLE_PUSH, classPathImage));
 			}
 			if (nRemove > 0) {
 				String updateLabel = formatLabel(removeClassPathLabel, nRemove, Boolean.FALSE);
-				contributions.add(addContribution(menuIdClasspath, dynamicMainCommandId, updateLabel, removeClassPathParamId,
-						CommandContributionItem.STYLE_PUSH, classPathImage));
+				contributions.add(createContibution(menuIdClasspath, dynamicMainCommandId, updateLabel,
+						removeClassPathParamId, CommandContributionItem.STYLE_PUSH, classPathImage));
 			}
 			return contributions;
 		}
 		return null;
-	}	
+	}
 }

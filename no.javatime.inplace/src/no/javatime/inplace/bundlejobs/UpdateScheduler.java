@@ -47,26 +47,25 @@ public class UpdateScheduler {
 	 * <p>
 	 * Only activated projects with a pending update transition are scheduled for update
 	 * 
-	 * @param projects projects to schedule for update
+	 * @param projects projects to schedule for update. Must not be null
 	 * @param delay number of milliseconds before starting the update job
 	 */
 	static public void scheduleUpdateJob(Collection<IProject> projects, long delay) {
-		if (projects.size() > 0) {
-			UpdateJob updateJob = new UpdateJob(UpdateJob.updateJobName);
-			for (IProject project : projects) {
-				if (BundleProjectState.isNatureEnabled(project)
-						&& BundleJobManager.getTransition().containsPending(project, Transition.UPDATE, false)) {
-					addProjectToUpdateJob(project, updateJob);
-				}
+
+		UpdateJob updateJob = new UpdateJob(UpdateJob.updateJobName);
+		for (IProject project : projects) {
+			if (BundleProjectState.isNatureEnabled(project)
+					&& BundleJobManager.getTransition().containsPending(project, Transition.UPDATE, false)) {
+				addProjectToUpdateJob(project, updateJob);
 			}
-			ActivateBundleJob postActivateBundleJob = null;
-			if (updateJob.pendingProjects() > 0) {
-				postActivateBundleJob = resolveduplicates(null, updateJob);
-				jobHandler(updateJob, delay);
-			}
-			if (null != postActivateBundleJob) {
-				jobHandler(postActivateBundleJob, delay);
-			}
+		}
+		ActivateBundleJob postActivateBundleJob = null;
+		if (updateJob.pendingProjects() > 0) {
+			postActivateBundleJob = resolveduplicates(null, updateJob);
+			jobHandler(updateJob, delay);
+		}
+		if (null != postActivateBundleJob) {
+			jobHandler(postActivateBundleJob, delay);
 		}
 	}
 

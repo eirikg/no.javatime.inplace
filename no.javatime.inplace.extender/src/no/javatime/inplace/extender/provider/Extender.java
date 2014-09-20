@@ -279,7 +279,7 @@ public class Extender<T> {
 	 * @throws ExtenderException if the bundle context of the extension is no longer valid or the class
 	 * object implementing the extension could not be created
 	 */
-	public static <E, T> Extender<E> getInstance(Class<T> intFace) {
+	public static <E, T> Extender<E> getInstance(Class<T> intFace) throws ExtenderException {
 
 		return getInstance(intFace.getName());
 	}

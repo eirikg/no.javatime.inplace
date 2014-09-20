@@ -132,15 +132,22 @@ public class ManifestOptions {
 	 * Checks if this bundle is a fragment
 	 * 
 	 * @param bundle bundle to check
-	 * @return true if the bundle is a fragment. Otherwise false
-	 * @throws InPlaceException
+	 * @return true if the bundle is a fragment. Otherwise false.
+	 * @throws InPlaceException if bundle is null or a security violation
 	 */
 	public static Boolean isFragment(Bundle bundle) throws InPlaceException {
-		Dictionary<String, String> headers = bundle.getHeaders();
-		// Key is always not null
-		String fragment = headers.get(Constants.FRAGMENT_HOST);
-		if (null != fragment) {
-			return true;
+		if (null == bundle) {
+			throw new InPlaceException("null_bundle_check_fragment");
+		}
+		try {			
+			Dictionary<String, String> headers = bundle.getHeaders();
+			// Key is always not null
+			String fragment = headers.get(Constants.FRAGMENT_HOST);
+			if (null != fragment) {
+				return true;
+			}
+		} catch (SecurityException e) {
+			throw new InPlaceException(e, "bundle_security_error", bundle);
 		}
 		return false;
 	}

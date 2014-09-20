@@ -136,9 +136,6 @@ public class ActivateProjectJob extends NatureJob {
 		} catch (NullPointerException e) {
 			String msg = ExceptionMessage.getInstance().formatString("npe_job", getName());
 			addError(e, msg);
-			// } catch (CoreException e) {
-			// String msg = ExceptionMessage.getInstance().formatString("core_exception_job", getName());
-			// addError(e, msg);
 		} catch (Exception e) {
 			String msg = ExceptionMessage.getInstance().formatString("exception_job", getName());
 			addError(e, msg);
