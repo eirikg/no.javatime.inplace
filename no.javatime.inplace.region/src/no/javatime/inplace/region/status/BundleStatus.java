@@ -16,6 +16,7 @@ import no.javatime.inplace.region.Activator;
 import no.javatime.inplace.region.manager.BundleManager;
 import no.javatime.inplace.region.manager.BundleTransition.Transition;
 import no.javatime.inplace.region.manager.InPlaceException;
+import no.javatime.util.messages.ErrorMessage;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IWorkspace;
@@ -23,6 +24,7 @@ import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.MultiStatus;
+import org.eclipse.core.runtime.Status;
 import org.eclipse.pde.core.project.IBundleProjectDescription;
 import org.eclipse.ui.statushandlers.StatusManager;
 import org.osgi.framework.Bundle;
@@ -164,32 +166,35 @@ public class BundleStatus extends MultiStatus implements IBundleStatus {
 		} else {
 			// Worst case. Symbolic name is not always the same as the plug-gin id.
 			if (null == symbolicName) {
-				symbolicName = getPlugin();
-				IWorkspace workspace = ResourcesPlugin.getWorkspace();
-				IWorkspaceRoot root = workspace.getRoot();
-				for (IProject bundleProject : root.getProjects()) {
-					try {
+				try {
+					symbolicName = getPlugin();
+					IWorkspace workspace = ResourcesPlugin.getWorkspace();
+					IWorkspaceRoot root = workspace.getRoot();
+					for (IProject bundleProject : root.getProjects()) {
 						IBundleProjectDescription bundleProjDesc = Activator.getDefault().getBundleDescription(bundleProject);
 						String pdSymbolicName = bundleProjDesc.getSymbolicName();
 						if (null != pdSymbolicName && pdSymbolicName.equals(symbolicName)) {
 							// Drop comparison with version. Use the first one available
 							project = bundleProject;
+							break;
 						}
-					} catch (InPlaceException e) {
-						StatusManager.getManager().handle(new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, null, e),
-								StatusManager.LOG);
 					}
-				}
-				if (null != project) {
-					bundle = BundleManager.getRegion().get(project);
-					if (null != bundle) {
-						symbolicName = bundle.getSymbolicName();
-						this.bundleId = bundle.getBundleId();
-						bundleTransition = BundleManager.getTransition().getTransition(bundle);
-					} else {
-						IBundleProjectDescription pd = Activator.getDefault().getBundleDescription(project);
-						symbolicName = pd.getSymbolicName();
+					if (null != project) {
+						bundle = BundleManager.getRegion().get(project);
+						if (null != bundle) {
+							symbolicName = bundle.getSymbolicName();
+							this.bundleId = bundle.getBundleId();
+							bundleTransition = BundleManager.getTransition().getTransition(bundle);
+						} else {
+							IBundleProjectDescription pd = Activator.getDefault().getBundleDescription(project);
+							symbolicName = pd.getSymbolicName();
+						}
 					}
+				} catch (InPlaceException e) {
+					String msg = ErrorMessage.getInstance().formatString("manifest_missing");
+					// Do not use bundle status due to infinite recursion
+					StatusManager.getManager().handle(new Status(IStatus.ERROR, Activator.PLUGIN_ID, msg, e),
+							StatusManager.LOG);
 				}
 			}
 		}
@@ -332,7 +337,9 @@ public class BundleStatus extends MultiStatus implements IBundleStatus {
 					}
 				}
 			} catch (InPlaceException e) {
-				StatusManager.getManager().handle(new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, null, e),
+				String msg = ErrorMessage.getInstance().formatString("manifest_missing");
+				// Do not use bundle status due to infinite recursion
+				StatusManager.getManager().handle(new Status(IStatus.ERROR, Activator.PLUGIN_ID, msg, e),
 						StatusManager.LOG);
 			}
 		}
