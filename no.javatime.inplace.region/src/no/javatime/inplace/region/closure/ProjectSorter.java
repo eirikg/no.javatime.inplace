@@ -17,6 +17,7 @@ import java.util.LinkedHashSet;
 import no.javatime.inplace.region.Activator;
 import no.javatime.inplace.region.manager.BundleManager;
 import no.javatime.inplace.region.manager.BundleTransition.TransitionError;
+import no.javatime.inplace.region.manager.InPlaceException;
 import no.javatime.inplace.region.project.BundleProjectState;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
@@ -167,9 +168,10 @@ public class ProjectSorter extends BaseSorter {
 	 * @param projects a collection of start bundles included in the result set
 	 * @return collection of projects in referencing sort order
 	 * @throws CircularReferenceException if cycles are detected in the project graph
+	 * @throws InPlaceException if any referenced project is closed or does nor exist
 	 */
 	public Collection<IProject> sortProvidingProjects(final Collection<IProject> projects)
-			throws CircularReferenceException {
+			throws CircularReferenceException, InPlaceException {
 		projectOrder = new LinkedHashSet<IProject>();
 		circularException = null;
 		for (final IProject project : projects) {
@@ -189,8 +191,10 @@ public class ProjectSorter extends BaseSorter {
 	 * @param child the initial requiring project
 	 * @param parent a providing project to the {@code child} project parameter. May be null.
 	 * @param visited is a list of projects in the current call stack (used for detecting cycles)
+	 * @throws InPlaceException if any referenced project is closed or does nor exist
 	 */
-	protected void visitProvidingProject(final IProject child, final IProject parent, final Collection<IProject> visited) {
+	protected void visitProvidingProject(final IProject child, final IProject parent, final Collection<IProject> visited) 
+			throws InPlaceException {
 
 		// Has this start bundle element been visited before (not through recursion)
 		if (!projectOrder.contains(child)) {
@@ -217,9 +221,10 @@ public class ProjectSorter extends BaseSorter {
 	 *          consider projects that are not activated
 	 * @return collection of projects in referencing sort order
 	 * @throws CircularReferenceException if cycles are detected in the project graph. All Cycles are detected.
+	 * @throws InPlaceException if any referenced project is closed or does nor exist
 	 */
 	public Collection<IProject> sortProvidingProjects(final Collection<IProject> projects, final Boolean natureEnabled)
-			throws CircularReferenceException {
+			throws CircularReferenceException, InPlaceException {
 		projectOrder = new LinkedHashSet<IProject>();
 		circularException = null;
 		for (final IProject project : projects) {
@@ -240,9 +245,10 @@ public class ProjectSorter extends BaseSorter {
 	 * @param parent a providing project to the {@code child} project parameter. May be null.
 	 * @param natureEnabled if true only consider activated projects and only deactivated projects if false
 	 * @param visited is a list of projects in the current call stack (used for detecting cycles)
+	 * @throws InPlaceException if any referenced project is closed or does nor exist
 	 */
 	protected void visitProvidingProject(final IProject child, final IProject parent, final Boolean natureEnabled,
-			final Collection<IProject> visited) {
+			final Collection<IProject> visited) throws InPlaceException {
 
 		// Has this start bundle element been visited before (not through recursion)
 		if (!projectOrder.contains(child)) {

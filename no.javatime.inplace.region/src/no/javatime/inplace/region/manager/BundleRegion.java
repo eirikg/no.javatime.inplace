@@ -100,7 +100,7 @@ public interface BundleRegion {
 	 * JavaTime nature enabled and the bundle is at least installed.
 	 * 
 	 * @param bundle bundle object to check for activation mode
-	 * @return true if the bundle object is activated. Otherwise false
+	 * @return true if the bundle object is activated. Otherwise false. If the specified bundle is null, false is returned.
 	 */
 	public Boolean isActivated(Bundle bundle);
 

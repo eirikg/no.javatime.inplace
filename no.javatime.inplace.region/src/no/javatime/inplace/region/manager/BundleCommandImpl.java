@@ -239,8 +239,7 @@ public class BundleCommandImpl implements BundleCommand {
 				throw new InPlaceException(e, "io_exception_install", locationIdentifier);
 			} finally {
 				if (null != bundle) {
-					BundleManager.addBundleTransition(new TransitionEvent(project, bundleTransition
-							.getTransition(project)));
+					BundleManager.addBundleTransition(new TransitionEvent(project, bundleNode.getTransition()));
 				}
 				if (bundleNode.hasTransitionError()) {
 					bundleNode.rollBack();

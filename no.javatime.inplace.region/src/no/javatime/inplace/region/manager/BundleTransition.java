@@ -40,8 +40,8 @@ public interface BundleTransition {
 		 */
 		START,
 		/**
-		 * Active when stopping a bundle 		 
-		*/
+		 * Active when stopping a bundle
+		 */
 		STOP,
 		/**
 		 * Set as active when a bundle is started with lazy policy
@@ -83,7 +83,7 @@ public interface BundleTransition {
 		 * Active when updating a bundle
 		 */
 		UPDATE,
-		/** 
+		/**
 		 * Active when a project is saved but not built yet
 		 */
 		BUILD,
@@ -92,35 +92,42 @@ public interface BundleTransition {
 		 */
 		REFRESH,
 		/**
-		 * Active when the OSGi resolve operation is called on a bundle. The framework make decisions on which bundles
-		 * should be resolved (e.g. when refreshed or resolve is issued). Bundles to resolve are adjusted in the resolver
-		 * hook (e.g. deactivated bundles are not resolved) and are thus not tagged with the resolve transition.
-		 *  
-		*/
+		 * Active when the OSGi resolve operation is called on a bundle. The framework make decisions on
+		 * which bundles should be resolved (e.g. when refreshed or resolve is issued). Bundles to
+		 * resolve are adjusted in the resolver hook (e.g. deactivated bundles are not resolved) and are
+		 * thus not tagged with the resolve transition.
+		 * 
+		 */
 		RESOLVE,
-		/** 
-		 * This is the same as a refresh without resolve. If the initial state of the bundle is {@code Bundle.RESOLVED}
-		 * unresolve moved the bundle to {@code Bundle.INSTALLED} 
-		*/
+		/**
+		 * Initiated by the framework resolver when a requiring closure is executed (e.g. by unistall
+		 * and refresh operations). There is no explicit unresolve command in OSGi. This is usually
+		 * controlled explicit by handing the complete requiring closure to the resolver when
+		 * executing the closure. If one or more bundles are excluded from the closure at
+		 * resolve time, the resolver will unresolve the excluded bundles anyway and initiate unresolve
+		 * events for the excluded bundles. It may in some situations be necessary to exclude bundles
+		 * from the closure. Bundles excluded from the closure set are tagged with a pending unresolve
+		 * transition to inform other parties (e.g. the bundle event handler or the resolver hook) that
+		 * we are aware of not having a complete or valid closure.
+		 */
 		UNRESOLVE,
-		/** 
-		 * Used when a bundle is first uninstalled and refreshed and than installed, resolved and started again. When resetting a bundle
-		 * all dependent (the partial graph) bundles are included  
+		/**
+		 * Used when a bundle is first uninstalled and refreshed and than installed, resolved and
+		 * started again. When resetting a bundle all dependent (the partial graph) bundles are included
 		 * */
 		RESET,
 		/**
 		 * Set as active when a transition is initiated by the framework (except lazy loading) or from a
 		 * third party tool or bundle
 		 */
-		EXTERNAL, 
-		/**
+		EXTERNAL, /**
 		 * Used when the bundle classpath is updated with the default output folder
 		 */
-		UPDATE_CLASSPATH, 
+		UPDATE_CLASSPATH,
 		/**
 		 * Used when the default output folder is removed from the bundle classpath
 		 */
-		REMOVE_CLASSPATH, 
+		REMOVE_CLASSPATH,
 		/**
 		 * Used when the activation policy is toggled
 		 */
@@ -129,8 +136,8 @@ public interface BundleTransition {
 		 * Rename of project with the JavaTime nature enabled
 		 */
 		RENAME,
-		/** 
-		 * No transition defined. This is also the case if a transition is canceled or rejected 
+		/**
+		 * No transition defined. This is also the case if a transition is canceled or rejected
 		 */
 		NOTRANSITION,
 	}
@@ -413,7 +420,7 @@ public interface BundleTransition {
 	 * @param transition associated with this bundle project
 	 * @param remove clear the transition from the bundle project if true
 	 * @return true if this transition is attached to this bundle project as a pending transition or
-	 * false if not.
+	 * false if not. False is also returned if the specified bundle is null.
 	 */
 	public boolean containsPending(Bundle bundle, Transition transition, boolean remove);
 

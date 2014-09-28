@@ -82,7 +82,7 @@ public class BundleProjectState {
 	 * project is activated. This only implies that one or more projects are JavaTime enabled, and does not
 	 * necessary mean that the corresponding bundle is activated.
 	 * 
-	 * @return true if at least one project is activated or false if no projects are activated
+	 * @return true if at least one project is activated and false if no projects are activated
 	 */
 	public static Boolean isWorkspaceNatureEnabled() {
 		for (IProject project : getProjects()) {

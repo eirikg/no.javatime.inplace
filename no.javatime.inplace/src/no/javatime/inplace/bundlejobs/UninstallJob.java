@@ -50,7 +50,16 @@ public class UninstallJob extends NatureJob {
 
 	// Remove the bundle project from the workspace region 
 	private boolean unregisterBundleProject = false;
-	
+	private boolean includeRequiring = true;
+
+	public boolean isIncludeRequiring() {
+		return includeRequiring;
+	}
+
+	public void setIncludeRequiring(boolean includeRequiring) {
+		this.includeRequiring = includeRequiring;
+	}
+
 	/**
 	 * Construct an uninstall job with a given name
 	 * 
@@ -150,10 +159,14 @@ public class UninstallJob extends NatureJob {
 		if (pendingBundles.size() == 0) {
 			return getLastStatus();
 		}
-		BundleSorter bs = new BundleSorter();
-		bs.setAllowCycles(Boolean.TRUE);
 		Collection<Bundle> bundlesToUninstall = null;
-		bundlesToUninstall = bs.sortDeclaredRequiringBundles(pendingBundles, bundleRegion.getBundles());
+		if (includeRequiring){
+			BundleSorter bs = new BundleSorter();
+			bs.setAllowCycles(Boolean.TRUE);
+			bundlesToUninstall = bs.sortDeclaredRequiringBundles(pendingBundles, bundleRegion.getBundles());
+		} else {
+			bundlesToUninstall = pendingBundles;
+		}
 		stop(bundlesToUninstall, null, new SubProgressMonitor(monitor, 1));
 		if (monitor.isCanceled()) {
 			throw new OperationCanceledException();

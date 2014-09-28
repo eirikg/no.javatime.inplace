@@ -31,9 +31,9 @@ import org.eclipse.ui.statushandlers.StatusManager;
 import org.osgi.service.prefs.BackingStoreException;
 
 /**
- * Abstract menu handler class to for menu options.
+ * Abstract menu handler class for menu options.
  * <p>
- * Concrete classes specifies the command id and loads and store the relevant command option 
+ * Concrete classes provides the command id and loads and store the value of the relevant command option 
  * @see CommandOptions
  *
  */
@@ -109,8 +109,8 @@ public abstract class AbstractOptionsHandler extends AbstractHandler implements 
 	/**
 	 * Update the checked menu element with the last updated value from the command options preference store
 	 * <p>
-	 * Invoked by framework on first contribution (first time menu entry is shown) and after each refresh in (See
-	 * {@linkplain #isEnabled()}
+	 * Invoked by framework on first contribution (first time menu entry is shown) and after each refresh (See
+	 * {@linkplain #isEnabled()}.
 	 */
 	@Override
 	public void updateElement(UIElement element, @SuppressWarnings("rawtypes") Map parameters) {

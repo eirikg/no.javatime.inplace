@@ -10,6 +10,8 @@
  *******************************************************************************/
 package no.javatime.inplace.ui.command.handlers;
 
+import java.util.Collection;
+
 import no.javatime.inplace.bundlejobs.DeactivateJob;
 import no.javatime.inplace.bundlemanager.BundleJobManager;
 import no.javatime.inplace.bundleproject.ProjectProperties;
@@ -17,6 +19,8 @@ import no.javatime.inplace.dl.preferences.intface.CommandOptions;
 import no.javatime.inplace.region.manager.InPlaceException;
 import no.javatime.inplace.ui.Activator;
 import no.javatime.inplace.ui.msg.Msg;
+
+import org.eclipse.core.resources.IProject;
 
 /**
  * Checked menu item allowing/disallowing activating bundles with ui contributions
@@ -28,18 +32,23 @@ public class UIContributorsHandler extends AbstractOptionsHandler {
 	@Override
 	protected void storeValue(Boolean value) throws InPlaceException {
 		CommandOptions cmdStore = getOptionsService();
-		cmdStore.setIsAllowUIContributions(value);
-		Activator.getDisplay().asyncExec(new Runnable() {
-			@Override
-			public void run() {
-				BundleMenuActivationHandler.updateBundleListPage(ProjectProperties
-						.toJavaProjects(ProjectProperties.getInstallableProjects()));
-			}			
-		});
-		if (!value) {
-			DeactivateJob daj = 
-					new DeactivateJob(Msg.DEACTIVATE_UI_CONTRIBOTRS_JOB, ProjectProperties.getUIContributors());			
-			BundleJobManager.addBundleJob(daj, 0);
+		Boolean storedValue = cmdStore.isAllowUIContributions();
+		Collection<IProject> uIProjects = ProjectProperties.getUIContributors();
+		if (!storedValue.equals(value) && uIProjects.size() > 0) {
+			cmdStore.setIsAllowUIContributions(value);
+			Activator.getDisplay().asyncExec(new Runnable() {
+				@Override
+				public void run() {
+					BundleMenuActivationHandler.updateBundleListPage(ProjectProperties
+							.toJavaProjects(ProjectProperties.getInstallableProjects()));
+				}			
+			});
+			if (!value) {
+				// Deactivate projects allowing UI extensions
+				DeactivateJob daj = 
+						new DeactivateJob(Msg.DEACTIVATE_UI_CONTRIBOTRS_JOB, uIProjects);			
+				BundleJobManager.addBundleJob(daj, 0);
+			}
 		}
 	}
 

@@ -27,6 +27,7 @@ public class Msg extends NLS {
 	public static String STOP_BUNDLE_OP_TRACE;
 	public static String REFRESH_BUNDLE_OP_TRACE;
 	public static String RESOLVE_BUNDLE_OP_TRACE;
+	public static String UNRESOLVE_BUNDLE_OP_TRACE;
 	public static String UNINSTALL_BUNDLE_OP_TRACE;
 	public static String INSTALL_BUNDLE_OP_TRACE;
 	public static String UPDATE_BUNDLE_OP_TRACE;
@@ -37,7 +38,7 @@ public class Msg extends NLS {
 	public static String ENABLE_NATURE_TRACE;
 	public static String UNDEFINED_CONTEXT_ERROR_TRACE;
 	public static String JOB_NAME_TRACE;
-
+	public static String FRAMEWORK_BUNDLE_OP_TRACE;
 	// Build trace operations
 	public static String BUILD_HEADER_TRACE;
 	public static String NO_RESOURCE_DELTA_BUILD_TRACE;
@@ -70,7 +71,8 @@ public class Msg extends NLS {
 	public static String RENAME_PROJECT_WARN;
 	public static String INIT_WORKSPACE_STORE_WARN;
 	public static String INSTALL_CONTEXT_FOR_ACTION_SET_WARN;
-
+	public static String NOT_RESOLVED_ROOT_WARN;
+	
 	// Info messages
 	public static String DEACTIVATE_BUILD_ERROR_INFO;
 	public static String UPDATE_BUILD_ERROR_INFO;
@@ -108,6 +110,8 @@ public class Msg extends NLS {
 	public static String AUTOUPDATE_OFF_INFO;
 	public static String CONDITIONAL_START_BUNDLE_INFO;
 	public static String UNINSTALLED_REQUIRING_BUNDLES_INFO;
+	public static String NOT_RESOLVED_BUNDLE_WARN;
+	public static String PROVIDING_TO_NOT_RESOLVED_BUNDLES_WARN;
 
 	// Dialog and View messages
 	public static String DEACTIVATE_QUESTION_DLG;

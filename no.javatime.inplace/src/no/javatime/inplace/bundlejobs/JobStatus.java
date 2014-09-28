@@ -107,6 +107,10 @@ public abstract class JobStatus extends WorkspaceJob implements BundleTransition
 				addTrace(Msg.RESOLVE_BUNDLE_OP_TRACE,
 						new Object[] {bundle.getSymbolicName()}, bundle);
 				break;
+			case UNRESOLVE:
+				addTrace(Msg.UNRESOLVE_BUNDLE_OP_TRACE,
+						new Object[] {bundle.getSymbolicName()}, bundle);
+				break;
 			case UPDATE:
 				addTrace(Msg.UPDATE_BUNDLE_OP_TRACE,
 						new Object[] { bundle.getSymbolicName()}, bundle);
@@ -172,6 +176,8 @@ public abstract class JobStatus extends WorkspaceJob implements BundleTransition
 						new Object[] { (null == policy) ? "lazy" : "eager", (null == policy) ? "eager" : "lazy",
 								project.getName() }, project);
 				break;
+			case EXTERNAL:
+				addTrace(Msg.FRAMEWORK_BUNDLE_OP_TRACE, new Object[] { bundle.getSymbolicName(), bundleCommand.getStateName(bundle)}, bundle);
 			default:
 				break;
 			}

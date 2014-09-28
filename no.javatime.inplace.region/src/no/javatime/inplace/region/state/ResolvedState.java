@@ -32,6 +32,18 @@ public class ResolvedState extends BundleState {
 	}
 
 	/**
+	 * Begins an unresolve transition with installed as the terminal state
+	 * <p>
+	 * Unresolve is usually generated from the framework as an unresolved event in
+	 * {@link BundleStateEvents#bundleChanged(org.osgi.framework.BundleEvent) BundleStateEvents}.
+	 * 
+	 * @param bundleNode saves and updates the current transition and state of the bundle
+	 */
+	public void unresolve(BundleNode bundleNode) {
+		bundleNode.begin(Transition.UNRESOLVE, StateFactory.INSTANCE.installedState);
+	}
+
+	/**
 	 * Begins a refresh transition with installed as the terminal state
 	 * <p>
 	 * Refresh is comprised of two transitions. The first transition is unresolve and performed by this

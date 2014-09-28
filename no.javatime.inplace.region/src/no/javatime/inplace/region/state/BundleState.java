@@ -1,6 +1,7 @@
 package no.javatime.inplace.region.state;
 
 import no.javatime.inplace.region.Activator;
+import no.javatime.inplace.region.events.TransitionEvent;
 import no.javatime.inplace.region.manager.BundleCommandImpl;
 import no.javatime.inplace.region.manager.BundleManager;
 import no.javatime.inplace.region.manager.BundleTransition.Transition;
@@ -27,6 +28,10 @@ public abstract class BundleState {
 
 	public void uninstall(BundleNode bundleNode) throws InPlaceException {
 		errorState(bundleNode);
+	}
+	
+	public void unresolve(BundleNode bundleNode) {
+		errorState(bundleNode);		
 	}
 
 	public void resolve(BundleNode bundleNode) throws InPlaceException {
@@ -94,7 +99,8 @@ public abstract class BundleState {
 			if (Activator.getDefault().msgOpt().isBundleOperations()) {
 				String msg = NLS.bind(Msg.EXT_BUNDLE_OP_INFO, new Object[] {symbolicName, stateName,
 						location});
-				StatusManager.getManager().handle(new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, bundle, msg, null), StatusManager.LOG);
+				BundleManager.addBundleTransition(new TransitionEvent(bundle, bundleNode.getTransition()));
+//				StatusManager.getManager().handle(new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, bundle, msg, null), StatusManager.LOG);
 			}
 		}
 	}

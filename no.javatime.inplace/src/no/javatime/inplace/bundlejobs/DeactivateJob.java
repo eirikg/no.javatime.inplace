@@ -70,6 +70,16 @@ public class DeactivateJob extends NatureJob {
 	final private static String deactivateTask = Message.getInstance().formatString(
 			"deactivate_task_name");
 
+	boolean checkBuildErrors = false;
+
+	public boolean isCheckBuildErrors() {
+		return checkBuildErrors;
+	}
+
+	public void setCheckBuildErrors(boolean checkBuildErrors) {
+		this.checkBuildErrors = checkBuildErrors;
+	}
+
 	/**
 	 * Construct a deactivate job with a given name
 	 * 
@@ -178,15 +188,19 @@ public class DeactivateJob extends NatureJob {
 		for (IProject project : installeableProjects) {
 			// If null the bundle is not installed
 			if (null == bundleRegion.get(project)) {
-				deactivateNature(Collections.singletonList(project), new SubProgressMonitor(monitor, 1));
+				deactivateNature(Collections.<IProject>singletonList(project), new SubProgressMonitor(monitor, 1));
 				removePendingProject(project);
 			}
 		}
 		BundleClosures closure = new BundleClosures();
-		Collection<IProject> pendingProjects = closure.projectDeactivation(getPendingProjects(), true);
-		resetPendingProjects(pendingProjects);
+		Collection<Bundle> pendingBundles = bundleRegion.getBundles(getPendingProjects());
+		// All not activated bundles are collectively either in state installed or in state uninstalled.
+		Collection<Bundle> activatedBundles = bundleRegion.getActivatedBundles();
+		pendingBundles = closure.bundleDeactivation(pendingBundles, activatedBundles);
+		// Collection<IProject> pendingProjects = closure.projectDeactivation(getPendingProjects(), true);
 
-		if (InPlace.get().getMsgOpt().isBundleOperations()) {
+		resetPendingProjects(bundleRegion.getBundleProjects(pendingBundles));
+		if (InPlace.get().getMsgOpt().isBundleOperations() && isCheckBuildErrors()) {
 			deactivateBuildErrorClosure(getPendingProjects());
 		}
 		
@@ -195,9 +209,8 @@ public class DeactivateJob extends NatureJob {
 		} else {
 			InPlace.get().savePluginSettings(true, true);
 		}
-		Collection<Bundle> pendingBundles = bundleRegion.getBundles(getPendingProjects());
-		// All not activated bundles are collectively either in state installed or in state uninstalled.
-		if (BundleProjectState.getNatureEnabledProjects().size() <= pendingProjects()) {
+		if (activatedBundles.size() <= pendingBundles.size()) {
+//		if (BundleProjectState.getNatureEnabledProjects().size() <= pendingProjects()) {
 			// This is the last project(s) to deactivate, move all bundles to state uninstalled
 			Collection<Bundle> allBundles = bundleRegion.getBundles();
 			allBundles = closure.bundleDeactivation(allBundles, allBundles);

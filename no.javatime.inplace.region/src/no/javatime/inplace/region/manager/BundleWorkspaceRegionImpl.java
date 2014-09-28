@@ -39,33 +39,34 @@ import org.osgi.framework.Bundle;
 import org.osgi.framework.Version;
 
 /**
- * Region for workspace bundles. Associate projects with workspace bundles, support static (not resolved) and
- * dynamic bidirectional traversal of bundle dependencies and a factory for resolver hook handlers filtering
- * bundles from resolving and enforcement of singletons.
+ * Region for workspace bundles. Associate projects with workspace bundles, support static (not
+ * resolved) and dynamic bidirectional traversal of bundle dependencies and a factory for resolver
+ * hook handlers filtering bundles from resolving and enforcement of singletons.
  */
 public class BundleWorkspaceRegionImpl implements BundleRegion {
 
 	public final static BundleWorkspaceRegionImpl INSTANCE = new BundleWorkspaceRegionImpl();
-	
+
 	// Default initial capacity of 16 assume peak on 22 bundles in workspace to avoid rehash
 	private static int initialCapacity = Math.round(20 / 0.75f) + 1;
-	
+
 	private boolean autoBuild;
 
-
 	/**
-	 * Internal hash of bundle project nodes. Viewed as a DAG when used in combination with the OSGI wiring API.
+	 * Internal hash of bundle project nodes. Viewed as a DAG when used in combination with the OSGI
+	 * wiring API.
 	 * <p>
-	 * {@code IProject} is the key and does not change during an IDE session. Nodes are registered (insertions)
-	 * when projects are nature enabled and optionally unregistered (removals) when bundles are uninstalled. Reads 
-	 * outweighs structural modifications.
+	 * {@code IProject} is the key and does not change during an IDE session. Nodes are registered
+	 * (insertions) when projects are nature enabled and optionally unregistered (removals) when
+	 * bundles are uninstalled. Reads outweighs structural modifications.
 	 */
-	private Map<IProject, BundleNode> projectNodes = new ConcurrentHashMap<IProject, BundleNode>(initialCapacity, 1);
+	private Map<IProject, BundleNode> projectNodes = new ConcurrentHashMap<IProject, BundleNode>(
+			initialCapacity, 1);
 
 	protected BundleWorkspaceRegionImpl() {
 		super();
 	}
-	
+
 	public boolean isAutoBuildActivated(boolean disable) {
 		boolean autoBuild = this.autoBuild;
 		if (disable) {
@@ -88,9 +89,9 @@ public class BundleWorkspaceRegionImpl implements BundleRegion {
 			return node.getProject();
 		}
 		IPath bundlePathLoc = new Path(bundle.getLocation());
-		for (IProject project : projectNodes.keySet()) {	
-			IPath projectPathLoc = 
-					new Path(BundleProjectState.getLocationIdentifier(project, BundleProjectState.BUNDLE_REF_LOC_SCHEME));
+		for (IProject project : projectNodes.keySet()) {
+			IPath projectPathLoc = new Path(BundleProjectState.getLocationIdentifier(project,
+					BundleProjectState.BUNDLE_REF_LOC_SCHEME));
 			if (bundlePathLoc.equals(projectPathLoc)) {
 				return project;
 			}
@@ -110,7 +111,7 @@ public class BundleWorkspaceRegionImpl implements BundleRegion {
 			// Uninstalled bundles are not registered in the workspace region
 			IWorkspace workspace = ResourcesPlugin.getWorkspace();
 			IPath bundlePathLoc = new Path(bundle.getLocation());
-			for (IProject bundleProject : workspace.getRoot().getProjects()) {	
+			for (IProject bundleProject : workspace.getRoot().getProjects()) {
 				IPath projectPathLoc = new Path(getBundleLocationIdentifier(bundleProject));
 				if (bundlePathLoc.equals(projectPathLoc)) {
 					return bundleProject;
@@ -130,46 +131,50 @@ public class BundleWorkspaceRegionImpl implements BundleRegion {
 	}
 
 	/**
-	 * Retrieves the bundle location identifier as an absolute platform-dependent file system path of the
-	 * specified project prepended with the reference file scheme {@link BundleProjectState#BUNDLE_REF_LOC_SCHEME}. 
+	 * Retrieves the bundle location identifier as an absolute platform-dependent file system path of
+	 * the specified project prepended with the reference file scheme
+	 * {@link BundleProjectState#BUNDLE_REF_LOC_SCHEME}.
 	 * 
 	 * <p>
-	 * If the associated workspace bundle of the specified project is installed the {@link Bundle#getLocation()} is
-	 * used. Otherwise {@link BundleProjectState#getLocationIdentifier(IProject, String)} is used.
+	 * If the associated workspace bundle of the specified project is installed the
+	 * {@link Bundle#getLocation()} is used. Otherwise
+	 * {@link BundleProjectState#getLocationIdentifier(IProject, String)} is used.
 	 * <p>
-	 * If the bundle project is {@link BundleCommandImpl#install(IProject) installed} with a different scheme,
-	 * {@link BundleProjectState#getLocationIdentifier(IProject, String)} can be used directly
+	 * If the bundle project is {@link BundleCommandImpl#install(IProject) installed} with a different
+	 * scheme, {@link BundleProjectState#getLocationIdentifier(IProject, String)} can be used directly
 	 * supplying another file scheme.
 	 * 
 	 * @param project which is the base for finding the path
 	 * @return the absolute file system path of the project prepended with the URI scheme
-	 * @throws ProjectLocationException if the specified project is null or the location of the specified project could
-	 *           not be found
-	 * @throws InPlaceException if the caller does not have the right permission to access the location data
+	 * @throws ProjectLocationException if the specified project is null or the location of the
+	 * specified project could not be found
+	 * @throws InPlaceException if the caller does not have the right permission to access the
+	 * location data
 	 * @see BundleProjectState#getLocationIdentifier(IProject, String)
 	 */
 	@Override
-	public String getBundleLocationIdentifier(IProject project) throws ProjectLocationException, InPlaceException {
+	public String getBundleLocationIdentifier(IProject project) throws ProjectLocationException,
+			InPlaceException {
 
 		Bundle bundle = get(project);
 		if (null != bundle) {
 			try {
-				return bundle.getLocation();				
+				return bundle.getLocation();
 			} catch (SecurityException e) {
 				throw new InPlaceException(e, "project_security_error", project.getName());
 			}
 		} else {
-			return BundleProjectState.getLocationIdentifier(project, 
+			return BundleProjectState.getLocationIdentifier(project,
 					BundleProjectState.BUNDLE_REF_LOC_SCHEME);
 		}
 	}
 
 	/**
-	 * Check if the workspace is activated. The condition is satisfied if one project is JavaTime nature enabled
-	 * and its bundle project is at least installed.
+	 * Check if the workspace is activated. The condition is satisfied if one project is JavaTime
+	 * nature enabled and its bundle project is at least installed.
 	 * 
 	 * @return true if at least one project is JavaTime nature enabled and its bundle project is not
-	 *         uninstalled. Otherwise false
+	 * uninstalled. Otherwise false
 	 * @see BundleWorkspaceRegionImpl#isActivated(Bundle)
 	 * @see BundleProjectState#isProjectWorkspaceNatureActivated()
 	 */
@@ -177,7 +182,7 @@ public class BundleWorkspaceRegionImpl implements BundleRegion {
 	public Boolean isBundleWorkspaceActivated() {
 		for (BundleNode node : projectNodes.values()) {
 			if (null != node.getBundle()) {
-//			if (node.isActivated()) {
+				// if (node.isActivated()) {
 				return true;
 			}
 		}
@@ -185,12 +190,12 @@ public class BundleWorkspaceRegionImpl implements BundleRegion {
 	}
 
 	/**
-	 * Check if the bundle is activated. The condition is satisfied if the project is JavaTime nature enabled
-	 * and its bundle project is at least installed.
+	 * Check if the bundle is activated. The condition is satisfied if the project is JavaTime nature
+	 * enabled and its bundle project is at least installed.
 	 * 
 	 * @param bundleProject to check for activation
 	 * @return true if the specified project is JavaTime nature enabled and its bundle project is not
-	 *         uninstalled. Otherwise false
+	 * uninstalled. Otherwise false
 	 * @see BundleWorkspaceRegionImpl#isActivated(Bundle)
 	 * @see BundleProjectState#isWorkspaceNatureEnabled()
 	 */
@@ -231,7 +236,7 @@ public class BundleWorkspaceRegionImpl implements BundleRegion {
 			if (activated && node.isActivated()) {
 				projects.add(node.getProject());
 			} else if (!activated && !node.isActivated()) {
-				projects.add(node.getProject());				
+				projects.add(node.getProject());
 			}
 		}
 		return projects;
@@ -307,9 +312,9 @@ public class BundleWorkspaceRegionImpl implements BundleRegion {
 	public Collection<Bundle> getBundles(Collection<Bundle> bundles, int state) {
 		Collection<Bundle> bundleStates = new ArrayList<Bundle>();
 		for (Bundle bundle : bundles) {
-				if (null != bundle && (bundle.getState() & (state)) != 0) {
-					bundleStates.add(bundle);
-				}
+			if (null != bundle && (bundle.getState() & (state)) != 0) {
+				bundleStates.add(bundle);
+			}
 		}
 		return bundleStates;
 	}
@@ -328,7 +333,7 @@ public class BundleWorkspaceRegionImpl implements BundleRegion {
 		}
 		return bundles;
 	}
-	
+
 	@Override
 	public Collection<Bundle> getJarBundles() {
 		Collection<Bundle> workspaceBundles = getBundles();
@@ -365,7 +370,7 @@ public class BundleWorkspaceRegionImpl implements BundleRegion {
 		}
 		return null;
 	}
-	
+
 	public Bundle get(Long bundleId) {
 		BundleNode node = getNode(bundleId);
 		if (null != node) {
@@ -373,8 +378,9 @@ public class BundleWorkspaceRegionImpl implements BundleRegion {
 		}
 		return null;
 	}
-	
-	public Map<IProject, IProject> getWorkspaceDuplicates(Collection<IProject> candidateProjects, Collection<IProject> scope) {
+
+	public Map<IProject, IProject> getWorkspaceDuplicates(Collection<IProject> candidateProjects,
+			Collection<IProject> scope) {
 
 		Map<IProject, IProject> duplicateMap = new HashMap<IProject, IProject>();
 		Map<String, IProject> candidateKeyMap = new HashMap<String, IProject>();
@@ -387,8 +393,8 @@ public class BundleWorkspaceRegionImpl implements BundleRegion {
 			if (null != project) {
 				duplicateMap.put(candidateProject, project);
 			}
-		}		
-		if (candidateKeyMap.size() > 0) {			
+		}
+		if (candidateKeyMap.size() > 0) {
 			scope.removeAll(candidateKeyMap.values());
 			for (IProject project : scope) {
 				String symbolicKey = getSymbolicKey(null, project);
@@ -404,10 +410,11 @@ public class BundleWorkspaceRegionImpl implements BundleRegion {
 		return duplicateMap;
 	}
 
-	public Map<IProject, Bundle> getSymbolicNameDuplicates(Collection<IProject> projects, Collection<Bundle> candidateBundles, boolean disjoint) {
+	public Map<IProject, Bundle> getSymbolicNameDuplicates(Collection<IProject> projects,
+			Collection<Bundle> candidateBundles, boolean disjoint) {
 
-		Map<String, IProject> newSymbolicNameMap= new HashMap<String, IProject>();
-		Map<IProject, Bundle> duplicateMap= new HashMap<IProject, Bundle>();
+		Map<String, IProject> newSymbolicNameMap = new HashMap<String, IProject>();
+		Map<IProject, Bundle> duplicateMap = new HashMap<IProject, Bundle>();
 
 		for (IProject project : projects) {
 			try {
@@ -431,6 +438,7 @@ public class BundleWorkspaceRegionImpl implements BundleRegion {
 		}
 		return duplicateMap;
 	}
+
 	/**
 	 * Reads the current symbolic name from the manifest file (not the cache)
 	 * 
@@ -563,8 +571,8 @@ public class BundleWorkspaceRegionImpl implements BundleRegion {
 	 * 
 	 * @param projects to check for having the specified transition
 	 * @param command or transition to check for in the specified projects
-	 * @return all projects among the specified projects containing the specified transition or an empty
-	 *         collection
+	 * @return all projects among the specified projects containing the specified transition or an
+	 * empty collection
 	 */
 	Collection<IProject> getPendingProjects(Collection<IProject> projects, Transition command) {
 		Collection<IProject> pendingProjects = new LinkedHashSet<IProject>();
@@ -573,7 +581,7 @@ public class BundleWorkspaceRegionImpl implements BundleRegion {
 				pendingProjects.add(project);
 			}
 		}
-		return pendingProjects; 
+		return pendingProjects;
 	}
 
 	/**
@@ -582,7 +590,7 @@ public class BundleWorkspaceRegionImpl implements BundleRegion {
 	 * @param bundles to check for having the specified transition
 	 * @param command or transition to check for in the specified projects
 	 * @return all bundles among the specified bundles containing the specified transition or an empty
-	 *         collection
+	 * collection
 	 */
 	Collection<Bundle> getPendingBundles(Collection<Bundle> bundles, Transition command) {
 		Collection<Bundle> pendingBundles = new LinkedHashSet<Bundle>();
@@ -591,7 +599,7 @@ public class BundleWorkspaceRegionImpl implements BundleRegion {
 				pendingBundles.add(bundle);
 			}
 		}
-		return pendingBundles; 
+		return pendingBundles;
 	}
 
 	/**
@@ -630,7 +638,8 @@ public class BundleWorkspaceRegionImpl implements BundleRegion {
 	 * @param bundle bundle project to check for the specified pending command
 	 * @param command associated with this bundle project
 	 * @param remove clear the command from the bundle project if true
-	 * @return true if this command is associated with this bundle project
+	 * @return true if this command is associated with this bundle project. Otherwise false. If the
+	 * specified bundle is null false is returned.
 	 */
 	boolean containsPendingCommand(Bundle bundle, Transition command, boolean remove) {
 		BundleNode bn = getNode(bundle);
@@ -642,6 +651,7 @@ public class BundleWorkspaceRegionImpl implements BundleRegion {
 
 	/**
 	 * Check if there are any bundle projects with the specified pending command
+	 * 
 	 * @param command pending command
 	 * @return true if the specified command is associated with any bundle project
 	 */
@@ -686,7 +696,6 @@ public class BundleWorkspaceRegionImpl implements BundleRegion {
 		return false;
 	}
 
-
 	public BundleNode getBundleNode(Bundle bundle) {
 		return getNode(bundle);
 	}
@@ -719,7 +728,8 @@ public class BundleWorkspaceRegionImpl implements BundleRegion {
 	 * @return the new or updated bundle node
 	 * @throws InPlaceException if the specified project parameter is null
 	 */
-	protected BundleNode put(IProject project, Bundle bundle, Boolean activate) throws InPlaceException {
+	protected BundleNode put(IProject project, Bundle bundle, Boolean activate)
+			throws InPlaceException {
 		if (null == project) {
 			if (Category.DEBUG && Category.getState(Category.dag))
 				TraceMessage.getInstance().getString("npe_project_cache");
@@ -738,14 +748,16 @@ public class BundleWorkspaceRegionImpl implements BundleRegion {
 			node.setActivated(activate);
 			projectNodes.put(project, node);
 			if (Category.DEBUG && Category.getState(Category.dag)) {
-				TraceMessage.getInstance().getString("updated_node", projectNodes.get(project).getProject());
+				TraceMessage.getInstance()
+						.getString("updated_node", projectNodes.get(project).getProject());
 			}
 			// Create node
 		} else {
 			node = new BundleNode(bundle, project, activate);
 			projectNodes.put(project, node);
 			if (Category.DEBUG && Category.getState(Category.dag)) {
-				TraceMessage.getInstance().getString("inserted_node", projectNodes.get(project).getProject());
+				TraceMessage.getInstance().getString("inserted_node",
+						projectNodes.get(project).getProject());
 			}
 		}
 		return node;
@@ -809,7 +821,7 @@ public class BundleWorkspaceRegionImpl implements BundleRegion {
 		}
 		return null;
 	}
-  
+
 	/**
 	 * Finds a bundle node based on the bundle object
 	 * 
