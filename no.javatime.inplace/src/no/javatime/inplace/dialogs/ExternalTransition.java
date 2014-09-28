@@ -16,6 +16,7 @@ import no.javatime.inplace.region.closure.ProjectSorter;
 import no.javatime.inplace.region.events.BundleTransitionEvent;
 import no.javatime.inplace.region.events.BundleTransitionEventListener;
 import no.javatime.inplace.region.manager.BundleCommand;
+import no.javatime.inplace.region.manager.BundleManager;
 import no.javatime.inplace.region.manager.BundleRegion;
 import no.javatime.inplace.region.manager.BundleTransition;
 import no.javatime.inplace.region.manager.BundleTransition.Transition;
@@ -45,7 +46,7 @@ public class ExternalTransition implements BundleTransitionEventListener {
 		if (evt.getTransition() == Transition.EXTERNAL) {
 			Bundle bundle = evt.getBundle();
 			IProject project = evt.getProject();
-			BundleTransition transition = BundleJobManager.getTransition();
+			BundleTransition transition = BundleManager.getTransition();
 			if (transition.getError(bundle) == TransitionError.UNINSTALL) {
 				transition.clearTransitionError(project);
 				externalUninstall(bundle, project);
@@ -65,12 +66,12 @@ public class ExternalTransition implements BundleTransitionEventListener {
 
 		final String symbolicName = bundle.getSymbolicName();
 		final String location = bundle.getLocation();
-		final BundleCommand bundleCommand = BundleJobManager.getCommand();
+		final BundleCommand bundleCommand = BundleManager.getCommand();
 		// After the fact
 		InPlace.getDisplay().syncExec(new Runnable() {
 			@Override
 			public void run() {
-				final BundleRegion bundleRegion = BundleJobManager.getRegion();
+				final BundleRegion bundleRegion = BundleManager.getRegion();
 				IBundleStatus reqStatus = null;
 				int autoDependencyAction = 1; // Default auto dependency action
 				new OpenProjectHandler().saveModifiedFiles();

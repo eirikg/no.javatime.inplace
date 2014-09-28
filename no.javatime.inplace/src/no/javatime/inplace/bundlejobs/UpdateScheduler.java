@@ -15,6 +15,7 @@ import no.javatime.inplace.region.closure.BuildErrorClosure;
 import no.javatime.inplace.region.closure.BuildErrorClosure.ActivationScope;
 import no.javatime.inplace.region.closure.CircularReferenceException;
 import no.javatime.inplace.region.closure.ProjectSorter;
+import no.javatime.inplace.region.manager.BundleManager;
 import no.javatime.inplace.region.manager.BundleRegion;
 import no.javatime.inplace.region.manager.BundleTransition;
 import no.javatime.inplace.region.manager.BundleTransition.Transition;
@@ -55,7 +56,7 @@ public class UpdateScheduler {
 		UpdateJob updateJob = new UpdateJob(UpdateJob.updateJobName);
 		for (IProject project : projects) {
 			if (BundleProjectState.isNatureEnabled(project)
-					&& BundleJobManager.getTransition().containsPending(project, Transition.UPDATE, false)) {
+					&& BundleManager.getTransition().containsPending(project, Transition.UPDATE, false)) {
 				addProjectToUpdateJob(project, updateJob);
 			}
 		}
@@ -194,7 +195,7 @@ public class UpdateScheduler {
 	@SuppressWarnings("unused")
 	private ActivateBundleJob getInstalledRequirers(UpdateJob updateJob) {
 		ActivateBundleJob postActivateBundleJob = null;
-		BundleRegion bundleRegion = BundleJobManager.getRegion();
+		BundleRegion bundleRegion = BundleManager.getRegion();
 		ProjectSorter ps = new ProjectSorter();
 		Collection<IProject> installedRequirers = ps.sortRequiringProjects(
 				updateJob.getPendingProjects(), true);
@@ -202,7 +203,7 @@ public class UpdateScheduler {
 			for (IProject project : installedRequirers) {
 				Bundle bundle = bundleRegion.get(project);
 				if (null != bundle
-						&& (BundleJobManager.getCommand().getState(bundle) & (Bundle.INSTALLED | Bundle.UNINSTALLED)) != 0) {
+						&& (BundleManager.getCommand().getState(bundle) & (Bundle.INSTALLED | Bundle.UNINSTALLED)) != 0) {
 					if (null == postActivateBundleJob) {
 						postActivateBundleJob = new ActivateBundleJob(ActivateBundleJob.activateJobName);
 					}
@@ -237,8 +238,8 @@ public class UpdateScheduler {
 			UpdateJob updateJob) {
 
 		ActivateBundleJob postActivateBundleJob = null;
-		BundleRegion bundleRegion = BundleJobManager.getRegion();
-		BundleTransition bundleTransition = BundleJobManager.getTransition();
+		BundleRegion bundleRegion = BundleManager.getRegion();
+		BundleTransition bundleTransition = BundleManager.getTransition();
 
 		if (!bundleTransition.hasTransitionError(TransitionError.DUPLICATE)) {
 			return postActivateBundleJob;
@@ -293,7 +294,7 @@ public class UpdateScheduler {
 
 		// Record projects that have changed their symbolic key (symbolic name and/or the version)
 		Map<IProject, String> symbolicKeymap = new HashMap<IProject, String>();
-		BundleRegion bundleRegion = BundleJobManager.getRegion();
+		BundleRegion bundleRegion = BundleManager.getRegion();
 
 		for (IProject project : projects) {
 			String newProjectKey = bundleRegion.getSymbolicKey(null, project);

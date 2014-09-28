@@ -13,10 +13,10 @@ package no.javatime.inplace.ui.command.handlers;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 
-import no.javatime.inplace.bundlemanager.BundleJobManager;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.extender.provider.ExtenderException;
 import no.javatime.inplace.region.manager.BundleCommand;
+import no.javatime.inplace.region.manager.BundleManager;
 import no.javatime.inplace.region.manager.BundleRegion;
 import no.javatime.inplace.region.manager.BundleTransition;
 import no.javatime.inplace.region.manager.InPlaceException;
@@ -39,8 +39,8 @@ import org.osgi.framework.Bundle;
  */
 public class BundleMainActivationHandler extends BundleMenuActivationHandler {
 
-	private final static BundleRegion region = BundleJobManager.getRegion();
-	private final static BundleCommand command = BundleJobManager.getCommand();
+	private final static BundleRegion region = BundleManager.getRegion();
+	private final static BundleCommand command = BundleManager.getCommand();
 
 	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
@@ -103,7 +103,7 @@ public class BundleMainActivationHandler extends BundleMenuActivationHandler {
 				break;
 			case BundleCommandsContributionItems.updateParamId:
 				Collection<IProject> projectsToUpdate = 
-				BundleJobManager.getTransition().getPendingProjects(BundleProjectState.getNatureEnabledProjects(), 
+				BundleManager.getTransition().getPendingProjects(BundleProjectState.getNatureEnabledProjects(), 
 						BundleTransition.Transition.UPDATE);			
 				updateHandler(projectsToUpdate);
 				break;

@@ -25,6 +25,7 @@ import no.javatime.inplace.bundlemanager.BundleJobManager;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.manager.BundleCommand;
+import no.javatime.inplace.region.manager.BundleManager;
 import no.javatime.inplace.region.manager.BundleRegion;
 import no.javatime.inplace.region.manager.BundleTransition;
 import no.javatime.inplace.region.manager.BundleTransition.Transition;
@@ -101,9 +102,9 @@ import org.osgi.framework.Bundle;
  */
 public class PostBuildListener implements IResourceChangeListener {
 
-	private BundleCommand bundleCommand = BundleJobManager.getCommand();
-	private BundleRegion bundleRegion = BundleJobManager.getRegion();
-	private BundleTransition bundleTransition = BundleJobManager.getTransition();
+	private BundleCommand bundleCommand = BundleManager.getCommand();
+	private BundleRegion bundleRegion = BundleManager.getRegion();
+	private BundleTransition bundleTransition = BundleManager.getTransition();
 	private static int delay = 0;
 
 	/**

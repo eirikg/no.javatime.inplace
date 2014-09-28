@@ -20,6 +20,7 @@ import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.closure.CircularReferenceException;
 import no.javatime.inplace.region.closure.ProjectSorter;
+import no.javatime.inplace.region.manager.BundleManager;
 import no.javatime.inplace.region.manager.BundleTransition;
 import no.javatime.inplace.region.manager.BundleTransition.Transition;
 import no.javatime.inplace.region.project.BundleProjectState;
@@ -141,7 +142,7 @@ public class BundleJobListener extends JobChangeAdapter {
 	 */
 	private void schedulePendingOperations() {
 
-		BundleTransition bundleTransition = BundleJobManager.getTransition();
+		BundleTransition bundleTransition = BundleManager.getTransition();
 		BundleJob bundleJob = null;
 
 		Collection<IProject> deactivatedProjects = ProjectProperties.getCandidateProjects();

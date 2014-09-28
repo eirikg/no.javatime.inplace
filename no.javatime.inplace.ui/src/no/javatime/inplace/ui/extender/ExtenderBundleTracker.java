@@ -1,8 +1,8 @@
 package no.javatime.inplace.ui.extender;
 
-import no.javatime.inplace.bundlemanager.BundleJobManager;
 import no.javatime.inplace.extender.provider.Extender;
 import no.javatime.inplace.pl.dependencies.intface.DependencyDialog;
+import no.javatime.inplace.region.manager.BundleManager;
 import no.javatime.inplace.region.manager.InPlaceException;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
@@ -27,7 +27,7 @@ public class ExtenderBundleTracker implements BundleTrackerCustomizer<Extender<?
 			String depDlgImpl = bundle.getHeaders().get(DependencyDialog.DEPENDENCY_DIALOG_HEADER);
 			if (null != depDlgImpl) {
 				if (Category.DEBUG)
-					System.out.println("[UI] Add Bundle: " + bundle + " " + BundleJobManager.getCommand().getStateName(event));	
+					System.out.println("[UI] Add Bundle: " + bundle + " " + BundleManager.getCommand().getStateName(event));	
 				return  Extender.<DependencyDialog>register(Activator.getDefault().getExtenderBundleTracker(),
 						bundle, Activator.getContext().getBundle(), DependencyDialog.class, depDlgImpl);
 			}
@@ -43,14 +43,14 @@ public class ExtenderBundleTracker implements BundleTrackerCustomizer<Extender<?
 	@Override
 	public void modifiedBundle(Bundle bundle, BundleEvent event, Extender<?> object) {
 		if (Category.DEBUG)
-			System.out.println("[UI] Mod Bundle: " + bundle + " " + BundleJobManager.getCommand().getStateName(event));
+			System.out.println("[UI] Mod Bundle: " + bundle + " " + BundleManager.getCommand().getStateName(event));
 		
 	}
 
 	@Override
 	public void removedBundle(Bundle bundle, BundleEvent event, Extender<?> object) {
 		if (Category.DEBUG)
-			System.out.println("[UI] Rem Bundle: " + bundle + " " + BundleJobManager.getCommand().getStateName(event));
+			System.out.println("[UI] Rem Bundle: " + bundle + " " + BundleManager.getCommand().getStateName(event));
 		object.closeServiceTracker();
 	}
 

@@ -19,7 +19,6 @@ import java.util.Map;
 import java.util.concurrent.TimeoutException;
 
 import no.javatime.inplace.InPlace;
-import no.javatime.inplace.bundlemanager.BundleJobManager;
 import no.javatime.inplace.bundleproject.BundleProjectSettings;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.dl.preferences.intface.CommandOptions;
@@ -33,6 +32,7 @@ import no.javatime.inplace.region.closure.CircularReferenceException;
 import no.javatime.inplace.region.closure.ProjectSorter;
 import no.javatime.inplace.region.manager.BundleActivatorException;
 import no.javatime.inplace.region.manager.BundleCommandImpl;
+import no.javatime.inplace.region.manager.BundleManager;
 import no.javatime.inplace.region.manager.BundleStateChangeException;
 import no.javatime.inplace.region.manager.BundleThread;
 import no.javatime.inplace.region.manager.BundleTransition.Transition;
@@ -526,7 +526,7 @@ public abstract class BundleJob extends JobStatus {
 						createMultiStatus(
 								errStat,
 								addWarning(null, msg,
-										BundleJobManager.getRegion().getRegisteredBundleProject(bundle)));
+										bundleRegion.getRegisteredBundleProject(bundle)));
 						stopCurrentBundleOperation(monitor);
 					} else if (null != cause && cause instanceof BundleException) {
 						stopCurrentBundleOperation(monitor);
@@ -616,7 +616,7 @@ public abstract class BundleJob extends JobStatus {
 						createMultiStatus(
 								errStat,
 								addWarning(null, msg,
-										BundleJobManager.getRegion().getRegisteredBundleProject(bundle)));
+										bundleRegion.getRegisteredBundleProject(bundle)));
 						stopCurrentBundleOperation(monitor);
 					} else if (null != cause && cause instanceof BundleException) {
 						stopCurrentBundleOperation(monitor);
@@ -632,7 +632,7 @@ public abstract class BundleJob extends JobStatus {
 	}
 
 	public static boolean isStateChanging() {
-		Bundle bundle = BundleJobManager.getCommand().getCurrentBundle();
+		Bundle bundle = BundleManager.getCommand().getCurrentBundle();
 		if (null != bundle) {
 			return true;
 		}

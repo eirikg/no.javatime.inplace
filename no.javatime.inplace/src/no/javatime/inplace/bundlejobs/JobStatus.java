@@ -6,13 +6,13 @@ import java.util.Collections;
 import java.util.List;
 
 import no.javatime.inplace.InPlace;
-import no.javatime.inplace.bundlemanager.BundleJobManager;
 import no.javatime.inplace.bundleproject.BundleProjectSettings;
 import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.closure.ProjectSorter;
 import no.javatime.inplace.region.events.BundleTransitionEvent;
 import no.javatime.inplace.region.events.BundleTransitionEventListener;
 import no.javatime.inplace.region.manager.BundleCommand;
+import no.javatime.inplace.region.manager.BundleManager;
 import no.javatime.inplace.region.manager.BundleRegion;
 import no.javatime.inplace.region.manager.BundleTransition;
 import no.javatime.inplace.region.manager.BundleTransition.Transition;
@@ -49,9 +49,9 @@ public abstract class JobStatus extends WorkspaceJob implements BundleTransition
 	/**
 	 * Convenience reference to the bundle manager
 	 */
-	final protected BundleCommand bundleCommand = BundleJobManager.getCommand();
-	final protected BundleTransition bundleTransition = BundleJobManager.getTransition();
-	final protected BundleRegion bundleRegion = BundleJobManager.getRegion();
+	final protected BundleCommand bundleCommand = BundleManager.getCommand();
+	final protected BundleTransition bundleTransition = BundleManager.getTransition();
+	final protected BundleRegion bundleRegion = BundleManager.getRegion();
 
 	/**
 	 * Construct a job with the name of the job to run

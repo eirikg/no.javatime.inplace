@@ -41,6 +41,7 @@ import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkbenchPage;
+import org.eclipse.ui.IWorkbenchPartSite;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.ICommandService;
@@ -131,7 +132,7 @@ public class Activator extends AbstractUIPlugin implements BundleJobEventListene
 	@Override
 	public void bundleJobEvent(BundleJobEvent event) {
 		WorkspaceJob bundleJob = event.getBundleJob();
-		scheduleViaPart(bundleJob, event.getDelay(), false);
+		scheduleViaBundleView(bundleJob, event.getDelay(), false);
 	}
 	/**
 	 * Schedule job through the {@linkplain no.javatime.inplace.ui.views.BundleView BundleView} if it is visible.
@@ -141,7 +142,7 @@ public class Activator extends AbstractUIPlugin implements BundleJobEventListene
 	 * @param delay schedule of job in milliseconds
 	 * @param setUser to true if job progress is to be shown
 	 */
-	public static void scheduleViaPart(final WorkspaceJob bundleJob, final long delay, Boolean setUser) {
+	public static void scheduleViaBundleView(final WorkspaceJob bundleJob, final long delay, Boolean setUser) {
 
 		bundleJob.setUser(setUser);
 		Activator.getDisplay().asyncExec(new Runnable() {
@@ -149,13 +150,18 @@ public class Activator extends AbstractUIPlugin implements BundleJobEventListene
 			public void run() {
 				BundleView bv = (BundleView) Message.getView(BundleView.ID);
 				if (null != bv) {
-					IWorkbenchSiteProgressService siteService = (IWorkbenchSiteProgressService) bv.getSite().getAdapter(
-							IWorkbenchSiteProgressService.class);
-					// TODO check for null on adapter and site
-					siteService.showBusyForFamily(BundleJob.FAMILY_BUNDLE_LIFECYCLE);
-					siteService.showBusyForFamily(ResourcesPlugin.FAMILY_AUTO_BUILD);
-					siteService.showBusyForFamily(ResourcesPlugin.FAMILY_MANUAL_BUILD);
-					siteService.schedule(bundleJob, delay, true);
+					IWorkbenchSiteProgressService siteService = null;
+					IWorkbenchPartSite partSite = bv.getSite();
+					if (null != partSite) {
+						siteService = (IWorkbenchSiteProgressService) partSite.getAdapter(
+								IWorkbenchSiteProgressService.class);						
+					}
+					if (null != siteService) {
+						siteService.showBusyForFamily(BundleJob.FAMILY_BUNDLE_LIFECYCLE);
+						siteService.showBusyForFamily(ResourcesPlugin.FAMILY_AUTO_BUILD);
+						siteService.showBusyForFamily(ResourcesPlugin.FAMILY_MANUAL_BUILD);
+						siteService.schedule(bundleJob, delay, true);
+					}
 				} else {
 					bundleJob.schedule(delay);
 				}

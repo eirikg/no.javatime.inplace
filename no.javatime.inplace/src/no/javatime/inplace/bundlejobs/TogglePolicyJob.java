@@ -14,7 +14,6 @@ import java.util.Collection;
 import java.util.Collections;
 
 import no.javatime.inplace.InPlace;
-import no.javatime.inplace.bundlemanager.BundleJobManager;
 import no.javatime.inplace.bundleproject.BundleProjectSettings;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.msg.Msg;
@@ -117,7 +116,7 @@ public class TogglePolicyJob extends BundleJob {
 									monitor, 1));
 						} else if ((bundle.getState() & (Bundle.RESOLVED)) != 0) {
 							// Do not start bundle if in state resolve when toggling policy
-							BundleJobManager.getTransition().addPending(bundle, Transition.RESOLVE);
+							bundleTransition.addPending(bundle, Transition.RESOLVE);
 						}
 					}
 				} catch (InPlaceException e) {

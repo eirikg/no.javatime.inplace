@@ -11,7 +11,6 @@
 package no.javatime.inplace.builder;
 
 import no.javatime.inplace.InPlace;
-import no.javatime.inplace.bundlemanager.BundleJobManager;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.region.events.TransitionEvent;
 import no.javatime.inplace.region.manager.BundleManager;
@@ -62,7 +61,7 @@ public class PreBuildListener implements IResourceChangeListener {
 					} else { 
 						if (BundleProjectState.isNatureEnabled(project)) {
 							if (!ProjectProperties.isAutoBuilding()) {
-								BundleJobManager.getTransition().addPending(project, Transition.BUILD);
+								BundleManager.getTransition().addPending(project, Transition.BUILD);
 							} else {
 								BundleManager.addBundleTransition(new TransitionEvent(project, Transition.BUILD));								
 							}

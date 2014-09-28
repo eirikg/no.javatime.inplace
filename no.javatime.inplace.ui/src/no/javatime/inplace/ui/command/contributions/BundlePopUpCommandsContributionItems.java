@@ -12,11 +12,12 @@ package no.javatime.inplace.ui.command.contributions;
 
 import java.util.ArrayList;
 
-import no.javatime.inplace.bundlemanager.BundleJobManager;
 import no.javatime.inplace.bundleproject.BundleProjectSettings;
 import no.javatime.inplace.dialogs.OpenProjectHandler;
 import no.javatime.inplace.extender.provider.ExtenderException;
 import no.javatime.inplace.region.closure.BuildErrorClosure;
+import no.javatime.inplace.region.manager.BundleCommand;
+import no.javatime.inplace.region.manager.BundleManager;
 import no.javatime.inplace.region.manager.BundleTransition.Transition;
 import no.javatime.inplace.region.manager.InPlaceException;
 import no.javatime.inplace.region.project.BundleProjectState;
@@ -55,8 +56,10 @@ public class BundlePopUpCommandsContributionItems extends BundleCommandsContribu
 	// Activation policy per bundle
 	public final static String policyParamId = "Policy";
 	private final static String eagerLabel = Message.getInstance().formatString("eager_activation_label");
+	
+	BundleCommand bundleCommand = BundleManager.getCommand();
 
-	public BundlePopUpCommandsContributionItems() {
+		public BundlePopUpCommandsContributionItems() {
 		super();
 	}
 
@@ -72,7 +75,7 @@ public class BundlePopUpCommandsContributionItems extends BundleCommandsContribu
 			// Get project, activation status and the bundle project
 			IProject project = javaProject.getProject();
 			Boolean activated = BundleProjectState.isNatureEnabled(project);
-			Bundle bundle = BundleJobManager.getRegion().get(project);
+			Bundle bundle = BundleManager.getRegion().get(project);
 			// Busy running bundle jobs.
 			if (OpenProjectHandler.getBundlesJobRunState()) {
 				// Do not add contributions for bundles that are dependent on their current state
@@ -118,7 +121,7 @@ public class BundlePopUpCommandsContributionItems extends BundleCommandsContribu
 		String label;
 		String stateName = " (";
 		if (!activated) {
-			stateName += BundleJobManager.getCommand().getStateName(bundle) + ")";
+			stateName += bundleCommand.getStateName(bundle) + ")";
 			label = activateProjectParamId;
 			label += " " + stateName;
 			return createContibution(menuId, dynamicPopUpCommandId, label, activateProjectParamId,
@@ -140,7 +143,7 @@ public class BundlePopUpCommandsContributionItems extends BundleCommandsContribu
 		String label;
 		String stateName = " (";
 		if (activated) {
-			stateName += BundleJobManager.getCommand().getStateName(bundle) + ")";
+			stateName += bundleCommand.getStateName(bundle) + ")";
 			label = deactivateParamId;
 			label += " " + stateName;
 			return createContibution(menuId, dynamicPopUpCommandId, label, deactivateParamId,
@@ -205,7 +208,7 @@ public class BundlePopUpCommandsContributionItems extends BundleCommandsContribu
 			throws InPlaceException {
 
 		// Conditional enabling of refresh
-		if (activated && BundleJobManager.getCommand().getBundleRevisions(bundle).size() > 1) {
+		if (activated && bundleCommand.getBundleRevisions(bundle).size() > 1) {
 			return createContibution(menuId, dynamicPopUpCommandId, refreshParamId, refreshParamId,
 					CommandContributionItem.STYLE_PUSH, refreshImage);
 		}
@@ -224,7 +227,7 @@ public class BundlePopUpCommandsContributionItems extends BundleCommandsContribu
 	private CommandContributionItem addUpdate(Boolean activated, IProject project, Bundle bundle) {
 		if (null != bundle
 				&& activated
-				&& BundleJobManager.getTransition().containsPending(project, Transition.UPDATE,
+				&& BundleManager.getTransition().containsPending(project, Transition.UPDATE,
 						Boolean.FALSE)) {
 			return createContibution(menuId, dynamicPopUpCommandId, updateParamId, updateParamId,
 					CommandContributionItem.STYLE_PUSH, updateImage);

@@ -2,10 +2,6 @@ package no.javatime.inplace.bundlemanager;
 
 import no.javatime.inplace.bundlejobs.events.BundleJobEventListener;
 import no.javatime.inplace.bundlejobs.events.BundleJobNotifier;
-import no.javatime.inplace.region.manager.BundleCommand;
-import no.javatime.inplace.region.manager.BundleManager;
-import no.javatime.inplace.region.manager.BundleRegion;
-import no.javatime.inplace.region.manager.BundleTransition;
 import no.javatime.util.messages.Category;
 import no.javatime.util.messages.TraceMessage;
 
@@ -20,20 +16,7 @@ public class BundleJobManager {
 
 	public BundleJobManager() {
 	}
-	
-	
-	public static BundleRegion getRegion() {
-		return BundleManager.getRegion();
-	}
-	
-	public static BundleCommand getCommand() {
-		return BundleManager.getCommand();
-	}
-
-	public static BundleTransition getTransition() {
-		return BundleManager.getTransition();
-	}
-	
+		
 	/**
 	 * Adds a bundle job managed by job listeners
 	 * @param bundleJob bundle job to add for later scheduling by listeners

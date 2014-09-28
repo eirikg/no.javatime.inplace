@@ -284,7 +284,7 @@ public class ResetJob {
 							}
 							super.runInWorkspace(monitor);
 							for (IProject project : getPendingProjects()) {
-								BundleJobManager.getTransition().removePending(project, Transition.UPDATE);
+								bundleTransition.removePending(project, Transition.UPDATE);
 							}
 						} catch (OperationCanceledException e) {
 							addCancelMessage(e, NLS.bind(Msg.CANCEL_JOB_INFO, getName()));

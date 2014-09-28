@@ -16,7 +16,6 @@ import java.util.Collections;
 import java.util.Map;
 
 import no.javatime.inplace.InPlace;
-import no.javatime.inplace.bundlemanager.BundleJobManager;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.msg.Msg;
@@ -145,8 +144,8 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 
 		try {
 			IProject project = getProject();
-			BundleTransition bundleTransition = BundleJobManager.getTransition();
-			BundleCommand bundleCommand = BundleJobManager.getCommand();
+			BundleTransition bundleTransition = BundleManager.getTransition();
+			BundleCommand bundleCommand = BundleManager.getCommand();
 			// Build is no longer pending. Remove as early as possible
 			// Also removed in the post build listener
 			bundleTransition.removeTransitionError(project, TransitionError.BUILD);
@@ -158,7 +157,7 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 			} else { // (kind == INCREMENTAL_BUILD || kind == AUTO_BUILD)
 				incrementalBuild(delta, monitor);
 			}
-			BundleRegion bundleRegion = BundleJobManager.getRegion();
+			BundleRegion bundleRegion = BundleManager.getRegion();
 			Bundle bundle = bundleRegion.get(project);
 			// Uninstalled project with no deltas
 			IResourceDelta[] resourceDelta = null;
@@ -248,7 +247,7 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 	protected void fullBuild(final IProgressMonitor monitor) throws CoreException {
 		if (InPlace.get().getMsgOpt().isBundleOperations()){
 			IProject project = getProject();
-			Bundle bundle = BundleJobManager.getRegion().get(project);
+			Bundle bundle = BundleManager.getRegion().get(project);
 			String msg = NLS.bind(Msg.FULL_BUILD_TRACE, 
 					new Object[] {project.getName(), project.getLocation().toOSString()});
 			IBundleStatus status = new BundleStatus(StatusCode.INFO,bundle, project, msg, null);
@@ -261,7 +260,7 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 	protected void incrementalBuild(IResourceDelta delta, IProgressMonitor monitor) throws CoreException {
 		if (InPlace.get().getMsgOpt().isBundleOperations()) {
 			IProject project = getProject();
-			Bundle bundle = BundleJobManager.getRegion().get(project);
+			Bundle bundle = BundleManager.getRegion().get(project);
 			String msg = NLS.bind(Msg.INCREMENTAL_BUILD_TRACE, 
 					new Object[] {project.getName(), project.getLocation().toOSString()});
 			IBundleStatus status = new BundleStatus(StatusCode.INFO,bundle, project, msg, null);
@@ -275,7 +274,7 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 
 		String projectLoaction = BundleProjectState.getLocationIdentifier(project, 
 				BundleProjectState.BUNDLE_REF_LOC_SCHEME);
-		String bundleLocation = BundleJobManager.getRegion().getBundleLocationIdentifier(project);
+		String bundleLocation = BundleManager.getRegion().getBundleLocationIdentifier(project);
 		if (!projectLoaction.equals(bundleLocation) && ProjectProperties.isInstallable(project)) {
 			return true;
 		}
@@ -314,7 +313,7 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 			}
 			if (!cycle && InPlace.get().getMsgOpt().isBundleOperations()) {
 				String msg = null;
-				Bundle bundle = BundleJobManager.getRegion().get(project);
+				Bundle bundle = BundleManager.getRegion().get(project);
 				if (InPlace.get().getCommandOptionsService().isUpdateOnBuild()) {
 					msg = NLS.bind(Msg.BUILD_ERROR_UPDATE_TRACE, project.getName());
 				} else {

@@ -210,7 +210,7 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 			}
 		}
 		BundleCommandImpl.INSTANCE.init();
-		bundleRegion = BundleJobManager.getRegion();
+		bundleRegion = BundleManager.getRegion();
 	}
 
 	@Override
@@ -539,13 +539,13 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 		try {
 			if (autoBuildCmd.isDefined() && !ProjectProperties.isAutoBuilding()) {
 				if (getCommandOptionsService().isUpdateOnBuild()) {
-					BundleJobManager.getRegion().setAutoBuildChanged(true);
+					BundleManager.getRegion().setAutoBuildChanged(true);
 					// Wait for builder to star. The post build listener does not
 					// always receive all projects to update when auto build is switched on
 					BundleJobManager.addBundleJob(new UpdateJob(UpdateJob.updateJobName), 1000);
 				}
 			} else {
-				BundleJobManager.getRegion().setAutoBuildChanged(false);
+				BundleManager.getRegion().setAutoBuildChanged(false);
 			}
 		} catch (InPlaceException e) {
 			StatusManager.getManager().handle(
@@ -738,7 +738,7 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 			} else {
 				for (IProject project : BundleProjectState.getProjects()) {
 					try {
-						Transition transition = BundleJobManager.getTransition().getTransition(project);
+						Transition transition = BundleManager.getTransition().getTransition(project);
 						// if (!BundleProjectState.isNatureEnabled(project) &&
 						if (transition == Transition.REFRESH || transition == Transition.UNINSTALL) {
 							String symbolicKey = bundleRegion.getSymbolicKey(null, project);
