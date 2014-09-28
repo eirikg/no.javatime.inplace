@@ -41,7 +41,7 @@ import no.javatime.inplace.ui.views.BundleProperties;
 import no.javatime.inplace.ui.views.BundleView;
 import no.javatime.util.messages.Category;
 import no.javatime.util.messages.ExceptionMessage;
-import no.javatime.util.messages.Message;
+import no.javatime.util.view.ViewUtil;
 
 import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.Command;
@@ -289,8 +289,8 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 	@SuppressWarnings("restriction")
 	protected void bundleViewHandler(Collection<IProject> projects) {
 
-		if (!Message.isViewVisible(BundleView.ID)) {
-			Message.showView(BundleView.ID);
+		if (!ViewUtil.isVisible(BundleView.ID)) {
+			ViewUtil.show(BundleView.ID);
 			updateBundleListPage(ProjectProperties.toJavaProjects(ProjectProperties.getInstallableProjects()));
 		} else {
 			BundleView bv = BundleCommandsContributionItems.getBundleView();
@@ -317,7 +317,7 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 				}
 			} else {
 				// Bundle view is open but there is no selection or detail page
-				Message.hideView(BundleView.ID);
+				ViewUtil.hide(BundleView.ID);
 			}
 		} 
 		// No projects open, start the new bundle wizard 
@@ -371,8 +371,8 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 		display.asyncExec(new Runnable() {
 			@Override
 			public void run() {
-				if (Message.isViewVisible(BundleView.ID)) {						
-					BundleView bundleView = (BundleView) Message.getView(BundleView.ID);
+				if (ViewUtil.isVisible(BundleView.ID)) {						
+					BundleView bundleView = (BundleView) ViewUtil.get(BundleView.ID);
 					if (bundleView != null) {
 						bundleView.showProjects(projects, true);
 					}

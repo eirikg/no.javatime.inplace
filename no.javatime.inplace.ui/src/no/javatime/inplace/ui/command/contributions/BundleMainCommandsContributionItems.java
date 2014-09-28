@@ -29,8 +29,8 @@ import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import no.javatime.inplace.ui.Activator;
 import no.javatime.inplace.ui.msg.Msg;
 import no.javatime.inplace.ui.views.BundleView;
-import no.javatime.util.messages.Message;
 import no.javatime.util.messages.WarnMessage;
+import no.javatime.util.view.ViewUtil;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.jface.action.ContributionItem;
@@ -58,7 +58,6 @@ public class BundleMainCommandsContributionItems extends BundleCommandsContribut
 	protected IContributionItem[] getContributionItems() {
 
 		ArrayList<ContributionItem> contributions = new ArrayList<ContributionItem>();
-
 		Collection<IProject> candidateProjects = ProjectProperties.getCandidateProjects();
 		Collection<IProject> activatedProjects = BundleProjectState.getNatureEnabledProjects();
 
@@ -66,7 +65,7 @@ public class BundleMainCommandsContributionItems extends BundleCommandsContribut
 			// Busy running bundle jobs.
 			// Do not add contributions for bundles that are dependent on their current state
 			if (OpenProjectHandler.getBundlesJobRunState()) {
-				contribute(addStopOperation(menuId, dynamicMainCommandId), contributions);
+				contribute(addStopTaskOperation(menuId, dynamicMainCommandId), contributions);
 				contribute(addInterrupt(menuId, dynamicMainCommandId), contributions);
 			} else {
 				contribute(addActivate(candidateProjects, activatedProjects), contributions);
@@ -342,7 +341,7 @@ public class BundleMainCommandsContributionItems extends BundleCommandsContribut
 	 * details page in an open view with a selected project.
 	 */
 	private CommandContributionItem addToggleBundleView() {
-		if (!Message.isViewVisible(BundleView.ID)) {
+		if (!ViewUtil.isVisible(BundleView.ID)) {
 			return createContibution(menuId, dynamicMainCommandId, showBundleView, bundleViewParamId,
 					CommandContributionItem.STYLE_PUSH, bundleListImage);
 		} else {

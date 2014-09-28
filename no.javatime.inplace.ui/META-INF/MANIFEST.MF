@@ -28,6 +28,7 @@ Import-Package: no.javatime.inplace.bundlejobs,
  no.javatime.inplace.region.manager,
  no.javatime.inplace.region.project,
  no.javatime.inplace.region.status,
- no.javatime.util.messages
+ no.javatime.util.messages,
+ no.javatime.util.view
 Bundle-SymbolicName: no.javatime.inplace.ui;singleton:=true
 Bundle-RequiredExecutionEnvironment: JavaSE-1.7

@@ -13,7 +13,7 @@ package no.javatime.inplace.pl.console.impl;
 import no.javatime.inplace.pl.console.Activator;
 import no.javatime.inplace.pl.console.intface.BundleConsoleFactory;
 import no.javatime.inplace.pl.console.view.BundleConsole;
-import no.javatime.util.messages.Message;
+import no.javatime.util.view.ViewUtil;
 
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.swt.widgets.Display;
@@ -43,7 +43,7 @@ public class BundleConsoleFactoryImpl implements IConsoleFactory, BundleConsoleF
 	 */
 	@Override
 	public Boolean isConsoleViewVisible() {
-		Boolean visible = Message.isViewVisible(IConsoleConstants.ID_CONSOLE_VIEW);
+		Boolean visible = ViewUtil.isVisible(IConsoleConstants.ID_CONSOLE_VIEW);
 		if (visible) {
 			if (!isConsoleVisible()) {
 				return false;
@@ -59,7 +59,7 @@ public class BundleConsoleFactoryImpl implements IConsoleFactory, BundleConsoleF
 	@Override
 	public void showConsoleView() {
 		showConsole();
-		Message.showView(IConsoleConstants.ID_CONSOLE_VIEW);
+		ViewUtil.show(IConsoleConstants.ID_CONSOLE_VIEW);
 	}
 
 	/* (non-Javadoc)
@@ -73,7 +73,7 @@ public class BundleConsoleFactoryImpl implements IConsoleFactory, BundleConsoleF
 		IConsoleManager manager = ConsolePlugin.getDefault().getConsoleManager();
 		IConsole[] consoles = manager.getConsoles();
 		if (consoles.length == 0) { 
-			Message.hideView(IConsoleConstants.ID_CONSOLE_VIEW);
+			ViewUtil.hide(IConsoleConstants.ID_CONSOLE_VIEW);
 		}
 	}
 	

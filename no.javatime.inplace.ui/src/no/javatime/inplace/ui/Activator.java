@@ -29,7 +29,7 @@ import no.javatime.inplace.ui.command.handlers.UIContributorsHandler;
 import no.javatime.inplace.ui.command.handlers.UpdateClassPathOnActivateHandler;
 import no.javatime.inplace.ui.extender.ExtenderBundleTracker;
 import no.javatime.inplace.ui.views.BundleView;
-import no.javatime.util.messages.Message;
+import no.javatime.util.view.ViewUtil;
 
 import org.eclipse.core.commands.Command;
 import org.eclipse.core.commands.State;
@@ -148,7 +148,7 @@ public class Activator extends AbstractUIPlugin implements BundleJobEventListene
 		Activator.getDisplay().asyncExec(new Runnable() {
 			@Override
 			public void run() {
-				BundleView bv = (BundleView) Message.getView(BundleView.ID);
+				BundleView bv = (BundleView) ViewUtil.get(BundleView.ID);
 				if (null != bv) {
 					IWorkbenchSiteProgressService siteService = null;
 					IWorkbenchPartSite partSite = bv.getSite();

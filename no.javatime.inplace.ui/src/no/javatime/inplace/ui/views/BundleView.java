@@ -36,6 +36,7 @@ import no.javatime.inplace.ui.command.handlers.BundleMenuActivationHandler;
 import no.javatime.inplace.ui.msg.Msg;
 import no.javatime.util.messages.ExceptionMessage;
 import no.javatime.util.messages.Message;
+import no.javatime.util.view.ViewUtil;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
@@ -1429,7 +1430,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 			IWorkbenchPartSite workbenchPartSite = null;
 			ISelectionProvider selProvider = null;
 			try {
-				packageExplorer = Message.getView(BundleMenuActivationHandler.PACKAGE_EXPLORER_ID);
+				packageExplorer = ViewUtil.get(BundleMenuActivationHandler.PACKAGE_EXPLORER_ID);
 				if (null != packageExplorer) {
 					IJavaProject jp = BundleProjectState.getJavaProject(project);
 					IStructuredSelection jpSelection = new StructuredSelection(jp);
@@ -1441,7 +1442,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 						}
 					}
 				}
-				projectExplorer = Message.getView(BundleMenuActivationHandler.PROJECT_EXPLORER_ID);
+				projectExplorer = ViewUtil.get(BundleMenuActivationHandler.PROJECT_EXPLORER_ID);
 				if (null != projectExplorer) {
 					IStructuredSelection pSelection = new StructuredSelection(project);
 					workbenchPartSite = projectExplorer.getSite();

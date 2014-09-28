@@ -24,11 +24,6 @@ import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.widgets.Display;
-import org.eclipse.ui.IViewPart;
-import org.eclipse.ui.IViewReference;
-import org.eclipse.ui.IWorkbenchPage;
-import org.eclipse.ui.PartInitException;
-import org.eclipse.ui.part.ViewPart;
 import org.eclipse.ui.statushandlers.StatusManager;
 
 /**
@@ -543,103 +538,6 @@ public class Message {
 			prefix = prefix != null ? prefix + msg : msg;
 			return prefix;
 		}
-	}
-
-	public static IViewPart getView(String partId) {
-		IWorkbenchPage page = Activator.getDefault().getActivePage();
-		if (null != page) {
-			return page.findView(partId);
-		}
-		return null;
-	}
-
-	public static Boolean isViewVisible(String partId) {
-		IWorkbenchPage page = Activator.getDefault().getActivePage();
-		if (null != page) {
-			IViewReference viewReference = page.findViewReference(partId);
-			if (null != viewReference) {
-				final IViewPart view = viewReference.getView(false);
-				if (null != view) {
-					return page.isPartVisible(view);
-				}
-			}
-		}
-		return false;
-	}
-
-	/**
-	 * Verify that a view is visible on the active page
-	 * 
-	 * @param part the view to check
-	 * @return true if the view is visible and false if not
-	 */
-	public static Boolean isViewVisible(Class<? extends ViewPart> part) {
-
-		IWorkbenchPage page = Activator.getDefault().getActivePage();
-		if (page != null) {
-			IViewReference[] vRefs = page.getViewReferences();
-			for (IViewReference vr : vRefs) {
-				IViewPart vp = vr.getView(false);
-				if (null != vp && vp.getClass().equals(part)) {
-					return true;
-				}
-			}
-		}
-		return false;
-	}
-
-	/**
-	 * Open view if closed or set focus on an already open view
-	 * 
-	 * @param viewId part id of view
-	 */
-	public static void showView(final String viewId) {
-		Display display = Activator.getDisplay();
-		if (null == display) {
-			return;
-		}
-		display.asyncExec(new Runnable() {
-			public void run() {
-				IWorkbenchPage page = Activator.getDefault().getActivePage();
-				if (null != page) {
-					if (!isViewVisible(viewId)) {
-						try {
-							page.showView(viewId);
-						} catch (PartInitException e) {
-						}
-					} else {
-						IViewPart mv = page.findView(viewId);
-						if (null != mv) {
-							mv.setFocus();
-						}
-					}
-				}
-			}
-		});
-	}
-
-	/**
-	 * Hide view if visible or set focus on an already open view
-	 * 
-	 * @param viewId part id of view
-	 */
-	public static void hideView(final String viewId) {
-		Display display = Activator.getDisplay();
-		if (null == display) {
-			return;
-		}
-		display.asyncExec(new Runnable() {
-			public void run() {
-				IWorkbenchPage page = Activator.getDefault().getActivePage();
-				if (null != page) {
-					// Hide even if not visible, may be on another tab
-					IViewPart mv = page.findView(viewId);
-					if (null != mv) {
-						page.hideView(mv);
-					}
-				}
-			}
-		});
 	}
 
 	/**

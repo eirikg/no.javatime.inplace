@@ -11,7 +11,8 @@ Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Import-Package: no.javatime.inplace.dl.preferences.intface,
  no.javatime.inplace.extender.provider,
  no.javatime.inplace.region.manager,
- no.javatime.util.messages
+ no.javatime.util.messages,
+ no.javatime.util.view
 Bundle-ActivationPolicy: lazy
 Bundle-Console-Factory: no.javatime.inplace.pl.console.impl.BundleConsoleFactoryImpl 
 Export-Package: no.javatime.inplace.pl.console.intface

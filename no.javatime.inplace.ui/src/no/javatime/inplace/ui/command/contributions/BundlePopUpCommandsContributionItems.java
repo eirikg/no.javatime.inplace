@@ -29,6 +29,7 @@ import no.javatime.inplace.ui.command.handlers.BundleMenuActivationHandler;
 import no.javatime.inplace.ui.msg.Msg;
 import no.javatime.inplace.ui.views.BundleView;
 import no.javatime.util.messages.Message;
+import no.javatime.util.view.ViewUtil;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.jdt.core.IJavaProject;
@@ -79,7 +80,7 @@ public class BundlePopUpCommandsContributionItems extends BundleCommandsContribu
 			// Busy running bundle jobs.
 			if (OpenProjectHandler.getBundlesJobRunState()) {
 				// Do not add contributions for bundles that are dependent on their current state
-				contribute(addStopOperation(menuId, dynamicPopUpCommandId), contributions);
+				contribute(addStopTaskOperation(menuId, dynamicPopUpCommandId), contributions);
 				contribute(addInterrupt(menuId, dynamicPopUpCommandId), contributions);
 			} else {
 				contribute(addActivate(activated, project, bundle), contributions);
@@ -283,7 +284,7 @@ public class BundlePopUpCommandsContributionItems extends BundleCommandsContribu
 	 * details page in an open view with an active project.
 	 */
 	private CommandContributionItem addToggleBundleView() {
-		if (!Message.isViewVisible(BundleView.ID)) {
+		if (!ViewUtil.isVisible(BundleView.ID)) {
 			return createContibution(menuId, dynamicPopUpCommandId, showBundleView, bundleViewParamId,
 					CommandContributionItem.STYLE_PUSH, bundleListImage);
 		} else {

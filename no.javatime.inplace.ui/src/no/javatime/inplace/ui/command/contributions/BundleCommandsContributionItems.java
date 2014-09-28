@@ -26,7 +26,7 @@ import no.javatime.inplace.ui.Activator;
 import no.javatime.inplace.ui.msg.Msg;
 import no.javatime.inplace.ui.views.BundleProperties;
 import no.javatime.inplace.ui.views.BundleView;
-import no.javatime.util.messages.Message;
+import no.javatime.util.view.ViewUtil;
 
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jface.action.ContributionItem;
@@ -126,7 +126,7 @@ public abstract class BundleCommandsContributionItems extends CompoundContributi
 	 * operations is enabled. Null if one of these conditions are false
 	 * @throws InPlaceException fail to get the command options service
 	 */
-	protected CommandContributionItem addStopOperation(String menuId, String commandId)
+	protected CommandContributionItem addStopTaskOperation(String menuId, String commandId)
 			throws InPlaceException {
 
 		CommandOptions cmdOpt = Activator.getDefault().getCommandOptionsService();
@@ -288,7 +288,7 @@ public abstract class BundleCommandsContributionItems extends CompoundContributi
 	 * @return the bundle view object or null if not present
 	 */
 	public static BundleView getBundleView() {
-		return (BundleView) Message.getView(BundleView.ID);
+		return (BundleView) ViewUtil.get(BundleView.ID);
 	}
 
 	/**
@@ -313,7 +313,7 @@ public abstract class BundleCommandsContributionItems extends CompoundContributi
 		}
 		if (null != selection && selection instanceof IStructuredSelection) {
 			Object element = ((IStructuredSelection) selection).getFirstElement();
-			// Bundles view model properties
+			// Bundle view model properties
 			if (element instanceof BundleProperties) {
 				BundleProperties bp = (BundleProperties) element;
 				return bp.getJavaProject();
