@@ -99,9 +99,9 @@ public class BundleCommandImpl implements BundleCommand {
 	}
 
 	/**
-	 * Create a wiring package service and a resolve hook factory
+	 * Create a wiring package service. Should be done at bundle startup
 	 */
-	public void init() {
+	public void initFrameworkWiring() {
 		Bundle systemBundle = getContext().getBundle(0); // Platform.getBundle("org.eclipse.osgi");
 		if (null != systemBundle) {
 			frameworkWiring = systemBundle.adapt(FrameworkWiring.class);

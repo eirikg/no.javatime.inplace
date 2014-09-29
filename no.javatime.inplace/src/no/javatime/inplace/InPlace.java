@@ -41,7 +41,6 @@ import no.javatime.inplace.pl.console.intface.BundleConsoleFactory;
 import no.javatime.inplace.region.closure.BuildErrorClosure;
 import no.javatime.inplace.region.closure.BuildErrorClosure.ActivationScope;
 import no.javatime.inplace.region.closure.CircularReferenceException;
-import no.javatime.inplace.region.manager.BundleCommandImpl;
 import no.javatime.inplace.region.manager.BundleManager;
 import no.javatime.inplace.region.manager.BundleRegion;
 import no.javatime.inplace.region.manager.BundleTransition.Transition;
@@ -209,7 +208,6 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 				autoBuildCommand.addCommandListener(this);
 			}
 		}
-		BundleCommandImpl.INSTANCE.init();
 		bundleRegion = BundleManager.getRegion();
 	}
 

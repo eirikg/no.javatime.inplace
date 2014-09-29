@@ -3,6 +3,7 @@ package no.javatime.inplace.region;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions;
 import no.javatime.inplace.dl.preferences.intface.MessageOptions;
 import no.javatime.inplace.extender.provider.Extension;
+import no.javatime.inplace.region.manager.BundleCommandImpl;
 import no.javatime.inplace.region.manager.InPlaceException;
 import no.javatime.inplace.region.resolver.BundleResolveHookFactory;
 import no.javatime.inplace.region.state.BundleStateEvents;
@@ -55,6 +56,7 @@ public class Activator extends AbstractUIPlugin {
 		Activator.context = context;		
 		registerResolverHook();
 		Activator.context.addBundleListener(bundleEvents);
+		BundleCommandImpl.INSTANCE.initFrameworkWiring();
 		messageOptions = new Extension<>(MessageOptions.class);
 		dependencyOptions = new Extension<>(DependencyOptions.class);
 		bundleProjectTracker =  new ServiceTracker<IBundleProjectService, IBundleProjectService>
