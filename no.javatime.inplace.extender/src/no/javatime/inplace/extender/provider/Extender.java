@@ -14,6 +14,7 @@ import java.util.concurrent.ConcurrentSkipListSet;
 import no.javatime.inplace.extender.Activator;
 
 import org.osgi.framework.Bundle;
+import org.osgi.framework.ServiceFactory;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.ServiceRegistration;
 import org.osgi.util.tracker.BundleTracker;
@@ -39,7 +40,7 @@ public class Extender<T> {
 	/* Bundle id of the bundle registering the extension */
 	private Long regBId;
 	/* Name of the implementation class */
-	final private String clsName;
+	private String clsName;
 	/* Implementation class loaded by extender or obtained from service registry */
 	private Class<?> cls;
 	/* Service registration object when the service is created by the extender */
@@ -50,28 +51,41 @@ public class Extender<T> {
 	private ServiceTracker<T, T> tracker;
 	/* The bundle tracker holding extender objects registered by a bundle tracker customizer */
 	final private BundleTracker<Extender<?>> bundleTracker;
-
+	private ServiceFactory<?> serviceFactory;
 	/**
 	 * An extension belonging to the current extender instance.
 	 */
 	private Extension<T> extension;
 
 	/**
-	 * List of all extenders keyed by interface name
+	 * List of all services keyed by interface name
 	 */
-	private static ConcurrentMap<String, Extender<?>> extenders = new ConcurrentHashMap<>();
-
+	private static ConcurrentMap<String, Extender<?>> services = new ConcurrentHashMap<>();
+	
+	
 	/**
 	 * List of all bundles registering a service
 	 */
-	private ConcurrentSkipListSet<Long> requesters = new ConcurrentSkipListSet<>();
+	private ConcurrentSkipListSet<Long> registrators = new ConcurrentSkipListSet<>();
 
-	public static <T> Extender<T> register(Bundle ownerBundle, Class<T> intFace, String className) {
-		return register(ownerBundle, ownerBundle, intFace.getName(), className);
+	public static <T> Extender<T> register(Bundle regBundle, Class<T> intFace, String className) {
+		return register(regBundle, regBundle, intFace.getName(), className);
 	}
 
-	public static <T> Extender<T> register(Bundle ownerBundle, String interfaceName, String className) {
-		return register(ownerBundle, ownerBundle, interfaceName, className);
+	public static <T> Extender<T> register(Bundle regBundle, String interfaceName, String className) {
+		return register(regBundle, regBundle, interfaceName, className);
+	}
+	
+	public static <T> Extender<T> register(Bundle ownerBundle, Bundle regBundle, String interfaceName, ServiceFactory<?> serviceFactory) {
+		Extender<?> ex = services.get(interfaceName);
+		// First registration of service
+		if (null == ex) {
+			ex = new Extender<>(ownerBundle, regBundle, interfaceName, serviceFactory);
+			services.put(interfaceName, ex);
+		} else {
+			ex.registrators.add(regBundle.getBundleId());
+		}
+		return Extender.register(ex);
 	}
 
 	public static <T> Extender<T> register(Bundle ownerBundle, Bundle regBundle, Class<T> intFace, String className) {
@@ -79,21 +93,18 @@ public class Extender<T> {
 	}
 
 	public static <T> Extender<T> register(Bundle ownerBundle, Bundle regBundle, String interfaceName, String className) {
-		Extender<?> ex = new Extender<>(ownerBundle, regBundle, interfaceName, className);
-		extenders.put(interfaceName, ex);
+		Extender<?> ex = services.get(interfaceName);
+		// First registration of service
+		if (null == ex) {
+			ex = new Extender<>(ownerBundle, regBundle, interfaceName, className);
+			services.put(interfaceName, ex);
+		} else {
+			ex.registrators.add(regBundle.getBundleId());
+		}
 		return Extender.register(ex);
 	}
 
 	// Register with bundle tracker
-	public static <T> Extender<T> register(BundleTracker<Extender<?>> bt, Bundle ownerBundle,
-			Class<T> intFace, String className) {
-		return register(bt, ownerBundle, ownerBundle, intFace.getName(), className);
-	}
-	
-	public static <T> Extender<T> register(BundleTracker<Extender<?>> bt, Bundle ownerBundle,
-			String interfaceName, String className) {
-		return register(bt, ownerBundle, ownerBundle, interfaceName, className);
-	}
 
 	public static <T> Extender<T> register(BundleTracker<Extender<?>> bt, Bundle ownerBundle,
 			Bundle regBundle, Class<T> intFace, String className) {
@@ -142,8 +153,14 @@ public class Extender<T> {
 	 */
 	public static <T> Extender<T> register(BundleTracker<Extender<?>> bt, Bundle ownerBundle,
 			Bundle regBundle, String interfaceName, String className) {
-		Extender<?> ex = new Extender<>(bt, ownerBundle, regBundle, interfaceName, className);
-		extenders.put(interfaceName, ex);
+		Extender<?> ex = services.get(interfaceName);
+		// First registration of service
+		if (null == ex) {
+			ex = new Extender<>(bt, ownerBundle, regBundle, interfaceName, className);		
+			services.put(interfaceName, ex);
+		} else {
+			ex.registrators.add(regBundle.getBundleId());
+		}
 		return Extender.register(ex);
 	}
 
@@ -155,6 +172,11 @@ public class Extender<T> {
 		this.interfaceName = interfaceName;
 		this.clsName = className;
 		this.bundleTracker = null;
+	}
+
+	private Extender(Bundle ownerBundle, Bundle regBundle, String interfaceName, ServiceFactory<?> serviceFactory) {
+		this(ownerBundle, regBundle, interfaceName, (String) null);
+		this.serviceFactory = serviceFactory;
 	}
 
 	/**
@@ -207,7 +229,7 @@ public class Extender<T> {
 	 */
 	public static <E> Extender<E> getInstance(String interfaceName) throws ExtenderException {
 
-		Extender<?> extender = extenders.get(interfaceName);
+		Extender<?> extender = services.get(interfaceName);
 		if (null != extender) {
 			Extender<?> trackedExtender = getTrackedExtender(extender, interfaceName);
 			if (null != trackedExtender) {
@@ -257,7 +279,7 @@ public class Extender<T> {
 	 * @see Extender#register(Long, Long, String, String)
 	 */
 	public static boolean isExtended(String interfaceName) {
-		if (null != extenders.get(interfaceName)) {
+		if (null != services.get(interfaceName)) {
 			return true;
 		}
 		return false;
@@ -288,11 +310,14 @@ public class Extender<T> {
 	private static <E> Extender<E> register(Extender<?> extender) throws ExtenderException {
 		// Ensure that this is a valid interface and that the implementation class
 		// actually implements the interface
-		if (null != extender.getExtensionInterface()) {
-			// Delayed service registration
+		if (null != extender.serviceFactory) {
 			extender.registerAsService();
 			// The cast should be safe as long as the class implements the interface
 			// See declaration of the bundle tracker customizer in the activator
+			return (Extender<E>) extender;			
+		}
+		if (null != extender.getExtensionInterface()) {
+			extender.registerAsService();
 			return (Extender<E>) extender;
 		}
 		return null;
@@ -301,8 +326,8 @@ public class Extender<T> {
 	protected void openServiceTracker() throws ExtenderException {
 		if (null == tracker) {
 			try {
-				// TODO Is it ok that the context from this bundle is used?
-				tracker = new ServiceTracker<T, T>(Activator.getContext(), interfaceName, null);
+				// TODO Is it OK to use the registration bundle of the service
+				tracker = new ServiceTracker<T, T>(getRegistratorBundle().getBundleContext(), interfaceName, null);
 				tracker.open();
 			} catch (IllegalStateException e) {
 				tracker = null;
@@ -310,7 +335,23 @@ public class Extender<T> {
 			}
 		}
 	}
-
+	
+	/**
+	 * Get the service object for the current extension using the context of the specified bundle
+	 * 
+	 * @param bundle bind the service to this bundle 
+	 * @return the service object or null if no service is being tracked. This usually means that the
+	 * bundle context of the bundle providing the service is no longer valid.
+	 */
+	@SuppressWarnings("unchecked")
+	public T getService(Bundle bundle) {
+		try {
+			return (T) bundle.getBundleContext().getService(serviceRef);
+		} catch (IllegalStateException e) {
+			throw new ExtenderException("failed_to_open_tracker", getExtensionInterfaceName());
+		}	
+	}
+	
 	/**
 	 * Get the service object for the current extension
 	 * 
@@ -331,7 +372,7 @@ public class Extender<T> {
 
 	public static void close() {
 
-		for (Entry<String, Extender<?>> extender : extenders.entrySet()) {
+		for (Entry<String, Extender<?>> extender : services.entrySet()) {
 			Extender<?> eVal = extender.getValue();
 			eVal.closeServiceTracker();
 			// unregistered by the framework
@@ -404,8 +445,9 @@ public class Extender<T> {
 	 * name is invalid
 	 */
 	public Class<?> getExtensionClass() throws ExtenderException {
+
 		if (null == cls) {
-			Bundle bundle = getExtensionBundle();
+			Bundle bundle = getOwnerBundle();
 			if (null == bundle) {
 				// Not tracked
 				throw new ExtenderException("get_bundle_exception", ownerBId);
@@ -436,7 +478,7 @@ public class Extender<T> {
 	 * 
 	 * @return an object of the class implementing this extension interface.
 	 * @throws ExtenderException If the class object or the object could not be created
-	 * @see #getExtensionBundle()
+	 * @see #getOwnerBundle()
 	 * @see #getExtensionClass()
 	 */
 	public Object createExtensionObjec() throws ExtenderException {
@@ -451,7 +493,7 @@ public class Extender<T> {
 	 * 
 	 * @return the bundle object or null if the bundle context of the extension is no longer valid
 	 */
-	public Bundle getExtensionBundle() {
+	public Bundle getOwnerBundle() {
 
 		return Activator.getContext().getBundle(ownerBId);
 	}
@@ -472,7 +514,7 @@ public class Extender<T> {
 	 * 
 	 * @return a service registration object or null if the extension is not registered
 	 */
-	public ServiceRegistration<?> getServiceRegistration() {
+	private ServiceRegistration<?> getServiceRegistration() {
 		return serviceRegOwner;
 	}
 
@@ -496,8 +538,7 @@ public class Extender<T> {
 	 * specified class
 	 */
 	public ServiceReference<?> getServicereReference() {
-		Bundle bundle = getExtensionBundle();
-		// Bundle bundle = getExtenderBundle();
+		Bundle bundle = getRegistratorBundle();
 		return bundle.getBundleContext().getServiceReference(getExtensionInterface());
 	}
 
@@ -517,7 +558,17 @@ public class Extender<T> {
 	public void registerAsService() throws ExtenderException {
 		try {
 			synchronized (this) {
-				if (requesters.add(regBId)) {
+				if (registrators.add(regBId)) {
+					if (null != serviceFactory && null == serviceRef) {
+						serviceRegOwner = getOwnerBundle().getBundleContext().registerService(interfaceName,
+								serviceFactory, null);													
+						T serviceobject = getService(getRegistratorBundle());
+						if (null == serviceobject) {
+							throw new ExtenderException("failed_to_get_service", interfaceName, serviceFactory.getClass());
+						}
+						cls = serviceobject.getClass();
+						clsName = cls.getName();
+					}
 					serviceRef = getServicereReference();
 					Class<?> cls = getExtensionClass();
 					if (null == interfaceName) {
@@ -527,26 +578,20 @@ public class Extender<T> {
 						throw new ExtenderException("missing_interface", interfaceName, cls);
 					}
 					if (null == serviceRef) {
-						serviceRegOwner = getRegistratorBundle().getBundleContext().registerService(interfaceName,
+						serviceRegOwner = getOwnerBundle().getBundleContext().registerService(interfaceName,
 								createExtensionObjec(), null);
 						serviceRef = getServicereReference();
 						if (null == serviceRef) {
 							throw new ExtenderException("failed_to_get_service_for_interface", interfaceName);
 						}
-					} else {
-						regBId = serviceRef.getBundle().getBundleId();
-						requesters.add(regBId);
 					}
-					Object extensionImplObject = getExtensionBundle().getBundleContext().getService(serviceRef);
-					// printServiceregInfo(serviceRef);
-					if (null == extensionImplObject) {
-						throw new ExtenderException("failed_to_get_service", interfaceName, cls);
-					}
-					if (!serviceRef.isAssignableTo(getExtensionBundle(), getExtensionClass().getName())) {
-						throw new ExtenderException("illegal_source_package_reference", getExtensionBundle(), getExtensionClass().getName());					
+					if (!serviceRef.isAssignableTo(getRegistratorBundle(), getExtensionClass().getName())) {
+						throw new ExtenderException("illegal_source_package_reference", getRegistratorBundle(), getExtensionClass().getName());					
 					}
 				}
+				printServiceregInfo(serviceRef);
 			}
+			
 		} catch (IllegalStateException | IllegalArgumentException | SecurityException e) {
 			throw new ExtenderException(e, e.getMessage());
 		}
@@ -556,11 +601,14 @@ public class Extender<T> {
 
 		System.out.println("------------   Service Registation info:  --------------------\n");
 		System.out.println("serviceref                   : " + serviceRef.getBundle().getSymbolicName());
-		System.out.println("getextension bundle          : " + getExtensionBundle().getSymbolicName());
-		System.out.println("getregistration bundle       : " + getRegistratorBundle().getSymbolicName());
-		System.out.println("Requesters set               : " + formatBundleList(getBundles(requesters), false));
-		System.out.println("Using bundles                : " + formatBundleList(new ArrayList<Bundle>(Arrays.asList(serviceRef.getUsingBundles())), false));
-		System.out.println("Serviceref Impl. Class       : " + getExtensionBundle().getBundleContext().getService(serviceRef).getClass().getName());
+		System.out.println("first owner bundle           : " + getOwnerBundle().getSymbolicName());
+		System.out.println("first registration bundle    : " + getRegistratorBundle().getSymbolicName());
+		System.out.println("Registrators                 : " + formatBundleList(getBundles(registrators), false));
+		Bundle[] using = serviceRef.getUsingBundles();
+		if (null != using) {
+			System.out.println("Using bundles                : " + formatBundleList(new ArrayList<Bundle>(Arrays.asList(using)), false));
+		}
+		System.out.println("Serviceref Impl. Class       : " + getOwnerBundle().getBundleContext().getService(serviceRef).getClass().getName());
 		System.out.println("Extender Impl. Class         : " + getExtensionClass().getName());
 		System.out.println("Extender Interface Class     : " + getExtensionInterface().getName());
 	}

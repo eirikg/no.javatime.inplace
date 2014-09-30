@@ -2,6 +2,8 @@ package no.javatime.inplace.extender.provider;
 
 import no.javatime.inplace.extender.intface.IExtension;
 
+import org.osgi.framework.Bundle;
+
 
 /**
  * Create an extension for a given interface.
@@ -29,7 +31,11 @@ public class Extension<T> implements IExtension<T> {
 		this.extender = Extender.<T>getInstance(interfaceName);
 		this.intFace = extender.getExtensionInterface();
 	}
-	
+
+	public T getService(Bundle bundle) {		
+		return extender.getService(bundle);
+	}		
+
 	public T getService() {
 		return extender.getService();
 	}		
