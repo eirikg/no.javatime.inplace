@@ -246,6 +246,7 @@ public class LogWriter implements SynchronousLogListener, LogFilter {
 			// If we're not allowed to get the values of these properties
 			// then just skip over them.
 		}
+		writeln ("OSGi Framework version=" + Activator.getContext().getProperty("org.osgi.framework.version"));
 		// The Bootloader has some information that we might be interested in.
 		write("BootLoader constants: OS=" + environmentInfo.getOS()); //$NON-NLS-1$
 		write(", ARCH=" + environmentInfo.getOSArch()); //$NON-NLS-1$
