@@ -172,13 +172,18 @@ public class BundleStateEvents implements SynchronousBundleListener {
 		 * transition from state installed. The unresolve transition part has been invoked by the
 		 * refresh command executing the refresh transition with resolved as the initial state.
 		 * 
+		 * Update is comprised of of two transitions; - unresolve; and - update. The update command
+		 * set the transition to update and the state to installed. 
+		 * 
 		 * When the uninstall command invokes the uninstall transition from state resolved the bundle is
 		 * moved to state installed. This unresolved event triggers the uninstall transition from state
 		 * installed and moves the bundle to the terminal state uninstalled. <p> In addition an
 		 * unresolved event can be triggered by the framework (see comment below).
 		 */
 		case BundleEvent.UNRESOLVED: {
-			if (node.isTransition(Transition.REFRESH)) {
+			if (node.isTransition(Transition.UPDATE)) {
+				// Do nothing the bundle is in state installed
+			} else if (node.isTransition(Transition.REFRESH)) {
 				node.getState().resolve(node);
 			} else if (node.isTransition(Transition.UNINSTALL)) {
 				node.getState().uninstall(node);
