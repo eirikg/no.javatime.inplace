@@ -1,7 +1,8 @@
 package no.javatime.inplace.pl.dependencies;
 
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions;
-import no.javatime.inplace.extender.provider.Extension;
+import no.javatime.inplace.extender.intface.Extenders;
+import no.javatime.inplace.extender.intface.Extension;
 import no.javatime.inplace.pl.dependencies.msg.Msg;
 import no.javatime.inplace.region.manager.InPlaceException;
 
@@ -42,14 +43,14 @@ public class Activator extends AbstractUIPlugin {
 	public void start(BundleContext context) throws Exception {
 		super.start(context);
 		plugin = this;
-		dependencyOptions = new Extension<>(DependencyOptions.class);
+		dependencyOptions = Extenders.getExtension(DependencyOptions.class.getName());
 
 		// The service (extender) should be registered by the bundle using this extension
 		/*
 		Bundle bundle = context.getBundle();
 		Dictionary<String, String> dictionary = bundle.getHeaders();		
 		String depDlgClassName = dictionary.get(DependencyDialog.DEPENDENCY_DIALOG_HEADER);
-		Extender.register(bundle, DependencyDialog.class, depDlgClassName);
+		ExtenderImpl.register(bundle, DependencyDialog.class, depDlgClassName);
 		*/
 	}
 

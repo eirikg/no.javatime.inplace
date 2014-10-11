@@ -204,7 +204,7 @@ public class ActivateProjectJob extends NatureJob {
 			InPlace.get().savePluginSettings(true, true);
 		} else {
 			if (InPlace.get().getMsgOpt().isBundleOperations()) {
-				InPlace.get().trace(
+				InPlace.get().log(
 						new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, Msg.NO_PROJECTS_TO_ACTIVATE_INFO));
 			}
 			return getLastStatus();
@@ -214,7 +214,7 @@ public class ActivateProjectJob extends NatureJob {
 					Msg.BUILDER_OFF_INFO);
 			status.add(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, NLS.bind(
 					Msg.BUILDER_OFF_LIST_INFO, BundleProjectState.formatProjectList(getPendingProjects()))));
-			InPlace.get().trace(status);
+			InPlace.get().log(status);
 		}
 		return getLastStatus();
 	}
@@ -336,7 +336,7 @@ public class ActivateProjectJob extends NatureJob {
 			if (projectsToActivate.size() > 0) {
 				addPendingProjects(projectsToActivate);
 				if (InPlace.get().getMsgOpt().isBundleOperations()) {
-					InPlace.get().trace(
+					InPlace.get().log(
 							new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, NLS.bind(
 									Msg.ADD_BUNDLES_TO_ACTIVATE_INFO,
 									BundleProjectState.formatProjectList(projectsToActivate))));
@@ -375,7 +375,7 @@ public class ActivateProjectJob extends NatureJob {
 			status = createMultiStatus(multiStatus);
 		} else {
 			if (InPlace.get().getMsgOpt().isBundleOperations()) {
-				InPlace.get().trace(
+				InPlace.get().log(
 						new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, NLS.bind(
 								Msg.UNINSTALL_BEFORE_ACTIVATE_INFO,
 								bundleRegion.formatBundleList(bundlesToUninstall, true))));

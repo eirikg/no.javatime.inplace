@@ -15,6 +15,7 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 
 import no.javatime.inplace.InPlace;
+import no.javatime.inplace.bundlejobs.intface.ActivateBundle;
 import no.javatime.inplace.bundlemanager.BundleJobManager;
 import no.javatime.inplace.bundleproject.BundleProjectSettings;
 import no.javatime.inplace.bundleproject.ProjectProperties;
@@ -89,7 +90,7 @@ import org.osgi.framework.Bundle;
  * @see DeactivateJob
  * 
  */
-public class ActivateBundleJob extends BundleJob {
+public class ActivateBundleJob extends BundleJob implements ActivateBundle {
 
 	/** Reactivating or activating bundles at start up */
 	final public static String activateStartupJobName = Message.getInstance().formatString(
@@ -103,6 +104,9 @@ public class ActivateBundleJob extends BundleJob {
 	final private static String duplicateMessage = ErrorMessage.getInstance().formatString(
 			"duplicate_ws_bundle_install");
 
+	public ActivateBundleJob() {
+		super("Registered as a service");
+	}
 	/**
 	 * Construct an activate job with a given job name
 	 * 
@@ -507,5 +511,10 @@ public class ActivateBundleJob extends BundleJob {
 	 */
 	public static int getTicks() {
 		return 3; // install (activate workspace), resolve, start
+	}
+	@Override
+	public void run() {
+		// TODO Auto-generated method stub
+		
 	}
 }

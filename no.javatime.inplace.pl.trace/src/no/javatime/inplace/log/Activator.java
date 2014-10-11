@@ -3,10 +3,7 @@ package no.javatime.inplace.log;
 import java.io.File;
 import java.util.Dictionary;
 
-import no.javatime.inplace.extender.provider.Extender;
 import no.javatime.inplace.log.dl.LogWriter;
-import no.javatime.inplace.log.intface.BundleLog;
-import no.javatime.inplace.log.intface.BundleLogView;
 import no.javatime.inplace.log.view.SharedImages;
 import no.javatime.inplace.region.manager.InPlaceException;
 
@@ -84,13 +81,16 @@ public class Activator extends AbstractUIPlugin {
 
 		Bundle bundle = context.getBundle();
 		Dictionary<String, String> dictionary = bundle.getHeaders();
-
+	
+		// Other bundles extends the bundle log view and the bundle logger
+		/*
 		String bundleLogImpl = dictionary.get(BundleLog.BUNDLE_LOG_HEADER);
-		Extender.<BundleLog>register(bundle, BundleLog.class, bundleLogImpl);
-		
+		ExtenderImpl.<BundleLog>register(bundle, BundleLog.class, bundleLogImpl);
+
 		String bundleLogViewImpl = dictionary.get(BundleLogView.BUNDLE_LOG_VIEW_HEADER);
-		Extender.<BundleLogView>register(bundle, BundleLogView.class, bundleLogViewImpl);
-	  
+		ExtenderImpl.<BundleLogView>register(bundle, BundleLogView.class, bundleLogViewImpl);
+	  */
+		
 		logWriter = new LogWriter(getLogFile(), BUNDLE_LOGGER_NAME);
 		ExtendedLogReaderService readerService = getLogReaderService(); 
 		readerService.addLogListener(logWriter, logWriter);

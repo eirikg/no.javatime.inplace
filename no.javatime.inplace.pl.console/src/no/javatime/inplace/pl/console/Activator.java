@@ -3,8 +3,9 @@ package no.javatime.inplace.pl.console;
 import java.util.Dictionary;
 
 import no.javatime.inplace.dl.preferences.intface.MessageOptions;
-import no.javatime.inplace.extender.provider.Extender;
-import no.javatime.inplace.extender.provider.Extension;
+import no.javatime.inplace.extender.intface.Extender;
+import no.javatime.inplace.extender.intface.Extenders;
+import no.javatime.inplace.extender.intface.Extension;
 import no.javatime.inplace.pl.console.impl.BundleConsoleFactoryImpl;
 import no.javatime.inplace.pl.console.intface.BundleConsoleFactory;
 import no.javatime.inplace.pl.console.view.BundleConsole;
@@ -57,9 +58,9 @@ public class Activator extends AbstractUIPlugin {
 		Bundle bundle = context.getBundle();
 		Dictionary<String, String> dictionary = bundle.getHeaders();
 		String consoleFactoryName = dictionary.get(BundleConsoleFactory.BUNDLE_CONSOLE_HEADER);
-		Extender.register(bundle, BundleConsoleFactory.class, consoleFactoryName);
-
-		messageOptions = new Extension<>(MessageOptions.class);
+		Extender<?> extender = Extenders.getExtender();  
+		extender.register(context.getBundle(), BundleConsoleFactory.class.getName(), consoleFactoryName);
+		messageOptions = Extenders.getExtension(MessageOptions.class.getName());
 		bundleConsole = BundleConsoleFactoryImpl.findConsole(CONSOLE_NAME);
 	}
 

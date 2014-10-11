@@ -17,8 +17,9 @@ import java.util.Map;
 import no.javatime.inplace.bundlejobs.BundleJob;
 import no.javatime.inplace.dialogs.OpenProjectHandler;
 import no.javatime.inplace.dl.preferences.intface.CommandOptions;
-import no.javatime.inplace.extender.provider.ExtenderException;
-import no.javatime.inplace.extender.provider.Extension;
+import no.javatime.inplace.extender.intface.ExtenderException;
+import no.javatime.inplace.extender.intface.Extenders;
+import no.javatime.inplace.extender.intface.Extension;
 import no.javatime.inplace.log.intface.BundleLogView;
 import no.javatime.inplace.pl.console.intface.BundleConsoleFactory;
 import no.javatime.inplace.region.manager.InPlaceException;
@@ -168,13 +169,13 @@ public abstract class BundleCommandsContributionItems extends CompoundContributi
 	 * @param menuId a dynamic menu id. This is usually the bundle main or pop-up menu id
 	 * @param commandId The command id for a defined command associated with the specified menu id
 	 * @return contribution for hiding or showing the bundle console view
-	 * @throws ExtenderException if failing to get the extender for the bundle console view
-	 * @throws InPlaceException if failing to get the extension service for the bundle console view
+	 * @throws ExtenderException if failing to get the extender service for the bundle console view
+	 * @throws InPlaceException if the bundle console view service returns null
 	 */
 	protected CommandContributionItem addToggleBundleConsoleView(String menuId, String commandId)
 			throws ExtenderException, InPlaceException {
-
-		Extension<BundleConsoleFactory> ext = new Extension<>(BundleConsoleFactory.class);
+	
+		Extension<BundleConsoleFactory> ext = Extenders.getExtension(BundleConsoleFactory.class.getName());
 		BundleConsoleFactory bundleConsoleService = ext.getService();
 		if (null == bundleConsoleService) {
 			throw new InPlaceException("failed_to_get_service_for_interface",
@@ -195,12 +196,13 @@ public abstract class BundleCommandsContributionItems extends CompoundContributi
 	 * @param menuId a dynamic menu id. This is usually the bundle main or pop-up menu id
 	 * @param commandId The command id for a defined command associated with the specified menu id
 	 * @return contribution for hiding or showing the bundle log view
-	 * @throws ExtenderException if failing to get the extender for the bundle log view
-	 * @throws InPlaceException if failing to get the extension service for the bundle log view
+	 * @throws ExtenderException if failing to get the extender service for the bundle log view
+	 * @throws InPlaceException if the bundle log view service returns null
 	 */
 	protected CommandContributionItem addToggleBundleLogView(String menuId, String commandId) 
 			throws ExtenderException, InPlaceException {
-		Extension<BundleLogView> ext = new Extension<>(BundleLogView.class);
+
+		Extension<BundleLogView> ext = Extenders.getExtension(BundleLogView.class.getName());
 		BundleLogView viewService = ext.getService();
 		if (null == viewService) {
 			throw new InPlaceException("failed_to_get_service_for_interface",

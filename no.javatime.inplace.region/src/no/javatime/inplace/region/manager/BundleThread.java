@@ -1,7 +1,7 @@
 package no.javatime.inplace.region.manager;
 
-import no.javatime.inplace.extender.provider.ExtenderException;
-import no.javatime.inplace.extender.provider.Introspector;
+import no.javatime.inplace.extender.intface.ExtenderException;
+import no.javatime.inplace.extender.intface.Introspector;
 import no.javatime.inplace.region.Activator;
 
 import org.osgi.framework.Bundle;

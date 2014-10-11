@@ -1,7 +1,8 @@
 package no.javatime.inplace.pl.preferences;
 
 import no.javatime.inplace.dl.preferences.intface.CommandOptions;
-import no.javatime.inplace.extender.provider.Extension;
+import no.javatime.inplace.extender.intface.Extenders;
+import no.javatime.inplace.extender.intface.Extension;
 import no.javatime.inplace.pl.preferences.msg.Msg;
 
 import org.eclipse.jface.resource.ImageDescriptor;
@@ -37,7 +38,7 @@ public class PreferencePlActivator extends AbstractUIPlugin {
 		super.start(context);
 		plugin = this;
 		PreferencePlActivator.context = context;
-		commandOptions = new Extension<>(CommandOptions.class);
+		commandOptions = Extenders.getExtension(CommandOptions.class.getName());
 	}
 
 	/*

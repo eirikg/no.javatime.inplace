@@ -15,8 +15,9 @@ import no.javatime.inplace.bundlejobs.events.BundleJobEvent;
 import no.javatime.inplace.bundlejobs.events.BundleJobEventListener;
 import no.javatime.inplace.bundlemanager.BundleJobManager;
 import no.javatime.inplace.dl.preferences.intface.CommandOptions;
-import no.javatime.inplace.extender.provider.Extender;
-import no.javatime.inplace.extender.provider.Extension;
+import no.javatime.inplace.extender.intface.Extender;
+import no.javatime.inplace.extender.intface.Extenders;
+import no.javatime.inplace.extender.intface.Extension;
 import no.javatime.inplace.region.manager.InPlaceException;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
@@ -51,7 +52,6 @@ import org.eclipse.ui.statushandlers.StatusManager;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.util.tracker.BundleTracker;
-import org.osgi.util.tracker.BundleTrackerCustomizer;
 
 
 /**
@@ -69,10 +69,9 @@ public class Activator extends AbstractUIPlugin implements BundleJobEventListene
 	private IWorkbenchWindow workBenchWindow = null;
 	
 	private Extension<CommandOptions> commandOptions;
-
-	// Don't know the interface to extend yet. Can be any interface 
+	
+	// Register (extend) services for use facilitated by other bundles  
 	private BundleTracker<Extender<?>> extenderBundleTracker;
-	private BundleTrackerCustomizer<Extender<?>> extenderBundleTrackerCustomizer;
 
 	public Activator() {
 	}
@@ -87,12 +86,10 @@ public class Activator extends AbstractUIPlugin implements BundleJobEventListene
 		plugin = this;
 		Activator.context = context;
 		try {			
-			extenderBundleTrackerCustomizer = new ExtenderBundleTracker();
-			// int trackStates = Bundle.ACTIVE | Bundle.STARTING | Bundle.STOPPING | Bundle.RESOLVED | Bundle.INSTALLED | Bundle.UNINSTALLED;
-			extenderBundleTracker = new BundleTracker<Extender<?>>(context, Bundle.ACTIVE, extenderBundleTrackerCustomizer);
+			extenderBundleTracker = new ExtenderBundleTracker(context, Bundle.ACTIVE, null);
 			extenderBundleTracker.open();
 			BundleJobManager.addBundleJobListener(Activator.getDefault());
-			commandOptions = new Extension<>(CommandOptions.class);
+			commandOptions = Extenders.getExtension(CommandOptions.class.getName());
 			loadCheckedMenus();
 		} catch (IllegalStateException | InPlaceException e) {
 			StatusManager.getManager().handle(
@@ -111,7 +108,6 @@ public class Activator extends AbstractUIPlugin implements BundleJobEventListene
 
 		BundleJobManager.removeBundleJobListener(this);
 		extenderBundleTracker.close();
-		extenderBundleTracker = null;
 		super.stop(context);
 		plugin = null;
 	}

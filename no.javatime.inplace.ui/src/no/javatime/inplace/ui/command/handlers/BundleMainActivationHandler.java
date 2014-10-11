@@ -14,7 +14,7 @@ import java.util.Collection;
 import java.util.LinkedHashSet;
 
 import no.javatime.inplace.bundleproject.ProjectProperties;
-import no.javatime.inplace.extender.provider.ExtenderException;
+import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.region.manager.BundleCommand;
 import no.javatime.inplace.region.manager.BundleManager;
 import no.javatime.inplace.region.manager.BundleRegion;

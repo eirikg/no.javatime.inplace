@@ -9,7 +9,7 @@ Require-Bundle: org.eclipse.ui,
  org.eclipse.ui.console
 Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Import-Package: no.javatime.inplace.dl.preferences.intface,
- no.javatime.inplace.extender.provider,
+ no.javatime.inplace.extender.intface,
  no.javatime.inplace.region.manager,
  no.javatime.util.messages,
  no.javatime.util.view

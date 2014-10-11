@@ -11,7 +11,7 @@ Require-Bundle: org.eclipse.ui,
 Bundle-ActivationPolicy: lazy
 Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Import-Package: no.javatime.inplace.dl.preferences.intface,
- no.javatime.inplace.extender.provider,
+ no.javatime.inplace.extender.intface,
  no.javatime.util.messages,
  org.eclipse.jdt.core
 Export-Package: no.javatime.inplace.region.closure;

@@ -424,7 +424,7 @@ public class PostBuildListener implements IResourceChangeListener {
 				for (IBundleStatus status : builds) {
 					mStatus.add(status);
 				}
-				InPlace.get().trace(mStatus);
+				InPlace.get().log(mStatus);
 			}
 		}
 		JavaTimeBuilder.clearBuilds();

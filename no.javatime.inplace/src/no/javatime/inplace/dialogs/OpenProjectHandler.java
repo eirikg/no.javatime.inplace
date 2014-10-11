@@ -89,7 +89,7 @@ public class OpenProjectHandler extends SaveScopeResourcesHandler {
 		if (build.length >= 1) {
 			try {
 				if (InPlace.get().getMsgOpt().isBundleOperations()) {
-					InPlace.get().trace(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, 
+					InPlace.get().log(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, 
 							NLS.bind(Msg.WAITING_ON_JOB_INFO, build[0].getName())));
 				}
 				build[0].join();
@@ -109,7 +109,7 @@ public class OpenProjectHandler extends SaveScopeResourcesHandler {
 		if (bundleJobs.length >= 1) {
 			try {
 				if (InPlace.get().getMsgOpt().isBundleOperations()) {
-					InPlace.get().trace(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, 
+					InPlace.get().log(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, 
 							NLS.bind(Msg.WAITING_ON_JOB_INFO, bundleJobs[0].getName())));
 				}
 				bundleJobs[0].join();

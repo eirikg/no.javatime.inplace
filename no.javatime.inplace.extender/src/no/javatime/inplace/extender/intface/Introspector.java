@@ -1,10 +1,9 @@
-package no.javatime.inplace.extender.provider;
+package no.javatime.inplace.extender.intface;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
-
 
 import org.osgi.framework.Bundle;
 
@@ -19,9 +18,12 @@ public class Introspector {
 	private static final String TYPE_CLASS_NAME_PREFIX = "class ";
 	private static final String TYPE_INTERFACE_NAME_PREFIX = "interface ";
 
-	public static Object createExtensionObject(Class<?> cls) throws ExtenderException {
+	public static <T> T createObject(Class<T> cls) throws ExtenderException {
 
 		try {
+			if(!hasDefaultConstructor(cls)) {
+				throw new ExtenderException("default_constructor", cls.getSimpleName());
+			}
 			return cls.newInstance();			
 		} catch (SecurityException e) {
 			throw new ExtenderException(e, "security_instantiation", cls.getSimpleName());
@@ -34,10 +36,22 @@ public class Introspector {
 		}
 	}
 
-	public static Class<?> loadExtensionClass(Bundle bundle, String classname) throws ExtenderException {
+	/**
+	 * OSGi load class wrapper
+	 *  
+	 * @param bundle Use the class loader of this bundle
+	 * @param classname the name of the class to load using the class loader of the specified bundle
+	 * @return the loaded class object
+	 * @throws ExtenderException if the bundle context is not valid or it is a fragment bundle, class
+	 * is not found in the specified bundle, the bundle is in an illegal state (uninstalled, installed or
+	 * resolved) or if the caller does not have the appropriate AdminPermission[this,CLASS], and the
+	 * Java Runtime Environment supports permissions.
+	 */
+	@SuppressWarnings("unchecked")
+	public static <T> Class<T> loadClass(Bundle bundle, String classname) throws ExtenderException {
 
 		try {
-			return bundle.loadClass(classname);					
+			return (Class<T>) bundle.loadClass(classname);					
 		} catch (ClassNotFoundException e) {
 			throw new ExtenderException(e, "load_class_not_found", classname, bundle);
 		} catch (IllegalStateException e) {
@@ -55,6 +69,7 @@ public class Introspector {
 	 * Loads extension class, creates extension object and executes an arbitrary class member method given 
 	 * its class, object, formal and actual parameters
 	 * 
+	 * @param T type of class
 	 * @param methodName method name to invoke
 	 * @param cls class in which the method is the member method to invoke
 	 * @param paramDef an array defining the formal parameter types of the method
@@ -64,34 +79,23 @@ public class Introspector {
 	 * @exception ExtenderException exception bounded to the underlying reflection exceptions. Adds some limited 
 	 * additional information about the cause in context of this method
 	 */
-	public static Object invoke(String methodName, Class<?> cls, Class<?>[] paramDef, Object obj,
+	public static <T> Object invoke(String methodName, Class<T> cls, Class<T>[] paramDef, Object obj,
 			Object[] paramVal) throws ExtenderException {
-		
-		// Class<?>[] doubleParDef = new Class<?>[] {Double.class};
-		// Object[] doubleParVal = new Object[1];
-
-		// invoke(setMethodName, elemClass, doubleParDef, elemInstance, new Object[] {startValue});
 
 		/* The method to invoke */
 		Method method = null;
 
-		try {			
-			try {
-				method = getMethod(methodName, cls, paramDef); 
-			} catch (ExtenderException e) {
-				throw e;
-			}
-			try {
-				return method.invoke(obj, paramVal);
-			} catch (IllegalArgumentException e) {
-		    throw new ExtenderException(e, "illegal_argument_method", methodName, cls.getSimpleName());
-			} catch (IllegalAccessException e) {
-				throw new ExtenderException(e, "illegal_access_method", methodName, cls.getSimpleName());
-			} catch (InvocationTargetException e) {
-				throw new ExtenderException(e, "method_invocation_target", cls.getSimpleName(), methodName);
-			} catch (ExceptionInInitializerError e) {
-				throw new ExtenderException(e, "initializer_error", cls.getSimpleName(), methodName);
-			}
+		try {
+			method = getMethod(methodName, cls, paramDef); 
+			return method.invoke(obj, paramVal);
+		} catch (IllegalArgumentException e) {
+			throw new ExtenderException(e, "illegal_argument_method", methodName, cls.getSimpleName());
+		} catch (IllegalAccessException e) {
+			throw new ExtenderException(e, "illegal_access_method", methodName, cls.getSimpleName());
+		} catch (InvocationTargetException e) {
+			throw new ExtenderException(e, "method_invocation_target", cls.getSimpleName(), methodName);
+		} catch (ExceptionInInitializerError e) {
+			throw new ExtenderException(e, "initializer_error", cls.getSimpleName(), methodName);
 		} catch (NullPointerException e) {
 			throw new ExtenderException(e);
 		}
@@ -105,8 +109,10 @@ public class Introspector {
 		return null;
 	}
 
-	public static Class<?> getInterface(Class<?> cls, String interfaceName) throws ExtenderException {
-		Class<?>[] interfaces = cls.getInterfaces();
+	public static <T> Class<T> getInterface(Class<T> cls, String interfaceName) throws ExtenderException {
+		
+		@SuppressWarnings("unchecked")
+		Class<T>[] interfaces = (Class<T>[]) cls.getInterfaces();
 		for (int i = 0; i < interfaces.length; i++) {
 			String name =  interfaces[i].getName();
 			if (name.equals(interfaceName)) {
@@ -115,7 +121,10 @@ public class Introspector {
 		}
 		return null;
 	}
-	public static <T> Class<T> getTypeInterface(Class<?> cls, String interfaceName) throws ExtenderException {
+	
+	public static <T> Class<T> getTypeInterface(Class<T> cls, String interfaceName) throws ExtenderException {
+		
+		@SuppressWarnings("unchecked")
 		Class<T>[] interfaces = (Class<T>[]) cls.getInterfaces();
 		for (int i = 0; i < interfaces.length; i++) {
 			String name =  interfaces[i].getName();
@@ -126,7 +135,8 @@ public class Introspector {
 		return null;
 	}
 
-	public static Method getMethod(String methodName, Class<?> cls, Class<?>[] paramDef) throws ExtenderException {
+	public static <T> Method getMethod(String methodName, Class<T> cls, Class<T>[] paramDef) throws ExtenderException {
+		
 		try {
 			return cls.getMethod(methodName, paramDef);
 		} catch (SecurityException e) {

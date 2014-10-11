@@ -6,7 +6,8 @@ import java.util.Collection;
 import no.javatime.inplace.bundleproject.BundleProjectSettings;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.dl.preferences.intface.MessageOptions;
-import no.javatime.inplace.extender.provider.Extension;
+import no.javatime.inplace.extender.intface.Extenders;
+import no.javatime.inplace.extender.intface.Extension;
 import no.javatime.inplace.region.closure.BuildErrorClosure;
 import no.javatime.inplace.region.manager.InPlaceException;
 import no.javatime.inplace.region.project.BundleProjectState;
@@ -84,7 +85,7 @@ public class BundleClassPathCommandContribution extends BundleMainCommandsContri
 				}
 			}
 			if (null != errProjects) {
-				Extension<MessageOptions> msgOpt = new Extension<>(MessageOptions.class);
+				Extension<MessageOptions> msgOpt = Extenders.getExtension(MessageOptions.class.getName());
 				MessageOptions optServicet = msgOpt.getService();
 				if (null != optServicet
 						&& (optServicet.isInfoMessages() || optServicet.isBundleEvents() || optServicet

@@ -8,6 +8,9 @@ package no.javatime.inplace.pl.dependencies.intface;
  * This bundle can be registered as a service by using the extender pattern.
  */
 public interface DependencyDialog {
+	
+	public final static String OPEN_METHOD = "open";
+	public final static String CLOSE_METHOD = "close";
 
 	/**
 	 * Manifest header for accessing the implementation class name of the bundle console.

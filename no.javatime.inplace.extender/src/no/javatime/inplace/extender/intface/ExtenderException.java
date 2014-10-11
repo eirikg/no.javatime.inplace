@@ -8,7 +8,7 @@
  * Contributors:
  * 	JavaTime project, Eirik Gronsund - initial implementation
  *******************************************************************************/
-package no.javatime.inplace.extender.provider;
+package no.javatime.inplace.extender.intface;
 
 import no.javatime.util.messages.ExceptionMessage;
 

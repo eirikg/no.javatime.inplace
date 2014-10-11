@@ -1,22 +1,26 @@
 package no.javatime.inplace.ui.extender;
 
-import no.javatime.inplace.extender.provider.Extender;
-import no.javatime.inplace.extender.provider.Extension;
-import no.javatime.inplace.extender.provider.Introspector;
+import no.javatime.inplace.extender.intface.Extender;
+import no.javatime.inplace.extender.intface.ExtenderException;
+import no.javatime.inplace.extender.intface.Extenders;
+import no.javatime.inplace.extender.intface.Extension;
+import no.javatime.inplace.extender.intface.Introspector;
 import no.javatime.inplace.pl.dependencies.intface.DependencyDialog;
-import no.javatime.inplace.region.manager.InPlaceException;
+
+import org.osgi.framework.Bundle;
 
 /**
- * Not used. Experimental
+ * Not in use. Experimental.
  */
-public class DependencyDialogExtension extends Extension<DependencyDialog> {
+public class DependencyDialogExtension implements Extension<DependencyDialog> {
 
-	public final static String OPEN_CONTRACT = "open";
-	public final static String CLOSE_CONTRACT = "close";
-	private Extender<DependencyDialog> e;
+	
+	private Extender<DependencyDialog> extender;
+	private Object serviceObject = null;
 
 	public DependencyDialogExtension() {
-		super(DependencyDialog.class);
+		extender = getExtender();
+		serviceObject = extender.getServiceObject();
 	}
 	
 	public int openAsService() {
@@ -27,24 +31,30 @@ public class DependencyDialogExtension extends Extension<DependencyDialog> {
 		return getService().close();
 	}
 
-	public Integer open() throws InPlaceException {
-		try {
-			e = getInstance();
-		} catch (InPlaceException e) {
-			throw e;
-		}
-		// Move to class scope to reuse. Can use getService()
-		Object implObj = e.createExtensionObjec();
-		return (Integer) Introspector.invoke(OPEN_CONTRACT, e.getExtensionClass(), (Class[]) null, implObj, (Object[]) null);
+	@SuppressWarnings("unchecked")
+	public Integer open() throws ExtenderException {
+
+		return (Integer) Introspector.invoke(DependencyDialog.OPEN_METHOD, extender.getServiceClass(), (Class[]) null, serviceObject, (Object[]) null);
 	}
 
-	public Boolean close() throws InPlaceException {
+	@SuppressWarnings("unchecked")
+	public Boolean close() throws ExtenderException {
 
-		try {
-			e = getInstance();
-		} catch (InPlaceException e) {
-			throw e;
-		}
-		return (Boolean) Introspector.invoke(CLOSE_CONTRACT, e.getExtensionClass(), (Class[]) null, e.createExtensionObjec(), (Object[]) null);
+		return (Boolean) Introspector.invoke(DependencyDialog.CLOSE_METHOD, extender.getServiceClass(), (Class[]) null, serviceObject, (Object[]) null);
+	}
+
+	@Override
+	public DependencyDialog getService() {
+		return extender.getService();
+	}
+
+	@Override
+	public DependencyDialog getService(Bundle bundle) {
+		return extender.getService(bundle);
+	}
+
+	@Override
+	public Extender<DependencyDialog> getExtender() throws ExtenderException {
+			return Extenders.getExtender(DependencyDialog.class.getName());
 	}
 }

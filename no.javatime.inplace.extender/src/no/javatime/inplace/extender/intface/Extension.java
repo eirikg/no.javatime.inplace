@@ -1,11 +1,9 @@
 package no.javatime.inplace.extender.intface;
 
-import no.javatime.inplace.extender.provider.Extender;
-import no.javatime.inplace.extender.provider.ExtenderException;
 
 import org.osgi.framework.Bundle;
 
-public interface IExtension<T> {
+public interface Extension<S> {
 
 	/**
 	 * Get the service object for this extension.
@@ -16,8 +14,18 @@ public interface IExtension<T> {
 	 * 
 	 * @return the service object for for the interface specified at construction of this extension
 	 * object or null if no service is being tracked.
+	 * @throws ExtenderException if the bundle context of the owner bundle is not valid, the bundle is
+	 * in an illegal state (uninstalled, installed or resolved), the service was not created by the
+	 * same framework instance as the BundleContext of the specified bundle or if the caller does not
+	 * have the appropriate AdminPermission[this,CLASS], and the Java Runtime Environment supports
+	 * permissions.
+	 * @throws ExtenderException if the bundle context of the owner bundle is not valid, the bundle is
+	 * in an illegal state (uninstalled, installed or resolved), the service was not created by the
+	 * same framework instance as the BundleContext of the specified bundle or if the caller does not
+	 * have the appropriate AdminPermission[this,CLASS], and the Java Runtime Environment supports
+	 * permissions.
 	 */
-	public T getService();
+	public S getService() throws ExtenderException ;
 
 	/**
 	 * Get the service object for this extension.
@@ -29,7 +37,7 @@ public interface IExtension<T> {
 	 * @return the service object for for the interface specified at construction of this extension
 	 * object or null if no service is being tracked.
 	 */
-	public T getService(Bundle bundle);
+	public S getService(Bundle bundle) throws ExtenderException ;
 
 	/**
 	 * Get the extender which this extension is part of
@@ -39,5 +47,5 @@ public interface IExtension<T> {
 	 * @throws ExtenderException if the bundle context of this extension is no longer valid or the
 	 * class object implementing the extension could not be created
 	 */
-	public Extender<T> getInstance() throws ExtenderException;
+	public Extender<S> getExtender() throws ExtenderException;
 }

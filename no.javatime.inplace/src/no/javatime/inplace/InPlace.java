@@ -25,6 +25,7 @@ import no.javatime.inplace.bundlejobs.UninstallJob;
 import no.javatime.inplace.bundlejobs.UpdateJob;
 import no.javatime.inplace.bundlejobs.events.BundleJobEvent;
 import no.javatime.inplace.bundlejobs.events.BundleJobEventListener;
+import no.javatime.inplace.bundlejobs.intface.ActivateBundle;
 import no.javatime.inplace.bundlemanager.BundleJobManager;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.dialogs.ExternalTransition;
@@ -33,8 +34,10 @@ import no.javatime.inplace.dl.preferences.intface.DependencyOptions;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.dl.preferences.intface.MessageOptions;
 import no.javatime.inplace.extender.ExtenderBundleTracker;
-import no.javatime.inplace.extender.provider.Extender;
-import no.javatime.inplace.extender.provider.Extension;
+import no.javatime.inplace.extender.intface.Extender;
+import no.javatime.inplace.extender.intface.ExtenderException;
+import no.javatime.inplace.extender.intface.Extenders;
+import no.javatime.inplace.extender.intface.Extension;
 import no.javatime.inplace.log.intface.BundleLog;
 import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.pl.console.intface.BundleConsoleFactory;
@@ -87,7 +90,6 @@ import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.service.prefs.BackingStoreException;
 import org.osgi.util.tracker.BundleTracker;
-import org.osgi.util.tracker.BundleTrackerCustomizer;
 import org.osgi.util.tracker.ServiceTracker;
 
 /**
@@ -158,18 +160,17 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 
 	private BundleRegion bundleRegion;
 
-	// Don't know the interface to extend yet. Can be any interface
-	private BundleTracker<Extender<?>> extenderBundleTracker;
-	private BundleTrackerCustomizer<Extender<?>> extenderBundleTrackerCustomizer;
+	// Register (extend) services facilitated by other bundles  
+	private ExtenderBundleTracker extenderBundleTracker;
 
 	// Service interfaces
 	private ServiceTracker<IBundleProjectService, IBundleProjectService> bundleProjectTracker;
 	private Extension<DependencyOptions> dependencyOptions;
 	private Extension<CommandOptions> commandOptions;
 	private Extension<MessageOptions> messageOptions;
+	private Extension<BundleConsoleFactory> bundleConsoleFactory;
 	private Extension<BundleLog> bundleLog;
-	Extension<BundleConsoleFactory> bundleConsoleFactory;
-
+	
 	public InPlace() {
 	}
 
@@ -178,19 +179,26 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 		super.start(context);
 		plugin = this;
 		InPlace.context = context;
-		extenderBundleTrackerCustomizer = new ExtenderBundleTracker();
-		extenderBundleTracker = new BundleTracker<Extender<?>>(context, Bundle.ACTIVE,
-				extenderBundleTrackerCustomizer);
+		extenderBundleTracker = new ExtenderBundleTracker(context, Bundle.ACTIVE, null);
 		extenderBundleTracker.open();
 		String refreshBSNResult = context.getProperty(REFRESH_DUPLICATE_BSN);
 		allowRefreshDuplicateBSN = Boolean.TRUE.toString().equals(
 				refreshBSNResult != null ? refreshBSNResult : Boolean.TRUE.toString());
-
-		bundleLog = new Extension<>(BundleLog.class);
-		commandOptions = new Extension<>(CommandOptions.class);
-		dependencyOptions = new Extension<>(DependencyOptions.class);
-		messageOptions = new Extension<>(MessageOptions.class);
-		bundleConsoleFactory = new Extension<>(BundleConsoleFactory.class);
+		// TODO Remove testing
+		// Register a service by getting the extender directly
+//		Extender<?> extender = Extenders.getExtender(Extender.class.getName());
+		Extender<?> extender = Extenders.getExtender();
+		extender = extender.register(context.getBundle(), ActivateBundle.class.getName(), ActivateBundleJob.class.getName());
+		// Register a service by getting the extender using an extension
+//		Extension<Extender<?>> extension = Extenders.getExtension(Extender.class.getName());
+//		Extender<?> ser = extension.getService();
+//		ser.register(context.getBundle(), ActivateBundle.class.getName(), ActivateBundleJob.class.getName());
+		
+		commandOptions = Extenders.getExtension(CommandOptions.class.getName()); 
+		dependencyOptions = Extenders.getExtension(DependencyOptions.class.getName()); 
+		messageOptions = Extenders.getExtension(MessageOptions.class.getName()); 
+		bundleConsoleFactory = Extenders.getExtension(BundleConsoleFactory.class.getName()); 
+		bundleLog = Extenders.getExtension(BundleLog.class.getName());
 
 		bundleProjectTracker = new ServiceTracker<IBundleProjectService, IBundleProjectService>(
 				context, IBundleProjectService.class.getName(), null);
@@ -276,63 +284,78 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 		return bundleProjectService;
 	}
 
-	public CommandOptions getCommandOptionsService() throws InPlaceException {
-
-		CommandOptions cmdOpt = commandOptions.getService();
-		if (null == cmdOpt) {
-			throw new InPlaceException("invalid_service", CommandOptions.class.getName());
-		}
-		return cmdOpt;
-	}
-
-	public MessageOptions getMsgOpt() throws InPlaceException {
-
-		MessageOptions msgOpt = messageOptions.getService();
-		if (null == msgOpt) {
-			throw new InPlaceException("invalid_service", MessageOptions.class.getName());
-		}
-		return msgOpt;
-	}
-
-	public DependencyOptions getDependencyOptionsService() throws InPlaceException {
-		DependencyOptions dpOpt = dependencyOptions.getService();
-		if (null == dpOpt) {
-			throw new InPlaceException("invalid_service", DependencyOptions.class.getName());
-		}
-		return dpOpt;
-	}
-
-	public BundleLog getTraceService() throws InPlaceException {
-
-		BundleLog trace = bundleLog.getService();
-		if (null == trace) {
-			throw new InPlaceException("invalid_service", BundleLog.class.getName());
-		}
-		return trace;
+	/**
+	 * Return the command preferences service
+	 * 
+	 * @return the command options service
+	 * @throws ExtenderException if failing to get the extender service for the command options
+	 * @throws InPlaceException if the command options service returns null
+	 */
+	public CommandOptions getCommandOptionsService() throws InPlaceException, ExtenderException{
+		
+		return getService(commandOptions);
 	}
 
 	/**
+	 * Return the message preferences service
+	 * 
+	 * @return the message options service
+	 * @throws ExtenderException if failing to get the extender service for the message options
+	 * @throws InPlaceException if the message options service returns null
+	 */
+	public MessageOptions getMsgOpt() throws InPlaceException, ExtenderException {
+		return getService(messageOptions);
+	}
+
+	/**
+	 * Return the dependency preferences service
+	 * 
+	 * @return the dependency options service
+	 * @throws ExtenderException if failing to get the extender service for the dependency options
+	 * @throws InPlaceException if the bundle log service returns null
+	 */
+	public DependencyOptions getDependencyOptionsService() throws InPlaceException, ExtenderException {
+		return getService(dependencyOptions);
+	}
+	
+	/**
 	 * Return the bundle console service view
 	 * 
-	 * @return null if failed to obtain the service
+	 * @return the bundle log view service
+	 * @throws ExtenderException if failing to get the extender service for the bundle console view
+	 * @throws InPlaceException if the bundle console view service returns null
 	 */
-	public BundleConsoleFactory getBundleConsoleService() {
-
-		BundleConsoleFactory bundleConsoleFactoryService = bundleConsoleFactory.getService();
-		if (null != bundleConsoleFactoryService) {
-			try {
-				throw new InPlaceException("invalid_service", BundleConsoleFactory.class.getName());
-			} catch (InPlaceException e) {
-				// ignore
-			}
-		}
-		return bundleConsoleFactoryService;
+	public BundleConsoleFactory getBundleConsoleService() throws InPlaceException, ExtenderException {
+		return getService(bundleConsoleFactory);
 	}
 
-	public String trace(IBundleStatus status) {
-		BundleLog t = getTraceService();
+	/**
+	 * Log the specified status object to the bundle log
+	 * 
+	 * @return the bundle status message 
+	 * @throws ExtenderException if failing to get the extender service for the bundle log
+	 * @throws InPlaceException if the bundle log service returns null
+	 */
+	public String log(IBundleStatus status) throws InPlaceException, ExtenderException {
+		BundleLog t = getService(bundleLog);
 		return t.trace(status);
 	}
+
+	/**
+	 * Utility returning a service for an extension but never null 
+	 * 
+	 * @return the service
+	 * @throws ExtenderException if failing to get the extender service 
+	 * @throws InPlaceException if the service returns null
+	 */
+	private <S> S getService(Extension<S> extension) throws InPlaceException, ExtenderException {
+
+		S s = extension.getService(context.getBundle());
+		if (null == s) {
+			throw new InPlaceException("invalid_service", extension.getExtender().getServiceInterfaceName());
+		}
+		return s;
+}
 
 	/**
 	 * Uninstalls or deactivates (optional) all workspace bundles. Bundle closures with build errors
@@ -381,7 +404,7 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 					// The custom or standard status handler is not invoked at shutdown
 					Runnable trace = new Runnable() {
 						public void run() {
-							trace(multiStatus);
+							log(multiStatus);
 						}
 					};
 					trace.run();

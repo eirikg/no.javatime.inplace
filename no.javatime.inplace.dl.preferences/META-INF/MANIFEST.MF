@@ -8,7 +8,7 @@ Export-Package: no.javatime.inplace.dl.preferences.intface
 Require-Bundle: org.eclipse.osgi.services,
  org.eclipse.osgi
 Bundle-RequiredExecutionEnvironment: JavaSE-1.7
-Import-Package: no.javatime.inplace.extender.provider,
+Import-Package: no.javatime.inplace.extender.intface,
  org.osgi.framework,
  org.osgi.service.prefs
 Bundle-ActivationPolicy: lazy

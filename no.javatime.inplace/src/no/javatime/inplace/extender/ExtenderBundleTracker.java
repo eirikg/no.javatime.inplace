@@ -1,7 +1,9 @@
 package no.javatime.inplace.extender;
 
 import no.javatime.inplace.InPlace;
-import no.javatime.inplace.extender.provider.Extender;
+import no.javatime.inplace.extender.intface.Extender;
+import no.javatime.inplace.extender.intface.ExtenderException;
+import no.javatime.inplace.extender.intface.Extenders;
 import no.javatime.inplace.log.intface.BundleLog;
 import no.javatime.inplace.region.manager.InPlaceException;
 import no.javatime.inplace.region.status.BundleStatus;
@@ -9,40 +11,42 @@ import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 
 import org.eclipse.ui.statushandlers.StatusManager;
 import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleEvent;
+import org.osgi.util.tracker.BundleTracker;
 import org.osgi.util.tracker.BundleTrackerCustomizer;
 
 /**
- * Registers extensions
+ * Registers services facilitated by other bundles
  */
-public class ExtenderBundleTracker implements BundleTrackerCustomizer<Extender<?>> {
+public class ExtenderBundleTracker extends BundleTracker<Extender<?>> {
 
-	
+	public ExtenderBundleTracker(BundleContext context, int stateMask, BundleTrackerCustomizer<Extender<?>> customizer) {
+		super(context, stateMask, customizer);
+	}
+
 	@Override
 	public Extender<?> addingBundle(Bundle bundle, BundleEvent event) {
 
 		try { 
-			String traceImpl = bundle.getHeaders().get(BundleLog.BUNDLE_LOG_HEADER);
-			if (null != traceImpl) {
-				return Extender.<BundleLog>register(InPlace.get().getExtenderBundleTracker(),
-						bundle, InPlace.getContext().getBundle(), BundleLog.class, traceImpl);
+			// Extend and register the bundle log as a service
+			String bundleLogImpl = bundle.getHeaders().get(BundleLog.BUNDLE_LOG_HEADER);
+			if (null != bundleLogImpl) {
+				Extender<?> extender = Extenders.getExtender();
+				return extender.register(InPlace.get().getExtenderBundleTracker(),
+						bundle, InPlace.getContext().getBundle(), BundleLog.class.getName(), bundleLogImpl);
+//				Extension<Extender<?>> extender = new ExtensionImpl<>(Extender.class.getName());
+//				Extender<?> ser = extender.getService();
+//				return ser.register(InPlace.get().getExtenderBundleTracker(),
+//						bundle, InPlace.getContext().getBundle(), BundleLog.class.getName(), bundleLogImpl);
 			}
 
-		} catch(InPlaceException e) {
+		} catch(InPlaceException | ExtenderException e) {
 			StatusManager.getManager().handle(
 					new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, e.getMessage(), e),
 					StatusManager.LOG);						
 		}
 		// Only track bundles of interest
 		return null;  
-	}
-
-	@Override
-	public void modifiedBundle(Bundle bundle, BundleEvent event, Extender<?> object) {		
-	}
-
-	@Override
-	public void removedBundle(Bundle bundle, BundleEvent event, Extender<?> object) {
-	}
-
+	}	
 }

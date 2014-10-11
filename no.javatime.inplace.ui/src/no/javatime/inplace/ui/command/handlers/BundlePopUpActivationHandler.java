@@ -14,7 +14,7 @@ import java.util.Collections;
 import java.util.Map;
 
 import no.javatime.inplace.bundleproject.BundleProjectSettings;
-import no.javatime.inplace.extender.provider.ExtenderException;
+import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.region.closure.BuildErrorClosure;
 import no.javatime.inplace.region.manager.InPlaceException;
 import no.javatime.inplace.region.status.BundleStatus;

@@ -70,7 +70,7 @@ public class ResourceRenameParticipant extends RenameParticipant {
 						Pattern pattern = Pattern.compile("^[a-zA-Z0-9_\\-][a-zA-Z0-9_\\-\\.]*$");
 						Matcher matcher = pattern.matcher(projectName);
 						if (!matcher.find()) {
-							InPlace.get().trace(new BundleStatus(StatusCode.WARNING, projectName, 
+							InPlace.get().log(new BundleStatus(StatusCode.WARNING, projectName, 
 									NLS.bind(Msg.RENAME_PROJECT_WARN, toProject.getName())));
 						}
 					}

@@ -88,7 +88,7 @@ public class BundleJobListener extends JobChangeAdapter {
 							for (IBundleStatus status : traceList) {
 								multiStatus.add(status);
 							}
-							InPlace.get().trace(multiStatus);
+							InPlace.get().log(multiStatus);
 						}
 					};
 					trace.run();

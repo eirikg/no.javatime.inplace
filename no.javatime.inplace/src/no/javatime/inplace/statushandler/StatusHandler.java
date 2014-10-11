@@ -94,7 +94,7 @@ public class StatusHandler extends WorkbenchErrorHandler {
 		}
 		if (status instanceof BundleStatus) {
 			if (InPlace.get().getMsgOpt().isBundleOperations()) {
-				InPlace.get().trace((BundleStatus) status);
+				InPlace.get().log((BundleStatus) status);
 			}
 			// Do not send info messages to the error log
 			if (((BundleStatus)status).getStatusCode() != StatusCode.INFO) {
@@ -123,7 +123,7 @@ public class StatusHandler extends WorkbenchErrorHandler {
 						IBundleStatus undefinedContextStatus = new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, bugInfoMsg);
 						IBundleStatus errorStatus = new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID, msg, exception);
 						undefinedContextStatus.add(errorStatus);
-						InPlace.get().trace(undefinedContextStatus);
+						InPlace.get().log(undefinedContextStatus);
 					}
 					return true;
 				}

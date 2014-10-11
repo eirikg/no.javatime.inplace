@@ -2,7 +2,8 @@ package no.javatime.inplace.region;
 
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions;
 import no.javatime.inplace.dl.preferences.intface.MessageOptions;
-import no.javatime.inplace.extender.provider.Extension;
+import no.javatime.inplace.extender.intface.Extenders;
+import no.javatime.inplace.extender.intface.Extension;
 import no.javatime.inplace.region.manager.BundleCommandImpl;
 import no.javatime.inplace.region.manager.InPlaceException;
 import no.javatime.inplace.region.resolver.BundleResolveHookFactory;
@@ -57,8 +58,9 @@ public class Activator extends AbstractUIPlugin {
 		registerResolverHook();
 		Activator.context.addBundleListener(bundleEvents);
 		BundleCommandImpl.INSTANCE.initFrameworkWiring();
-		messageOptions = new Extension<>(MessageOptions.class);
-		dependencyOptions = new Extension<>(DependencyOptions.class);
+
+		messageOptions = Extenders.getExtension(MessageOptions.class.getName());
+		dependencyOptions = Extenders.getExtension(DependencyOptions.class.getName());
 		bundleProjectTracker =  new ServiceTracker<IBundleProjectService, IBundleProjectService>
 				(context, IBundleProjectService.class.getName(), null);
 		bundleProjectTracker.open();

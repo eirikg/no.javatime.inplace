@@ -39,7 +39,8 @@ import java.util.List;
 import java.util.Map;
 
 import no.javatime.inplace.dl.preferences.intface.MessageOptions;
-import no.javatime.inplace.extender.provider.Extension;
+import no.javatime.inplace.extender.intface.Extenders;
+import no.javatime.inplace.extender.intface.Extension;
 import no.javatime.inplace.log.Activator;
 import no.javatime.inplace.log.dl.AbstractEntry;
 import no.javatime.inplace.log.dl.LogFilesManager;
@@ -259,7 +260,7 @@ public class LogView extends ViewPart implements SynchronousLogListener, LogFilt
 		groups = new HashMap();
 		batchedEntries = new ArrayList();
 		fInputFile = Activator.getDefault().getLogFile();
-		messageOptions = new Extension<>(MessageOptions.class);
+		messageOptions = Extenders.getExtension(MessageOptions.class.getName());
 	}
 
 	/* (non-Javadoc)

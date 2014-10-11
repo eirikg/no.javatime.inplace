@@ -26,8 +26,10 @@ import no.javatime.inplace.bundlejobs.UpdateScheduler;
 import no.javatime.inplace.bundlemanager.BundleJobManager;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.dialogs.OpenProjectHandler;
-import no.javatime.inplace.extender.provider.ExtenderException;
-import no.javatime.inplace.extender.provider.Extension;
+import no.javatime.inplace.extender.intface.Extender;
+import no.javatime.inplace.extender.intface.ExtenderException;
+import no.javatime.inplace.extender.intface.Extenders;
+import no.javatime.inplace.extender.intface.Extension;
 import no.javatime.inplace.log.intface.BundleLogView;
 import no.javatime.inplace.pl.console.intface.BundleConsoleFactory;
 import no.javatime.inplace.pl.dependencies.intface.DependencyDialog;
@@ -270,12 +272,15 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 	 */
 	protected void dependencyDialogHandler() throws InPlaceException, ExtenderException {
 
-		Extension<DependencyDialog> ext = new Extension<>(DependencyDialog.class);
-		DependencyDialog depService = ext.getService();
-		if (null == depService) {
-			throw new InPlaceException("failed_to_get_service_for_interface", DependencyDialog.class.getName());
-		}
-		depService.open();
+		// Exploring the extender service and introspection. May be replaced by the other code in this method.
+		//		DependencyDialogExtension depService = new DependencyDialogExtension();
+		//		depService.open();
+			Extender<DependencyDialog> depExt = Extenders.getExtender(DependencyDialog.class.getName());
+			DependencyDialog depService = depExt.getService();
+			if (null == depService) {
+				throw new InPlaceException("failed_to_get_service_for_interface", DependencyDialog.class.getName());
+			}
+			depService.open();
 	}
 	
 	/**
@@ -384,12 +389,12 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 	/**
 	 * Toggles between showing and hiding the bundle console view
 	 * 
-	 * @throws ExtenderException if failing to get the extender for the bundle console view
-	 * @throws InPlaceException if failing to get the extension service for the bundle console view
+	 * @throws ExtenderException if failing to get the extender service for the bundle console view
+	 * @throws InPlaceException if the bundle console view service returns null
 	 */
 	protected void bundleConsoleHandler() throws InPlaceException, ExtenderException {
 
-		Extension<BundleConsoleFactory> ext = new Extension<>(BundleConsoleFactory.class);
+		Extension<BundleConsoleFactory> ext = Extenders.getExtension(BundleConsoleFactory.class.getName());
 		BundleConsoleFactory bundleConsoleService = ext.getService();
 		if (null == bundleConsoleService) {
 			throw new InPlaceException("failed_to_get_service_for_interface", BundleConsoleFactory.class.getName());
@@ -404,12 +409,12 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 	/**
 	 * Toggles between showing and hiding the bundle log view
 	 * 
-	 * @throws ExtenderException if failing to get the extender for the bundle log view
-	 * @throws InPlaceException if failing to get the extension service for the bundle log view
+	 * @throws ExtenderException if failing to get the extender service for the bundle log view
+	 * @throws InPlaceException if the bundle log view service returns null
 	 */
 	protected void bundleLogViewViewHandler() throws InPlaceException, ExtenderException {
 
-		Extension<BundleLogView> ext = new Extension<>(BundleLogView.class);
+		Extension<BundleLogView> ext = Extenders.getExtension(BundleLogView.class.getName());
 		BundleLogView viewService = ext.getService();
 		if (null == viewService) {
 			throw new InPlaceException("failed_to_get_service_for_interface", BundleLogView.class.getName());

@@ -177,14 +177,14 @@ public class DynamicExtensionContribution {
 				String msg = null;
 				if (!productId.equals(defaultProductId)) {
 					msg = NLS.bind(Msg.CUSTOMIZED_STATUS_HANDLER_INFO, statusHandlerExtensionId, productId);
-					InPlace.get().trace(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, msg));					
+					InPlace.get().log(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, msg));					
 				} else if (statusFromCommandline()) {
 					msg = NLS.bind(Msg.CUSTOMIZED_STATUS_HANDLER_CMD_LINE_INFO, statusHandlerExtensionId, productId);
-					InPlace.get().trace(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, msg));
+					InPlace.get().log(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, msg));
 				} else {
 					IBundleStatus status = new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, Msg.STANDARD_STATUS_HANDLER_INFO);
 					status.add(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, Msg.USE_CUSTOMIZED_STATUS_HANDLER_INFO));
-					InPlace.get().trace(status);
+					InPlace.get().log(status);
 				}
 			}
 		}
@@ -270,7 +270,7 @@ public class DynamicExtensionContribution {
 	 * @return true if the extension was added, otherwise false.
 	 */
 	public Boolean addExtensionFromFile(String xmlsrc) {
-		// Use Eclipse Dynamic Extension API
+		// Use Eclipse Dynamic Extenders API
 		Boolean extAdded = true;
 		Bundle bundle = InPlace.get().getBundle();
 		try {
@@ -316,7 +316,7 @@ public class DynamicExtensionContribution {
 	 */
 	public Boolean removeExtension(String extensionPointId, String extensionId) {
 		Boolean removed = true;
-		// use Eclipse Dynamic Extension API
+		// use Eclipse Dynamic Extenders API
 		try {
 			IExtensionRegistry reg = RegistryFactory.getRegistry();
 			Object token = ((ExtensionRegistry) reg).getTemporaryUserToken();

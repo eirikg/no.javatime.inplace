@@ -56,7 +56,7 @@ public class StartUp implements IStartup {
 			String osgiDev = BundleProjectSettings.inDevelopmentMode();
 			if (null != osgiDev) {
 				String msg = NLS.bind(Msg.CLASS_PATH_DEV_PARAM_INFO, osgiDev);
-				InPlace.get().trace(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, msg));
+				InPlace.get().log(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, msg));
 			}
 		}
 		try {
