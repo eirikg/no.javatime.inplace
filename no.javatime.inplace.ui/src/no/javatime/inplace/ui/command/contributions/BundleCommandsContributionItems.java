@@ -182,9 +182,11 @@ public abstract class BundleCommandsContributionItems extends CompoundContributi
 					BundleConsoleFactory.class.getName());
 		}
 		if (!bundleConsoleService.isConsoleViewVisible()) {
+			ext.ungetService();
 			return createContibution(menuId, commandId, showConsolePage, bundleConsolePageParamId,
 					CommandContributionItem.STYLE_PUSH, bundleConsoleService.getConsoleViewImage());
 		} else {
+			ext.ungetService();
 			return createContibution(menuId, commandId, hideConsolePage, bundleConsolePageParamId,
 					CommandContributionItem.STYLE_PUSH, bundleConsoleService.getConsoleViewImage());
 		}
@@ -209,9 +211,11 @@ public abstract class BundleCommandsContributionItems extends CompoundContributi
 					BundleLogView.class.getName());
 		}
 		if (!viewService.isVisible()) {
+			ext.ungetService();
 			return createContibution(menuId, commandId, showMessageView, bundleLogViewParamId,
 					CommandContributionItem.STYLE_PUSH, viewService.getLogViewImage());
 		} else {
+			ext.ungetService();
 			return createContibution(menuId, commandId, hideMessageView, bundleLogViewParamId,
 					CommandContributionItem.STYLE_PUSH, viewService.getLogViewImage());
 		}

@@ -15,6 +15,7 @@ Export-Package: no.javatime.inplace.bundlejobs;
    no.javatime.inplace.region.events,
    no.javatime.inplace.dl.preferences.intface",
  no.javatime.inplace.bundlejobs.events;uses:="org.eclipse.core.resources",
+ no.javatime.inplace.bundlejobs.intface,
  no.javatime.inplace.bundlemanager;uses:="no.javatime.inplace.region.manager,no.javatime.inplace.bundlejobs.events,org.eclipse.core.resources",
  no.javatime.inplace.bundleproject;uses:="org.eclipse.core.runtime,org.eclipse.core.resources,org.osgi.framework",
  no.javatime.inplace.dialogs;uses:="no.javatime.inplace.bundlejobs,org.eclipse.debug.internal.ui.launchConfigurations,no.javatime.inplace.region.events",

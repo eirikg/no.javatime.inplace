@@ -57,4 +57,28 @@ public class DependencyDialogExtension implements Extension<DependencyDialog> {
 	public Extender<DependencyDialog> getExtender() throws ExtenderException {
 			return Extenders.getExtender(DependencyDialog.class.getName());
 	}
+
+	@Override
+	public DependencyDialog getTrackedService() throws ExtenderException {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public void closeServiceTracker() {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public Boolean ungetService() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public Boolean ungetService(Bundle bundle) {
+		// TODO Auto-generated method stub
+		return null;
+	}
 }

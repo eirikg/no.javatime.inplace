@@ -31,16 +31,14 @@ public class ExtenderBundleTracker extends BundleTracker<Extender<?>> {
 			// Extend and register the dependency dialog as a service
 			String dependencyDialogImpl = bundle.getHeaders().get(DependencyDialog.DEPENDENCY_DIALOG_HEADER);
 			if (null != dependencyDialogImpl) {
-				Extender<?> extender = Extenders.getExtender();  
-				return extender.register(Activator.getDefault().getExtenderBundleTracker(),
-						bundle, Activator.getContext().getBundle(), DependencyDialog.class.getName(), dependencyDialogImpl);
+				return Extenders.register(Activator.getDefault().getExtenderBundleTracker(),
+						bundle, Activator.getContext().getBundle(), DependencyDialog.class.getName(), dependencyDialogImpl, null);
 			}			
 			// Extend and register the bundle log view as a service
 			String bundleLogViewImpl = bundle.getHeaders().get(BundleLogView.BUNDLE_LOG_VIEW_HEADER);
 			if (null != bundleLogViewImpl) {
-				Extender<?> extender = Extenders.getExtender();
-				return extender.register(Activator.getDefault().getExtenderBundleTracker(),
-						bundle, Activator.getContext().getBundle(), BundleLogView.class.getName(), bundleLogViewImpl);
+				return Extenders.register(Activator.getDefault().getExtenderBundleTracker(),
+						bundle, Activator.getContext().getBundle(), BundleLogView.class.getName(), bundleLogViewImpl, null);
 			}
 		} catch(InPlaceException e) {
 			StatusManager.getManager().handle(

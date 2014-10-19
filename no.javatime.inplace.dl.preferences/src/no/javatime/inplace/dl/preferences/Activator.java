@@ -1,11 +1,11 @@
 package no.javatime.inplace.dl.preferences;
 
-import java.util.Dictionary;
-
+import no.javatime.inplace.dl.preferences.impl.CommandOptionsImpl;
+import no.javatime.inplace.dl.preferences.impl.DependencyOptionsImpl;
+import no.javatime.inplace.dl.preferences.impl.MessageOptionsImpl;
 import no.javatime.inplace.dl.preferences.intface.CommandOptions;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions;
 import no.javatime.inplace.dl.preferences.intface.MessageOptions;
-import no.javatime.inplace.extender.intface.Extender;
 import no.javatime.inplace.extender.intface.Extenders;
 
 import org.osgi.framework.Bundle;
@@ -45,14 +45,9 @@ public class Activator implements BundleActivator {
 		plugin = this;
 		Activator.context = context;
 		Bundle bundle = context.getBundle();
-		Dictionary<String, String> dictionary = bundle.getHeaders();		
-		Extender<?> extender = Extenders.getExtender();  
-		String dependencyOptionsClassName = dictionary.get(DependencyOptions.DEPENDENCY_OPTIONS_HEADER);
-		extender.register(bundle, DependencyOptions.class.getName(), dependencyOptionsClassName);
-		String commandOptionsClassName = dictionary.get(CommandOptions.COMMAND_OPTIONS_HEADER);		
-		extender.register(bundle, CommandOptions.class.getName(), commandOptionsClassName);
-		String messageClassName = dictionary.get(MessageOptions.MESSAGE_OPTIONS_HEADER);		
-		extender.register(bundle, MessageOptions.class.getName(), messageClassName);
+		Extenders.register(bundle, DependencyOptions.class.getName(), new DependencyOptionsImpl(), null); 
+		Extenders.register(bundle, CommandOptions.class.getName(), new CommandOptionsImpl(), null);
+		Extenders.register(bundle, MessageOptions.class.getName(), new MessageOptionsImpl(), null);
 	}
 
 	/*

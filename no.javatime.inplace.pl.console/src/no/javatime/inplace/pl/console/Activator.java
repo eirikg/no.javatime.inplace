@@ -1,9 +1,6 @@
 package no.javatime.inplace.pl.console;
 
-import java.util.Dictionary;
-
 import no.javatime.inplace.dl.preferences.intface.MessageOptions;
-import no.javatime.inplace.extender.intface.Extender;
 import no.javatime.inplace.extender.intface.Extenders;
 import no.javatime.inplace.extender.intface.Extension;
 import no.javatime.inplace.pl.console.impl.BundleConsoleFactoryImpl;
@@ -17,7 +14,6 @@ import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
-import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 
 /**
@@ -49,23 +45,22 @@ public class Activator extends AbstractUIPlugin {
 
 	/*
 	 * (non-Javadoc)
+	 * 
 	 * @see org.eclipse.ui.plugin.AbstractUIPlugin#start(org.osgi.framework.BundleContext)
 	 */
 	public void start(BundleContext context) throws Exception {
 		super.start(context);
 		plugin = this;
 		Activator.context = context;
-		Bundle bundle = context.getBundle();
-		Dictionary<String, String> dictionary = bundle.getHeaders();
-		String consoleFactoryName = dictionary.get(BundleConsoleFactory.BUNDLE_CONSOLE_HEADER);
-		Extender<?> extender = Extenders.getExtender();  
-		extender.register(context.getBundle(), BundleConsoleFactory.class.getName(), consoleFactoryName);
+		Extenders.register(context.getBundle(), BundleConsoleFactory.class.getName(),
+				new BundleConsoleFactoryImpl(), null);
 		messageOptions = Extenders.getExtension(MessageOptions.class.getName());
 		bundleConsole = BundleConsoleFactoryImpl.findConsole(CONSOLE_NAME);
 	}
 
 	/*
 	 * (non-Javadoc)
+	 * 
 	 * @see org.eclipse.ui.plugin.AbstractUIPlugin#stop(org.osgi.framework.BundleContext)
 	 */
 	public void stop(BundleContext context) throws Exception {
@@ -76,7 +71,7 @@ public class Activator extends AbstractUIPlugin {
 	public BundleConsole getBundleConsole() {
 		return bundleConsole;
 	}
-	
+
 	public MessageOptions getMsgOpt() throws InPlaceException {
 
 		MessageOptions msgOpt = messageOptions.getService();
@@ -95,10 +90,9 @@ public class Activator extends AbstractUIPlugin {
 		return context;
 	}
 
-
 	/**
 	 * Returns the shared instance
-	 *
+	 * 
 	 * @return the shared instance
 	 */
 	public static Activator getDefault() {
@@ -139,7 +133,6 @@ public class Activator extends AbstractUIPlugin {
 		}
 		return activeWorkbenchWindow.getActivePage();
 	}
-
 
 	/**
 	 * Returns the active or the default display if the active display is null

@@ -1,5 +1,27 @@
 package no.javatime.inplace.bundlejobs.intface;
 
+
+/**
+ * 		
+ * // TODO Use this as a starting point when creating service for jobs Remove after testing
+		Extension<Extender<?>> e;
+		e = Extenders.getExtension(Extender.class.getName());
+		Extender<?> ex = e.getService(context.getBundle());
+		BundleScopeServiceFactory<ActivateBundle> bundleScopeFactory = 
+				new BundleScopeServiceFactory<>(ActivateBundleJob.class.getName());
+		Extender<ActivateBundle> activateExtender = 
+				Extenders.register(context.getBundle(), context.getBundle(), ActivateBundle.class.getName(), 
+						bundleScopeFactory);
+						// Specific factory for activate job
+//						new BundleJobServiceFactory());
+		ActivateBundle activate = activateExtender.getService();
+		activate.addPendingProjects(ProjectProperties.getCandidateProjects());
+		activateExtender.unregisterService();
+		activateExtender.registerService();
+		activate = activateExtender.getService();
+
+ *
+ */
 public interface ActivateBundle extends Bundles {
 
 	/**

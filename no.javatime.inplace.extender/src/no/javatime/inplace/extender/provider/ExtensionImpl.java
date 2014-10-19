@@ -2,71 +2,114 @@ package no.javatime.inplace.extender.provider;
 
 import no.javatime.inplace.extender.intface.Extender;
 import no.javatime.inplace.extender.intface.ExtenderException;
+import no.javatime.inplace.extender.intface.Extenders;
 import no.javatime.inplace.extender.intface.Extension;
 
 import org.osgi.framework.Bundle;
+import org.osgi.util.tracker.ServiceTracker;
 
 
 /**
  * Create an extension for a given interface.
  *
- * @param <T>
+ * @param <S> type of service
  */
-public class ExtensionImpl<T> implements Extension<T> {
-
-	/**
-	 * The interface class of this extension
-	 */
-	private Class<T> intFace;
+public class ExtensionImpl<S> implements Extension<S> {
 
 	/**
 	 * The extender this extension is part of
 	 */
-	private Extender<T> extender;
+	private Extender<S> extender;
 	private Bundle userBundle;
-	
-	public ExtensionImpl()  throws ExtenderException {
-	}
 
-	public ExtensionImpl(Class<T> intFace, Bundle userBundle)  throws ExtenderException {
+	private ServiceTracker<S, S> tracker;
 
-		this.intFace = intFace;
+	public ExtensionImpl(Class<S> intFace, Bundle userBundle)  throws ExtenderException {
+
+		this.extender = Extenders.getExtender(intFace.getName());
 		this.userBundle = userBundle;
-		this.extender = getExtender();
 	}
 
 	public ExtensionImpl(String interfaceName, Bundle userBundle)  throws ExtenderException {
-		this.extender = ExtenderImpl.<T>getExtender(interfaceName);
-		this.intFace = extender.getInterfaceServiceClass();
+
+		this.extender = Extenders.getExtender(interfaceName);
 		this.userBundle = userBundle;
 	}
 
-	public ExtensionImpl(Class<T> intFace)  throws ExtenderException {
-		this.intFace = intFace;
-		this.extender = getExtender();
+	public ExtensionImpl(Class<S> intFace)  throws ExtenderException {
+		this.extender = Extenders.getExtender(intFace.getName());
+		userBundle = extender.getRegistrarBundle();
 	}
 
 	public ExtensionImpl(String interfaceName)  throws ExtenderException {
-		this.extender = ExtenderImpl.<T>getExtender(interfaceName);
-		this.intFace = extender.getInterfaceServiceClass();
+
+		this.extender = Extenders.getExtender(interfaceName);
+		userBundle = extender.getRegistrarBundle();
 	}
 
-	public T getService(Bundle bundle) throws ExtenderException {		
-		extender = getExtender();
+	public S getService(Bundle bundle) throws ExtenderException {		
 		return extender.getService(bundle);
 	}		
 
-	public T getService() throws ExtenderException {
-		extender = getExtender();
-		if (null == userBundle) {
-			return extender.getService();			
-		} else {
-			return extender.getService(userBundle);						
-		}
+	public S getService() throws ExtenderException {
+		return extender.getService(userBundle);						
 	}		
 	
-	public Extender<T> getExtender() throws ExtenderException {
-		this.extender = ExtenderImpl.<T>getExtender(intFace.getName());
+	public Boolean ungetService() {
+		return extender.ungetService(userBundle);
+	}
+
+	public Boolean ungetService(Bundle bundle) {
+		return extender.ungetService(bundle);
+	}
+
+	public Extender<S> getExtender() throws ExtenderException {
 		return extender;
+	}
+
+	public Bundle getUserBundle() {
+		return userBundle;
+	}
+
+	public void setUserBundle(Bundle userBundle) {
+		closeServiceTracker();
+		this.userBundle = userBundle;
+	}
+	
+	protected void openServiceTracker(Bundle userBundle) throws ExtenderException {
+
+		if (null == tracker) {
+			try {
+				tracker = new ServiceTracker<S, S>(userBundle.getBundleContext(), extender.getServicereReference(),
+						null);
+				tracker.open();
+			} catch (IllegalStateException e) {
+				tracker = null;
+				throw new ExtenderException("failed_to_open_tracker", extender.getServiceInterfaceName());
+			}
+		}
+	}
+
+	public S getTrackedService() throws ExtenderException {
+
+		try {
+			if (null == tracker) {
+				openServiceTracker(userBundle);
+			}
+			return tracker.getService();
+		} catch (ExtenderException e) {
+			// Ignore
+			// throw new ExtenderException("failed_to_open_tracker", getServiceInterfaceName());
+		}
+		return null;
+	}
+
+	public void closeServiceTracker() {
+		// synchronized (tracker) {
+		if (null != tracker && tracker.getTrackingCount() != -1) {
+			tracker.close();
+			tracker = null;
+		}
+		// }
 	}
 }

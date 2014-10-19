@@ -1,5 +1,8 @@
 package no.javatime.inplace.extender;
 
+import java.util.Dictionary;
+import java.util.Hashtable;
+
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.extender.intface.Extender;
 import no.javatime.inplace.extender.intface.ExtenderException;
@@ -32,9 +35,10 @@ public class ExtenderBundleTracker extends BundleTracker<Extender<?>> {
 			// Extend and register the bundle log as a service
 			String bundleLogImpl = bundle.getHeaders().get(BundleLog.BUNDLE_LOG_HEADER);
 			if (null != bundleLogImpl) {
-				Extender<?> extender = Extenders.getExtender();
-				return extender.register(InPlace.get().getExtenderBundleTracker(),
-						bundle, InPlace.getContext().getBundle(), BundleLog.class.getName(), bundleLogImpl);
+				Dictionary<String, Object> properties = new Hashtable<>();
+				properties.put(BundleLog.class.getName(), "logging");
+				return Extenders.register(this, bundle, InPlace.getContext().getBundle(), 
+						BundleLog.class.getName(), bundleLogImpl, properties);
 //				Extension<Extender<?>> extender = new ExtensionImpl<>(Extender.class.getName());
 //				Extender<?> ser = extender.getService();
 //				return ser.register(InPlace.get().getExtenderBundleTracker(),

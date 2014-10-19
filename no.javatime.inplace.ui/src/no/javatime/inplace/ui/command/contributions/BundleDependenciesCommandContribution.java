@@ -31,8 +31,9 @@ public class BundleDependenciesCommandContribution extends BundleMainCommandsCon
 	protected IContributionItem[] getContributionItems() {
 
 		ArrayList<ContributionItem> contributions = new ArrayList<ContributionItem>();
+		Extension<DependencyDialog> ext = null;
 		try {
-			Extension<DependencyDialog> ext = Extenders.getExtension(DependencyDialog.class.getName());
+			ext = Extenders.getExtension(DependencyDialog.class.getName());
 			DependencyDialog depDlgService = ext.getService();
 			if (null != depDlgService) {
 				contributions.add(createContibution(menuIdDependencies, dynamicMainCommandId, partialDependenciesLabel, dependencyDialogParamId,
@@ -47,6 +48,9 @@ public class BundleDependenciesCommandContribution extends BundleMainCommandsCon
 			StatusManager.getManager().handle(
 					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, Msg.ADD_CONTRIBUTION_ERROR, e),
 					StatusManager.LOG);
+		}
+		if (null != ext) {
+			ext.ungetService();
 		}
 		IContributionItem[] contributionArray = contributions.toArray(new ContributionItem[contributions.size()]);
 		return contributionArray;

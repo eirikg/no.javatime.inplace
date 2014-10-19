@@ -25,7 +25,6 @@ import no.javatime.inplace.bundlejobs.UninstallJob;
 import no.javatime.inplace.bundlejobs.UpdateJob;
 import no.javatime.inplace.bundlejobs.events.BundleJobEvent;
 import no.javatime.inplace.bundlejobs.events.BundleJobEventListener;
-import no.javatime.inplace.bundlejobs.intface.ActivateBundle;
 import no.javatime.inplace.bundlemanager.BundleJobManager;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.dialogs.ExternalTransition;
@@ -184,26 +183,14 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 		String refreshBSNResult = context.getProperty(REFRESH_DUPLICATE_BSN);
 		allowRefreshDuplicateBSN = Boolean.TRUE.toString().equals(
 				refreshBSNResult != null ? refreshBSNResult : Boolean.TRUE.toString());
-		// TODO Remove testing
-		// Register a service by getting the extender directly
-//		Extender<?> extender = Extenders.getExtender(Extender.class.getName());
-		Extender<?> extender = Extenders.getExtender();
-		extender = extender.register(context.getBundle(), ActivateBundle.class.getName(), ActivateBundleJob.class.getName());
-		// Register a service by getting the extender using an extension
-//		Extension<Extender<?>> extension = Extenders.getExtension(Extender.class.getName());
-//		Extender<?> ser = extension.getService();
-//		ser.register(context.getBundle(), ActivateBundle.class.getName(), ActivateBundleJob.class.getName());
-		
 		commandOptions = Extenders.getExtension(CommandOptions.class.getName()); 
 		dependencyOptions = Extenders.getExtension(DependencyOptions.class.getName()); 
 		messageOptions = Extenders.getExtension(MessageOptions.class.getName()); 
 		bundleConsoleFactory = Extenders.getExtension(BundleConsoleFactory.class.getName()); 
 		bundleLog = Extenders.getExtension(BundleLog.class.getName());
-
 		bundleProjectTracker = new ServiceTracker<IBundleProjectService, IBundleProjectService>(
 				context, IBundleProjectService.class.getName(), null);
 		bundleProjectTracker.open();
-
 		addDynamicExtensions();
 		BundleManager.addBundleTransitionListener(externalTransitionListener);
 		Job.getJobManager().addJobChangeListener(jobChangeListener);

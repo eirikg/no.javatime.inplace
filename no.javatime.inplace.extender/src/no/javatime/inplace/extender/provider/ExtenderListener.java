@@ -1,11 +1,14 @@
 package no.javatime.inplace.extender.provider;
 
+import no.javatime.inplace.extender.Activator;
+import no.javatime.inplace.extender.intface.Extender;
+
 import org.osgi.framework.Constants;
 import org.osgi.framework.ServiceEvent;
 import org.osgi.framework.ServiceListener;
 import org.osgi.framework.ServiceReference;
 
-public class ExtenderListener implements ServiceListener{
+public class ExtenderListener<S> implements ServiceListener{
 	/**
 	 * {@code ServiceListener} method for the {@code ServiceTracker} class.
 	 * This method must NOT be synchronized to avoid deadlock potential.
@@ -15,7 +18,9 @@ public class ExtenderListener implements ServiceListener{
 	final public void serviceChanged(final ServiceEvent event) {
 
 		final ServiceReference<?> reference = (ServiceReference<?>) event.getServiceReference();
-		final ExtenderImpl<?> extender = ExtenderImpl.getExtender(reference);		
+		@SuppressWarnings("unchecked")
+		ExtenderServiceMap<S> ems = (ExtenderServiceMap<S>) Activator.getExtenderServiceMap();
+		final Extender<S> extender = ems.getExtender(reference);
 		Long sid = Long.valueOf(0L);
 		if (null != extender) {
 			sid = (Long) reference.getProperty(Constants.SERVICE_ID);
@@ -24,16 +29,17 @@ public class ExtenderListener implements ServiceListener{
 		}
 		switch (event.getType()) {
 		case ServiceEvent.REGISTERED :
-			System.out.println("ServiceTracker.Tracked.register. SID: (" + sid + ") Type: [" + event.getType() + "]: " + extender.getServiceInterfaceName());					
+			//ems.register(extender);
+			//System.out.println("ServiceTracker.Tracked.register. SID: (" + sid + ") Type: [" + event.getType() + "]: " + extender.getServiceInterfaceName());					
 			break;
 		case ServiceEvent.MODIFIED :
-			System.out.println("ServiceTracker.Tracked.modified. SID: (" + sid + ") Type: [" + event.getType() + "]: " + extender.getServiceInterfaceName());					
+			//System.out.println("ServiceTracker.Tracked.modified. SID: (" + sid + ") Type: [" + event.getType() + "]: " + extender.getServiceInterfaceName());					
 			break;
 		case ServiceEvent.MODIFIED_ENDMATCH :
 			break;
 		case ServiceEvent.UNREGISTERING :
-			System.out.println("ServiceTracker.Tracked.unregister. SID: (" + sid + ") Type: [" + event.getType() + "]: " + extender.getServiceInterfaceName());					
-			ExtenderImpl.removeExtender(reference);
+			//System.out.println("ServiceTracker.Tracked.unregister. SID: (" + sid + ") Type: [" + event.getType() + "]: " + extender.getServiceInterfaceName());					
+			ems.removeExtender(reference);
 			break;
 		}
 	}
