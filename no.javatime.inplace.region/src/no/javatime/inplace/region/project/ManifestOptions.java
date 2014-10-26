@@ -20,8 +20,8 @@ import java.util.Dictionary;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 
-import no.javatime.inplace.region.manager.InPlaceException;
-import no.javatime.inplace.region.manager.ProjectLocationException;
+import no.javatime.inplace.region.intface.InPlaceException;
+import no.javatime.inplace.region.intface.ProjectLocationException;
 import no.javatime.inplace.region.msg.Msg;
 
 import org.eclipse.core.resources.IFile;

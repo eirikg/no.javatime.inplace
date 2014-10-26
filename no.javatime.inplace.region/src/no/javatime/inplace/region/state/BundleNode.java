@@ -13,12 +13,12 @@ package no.javatime.inplace.region.state;
 import java.util.EnumSet;
 
 import no.javatime.inplace.region.Activator;
+import no.javatime.inplace.region.intface.BundleTransition;
+import no.javatime.inplace.region.intface.InPlaceException;
+import no.javatime.inplace.region.intface.BundleTransition.Transition;
+import no.javatime.inplace.region.intface.BundleTransition.TransitionError;
 import no.javatime.inplace.region.manager.BundleCommandImpl;
-import no.javatime.inplace.region.manager.BundleTransition;
-import no.javatime.inplace.region.manager.BundleTransition.Transition;
-import no.javatime.inplace.region.manager.BundleTransition.TransitionError;
 import no.javatime.inplace.region.manager.BundleWorkspaceRegionImpl;
-import no.javatime.inplace.region.manager.InPlaceException;
 import no.javatime.util.messages.Category;
 import no.javatime.util.messages.TraceMessage;
 

@@ -4,7 +4,7 @@ import no.javatime.inplace.dl.preferences.intface.DependencyOptions;
 import no.javatime.inplace.extender.intface.Extenders;
 import no.javatime.inplace.extender.intface.Extension;
 import no.javatime.inplace.pl.dependencies.msg.Msg;
-import no.javatime.inplace.region.manager.InPlaceException;
+import no.javatime.inplace.region.intface.InPlaceException;
 
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.swt.widgets.Display;

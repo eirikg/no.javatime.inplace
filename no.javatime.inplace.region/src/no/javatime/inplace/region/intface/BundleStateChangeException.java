@@ -8,23 +8,25 @@
  * Contributors:
  * 	JavaTime project, Eirik Gronsund - initial implementation
  *******************************************************************************/
-package no.javatime.inplace.region.manager;
+package no.javatime.inplace.region.intface;
 
-import no.javatime.util.messages.ExceptionMessage;
 
-public class BundleActivatorException extends BaseException {
+
+
+public class BundleStateChangeException extends InPlaceException {
+
+	private static final long serialVersionUID = 4698034779808044676L;
+
 	
-	private static final long serialVersionUID = 5769222856646228959L;
-
-	public BundleActivatorException () {
+	public BundleStateChangeException () {
 		super();	
 	}
-	public BundleActivatorException(Throwable tex, String key, Object ... substitutions) {
-		super(ExceptionMessage.getInstance().formatString(key, substitutions), tex);
+	public BundleStateChangeException(Throwable tex, String key, Object ... substitutions) {
+		super(tex, key, substitutions);
 	}
 	
-	public BundleActivatorException(String key, Object ... substitutions) {
-		super(ExceptionMessage.getInstance().formatString(key, substitutions));
+	public BundleStateChangeException(String key, Object ... substitutions) {
+		super(key, substitutions);
 	}
 	
 	

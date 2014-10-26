@@ -13,9 +13,10 @@ package no.javatime.inplace.region.status;
 import java.util.Collection;
 
 import no.javatime.inplace.region.Activator;
-import no.javatime.inplace.region.manager.BundleManager;
-import no.javatime.inplace.region.manager.BundleTransition.Transition;
-import no.javatime.inplace.region.manager.InPlaceException;
+import no.javatime.inplace.region.intface.InPlaceException;
+import no.javatime.inplace.region.intface.BundleTransition.Transition;
+import no.javatime.inplace.region.manager.BundleTransitionImpl;
+import no.javatime.inplace.region.manager.BundleWorkspaceRegionImpl;
 import no.javatime.util.messages.ErrorMessage;
 
 import org.eclipse.core.resources.IProject;
@@ -151,14 +152,14 @@ public class BundleStatus extends MultiStatus implements IBundleStatus {
 			symbolicName = bundle.getSymbolicName();
 			this.bundleId = bundle.getBundleId();
 			bundleState = bundle.getState();
-			bundleTransition = BundleManager.getTransition().getTransition(bundle);
+			bundleTransition = BundleTransitionImpl.INSTANCE.getTransition(bundle);
 		} else if (null != project) {
-			bundle = BundleManager.getRegion().get(project);
+			bundle = BundleWorkspaceRegionImpl.INSTANCE.get(project);
 			if (null != bundle) {
 				symbolicName = bundle.getSymbolicName();
 				this.bundleId = bundle.getBundleId();
 				bundleState = bundle.getState();
-				bundleTransition = BundleManager.getTransition().getTransition(bundle);
+				bundleTransition = BundleTransitionImpl.INSTANCE.getTransition(bundle);
 			} else {
 				IBundleProjectDescription pd = Activator.getDefault().getBundleDescription(project);
 				symbolicName = pd.getSymbolicName();
@@ -180,11 +181,11 @@ public class BundleStatus extends MultiStatus implements IBundleStatus {
 						}
 					}
 					if (null != project) {
-						bundle = BundleManager.getRegion().get(project);
+						bundle = BundleWorkspaceRegionImpl.INSTANCE.get(project);
 						if (null != bundle) {
 							symbolicName = bundle.getSymbolicName();
 							this.bundleId = bundle.getBundleId();
-							bundleTransition = BundleManager.getTransition().getTransition(bundle);
+							bundleTransition = BundleTransitionImpl.INSTANCE.getTransition(bundle);
 						} else {
 							IBundleProjectDescription pd = Activator.getDefault().getBundleDescription(project);
 							symbolicName = pd.getSymbolicName();

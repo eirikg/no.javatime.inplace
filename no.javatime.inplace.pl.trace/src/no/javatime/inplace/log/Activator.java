@@ -1,11 +1,10 @@
 package no.javatime.inplace.log;
 
 import java.io.File;
-import java.util.Dictionary;
 
 import no.javatime.inplace.log.dl.LogWriter;
 import no.javatime.inplace.log.view.SharedImages;
-import no.javatime.inplace.region.manager.InPlaceException;
+import no.javatime.inplace.region.intface.InPlaceException;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
@@ -78,19 +77,7 @@ public class Activator extends AbstractUIPlugin {
 		bundleProjectTracker = new ServiceTracker<IBundleProjectService, IBundleProjectService>
 				(context, IBundleProjectService.class.getName(), null);
 		bundleProjectTracker.open();
-
-		Bundle bundle = context.getBundle();
-		Dictionary<String, String> dictionary = bundle.getHeaders();
 	
-		// Other bundles extends the bundle log view and the bundle logger
-		/*
-		String bundleLogImpl = dictionary.get(BundleLog.BUNDLE_LOG_HEADER);
-		ExtenderImpl.<BundleLog>register(bundle, BundleLog.class, bundleLogImpl);
-
-		String bundleLogViewImpl = dictionary.get(BundleLogView.BUNDLE_LOG_VIEW_HEADER);
-		ExtenderImpl.<BundleLogView>register(bundle, BundleLogView.class, bundleLogViewImpl);
-	  */
-		
 		logWriter = new LogWriter(getLogFile(), BUNDLE_LOGGER_NAME);
 		ExtendedLogReaderService readerService = getLogReaderService(); 
 		readerService.addLogListener(logWriter, logWriter);
@@ -185,6 +172,7 @@ public class Activator extends AbstractUIPlugin {
 
 	/**
 	 * Finds and return the bundle description for a given project.
+	 * 
 	 * @param project to get the bundle description for
 	 * @return the bundle description for the specified project
 	 * @throws InPlaceException if the description could not be obtained or is invalid

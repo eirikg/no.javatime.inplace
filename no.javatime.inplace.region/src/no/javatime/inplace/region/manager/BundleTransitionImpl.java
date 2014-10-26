@@ -3,6 +3,8 @@ package no.javatime.inplace.region.manager;
 import java.util.Collection;
 import java.util.EnumSet;
 
+import no.javatime.inplace.region.intface.BundleTransition;
+import no.javatime.inplace.region.intface.ProjectLocationException;
 import no.javatime.inplace.region.state.BundleNode;
 
 import org.eclipse.core.resources.IProject;

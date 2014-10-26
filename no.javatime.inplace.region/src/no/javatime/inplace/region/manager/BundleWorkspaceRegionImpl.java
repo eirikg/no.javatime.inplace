@@ -22,7 +22,10 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import no.javatime.inplace.region.Activator;
-import no.javatime.inplace.region.manager.BundleTransition.Transition;
+import no.javatime.inplace.region.intface.BundleRegion;
+import no.javatime.inplace.region.intface.InPlaceException;
+import no.javatime.inplace.region.intface.ProjectLocationException;
+import no.javatime.inplace.region.intface.BundleTransition.Transition;
 import no.javatime.inplace.region.project.BundleProjectState;
 import no.javatime.inplace.region.state.BundleNode;
 import no.javatime.inplace.region.state.BundleState;

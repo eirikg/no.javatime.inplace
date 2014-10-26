@@ -11,7 +11,7 @@ import org.osgi.framework.ServiceReference;
 import org.osgi.util.tracker.BundleTracker;
 
 /**
- * Register extenders and access extenders and their extensions
+ * Register, unregister, re-register and access extenders and create extensions
  * <p>
  * Prior to OSGi R6 a service scope is implicit when registering a service. The scopes are singleton
  * (shared service), bundle (one service per bundle) and prototype (OSGi R6 only) (a new service for
@@ -19,7 +19,7 @@ import org.osgi.util.tracker.BundleTracker;
  * <p>
  * The specified registrar bundle specified when registering a service is also the user bundle of
  * the service when {@link #getService()} is used. If {@link #getService(Bundle)} is used, the
- * specified bundle becomes the user bundle
+ * specified bundle is the user bundle.
  */
 public class Extenders {
 
@@ -231,7 +231,7 @@ public class Extenders {
 	 * service is decremented by one.
 	 * 
 	 * @return false if the context bundle's use count for the service is zero or if the service has
-	 * been unregistered; true otherwise; true otherwise
+	 * been unregistered; true otherwise;
 	 * @see org.osgi.framework.BundleContext#ungetService(ServiceReference) OSGi ungetService
 	 * @see #ungetService(Bundle)
 	 */
@@ -261,8 +261,7 @@ public class Extenders {
 	 * extender
 	 * 
 	 * @param serviceInterfaceName one of possible multiple interface names of the extension bundle.
-	 * @return the extender instance or null if the bundle is no longer tracked, the bundle has no
-	 * registered extensions or the registered class does not implement the registered interface
+	 * @return the extender instance or null if the service is not tracked under the specified interface name.
 	 * @throws ExtenderException if the bundle context of the extension is no longer valid or the
 	 * class object implementing the extension could not be created
 	 */
@@ -283,7 +282,7 @@ public class Extenders {
 	 * specified key
 	 * 
 	 * @param serviceId the unique key to locate the extender
-	 * @return the extender stored with the service id as its key or null if not found.
+	 * @return the extender instance or null if the service is not tracked under the specified service id.
 	 * @throws ExtenderException if the bundle context used to get the extender is not valid or a
 	 * security permission is missing
 	 */

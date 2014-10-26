@@ -1,6 +1,6 @@
 package no.javatime.inplace.bundlejobs.intface;
 
-import no.javatime.inplace.region.manager.InPlaceException;
+import no.javatime.inplace.region.intface.InPlaceException;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.IProgressMonitor;

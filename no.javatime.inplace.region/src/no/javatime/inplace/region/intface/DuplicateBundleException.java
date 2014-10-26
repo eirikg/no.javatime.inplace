@@ -8,23 +8,24 @@
  * Contributors:
  * 	JavaTime project, Eirik Gronsund - initial implementation
  *******************************************************************************/
-package no.javatime.inplace.region.manager;
+package no.javatime.inplace.region.intface;
 
-import no.javatime.util.messages.ExceptionMessage;
 
-public class ProjectLocationException extends BaseException {
 
-	private static final long serialVersionUID = -3357911740963379729L;
 
-	public ProjectLocationException () {
+public class DuplicateBundleException extends InPlaceException {
+
+	private static final long serialVersionUID = -6632902141188744336L;
+	
+	public DuplicateBundleException () {
 		super();	
 	}
-	public ProjectLocationException(Throwable tex, String key, Object ... substitutions) {
-		super(ExceptionMessage.getInstance().formatString(key, substitutions), tex);
+	public DuplicateBundleException(Throwable tex, String key, Object ... substitutions) {
+		super(tex, key, substitutions);
 	}
 	
-	public ProjectLocationException(String key, Object ... substitutions) {
-		super(ExceptionMessage.getInstance().formatString(key, substitutions));
+	public DuplicateBundleException(String key, Object ... substitutions) {
+		super(key, substitutions);
 	}
 	
 	

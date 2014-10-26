@@ -23,14 +23,13 @@ import no.javatime.inplace.region.closure.BuildErrorClosure;
 import no.javatime.inplace.region.closure.CircularReferenceException;
 import no.javatime.inplace.region.closure.ProjectDependencies;
 import no.javatime.inplace.region.closure.ProjectSorter;
-import no.javatime.inplace.region.manager.BundleCommand;
-import no.javatime.inplace.region.manager.BundleManager;
-import no.javatime.inplace.region.manager.BundleRegion;
-import no.javatime.inplace.region.manager.BundleTransition;
-import no.javatime.inplace.region.manager.BundleTransition.Transition;
-import no.javatime.inplace.region.manager.BundleTransition.TransitionError;
-import no.javatime.inplace.region.manager.InPlaceException;
-import no.javatime.inplace.region.manager.ProjectLocationException;
+import no.javatime.inplace.region.intface.BundleCommand;
+import no.javatime.inplace.region.intface.BundleRegion;
+import no.javatime.inplace.region.intface.BundleTransition;
+import no.javatime.inplace.region.intface.InPlaceException;
+import no.javatime.inplace.region.intface.ProjectLocationException;
+import no.javatime.inplace.region.intface.BundleTransition.Transition;
+import no.javatime.inplace.region.intface.BundleTransition.TransitionError;
 import no.javatime.inplace.region.project.BundleProjectState;
 import no.javatime.inplace.region.project.ManifestOptions;
 import no.javatime.inplace.region.status.BundleStatus;
@@ -144,8 +143,8 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 
 		try {
 			IProject project = getProject();
-			BundleTransition bundleTransition = BundleManager.getTransition();
-			BundleCommand bundleCommand = BundleManager.getCommand();
+			BundleTransition bundleTransition = InPlace.getBundleTransitionService();
+			BundleCommand bundleCommand = InPlace.getBundleCommandService();
 			// Build is no longer pending. Remove as early as possible
 			// Also removed in the post build listener
 			bundleTransition.removeTransitionError(project, TransitionError.BUILD);
@@ -157,7 +156,7 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 			} else { // (kind == INCREMENTAL_BUILD || kind == AUTO_BUILD)
 				incrementalBuild(delta, monitor);
 			}
-			BundleRegion bundleRegion = BundleManager.getRegion();
+			BundleRegion bundleRegion = InPlace.getBundleRegionService();
 			Bundle bundle = bundleRegion.get(project);
 			// Uninstalled project with no deltas
 			IResourceDelta[] resourceDelta = null;
@@ -247,7 +246,7 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 	protected void fullBuild(final IProgressMonitor monitor) throws CoreException {
 		if (InPlace.get().getMsgOpt().isBundleOperations()){
 			IProject project = getProject();
-			Bundle bundle = BundleManager.getRegion().get(project);
+			Bundle bundle = InPlace.getBundleRegionService().get(project);
 			String msg = NLS.bind(Msg.FULL_BUILD_TRACE, 
 					new Object[] {project.getName(), project.getLocation().toOSString()});
 			IBundleStatus status = new BundleStatus(StatusCode.INFO,bundle, project, msg, null);
@@ -260,7 +259,7 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 	protected void incrementalBuild(IResourceDelta delta, IProgressMonitor monitor) throws CoreException {
 		if (InPlace.get().getMsgOpt().isBundleOperations()) {
 			IProject project = getProject();
-			Bundle bundle = BundleManager.getRegion().get(project);
+			Bundle bundle = InPlace.getBundleRegionService().get(project);
 			String msg = NLS.bind(Msg.INCREMENTAL_BUILD_TRACE, 
 					new Object[] {project.getName(), project.getLocation().toOSString()});
 			IBundleStatus status = new BundleStatus(StatusCode.INFO,bundle, project, msg, null);
@@ -274,7 +273,7 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 
 		String projectLoaction = BundleProjectState.getLocationIdentifier(project, 
 				BundleProjectState.BUNDLE_REF_LOC_SCHEME);
-		String bundleLocation = BundleManager.getRegion().getBundleLocationIdentifier(project);
+		String bundleLocation = InPlace.getBundleRegionService().getBundleLocationIdentifier(project);
 		if (!projectLoaction.equals(bundleLocation) && ProjectProperties.isInstallable(project)) {
 			return true;
 		}
@@ -301,7 +300,7 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 				// Get the closures to reveal any cycles 
 				if (be.getBuildErrors().size() > 0) {
 					if (BuildErrorClosure.hasBuildErrors(project)|| !BuildErrorClosure.hasBuildState(project)) {
-						BundleManager.getTransition().setTransitionError(project, TransitionError.BUILD);
+						InPlace.getBundleTransitionService().setTransitionError(project, TransitionError.BUILD);
 					}
 				}
 			} catch (CircularReferenceException e) {
@@ -313,7 +312,7 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 			}
 			if (!cycle && InPlace.get().getMsgOpt().isBundleOperations()) {
 				String msg = null;
-				Bundle bundle = BundleManager.getRegion().get(project);
+				Bundle bundle = InPlace.getBundleRegionService().get(project);
 				if (InPlace.get().getCommandOptionsService().isUpdateOnBuild()) {
 					msg = NLS.bind(Msg.BUILD_ERROR_UPDATE_TRACE, project.getName());
 				} else {

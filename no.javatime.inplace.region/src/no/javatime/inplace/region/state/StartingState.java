@@ -1,6 +1,6 @@
 package no.javatime.inplace.region.state;
 
-import no.javatime.inplace.region.manager.BundleTransition.Transition;
+import no.javatime.inplace.region.intface.BundleTransition.Transition;
 
 /**
  * Begins a outgoing start and stop transition with {@link org.osgi.framework.Bundle#STARTING

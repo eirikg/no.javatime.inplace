@@ -1,9 +1,9 @@
-package no.javatime.inplace.region.manager;
+package no.javatime.inplace.region.intface;
 
 import java.util.Collection;
 import java.util.EnumSet;
 
-import no.javatime.inplace.region.manager.BundleTransition.Transition;
+import no.javatime.inplace.region.intface.BundleTransition.Transition;
 
 import org.eclipse.core.resources.IProject;
 import org.osgi.framework.Bundle;

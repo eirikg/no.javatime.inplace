@@ -21,8 +21,8 @@ import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.closure.BundleClosures;
 import no.javatime.inplace.region.closure.BundleSorter;
 import no.javatime.inplace.region.closure.CircularReferenceException;
-import no.javatime.inplace.region.manager.BundleManager;
-import no.javatime.inplace.region.manager.InPlaceException;
+import no.javatime.inplace.region.intface.BundleTransitionListener;
+import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
@@ -100,7 +100,7 @@ public class StartJob extends BundleJob {
 
 		try {
 			monitor.beginTask(startTaskName, getTicks());
-			BundleManager.addBundleTransitionListener(this);
+			BundleTransitionListener.addBundleTransitionListener(this);
 			start(monitor);
 		} catch(InterruptedException e) {
 			String msg = ExceptionMessage.getInstance().formatString("interrupt_job", getName());
@@ -129,7 +129,7 @@ public class StartJob extends BundleJob {
 			return new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID, msg);
 		} finally {
 			monitor.done();
-			BundleManager.removeBundleTransitionListener(this);
+			BundleTransitionListener.removeBundleTransitionListener(this);
 		}
 	}
 

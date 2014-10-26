@@ -8,9 +8,9 @@ import no.javatime.inplace.dl.preferences.intface.DependencyOptions;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Operation;
 import no.javatime.inplace.region.Activator;
-import no.javatime.inplace.region.manager.BundleManager;
-import no.javatime.inplace.region.manager.BundleRegion;
-import no.javatime.inplace.region.manager.InPlaceException;
+import no.javatime.inplace.region.intface.BundleRegion;
+import no.javatime.inplace.region.intface.InPlaceException;
+import no.javatime.inplace.region.manager.BundleWorkspaceRegionImpl;
 
 import org.eclipse.core.resources.IProject;
 import org.osgi.framework.Bundle;
@@ -44,7 +44,7 @@ import org.osgi.framework.Bundle;
  */
 public class BundleClosures {
 
-	private final BundleRegion bundleRegion = BundleManager.getRegion();
+	private final BundleRegion bundleRegion = BundleWorkspaceRegionImpl.INSTANCE;
 	/**
 	 * Sort deactivated and activated projects when true
 	 */

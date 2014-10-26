@@ -8,9 +8,9 @@ import no.javatime.inplace.bundlejobs.NatureJob;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.region.closure.BundleClosures;
 import no.javatime.inplace.region.closure.CircularReferenceException;
-import no.javatime.inplace.region.manager.BundleManager;
-import no.javatime.inplace.region.manager.BundleTransition.Transition;
-import no.javatime.inplace.region.manager.InPlaceException;
+import no.javatime.inplace.region.intface.BundleTransitionListener;
+import no.javatime.inplace.region.intface.InPlaceException;
+import no.javatime.inplace.region.intface.BundleTransition.Transition;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
@@ -60,7 +60,7 @@ public class RemoveBundleProjectJob extends NatureJob {
 	public IBundleStatus runInWorkspace(IProgressMonitor monitor) throws CoreException {
 
 		try {
-			BundleManager.addBundleTransitionListener(this);
+			BundleTransitionListener.addBundleTransitionListener(this);
 			Collection<Bundle> pendingBundles = bundleRegion.getBundles(getPendingProjects());
 			if (pendingBundles.size() == 0) {
 					return super.runInWorkspace(monitor);
@@ -106,16 +106,16 @@ public class RemoveBundleProjectJob extends NatureJob {
 			String msg = ErrorMessage.getInstance().formatString("error_end_job", getName());
 			return new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID, msg, e);
 		} finally {
-			BundleManager.removeBundleTransitionListener(this);
+			BundleTransitionListener.removeBundleTransitionListener(this);
 		}
 		try {
-			BundleManager.addBundleTransitionListener(this);
+			BundleTransitionListener.addBundleTransitionListener(this);
 			return super.runInWorkspace(monitor);
 		} catch (CoreException e) {
 			String msg = ErrorMessage.getInstance().formatString("error_end_job", getName());
 			return new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID, msg, e);
 		} finally {
-			BundleManager.removeBundleTransitionListener(this);
+			BundleTransitionListener.removeBundleTransitionListener(this);
 		}
 	}
 }

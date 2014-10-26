@@ -27,10 +27,10 @@ import no.javatime.inplace.region.closure.BuildErrorClosure.ActivationScope;
 import no.javatime.inplace.region.closure.BundleSorter;
 import no.javatime.inplace.region.closure.CircularReferenceException;
 import no.javatime.inplace.region.closure.ProjectSorter;
-import no.javatime.inplace.region.manager.BundleManager;
-import no.javatime.inplace.region.manager.BundleTransition.Transition;
-import no.javatime.inplace.region.manager.BundleTransition.TransitionError;
-import no.javatime.inplace.region.manager.InPlaceException;
+import no.javatime.inplace.region.intface.BundleTransitionListener;
+import no.javatime.inplace.region.intface.InPlaceException;
+import no.javatime.inplace.region.intface.BundleTransition.Transition;
+import no.javatime.inplace.region.intface.BundleTransition.TransitionError;
 import no.javatime.inplace.region.project.BundleProjectState;
 import no.javatime.inplace.region.project.ManifestOptions;
 import no.javatime.inplace.region.status.BundleStatus;
@@ -154,7 +154,7 @@ public class ActivateBundleJob extends BundleJob implements ActivateBundle {
 	public IBundleStatus runInWorkspace(IProgressMonitor monitor) {
 
 		try {
-			BundleManager.addBundleTransitionListener(this);
+			BundleTransitionListener.addBundleTransitionListener(this);
 			monitor.beginTask(activateTaskName, getTicks());
 			activate(monitor);
 		} catch (InterruptedException e) {
@@ -185,7 +185,7 @@ public class ActivateBundleJob extends BundleJob implements ActivateBundle {
 			return new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID, msg, e);
 		} finally {
 			monitor.done();
-			BundleManager.removeBundleTransitionListener(this);
+			BundleTransitionListener.removeBundleTransitionListener(this);
 		}
 	}
 

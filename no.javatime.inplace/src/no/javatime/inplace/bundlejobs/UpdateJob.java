@@ -24,13 +24,12 @@ import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.closure.BundleClosures;
 import no.javatime.inplace.region.closure.BundleSorter;
 import no.javatime.inplace.region.closure.CircularReferenceException;
-import no.javatime.inplace.region.manager.BundleCommandImpl;
-import no.javatime.inplace.region.manager.BundleManager;
-import no.javatime.inplace.region.manager.BundleTransition.Transition;
-import no.javatime.inplace.region.manager.BundleTransition.TransitionError;
-import no.javatime.inplace.region.manager.DuplicateBundleException;
-import no.javatime.inplace.region.manager.InPlaceException;
-import no.javatime.inplace.region.manager.ProjectLocationException;
+import no.javatime.inplace.region.intface.BundleTransition.Transition;
+import no.javatime.inplace.region.intface.BundleTransition.TransitionError;
+import no.javatime.inplace.region.intface.BundleTransitionListener;
+import no.javatime.inplace.region.intface.DuplicateBundleException;
+import no.javatime.inplace.region.intface.InPlaceException;
+import no.javatime.inplace.region.intface.ProjectLocationException;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
@@ -116,7 +115,7 @@ public class UpdateJob extends BundleJob {
 
 		try {
 			monitor.beginTask(updateTaskName, getTicks());
-			BundleManager.addBundleTransitionListener(this);
+			BundleTransitionListener.addBundleTransitionListener(this);
 			update(monitor);
 		} catch (InterruptedException e) {
 			String msg = ExceptionMessage.getInstance().formatString("interrupt_job", getName());
@@ -149,7 +148,7 @@ public class UpdateJob extends BundleJob {
 			return new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID, msg);
 		} finally {
 			monitor.done();
-			BundleManager.removeBundleTransitionListener(this);
+			BundleTransitionListener.removeBundleTransitionListener(this);
 		}
 	}
 
@@ -336,7 +335,6 @@ public class UpdateJob extends BundleJob {
 	 * @return status object describing the result of updating with {@code StatusCode.OK} if no
 	 * failure, otherwise one of the failure codes are returned. If more than one bundle fails, status
 	 * of the last failed bundle is returned. All failures are added to the job status list
-	 * @see BundleCommandImpl#update(Bundle)
 	 */
 	private Collection<IBundleStatus> updateByReference(Collection<Bundle> bundles,
 			SubProgressMonitor monitor) {

@@ -1,8 +1,9 @@
-package no.javatime.inplace.region.manager;
+package no.javatime.inplace.region.intface;
 
 import java.util.Collection;
 import java.util.Map;
 
+import no.javatime.inplace.region.manager.BundleWorkspaceRegionImpl;
 import no.javatime.inplace.region.project.BundleProjectState;
 
 import org.eclipse.core.resources.IProject;

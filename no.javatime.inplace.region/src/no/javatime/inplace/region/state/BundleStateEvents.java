@@ -12,13 +12,13 @@ package no.javatime.inplace.region.state;
 
 import no.javatime.inplace.region.Activator;
 import no.javatime.inplace.region.events.TransitionEvent;
+import no.javatime.inplace.region.intface.BundleTransitionListener;
+import no.javatime.inplace.region.intface.ProjectLocationException;
+import no.javatime.inplace.region.intface.BundleTransition.Transition;
+import no.javatime.inplace.region.intface.BundleTransition.TransitionError;
 import no.javatime.inplace.region.manager.BundleCommandImpl;
-import no.javatime.inplace.region.manager.BundleManager;
-import no.javatime.inplace.region.manager.BundleTransition.Transition;
-import no.javatime.inplace.region.manager.BundleTransition.TransitionError;
 import no.javatime.inplace.region.manager.BundleTransitionImpl;
 import no.javatime.inplace.region.manager.BundleWorkspaceRegionImpl;
-import no.javatime.inplace.region.manager.ProjectLocationException;
 import no.javatime.inplace.region.msg.Msg;
 import no.javatime.inplace.region.project.BundleProjectState;
 import no.javatime.inplace.region.project.ManifestOptions;
@@ -194,7 +194,7 @@ public class BundleStateEvents implements SynchronousBundleListener {
 				node.setCurrentState(StateFactory.INSTANCE.resolvedState);
 				node.getState().unresolve(node);
 				node.commit();
-				BundleManager.addBundleTransition(new TransitionEvent(bundle, node.getTransition()));
+				BundleTransitionListener.addBundleTransition(new TransitionEvent(bundle, node.getTransition()));
 			} else {
 				node.getState().external(node, event, StateFactory.INSTANCE.installedState,
 						Transition.EXTERNAL);
@@ -245,7 +245,7 @@ public class BundleStateEvents implements SynchronousBundleListener {
 						Transition.EXTERNAL);
 				if (BundleProjectState.isWorkspaceNatureEnabled()) {
 					bundleTransition.setTransitionError(bundle, TransitionError.UNINSTALL);
-					BundleManager.addBundleTransition(new TransitionEvent(bundle, node.getTransition()));
+					BundleTransitionListener.addBundleTransition(new TransitionEvent(bundle, node.getTransition()));
 				} else {
 					// Remove the externally uninstalled bundle from the workspace region
 					bundleCommand.unregisterBundle(bundle);
@@ -269,7 +269,7 @@ public class BundleStateEvents implements SynchronousBundleListener {
 						Transition.EXTERNAL);
 			} else if (node.isState(Transition.RESOLVE, ResolvedState.class)) {
 				node.getState().start(node);
-				BundleManager.addBundleTransition(new TransitionEvent(bundle, node.getTransition()));
+				BundleTransitionListener.addBundleTransition(new TransitionEvent(bundle, node.getTransition()));
 			}
 			break;
 		}
@@ -305,7 +305,7 @@ public class BundleStateEvents implements SynchronousBundleListener {
 			if (node.isState(StartingState.class)) {
 				node.getState().start(node);
 				node.getState().commit(node);
-				BundleManager.addBundleTransition(new TransitionEvent(bundle, node.getTransition()));
+				BundleTransitionListener.addBundleTransition(new TransitionEvent(bundle, node.getTransition()));
 			}
 			break;
 		}

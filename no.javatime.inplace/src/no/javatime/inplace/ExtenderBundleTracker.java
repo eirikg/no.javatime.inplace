@@ -1,14 +1,11 @@
-package no.javatime.inplace.extender;
+package no.javatime.inplace;
 
-import java.util.Dictionary;
-import java.util.Hashtable;
-
-import no.javatime.inplace.InPlace;
 import no.javatime.inplace.extender.intface.Extender;
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.extender.intface.Extenders;
 import no.javatime.inplace.log.intface.BundleLog;
-import no.javatime.inplace.region.manager.InPlaceException;
+import no.javatime.inplace.pl.console.intface.BundleConsoleFactory;
+import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 
@@ -20,7 +17,7 @@ import org.osgi.util.tracker.BundleTracker;
 import org.osgi.util.tracker.BundleTrackerCustomizer;
 
 /**
- * Registers services facilitated by other bundles
+ * Registers services provided by other bundles
  */
 public class ExtenderBundleTracker extends BundleTracker<Extender<?>> {
 
@@ -32,19 +29,17 @@ public class ExtenderBundleTracker extends BundleTracker<Extender<?>> {
 	public Extender<?> addingBundle(Bundle bundle, BundleEvent event) {
 
 		try { 
-			// Extend and register the bundle log as a service
-			String bundleLogImpl = bundle.getHeaders().get(BundleLog.BUNDLE_LOG_HEADER);
-			if (null != bundleLogImpl) {
-				Dictionary<String, Object> properties = new Hashtable<>();
-				properties.put(BundleLog.class.getName(), "logging");
-				return Extenders.register(this, bundle, InPlace.getContext().getBundle(), 
-						BundleLog.class.getName(), bundleLogImpl, properties);
-//				Extension<Extender<?>> extender = new ExtensionImpl<>(Extender.class.getName());
-//				Extender<?> ser = extender.getService();
-//				return ser.register(InPlace.get().getExtenderBundleTracker(),
-//						bundle, InPlace.getContext().getBundle(), BundleLog.class.getName(), bundleLogImpl);
+			String bundleLogSvcName = bundle.getHeaders().get(BundleLog.BUNDLE_LOG_HEADER);
+			// Extend and register the bundle log as a service if not registered by others
+			if (null != bundleLogSvcName && null == Extenders.getExtender(BundleLog.class.getName())) {
+				return Extenders.register(this, bundle, context.getBundle(), 
+						BundleLog.class.getName(), bundleLogSvcName, null);
 			}
-
+			String bundleConsoleViewSvcname = bundle.getHeaders().get(BundleConsoleFactory.BUNDLE_CONSOLE_HEADER);
+			if (null != bundleConsoleViewSvcname && null == Extenders.getExtender(BundleConsoleFactory.class.getName())) {
+				return Extenders.register(this, bundle, context.getBundle(), BundleConsoleFactory.class.getName(),
+						bundleConsoleViewSvcname, null);
+			}
 		} catch(InPlaceException | ExtenderException e) {
 			StatusManager.getManager().handle(
 					new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, e.getMessage(), e),

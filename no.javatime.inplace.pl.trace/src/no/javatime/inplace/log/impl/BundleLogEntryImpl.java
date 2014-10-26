@@ -21,8 +21,7 @@ import java.util.StringTokenizer;
 import no.javatime.inplace.log.dl.AbstractEntry;
 import no.javatime.inplace.log.dl.LogSession;
 import no.javatime.inplace.log.msg.Messages;
-import no.javatime.inplace.region.manager.BundleManager;
-import no.javatime.inplace.region.manager.BundleTransition.Transition;
+import no.javatime.inplace.region.intface.BundleTransition.Transition;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
 
@@ -374,10 +373,6 @@ public class BundleLogEntryImpl extends AbstractEntry implements BundleLogEntry 
 		this.message = message;
 	}
 
-	public String getBundleTransition() {
-		return BundleManager.getTransition().getTransitionName(bundleTransition, false, false);
-	}
-	
 	public int getBundleStateId() {
 		return bundleState;
 	}
@@ -386,9 +381,6 @@ public class BundleLogEntryImpl extends AbstractEntry implements BundleLogEntry 
 		return getStateName(bundleState);
 	}
 
-//	public void setBundleState(String stateName) {
-//		this.bundleState = getStateId(stateName);
-//	}
 	// If we want to save the state as a string in the log file
 	@SuppressWarnings("unused")
 	private int getStateId(String state) {

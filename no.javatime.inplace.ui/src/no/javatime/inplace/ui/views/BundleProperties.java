@@ -20,14 +20,13 @@ import no.javatime.inplace.region.closure.BuildErrorClosure;
 import no.javatime.inplace.region.closure.BundleSorter;
 import no.javatime.inplace.region.closure.CircularReferenceException;
 import no.javatime.inplace.region.closure.ProjectSorter;
-import no.javatime.inplace.region.manager.BundleCommand;
-import no.javatime.inplace.region.manager.BundleManager;
-import no.javatime.inplace.region.manager.BundleRegion;
-import no.javatime.inplace.region.manager.BundleTransition;
-import no.javatime.inplace.region.manager.BundleTransition.Transition;
-import no.javatime.inplace.region.manager.BundleTransition.TransitionError;
-import no.javatime.inplace.region.manager.InPlaceException;
-import no.javatime.inplace.region.manager.ProjectLocationException;
+import no.javatime.inplace.region.intface.BundleCommand;
+import no.javatime.inplace.region.intface.BundleRegion;
+import no.javatime.inplace.region.intface.BundleTransition;
+import no.javatime.inplace.region.intface.InPlaceException;
+import no.javatime.inplace.region.intface.ProjectLocationException;
+import no.javatime.inplace.region.intface.BundleTransition.Transition;
+import no.javatime.inplace.region.intface.BundleTransition.TransitionError;
 import no.javatime.inplace.region.project.BundleProjectState;
 import no.javatime.inplace.region.project.ManifestOptions;
 import no.javatime.inplace.region.status.BundleStatus;
@@ -97,9 +96,9 @@ public class BundleProperties {
 	static private final BundleSorter bundleSorter = new BundleSorter();
 	static private final ProjectSorter projectSorter = new ProjectSorter();
 
-	private static final BundleCommand bundleCommand = BundleManager.getCommand();
-	private static final BundleTransition bundleTransition = BundleManager.getTransition();
-	private static final BundleRegion bundleRegion = BundleManager.getRegion();
+	private final BundleCommand bundleCommand = Activator.getBundleCommandService(); 
+	private static final BundleTransition bundleTransition = Activator.getBundleTransitionService();
+	private final BundleRegion bundleRegion = Activator.getBundleRegionService();
 	
 	public BundleProperties(IProject project) {
 		this.project = project;

@@ -11,14 +11,13 @@ import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.closure.ProjectSorter;
 import no.javatime.inplace.region.events.BundleTransitionEvent;
 import no.javatime.inplace.region.events.BundleTransitionEventListener;
-import no.javatime.inplace.region.manager.BundleCommand;
-import no.javatime.inplace.region.manager.BundleManager;
-import no.javatime.inplace.region.manager.BundleRegion;
-import no.javatime.inplace.region.manager.BundleTransition;
-import no.javatime.inplace.region.manager.BundleTransition.Transition;
-import no.javatime.inplace.region.manager.DuplicateBundleException;
-import no.javatime.inplace.region.manager.InPlaceException;
-import no.javatime.inplace.region.manager.ProjectLocationException;
+import no.javatime.inplace.region.intface.BundleCommand;
+import no.javatime.inplace.region.intface.BundleRegion;
+import no.javatime.inplace.region.intface.BundleTransition;
+import no.javatime.inplace.region.intface.DuplicateBundleException;
+import no.javatime.inplace.region.intface.InPlaceException;
+import no.javatime.inplace.region.intface.ProjectLocationException;
+import no.javatime.inplace.region.intface.BundleTransition.Transition;
 import no.javatime.inplace.region.project.BundleProjectState;
 import no.javatime.inplace.region.project.ManifestOptions;
 import no.javatime.inplace.region.status.BundleStatus;
@@ -49,9 +48,9 @@ public abstract class JobStatus extends WorkspaceJob implements BundleTransition
 	/**
 	 * Convenience reference to the bundle manager
 	 */
-	final protected BundleCommand bundleCommand = BundleManager.getCommand();
-	final protected BundleTransition bundleTransition = BundleManager.getTransition();
-	final protected BundleRegion bundleRegion = BundleManager.getRegion();
+	final protected BundleCommand bundleCommand = InPlace.getBundleCommandService();
+	final protected BundleTransition bundleTransition = InPlace.getBundleTransitionService();
+	final protected BundleRegion bundleRegion = InPlace.getBundleRegionService();
 
 	/**
 	 * Construct a job with the name of the job to run

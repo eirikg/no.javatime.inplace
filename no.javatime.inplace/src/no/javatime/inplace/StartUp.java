@@ -14,13 +14,12 @@ import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.closure.BuildErrorClosure;
 import no.javatime.inplace.region.closure.BuildErrorClosure.ActivationScope;
 import no.javatime.inplace.region.closure.CircularReferenceException;
-import no.javatime.inplace.region.manager.BundleCommand;
-import no.javatime.inplace.region.manager.BundleManager;
-import no.javatime.inplace.region.manager.BundleRegion;
-import no.javatime.inplace.region.manager.BundleTransition;
-import no.javatime.inplace.region.manager.BundleTransition.Transition;
-import no.javatime.inplace.region.manager.InPlaceException;
-import no.javatime.inplace.region.manager.ProjectLocationException;
+import no.javatime.inplace.region.intface.BundleCommand;
+import no.javatime.inplace.region.intface.BundleRegion;
+import no.javatime.inplace.region.intface.BundleTransition;
+import no.javatime.inplace.region.intface.InPlaceException;
+import no.javatime.inplace.region.intface.ProjectLocationException;
+import no.javatime.inplace.region.intface.BundleTransition.Transition;
 import no.javatime.inplace.region.project.BundleProjectState;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
@@ -161,9 +160,9 @@ public class StartUp implements IStartup {
 								Msg.INIT_WORKSPACE_STORE_WARN, null));
 						return super.runInWorkspace(monitor);
 					}
-					BundleTransition bundleTransition = BundleManager.getTransition();
-					BundleCommand bundleCommand = BundleManager.getCommand();
-					BundleRegion bundleRegion = BundleManager.getRegion();
+					BundleTransition bundleTransition = InPlace.getBundleTransitionService();
+					BundleCommand bundleCommand = InPlace.getBundleCommandService();
+					BundleRegion bundleRegion = InPlace.getBundleRegionService();
 					for (IProject project : ProjectProperties.getPlugInProjects()) {
 						if (null != store) {
 							try {

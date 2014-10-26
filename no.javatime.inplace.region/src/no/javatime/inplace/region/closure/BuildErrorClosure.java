@@ -6,11 +6,12 @@ import java.util.LinkedHashSet;
 
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.region.Activator;
-import no.javatime.inplace.region.manager.BundleManager;
-import no.javatime.inplace.region.manager.BundleRegion;
-import no.javatime.inplace.region.manager.BundleTransition;
-import no.javatime.inplace.region.manager.BundleTransition.Transition;
-import no.javatime.inplace.region.manager.InPlaceException;
+import no.javatime.inplace.region.intface.BundleRegion;
+import no.javatime.inplace.region.intface.BundleTransition;
+import no.javatime.inplace.region.intface.InPlaceException;
+import no.javatime.inplace.region.intface.BundleTransition.Transition;
+import no.javatime.inplace.region.manager.BundleTransitionImpl;
+import no.javatime.inplace.region.manager.BundleWorkspaceRegionImpl;
 import no.javatime.inplace.region.msg.Msg;
 import no.javatime.inplace.region.project.BundleProjectState;
 import no.javatime.inplace.region.project.ManifestOptions;
@@ -54,8 +55,8 @@ import org.osgi.framework.Bundle;
  */
 public class BuildErrorClosure {
 
-	final static private BundleRegion bundleRegion = BundleManager.getRegion();
-	final static private BundleTransition bundleTransition = BundleManager.getTransition();
+	final static private BundleRegion bundleRegion = BundleWorkspaceRegionImpl.INSTANCE;
+	final static private BundleTransition bundleTransition = BundleTransitionImpl.INSTANCE;
 
 	public enum ActivationScope {
 		ACTIVATED, DEACTIVATED, ALL

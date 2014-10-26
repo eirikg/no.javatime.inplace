@@ -2,10 +2,16 @@ package no.javatime.inplace.region;
 
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions;
 import no.javatime.inplace.dl.preferences.intface.MessageOptions;
+import no.javatime.inplace.extender.intface.Extender;
 import no.javatime.inplace.extender.intface.Extenders;
 import no.javatime.inplace.extender.intface.Extension;
-import no.javatime.inplace.region.manager.BundleCommandImpl;
-import no.javatime.inplace.region.manager.InPlaceException;
+import no.javatime.inplace.region.intface.BundleCommand;
+import no.javatime.inplace.region.intface.BundleRegion;
+import no.javatime.inplace.region.intface.BundleTransition;
+import no.javatime.inplace.region.intface.InPlaceException;
+import no.javatime.inplace.region.manager.BundleCommandServiceFactory;
+import no.javatime.inplace.region.manager.BundleRegionServiceFactory;
+import no.javatime.inplace.region.manager.BundleTransitionServiceFactory;
 import no.javatime.inplace.region.resolver.BundleResolveHookFactory;
 import no.javatime.inplace.region.state.BundleStateEvents;
 
@@ -33,6 +39,9 @@ public class Activator extends AbstractUIPlugin {
 	private ServiceTracker<IBundleProjectService, IBundleProjectService> bundleProjectTracker;
 	private Extension<MessageOptions> messageOptions;
 	private Extension<DependencyOptions> dependencyOptions;
+	private static Extender<BundleCommand> extenderCommand;
+	private static Extender<BundleRegion> extenderRegion;
+	private static Extender<BundleTransition> extenderTransition;
 
 	/**
 	 * Factory creating resolver hook objects for filtering and detection of duplicate bundle instances
@@ -57,7 +66,14 @@ public class Activator extends AbstractUIPlugin {
 		Activator.context = context;		
 		registerResolverHook();
 		Activator.context.addBundleListener(bundleEvents);
-		BundleCommandImpl.INSTANCE.initFrameworkWiring();
+
+		extenderCommand = Extenders.register(context.getBundle(), BundleCommand.class.getName(), 
+				new BundleCommandServiceFactory(),null);
+		//BundleCommandImpl.INSTANCE.initFrameworkWiring();
+		extenderRegion = Extenders.register(context.getBundle(), BundleRegion.class.getName(), 
+				new BundleRegionServiceFactory(),null);
+		extenderTransition = Extenders.register(context.getBundle(), BundleTransition.class.getName(), 
+				new BundleTransitionServiceFactory(),null);
 
 		messageOptions = Extenders.getExtension(MessageOptions.class.getName());
 		dependencyOptions = Extenders.getExtension(DependencyOptions.class.getName());
@@ -78,6 +94,18 @@ public class Activator extends AbstractUIPlugin {
 		super.stop(context);
 		plugin = null;
 		Activator.context = null;
+	}
+
+	public static Extender<BundleCommand> getExtenderCommand() {
+		return extenderCommand;
+	}
+
+	public static Extender<BundleRegion> getExtenderRegion() {
+		return extenderRegion;
+	}
+
+	public static Extender<BundleTransition> getExtenderTransition() {
+		return extenderTransition;
 	}
 
 	/**

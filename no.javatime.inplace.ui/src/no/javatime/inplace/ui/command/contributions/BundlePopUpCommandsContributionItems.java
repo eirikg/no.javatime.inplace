@@ -16,10 +16,10 @@ import no.javatime.inplace.bundleproject.BundleProjectSettings;
 import no.javatime.inplace.dialogs.OpenProjectHandler;
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.region.closure.BuildErrorClosure;
-import no.javatime.inplace.region.manager.BundleCommand;
-import no.javatime.inplace.region.manager.BundleManager;
-import no.javatime.inplace.region.manager.BundleTransition.Transition;
-import no.javatime.inplace.region.manager.InPlaceException;
+import no.javatime.inplace.region.intface.BundleCommand;
+import no.javatime.inplace.region.intface.BundleRegion;
+import no.javatime.inplace.region.intface.InPlaceException;
+import no.javatime.inplace.region.intface.BundleTransition.Transition;
 import no.javatime.inplace.region.project.BundleProjectState;
 import no.javatime.inplace.region.project.ManifestOptions;
 import no.javatime.inplace.region.status.BundleStatus;
@@ -58,7 +58,7 @@ public class BundlePopUpCommandsContributionItems extends BundleCommandsContribu
 	public final static String policyParamId = "Policy";
 	private final static String eagerLabel = Message.getInstance().formatString("eager_activation_label");
 	
-	BundleCommand bundleCommand = BundleManager.getCommand();
+	private BundleCommand bundleCommand = Activator.getBundleCommandService(); 
 
 		public BundlePopUpCommandsContributionItems() {
 		super();
@@ -67,6 +67,7 @@ public class BundlePopUpCommandsContributionItems extends BundleCommandsContribu
 	@Override
 	protected IContributionItem[] getContributionItems() {
 
+		BundleRegion bundleRegion = Activator.getBundleRegionService(); 
 		ArrayList<ContributionItem> contributions = new ArrayList<ContributionItem>();
 		IJavaProject javaProject = BundleMenuActivationHandler.getSelectedJavaProject();
 		if (null == javaProject) {
@@ -76,7 +77,7 @@ public class BundlePopUpCommandsContributionItems extends BundleCommandsContribu
 			// Get project, activation status and the bundle project
 			IProject project = javaProject.getProject();
 			Boolean activated = BundleProjectState.isNatureEnabled(project);
-			Bundle bundle = BundleManager.getRegion().get(project);
+			Bundle bundle = bundleRegion.get(project);
 			// Busy running bundle jobs.
 			if (OpenProjectHandler.getBundlesJobRunState()) {
 				// Do not add contributions for bundles that are dependent on their current state
@@ -228,7 +229,7 @@ public class BundlePopUpCommandsContributionItems extends BundleCommandsContribu
 	private CommandContributionItem addUpdate(Boolean activated, IProject project, Bundle bundle) {
 		if (null != bundle
 				&& activated
-				&& BundleManager.getTransition().containsPending(project, Transition.UPDATE,
+				&& Activator.getBundleTransitionService().containsPending(project, Transition.UPDATE,
 						Boolean.FALSE)) {
 			return createContibution(menuId, dynamicPopUpCommandId, updateParamId, updateParamId,
 					CommandContributionItem.STYLE_PUSH, updateImage);

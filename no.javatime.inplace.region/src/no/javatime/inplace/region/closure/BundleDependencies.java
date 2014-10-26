@@ -17,8 +17,8 @@ import java.util.LinkedHashSet;
 import java.util.List;
 
 import no.javatime.inplace.region.Activator;
-import no.javatime.inplace.region.manager.BundleManager;
-import no.javatime.inplace.region.manager.InPlaceException;
+import no.javatime.inplace.region.intface.InPlaceException;
+import no.javatime.inplace.region.manager.BundleWorkspaceRegionImpl;
 import no.javatime.inplace.region.msg.Msg;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
@@ -64,7 +64,7 @@ public class BundleDependencies {
 		Collection<Bundle> requirers = null;
 		if (null != provider) {
 			if ((provider.getState() & (Bundle.INSTALLED)) != 0) {
-				requirers = getRequiringBundles(provider, BundleManager.getRegion().getBundles());
+				requirers = getRequiringBundles(provider, BundleWorkspaceRegionImpl.INSTANCE.getBundles());
 			} else {
 				requirers = getRequiringBundles(provider, null, new LinkedHashSet<Bundle>());
 			}
@@ -110,7 +110,7 @@ public class BundleDependencies {
 				// Get the capabilities from all name spaces
 				for (BundleWire wire : wiredReqBundle.getProvidedWires(null)) {
 					Bundle reqBundle = wire.getRequirerWiring().getBundle();
-					if (null != reqBundle && BundleManager.getRegion().exist(reqBundle)) {
+					if (null != reqBundle && BundleWorkspaceRegionImpl.INSTANCE.exist(reqBundle)) {
 						requiredBundles.add(reqBundle);
 					}
 				}
@@ -135,7 +135,7 @@ public class BundleDependencies {
 		Collection<Bundle> providers = null;
 		if (null != requirer) {
 			if ((requirer.getState() & (Bundle.INSTALLED)) != 0) {
-				providers = getProvidingBundles(requirer, BundleManager.getRegion().getBundles());
+				providers = getProvidingBundles(requirer, BundleWorkspaceRegionImpl.INSTANCE.getBundles());
 			} else {
 				providers = getProvidingBundles(requirer, null, new LinkedHashSet<Bundle>());
 			}
@@ -179,7 +179,7 @@ public class BundleDependencies {
 				// Get the requirements from all name spaces
 				for (BundleWire wire : wiredProvBundle.getRequiredWires(null)) {
 					Bundle provBundle = wire.getProviderWiring().getBundle();
-					if (null != provBundle && BundleManager.getRegion().exist(provBundle)) {
+					if (null != provBundle && BundleWorkspaceRegionImpl.INSTANCE.exist(provBundle)) {
 						providedBundles.add(provBundle);
 					}
 				}

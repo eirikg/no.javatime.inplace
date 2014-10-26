@@ -23,9 +23,9 @@ import no.javatime.inplace.region.closure.BuildErrorClosure;
 import no.javatime.inplace.region.closure.BuildErrorClosure.ActivationScope;
 import no.javatime.inplace.region.closure.BundleClosures;
 import no.javatime.inplace.region.closure.CircularReferenceException;
-import no.javatime.inplace.region.manager.BundleManager;
-import no.javatime.inplace.region.manager.BundleTransition.Transition;
-import no.javatime.inplace.region.manager.InPlaceException;
+import no.javatime.inplace.region.intface.BundleTransitionListener;
+import no.javatime.inplace.region.intface.InPlaceException;
+import no.javatime.inplace.region.intface.BundleTransition.Transition;
 import no.javatime.inplace.region.project.BundleProjectState;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
@@ -122,7 +122,7 @@ public class DeactivateJob extends NatureJob {
 
 		try {
 			monitor.beginTask(deactivateTask, getTicks());
-			BundleManager.addBundleTransitionListener(this);
+			BundleTransitionListener.addBundleTransitionListener(this);
 			deactivate(monitor);
 		} catch (InterruptedException e) {
 			String msg = ExceptionMessage.getInstance().formatString("interrupt_job", getName());
@@ -152,7 +152,7 @@ public class DeactivateJob extends NatureJob {
 			return new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID, msg, e);
 		} finally {
 			monitor.done();
-			BundleManager.removeBundleTransitionListener(this);
+			BundleTransitionListener.removeBundleTransitionListener(this);
 		}
 	}
 

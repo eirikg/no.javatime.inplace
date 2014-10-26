@@ -15,13 +15,12 @@ import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.closure.ProjectSorter;
 import no.javatime.inplace.region.events.BundleTransitionEvent;
 import no.javatime.inplace.region.events.BundleTransitionEventListener;
-import no.javatime.inplace.region.manager.BundleCommand;
-import no.javatime.inplace.region.manager.BundleManager;
-import no.javatime.inplace.region.manager.BundleRegion;
-import no.javatime.inplace.region.manager.BundleTransition;
-import no.javatime.inplace.region.manager.BundleTransition.Transition;
-import no.javatime.inplace.region.manager.BundleTransition.TransitionError;
-import no.javatime.inplace.region.manager.InPlaceException;
+import no.javatime.inplace.region.intface.BundleCommand;
+import no.javatime.inplace.region.intface.BundleRegion;
+import no.javatime.inplace.region.intface.BundleTransition;
+import no.javatime.inplace.region.intface.InPlaceException;
+import no.javatime.inplace.region.intface.BundleTransition.Transition;
+import no.javatime.inplace.region.intface.BundleTransition.TransitionError;
 import no.javatime.inplace.region.project.BundleProjectState;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
@@ -46,7 +45,7 @@ public class ExternalTransition implements BundleTransitionEventListener {
 		if (evt.getTransition() == Transition.EXTERNAL) {
 			Bundle bundle = evt.getBundle();
 			IProject project = evt.getProject();
-			BundleTransition transition = BundleManager.getTransition();
+			BundleTransition transition = InPlace.getBundleTransitionService();
 			if (transition.getError(bundle) == TransitionError.UNINSTALL) {
 				transition.clearTransitionError(project);
 				externalUninstall(bundle, project);
@@ -66,12 +65,12 @@ public class ExternalTransition implements BundleTransitionEventListener {
 
 		final String symbolicName = bundle.getSymbolicName();
 		final String location = bundle.getLocation();
-		final BundleCommand bundleCommand = BundleManager.getCommand();
+		final BundleCommand bundleCommand = InPlace.getBundleCommandService();
 		// After the fact
 		InPlace.getDisplay().syncExec(new Runnable() {
 			@Override
 			public void run() {
-				final BundleRegion bundleRegion = BundleManager.getRegion();
+				final BundleRegion bundleRegion = InPlace.getBundleRegionService();
 				IBundleStatus reqStatus = null;
 				int autoDependencyAction = 1; // Default auto dependency action
 				new OpenProjectHandler().saveModifiedFiles();

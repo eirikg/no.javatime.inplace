@@ -12,7 +12,7 @@ import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.pde.core.IBundleClasspathResolver;
 
 import no.javatime.inplace.bundleproject.BundleProjectSettings;
-import no.javatime.inplace.region.manager.InPlaceException;
+import no.javatime.inplace.region.intface.InPlaceException;
 
 /**
  * Adds default output location to source folders when dynamically generated bundles 

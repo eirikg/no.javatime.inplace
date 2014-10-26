@@ -1,7 +1,7 @@
 package no.javatime.inplace.region.state;
 
-import no.javatime.inplace.region.manager.BundleTransition.Transition;
-import no.javatime.inplace.region.manager.InPlaceException;
+import no.javatime.inplace.region.intface.InPlaceException;
+import no.javatime.inplace.region.intface.BundleTransition.Transition;
 
 /**
  * Begins a set of outgoing transitions with {@link org.osgi.framework.Bundle#UNINSTALLED

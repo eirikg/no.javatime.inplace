@@ -13,9 +13,10 @@ package no.javatime.inplace.builder;
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.region.events.TransitionEvent;
-import no.javatime.inplace.region.manager.BundleManager;
-import no.javatime.inplace.region.manager.BundleTransition.Transition;
-import no.javatime.inplace.region.manager.InPlaceException;
+import no.javatime.inplace.region.intface.BundleTransitionListener;
+import no.javatime.inplace.region.intface.BundleTransition;
+import no.javatime.inplace.region.intface.InPlaceException;
+import no.javatime.inplace.region.intface.BundleTransition.Transition;
 import no.javatime.inplace.region.project.BundleProjectState;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
@@ -54,16 +55,17 @@ public class PreBuildListener implements IResourceChangeListener {
 			if (projectResource.isAccessible() && (projectResource.getType() & (IResource.PROJECT)) != 0) {
 				IProject project = projectResource.getProject();
 				try {
+					BundleTransition transition = InPlace.getBundleTransitionService();
 					if (!isWSActivated) {
 						// Clear any errors detected from last activation that caused the workspace to be deactivated
 						// The error should be visible in a deactivated workspace until the project is built
-						BundleManager.getTransition().clearTransitionError(project);
+						transition.clearTransitionError(project);
 					} else { 
 						if (BundleProjectState.isNatureEnabled(project)) {
 							if (!ProjectProperties.isAutoBuilding()) {
-								BundleManager.getTransition().addPending(project, Transition.BUILD);
+								transition.addPending(project, Transition.BUILD);
 							} else {
-								BundleManager.addBundleTransition(new TransitionEvent(project, Transition.BUILD));								
+								BundleTransitionListener.addBundleTransition(new TransitionEvent(project, Transition.BUILD));								
 							}
 						}
 					}

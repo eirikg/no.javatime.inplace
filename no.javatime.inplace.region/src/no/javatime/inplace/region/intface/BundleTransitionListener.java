@@ -1,4 +1,4 @@
-package no.javatime.inplace.region.manager;
+package no.javatime.inplace.region.intface;
 
 import no.javatime.inplace.region.events.BundleTransitionEventListener;
 import no.javatime.inplace.region.events.BundleTransitionNotifier;
@@ -6,28 +6,15 @@ import no.javatime.inplace.region.events.TransitionEvent;
 import no.javatime.util.messages.Category;
 import no.javatime.util.messages.TraceMessage;
 
-public class BundleManager {
+public class BundleTransitionListener {
 	
 	/**
 	 * Management of bundle transition listeners.
 	 */
 	private static BundleTransitionNotifier bundleTransitionNotifier = new BundleTransitionNotifier();
 
-	public BundleManager() {
-	}
-	
-	
-	public static BundleRegion getRegion() {
-		return BundleWorkspaceRegionImpl.INSTANCE;
-	}
-	
-	public static BundleCommand getCommand() {
-		return BundleCommandImpl.INSTANCE;
-	}
-
-	public static BundleTransition getTransition() {
-		return BundleTransitionImpl.INSTANCE;
-	}
+	public BundleTransitionListener() {
+	}	
 	
 	public static void addBundleTransition(TransitionEvent transitionEvent) {
 		bundleTransitionNotifier.addBundleTransitionEvent(transitionEvent);

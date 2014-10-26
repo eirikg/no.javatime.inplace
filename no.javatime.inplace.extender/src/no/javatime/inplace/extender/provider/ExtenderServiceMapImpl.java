@@ -16,12 +16,18 @@ public class ExtenderServiceMapImpl<S> extends ConcurrentHashMap<Long, Extender<
 
 	private static final long serialVersionUID = 1L;
 
-	public Extender<S> addExtender(Extender<S> extender) throws ExtenderException {
-			put(extender.getServiceId(), extender);
-			return extender;
+	public Extender<S> addExtender(ServiceReference<?> sr, Extender<S> extender) throws ExtenderException {
+
+		if (null == sr) {
+			return null;
+		}
+		Long sid = (Long) sr.getProperty(Constants.SERVICE_ID);
+		put(sid, extender);
+		return extender;
 	}
 
 	public Extender<S> removeExtender(ServiceReference<?> sr) {
+		
 		if (null == sr) {
 			return null;
 		}
@@ -30,6 +36,7 @@ public class ExtenderServiceMapImpl<S> extends ConcurrentHashMap<Long, Extender<
 	}
 	
 	public Extender<S> getExtender(ServiceReference<?> sr) {
+		
 		if (null == sr) {
 			return null;
 		}

@@ -19,10 +19,9 @@ import java.util.Set;
 
 import no.javatime.inplace.region.Activator;
 import no.javatime.inplace.region.closure.BundleDependencies;
-import no.javatime.inplace.region.manager.BundleManager;
-import no.javatime.inplace.region.manager.BundleRegion;
-import no.javatime.inplace.region.manager.BundleTransition;
-import no.javatime.inplace.region.manager.BundleTransition.Transition;
+import no.javatime.inplace.region.intface.BundleTransition;
+import no.javatime.inplace.region.intface.BundleTransition.Transition;
+import no.javatime.inplace.region.manager.BundleTransitionImpl;
 import no.javatime.inplace.region.manager.BundleWorkspaceRegionImpl;
 import no.javatime.inplace.region.project.BundleProjectState;
 import no.javatime.inplace.region.state.BundleNode;
@@ -68,8 +67,7 @@ class BundleResolveHandler implements ResolverHook {
 
 	// Groups of singletons
 	private Map<Bundle, Set<Bundle>> groups = null;
-	private BundleRegion bundleRegion = BundleManager.getRegion();
-	private BundleTransition bundleTransition = BundleManager.getTransition();
+	private BundleTransition bundleTransition = BundleTransitionImpl.INSTANCE;
 
 	@Override
 	public void filterMatches(BundleRequirement r, Collection<BundleCapability> candidates) {
@@ -92,7 +90,7 @@ class BundleResolveHandler implements ResolverHook {
 		if (!BundleProjectState.isWorkspaceNatureEnabled()) {
 			return;
 		}
-		Collection<Bundle> bundles = BundleManager.getRegion().getBundles();
+		Collection<Bundle> bundles = BundleWorkspaceRegionImpl.INSTANCE.getBundles();
 		if (bundles.size() == 0) {
 			return;
 		}
@@ -227,7 +225,7 @@ class BundleResolveHandler implements ResolverHook {
 			if (Category.DEBUG && Activator.getDefault().msgOpt().isBundleOperations())
 				TraceMessage.getInstance().getString("singleton_collisions_group",
 						singleton.getRevision().getBundle().getSymbolicName(),
-						BundleManager.getRegion().formatBundleList(group, true));
+						BundleWorkspaceRegionImpl.INSTANCE.formatBundleList(group, true));
 			for (Iterator<BundleCapability> i = collisionCandidates.iterator(); i.hasNext();) {
 				BundleCapability candidate = i.next();
 				Bundle candidateBundle = candidate.getRevision().getBundle();
@@ -235,7 +233,7 @@ class BundleResolveHandler implements ResolverHook {
 				if (Category.DEBUG && Activator.getDefault().msgOpt().isBundleOperations())
 					TraceMessage.getInstance().getString("singleton_collisions_other_group",
 							candidateBundle.getSymbolicName(),
-							BundleManager.getRegion().formatBundleList(otherGroup, true));
+							BundleWorkspaceRegionImpl.INSTANCE.formatBundleList(otherGroup, true));
 				// If this singleton is in the group and at the same time is a candidate (other group)
 				// Remove it so the same but new updated instance of the bundle can be resolved
 				// Note this is opposite to the sample in the OSGI 4.3 specification
@@ -244,7 +242,7 @@ class BundleResolveHandler implements ResolverHook {
 				if (Category.getState(Category.bundleEvents)) {
 					TraceMessage.getInstance().getString("singleton_collision_remove_duplicate",
 							candidateBundle.getSymbolicName(),
-							BundleManager.getRegion().formatBundleList(otherGroup, true));
+							BundleWorkspaceRegionImpl.INSTANCE.formatBundleList(otherGroup, true));
 				}
 			}
 		}

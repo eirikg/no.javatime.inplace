@@ -12,12 +12,11 @@ package no.javatime.inplace.ui.views;
 
 import no.javatime.inplace.region.closure.BuildErrorClosure;
 import no.javatime.inplace.region.closure.BundleSorter;
-import no.javatime.inplace.region.manager.BundleCommand;
-import no.javatime.inplace.region.manager.BundleManager;
-import no.javatime.inplace.region.manager.BundleTransition;
-import no.javatime.inplace.region.manager.BundleTransition.Transition;
-import no.javatime.inplace.region.manager.BundleTransition.TransitionError;
-import no.javatime.inplace.region.manager.ProjectLocationException;
+import no.javatime.inplace.region.intface.BundleCommand;
+import no.javatime.inplace.region.intface.BundleTransition;
+import no.javatime.inplace.region.intface.ProjectLocationException;
+import no.javatime.inplace.region.intface.BundleTransition.Transition;
+import no.javatime.inplace.region.intface.BundleTransition.TransitionError;
 import no.javatime.inplace.region.project.BundleProjectState;
 import no.javatime.inplace.ui.Activator;
 
@@ -128,8 +127,8 @@ public class BundleListLabelProvider extends LabelProvider implements ITableLabe
 				Bundle bundle = ((BundleProperties) element).getBundle();
 				IProject project = ((BundleProperties) element).getProject();
 				boolean isProjectActivated = BundleProjectState.isNatureEnabled(project);
-				BundleCommand bundleCommand = BundleManager.getCommand();
-				BundleTransition bundleTransition = BundleManager.getTransition();
+				BundleCommand bundleCommand = Activator.getBundleCommandService(); 
+				BundleTransition bundleTransition = Activator.getBundleTransitionService();
 				try {
 					if (!BuildErrorClosure.hasBuildState(project)) {
 						return warningImage;

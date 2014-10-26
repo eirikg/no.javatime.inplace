@@ -32,8 +32,6 @@ import no.javatime.inplace.dl.preferences.intface.CommandOptions;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.dl.preferences.intface.MessageOptions;
-import no.javatime.inplace.extender.ExtenderBundleTracker;
-import no.javatime.inplace.extender.intface.Extender;
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.extender.intface.Extenders;
 import no.javatime.inplace.extender.intface.Extension;
@@ -43,11 +41,13 @@ import no.javatime.inplace.pl.console.intface.BundleConsoleFactory;
 import no.javatime.inplace.region.closure.BuildErrorClosure;
 import no.javatime.inplace.region.closure.BuildErrorClosure.ActivationScope;
 import no.javatime.inplace.region.closure.CircularReferenceException;
-import no.javatime.inplace.region.manager.BundleManager;
-import no.javatime.inplace.region.manager.BundleRegion;
-import no.javatime.inplace.region.manager.BundleTransition.Transition;
-import no.javatime.inplace.region.manager.InPlaceException;
-import no.javatime.inplace.region.manager.ProjectLocationException;
+import no.javatime.inplace.region.intface.BundleCommand;
+import no.javatime.inplace.region.intface.BundleRegion;
+import no.javatime.inplace.region.intface.BundleTransition;
+import no.javatime.inplace.region.intface.BundleTransition.Transition;
+import no.javatime.inplace.region.intface.BundleTransitionListener;
+import no.javatime.inplace.region.intface.InPlaceException;
+import no.javatime.inplace.region.intface.ProjectLocationException;
 import no.javatime.inplace.region.project.BundleProjectState;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
@@ -88,7 +88,6 @@ import org.eclipse.ui.statushandlers.StatusManager;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.service.prefs.BackingStoreException;
-import org.osgi.util.tracker.BundleTracker;
 import org.osgi.util.tracker.ServiceTracker;
 
 /**
@@ -105,7 +104,6 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 	public static final String PLUGIN_ID = "no.javatime.inplace"; //$NON-NLS-1$
 	private static InPlace plugin;
 	private static BundleContext context;
-
 	/**
 	 * Framework launching property specifying whether Equinox's FrameworkWiring implementation should
 	 * refresh bundles with equal symbolic names.
@@ -124,50 +122,43 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 	 */
 	public static final String REFRESH_DUPLICATE_BSN = "equinox.refresh.duplicate.bsn";
 	private boolean allowRefreshDuplicateBSN;
-
-	/*
-	 * Dynamically load contexts for action sets
-	 */
+	// Dynamically load contexts for action sets
 	private ActionSetContexts actionSetContexts = new ActionSetContexts();
-
 	// Get the workbench window from UI thread
 	private IWorkbenchWindow workBenchWindow;
-
-	/**
-	 * Receives notification before a project is deleted or closed
-	 */
+	// Receives notification before a project is renamed, deleted or closed
 	private IResourceChangeListener preChangeListener;
-
-	/**
-	 * Receives notification after a build.
-	 */
+	// Receives notification after a build.
 	private IResourceChangeListener postBuildListener;
-
-	/**
-	 * Receives notification after a resource change, before pre build and after post build.
-	 */
+	// Receives notification after a resource change, before build and after post build.
 	private IResourceChangeListener preBuildListener;
-	/**
-	 * Debug listener.
-	 */
+	// Debug listener.
 	private IResourceChangeListener projectChangeListener;
-
+	// Listens to scheduled bundles
 	private BundleJobListener jobChangeListener = new BundleJobListener();
-
+	// Listen to external bundle commands
 	private ExternalTransition externalTransitionListener = new ExternalTransition();
+	// Listen to toggling of auto build
 	private Command autoBuildCommand;
-
-	private BundleRegion bundleRegion;
-
-	// Register (extend) services facilitated by other bundles  
+	// Register (extend) services provided by other bundles  
 	private ExtenderBundleTracker extenderBundleTracker;
-
 	// Service interfaces
 	private ServiceTracker<IBundleProjectService, IBundleProjectService> bundleProjectTracker;
+	// Workspace bundle region
+	private static Extension<BundleRegion> bundleRegion;
+	// Bundle life cycle commands
+	private static Extension<BundleCommand> bundleCommand;
+	// Bundle transitions and pending transitions
+	private static Extension<BundleTransition> bundleTransition;
+	// Dependency closure options
 	private Extension<DependencyOptions> dependencyOptions;
+	// Bundle command options
 	private Extension<CommandOptions> commandOptions;
+	// Logging and user message options
 	private Extension<MessageOptions> messageOptions;
+	// The bundle console page for redirection of system out and err
 	private Extension<BundleConsoleFactory> bundleConsoleFactory;
+	// Log for bundle commands
 	private Extension<BundleLog> bundleLog;
 	
 	public InPlace() {
@@ -183,6 +174,9 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 		String refreshBSNResult = context.getProperty(REFRESH_DUPLICATE_BSN);
 		allowRefreshDuplicateBSN = Boolean.TRUE.toString().equals(
 				refreshBSNResult != null ? refreshBSNResult : Boolean.TRUE.toString());
+		bundleRegion = Extenders.getExtension(BundleRegion.class.getName());
+		bundleCommand = Extenders.getExtension(BundleCommand.class.getName());
+		bundleTransition = Extenders.getExtension(BundleTransition.class.getName());
 		commandOptions = Extenders.getExtension(CommandOptions.class.getName()); 
 		dependencyOptions = Extenders.getExtension(DependencyOptions.class.getName()); 
 		messageOptions = Extenders.getExtension(MessageOptions.class.getName()); 
@@ -192,7 +186,7 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 				context, IBundleProjectService.class.getName(), null);
 		bundleProjectTracker.open();
 		addDynamicExtensions();
-		BundleManager.addBundleTransitionListener(externalTransitionListener);
+		BundleTransitionListener.addBundleTransitionListener(externalTransitionListener);
 		Job.getJobManager().addJobChangeListener(jobChangeListener);
 		BundleJobManager.addBundleJobListener(get());
 		IWorkbench workbench = PlatformUI.getWorkbench();
@@ -203,7 +197,6 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 				autoBuildCommand.addCommandListener(this);
 			}
 		}
-		bundleRegion = BundleManager.getRegion();
 	}
 
 	@Override
@@ -221,17 +214,13 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 			if (autoBuildCommand.isDefined()) {
 				autoBuildCommand.removeCommandListener(this);
 			}
-			BundleManager.removeBundleTransitionListener(externalTransitionListener);
+			BundleTransitionListener.removeBundleTransitionListener(externalTransitionListener);
 			Job.getJobManager().removeJobChangeListener(jobChangeListener);
 			removeDynamicExtensions();
 			super.stop(context);
 			plugin = null;
 			InPlace.context = null;
 		}
-	}
-
-	public BundleTracker<Extender<?>> getExtenderBundleTracker() {
-		return extenderBundleTracker;
 	}
 
 	/**
@@ -270,6 +259,33 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 		}
 		return bundleProjectService;
 	}
+	
+	public static BundleRegion getBundleRegionService() throws InPlaceException, ExtenderException {
+
+		BundleRegion br = bundleRegion.getService(context.getBundle());
+		if (null == br) {
+			throw new InPlaceException("invalid_service", BundleRegion.class.getName());			
+		}
+		return br;
+	}
+
+	public static BundleCommand getBundleCommandService() throws InPlaceException, ExtenderException {
+
+		BundleCommand br = bundleCommand.getService(context.getBundle());
+		if (null == br) {
+			throw new InPlaceException("invalid_service", BundleCommand.class.getName());			
+		}
+		return br;
+	}
+	
+	public static BundleTransition getBundleTransitionService() throws InPlaceException, ExtenderException {
+		
+		BundleTransition bt = bundleTransition.getService(context.getBundle());
+		if (null == bt) {
+			throw new InPlaceException("invalid_service", BundleTransition.class.getName());			
+		}
+		return bt;
+	}
 
 	/**
 	 * Return the command preferences service
@@ -278,7 +294,7 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 	 * @throws ExtenderException if failing to get the extender service for the command options
 	 * @throws InPlaceException if the command options service returns null
 	 */
-	public CommandOptions getCommandOptionsService() throws InPlaceException, ExtenderException{
+	public CommandOptions getCommandOptionsService() throws InPlaceException, ExtenderException {
 		
 		return getService(commandOptions);
 	}
@@ -291,6 +307,7 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 	 * @throws InPlaceException if the message options service returns null
 	 */
 	public MessageOptions getMsgOpt() throws InPlaceException, ExtenderException {
+
 		return getService(messageOptions);
 	}
 
@@ -547,13 +564,13 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 		try {
 			if (autoBuildCmd.isDefined() && !ProjectProperties.isAutoBuilding()) {
 				if (getCommandOptionsService().isUpdateOnBuild()) {
-					BundleManager.getRegion().setAutoBuildChanged(true);
+					getBundleRegionService().setAutoBuildChanged(true);
 					// Wait for builder to star. The post build listener does not
 					// always receive all projects to update when auto build is switched on
 					BundleJobManager.addBundleJob(new UpdateJob(UpdateJob.updateJobName), 1000);
 				}
 			} else {
-				BundleManager.getRegion().setAutoBuildChanged(false);
+				getBundleRegionService().setAutoBuildChanged(false);
 			}
 		} catch (InPlaceException e) {
 			StatusManager.getManager().handle(
@@ -713,7 +730,7 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 			if (BundleProjectState.isWorkspaceNatureEnabled()) {
 				for (IProject project : BundleProjectState.getNatureEnabledProjects()) {
 					try {
-						String symbolicKey = bundleRegion.getSymbolicKey(null, project);
+						String symbolicKey = getBundleRegionService().getSymbolicKey(null, project);
 						if (symbolicKey.isEmpty()) {
 							continue;
 						}
@@ -727,10 +744,11 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 				}
 			}
 		} else {
-			if (bundleRegion.isBundleWorkspaceActivated()) {
-				for (Bundle bundle : bundleRegion.getBundles()) {
+			BundleRegion region = getBundleRegionService();
+			if (region.isBundleWorkspaceActivated()) {
+				for (Bundle bundle : region.getBundles()) {
 					try {
-						String symbolicKey = bundleRegion.getSymbolicKey(bundle, null);
+						String symbolicKey = region.getSymbolicKey(bundle, null);
 						if (symbolicKey.isEmpty()) {
 							continue;
 						}
@@ -746,10 +764,10 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 			} else {
 				for (IProject project : BundleProjectState.getProjects()) {
 					try {
-						Transition transition = BundleManager.getTransition().getTransition(project);
+						Transition transition = InPlace.getBundleTransitionService().getTransition(project);
 						// if (!BundleProjectState.isNatureEnabled(project) &&
 						if (transition == Transition.REFRESH || transition == Transition.UNINSTALL) {
-							String symbolicKey = bundleRegion.getSymbolicKey(null, project);
+							String symbolicKey = getBundleRegionService().getSymbolicKey(null, project);
 							if (symbolicKey.isEmpty()) {
 								continue;
 							}

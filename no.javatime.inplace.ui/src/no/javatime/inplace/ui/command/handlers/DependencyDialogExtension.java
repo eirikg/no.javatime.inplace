@@ -1,4 +1,4 @@
-package no.javatime.inplace.ui.extender;
+package no.javatime.inplace.ui.command.handlers;
 
 import no.javatime.inplace.extender.intface.Extender;
 import no.javatime.inplace.extender.intface.ExtenderException;
@@ -8,6 +8,7 @@ import no.javatime.inplace.extender.intface.Introspector;
 import no.javatime.inplace.pl.dependencies.intface.DependencyDialog;
 
 import org.osgi.framework.Bundle;
+import org.osgi.util.tracker.ServiceTrackerCustomizer;
 
 /**
  * Not in use. Experimental.
@@ -80,5 +81,13 @@ public class DependencyDialogExtension implements Extension<DependencyDialog> {
 	public Boolean ungetService(Bundle bundle) {
 		// TODO Auto-generated method stub
 		return null;
+	}
+
+	@Override
+	public void openServiceTracker(Bundle userBundle,
+			ServiceTrackerCustomizer<DependencyDialog, DependencyDialog> customizer)
+			throws ExtenderException {
+		// TODO Auto-generated method stub
+		
 	}
 }

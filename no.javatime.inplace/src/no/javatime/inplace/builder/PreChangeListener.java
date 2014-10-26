@@ -10,12 +10,12 @@
  *******************************************************************************/
 package no.javatime.inplace.builder;
 
+import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundlejobs.BundleJob;
 import no.javatime.inplace.bundlejobs.UninstallJob;
 import no.javatime.inplace.bundlemanager.BundleJobManager;
-import no.javatime.inplace.region.manager.BundleManager;
-import no.javatime.inplace.region.manager.BundleRegion;
-import no.javatime.inplace.region.manager.BundleTransition.Transition;
+import no.javatime.inplace.region.intface.BundleRegion;
+import no.javatime.inplace.region.intface.BundleTransition.Transition;
 import no.javatime.inplace.region.project.BundleProjectState;
 
 import org.eclipse.core.resources.IProject;
@@ -59,12 +59,12 @@ public class PreChangeListener implements IResourceChangeListener {
 		if (null != resource && resource.isAccessible()
 				&& (resource.getType() & (IResource.PROJECT)) != 0) {
 			final IProject project = resource.getProject();
-			BundleRegion bundleRegion = BundleManager.getRegion();
+			BundleRegion bundleRegion = InPlace.getBundleRegionService();
 			Bundle bundle = bundleRegion.get(project);
 			if (null == bundle) {
 				return;
 			}
-			if (BundleManager.getTransition().containsPending(bundle, Transition.RENAME, true)) {
+			if (InPlace.getBundleTransitionService().containsPending(bundle, Transition.RENAME, true)) {
 				// The renamed bundle and requiring bundles are scheduled for install again in the post
 				// build listener with the new name after they have been built
 				UninstallJob uninstallJob = new UninstallJob(UninstallJob.uninstallJobName, project);

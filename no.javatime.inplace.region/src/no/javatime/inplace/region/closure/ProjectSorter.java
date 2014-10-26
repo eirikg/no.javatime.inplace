@@ -15,9 +15,9 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 
 import no.javatime.inplace.region.Activator;
-import no.javatime.inplace.region.manager.BundleManager;
-import no.javatime.inplace.region.manager.BundleTransition.TransitionError;
-import no.javatime.inplace.region.manager.InPlaceException;
+import no.javatime.inplace.region.intface.InPlaceException;
+import no.javatime.inplace.region.intface.BundleTransition.TransitionError;
+import no.javatime.inplace.region.manager.BundleTransitionImpl;
 import no.javatime.inplace.region.project.BundleProjectState;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
@@ -296,8 +296,8 @@ public class ProjectSorter extends BaseSorter {
 			ps.setAllowCycles(true);
 			Collection<IProject> projects = ps.sortRequiringProjects(Collections.<IProject>singletonList(parent));
 			projects.addAll(ps.sortRequiringProjects(Collections.<IProject>singletonList(child)));
-			BundleManager.getTransition().setTransitionError(parent, TransitionError.CYCLE);
-			BundleManager.getTransition().setTransitionError(child, TransitionError.CYCLE);
+			BundleTransitionImpl.INSTANCE.setTransitionError(parent, TransitionError.CYCLE);
+			BundleTransitionImpl.INSTANCE.setTransitionError(child, TransitionError.CYCLE);
 			if (null == circularException) {
 				circularException = new CircularReferenceException();
 			}

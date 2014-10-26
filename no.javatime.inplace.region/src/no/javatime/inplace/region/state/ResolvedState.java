@@ -1,6 +1,6 @@
 package no.javatime.inplace.region.state;
 
-import no.javatime.inplace.region.manager.BundleTransition.Transition;
+import no.javatime.inplace.region.intface.BundleTransition.Transition;
 import no.javatime.inplace.region.project.ManifestOptions;
 
 import org.osgi.framework.BundleEvent;

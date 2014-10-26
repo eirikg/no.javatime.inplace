@@ -20,12 +20,12 @@ import no.javatime.inplace.bundleproject.BundleProjectSettings;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.region.events.BundleTransitionEvent;
 import no.javatime.inplace.region.events.BundleTransitionEventListener;
-import no.javatime.inplace.region.manager.BundleManager;
-import no.javatime.inplace.region.manager.BundleRegion;
-import no.javatime.inplace.region.manager.BundleTransition;
-import no.javatime.inplace.region.manager.BundleTransition.Transition;
-import no.javatime.inplace.region.manager.InPlaceException;
-import no.javatime.inplace.region.manager.ProjectLocationException;
+import no.javatime.inplace.region.intface.BundleRegion;
+import no.javatime.inplace.region.intface.BundleTransition;
+import no.javatime.inplace.region.intface.BundleTransition.Transition;
+import no.javatime.inplace.region.intface.BundleTransitionListener;
+import no.javatime.inplace.region.intface.InPlaceException;
+import no.javatime.inplace.region.intface.ProjectLocationException;
 import no.javatime.inplace.region.project.BundleProjectState;
 import no.javatime.inplace.region.project.ManifestOptions;
 import no.javatime.inplace.region.status.BundleStatus;
@@ -336,7 +336,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 		// Bundles, bundle jobs and resource listeners to update bundle status in pages
 		Activator.getContext().addBundleListener(this);
 		Job.getJobManager().addJobChangeListener(this);
-		BundleManager.addBundleTransitionListener(this);
+		BundleTransitionListener.addBundleTransitionListener(this);
 		ResourcesPlugin.getWorkspace().addResourceChangeListener(
 				this,
 				IResourceChangeEvent.PRE_CLOSE | IResourceChangeEvent.PRE_DELETE | IResourceChangeEvent.POST_BUILD
@@ -423,7 +423,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 		Activator.getContext().removeBundleListener(this);
 		ResourcesPlugin.getWorkspace().removeResourceChangeListener(this);
 		Job.getJobManager().removeJobChangeListener(this);
-		BundleManager.removeBundleTransitionListener(this);
+		BundleTransitionListener.removeBundleTransitionListener(this);
 		super.dispose();
 	}
 
@@ -553,8 +553,8 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 	public void bundleChanged(BundleEvent event) {
 
 		final Bundle bundle = event.getBundle();
-		BundleRegion bundleRegion = BundleManager.getRegion();
-		BundleTransition bundleTransition = BundleManager.getTransition();
+		final BundleRegion bundleRegion = Activator.getBundleRegionService();
+		BundleTransition bundleTransition = Activator.getBundleTransitionService();
 		try {
 			IProject project = bundleRegion.getRegisteredBundleProject(bundle);
 			if (null == project) {
@@ -604,8 +604,8 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 					projectResource = projectDelta.getResource();
 					if (projectResource.isAccessible() && (projectResource.getType() & (IResource.PROJECT)) != 0) {
 						IProject project = projectResource.getProject();
-						if (BundleManager.getRegion().isActivated(project)
-								&& BundleManager.getTransition().containsPending(project, Transition.BUILD, false)) {
+						if (Activator.getBundleRegionService().isActivated(project)
+								&& Activator.getBundleTransitionService().containsPending(project, Transition.BUILD, false)) {
 							isBuildingPending = true;
 						}
 					}
@@ -664,7 +664,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 			}
 			try {
 				if (!Activator.getDefault().getCommandOptionsService().isUpdateOnBuild()
-						&& BundleManager.getTransition().containsPending(Transition.UPDATE)) {
+						&& Activator.getBundleTransitionService().containsPending(Transition.UPDATE)) {
 					showProjectInfo();
 				}
 			} catch (InPlaceException e) {
@@ -867,7 +867,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 				IProject project = getSelectedProject();
 				if (null != project) {
 					if (BundleProjectState.isNatureEnabled(project)) {
-						boolean update = BundleManager.getTransition().containsPending(project, Transition.UPDATE,
+						boolean update = Activator.getBundleTransitionService().containsPending(project, Transition.UPDATE,
 								Boolean.FALSE);
 						if (update) {
 							BundleMenuActivationHandler.updateHandler(Collections.<IProject>singletonList(project));
@@ -886,10 +886,10 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 				IProject project = getSelectedProject();
 				if (null != project) {
 					if (BundleProjectState.isNatureEnabled(project)) {
-						Bundle bundle = BundleManager.getRegion().get(project);
+						Bundle bundle = Activator.getBundleRegionService().get(project);
 						if (null != bundle) {
 							try {								
-								if (BundleManager.getCommand().getBundleRevisions(bundle).size() > 1) {
+								if (Activator.getBundleCommandService().getBundleRevisions(bundle).size() > 1) {
 									BundleMenuActivationHandler.refreshHandler(Collections.<IProject>singletonList(project));
 								}
 							} catch (InPlaceException e) {
@@ -912,7 +912,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 				IProject project = getSelectedProject();
 				if (null != project) {
 					if (BundleProjectState.isNatureEnabled(project)) {
-						Bundle bundle = BundleManager.getRegion().get(project);
+						Bundle bundle = Activator.getBundleRegionService().get(project);
 						if (bundle != null) {
 							Collection<IProject> projects = Collections.<IProject>singletonList(project);
 							if ((bundle.getState() & (Bundle.ACTIVE | Bundle.STARTING)) != 0) {
@@ -969,8 +969,11 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 							try {
 								page.openEditor(editorInput, editorDesc.getId());
 							} catch (PartInitException e) {
+								// TODO Add exception to error log
 							}
 						}
+					} else { 
+					// TODO Add message about missing manifest
 					}
 				}
 			}
@@ -1021,7 +1024,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 		setUpdateClassPathAction(project);
 		if (BundleProjectState.isNatureEnabled(project)) {
 			// Bundle should be in state installed (if resolve errors), resolved or active/starting
-			Bundle bundle = BundleManager.getRegion().get(project);
+			Bundle bundle =Activator.getBundleRegionService().get(project);
 			if (null != bundle) {
 				// Start and Stop is dependent on the bundle state of the activated bundle
 				if ((bundle.getState() & (Bundle.ACTIVE | Bundle.STARTING)) != 0) {
@@ -1064,7 +1067,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 	private void setUpdateRefresh(boolean enable, Bundle bundle) {
 
 		if (enable && null != bundle) {
-			if (BundleManager.getTransition().containsPending(bundle, Transition.UPDATE, Boolean.FALSE)) {
+			if (Activator.getBundleTransitionService().containsPending(bundle, Transition.UPDATE, Boolean.FALSE)) {
 				setUIElement(updateAction, true, updateText, updateText,
 						BundleCommandsContributionItems.updateImage);
 			} else {
@@ -1072,7 +1075,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 						BundleCommandsContributionItems.updateImage);
 			}
 			try {				
-				if (BundleManager.getCommand().getBundleRevisions(bundle).size() > 1) {
+				if (Activator.getBundleCommandService().getBundleRevisions(bundle).size() > 1) {
 					setUIElement(refreshAction, true, refreshText, refreshText,
 							BundleCommandsContributionItems.refreshImage);
 				} else {

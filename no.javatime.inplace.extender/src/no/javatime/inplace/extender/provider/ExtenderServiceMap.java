@@ -9,7 +9,7 @@ import org.osgi.framework.ServiceReference;
 
 public interface ExtenderServiceMap<S> extends ConcurrentMap<Long, Extender<S>>{
 
-	public Extender<S> addExtender(Extender<S> extender) throws ExtenderException;
+	public Extender<S> addExtender(ServiceReference<?> sr, Extender<S> extender) throws ExtenderException;
 
 	public Extender<S> getExtender(ServiceReference<?> sr);
 

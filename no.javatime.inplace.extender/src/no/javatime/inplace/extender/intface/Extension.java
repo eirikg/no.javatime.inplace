@@ -2,11 +2,12 @@ package no.javatime.inplace.extender.intface;
 
 import org.osgi.framework.Bundle;
 import org.osgi.framework.ServiceReference;
+import org.osgi.util.tracker.ServiceTrackerCustomizer;
 
 public interface Extension<S> {
 
 	/**
-	 * Get the service object for this extension.
+	 * Get the service object for this extension using the registrar bundle as the user bundle.
 	 * <p>
 	 * Uses the bundle context of the specified bundle. If a factory object was specified when the
 	 * extender of this extension was registered each bundle is exposed to one instance of the service
@@ -32,7 +33,7 @@ public interface Extension<S> {
 	public S getService() throws ExtenderException;
 
 	/**
-	 * Get the service object for this extension.
+	 * Get the service object for this extension using the specified bundle as the user bundle.
 	 * <p>
 	 * Uses the bundle context of the specified bundle. If a factory object was specified when the
 	 * extender of this extension was registered each bundle is exposed to one instance of the service
@@ -94,9 +95,25 @@ public interface Extension<S> {
 	 */
 	public Extender<S> getExtender() throws ExtenderException;
 
+	/** 
+	 * Open the service tracker. If the tracker is not open when calling {@link #getTrackedService()} the
+	 * tracker will be opened using the default customizer provide by the Framework. If the the tracker
+	 * already is open the opened tracker is returned.
+	 * <p>
+	 * There can be at most one tracker object per extension, but it is possible to close the tracker and then
+	 * open a new one.
+	 * 
+	 * @param userBundle The bundle using this service
+	 * @param customizer A service tracker to track the life cycle of the service. Can be null.
+	 * @throws ExtenderException 
+	 */
+	public void openServiceTracker(Bundle userBundle,  ServiceTrackerCustomizer<S, S> customizer) throws ExtenderException;
+
 	/**
 	 * Uses the {@link org.osgi.util.tracker.ServiceTracker ServiceTracker} to get the service. This
 	 * is the same as using {@link #getService()}.
+	 * <p>
+	 * If the the tracker is closed, it is opened with a default customizer before getting the tracked service.
 	 * 
 	 * @return the service of this extension type or null if no service is being tracked
 	 * @throws ExtenderException if this call force opening the service tracker and the bundle context
@@ -109,6 +126,7 @@ public interface Extension<S> {
 	 * This method should be called when the tracking of the service should end
 	 * 
 	 * @see #getTrackedService()
+	 * @see #openServiceTracker(Bundle, ServiceTrackerCustomizer)
 	 */
 	public void closeServiceTracker();
 }

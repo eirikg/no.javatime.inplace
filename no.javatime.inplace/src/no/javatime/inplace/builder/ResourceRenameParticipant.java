@@ -4,8 +4,7 @@ import java.util.regex.Pattern;
 
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.msg.Msg;
-import no.javatime.inplace.region.manager.BundleManager;
-import no.javatime.inplace.region.manager.BundleTransition.Transition;
+import no.javatime.inplace.region.intface.BundleTransition.Transition;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 
@@ -98,7 +97,7 @@ public class ResourceRenameParticipant extends RenameParticipant {
 	protected boolean initialize(Object arg0) {
 		if (arg0 instanceof IProject) {
 			fromProject = (IProject) arg0;
-			BundleManager.getTransition().addPending(fromProject, Transition.RENAME);
+			InPlace.getBundleTransitionService().addPending(fromProject, Transition.RENAME);
 			return true;
 		}
 		return false;

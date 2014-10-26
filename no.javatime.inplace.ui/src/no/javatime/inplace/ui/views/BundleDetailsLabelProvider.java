@@ -10,7 +10,7 @@
  *******************************************************************************/
 package no.javatime.inplace.ui.views;
 
-import no.javatime.inplace.region.manager.InPlaceException;
+import no.javatime.inplace.region.intface.InPlaceException;
 
 import org.eclipse.jface.viewers.ITableLabelProvider;
 import org.eclipse.jface.viewers.LabelProvider;

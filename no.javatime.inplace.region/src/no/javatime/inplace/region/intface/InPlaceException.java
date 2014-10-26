@@ -8,7 +8,7 @@
  * Contributors:
  * 	JavaTime project, Eirik Gronsund - initial implementation
  *******************************************************************************/
-package no.javatime.inplace.region.manager;
+package no.javatime.inplace.region.intface;
 
 import no.javatime.util.messages.ExceptionMessage;
 

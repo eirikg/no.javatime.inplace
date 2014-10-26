@@ -2,12 +2,13 @@ package no.javatime.inplace.region.state;
 
 import no.javatime.inplace.region.Activator;
 import no.javatime.inplace.region.events.TransitionEvent;
+import no.javatime.inplace.region.intface.BundleTransitionListener;
+import no.javatime.inplace.region.intface.InPlaceException;
+import no.javatime.inplace.region.intface.BundleTransition.Transition;
+import no.javatime.inplace.region.intface.BundleTransition.TransitionError;
 import no.javatime.inplace.region.manager.BundleCommandImpl;
-import no.javatime.inplace.region.manager.BundleManager;
-import no.javatime.inplace.region.manager.BundleTransition.Transition;
-import no.javatime.inplace.region.manager.BundleTransition.TransitionError;
 import no.javatime.inplace.region.manager.BundleTransitionImpl;
-import no.javatime.inplace.region.manager.InPlaceException;
+import no.javatime.inplace.region.manager.BundleWorkspaceRegionImpl;
 import no.javatime.inplace.region.msg.Msg;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
@@ -86,7 +87,7 @@ public abstract class BundleState {
 		final String location = bundle.getLocation();
 		BundleCommandImpl bundleCommand = BundleCommandImpl.INSTANCE;
 		BundleTransitionImpl bundleTransition = BundleTransitionImpl.INSTANCE;
-		final String symbolicName = BundleManager.getRegion().getSymbolicKey(bundle, null);
+		final String symbolicName = BundleWorkspaceRegionImpl.INSTANCE.getSymbolicKey(bundle, null);
 		final String stateName = bundleCommand.getStateName(event);
 		if (bundleTransition.getError(bundle) == TransitionError.INCOMPLETE) {
 			if (Activator.getDefault().msgOpt().isBundleOperations()) {
@@ -99,7 +100,7 @@ public abstract class BundleState {
 			if (Activator.getDefault().msgOpt().isBundleOperations()) {
 				String msg = NLS.bind(Msg.EXT_BUNDLE_OP_INFO, new Object[] {symbolicName, stateName,
 						location});
-				BundleManager.addBundleTransition(new TransitionEvent(bundle, bundleNode.getTransition()));
+				BundleTransitionListener.addBundleTransition(new TransitionEvent(bundle, bundleNode.getTransition()));
 //				StatusManager.getManager().handle(new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, bundle, msg, null), StatusManager.LOG);
 			}
 		}

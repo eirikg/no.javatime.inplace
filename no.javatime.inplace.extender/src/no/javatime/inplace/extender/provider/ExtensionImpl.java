@@ -7,6 +7,7 @@ import no.javatime.inplace.extender.intface.Extension;
 
 import org.osgi.framework.Bundle;
 import org.osgi.util.tracker.ServiceTracker;
+import org.osgi.util.tracker.ServiceTrackerCustomizer;
 
 
 /**
@@ -76,12 +77,12 @@ public class ExtensionImpl<S> implements Extension<S> {
 		this.userBundle = userBundle;
 	}
 	
-	protected void openServiceTracker(Bundle userBundle) throws ExtenderException {
+	public void openServiceTracker(Bundle userBundle,  ServiceTrackerCustomizer<S, S> customizer) throws ExtenderException {
 
 		if (null == tracker) {
 			try {
 				tracker = new ServiceTracker<S, S>(userBundle.getBundleContext(), extender.getServicereReference(),
-						null);
+						customizer);
 				tracker.open();
 			} catch (IllegalStateException e) {
 				tracker = null;
@@ -94,7 +95,7 @@ public class ExtensionImpl<S> implements Extension<S> {
 
 		try {
 			if (null == tracker) {
-				openServiceTracker(userBundle);
+				openServiceTracker(userBundle, null);
 			}
 			return tracker.getService();
 		} catch (ExtenderException e) {

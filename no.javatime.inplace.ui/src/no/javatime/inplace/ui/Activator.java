@@ -16,9 +16,13 @@ import no.javatime.inplace.bundlejobs.events.BundleJobEventListener;
 import no.javatime.inplace.bundlemanager.BundleJobManager;
 import no.javatime.inplace.dl.preferences.intface.CommandOptions;
 import no.javatime.inplace.extender.intface.Extender;
+import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.extender.intface.Extenders;
 import no.javatime.inplace.extender.intface.Extension;
-import no.javatime.inplace.region.manager.InPlaceException;
+import no.javatime.inplace.region.intface.BundleCommand;
+import no.javatime.inplace.region.intface.BundleRegion;
+import no.javatime.inplace.region.intface.BundleTransition;
+import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import no.javatime.inplace.ui.command.handlers.AutoExternalCommandHandler;
@@ -28,7 +32,6 @@ import no.javatime.inplace.ui.command.handlers.DeactivateOnExitHandler;
 import no.javatime.inplace.ui.command.handlers.EagerActivationHandler;
 import no.javatime.inplace.ui.command.handlers.UIContributorsHandler;
 import no.javatime.inplace.ui.command.handlers.UpdateClassPathOnActivateHandler;
-import no.javatime.inplace.ui.extender.ExtenderBundleTracker;
 import no.javatime.inplace.ui.views.BundleView;
 import no.javatime.util.view.ViewUtil;
 
@@ -69,6 +72,9 @@ public class Activator extends AbstractUIPlugin implements BundleJobEventListene
 	private IWorkbenchWindow workBenchWindow = null;
 	
 	private Extension<CommandOptions> commandOptions;
+	private static Extension<BundleRegion> bundleRegion;
+	private static Extension<BundleCommand> bundleCommand;
+	private static Extension<BundleTransition> bundleTransition;
 	
 	// Register (extend) services for use facilitated by other bundles  
 	private BundleTracker<Extender<?>> extenderBundleTracker;
@@ -90,6 +96,10 @@ public class Activator extends AbstractUIPlugin implements BundleJobEventListene
 			extenderBundleTracker.open();
 			BundleJobManager.addBundleJobListener(Activator.getDefault());
 			commandOptions = Extenders.getExtension(CommandOptions.class.getName());
+			bundleRegion = Extenders.getExtension(BundleRegion.class.getName());
+			bundleCommand = Extenders.getExtension(BundleCommand.class.getName());
+			bundleTransition = Extenders.getExtension(BundleTransition.class.getName());
+	
 			loadCheckedMenus();
 		} catch (IllegalStateException | InPlaceException e) {
 			StatusManager.getManager().handle(
@@ -112,10 +122,33 @@ public class Activator extends AbstractUIPlugin implements BundleJobEventListene
 		plugin = null;
 	}
 	
-	public BundleTracker<Extender<?>> getExtenderBundleTracker() {
-		return extenderBundleTracker;
+	public static BundleRegion getBundleRegionService() throws InPlaceException, ExtenderException {
+
+		BundleRegion br = bundleRegion.getService(context.getBundle());
+		if (null == br) {
+			throw new InPlaceException("invalid_service", BundleRegion.class.getName());			
+		}
+		return br;
+	}
+
+	public static BundleCommand getBundleCommandService() throws InPlaceException, ExtenderException {
+
+		BundleCommand br = bundleCommand.getService(context.getBundle());
+		if (null == br) {
+			throw new InPlaceException("invalid_service", BundleCommand.class.getName());			
+		}
+		return br;
 	}
 	
+	public static BundleTransition getBundleTransitionService() throws InPlaceException, ExtenderException {
+
+		BundleTransition bt = bundleTransition.getService(context.getBundle());
+		if (null == bt) {
+			throw new InPlaceException("invalid_service", BundleTransition.class.getName());			
+		}
+		return bt;
+	}
+
 	public CommandOptions getCommandOptionsService() throws InPlaceException {
 		
 		CommandOptions cmdOpt = commandOptions.getService();

@@ -17,7 +17,7 @@ Require-Bundle: org.eclipse.core.runtime,
 Import-Package: com.ibm.icu.text,
  no.javatime.inplace.dl.preferences.intface,
  no.javatime.inplace.extender.intface,
- no.javatime.inplace.region.manager,
+ no.javatime.inplace.region.intface,
  no.javatime.inplace.region.status
 Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Bundle-ActivationPolicy: lazy

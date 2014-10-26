@@ -6,6 +6,17 @@ import org.osgi.util.tracker.BundleTracker;
 
 public interface Extender<S> {
 
+	/**
+	 * Create a new extension from this extender. Use the extension to access the service created when
+	 * this extender was registered.
+	 * <p>
+	 * Note that if the bundle creating this extension is different from the bundle that registered the
+	 * extender, and this is the first time an extension is created for this client bundle a new
+	 * service object will be created if the service scope is bundle; otherwise the service scope will
+	 * be singleton or prototype (only for OSGi R6 @see {@link Extenders})
+	 * 
+	 * @return a new extension object or null if there is no registered service for this extender.
+	 */
 	public Extension<S> getExtension();
 
 	/**
@@ -130,8 +141,8 @@ public interface Extender<S> {
 	public Long getServiceId();
 
 	/**
-	 * Register a service for this extender. If the service is registered it implies that it has been
-	 * unregistered earlier, either by {@link #unregisterService()} or by
+	 * Register a service for this extender. If the service is unregistered this implies that it has
+	 * been unregistered earlier, either by {@link #unregisterService()} or by
 	 * {@link org.osgi.framework.ServiceRegistration#unregister() OSGi unregister}
 	 * 
 	 * @return true if the service was registered; false if the service already was registered
@@ -145,10 +156,13 @@ public interface Extender<S> {
 
 	/**
 	 * Check if the service is registered by the framework
+	 * <p>
+	 * If the service held by this extender has been unregistered see {@link #registerService()} to
+	 * re-register the service for this extender.
 	 * 
 	 * @return true if the service is registered; false if unregistered
 	 */
-	public boolean isServiceRegistered();
+	public Boolean isServiceRegistered();
 
 	/**
 	 * Unregister this extender and the service held by this extender. After unregistering the
@@ -190,6 +204,11 @@ public interface Extender<S> {
 	 */
 	public Boolean ungetService(Bundle bundle);
 
+	/**
+	 * Get the bundle tracker used when this extender was registered
+	 * 
+	 * @return the bundle tracker or null if the extender was not registered with a bundle tracker
+	 */
 	public BundleTracker<Extender<?>> getBundleTracker();
 
 	/**

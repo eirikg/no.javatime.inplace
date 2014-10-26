@@ -15,11 +15,10 @@ import java.util.LinkedHashSet;
 
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.extender.intface.ExtenderException;
-import no.javatime.inplace.region.manager.BundleCommand;
-import no.javatime.inplace.region.manager.BundleManager;
-import no.javatime.inplace.region.manager.BundleRegion;
-import no.javatime.inplace.region.manager.BundleTransition;
-import no.javatime.inplace.region.manager.InPlaceException;
+import no.javatime.inplace.region.intface.BundleCommand;
+import no.javatime.inplace.region.intface.BundleRegion;
+import no.javatime.inplace.region.intface.BundleTransition;
+import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.project.BundleProjectState;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
@@ -39,8 +38,8 @@ import org.osgi.framework.Bundle;
  */
 public class BundleMainActivationHandler extends BundleMenuActivationHandler {
 
-	private final static BundleRegion region = BundleManager.getRegion();
-	private final static BundleCommand command = BundleManager.getCommand();
+	private BundleRegion region = Activator.getBundleRegionService();
+	private BundleCommand command = Activator.getBundleCommandService(); 
 
 	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
@@ -103,7 +102,7 @@ public class BundleMainActivationHandler extends BundleMenuActivationHandler {
 				break;
 			case BundleCommandsContributionItems.updateParamId:
 				Collection<IProject> projectsToUpdate = 
-				BundleManager.getTransition().getPendingProjects(BundleProjectState.getNatureEnabledProjects(), 
+						Activator.getBundleTransitionService().getPendingProjects(BundleProjectState.getNatureEnabledProjects(), 
 						BundleTransition.Transition.UPDATE);			
 				updateHandler(projectsToUpdate);
 				break;

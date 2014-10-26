@@ -1,7 +1,7 @@
 package no.javatime.inplace.region.state;
 
-import no.javatime.inplace.region.manager.BundleTransition.Transition;
-import no.javatime.inplace.region.manager.InPlaceException;
+import no.javatime.inplace.region.intface.InPlaceException;
+import no.javatime.inplace.region.intface.BundleTransition.Transition;
 
 /**
  * Triggers the FSM by running an install transition moving the bundle to the initial

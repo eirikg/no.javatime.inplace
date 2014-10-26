@@ -22,14 +22,7 @@ Export-Package: no.javatime.inplace.region.closure;
    org.osgi.framework,
    no.javatime.inplace.dl.preferences.intface",
  no.javatime.inplace.region.events;uses:="no.javatime.inplace.region.manager,org.eclipse.core.resources,org.osgi.framework",
- no.javatime.inplace.region.manager;
-  uses:="no.javatime.inplace.region.resolver,
-   org.eclipse.core.resources,
-   org.osgi.framework.wiring,
-   no.javatime.util.messages.exceptions,
-   org.osgi.framework,
-   no.javatime.inplace.region.events,
-   no.javatime.inplace.region.state",
+ no.javatime.inplace.region.intface,
  no.javatime.inplace.region.project;
   uses:="org.eclipse.core.runtime,
    org.eclipse.jdt.core,

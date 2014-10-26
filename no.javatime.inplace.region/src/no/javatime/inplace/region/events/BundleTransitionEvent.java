@@ -12,8 +12,8 @@ package no.javatime.inplace.region.events;
 
 import java.util.EventObject;
 
+import no.javatime.inplace.region.intface.BundleTransition.Transition;
 import no.javatime.inplace.region.manager.BundleWorkspaceRegionImpl;
-import no.javatime.inplace.region.manager.BundleTransition.Transition;
 import no.javatime.inplace.region.state.BundleNode;
 
 import org.eclipse.core.resources.IProject;

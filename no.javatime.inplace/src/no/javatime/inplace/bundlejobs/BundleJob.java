@@ -30,16 +30,14 @@ import no.javatime.inplace.region.closure.BundleClosures;
 import no.javatime.inplace.region.closure.BundleSorter;
 import no.javatime.inplace.region.closure.CircularReferenceException;
 import no.javatime.inplace.region.closure.ProjectSorter;
-import no.javatime.inplace.region.manager.BundleActivatorException;
-import no.javatime.inplace.region.manager.BundleCommandImpl;
-import no.javatime.inplace.region.manager.BundleManager;
-import no.javatime.inplace.region.manager.BundleStateChangeException;
-import no.javatime.inplace.region.manager.BundleThread;
-import no.javatime.inplace.region.manager.BundleTransition.Transition;
-import no.javatime.inplace.region.manager.BundleTransition.TransitionError;
-import no.javatime.inplace.region.manager.DuplicateBundleException;
-import no.javatime.inplace.region.manager.InPlaceException;
-import no.javatime.inplace.region.manager.ProjectLocationException;
+import no.javatime.inplace.region.intface.BundleActivatorException;
+import no.javatime.inplace.region.intface.BundleStateChangeException;
+import no.javatime.inplace.region.intface.BundleThread;
+import no.javatime.inplace.region.intface.BundleTransition.Transition;
+import no.javatime.inplace.region.intface.BundleTransition.TransitionError;
+import no.javatime.inplace.region.intface.DuplicateBundleException;
+import no.javatime.inplace.region.intface.InPlaceException;
+import no.javatime.inplace.region.intface.ProjectLocationException;
 import no.javatime.inplace.region.project.BundleProjectState;
 import no.javatime.inplace.region.project.ManifestOptions;
 import no.javatime.inplace.region.status.BundleStatus;
@@ -632,7 +630,7 @@ public abstract class BundleJob extends JobStatus {
 	}
 
 	public static boolean isStateChanging() {
-		Bundle bundle = BundleManager.getCommand().getCurrentBundle();
+		Bundle bundle = InPlace.getBundleCommandService().getCurrentBundle();
 		if (null != bundle) {
 			return true;
 		}
@@ -795,7 +793,6 @@ public abstract class BundleJob extends JobStatus {
 	 * @param subMonitor monitor the progress monitor to use for reporting progress to the user.
 	 * @throws InPlaceException if this thread is interrupted, security violation, illegal argument
 	 * (not same framework) or illegal monitor (current thread not owner of monitor)
-	 * @see BundleCommandImpl#refresh(Collection)
 	 */
 	protected void refresh(final Collection<Bundle> bundlesToRefresh, IProgressMonitor subMonitor)
 			throws InPlaceException {

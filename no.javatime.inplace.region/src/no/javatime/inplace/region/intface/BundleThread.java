@@ -1,4 +1,4 @@
-package no.javatime.inplace.region.manager;
+package no.javatime.inplace.region.intface;
 
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.extender.intface.Introspector;

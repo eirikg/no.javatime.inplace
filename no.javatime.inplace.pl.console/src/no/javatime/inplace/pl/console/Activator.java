@@ -4,9 +4,8 @@ import no.javatime.inplace.dl.preferences.intface.MessageOptions;
 import no.javatime.inplace.extender.intface.Extenders;
 import no.javatime.inplace.extender.intface.Extension;
 import no.javatime.inplace.pl.console.impl.BundleConsoleFactoryImpl;
-import no.javatime.inplace.pl.console.intface.BundleConsoleFactory;
 import no.javatime.inplace.pl.console.view.BundleConsole;
-import no.javatime.inplace.region.manager.InPlaceException;
+import no.javatime.inplace.region.intface.InPlaceException;
 
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.swt.widgets.Display;
@@ -52,8 +51,9 @@ public class Activator extends AbstractUIPlugin {
 		super.start(context);
 		plugin = this;
 		Activator.context = context;
-		Extenders.register(context.getBundle(), BundleConsoleFactory.class.getName(),
-				new BundleConsoleFactoryImpl(), null);
+		// Delegate to user bundles
+		//		Extenders.register(context.getBundle(), BundleConsoleFactory.class.getName(),
+		//				new BundleConsoleFactoryImpl(), null);
 		messageOptions = Extenders.getExtension(MessageOptions.class.getName());
 		bundleConsole = BundleConsoleFactoryImpl.findConsole(CONSOLE_NAME);
 	}

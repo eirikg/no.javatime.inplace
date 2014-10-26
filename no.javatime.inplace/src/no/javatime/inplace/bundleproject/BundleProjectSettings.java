@@ -24,9 +24,9 @@ import no.javatime.inplace.InPlace;
 import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.closure.BuildErrorClosure;
 import no.javatime.inplace.region.events.TransitionEvent;
-import no.javatime.inplace.region.manager.BundleManager;
-import no.javatime.inplace.region.manager.BundleTransition.Transition;
-import no.javatime.inplace.region.manager.InPlaceException;
+import no.javatime.inplace.region.intface.BundleTransitionListener;
+import no.javatime.inplace.region.intface.InPlaceException;
+import no.javatime.inplace.region.intface.BundleTransition.Transition;
 import no.javatime.inplace.region.project.BundleProjectState;
 import no.javatime.inplace.region.project.ManifestOptions;
 import no.javatime.inplace.region.status.BundleStatus;
@@ -178,7 +178,7 @@ public class BundleProjectSettings {
 			if (null == storedClassPath) {
 				bundleProjDesc.setHeader(Constants.BUNDLE_CLASSPATH, defaultOutputPath.toString());
 				bundleProjDesc.apply(null);
-				BundleManager.addBundleTransition(new TransitionEvent(project, Transition.UPDATE_CLASSPATH));
+				BundleTransitionListener.addBundleTransition(new TransitionEvent(project, Transition.UPDATE_CLASSPATH));
 				return true;
 			}
 			// Search for the output class path entry in the class path header
@@ -210,7 +210,7 @@ public class BundleProjectSettings {
 				updatedClassPath = updatedClassPath.concat(defaultOutputPath.toString());
 				bundleProjDesc.setHeader(Constants.BUNDLE_CLASSPATH, updatedClassPath);
 				bundleProjDesc.apply(null);
-				BundleManager.addBundleTransition(new TransitionEvent(project, Transition.UPDATE_CLASSPATH));
+				BundleTransitionListener.addBundleTransition(new TransitionEvent(project, Transition.UPDATE_CLASSPATH));
 			}
 		} catch (CoreException e) {
 			throw new InPlaceException(e, "manifest_io_project", project.getName());
@@ -282,7 +282,7 @@ public class BundleProjectSettings {
 						bundleProjDesc.setHeader(Constants.BUNDLE_CLASSPATH, null);
 					}
 					bundleProjDesc.apply(null);
-					BundleManager.addBundleTransition(new TransitionEvent(project, Transition.REMOVE_CLASSPATH));
+					BundleTransitionListener.addBundleTransition(new TransitionEvent(project, Transition.REMOVE_CLASSPATH));
 				}
 			}
 		} catch (CoreException e) {
@@ -313,7 +313,7 @@ public class BundleProjectSettings {
 		}
 		try {
 			bundleProjDesc.apply(null);
-			BundleManager.addBundleTransition(new TransitionEvent(project, Transition.UPDATE_ACTIVATION_POLICY));
+			BundleTransitionListener.addBundleTransition(new TransitionEvent(project, Transition.UPDATE_ACTIVATION_POLICY));
 		} catch (CoreException e) {
 			throw new InPlaceException(e, "manifest_io_project", project.getName());
 		}

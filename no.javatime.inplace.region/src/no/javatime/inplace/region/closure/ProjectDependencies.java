@@ -3,7 +3,7 @@ package no.javatime.inplace.region.closure;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 
-import no.javatime.inplace.region.manager.InPlaceException;
+import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.project.BundleProjectState;
 
 import org.eclipse.core.resources.IProject;

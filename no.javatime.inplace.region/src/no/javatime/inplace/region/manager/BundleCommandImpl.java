@@ -32,8 +32,16 @@ import java.util.concurrent.TimeoutException;
 
 import no.javatime.inplace.region.Activator;
 import no.javatime.inplace.region.events.TransitionEvent;
-import no.javatime.inplace.region.manager.BundleTransition.Transition;
-import no.javatime.inplace.region.manager.BundleTransition.TransitionError;
+import no.javatime.inplace.region.intface.BundleActivatorException;
+import no.javatime.inplace.region.intface.BundleCommand;
+import no.javatime.inplace.region.intface.BundleStateChangeException;
+import no.javatime.inplace.region.intface.BundleThread;
+import no.javatime.inplace.region.intface.BundleTransitionListener;
+import no.javatime.inplace.region.intface.DuplicateBundleException;
+import no.javatime.inplace.region.intface.InPlaceException;
+import no.javatime.inplace.region.intface.ProjectLocationException;
+import no.javatime.inplace.region.intface.BundleTransition.Transition;
+import no.javatime.inplace.region.intface.BundleTransition.TransitionError;
 import no.javatime.inplace.region.msg.Msg;
 import no.javatime.inplace.region.resolver.BundleResolveHookFactory;
 import no.javatime.inplace.region.state.BundleNode;
@@ -59,7 +67,7 @@ import org.osgi.framework.wiring.BundleRevisions;
 import org.osgi.framework.wiring.FrameworkWiring;
 
 /**
- * Maintains workspace bundles and provides an interface to the BundleManager wiring framework (refresh,
+ * Maintains workspace bundles and provides an interface to the BundleTransitionListener wiring framework (refresh,
  * resolve, dependency closure), bundle context (install) and the bundle object (start, stop, uninstall,
  * update).
  * <p>
@@ -99,15 +107,17 @@ public class BundleCommandImpl implements BundleCommand {
 	}
 
 	/**
-	 * Create a wiring package service. Should be done at bundle startup
+	 * Create the wiring package service.
 	 */
 	public void initFrameworkWiring() {
-		Bundle systemBundle = getContext().getBundle(0); // Platform.getBundle("org.eclipse.osgi");
-		if (null != systemBundle) {
-			frameworkWiring = systemBundle.adapt(FrameworkWiring.class);
-		} else {
-			StatusManager.getManager().handle(new Status(Status.WARNING, Activator.PLUGIN_ID, 
-					Msg.SYSTEM_BUNDLE_ERROR), StatusManager.LOG);
+		if (null == frameworkWiring) {
+			Bundle systemBundle = getContext().getBundle(0); // Platform.getBundle("org.eclipse.osgi");
+			if (null != systemBundle) {
+				frameworkWiring = systemBundle.adapt(FrameworkWiring.class);
+			} else {
+				StatusManager.getManager().handle(new Status(Status.WARNING, Activator.PLUGIN_ID, 
+						Msg.SYSTEM_BUNDLE_ERROR), StatusManager.LOG);
+			}
 		}
 	}
 
@@ -239,7 +249,7 @@ public class BundleCommandImpl implements BundleCommand {
 				throw new InPlaceException(e, "io_exception_install", locationIdentifier);
 			} finally {
 				if (null != bundle) {
-					BundleManager.addBundleTransition(new TransitionEvent(project, bundleNode.getTransition()));
+					BundleTransitionListener.addBundleTransition(new TransitionEvent(project, bundleNode.getTransition()));
 				}
 				if (bundleNode.hasTransitionError()) {
 					bundleNode.rollBack();
@@ -306,7 +316,7 @@ public class BundleCommandImpl implements BundleCommand {
 			// The last step (after unresolve) in resolve is resolve. Force a resolve trace
 			for (Bundle bundle : bundles) {
 				BundleNode node = bundleRegion.getBundleNode(bundle);
-				BundleManager.addBundleTransition(new TransitionEvent(bundle, Transition.RESOLVE));
+				BundleTransitionListener.addBundleTransition(new TransitionEvent(bundle, Transition.RESOLVE));
 				if (node.hasTransitionError()) {
 					node.rollBack();
 				} else {
@@ -333,7 +343,7 @@ public class BundleCommandImpl implements BundleCommand {
 		}
 		try { // wait block
 			for (Bundle bundle : bundles) {
-				if (BundleManager.getRegion().exist(bundle)) {
+				if (BundleWorkspaceRegionImpl.INSTANCE.exist(bundle)) {
 					BundleNode node = bundleRegion.getBundleNode(bundle);
 					node.getState().refresh(node);
 				}
@@ -403,7 +413,7 @@ public class BundleCommandImpl implements BundleCommand {
 						BundleCommandImpl.class.getSimpleName());
 			for (Bundle bundle : bundles) {
 				BundleNode node = bundleRegion.getBundleNode(bundle);
-				BundleManager.addBundleTransition(new TransitionEvent(bundle, Transition.REFRESH));
+				BundleTransitionListener.addBundleTransition(new TransitionEvent(bundle, Transition.REFRESH));
 				if (node.hasTransitionError()) {
 					node.rollBack();
 				} else {
@@ -505,7 +515,7 @@ public class BundleCommandImpl implements BundleCommand {
 			}
 		} finally {
 			msec = System.currentTimeMillis() - startTime;
-			BundleManager.addBundleTransition(new TransitionEvent(bundle, node.getTransition())); 
+			BundleTransitionListener.addBundleTransition(new TransitionEvent(bundle, node.getTransition())); 
 			if (!(node.getTransitionError() == TransitionError.STATECHANGE)) {
 				currentBundle = null;
 			}
@@ -611,7 +621,7 @@ public class BundleCommandImpl implements BundleCommand {
 				throw new InPlaceException(e, "bundle_stop_error", bundle);
 			}
 		} finally {
-			BundleManager.addBundleTransition(new TransitionEvent(bundle, node.getTransition())); 
+			BundleTransitionListener.addBundleTransition(new TransitionEvent(bundle, node.getTransition())); 
 			// The framework moves the bundle to state resolve for both 
 			// successful and incomplete (exceptions) stop commands   
 			if (node.hasTransitionError()) {
@@ -708,7 +718,7 @@ public class BundleCommandImpl implements BundleCommand {
 			} catch (IOException e) {
 				throw new InPlaceException(e, "io_exception_update", bundle, location);
 			} finally {
-				BundleManager.addBundleTransition(new TransitionEvent(bundle, node.getTransition())); 
+				BundleTransitionListener.addBundleTransition(new TransitionEvent(bundle, node.getTransition())); 
 				if (node.hasTransitionError()) {
 					node.getState().rollBack(node);
 				} else {
@@ -766,7 +776,7 @@ public class BundleCommandImpl implements BundleCommand {
 			node.setTransitionError(TransitionError.EXCEPTION);
 			throw new InPlaceException(e, "bundle_uninstall_error", bundle);
 		} finally {
-			BundleManager.addBundleTransition(new TransitionEvent(bundle, Transition.UNINSTALL)); 
+			BundleTransitionListener.addBundleTransition(new TransitionEvent(bundle, Transition.UNINSTALL)); 
 			if (null != node) {
 				if (node.hasTransitionError()) {
 					node.getState().rollBack(node);

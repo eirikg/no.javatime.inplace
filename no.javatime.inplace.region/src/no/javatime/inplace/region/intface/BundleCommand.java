@@ -1,4 +1,4 @@
-package no.javatime.inplace.region.manager;
+package no.javatime.inplace.region.intface;
 
 import java.io.InputStream;
 import java.util.Collection;

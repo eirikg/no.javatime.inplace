@@ -15,7 +15,7 @@ import java.util.Collection;
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.msg.Msg;
-import no.javatime.inplace.region.manager.BundleManager;
+import no.javatime.inplace.region.intface.BundleTransitionListener;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
@@ -113,7 +113,7 @@ public class BuildJob extends NatureJob {
 
 		try {
 			monitor.beginTask(buildTaskName, getTicks());
-			BundleManager.addBundleTransitionListener(this);
+			BundleTransitionListener.addBundleTransitionListener(this);
 			if (buildType == IncrementalProjectBuilder.INCREMENTAL_BUILD) {
 				incrementalBuild(monitor);
 			} else {
@@ -138,7 +138,7 @@ public class BuildJob extends NatureJob {
 			return new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID, msg);
 		} finally {
 			monitor.done();
-			BundleManager.removeBundleTransitionListener(this);
+			BundleTransitionListener.removeBundleTransitionListener(this);
 		}
 	}
 
