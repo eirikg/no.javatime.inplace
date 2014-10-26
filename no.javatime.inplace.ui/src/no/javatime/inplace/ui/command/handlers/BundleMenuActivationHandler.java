@@ -35,14 +35,11 @@ import no.javatime.inplace.pl.console.intface.BundleConsoleFactory;
 import no.javatime.inplace.pl.dependencies.intface.DependencyDialog;
 import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.project.BundleProjectState;
-import no.javatime.inplace.region.status.BundleStatus;
-import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import no.javatime.inplace.ui.Activator;
 import no.javatime.inplace.ui.command.contributions.BundleCommandsContributionItems;
 import no.javatime.inplace.ui.views.BundleProperties;
 import no.javatime.inplace.ui.views.BundleView;
 import no.javatime.util.messages.Category;
-import no.javatime.util.messages.ExceptionMessage;
 import no.javatime.util.view.ViewUtil;
 
 import org.eclipse.core.commands.AbstractHandler;
@@ -57,9 +54,6 @@ import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.ui.IPackagesViewPart;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
-import org.eclipse.jface.wizard.IWizard;
-import org.eclipse.jface.wizard.WizardDialog;
-import org.eclipse.swt.SWTException;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchPart;
@@ -67,8 +61,6 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.ICommandService;
 import org.eclipse.ui.handlers.RegistryToggleState;
 import org.eclipse.ui.navigator.CommonNavigator;
-import org.eclipse.ui.statushandlers.StatusManager;
-import org.eclipse.ui.wizards.IWizardDescriptor;
 
 /**
  * Executes bundle menu commands for one or more projects. The bundle commands are
@@ -291,7 +283,6 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 	 * 
 	 * @param projects to display in the bundle view
 	 */
-	@SuppressWarnings("restriction")
 	protected void bundleViewHandler(Collection<IProject> projects) {
 
 		if (!ViewUtil.isVisible(BundleView.ID)) {
@@ -325,41 +316,6 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 				ViewUtil.hide(BundleView.ID);
 			}
 		} 
-		// No projects open, start the new bundle wizard 
-		openWizard(org.eclipse.pde.internal.ui.wizards.plugin.NewPluginProjectWizard.PLUGIN_POINT);
-	}
-	
-	/**
-	 * Opens wizard specified by the wizard id parameter
-	 * <p>
-	 * Candidate wizards are new, import and export wizards
-	 * @param id the wizard id of the wizard to open
-	 */
-	public static void openWizard(String id) { 
-
-		// First: search for "new wizard". 
-		IWizardDescriptor descriptor = PlatformUI.getWorkbench().getNewWizardRegistry().findWizard(id); 
-		// Second: search for "import wizard". 
-		if  (descriptor == null) {   
-			descriptor = PlatformUI.getWorkbench().getImportWizardRegistry().findWizard(id); 
-		} 
-		// Third: search for  "export wizard" 
-		if  (descriptor == null) {   
-			descriptor = PlatformUI.getWorkbench().getExportWizardRegistry().findWizard(id); 
-		} 
-		try  {   
-			// Open the wizard   
-			if  (descriptor != null) {     
-				IWizard wizard = descriptor.createWizard();     
-				WizardDialog wd = new  WizardDialog(Activator.getDisplay().getActiveShell(), wizard);     
-				wd.setTitle(wizard.getWindowTitle());     
-				wd.open();   
-			} 
-		} catch  (CoreException | SWTException e) {   
-			String msg = ExceptionMessage.getInstance().formatString("error_open_create_bundle_wizard", e);
-			StatusManager.getManager().handle(new BundleStatus(StatusCode.ERROR, Activator.PLUGIN_ID, msg),
-					StatusManager.LOG);
-		}
 	}
 
 	/**

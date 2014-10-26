@@ -291,7 +291,10 @@ public interface BundleCommand {
 
 	/**
 	 * Unregister a workspace bundle from the workspace region. The bundle activation status is set to
-	 * false and the bundle is removed from it associated project
+	 * false and the bundle is removed from it associated project.
+	 * <p>
+	 * If the registered project associated with the bundle (the bundle project) is inaccessible the
+	 * project is also removed (unregistered) from the region. 
 	 * 
 	 * @param bundle bundle to unregister form the workspace region.
 	 * @see #unregisterBundleProject(IProject)

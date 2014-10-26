@@ -8,9 +8,10 @@ import no.javatime.inplace.bundlejobs.NatureJob;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.region.closure.BundleClosures;
 import no.javatime.inplace.region.closure.CircularReferenceException;
+import no.javatime.inplace.region.intface.BundleTransition.Transition;
 import no.javatime.inplace.region.intface.BundleTransitionListener;
 import no.javatime.inplace.region.intface.InPlaceException;
-import no.javatime.inplace.region.intface.BundleTransition.Transition;
+import no.javatime.inplace.region.project.BundleProjectState;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
@@ -25,10 +26,12 @@ import org.osgi.framework.Bundle;
 
 /**
  * Uninstall all activated bundle projects that have been removed (closed or deleted) from the
- * workspace. Removed bundle projects should be added as pending projects to this job before scheduling the job.
+ * workspace. Removed bundle projects should be added as pending projects to this job before
+ * scheduling the job.
  * <p>
- * When removing bundle projects with requiring bundles the requiring closure set becomes incomplete.
- * This inconsistency is solved by deactivating the requiring bundles in the closure before uninstalling.
+ * When removing bundle projects with requiring bundles the requiring closure set becomes
+ * incomplete. This inconsistency is solved by deactivating the requiring bundles in the closure
+ * before uninstalling.
  */
 public class RemoveBundleProjectJob extends NatureJob {
 
@@ -63,31 +66,41 @@ public class RemoveBundleProjectJob extends NatureJob {
 			BundleTransitionListener.addBundleTransitionListener(this);
 			Collection<Bundle> pendingBundles = bundleRegion.getBundles(getPendingProjects());
 			if (pendingBundles.size() == 0) {
-					return super.runInWorkspace(monitor);
+				return super.runInWorkspace(monitor);
 			}
 			BundleClosures closure = new BundleClosures();
 			Collection<Bundle> activatedBundles = bundleRegion.getActivatedBundles();
 			// Ensure requiring closure by overriding the current closure preferences
-			final Collection<Bundle> reqClosure = closure.bundleDeactivation(Closure.REQUIRING, pendingBundles,
-					activatedBundles);
+			final Collection<Bundle> reqClosure = closure.bundleDeactivation(Closure.REQUIRING,
+					pendingBundles, activatedBundles);
 			stop(reqClosure, null, new SubProgressMonitor(monitor, 1));
 			// Deactivate the requiring projects (those which have not been removed) in the closure
 			Collection<IProject> reqProjects = new LinkedHashSet<IProject>(
 					bundleRegion.getBundleProjects(reqClosure));
+			// Do not deactivate closed or deleted projects that may be opened or recovered again (not
+			// deleted from disk)
 			reqProjects.removeAll(getPendingProjects());
 			deactivateNature(reqProjects, new SubProgressMonitor(monitor, 1));
-			// The deactivated projects are excluded from the uninstall (or requiring) closure, but are
-			// by definition members in the closure set.
-			// Uninstall cause the resolver to unresolve and initiate an unresolve event for all projects
-			// being member of a defined requiring closure(in this case uninstalled projects and their
-			// requiring projects). Inform others by adding a pending unresolve transition on each bundle excluded
-			// from the requiring closure
-			for (IProject reqProject : reqProjects) {
-				bundleTransition.addPending(reqProject, Transition.UNRESOLVE);
+			// Is workspace activated after deactivating requiring projects, uninstall all projects
+			// Closed or deleted projects will not be included in this check due to inaccessibility
+			if (!BundleProjectState.isWorkspaceNatureEnabled()) {
+				pendingBundles.addAll(bundleRegion.getBundles());
+			} else {
+				// The deactivated projects are excluded from the uninstall (or requiring) closure, but are
+				// by definition members in the closure set.
+				// Uninstall cause the resolver to unresolve and initiate an unresolve event for all
+				// projects being member of a defined requiring closure(in this case uninstalled projects
+				// and their requiring projects). Inform others by adding a pending unresolve transition on
+				// each bundle excluded from the requiring closure
+				for (IProject reqProject : reqProjects) {
+					bundleTransition.addPending(reqProject, Transition.UNRESOLVE);
+				}
 			}
-			// Uninstall, refresh and unregister the removed projects
-			uninstall(pendingBundles, new SubProgressMonitor(monitor, 1), true);
-			// Also refresh the deactivated bundles
+			// Uninstall, refresh and unregister the bundles.
+			// The closed or removed projects should be inaccessible at this time and removed from
+			// the region by uninstall
+			uninstall(pendingBundles, new SubProgressMonitor(monitor, 1), false);
+			// Also refresh any deactivated bundles
 			refresh(bundleRegion.getBundles(reqProjects), new SubProgressMonitor(monitor, 1));
 			return super.runInWorkspace(monitor);
 		} catch (InterruptedException e) {
