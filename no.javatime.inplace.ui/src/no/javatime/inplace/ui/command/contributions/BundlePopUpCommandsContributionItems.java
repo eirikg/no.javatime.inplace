@@ -20,7 +20,7 @@ import no.javatime.inplace.region.intface.BundleCommand;
 import no.javatime.inplace.region.intface.BundleRegion;
 import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
-import no.javatime.inplace.region.project.BundleProjectState;
+import no.javatime.inplace.region.project.BundleCandidates;
 import no.javatime.inplace.region.project.ManifestOptions;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
@@ -76,7 +76,7 @@ public class BundlePopUpCommandsContributionItems extends BundleCommandsContribu
 		try {
 			// Get project, activation status and the bundle project
 			IProject project = javaProject.getProject();
-			Boolean activated = BundleProjectState.isNatureEnabled(project);
+			Boolean activated = BundleCandidates.isNatureEnabled(project);
 			Bundle bundle = bundleRegion.get(project);
 			// Busy running bundle jobs.
 			if (OpenProjectHandler.getBundlesJobRunState()) {
@@ -264,7 +264,7 @@ public class BundlePopUpCommandsContributionItems extends BundleCommandsContribu
 	private CommandContributionItem addClassPath(IProject project) throws InPlaceException {
 
 		if (!BuildErrorClosure.hasManifestBuildErrors(project)) {
-			if (!BundleProjectSettings.isOutputFolderInBundleClassPath(project)) {
+			if (!BundleProjectSettings.isDefaultOutputFolder(project)) {
 				return createContibution(menuId, dynamicPopUpCommandId, addClassPathLabel,
 						addClassPathParamId, CommandContributionItem.STYLE_PUSH, classPathImage);
 			} else {

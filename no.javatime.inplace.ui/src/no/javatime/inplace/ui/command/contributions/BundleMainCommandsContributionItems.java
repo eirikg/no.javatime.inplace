@@ -14,14 +14,13 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 import no.javatime.inplace.bundlejobs.ActivateProjectJob;
-import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.dialogs.OpenProjectHandler;
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.region.intface.BundleCommand;
 import no.javatime.inplace.region.intface.BundleRegion;
 import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
-import no.javatime.inplace.region.project.BundleProjectState;
+import no.javatime.inplace.region.project.BundleCandidates;
 import no.javatime.inplace.region.project.ManifestOptions;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
@@ -57,8 +56,8 @@ public class BundleMainCommandsContributionItems extends BundleCommandsContribut
 	protected IContributionItem[] getContributionItems() {
 
 		ArrayList<ContributionItem> contributions = new ArrayList<ContributionItem>();
-		Collection<IProject> candidateProjects = ProjectProperties.getCandidateProjects();
-		Collection<IProject> activatedProjects = BundleProjectState.getNatureEnabledProjects();
+		Collection<IProject> candidateProjects = BundleCandidates.getCandidates();
+		Collection<IProject> activatedProjects = BundleCandidates.getNatureEnabled();
 
 		try {
 			// Busy running bundle jobs.

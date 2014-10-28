@@ -4,7 +4,7 @@ import java.util.Collection;
 import java.util.Map;
 
 import no.javatime.inplace.region.manager.BundleWorkspaceRegionImpl;
-import no.javatime.inplace.region.project.BundleProjectState;
+import no.javatime.inplace.region.project.BundleCandidates;
 
 import org.eclipse.core.resources.IProject;
 import org.osgi.framework.Bundle;
@@ -71,7 +71,7 @@ public interface BundleRegion {
 	 * @return true if at least one project is JavaTime nature enabled and its bundle project is not
 	 *         uninstalled. Otherwise false
 	 * @see BundleWorkspaceRegionImpl#isActivated(Bundle)
-	 * @see BundleProjectState#isWorkspaceNatureEnabled()
+	 * @see BundleCandidates#isWorkspaceNatureEnabled()
 	 */
 	public Boolean isBundleWorkspaceActivated();
 
@@ -83,7 +83,7 @@ public interface BundleRegion {
 	 * @return true if the specified project is JavaTime nature enabled and its bundle project is not
 	 *         uninstalled. Otherwise false
 	 * @see BundleWorkspaceRegionImpl#isActivated(Bundle)
-	 * @see BundleProjectState#isWorkspaceNatureEnabled()
+	 * @see BundleCandidates#isWorkspaceNatureEnabled()
 	 */
 	public Boolean isActivated(IProject bundleProject);
 

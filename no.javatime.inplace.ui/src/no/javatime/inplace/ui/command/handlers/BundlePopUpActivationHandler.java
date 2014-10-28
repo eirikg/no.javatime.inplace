@@ -117,7 +117,7 @@ public class BundlePopUpActivationHandler extends BundleMenuActivationHandler im
 				updateClassPathHandler(Collections.<IProject>singletonList(project), true);
 				break;
 			case BundleCommandsContributionItems.removeClassPathParamId:
-				updateClassPathHandler(Collections.<IProject>singletonList(project), true);
+				updateClassPathHandler(Collections.<IProject>singletonList(project), false);
 				break;
 			case BundleCommandsContributionItems.interruptParamId:
 				interruptHandler();
@@ -151,7 +151,7 @@ public class BundlePopUpActivationHandler extends BundleMenuActivationHandler im
 			IProject project = javaProject.getProject();
 			try {
 				// Set current activation policy from manifest
-				boolean isLazy = BundleProjectSettings.getLazyActivationPolicyFromManifest(project);
+				boolean isLazy = BundleProjectSettings.getActivationPolicy(project);
 				element.setChecked(!isLazy);
 			} catch (InPlaceException e) {
 				// Don't spam this meassage.

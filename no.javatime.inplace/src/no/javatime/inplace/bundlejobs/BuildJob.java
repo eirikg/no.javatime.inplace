@@ -13,9 +13,9 @@ package no.javatime.inplace.bundlejobs;
 import java.util.Collection;
 
 import no.javatime.inplace.InPlace;
-import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.intface.BundleTransitionListener;
+import no.javatime.inplace.region.project.BundleCandidates;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
@@ -152,7 +152,7 @@ public class BuildJob extends NatureJob {
 	 */
 	private void fullBuild(IProgressMonitor monitor) throws CoreException {
 
-		if (pendingProjects() == ProjectProperties.getInstallableProjects().size()
+		if (pendingProjects() == BundleCandidates.getInstallable().size()
 				|| IncrementalProjectBuilder.CLEAN_BUILD == buildType) {
 			ResourcesPlugin.getWorkspace().build(buildType, new SubProgressMonitor(monitor, 1));
 		} else {

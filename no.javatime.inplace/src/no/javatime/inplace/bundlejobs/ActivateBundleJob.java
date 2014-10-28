@@ -18,7 +18,6 @@ import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundlejobs.intface.ActivateBundle;
 import no.javatime.inplace.bundlemanager.BundleJobManager;
 import no.javatime.inplace.bundleproject.BundleProjectSettings;
-import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Operation;
 import no.javatime.inplace.msg.Msg;
@@ -31,7 +30,7 @@ import no.javatime.inplace.region.intface.BundleTransitionListener;
 import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
 import no.javatime.inplace.region.intface.BundleTransition.TransitionError;
-import no.javatime.inplace.region.project.BundleProjectState;
+import no.javatime.inplace.region.project.BundleCandidates;
 import no.javatime.inplace.region.project.ManifestOptions;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
@@ -214,15 +213,15 @@ public class ActivateBundleJob extends BundleJob implements ActivateBundle {
 		Collection<Bundle> activatedBundles = null;
 		ProjectSorter projectSorter = new ProjectSorter();
 		// At least one project must be activated (nature enabled) for workspace bundles to be activated
-		if (BundleProjectState.isWorkspaceNatureEnabled()) {
+		if (BundleCandidates.isWorkspaceNatureEnabled()) {
 			// If this is the first set of workspace project(s) that have been activated no bundle(s) have
 			// been activated yet
 			// and all deactivated bundles should be installed in an activated workspace
 			if (!bundleRegion.isBundleWorkspaceActivated()) {
-				addPendingProjects(ProjectProperties.getPlugInProjects());
+				addPendingProjects(BundleCandidates.getPlugIns());
 			} else {
 				// If any, add uninstalled bundles to be installed in an activated workspace
-				for (IProject project : ProjectProperties.getPlugInProjects()) {
+				for (IProject project : BundleCandidates.getPlugIns()) {
 					if (null == bundleRegion.get(project)) {
 						addPendingProject(project);
 					}
@@ -384,7 +383,7 @@ public class ActivateBundleJob extends BundleJob implements ActivateBundle {
 		bundleTransition.removeTransitionError(TransitionError.DUPLICATE);
 		removeExternalDuplicates(getPendingProjects(), null, null);
 		Collection<IProject> duplicates = removeWorkspaceDuplicates(getPendingProjects(), null, null,
-				ProjectProperties.getInstallableProjects(), duplicateMessage);
+				BundleCandidates.getInstallable(), duplicateMessage);
 		if (null != duplicates) {
 			Collection<IProject> installedRequirers = projectSorter.sortRequiringProjects(duplicates,
 					true);

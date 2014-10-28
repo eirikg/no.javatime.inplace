@@ -114,9 +114,9 @@ public class ManifestOptions {
 	 * Gets the cached activation policy header
 	 * 
 	 * @param bundle containing the meta information
-	 * @return true if lazy activation or false if not
+	 * @return true if lazy activation and false if eager
 	 */
-	public static Boolean getlazyActivationPolicy(Bundle bundle) throws InPlaceException {
+	public static Boolean getActivationPolicy(Bundle bundle) throws InPlaceException {
 		if (null == bundle) {
 			throw new InPlaceException("null_bundle_activation_policy");
 		}
@@ -223,7 +223,7 @@ public class ManifestOptions {
 	 * @exception InPlaceException if {@code Bundle#getEntry(String)} return null or an i/o error occurs reading
 	 *              the manifest
 	 */
-	public static Manifest loadManifest(Bundle bundle) throws InPlaceException {
+	private static Manifest loadManifest(Bundle bundle) throws InPlaceException {
 
 		URL url = null;
 		try {
@@ -255,7 +255,7 @@ public class ManifestOptions {
 	 * @param resource the manifest resource
 	 * @return the content of the manifest file
 	 */
-	public static Manifest loadManifest(IResource resource) {
+	private static Manifest loadManifest(IResource resource) {
 		Manifest manifest = null;
 		if (resource instanceof IFile) {
 			manifest = loadManifest(resource.getProject(), (IFile) resource);
@@ -270,7 +270,7 @@ public class ManifestOptions {
 	 * @param file the manifest file
 	 * @return the content of the manifest file
 	 */
-	public static Manifest loadManifest(IProject project, IFile file) {
+	private static Manifest loadManifest(IProject project, IFile file) {
 		try {
 			InputStream is = null;
 			try {

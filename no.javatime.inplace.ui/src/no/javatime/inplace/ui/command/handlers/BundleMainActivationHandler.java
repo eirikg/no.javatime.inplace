@@ -13,13 +13,12 @@ package no.javatime.inplace.ui.command.handlers;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 
-import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.region.intface.BundleCommand;
 import no.javatime.inplace.region.intface.BundleRegion;
 import no.javatime.inplace.region.intface.BundleTransition;
 import no.javatime.inplace.region.intface.InPlaceException;
-import no.javatime.inplace.region.project.BundleProjectState;
+import no.javatime.inplace.region.project.BundleCandidates;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import no.javatime.inplace.ui.Activator;
@@ -51,14 +50,14 @@ public class BundleMainActivationHandler extends BundleMenuActivationHandler {
 		try {
 			switch (parameterId) {
 			case BundleCommandsContributionItems.deactivateParamId:
-				deactivateHandler(BundleProjectState.getNatureEnabledProjects());
+				deactivateHandler(BundleCandidates.getNatureEnabled());
 				break;
 			case BundleCommandsContributionItems.activateProjectParamId:
-				activateProjectHandler(ProjectProperties.getCandidateProjects());
+				activateProjectHandler(BundleCandidates.getCandidates());
 				break;
 			case BundleCommandsContributionItems.startParamId:
 				Collection<Bundle> startProjects = new LinkedHashSet<Bundle>(); 
-				for (IProject project : BundleProjectState.getNatureEnabledProjects()) {
+				for (IProject project : BundleCandidates.getNatureEnabled()) {
 					Bundle bundle = region.get(project);
 					if (null == bundle) {
 						continue;
@@ -74,7 +73,7 @@ public class BundleMainActivationHandler extends BundleMenuActivationHandler {
 				break;
 			case BundleCommandsContributionItems.stopParamId:
 				Collection<Bundle> stopProjects = new LinkedHashSet<Bundle>(); 
-				for (IProject project : BundleProjectState.getNatureEnabledProjects()) {
+				for (IProject project : BundleCandidates.getNatureEnabled()) {
 					Bundle bundle = region.get(project);
 					int state = command.getState(bundle);
 					if (Bundle.ACTIVE == state || Bundle.STARTING == state) {
@@ -86,11 +85,11 @@ public class BundleMainActivationHandler extends BundleMenuActivationHandler {
 				}
 				break;
 			case BundleCommandsContributionItems.refreshParamId:
-				refreshHandler(BundleProjectState.getNatureEnabledProjects());
+				refreshHandler(BundleCandidates.getNatureEnabled());
 				break;
 			case BundleCommandsContributionItems.refreshPendingParamId:
 				Collection<Bundle> refreshProjects = new LinkedHashSet<Bundle>(); 
-				for (IProject project : BundleProjectState.getNatureEnabledProjects()) {
+				for (IProject project : BundleCandidates.getNatureEnabled()) {
 					Bundle bundle = region.get(project);
 					if (command.getBundleRevisions(bundle).size() > 1) {
 						refreshProjects.add(bundle);
@@ -102,15 +101,15 @@ public class BundleMainActivationHandler extends BundleMenuActivationHandler {
 				break;
 			case BundleCommandsContributionItems.updateParamId:
 				Collection<IProject> projectsToUpdate = 
-						Activator.getBundleTransitionService().getPendingProjects(BundleProjectState.getNatureEnabledProjects(), 
+						Activator.getBundleTransitionService().getPendingProjects(BundleCandidates.getNatureEnabled(), 
 						BundleTransition.Transition.UPDATE);			
 				updateHandler(projectsToUpdate);
 				break;
 			case BundleCommandsContributionItems.resetParamId:
-				resetHandler(ProjectProperties.getInstallableProjects());
+				resetHandler(BundleCandidates.getInstallable());
 				break;
 			case BundleCommandsContributionItems.bundleViewParamId:
-				bundleViewHandler(ProjectProperties.getInstallableProjects());
+				bundleViewHandler(BundleCandidates.getInstallable());
 				break;
 			case BundleCommandsContributionItems.bundleConsolePageParamId:
 				bundleConsoleHandler();
@@ -119,10 +118,10 @@ public class BundleMainActivationHandler extends BundleMenuActivationHandler {
 				bundleLogViewViewHandler();
 				break;
 			case BundleCommandsContributionItems.addClassPathParamId:
-				updateClassPathHandler(ProjectProperties.getPlugInProjects(), true);
+				updateClassPathHandler(BundleCandidates.getPlugIns(), true);
 				break;
 			case BundleCommandsContributionItems.removeClassPathParamId:
-				updateClassPathHandler(ProjectProperties.getPlugInProjects(), false);
+				updateClassPathHandler(BundleCandidates.getPlugIns(), false);
 				break;
 			case BundleCommandsContributionItems.dependencyDialogParamId:
 				dependencyDialogHandler();

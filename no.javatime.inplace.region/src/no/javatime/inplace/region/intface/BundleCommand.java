@@ -4,7 +4,7 @@ import java.io.InputStream;
 import java.util.Collection;
 import java.util.List;
 
-import no.javatime.inplace.region.project.BundleProjectState;
+import no.javatime.inplace.region.project.BundleCandidates;
 import no.javatime.inplace.region.resolver.BundleResolveHookFactory;
 import no.javatime.inplace.region.state.BundleStateEvents;
 
@@ -35,7 +35,7 @@ public interface BundleCommand {
 	 * internal bundle state
 	 * <p>
 	 * The activation status of a project can be obtained from
-	 * {@link BundleProjectState#isNatureEnabled(IProject) isProjectActivated(IProject)}. A project is
+	 * {@link BundleCandidates#isNatureEnabled(IProject) isProjectActivated(IProject)}. A project is
 	 * activated before the bundle and is said to be activated when assigned an internal nature.
 	 * <p>
 	 * The location identifier is obtained from {@link #getBundleLocationIdentifier(IProject)} .

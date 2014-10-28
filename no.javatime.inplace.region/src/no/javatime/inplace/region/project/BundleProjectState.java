@@ -2,10 +2,10 @@ package no.javatime.inplace.region.project;
 
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.LinkedHashSet;
 
 import no.javatime.inplace.region.Activator;
 import no.javatime.inplace.region.intface.InPlaceException;
@@ -39,59 +39,6 @@ public class BundleProjectState {
 	final public static String BUNDLE_REF_LOC_SCHEME = Msg.BUNDLE_ID_REF_SCHEME_REF; 
 	final public static String BUNDLE_FILE_LOC_SCHEME = Msg.BUNDLE_ID_FILE_SCHEME_REF; 
 
-
-	/**
-	 * Filters out all projects in the workspace registered with the JavaTime nature
-	 * 
-	 * @return a list of projects with the JavaTime nature or an empty collection
-	 */
-	public static Collection<IProject> getNatureEnabledProjects() {
-	
-		Collection<IProject> projects = new LinkedHashSet<IProject>();
-	
-		for (IProject project : getProjects()) {
-			if (isNatureEnabled(project)) {
-				projects.add(project);
-			}
-		}
-		return projects;
-	}
-
-	/**
-		 * When a project has JavaTime nature enabled the project is activated.
-		 * 
-		 * @param project to check for JavaTime nature
-		 * @return true if JavaTime nature is enabled for the project and false if not
-		 * @see no.javatime.inplace.region.manager.BundleWorkspaceRegionImpl#isActivated(IProject)
-		 * @see no.javatime.inplace.region.manager.BundleWorkspaceRegionImpl#isActivated(Long)
-		 * @see no.javatime.inplace.region.manager.BundleWorkspaceRegionImpl#isActivated(Bundle)
-		 */
-		public static Boolean isNatureEnabled(IProject project) {
-			try {
-				if (null != project && project.isNatureEnabled(JAVATIME_NATURE_ID)) {
-					return true;
-				}
-			} catch (CoreException e) {
-				// Ignore closed or non-existing project
-			}
-			return false;
-		}
-
-	/**
-	 * Check if a project is JavaTime nature enabled (activated). The condition is satisfied if one workspace
-	 * project is activated. This only implies that one or more projects are JavaTime enabled, and does not
-	 * necessary mean that the corresponding bundle is activated.
-	 * 
-	 * @return true if at least one project is activated and false if no projects are activated
-	 */
-	public static Boolean isWorkspaceNatureEnabled() {
-		for (IProject project : getProjects()) {
-			if (isNatureEnabled(project)) {
-				return true;
-			}
-		}
-		return false;
-	}
 
 	public static Boolean isFragment(IProject project) throws InPlaceException {
 	
@@ -243,5 +190,56 @@ public class BundleProjectState {
 			}
 		}
 		return null;
+	}
+
+	/**
+	 * Convert from java projects to general projects
+	 * 
+	 * @param javaProjects set of java projects
+	 * @return set of projects
+	 */
+	public static Collection<IProject> toProjects(Collection<IJavaProject> javaProjects) {
+	
+		Collection<IProject> projects = new ArrayList<IProject>();
+		for (IJavaProject javaProject : javaProjects) {
+			IProject project = javaProject.getProject();
+			if (null != project) {
+				projects.add(project);
+			}
+		}
+		return projects;
+	}
+
+	/**
+	 * Convert from general projects to java projects
+	 * 
+	 * @param projects set of general projects
+	 * @return set of java projects
+	 */
+	public static Collection<IJavaProject> toJavaProjects(Collection<IProject> projects) {
+	
+		Collection<IJavaProject> javaProjects = new ArrayList<IJavaProject>();
+		for (IProject project : projects) {
+			IJavaProject javaProject = JavaCore.create(project);
+			if (null != javaProject) {
+				javaProjects.add(javaProject);
+			}
+		}
+		return javaProjects;
+	}
+
+	/**
+	 * Get a project based on it's name.
+	 * 
+	 * @param name a project name
+	 * @return the project or null if the given project is null
+	 */
+	public static IProject getProject(String name) {
+		if (null == name) {
+			throw new InPlaceException("project_null");
+		}
+		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
+		IProject p = root.getProject(name);
+		return p;
 	}
 }

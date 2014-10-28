@@ -12,9 +12,9 @@ package no.javatime.inplace.ui.views;
 
 import java.util.Collection;
 
-import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.intface.ProjectLocationException;
+import no.javatime.inplace.region.project.BundleCandidates;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
@@ -138,7 +138,7 @@ class BundleContentProvider implements IStructuredContentProvider {
 		Boolean uiExtensions = false;
 		String locationIdentifier = null;
 		try {
-			uiExtensions = ProjectProperties.isUIContributor(project);
+			uiExtensions = BundleCandidates.isUIContributor(project);
 		} catch (InPlaceException e) {
 		}
 
@@ -158,7 +158,7 @@ class BundleContentProvider implements IStructuredContentProvider {
 			locationIdentifier = e.getLocalizedMessage();
 		}
 		try {
-			Boolean installeable = ProjectProperties.isInstallable(project);
+			Boolean installeable = BundleCandidates.isInstallable(project);
 			if (!installeable && !uiExtensions) {  // Not a plug-in project
 				return new BundleProperties[] {
 						new BundleProperties(project, BundleProperties.projectLabelName, bp.getProjectName()),

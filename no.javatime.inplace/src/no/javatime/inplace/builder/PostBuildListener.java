@@ -22,7 +22,6 @@ import no.javatime.inplace.bundlejobs.UninstallJob;
 import no.javatime.inplace.bundlejobs.UpdateJob;
 import no.javatime.inplace.bundlejobs.UpdateScheduler;
 import no.javatime.inplace.bundlemanager.BundleJobManager;
-import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.intface.BundleCommand;
 import no.javatime.inplace.region.intface.BundleRegion;
@@ -30,6 +29,7 @@ import no.javatime.inplace.region.intface.BundleTransition;
 import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.intface.ProjectLocationException;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
+import no.javatime.inplace.region.project.BundleCandidates;
 import no.javatime.inplace.region.project.BundleProjectState;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
@@ -114,7 +114,7 @@ public class PostBuildListener implements IResourceChangeListener {
 	public void resourceChanged(IResourceChangeEvent event) {
 
 		// Nothing to do in a deactivated workspace where all bundle projects are uninstalled
-		if (!BundleProjectState.isWorkspaceNatureEnabled()) {
+		if (!BundleCandidates.isWorkspaceNatureEnabled()) {
 			return;
 		}
 		// After a build when source has changed and the project is pending for update and auto build is
@@ -144,7 +144,7 @@ public class PostBuildListener implements IResourceChangeListener {
 		// implies
 		// no change since last build, but the resource may have a pending transition
 		if (null == resourceDeltas || resourceDeltas.length == 0) {
-			for (IProject project : ProjectProperties.getInstallableProjects()) {
+			for (IProject project : BundleCandidates.getInstallable()) {
 				try {
 					removePendingBuildTransition(buildType, project);
 					if (null != bundleTransition.getPendingTransitions(project)) {
@@ -235,7 +235,7 @@ public class PostBuildListener implements IResourceChangeListener {
 	 * transition does not have to be present before the build transition is cleared, Otherwise false,
 	 */
 	private boolean removePendingBuildTransition(int buildType, IProject project) {
-		if ((ProjectProperties.isAutoBuilding()
+		if ((BundleCandidates.isAutoBuilding()
 				|| buildType == IncrementalProjectBuilder.INCREMENTAL_BUILD
 				|| buildType == IncrementalProjectBuilder.FULL_BUILD || buildType == IncrementalProjectBuilder.CLEAN_BUILD)) {
 			// Build is no longer pending
@@ -298,7 +298,7 @@ public class PostBuildListener implements IResourceChangeListener {
 		}
 		if (bundleTransition.containsPending(project, Transition.ACTIVATE_BUNDLE, Boolean.TRUE)) {
 			// TODO Check this check
-			if (ProjectProperties.isInstallable(project)) {
+			if (BundleCandidates.isInstallable(project)) {
 				activateBundleJob.addPendingProject(project);
 				ishandled = true;
 			}
@@ -350,7 +350,7 @@ public class PostBuildListener implements IResourceChangeListener {
 	private boolean handleCRUDOperation(IResourceDelta projectDelta, IProject project,
 			ActivateBundleJob activateBundleJob) {
 
-		if (!ProjectProperties.isPlugIn(project)) {
+		if (!BundleCandidates.isPlugIn(project)) {
 			return false;
 		}
 		// A renamed project has already been uninstalled in pre change listener
@@ -393,7 +393,7 @@ public class PostBuildListener implements IResourceChangeListener {
 			// If path is different its a move (the path of the project description is changed)
 			// The replaced flag is set on files being moved but not set on project level.
 			// For all other modifications of the project description, use update bundle
-			if (!projectLoaction.equals(bundleLocation) && ProjectProperties.isInstallable(project)) {
+			if (!projectLoaction.equals(bundleLocation) && BundleCandidates.isInstallable(project)) {
 				UninstallJob uninstallJob = new UninstallJob(UninstallJob.uninstallJobName, project);
 				BundleJobManager.addBundleJob(uninstallJob, 0);
 				activateBundleJob.addPendingProject(project);

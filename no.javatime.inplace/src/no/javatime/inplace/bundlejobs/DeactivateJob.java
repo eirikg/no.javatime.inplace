@@ -16,7 +16,6 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 
 import no.javatime.inplace.InPlace;
-import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.closure.BuildErrorClosure;
@@ -26,6 +25,7 @@ import no.javatime.inplace.region.closure.CircularReferenceException;
 import no.javatime.inplace.region.intface.BundleTransitionListener;
 import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
+import no.javatime.inplace.region.project.BundleCandidates;
 import no.javatime.inplace.region.project.BundleProjectState;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
@@ -184,7 +184,7 @@ public class DeactivateJob extends NatureJob {
 
 		// Disable nature of uninstalled projects
 		// TODO Optimize. Only get uninstalled bundles
-		Collection<IProject> installeableProjects = ProjectProperties.getInstallableProjects();
+		Collection<IProject> installeableProjects = BundleCandidates.getInstallable();
 		for (IProject project : installeableProjects) {
 			// If null the bundle is not installed
 			if (null == bundleRegion.get(project)) {

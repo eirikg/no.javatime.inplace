@@ -20,7 +20,7 @@ import no.javatime.inplace.region.manager.BundleCommandImpl;
 import no.javatime.inplace.region.manager.BundleTransitionImpl;
 import no.javatime.inplace.region.manager.BundleWorkspaceRegionImpl;
 import no.javatime.inplace.region.msg.Msg;
-import no.javatime.inplace.region.project.BundleProjectState;
+import no.javatime.inplace.region.project.BundleCandidates;
 import no.javatime.inplace.region.project.ManifestOptions;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
@@ -138,7 +138,7 @@ public class BundleStateEvents implements SynchronousBundleListener {
 		if (null == node || null == node.getBundleId()) {
 			// Bundle node will be registered as long as the project exists
 			node = bundleCommand.registerBundleNode(project, bundle,
-					BundleProjectState.isNatureEnabled(project));
+					BundleCandidates.isNatureEnabled(project));
 		}
 		/*
 		 * Examine all bundle events and update state by executing intermediate transitions, identify
@@ -243,7 +243,7 @@ public class BundleStateEvents implements SynchronousBundleListener {
 			if (!node.isStateChanging()) {
 				node.getState().external(node, event, StateFactory.INSTANCE.uninstalledState,
 						Transition.EXTERNAL);
-				if (BundleProjectState.isWorkspaceNatureEnabled()) {
+				if (BundleCandidates.isWorkspaceNatureEnabled()) {
 					bundleTransition.setTransitionError(bundle, TransitionError.UNINSTALL);
 					BundleTransitionListener.addBundleTransition(new TransitionEvent(bundle, node.getTransition()));
 				} else {
@@ -282,7 +282,7 @@ public class BundleStateEvents implements SynchronousBundleListener {
 		 */
 		case BundleEvent.STARTING: {
 			if (node.getTransition() == Transition.EXTERNAL) {
-				if (ManifestOptions.getlazyActivationPolicy(node.getBundle())) {
+				if (ManifestOptions.getActivationPolicy(node.getBundle())) {
 					node.getState().external(node, event, StateFactory.INSTANCE.startingState,
 							Transition.EXTERNAL);
 				} else {

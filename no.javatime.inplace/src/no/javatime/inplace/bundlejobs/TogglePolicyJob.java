@@ -15,11 +15,11 @@ import java.util.Collections;
 
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundleproject.BundleProjectSettings;
-import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.intface.BundleTransitionListener;
 import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
+import no.javatime.inplace.region.project.BundleCandidates;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
@@ -93,7 +93,7 @@ public class TogglePolicyJob extends BundleJob {
 					// No bundle jobs (which updates the bundle view) are run when the project(s) are
 					// deactivated or auto build is off
 					Bundle bundle = bundleRegion.get(project);
-					if (!ProjectProperties.isAutoBuilding()) {
+					if (!BundleCandidates.isAutoBuilding()) {
 						if (bundleRegion.isActivated(bundle)) {
 							String msg = WarnMessage.getInstance().formatString("policy_updated_auto_build_off",
 									project.getName());

@@ -24,9 +24,9 @@ import no.javatime.inplace.InPlace;
 import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.closure.BuildErrorClosure;
 import no.javatime.inplace.region.events.TransitionEvent;
+import no.javatime.inplace.region.intface.BundleTransition.Transition;
 import no.javatime.inplace.region.intface.BundleTransitionListener;
 import no.javatime.inplace.region.intface.InPlaceException;
-import no.javatime.inplace.region.intface.BundleTransition.Transition;
 import no.javatime.inplace.region.project.BundleProjectState;
 import no.javatime.inplace.region.project.ManifestOptions;
 import no.javatime.inplace.region.status.BundleStatus;
@@ -65,10 +65,12 @@ public class BundleProjectSettings {
 	 * Verify that the default output folder is part of the bundle class path header in the manifest
 	 * 
 	 * @param project containing the class path
-	 * @return true if the default output folder is contained in the class path for the specified project
-	 * @throws InPlaceException if the manifest file is missing or the projects description could not be obtained
+	 * @return true if the default output folder is contained in the class path for the specified
+	 * project
+	 * @throws InPlaceException if the manifest file is missing or the projects description could not
+	 * be obtained
 	 */
-	public static Boolean isOutputFolderInBundleClassPath(IProject project) throws InPlaceException {
+	public static Boolean isDefaultOutputFolder(IProject project) throws InPlaceException {
 		if (!BuildErrorClosure.hasManifest(project)) {
 			throw new InPlaceException("no_manifest_found_project", project.getName());
 		}
@@ -81,22 +83,35 @@ public class BundleProjectSettings {
 			return false;
 		}
 		if (Category.DEBUG && Category.getState(Category.binpath)) {
-			TraceMessage.getInstance().getString("default_output_folder", project.getName(), defaultOutpUtPath);
+			TraceMessage.getInstance().getString("default_output_folder", project.getName(),
+					defaultOutpUtPath);
 		}
-		return ManifestOptions.verifyPathInClassPath(defaultOutpUtPath, bundleClassPath, project.getName());
+		return ManifestOptions.verifyPathInClassPath(defaultOutpUtPath, bundleClassPath,
+				project.getName());
 	}
 
-	public static IPath getDefaultOutputLocation(IProject project) {
+	/**
+	 * Returns a project relative path for the bundle's default output folder used on the
+	 * Java build path, or null to indicate the default output location is used.
+	 * 
+	 * @param project The project with a default output folder
+	 * @return Default project relative output folder path or null
+	 */
+	public static IPath getDefaultOutputFolder(IProject project) {
 		IBundleProjectDescription bundleProjDesc = InPlace.get().getBundleDescription(project);
 		return bundleProjDesc.getDefaultOutputFolder();
 	}
-
+	
+	public static String getBundleClassPath(IProject project) {
+		IBundleProjectDescription bundleProjDesc = InPlace.get().getBundleDescription(project);
+		return bundleProjDesc.getHeader(Constants.BUNDLE_CLASSPATH);
+	}
 	/**
 	 * Adds default output location to the source folders of the specified projects
 	 * 
 	 * @param project containing one or more source folders
-	 * @return true if one or more output locations was added, false if no output location was added, does not
-	 *         exist or any exception was thrown
+	 * @return true if one or more output locations was added, false if no output location was added,
+	 * does not exist or any exception was thrown
 	 */
 	public static Boolean createClassPathEntry(IProject project) {
 		boolean outputLocationAdded = false;
@@ -106,17 +121,19 @@ public class BundleProjectSettings {
 			if (null == defaultOutputPath) {
 				return false;
 			}
-			Collection<IPath> srcPaths = getJavaProjectSourceFolders(project);
+			Collection<IPath> srcPaths = getSourceFolders(project);
 			ArrayList<IBundleClasspathEntry> entries = new ArrayList<IBundleClasspathEntry>();
 			for (IPath srcPath : srcPaths) {
 				IBundleProjectService service = InPlace.get().getBundleProjectService(project);
-				IBundleClasspathEntry entry = service.newBundleClasspathEntry(srcPath, defaultOutputPath, null);
+				IBundleClasspathEntry entry = service.newBundleClasspathEntry(srcPath, defaultOutputPath,
+						null);
 				if (!entry.getBinaryPath().equals(defaultOutputPath)) {
 					entries.add(entry);
 				}
 			}
 			if (entries.size() > 0) {
-				bundleProjDesc.setBundleClasspath(entries.toArray(new IBundleClasspathEntry[entries.size()]));
+				bundleProjDesc
+						.setBundleClasspath(entries.toArray(new IBundleClasspathEntry[entries.size()]));
 				bundleProjDesc.apply(null);
 				outputLocationAdded = true;
 			}
@@ -135,11 +152,12 @@ public class BundleProjectSettings {
 	 * 
 	 * @param project with source folders
 	 * @return source folders or an empty collection
-	 * @throws JavaModelException when accessing the project resource or the class path element does not exist
+	 * @throws JavaModelException when accessing the project resource or the class path element does
+	 * not exist
 	 * @throws InPlaceException if the project could not be accessed
 	 */
-	public static Collection<IPath> getJavaProjectSourceFolders(IProject project) throws JavaModelException,
-			InPlaceException {
+	public static Collection<IPath> getSourceFolders(IProject project)
+			throws JavaModelException, InPlaceException {
 		ArrayList<IPath> paths = new ArrayList<IPath>();
 		IJavaProject javaProject = BundleProjectState.getJavaProject(project);
 		IClasspathEntry[] classpathEntries = javaProject.getResolvedClasspath(true);
@@ -157,13 +175,14 @@ public class BundleProjectSettings {
 	}
 
 	/**
-	 * Set the default output folder, if it does not exists.
+	 * Set the default output folder to the bundle class path, if it does not exists.
 	 * 
 	 * @param project to set the bundle class path header on
 	 * @return true if the bundle class path is modified, otherwise false (already in path)
-	 * @throws InPlaceException if failed to get bundle project description or if the manifest file is invalid
+	 * @throws InPlaceException if failed to get bundle project description or if the manifest file is
+	 * invalid
 	 */
-	public static Boolean addOutputLocationToBundleClassPath(IProject project) throws InPlaceException {
+	public static Boolean addDefaultOutputFolder(IProject project) throws InPlaceException {
 		try {
 			if (!BuildErrorClosure.hasManifest(project)) {
 				throw new InPlaceException("no_manifest_found_project", project.getName());
@@ -178,7 +197,8 @@ public class BundleProjectSettings {
 			if (null == storedClassPath) {
 				bundleProjDesc.setHeader(Constants.BUNDLE_CLASSPATH, defaultOutputPath.toString());
 				bundleProjDesc.apply(null);
-				BundleTransitionListener.addBundleTransition(new TransitionEvent(project, Transition.UPDATE_CLASSPATH));
+				BundleTransitionListener.addBundleTransition(new TransitionEvent(project,
+						Transition.UPDATE_CLASSPATH));
 				return true;
 			}
 			// Search for the output class path entry in the class path header
@@ -210,7 +230,8 @@ public class BundleProjectSettings {
 				updatedClassPath = updatedClassPath.concat(defaultOutputPath.toString());
 				bundleProjDesc.setHeader(Constants.BUNDLE_CLASSPATH, updatedClassPath);
 				bundleProjDesc.apply(null);
-				BundleTransitionListener.addBundleTransition(new TransitionEvent(project, Transition.UPDATE_CLASSPATH));
+				BundleTransitionListener.addBundleTransition(new TransitionEvent(project,
+						Transition.UPDATE_CLASSPATH));
 			}
 		} catch (CoreException e) {
 			throw new InPlaceException(e, "manifest_io_project", project.getName());
@@ -219,14 +240,14 @@ public class BundleProjectSettings {
 	}
 
 	/**
-	 * Removes the default output folder, if it exists.
+	 * Removes the default output folder entry from the bundle class path, if it exists.
 	 * 
-	 * @param project to remove the bundle class path header from
+	 * @param project to remove the bundle class path entry from
 	 * @return true if the bundle class path is removed, otherwise false (not in path)
-	 * @throws InPlaceException if failed to get bundle project description, failed to read or parse manifest and when
-	 *           the header is empty or contains space(s) only
+	 * @throws InPlaceException if failed to get bundle project description, failed to read or parse
+	 * manifest and when the header is empty or contains space(s) only
 	 */
-	public static Boolean removeOutputLocationFromClassPath(IProject project) throws InPlaceException {
+	public static Boolean removeDefaultOutputFolder(IProject project) throws InPlaceException {
 
 		// Output folder initially not removed
 		boolean removed = false;
@@ -282,7 +303,8 @@ public class BundleProjectSettings {
 						bundleProjDesc.setHeader(Constants.BUNDLE_CLASSPATH, null);
 					}
 					bundleProjDesc.apply(null);
-					BundleTransitionListener.addBundleTransition(new TransitionEvent(project, Transition.REMOVE_CLASSPATH));
+					BundleTransitionListener.addBundleTransition(new TransitionEvent(project,
+							Transition.REMOVE_CLASSPATH));
 				}
 			}
 		} catch (CoreException e) {
@@ -295,8 +317,8 @@ public class BundleProjectSettings {
 	 * Toggles between lazy and eager activation
 	 * 
 	 * @param project of bundle containing the activation policy
-	 * @throws InPlaceException if failed to get bundle project description or saving activation policy to
-	 *           manifest
+	 * @throws InPlaceException if failed to get bundle project description or saving activation
+	 * policy to manifest
 	 */
 	public static void toggleActivationPolicy(IProject project) throws InPlaceException {
 
@@ -313,7 +335,8 @@ public class BundleProjectSettings {
 		}
 		try {
 			bundleProjDesc.apply(null);
-			BundleTransitionListener.addBundleTransition(new TransitionEvent(project, Transition.UPDATE_ACTIVATION_POLICY));
+			BundleTransitionListener.addBundleTransition(new TransitionEvent(project,
+					Transition.UPDATE_ACTIVATION_POLICY));
 		} catch (CoreException e) {
 			throw new InPlaceException(e, "manifest_io_project", project.getName());
 		}
@@ -323,10 +346,11 @@ public class BundleProjectSettings {
 	 * Gets the activation policy header from the manifest file
 	 * 
 	 * @param project containing the meta information
-	 * @return true if lazy activation and false if not.
+	 * @return true if lazy activation and false if eager activation.
 	 * @throws InPlaceException if project is null or failed to obtain the project description
 	 */
-	public static Boolean getLazyActivationPolicyFromManifest(IProject project) throws InPlaceException {
+	public static Boolean getActivationPolicy(IProject project)
+			throws InPlaceException {
 		if (null == project) {
 			throw new InPlaceException("project_null");
 		}
@@ -348,7 +372,7 @@ public class BundleProjectSettings {
 	 * @return current symbolic name in manifest file or null
 	 * @throws InPlaceException if the project description could not be obtained
 	 */
-	public static String getSymbolicNameFromManifest(IProject project) throws InPlaceException {
+	public static String getSymbolicName(IProject project) throws InPlaceException {
 
 		IBundleProjectDescription bundleProjDesc = InPlace.get().getBundleDescription(project);
 		if (null == bundleProjDesc) {
@@ -364,7 +388,7 @@ public class BundleProjectSettings {
 	 * @return current version from manifest file as a string or null
 	 * @throws InPlaceException if the bundle project description could not be obtained
 	 */
-	public static String getBundleVersionFromManifest(IProject project) throws InPlaceException {
+	public static String getBundleVersion(IProject project) throws InPlaceException {
 		if (null == project) {
 			return null;
 		}
@@ -399,8 +423,8 @@ public class BundleProjectSettings {
 					}
 				}
 			} catch (InPlaceException e) {
-				StatusManager.getManager().handle(new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, null, e),
-						StatusManager.LOG);
+				StatusManager.getManager().handle(
+						new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, null, e), StatusManager.LOG);
 			}
 		}
 		return null;
@@ -416,17 +440,18 @@ public class BundleProjectSettings {
 	}
 
 	/**
-	 * Updates the {@code classPath} of the bundle with {@code symbolicName} as a framework property. There is a
-	 * configuration option -dev that PDE uses to launch the framework. This option points to a dev.properties
-	 * file. This file contains configuration data that tells the framework what additional class path entries
-	 * to add to the bundles class path. This is a design choice of PDE that provides an approximation of the
-	 * bundles content when run directly out of the workspace.
+	 * Updates the {@code classPath} of the bundle with {@code symbolicName} as a framework property.
+	 * There is a configuration option -dev that PDE uses to launch the framework. This option points
+	 * to a dev.properties file. This file contains configuration data that tells the framework what
+	 * additional class path entries to add to the bundles class path. This is a design choice of PDE
+	 * that provides an approximation of the bundles content when run directly out of the workspace.
 	 * 
 	 * @param symbolicName of an installed bundle
 	 * @param classPath a valid path (e.g. "bin")
 	 * @throws InPlaceException if an IO or property error occurs updating build properties file
 	 */
-	public static boolean setDevClasspath(String symbolicName, String classPath) throws InPlaceException {
+	public static Boolean setDevClasspath(String symbolicName, String classPath)
+			throws InPlaceException {
 
 		String osgiDev = inDevelopmentMode();
 		if (null == osgiDev || null == symbolicName || null == classPath) {
@@ -439,8 +464,9 @@ public class BundleProjectSettings {
 		} catch (MalformedURLException e) {
 			// Using common comma-separated class path entries (dev=<class path entries>) for all bundles
 			if (InPlace.get().getMsgOpt().isBundleOperations()) {
-				InPlace.get().log(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, 
-						NLS.bind(Msg.CLASS_PATH_COMMON_INFO, osgiDev, symbolicName)));
+				InPlace.get().log(
+						new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, NLS.bind(
+								Msg.CLASS_PATH_COMMON_INFO, osgiDev, symbolicName)));
 			}
 			String[] devDefaultClasspath = DevClassPathHelper.getDevClassPath(symbolicName);
 			boolean found = false;
@@ -454,10 +480,10 @@ public class BundleProjectSettings {
 					}
 				}
 				if (!found) {
-					String msg = WarnMessage.getInstance().formatString("bundle_class_path_mismatch", symbolicName,
-							classPath, osgiDev);
-					StatusManager.getManager().handle(new BundleStatus(StatusCode.WARNING, InPlace.PLUGIN_ID, msg),
-							StatusManager.LOG);
+					String msg = WarnMessage.getInstance().formatString("bundle_class_path_mismatch",
+							symbolicName, classPath, osgiDev);
+					StatusManager.getManager().handle(
+							new BundleStatus(StatusCode.WARNING, InPlace.PLUGIN_ID, msg), StatusManager.LOG);
 				}
 			}
 			return found;

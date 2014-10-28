@@ -26,6 +26,7 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.commands.IElementUpdater;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.menus.UIElement;
+// import no.javatime.wizard.bundle.NewPluginProjectWizard;
 
 /**
  * Checked menu item allowing/disallowing activating bundles with ui contributions

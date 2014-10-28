@@ -17,7 +17,7 @@ import no.javatime.inplace.region.intface.BundleTransition;
 import no.javatime.inplace.region.intface.ProjectLocationException;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
 import no.javatime.inplace.region.intface.BundleTransition.TransitionError;
-import no.javatime.inplace.region.project.BundleProjectState;
+import no.javatime.inplace.region.project.BundleCandidates;
 import no.javatime.inplace.ui.Activator;
 
 import org.eclipse.core.resources.IProject;
@@ -126,7 +126,7 @@ public class BundleListLabelProvider extends LabelProvider implements ITableLabe
 				}
 				Bundle bundle = ((BundleProperties) element).getBundle();
 				IProject project = ((BundleProperties) element).getProject();
-				boolean isProjectActivated = BundleProjectState.isNatureEnabled(project);
+				boolean isProjectActivated = BundleCandidates.isNatureEnabled(project);
 				BundleCommand bundleCommand = Activator.getBundleCommandService(); 
 				BundleTransition bundleTransition = Activator.getBundleTransitionService();
 				try {

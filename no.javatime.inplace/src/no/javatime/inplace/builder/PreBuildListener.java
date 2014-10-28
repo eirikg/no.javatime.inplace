@@ -11,13 +11,12 @@
 package no.javatime.inplace.builder;
 
 import no.javatime.inplace.InPlace;
-import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.region.events.TransitionEvent;
 import no.javatime.inplace.region.intface.BundleTransitionListener;
 import no.javatime.inplace.region.intface.BundleTransition;
 import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
-import no.javatime.inplace.region.project.BundleProjectState;
+import no.javatime.inplace.region.project.BundleCandidates;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import no.javatime.util.messages.ExceptionMessage;
@@ -49,7 +48,7 @@ public class PreBuildListener implements IResourceChangeListener {
 		IResourceDelta rootDelta = event.getDelta();
 		IResourceDelta[] projectDeltas = rootDelta.getAffectedChildren(IResourceDelta.ADDED
 				| IResourceDelta.CHANGED, IResource.NONE);
-		boolean isWSActivated = BundleProjectState.isWorkspaceNatureEnabled();
+		boolean isWSActivated = BundleCandidates.isWorkspaceNatureEnabled();
 		for (IResourceDelta projectDelta : projectDeltas) {
 			IResource projectResource = projectDelta.getResource();
 			if (projectResource.isAccessible() && (projectResource.getType() & (IResource.PROJECT)) != 0) {
@@ -61,8 +60,8 @@ public class PreBuildListener implements IResourceChangeListener {
 						// The error should be visible in a deactivated workspace until the project is built
 						transition.clearTransitionError(project);
 					} else { 
-						if (BundleProjectState.isNatureEnabled(project)) {
-							if (!ProjectProperties.isAutoBuilding()) {
+						if (BundleCandidates.isNatureEnabled(project)) {
+							if (!BundleCandidates.isAutoBuilding()) {
 								transition.addPending(project, Transition.BUILD);
 							} else {
 								BundleTransitionListener.addBundleTransition(new TransitionEvent(project, Transition.BUILD));								

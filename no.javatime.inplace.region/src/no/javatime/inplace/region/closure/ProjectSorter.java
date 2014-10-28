@@ -18,6 +18,7 @@ import no.javatime.inplace.region.Activator;
 import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.intface.BundleTransition.TransitionError;
 import no.javatime.inplace.region.manager.BundleTransitionImpl;
+import no.javatime.inplace.region.project.BundleCandidates;
 import no.javatime.inplace.region.project.BundleProjectState;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
@@ -153,7 +154,7 @@ public class ProjectSorter extends BaseSorter {
 			visited.add(child);
 			Collection<IProject> requirers = ProjectDependencies.getRequiringProjects(child);
 			for (IProject requirer : requirers) {
-				if (natureEnabled.equals(BundleProjectState.isNatureEnabled(requirer))) {
+				if (natureEnabled.equals(BundleCandidates.isNatureEnabled(requirer))) {
 					visitRequiringProject(requirer, child, natureEnabled, visited);
 				}
 			}
@@ -260,7 +261,7 @@ public class ProjectSorter extends BaseSorter {
 			visited.add(child); // Overlook self providing
 			Collection<IProject> providers = ProjectDependencies.getProvidingProjects(child);
 			for (IProject provider : providers) {
-				if (natureEnabled.equals(BundleProjectState.isNatureEnabled(provider))) {
+				if (natureEnabled.equals(BundleCandidates.isNatureEnabled(provider))) {
 					visitProvidingProject(provider, child, natureEnabled, visited);
 				}
 			}

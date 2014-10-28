@@ -30,10 +30,10 @@ public class BundleClasspathResolver implements IBundleClasspathResolver {
 	@Override
 	public Map getAdditionalClasspathEntries(IJavaProject javaProject) {
 		Map<IPath, Collection<IPath>> additionalEntries = new HashMap<IPath, Collection<IPath>>(); 		
-		IPath defaultOutputlocation = BundleProjectSettings.getDefaultOutputLocation(javaProject.getProject());
+		IPath defaultOutputlocation = BundleProjectSettings.getDefaultOutputFolder(javaProject.getProject());
 		Collection<IPath> srcPath = null;
 		try {
-			srcPath = BundleProjectSettings.getJavaProjectSourceFolders(javaProject.getProject());
+			srcPath = BundleProjectSettings.getSourceFolders(javaProject.getProject());
 			for (IPath path : srcPath) {
 				additionalEntries.put(path, Collections.<IPath>singletonList(defaultOutputlocation)); 
 			}

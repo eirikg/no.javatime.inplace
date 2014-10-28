@@ -13,7 +13,6 @@ package no.javatime.inplace.bundlejobs;
 import java.util.Collection;
 
 import no.javatime.inplace.InPlace;
-import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.closure.BuildErrorClosure;
@@ -23,7 +22,7 @@ import no.javatime.inplace.region.intface.BundleTransitionListener;
 import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
 import no.javatime.inplace.region.intface.BundleTransition.TransitionError;
-import no.javatime.inplace.region.project.BundleProjectState;
+import no.javatime.inplace.region.project.BundleCandidates;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
@@ -97,10 +96,10 @@ public class InstallJob extends BundleJob {
 		try {
 			monitor.beginTask(installTaskName, 1);
 			BundleTransitionListener.addBundleTransitionListener(this);
-		if (BundleProjectState.isWorkspaceNatureEnabled()) {
+		if (BundleCandidates.isWorkspaceNatureEnabled()) {
 				if (!bundleRegion.isBundleWorkspaceActivated()) {
 					// First nature activated projects. Activate the workspace
-					addPendingProjects(ProjectProperties.getPlugInProjects());
+					addPendingProjects(BundleCandidates.getPlugIns());
 				}
 			}
 			ProjectSorter projectSorter = new ProjectSorter();
@@ -180,7 +179,7 @@ public class InstallJob extends BundleJob {
 			bundleTransition.removeTransitionError(TransitionError.DUPLICATE);
 			removeExternalDuplicates(getPendingProjects(), null, null);
 			Collection<IProject> duplicates = removeWorkspaceDuplicates(getPendingProjects(), null, null, 
-					ProjectProperties.getInstallableProjects(), duplicateMessage);
+					BundleCandidates.getInstallable(), duplicateMessage);
 			if (null != duplicates) {
 				Collection<IProject> installedRequirers = projectSorter.sortRequiringProjects(duplicates, true);
 				if (installedRequirers.size() > 0) {

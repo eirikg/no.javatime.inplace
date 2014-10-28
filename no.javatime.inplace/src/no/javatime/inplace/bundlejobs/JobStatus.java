@@ -14,10 +14,10 @@ import no.javatime.inplace.region.events.BundleTransitionEventListener;
 import no.javatime.inplace.region.intface.BundleCommand;
 import no.javatime.inplace.region.intface.BundleRegion;
 import no.javatime.inplace.region.intface.BundleTransition;
+import no.javatime.inplace.region.intface.BundleTransition.Transition;
 import no.javatime.inplace.region.intface.DuplicateBundleException;
 import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.intface.ProjectLocationException;
-import no.javatime.inplace.region.intface.BundleTransition.Transition;
 import no.javatime.inplace.region.project.BundleProjectState;
 import no.javatime.inplace.region.project.ManifestOptions;
 import no.javatime.inplace.region.status.BundleStatus;
@@ -33,9 +33,7 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.osgi.util.NLS;
-import org.eclipse.pde.core.project.IBundleProjectDescription;
 import org.osgi.framework.Bundle;
-import org.osgi.framework.Constants;
 
 /**
  * Container class for bundle status objects added during a bundle job. A status object contains a
@@ -98,7 +96,8 @@ public abstract class JobStatus extends WorkspaceJob implements BundleTransition
 		Bundle bundle = event.getBundle();
 		Transition transition = event.getTransition();
 		IProject project = event.getProject();
-		IBundleProjectDescription bundleProjDesc = null;
+		String bundleClassPath = null;
+		
 		try {
 
 			switch (transition) {
@@ -118,7 +117,7 @@ public abstract class JobStatus extends WorkspaceJob implements BundleTransition
 				addTrace(Msg.REFRESH_BUNDLE_OP_TRACE, new Object[] { bundle.getSymbolicName() }, bundle);
 				break;
 			case START:
-				if (ManifestOptions.getlazyActivationPolicy(bundle)) {
+				if (ManifestOptions.getActivationPolicy(bundle)) {
 					addTrace(Msg.ON_DEMAND_BUNDLE_START_OP_TRACE, new Object[] { bundle.getSymbolicName() },
 							bundle);
 				} else {
@@ -150,29 +149,27 @@ public abstract class JobStatus extends WorkspaceJob implements BundleTransition
 						bundleCommand.getStateName(bundle) }, bundle);
 				break;
 			case UPDATE_CLASSPATH:
-				bundleProjDesc = InPlace.get().getBundleDescription(project);
-				addTrace(Msg.UPDATE_BUNDLE_CLASSPATH_TRACE,
-						new Object[] { bundleProjDesc.getHeader(Constants.BUNDLE_CLASSPATH),
-						BundleProjectSettings.getDefaultOutputLocation(project), project.getName() }, project);
+				bundleClassPath = BundleProjectSettings.getBundleClassPath(project);
+					addTrace(Msg.UPDATE_BUNDLE_CLASSPATH_TRACE,
+							new Object[] { bundleClassPath, BundleProjectSettings.getDefaultOutputFolder(project), project.getName() }, project);
 				break;
 			case REMOVE_CLASSPATH:
-				bundleProjDesc = InPlace.get().getBundleDescription(project);
-				String classPath = bundleProjDesc.getHeader(Constants.BUNDLE_CLASSPATH);
-				if (null == classPath) {
+				bundleClassPath = BundleProjectSettings.getBundleClassPath(project);
+				if (null == bundleClassPath) {
 					addTrace(
 							Msg.REMOVE_BUNDLE_CLASSPATH_TRACE,
-							new Object[] { BundleProjectSettings.getDefaultOutputLocation(project),
+							new Object[] { BundleProjectSettings.getDefaultOutputFolder(project),
 									project.getName() }, project);
 				} else {
-					addTrace(Msg.REMOVE_BUNDLE_CLASSPATH_ENTRY_TRACE, new Object[] { classPath,
-							BundleProjectSettings.getDefaultOutputLocation(project), project.getName() }, project);
+					addTrace(Msg.REMOVE_BUNDLE_CLASSPATH_ENTRY_TRACE, new Object[] { bundleClassPath,
+							BundleProjectSettings.getDefaultOutputFolder(project), project.getName() }, project);
 				}
 				break;
 			case UPDATE_ACTIVATION_POLICY:
-				bundleProjDesc = InPlace.get().getBundleDescription(project);
-				String policy = bundleProjDesc.getActivationPolicy();
+				Boolean policy = BundleProjectSettings.getActivationPolicy(project);
 				addTrace(Msg.TOGGLE_ACTIVATION_POLICY_TRACE,
-						new Object[] { (null == policy) ? "lazy" : "eager", (null == policy) ? "eager" : "lazy",
+						// Changing from (old policy) to (new policy)
+						new Object[] { (policy) ? "eager" : "lazy" , (policy) ? "lazy" : "eager",
 								project.getName() }, project);
 				break;
 			case EXTERNAL:

@@ -26,7 +26,6 @@ import no.javatime.inplace.bundlejobs.UpdateJob;
 import no.javatime.inplace.bundlejobs.events.BundleJobEvent;
 import no.javatime.inplace.bundlejobs.events.BundleJobEventListener;
 import no.javatime.inplace.bundlemanager.BundleJobManager;
-import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.dialogs.ExternalTransition;
 import no.javatime.inplace.dl.preferences.intface.CommandOptions;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions;
@@ -48,6 +47,7 @@ import no.javatime.inplace.region.intface.BundleTransition.Transition;
 import no.javatime.inplace.region.intface.BundleTransitionListener;
 import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.intface.ProjectLocationException;
+import no.javatime.inplace.region.project.BundleCandidates;
 import no.javatime.inplace.region.project.BundleProjectState;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
@@ -372,10 +372,10 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 		if (null != bundleConsoleService) {
 			bundleConsoleService.setSystemOutToIDEDefault();
 		}
-		if (BundleProjectState.isWorkspaceNatureEnabled()) {
+		if (BundleCandidates.isWorkspaceNatureEnabled()) {
 			try {
 				BundleJob shutDownJob = null;
-				Collection<IProject> activatedProjects = BundleProjectState.getNatureEnabledProjects();
+				Collection<IProject> activatedProjects = BundleCandidates.getNatureEnabled();
 				if (getCommandOptionsService().isDeactivateOnExit()) {
 					shutDownJob = new DeactivateJob(DeactivateJob.deactivateOnshutDownJobName);
 				} else {
@@ -387,7 +387,7 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 					}
 					if (activatedProjects.size() > 0) {
 						savePluginSettings(true, false);
-						activatedProjects = ProjectProperties.getPlugInProjects();
+						activatedProjects = BundleCandidates.getPlugIns();
 						shutDownJob = new UninstallJob(UninstallJob.shutDownJobName);
 						((UninstallJob) shutDownJob).unregisterBundleProject(true);
 					}
@@ -556,13 +556,13 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 			return;
 		}
 		IWorkbench workbench = getWorkbench();
-		if (!BundleProjectState.isWorkspaceNatureEnabled()
+		if (!BundleCandidates.isWorkspaceNatureEnabled()
 				|| (null != workbench && workbench.isClosing())) {
 			return;
 		}
 		Command autoBuildCmd = commandEvent.getCommand();
 		try {
-			if (autoBuildCmd.isDefined() && !ProjectProperties.isAutoBuilding()) {
+			if (autoBuildCmd.isDefined() && !BundleCandidates.isAutoBuilding()) {
 				if (getCommandOptionsService().isUpdateOnBuild()) {
 					getBundleRegionService().setAutoBuildChanged(true);
 					// Wait for builder to star. The post build listener does not
@@ -727,8 +727,8 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 			return; // Use existing values
 		}
 		if (allResolve) {
-			if (BundleProjectState.isWorkspaceNatureEnabled()) {
-				for (IProject project : BundleProjectState.getNatureEnabledProjects()) {
+			if (BundleCandidates.isWorkspaceNatureEnabled()) {
+				for (IProject project : BundleCandidates.getNatureEnabled()) {
 					try {
 						String symbolicKey = getBundleRegionService().getSymbolicKey(null, project);
 						if (symbolicKey.isEmpty()) {

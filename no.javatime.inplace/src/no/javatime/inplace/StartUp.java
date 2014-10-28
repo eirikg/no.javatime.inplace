@@ -8,7 +8,6 @@ import no.javatime.inplace.bundlejobs.BundleJob;
 import no.javatime.inplace.bundlejobs.DeactivateJob;
 import no.javatime.inplace.bundlemanager.BundleJobManager;
 import no.javatime.inplace.bundleproject.BundleProjectSettings;
-import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.closure.BuildErrorClosure;
@@ -20,7 +19,7 @@ import no.javatime.inplace.region.intface.BundleTransition;
 import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.intface.ProjectLocationException;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
-import no.javatime.inplace.region.project.BundleProjectState;
+import no.javatime.inplace.region.project.BundleCandidates;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
@@ -59,7 +58,7 @@ public class StartUp implements IStartup {
 			}
 		}
 		try {
-			Collection<IProject> activatedProjects = BundleProjectState.getNatureEnabledProjects();
+			Collection<IProject> activatedProjects = BundleCandidates.getNatureEnabled();
 			if (activatedProjects.size() > 0) {
 				Collection<IProject> deactivatedProjects = deactivateBuildErrorClosures(activatedProjects);
 				if (deactivatedProjects.size() > 0) {
@@ -163,7 +162,7 @@ public class StartUp implements IStartup {
 					BundleTransition bundleTransition = InPlace.getBundleTransitionService();
 					BundleCommand bundleCommand = InPlace.getBundleCommandService();
 					BundleRegion bundleRegion = InPlace.getBundleRegionService();
-					for (IProject project : ProjectProperties.getPlugInProjects()) {
+					for (IProject project : BundleCandidates.getPlugIns()) {
 						if (null != store) {
 							try {
 								String symbolicKey = bundleRegion.getSymbolicKey(null, project);

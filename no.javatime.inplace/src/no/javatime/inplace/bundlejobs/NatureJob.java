@@ -16,11 +16,10 @@ import java.util.Collections;
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.builder.JavaTimeNature;
 import no.javatime.inplace.bundleproject.BundleProjectSettings;
-import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
-import no.javatime.inplace.region.project.BundleProjectState;
+import no.javatime.inplace.region.project.BundleCandidates;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
@@ -112,9 +111,9 @@ public abstract class NatureJob extends BundleJob {
 				if (Category.getState(Category.progressBar))
 					sleep(sleepTime);
 				localMonitor.subTask(NatureJob.disableNatureSubTaskName + project.getName());
-				if (BundleProjectState.isNatureEnabled(project)) {
+				if (BundleCandidates.isNatureEnabled(project)) {
 					if (getOptionsService().isUpdateDefaultOutPutFolder()) {
-						BundleProjectSettings.removeOutputLocationFromClassPath(project);
+						BundleProjectSettings.removeDefaultOutputFolder(project);
 					}
 					// Deactivate project
 					toggleNatureActivation(project, new SubProgressMonitor(monitor, 1));
@@ -152,14 +151,14 @@ public abstract class NatureJob extends BundleJob {
 		for (IProject project : projectsToActivate) {
 			try {
 				localMonitor.subTask(NatureJob.enableNatureSubTaskName + project.getName());
-				if (ProjectProperties.isBundleCandidate(project) && !BundleProjectState.isNatureEnabled(project)) {
+				if (BundleCandidates.isCandidate(project) && !BundleCandidates.isNatureEnabled(project)) {
 					// Set the JavaTime nature
 					toggleNatureActivation(project, new SubProgressMonitor(monitor, 1));
 					result = resolveBundleClasspath(project);
 					Bundle bundle = bundleRegion.get(project);
 					try {
 						if (getOptionsService().isEagerOnActivate()) {
-							Boolean isLazy = BundleProjectSettings.getLazyActivationPolicyFromManifest(project.getProject());
+							Boolean isLazy = BundleProjectSettings.getActivationPolicy(project.getProject());
 							if (isLazy) {
 								BundleProjectSettings.toggleActivationPolicy(project);
 								// Uninstall and install bundles when toggling from lazy to eager activation policy

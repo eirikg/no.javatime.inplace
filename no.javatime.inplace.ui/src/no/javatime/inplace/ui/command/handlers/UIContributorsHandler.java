@@ -14,9 +14,10 @@ import java.util.Collection;
 
 import no.javatime.inplace.bundlejobs.DeactivateJob;
 import no.javatime.inplace.bundlemanager.BundleJobManager;
-import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.dl.preferences.intface.CommandOptions;
 import no.javatime.inplace.region.intface.InPlaceException;
+import no.javatime.inplace.region.project.BundleCandidates;
+import no.javatime.inplace.region.project.BundleProjectState;
 import no.javatime.inplace.ui.Activator;
 import no.javatime.inplace.ui.msg.Msg;
 
@@ -33,14 +34,14 @@ public class UIContributorsHandler extends AbstractOptionsHandler {
 	protected void storeValue(Boolean value) throws InPlaceException {
 		CommandOptions cmdStore = getOptionsService();
 		Boolean storedValue = cmdStore.isAllowUIContributions();
-		Collection<IProject> uIProjects = ProjectProperties.getUIContributors();
+		Collection<IProject> uIProjects = BundleCandidates.getUIContributors();
 		if (!storedValue.equals(value) && uIProjects.size() > 0) {
 			cmdStore.setIsAllowUIContributions(value);
 			Activator.getDisplay().asyncExec(new Runnable() {
 				@Override
 				public void run() {
-					BundleMenuActivationHandler.updateBundleListPage(ProjectProperties
-							.toJavaProjects(ProjectProperties.getInstallableProjects()));
+					BundleMenuActivationHandler.updateBundleListPage(BundleProjectState
+							.toJavaProjects(BundleCandidates.getInstallable()));
 				}			
 			});
 			if (!value) {

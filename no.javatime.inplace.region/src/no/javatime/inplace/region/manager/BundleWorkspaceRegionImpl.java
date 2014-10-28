@@ -26,6 +26,7 @@ import no.javatime.inplace.region.intface.BundleRegion;
 import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.intface.ProjectLocationException;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
+import no.javatime.inplace.region.project.BundleCandidates;
 import no.javatime.inplace.region.project.BundleProjectState;
 import no.javatime.inplace.region.state.BundleNode;
 import no.javatime.inplace.region.state.BundleState;
@@ -200,7 +201,7 @@ public class BundleWorkspaceRegionImpl implements BundleRegion {
 	 * @return true if the specified project is JavaTime nature enabled and its bundle project is not
 	 * uninstalled. Otherwise false
 	 * @see BundleWorkspaceRegionImpl#isActivated(Bundle)
-	 * @see BundleProjectState#isWorkspaceNatureEnabled()
+	 * @see BundleCandidates#isWorkspaceNatureEnabled()
 	 */
 	@Override
 	public Boolean isActivated(IProject bundleProject) {

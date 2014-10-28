@@ -1,8 +1,10 @@
 package no.javatime.inplace.region;
 
+import no.javatime.inplace.dl.preferences.intface.CommandOptions;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions;
 import no.javatime.inplace.dl.preferences.intface.MessageOptions;
 import no.javatime.inplace.extender.intface.Extender;
+import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.extender.intface.Extenders;
 import no.javatime.inplace.extender.intface.Extension;
 import no.javatime.inplace.region.intface.BundleCommand;
@@ -38,6 +40,7 @@ public class Activator extends AbstractUIPlugin {
 
 	private ServiceTracker<IBundleProjectService, IBundleProjectService> bundleProjectTracker;
 	private Extension<MessageOptions> messageOptions;
+	private Extension<CommandOptions> commandOptions;
 	private Extension<DependencyOptions> dependencyOptions;
 	private static Extender<BundleCommand> extenderCommand;
 	private static Extender<BundleRegion> extenderRegion;
@@ -75,6 +78,7 @@ public class Activator extends AbstractUIPlugin {
 		extenderTransition = Extenders.register(context.getBundle(), BundleTransition.class.getName(), 
 				new BundleTransitionServiceFactory(),null);
 
+		commandOptions = Extenders.getExtension(CommandOptions.class.getName()); 
 		messageOptions = Extenders.getExtension(MessageOptions.class.getName());
 		dependencyOptions = Extenders.getExtension(DependencyOptions.class.getName());
 		bundleProjectTracker =  new ServiceTracker<IBundleProjectService, IBundleProjectService>
@@ -166,6 +170,22 @@ public class Activator extends AbstractUIPlugin {
 			throw new InPlaceException("invalid_project_description_service", project.getName());	
 		}
 		return bundleProjectService;
+	}
+
+	/**
+	 * Return the command preferences service
+	 * 
+	 * @return the command options service
+	 * @throws ExtenderException if failing to get the extender service for the command options
+	 * @throws InPlaceException if the command options service returns null
+	 */
+	public CommandOptions getCommandOptionsService() throws InPlaceException, ExtenderException {
+		
+		CommandOptions cmdOpt = commandOptions.getService();
+		if (null == cmdOpt) {
+			throw new InPlaceException("invalid_service", CommandOptions.class.getName());			
+		}
+		return cmdOpt;
 	}
 
 	public MessageOptions msgOpt() throws InPlaceException {

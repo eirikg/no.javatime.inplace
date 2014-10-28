@@ -24,7 +24,6 @@ import no.javatime.inplace.bundlejobs.TogglePolicyJob;
 import no.javatime.inplace.bundlejobs.UpdateBundleClassPathJob;
 import no.javatime.inplace.bundlejobs.UpdateScheduler;
 import no.javatime.inplace.bundlemanager.BundleJobManager;
-import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.dialogs.OpenProjectHandler;
 import no.javatime.inplace.extender.intface.Extender;
 import no.javatime.inplace.extender.intface.ExtenderException;
@@ -34,6 +33,7 @@ import no.javatime.inplace.log.intface.BundleLogView;
 import no.javatime.inplace.pl.console.intface.BundleConsoleFactory;
 import no.javatime.inplace.pl.dependencies.intface.DependencyDialog;
 import no.javatime.inplace.region.intface.InPlaceException;
+import no.javatime.inplace.region.project.BundleCandidates;
 import no.javatime.inplace.region.project.BundleProjectState;
 import no.javatime.inplace.ui.Activator;
 import no.javatime.inplace.ui.command.contributions.BundleCommandsContributionItems;
@@ -94,7 +94,7 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 		if (so.saveModifiedFiles()) {
 			OpenProjectHandler.waitOnBuilder();
 			ActivateProjectJob activateJob = null;
-			if (BundleProjectState.getNatureEnabledProjects().size() > 0) {
+			if (BundleCandidates.getNatureEnabled().size() > 0) {
 				activateJob = new ActivateProjectJob(ActivateProjectJob.activateProjectsJobName, projects);
 			} else {
 				activateJob = new ActivateProjectJob(ActivateProjectJob.activateWorkspaceJobName, projects);
@@ -111,7 +111,7 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 	static public void deactivateHandler(Collection<IProject> projects) {
 
 		DeactivateJob deactivateJob = null;
-		if (BundleProjectState.getNatureEnabledProjects().size() <= projects.size()) {
+		if (BundleCandidates.getNatureEnabled().size() <= projects.size()) {
 			deactivateJob = new DeactivateJob(DeactivateJob.deactivateWorkspaceJobName, projects);			
 		} else {
 			deactivateJob = new DeactivateJob(DeactivateJob.deactivateJobName, projects);
@@ -287,15 +287,15 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 
 		if (!ViewUtil.isVisible(BundleView.ID)) {
 			ViewUtil.show(BundleView.ID);
-			updateBundleListPage(ProjectProperties.toJavaProjects(ProjectProperties.getInstallableProjects()));
+			updateBundleListPage(BundleProjectState.toJavaProjects(BundleCandidates.getInstallable()));
 		} else {
 			BundleView bv = BundleCommandsContributionItems.getBundleView();
-			Collection<IJavaProject> javaProjects = ProjectProperties.toJavaProjects(projects);
+			Collection<IJavaProject> javaProjects = BundleProjectState.toJavaProjects(projects);
 			int size = javaProjects.size();
 			// Show list page
 			if (bv.isDetailsPageActive()) {
 				if (size <= 1) {
-					bv.showProjects(ProjectProperties.toJavaProjects(ProjectProperties.getInstallableProjects()), true);
+					bv.showProjects(BundleProjectState.toJavaProjects(BundleCandidates.getInstallable()), true);
 				} else {
 					bv.showProjects(javaProjects, true);
 				}

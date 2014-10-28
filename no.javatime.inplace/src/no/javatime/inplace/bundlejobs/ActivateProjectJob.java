@@ -15,7 +15,6 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 
 import no.javatime.inplace.InPlace;
-import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.closure.BuildErrorClosure;
@@ -26,6 +25,7 @@ import no.javatime.inplace.region.intface.BundleTransitionListener;
 import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
 import no.javatime.inplace.region.intface.BundleTransition.TransitionError;
+import no.javatime.inplace.region.project.BundleCandidates;
 import no.javatime.inplace.region.project.BundleProjectState;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
@@ -196,7 +196,7 @@ public class ActivateProjectJob extends NatureJob {
 			// should be updated as part of the activation process
 			if (!getOptionsService().isUpdateOnBuild() && bundleRegion.isBundleWorkspaceActivated()) {
 				for (IProject project : getPendingProjects()) {
-					if (BundleProjectState.isNatureEnabled(project)) {
+					if (BundleCandidates.isNatureEnabled(project)) {
 						bundleTransition.addPending(project, Transition.UPDATE_ON_ACTIVATE);
 					}
 				}
@@ -209,7 +209,7 @@ public class ActivateProjectJob extends NatureJob {
 			}
 			return getLastStatus();
 		}
-		if (InPlace.get().getMsgOpt().isBundleOperations() && !ProjectProperties.isAutoBuilding()) {
+		if (InPlace.get().getMsgOpt().isBundleOperations() && !BundleCandidates.isAutoBuilding()) {
 			IBundleStatus status = new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID,
 					Msg.BUILDER_OFF_INFO);
 			status.add(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, NLS.bind(
@@ -273,9 +273,9 @@ public class ActivateProjectJob extends NatureJob {
 
 		 // Uninstalled projects missing build state or with build errors in manifest prevents activation
 		 // of any project
-		if (!BundleProjectState.isWorkspaceNatureEnabled()) {
-			Collection<IProject> errorProjects = BuildErrorClosure.getBuildErrors((ProjectProperties
-					.getPlugInProjects()));
+		if (!BundleCandidates.isWorkspaceNatureEnabled()) {
+			Collection<IProject> errorProjects = BuildErrorClosure.getBuildErrors((BundleCandidates
+					.getPlugIns()));
 			IBundleStatus multiStatus = new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID,
 					Msg.FATAL_ACTIVATE_ERROR);
 			for (IProject project : errorProjects) {
@@ -328,7 +328,7 @@ public class ActivateProjectJob extends NatureJob {
 
 		// If the workspace is deactivated and there are registered bundles they are uninstalled but not
 		// unregistered
-		if (!BundleProjectState.isWorkspaceNatureEnabled() && installedBundles.size() > 0) {
+		if (!BundleCandidates.isWorkspaceNatureEnabled() && installedBundles.size() > 0) {
 			Collection<IProject> projectsToActivate = bundleRegion.getBundleProjects(installedBundles);
 			uninstallBundles(installedBundles, monitor);
 			// Subtract installed projects already pending

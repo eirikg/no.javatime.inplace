@@ -75,7 +75,7 @@ public class ResolvedState extends BundleState {
 	 * @param bundleNode saves and updates the current transition and state of the bundle
 	 */
 	public void start(BundleNode bundleNode) {
-		if (ManifestOptions.getlazyActivationPolicy(bundleNode.getBundle())) {
+		if (ManifestOptions.getActivationPolicy(bundleNode.getBundle())) {
 			bundleNode.begin(Transition.LAZY_ACTIVATE, StateFactory.INSTANCE.startingState);
 		} else {
 			bundleNode.begin(Transition.START, StateFactory.INSTANCE.activeState);

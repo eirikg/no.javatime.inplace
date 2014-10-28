@@ -16,7 +16,7 @@ import no.javatime.inplace.bundlejobs.UninstallJob;
 import no.javatime.inplace.bundlemanager.BundleJobManager;
 import no.javatime.inplace.region.intface.BundleRegion;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
-import no.javatime.inplace.region.project.BundleProjectState;
+import no.javatime.inplace.region.project.BundleCandidates;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
@@ -52,7 +52,7 @@ public class PreChangeListener implements IResourceChangeListener {
 	@Override
 	public void resourceChanged(IResourceChangeEvent event) {
 
-		if (!BundleProjectState.isWorkspaceNatureEnabled()) {
+		if (!BundleCandidates.isWorkspaceNatureEnabled()) {
 			return;
 		}
 		final IResource resource = event.getResource();

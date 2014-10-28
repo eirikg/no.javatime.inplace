@@ -7,7 +7,6 @@ import java.util.Map;
 
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundlemanager.BundleJobManager;
-import no.javatime.inplace.bundleproject.ProjectProperties;
 import no.javatime.inplace.dialogs.OpenProjectHandler;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.msg.Msg;
@@ -19,6 +18,7 @@ import no.javatime.inplace.region.intface.BundleRegion;
 import no.javatime.inplace.region.intface.BundleTransition;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
 import no.javatime.inplace.region.intface.BundleTransition.TransitionError;
+import no.javatime.inplace.region.project.BundleCandidates;
 import no.javatime.inplace.region.project.BundleProjectState;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
@@ -54,7 +54,7 @@ public class UpdateScheduler {
 
 		UpdateJob updateJob = new UpdateJob(UpdateJob.updateJobName);
 		for (IProject project : projects) {
-			if (BundleProjectState.isNatureEnabled(project)
+			if (BundleCandidates.isNatureEnabled(project)
 					&& InPlace.getBundleTransitionService().containsPending(project, Transition.UPDATE, false)) {
 				addProjectToUpdateJob(project, updateJob);
 			}
@@ -250,7 +250,7 @@ public class UpdateScheduler {
 			// Install/update and update all projects that are duplicates to the current symbolic key
 			// (before this
 			// update) of changed bundles
-			Collection<IProject> projects = ProjectProperties.getInstallableProjects();
+			Collection<IProject> projects = BundleCandidates.getInstallable();
 			projects.removeAll(symbolicKeymap.keySet());
 			for (IProject project : projects) {
 				String duplicateProjectKey = bundleRegion.getSymbolicKey(null, project);

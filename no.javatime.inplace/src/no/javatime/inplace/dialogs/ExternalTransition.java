@@ -21,6 +21,7 @@ import no.javatime.inplace.region.intface.BundleTransition;
 import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
 import no.javatime.inplace.region.intface.BundleTransition.TransitionError;
+import no.javatime.inplace.region.project.BundleCandidates;
 import no.javatime.inplace.region.project.BundleProjectState;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
@@ -115,7 +116,7 @@ public class ExternalTransition implements BundleTransitionEventListener {
 				BundleJob bundleJob = null;
 				// Reactivate uninstalled bundle
 				if (autoDependencyAction == 0) {
-					if (BundleProjectState.isNatureEnabled(project)) {
+					if (BundleCandidates.isNatureEnabled(project)) {
 						bundleJob = new ActivateBundleJob(ActivateBundleJob.activateJobName, project);
 						if (dependencies) {
 							// Bring workspace back to a consistent state before restoring
@@ -125,22 +126,22 @@ public class ExternalTransition implements BundleTransitionEventListener {
 							bundleJob.addPendingProjects(reqProjects);
 						}
 					} else {
-						if (!BundleProjectState.isWorkspaceNatureEnabled()) {
+						if (!BundleCandidates.isWorkspaceNatureEnabled()) {
 							// External uninstall may have been issued on multiple bundles (uninstall A B)
 							bundleJob = new ActivateProjectJob(ActivateProjectJob.activateProjectsJobName,
 									project);
 						} else {
 							// Workspace is activated but bundle is not. Install the bundle and other uninstalled
 							// bundles
-							bundleJob = new InstallJob(InstallJob.installJobName, project); // ProjectProperties.getInstallableProjects());
+							bundleJob = new InstallJob(InstallJob.installJobName, project); // BundleCandidates.getInstallableProjects());
 						}
 					}
 					// Deactivate workspace
 				} else if (autoDependencyAction == 1) {
 					// Deactivate workspace to obtain a consistent state between all workspace bundles
-					if (BundleProjectState.isWorkspaceNatureEnabled()) {
+					if (BundleCandidates.isWorkspaceNatureEnabled()) {
 						bundleJob = new DeactivateJob(DeactivateJob.deactivateWorkspaceJobName);
-						bundleJob.addPendingProjects(BundleProjectState.getNatureEnabledProjects());
+						bundleJob.addPendingProjects(BundleCandidates.getNatureEnabled());
 					}
 				}
 				if (null != bundleJob) {
