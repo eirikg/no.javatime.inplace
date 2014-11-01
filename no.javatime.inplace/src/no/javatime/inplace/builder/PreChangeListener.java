@@ -14,9 +14,9 @@ import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundlejobs.BundleJob;
 import no.javatime.inplace.bundlejobs.UninstallJob;
 import no.javatime.inplace.bundlemanager.BundleJobManager;
+import no.javatime.inplace.region.intface.BundleProject;
 import no.javatime.inplace.region.intface.BundleRegion;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
-import no.javatime.inplace.region.project.BundleCandidates;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
@@ -52,7 +52,8 @@ public class PreChangeListener implements IResourceChangeListener {
 	@Override
 	public void resourceChanged(IResourceChangeEvent event) {
 
-		if (!BundleCandidates.isWorkspaceNatureEnabled()) {
+		BundleProject bundleProject = InPlace.getBundleProjectService();
+		if (!bundleProject.isWorkspaceNatureEnabled()) {
 			return;
 		}
 		final IResource resource = event.getResource();
@@ -60,7 +61,7 @@ public class PreChangeListener implements IResourceChangeListener {
 				&& (resource.getType() & (IResource.PROJECT)) != 0) {
 			final IProject project = resource.getProject();
 			BundleRegion bundleRegion = InPlace.getBundleRegionService();
-			Bundle bundle = bundleRegion.get(project);
+			Bundle bundle = bundleRegion.getBundle(project);
 			if (null == bundle) {
 				return;
 			}

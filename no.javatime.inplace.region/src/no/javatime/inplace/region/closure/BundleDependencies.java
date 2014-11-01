@@ -18,7 +18,7 @@ import java.util.List;
 
 import no.javatime.inplace.region.Activator;
 import no.javatime.inplace.region.intface.InPlaceException;
-import no.javatime.inplace.region.manager.BundleWorkspaceRegionImpl;
+import no.javatime.inplace.region.manager.WorkspaceRegionImpl;
 import no.javatime.inplace.region.msg.Msg;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
@@ -64,7 +64,7 @@ public class BundleDependencies {
 		Collection<Bundle> requirers = null;
 		if (null != provider) {
 			if ((provider.getState() & (Bundle.INSTALLED)) != 0) {
-				requirers = getRequiringBundles(provider, BundleWorkspaceRegionImpl.INSTANCE.getBundles());
+				requirers = getRequiringBundles(provider, WorkspaceRegionImpl.INSTANCE.getBundles());
 			} else {
 				requirers = getRequiringBundles(provider, null, new LinkedHashSet<Bundle>());
 			}
@@ -110,7 +110,7 @@ public class BundleDependencies {
 				// Get the capabilities from all name spaces
 				for (BundleWire wire : wiredReqBundle.getProvidedWires(null)) {
 					Bundle reqBundle = wire.getRequirerWiring().getBundle();
-					if (null != reqBundle && BundleWorkspaceRegionImpl.INSTANCE.exist(reqBundle)) {
+					if (null != reqBundle && WorkspaceRegionImpl.INSTANCE.exist(reqBundle)) {
 						requiredBundles.add(reqBundle);
 					}
 				}
@@ -135,7 +135,7 @@ public class BundleDependencies {
 		Collection<Bundle> providers = null;
 		if (null != requirer) {
 			if ((requirer.getState() & (Bundle.INSTALLED)) != 0) {
-				providers = getProvidingBundles(requirer, BundleWorkspaceRegionImpl.INSTANCE.getBundles());
+				providers = getProvidingBundles(requirer, WorkspaceRegionImpl.INSTANCE.getBundles());
 			} else {
 				providers = getProvidingBundles(requirer, null, new LinkedHashSet<Bundle>());
 			}
@@ -179,7 +179,7 @@ public class BundleDependencies {
 				// Get the requirements from all name spaces
 				for (BundleWire wire : wiredProvBundle.getRequiredWires(null)) {
 					Bundle provBundle = wire.getProviderWiring().getBundle();
-					if (null != provBundle && BundleWorkspaceRegionImpl.INSTANCE.exist(provBundle)) {
+					if (null != provBundle && WorkspaceRegionImpl.INSTANCE.exist(provBundle)) {
 						providedBundles.add(provBundle);
 					}
 				}

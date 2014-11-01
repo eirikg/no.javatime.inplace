@@ -21,7 +21,7 @@ import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.intface.BundleTransition.TransitionError;
 import no.javatime.inplace.region.manager.BundleCommandImpl;
 import no.javatime.inplace.region.manager.BundleTransitionImpl;
-import no.javatime.inplace.region.manager.BundleWorkspaceRegionImpl;
+import no.javatime.inplace.region.manager.WorkspaceRegionImpl;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import no.javatime.util.messages.ExceptionMessage;
@@ -85,7 +85,7 @@ public class BundleSorter extends BaseSorter {
 	 */
 	public Collection<Bundle> sortRequiringBundles(Collection<Bundle> bundles)
 			throws CircularReferenceException {
-		return sortRequiringBundles(bundles, BundleWorkspaceRegionImpl.INSTANCE.getBundles());
+		return sortRequiringBundles(bundles, WorkspaceRegionImpl.INSTANCE.getBundles());
 	}
 
 	/**
@@ -237,7 +237,7 @@ public class BundleSorter extends BaseSorter {
 				// Get the capabilities from all name spaces
 				for (BundleWire wire : wiredReqBundle.getProvidedWires(null)) {
 					Bundle reqBundle = wire.getRequirerWiring().getBundle();
-					if (null != reqBundle && BundleWorkspaceRegionImpl.INSTANCE.exist(reqBundle)) {
+					if (null != reqBundle && WorkspaceRegionImpl.INSTANCE.exist(reqBundle)) {
 						// Restrict to scope
 						if (scope.contains(reqBundle)) {
 							requiredBundles.add(reqBundle);
@@ -262,7 +262,7 @@ public class BundleSorter extends BaseSorter {
 	 */
 	public Collection<Bundle> sortProvidingBundles(Collection<Bundle> bundles)
 			throws CircularReferenceException {
-		return sortProvidingBundles(bundles, BundleWorkspaceRegionImpl.INSTANCE.getBundles());
+		return sortProvidingBundles(bundles, WorkspaceRegionImpl.INSTANCE.getBundles());
 	}
 
 	/**
@@ -410,7 +410,7 @@ public class BundleSorter extends BaseSorter {
 				// Get the requirements from all name spaces
 				for (BundleWire wire : wiredProvBundle.getRequiredWires(null)) {
 					Bundle provBundle = wire.getProviderWiring().getBundle();
-					if (null != provBundle && BundleWorkspaceRegionImpl.INSTANCE.exist(provBundle)) {
+					if (null != provBundle && WorkspaceRegionImpl.INSTANCE.exist(provBundle)) {
 						// Adjust to scope
 						if (scope.contains(provBundle)) {
 							providedBundles.add(provBundle);
@@ -449,15 +449,15 @@ public class BundleSorter extends BaseSorter {
 		if (!getAllowCycles() && (!isFragment(child) && !isFragment(parent))) {
 			BundleSorter bs = new BundleSorter();
 			bs.setAllowCycles(true);
-			Collection<Bundle> bundles = bs.sortDeclaredRequiringBundles(Collections.<Bundle>singletonList(parent), BundleWorkspaceRegionImpl.INSTANCE.getBundles());
+			Collection<Bundle> bundles = bs.sortDeclaredRequiringBundles(Collections.<Bundle>singletonList(parent), WorkspaceRegionImpl.INSTANCE.getBundles());
 			BundleTransitionImpl.INSTANCE.setTransitionError(parent, TransitionError.CYCLE);
-			bundles.addAll(bs.sortDeclaredRequiringBundles(Collections.<Bundle>singletonList(child), BundleWorkspaceRegionImpl.INSTANCE.getBundles()));
+			bundles.addAll(bs.sortDeclaredRequiringBundles(Collections.<Bundle>singletonList(child), WorkspaceRegionImpl.INSTANCE.getBundles()));
 			BundleTransitionImpl.INSTANCE.setTransitionError(child, TransitionError.CYCLE);
 			if (null == circularException) {
 				circularException = new CircularReferenceException();
 			}
 			String msg = ExceptionMessage.getInstance().formatString("affected_bundles",
-					BundleWorkspaceRegionImpl.INSTANCE.formatBundleList(bundles, false));
+					WorkspaceRegionImpl.INSTANCE.formatBundleList(bundles, false));
 			circularException.addToStatusList(new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, msg, null));
 			if (directRecursion) {
 				msg = ExceptionMessage.getInstance().formatString("direct_circular_reference_with_bundles",
@@ -554,6 +554,6 @@ public class BundleSorter extends BaseSorter {
 			return;
 		}
 		System.out.println("Bundle topological Order "
-				+ BundleWorkspaceRegionImpl.INSTANCE.formatBundleList(bundleOrder, true));
+				+ WorkspaceRegionImpl.INSTANCE.formatBundleList(bundleOrder, true));
 	}
 }

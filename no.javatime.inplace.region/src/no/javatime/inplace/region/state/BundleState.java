@@ -8,7 +8,7 @@ import no.javatime.inplace.region.intface.BundleTransition.Transition;
 import no.javatime.inplace.region.intface.BundleTransition.TransitionError;
 import no.javatime.inplace.region.manager.BundleCommandImpl;
 import no.javatime.inplace.region.manager.BundleTransitionImpl;
-import no.javatime.inplace.region.manager.BundleWorkspaceRegionImpl;
+import no.javatime.inplace.region.manager.WorkspaceRegionImpl;
 import no.javatime.inplace.region.msg.Msg;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
@@ -87,17 +87,17 @@ public abstract class BundleState {
 		final String location = bundle.getLocation();
 		BundleCommandImpl bundleCommand = BundleCommandImpl.INSTANCE;
 		BundleTransitionImpl bundleTransition = BundleTransitionImpl.INSTANCE;
-		final String symbolicName = BundleWorkspaceRegionImpl.INSTANCE.getSymbolicKey(bundle, null);
+		final String symbolicName = WorkspaceRegionImpl.INSTANCE.getSymbolicKey(bundle, null);
 		final String stateName = bundleCommand.getStateName(event);
 		if (bundleTransition.getError(bundle) == TransitionError.INCOMPLETE) {
-			if (Activator.getDefault().msgOpt().isBundleOperations()) {
+			if (Activator.getDefault().getMsgOptService().isBundleOperations()) {
 				String msg = NLS.bind(Msg.INCOMPLETE_BUNDLE_OP_INFO, new Object[] {symbolicName, stateName,
 						location});
 				StatusManager.getManager().handle(new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, msg), StatusManager.LOG);				
 			}
 		} else {
 			bundleNode.commit(transition, state);
-			if (Activator.getDefault().msgOpt().isBundleOperations()) {
+			if (Activator.getDefault().getMsgOptService().isBundleOperations()) {
 				String msg = NLS.bind(Msg.EXT_BUNDLE_OP_INFO, new Object[] {symbolicName, stateName,
 						location});
 				BundleTransitionListener.addBundleTransition(new TransitionEvent(bundle, bundleNode.getTransition()));

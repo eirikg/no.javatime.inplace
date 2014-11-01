@@ -17,7 +17,6 @@ import java.util.LinkedHashSet;
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundlejobs.intface.ActivateBundle;
 import no.javatime.inplace.bundlemanager.BundleJobManager;
-import no.javatime.inplace.bundleproject.BundleProjectSettings;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Operation;
 import no.javatime.inplace.msg.Msg;
@@ -26,12 +25,10 @@ import no.javatime.inplace.region.closure.BuildErrorClosure.ActivationScope;
 import no.javatime.inplace.region.closure.BundleSorter;
 import no.javatime.inplace.region.closure.CircularReferenceException;
 import no.javatime.inplace.region.closure.ProjectSorter;
-import no.javatime.inplace.region.intface.BundleTransitionListener;
-import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
 import no.javatime.inplace.region.intface.BundleTransition.TransitionError;
-import no.javatime.inplace.region.project.BundleCandidates;
-import no.javatime.inplace.region.project.ManifestOptions;
+import no.javatime.inplace.region.intface.BundleTransitionListener;
+import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
@@ -156,6 +153,7 @@ public class ActivateBundleJob extends BundleJob implements ActivateBundle {
 			BundleTransitionListener.addBundleTransitionListener(this);
 			monitor.beginTask(activateTaskName, getTicks());
 			activate(monitor);
+			// TODO Add extender exception to all jobs
 		} catch (InterruptedException e) {
 			String msg = ExceptionMessage.getInstance().formatString("interrupt_job", getName());
 			addError(e, msg);
@@ -213,16 +211,16 @@ public class ActivateBundleJob extends BundleJob implements ActivateBundle {
 		Collection<Bundle> activatedBundles = null;
 		ProjectSorter projectSorter = new ProjectSorter();
 		// At least one project must be activated (nature enabled) for workspace bundles to be activated
-		if (BundleCandidates.isWorkspaceNatureEnabled()) {
+		if (bundleProject.isWorkspaceNatureEnabled()) {
 			// If this is the first set of workspace project(s) that have been activated no bundle(s) have
 			// been activated yet
 			// and all deactivated bundles should be installed in an activated workspace
 			if (!bundleRegion.isBundleWorkspaceActivated()) {
-				addPendingProjects(BundleCandidates.getPlugIns());
+				addPendingProjects(bundleProject.getPlugIns());
 			} else {
 				// If any, add uninstalled bundles to be installed in an activated workspace
-				for (IProject project : BundleCandidates.getPlugIns()) {
-					if (null == bundleRegion.get(project)) {
+				for (IProject project : bundleProject.getPlugIns()) {
+					if (null == bundleRegion.getBundle(project)) {
 						addPendingProject(project);
 					}
 				}
@@ -291,10 +289,10 @@ public class ActivateBundleJob extends BundleJob implements ActivateBundle {
 		// Set the bundle class path on start up if settings (dev and/or update bundle class path) are
 		// changed
 		if (getName().equals(ActivateBundleJob.activateStartupJobName)
-				&& (null != BundleProjectSettings.inDevelopmentMode() || getOptionsService()
+				&& (null != bundleProjectDesc.inDevelopmentMode() || getOptionsService()
 						.isUpdateDefaultOutPutFolder())) {
 			for (Bundle bundle : activatedBundles) {
-				resolveBundleClasspath(bundleRegion.getRegisteredBundleProject(bundle));
+				resolveBundleClasspath(bundleRegion.getProject(bundle));
 			}
 		}
 		if (monitor.isCanceled()) {
@@ -311,7 +309,7 @@ public class ActivateBundleJob extends BundleJob implements ActivateBundle {
 
 		IBundleStatus status = createStatus();
 		Collection<IProject> projectErrorClosures = null;
-		Collection<IProject> activatedProjects = bundleRegion.getBundleProjects(activatedBundles);
+		Collection<IProject> activatedProjects = bundleRegion.getProjects(activatedBundles);
 		try {
 			BuildErrorClosure be = new BuildErrorClosure(activatedProjects, Transition.ACTIVATE_BUNDLE,
 					Closure.REQUIRING, Bundle.INSTALLED, ActivationScope.ACTIVATED);
@@ -383,7 +381,7 @@ public class ActivateBundleJob extends BundleJob implements ActivateBundle {
 		bundleTransition.removeTransitionError(TransitionError.DUPLICATE);
 		removeExternalDuplicates(getPendingProjects(), null, null);
 		Collection<IProject> duplicates = removeWorkspaceDuplicates(getPendingProjects(), null, null,
-				BundleCandidates.getInstallable(), duplicateMessage);
+				bundleProject.getInstallable(), duplicateMessage);
 		if (null != duplicates) {
 			Collection<IProject> installedRequirers = projectSorter.sortRequiringProjects(duplicates,
 					true);
@@ -415,7 +413,7 @@ public class ActivateBundleJob extends BundleJob implements ActivateBundle {
 			}
 			// Default is to start the bundle, so it is sufficient to handle bundles with state resolved
 			for (Bundle bundle : bundleRegion.getActivatedBundles()) {
-				if (bundles.contains(bundle) && !ManifestOptions.isFragment(bundle)) {
+				if (bundles.contains(bundle) && !bundleProjectDesc.isFragment(bundle)) {
 					String symbolicKey = bundleRegion.getSymbolicKey(bundle, null);
 					if (symbolicKey.isEmpty()) {
 						continue;
@@ -436,7 +434,7 @@ public class ActivateBundleJob extends BundleJob implements ActivateBundle {
 						if (reqBundles.size() > 0) {
 							for (Bundle reqBundle : reqBundles) {
 								// Fragments are only resolved (not started)
-								if (ManifestOptions.isFragment(reqBundle)) {
+								if (bundleProjectDesc.isFragment(reqBundle)) {
 									continue;
 								}
 								int reqState = 0;

@@ -13,12 +13,10 @@ package no.javatime.inplace.bundlejobs;
 import java.util.Collection;
 
 import no.javatime.inplace.InPlace;
-import no.javatime.inplace.bundleproject.BundleProjectSettings;
 import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.closure.BuildErrorClosure;
 import no.javatime.inplace.region.intface.BundleTransitionListener;
 import no.javatime.inplace.region.intface.InPlaceException;
-import no.javatime.inplace.region.project.BundleCandidates;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
@@ -90,11 +88,11 @@ public class UpdateBundleClassPathJob extends BundleJob {
 				try {
 					if (!BuildErrorClosure.hasManifestBuildErrors(project)) {
 						if (addToPath) {
-							if (BundleProjectSettings.addDefaultOutputFolder(project)) {
+							if (bundleProjectDesc.addDefaultOutputFolder(project)) {
 								resetJob.addPendingProject(project);
 							}
 						} else {
-							if (BundleProjectSettings.removeDefaultOutputFolder(project)) {
+							if (bundleProjectDesc.removeDefaultOutputFolder(project)) {
 								resetJob.addPendingProject(project);
 							}
 						}
@@ -105,7 +103,7 @@ public class UpdateBundleClassPathJob extends BundleJob {
 					addError(e, msg, project);
 				}
 			}
-			if (pendingProjects() > 0 && !BundleCandidates.isAutoBuilding()) {
+			if (pendingProjects() > 0 && !bundleProject.isAutoBuilding()) {
 				if (InPlace.get().getMsgOpt().isBundleOperations()) {
 					addInfoMessage(Msg.ATOBUILD_OFF_RESET_INFO);
 				}

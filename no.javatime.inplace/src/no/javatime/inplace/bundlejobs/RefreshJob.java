@@ -187,7 +187,7 @@ public class RefreshJob extends BundleJob {
 	private boolean containsBuildErrorClosures(Collection<Bundle> bundlesToRefresh) {
 		boolean containsErrorClosures = false;
 
-		Collection<IProject> projectsToRefresh = bundleRegion.getBundleProjects(bundlesToRefresh);
+		Collection<IProject> projectsToRefresh = bundleRegion.getProjects(bundlesToRefresh);
 		BuildErrorClosure be = new BuildErrorClosure(projectsToRefresh, 
 				Transition.REFRESH, Closure.REQUIRING, Bundle.RESOLVED, ActivationScope.ACTIVATED);
 		if (be.hasBuildErrors()) {

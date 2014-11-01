@@ -20,6 +20,8 @@ import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.extender.intface.Extenders;
 import no.javatime.inplace.extender.intface.Extension;
 import no.javatime.inplace.region.intface.BundleCommand;
+import no.javatime.inplace.region.intface.BundleProject;
+import no.javatime.inplace.region.intface.BundleProjectDescription;
 import no.javatime.inplace.region.intface.BundleRegion;
 import no.javatime.inplace.region.intface.BundleTransition;
 import no.javatime.inplace.region.intface.InPlaceException;
@@ -75,6 +77,10 @@ public class Activator extends AbstractUIPlugin implements BundleJobEventListene
 	private static Extension<BundleRegion> bundleRegion;
 	private static Extension<BundleCommand> bundleCommand;
 	private static Extension<BundleTransition> bundleTransition;
+	// Bundle candidate projects
+	private static Extension<BundleProject> bundleproject;
+	// Bundle project meta information
+	private static Extension<BundleProjectDescription> bundleProjectDescription;
 	
 	// Register (extend) services for use facilitated by other bundles  
 	private BundleTracker<Extender<?>> extenderBundleTracker;
@@ -99,6 +105,8 @@ public class Activator extends AbstractUIPlugin implements BundleJobEventListene
 			bundleRegion = Extenders.getExtension(BundleRegion.class.getName());
 			bundleCommand = Extenders.getExtension(BundleCommand.class.getName());
 			bundleTransition = Extenders.getExtension(BundleTransition.class.getName());
+			bundleproject = Extenders.getExtension(BundleProject.class.getName());
+			bundleProjectDescription = Extenders.getExtension(BundleProjectDescription.class.getName());
 	
 			loadCheckedMenus();
 		} catch (IllegalStateException | InPlaceException e) {
@@ -149,6 +157,24 @@ public class Activator extends AbstractUIPlugin implements BundleJobEventListene
 		return bt;
 	}
 
+	public static BundleProject getBundleProjectService() throws InPlaceException, ExtenderException {
+		
+		BundleProject bp = bundleproject.getService(context.getBundle());
+		if (null == bp) {
+			throw new InPlaceException("invalid_service", BundleProject.class.getName());			
+		}
+		return bp;
+	}
+
+	public static BundleProjectDescription getBundleProjectDescriptionService() throws InPlaceException, ExtenderException {
+		
+		BundleProjectDescription bpd = bundleProjectDescription.getService(context.getBundle());
+		if (null == bpd) {
+			throw new InPlaceException("invalid_service", BundleProjectDescription.class.getName());			
+		}
+		return bpd;
+	}
+
 	public CommandOptions getCommandOptionsService() throws InPlaceException {
 		
 		CommandOptions cmdOpt = commandOptions.getService();
@@ -157,6 +183,7 @@ public class Activator extends AbstractUIPlugin implements BundleJobEventListene
 		}
 		return cmdOpt;
 	}
+
 
 	@Override
 	public void bundleJobEvent(BundleJobEvent event) {

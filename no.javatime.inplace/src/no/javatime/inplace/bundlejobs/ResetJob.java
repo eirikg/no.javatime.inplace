@@ -22,7 +22,6 @@ import no.javatime.inplace.region.closure.BuildErrorClosure.ActivationScope;
 import no.javatime.inplace.region.closure.CircularReferenceException;
 import no.javatime.inplace.region.closure.ProjectSorter;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
-import no.javatime.inplace.region.project.BundleProjectState;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
@@ -324,7 +323,7 @@ public class ResetJob {
 						errorProjects = removeExternalDuplicates(projectsToReset, null, null);
 						if (null != errorProjects) {
 							projectsToReset.removeAll(errorProjects);
-							String msg = ErrorMessage.getInstance().formatString("bundle_errors_reset", BundleProjectState.formatProjectList((errorProjects)));
+							String msg = ErrorMessage.getInstance().formatString("bundle_errors_reset", bundleProject.formatProjectList((errorProjects)));
 							addError(null, msg);
 						}
 					}

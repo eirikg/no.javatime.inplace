@@ -11,7 +11,6 @@ import no.javatime.inplace.region.closure.CircularReferenceException;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
 import no.javatime.inplace.region.intface.BundleTransitionListener;
 import no.javatime.inplace.region.intface.InPlaceException;
-import no.javatime.inplace.region.project.BundleCandidates;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
@@ -76,14 +75,14 @@ public class RemoveBundleProjectJob extends NatureJob {
 			stop(reqClosure, null, new SubProgressMonitor(monitor, 1));
 			// Deactivate the requiring projects (those which have not been removed) in the closure
 			Collection<IProject> reqProjects = new LinkedHashSet<IProject>(
-					bundleRegion.getBundleProjects(reqClosure));
+					bundleRegion.getProjects(reqClosure));
 			// Do not deactivate closed or deleted projects that may be opened or recovered again (not
 			// deleted from disk)
 			reqProjects.removeAll(getPendingProjects());
 			deactivateNature(reqProjects, new SubProgressMonitor(monitor, 1));
 			// If workspace is deactivated after deactivating requiring projects, uninstall all projects
 			// Closed or deleted projects will not be included in this check due to inaccessibility
-			if (!BundleCandidates.isWorkspaceNatureEnabled()) {
+			if (!InPlace.getBundleProjectService().isWorkspaceNatureEnabled()) {
 				pendingBundles.addAll(bundleRegion.getBundles());
 			} else {
 				// The deactivated projects are excluded from the uninstall (or requiring) closure, but are

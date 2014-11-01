@@ -19,7 +19,6 @@ import java.util.Map;
 import java.util.concurrent.TimeoutException;
 
 import no.javatime.inplace.InPlace;
-import no.javatime.inplace.bundleproject.BundleProjectSettings;
 import no.javatime.inplace.dl.preferences.intface.CommandOptions;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
@@ -30,6 +29,7 @@ import no.javatime.inplace.region.closure.BundleSorter;
 import no.javatime.inplace.region.closure.CircularReferenceException;
 import no.javatime.inplace.region.closure.ProjectSorter;
 import no.javatime.inplace.region.intface.BundleActivatorException;
+import no.javatime.inplace.region.intface.BundleProject;
 import no.javatime.inplace.region.intface.BundleStateChangeException;
 import no.javatime.inplace.region.intface.BundleThread;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
@@ -37,9 +37,6 @@ import no.javatime.inplace.region.intface.BundleTransition.TransitionError;
 import no.javatime.inplace.region.intface.DuplicateBundleException;
 import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.intface.ProjectLocationException;
-import no.javatime.inplace.region.project.BundleCandidates;
-import no.javatime.inplace.region.project.BundleProjectState;
-import no.javatime.inplace.region.project.ManifestOptions;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
@@ -279,7 +276,7 @@ public abstract class BundleJob extends JobStatus {
 		SubMonitor progress = SubMonitor.convert(monitor, projectsToReinstall.size());
 
 		for (IProject project : projectsToReinstall) {
-			Bundle bundle = bundleRegion.get(project);
+			Bundle bundle = bundleRegion.getBundle(project);
 			if ((null != bundle) && (bundle.getState() & (Bundle.INSTALLED)) != 0) {
 				try {
 					if (Category.getState(Category.progressBar))
@@ -324,7 +321,7 @@ public abstract class BundleJob extends JobStatus {
 					sleep(sleepTime);
 				progress.subTask(installSubtaskName + project.getName());
 				// Get the activation status of the corresponding project
-				Boolean activated = BundleCandidates.isNatureEnabled(project);
+				Boolean activated = bundleProject.isNatureEnabled(project);
 				bundle = bundleCommand.install(project, activated);
 				// Project must be activated and bundle must be successfully installed to be activated
 				if (null != bundle && activated) {
@@ -392,11 +389,11 @@ public abstract class BundleJob extends JobStatus {
 			refresh(bundles, new SubProgressMonitor(monitor, 1));
 			if (unregister) {
 				for (Bundle bundle : bundles) {
-					bundleCommand.unregisterBundleProject(bundleRegion.getRegisteredBundleProject(bundle));
+					bundleRegion.unregisterBundleProject(bundleRegion.getProject(bundle));
 				}
 			} else {
 				for (Bundle bundle : bundles) {
-					bundleCommand.unregisterBundle(bundle);
+					bundleRegion.unregisterBundle(bundle);
 				}
 			}
 		}
@@ -476,10 +473,10 @@ public abstract class BundleJob extends JobStatus {
 						}
 					}
 					if (!bundleTransition.containsPending(bundle, Transition.RESOLVE, true)
-							&& (!ManifestOptions.isFragment(bundle))
+							&& (!bundleProjectDesc.isFragment(bundle))
 							&& ((bundle.getState() & (Bundle.RESOLVED | Bundle.STOPPING)) != 0)) {
 						int startOption = Bundle.START_TRANSIENT;
-						if (ManifestOptions.getActivationPolicy(bundle)) {
+						if (bundleProjectDesc.getCachedActivationPolicy(bundle)) {
 							startOption = Bundle.START_ACTIVATION_POLICY;
 						}
 						if (timeout) {
@@ -524,7 +521,7 @@ public abstract class BundleJob extends JobStatus {
 						createMultiStatus(
 								errStat,
 								addWarning(null, msg,
-										bundleRegion.getRegisteredBundleProject(bundle)));
+										bundleRegion.getProject(bundle)));
 						stopCurrentBundleOperation(monitor);
 					} else if (null != cause && cause instanceof BundleException) {
 						stopCurrentBundleOperation(monitor);
@@ -614,7 +611,7 @@ public abstract class BundleJob extends JobStatus {
 						createMultiStatus(
 								errStat,
 								addWarning(null, msg,
-										bundleRegion.getRegisteredBundleProject(bundle)));
+										bundleRegion.getProject(bundle)));
 						stopCurrentBundleOperation(monitor);
 					} else if (null != cause && cause instanceof BundleException) {
 						stopCurrentBundleOperation(monitor);
@@ -651,7 +648,7 @@ public abstract class BundleJob extends JobStatus {
 		if (null != bundle) {
 			if (getOptionsService().isDeactivateOnTerminate() && null == deactivateTask) {
 				deactivateTask = new DeactivateJob(DeactivateJob.deactivateJobName);
-				deactivateTask.addPendingProject(bundleRegion.getRegisteredBundleProject(bundle));
+				deactivateTask.addPendingProject(bundleRegion.getProject(bundle));
 			}
 			Thread thread = BundleThread.getThread(bundle);
 			if (null != thread) {
@@ -679,7 +676,7 @@ public abstract class BundleJob extends JobStatus {
 				}
 			} else {
 				String transitioNname = bundleTransition.getTransitionName(bundleRegion
-						.getRegisteredBundleProject(bundle));
+						.getProject(bundle));
 				String msg = NLS.bind(Msg.FAILED_TO_GET_THREAD_INFO, bundle, transitioNname);
 				IBundleStatus status = new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, bundle, msg,
 						null);
@@ -742,7 +739,7 @@ public abstract class BundleJob extends JobStatus {
 				}
 			} else {
 				String transitioNname = bundleTransition.getTransitionName(bundleRegion
-						.getRegisteredBundleProject(bundle));
+						.getProject(bundle));
 				if (getOptionsService().isTimeOut()) {
 					String msg = NLS.bind(Msg.AFTER_TIMEOUT_STOP_TASK_INFO, new Object[] { bundle,
 							threadName, transitioNname });
@@ -841,7 +838,7 @@ public abstract class BundleJob extends JobStatus {
 		// TODO Add these when duplicates are detected. See who uses this method. NB -> Now excluded for
 		// update job
 		Map<IProject, Bundle> duplicates = bundleRegion.getSymbolicNameDuplicates(
-				bundleRegion.getBundleProjects(bundlesToResolve), activatedBundles, true);
+				bundleRegion.getProjects(bundlesToResolve), activatedBundles, true);
 		if (duplicates.size() > 0) {
 			bundlesToResolve
 					.addAll(bs.sortDeclaredRequiringBundles(duplicates.values(), activatedBundles));
@@ -868,7 +865,7 @@ public abstract class BundleJob extends JobStatus {
 				sleep(sleepTime);
 			localMonitor.subTask(resolveTaskName);
 			if (!bundleCommand.resolve(bundlesToResolve)) {
-				Collection<IProject> projectsToResolve = bundleRegion.getBundleProjects(bundlesToResolve);
+				Collection<IProject> projectsToResolve = bundleRegion.getProjects(bundlesToResolve);
 				BuildErrorClosure be = new BuildErrorClosure(projectsToResolve, Transition.RESOLVE,
 						Closure.REQUIRING);
 				if (be.hasBuildErrors()) {
@@ -885,9 +882,9 @@ public abstract class BundleJob extends JobStatus {
 				Collection<IProject> notResolvedProjects = new ArrayList<IProject>();
 				IBundleStatus startStatus = null;
 				for (IProject project : projectsToResolve) {
-					Bundle bundle = bundleRegion.get(project);
+					Bundle bundle = bundleRegion.getBundle(project);
 					// Bundle may be rejected by the resolver hook due to dependencies on deactivated bundles
-					if (BundleCandidates.isNatureEnabled(project)) {
+					if (bundleProject.isNatureEnabled(project)) {
 						int state = bundleCommand.getState(bundle);
 						if ((state & (Bundle.UNINSTALLED | Bundle.INSTALLED)) != 0) {
 							notResolvedBundles.add(bundle);
@@ -904,7 +901,7 @@ public abstract class BundleJob extends JobStatus {
 									.<IProject> singletonList(project));
 							Collection<IProject> providingAndNotRsolvedProjects = new ArrayList<IProject>();
 							for (IProject providingProject : providingProjects) {
-								Bundle providingBundle = bundleRegion.get(providingProject);
+								Bundle providingBundle = bundleRegion.getBundle(providingProject);
 								int providingState = bundleCommand.getState(providingBundle);
 								if ((providingState & (Bundle.UNINSTALLED | Bundle.INSTALLED)) != 0) {
 									providingAndNotRsolvedProjects.add(providingProject);
@@ -914,7 +911,7 @@ public abstract class BundleJob extends JobStatus {
 							if (providingAndNotRsolvedProjects.size() > 0) {
 								String msgNotResolvedBundles = NLS.bind(Msg.PROVIDING_TO_NOT_RESOLVED_BUNDLES_WARN,
 										project.getName(),
-										BundleProjectState.formatProjectList(providingAndNotRsolvedProjects));
+										bundleProject.formatProjectList(providingAndNotRsolvedProjects));
 								if (null == startStatus) {
 									startStatus = addInfoMessage(msgNotResolvedBundles);
 								} else {
@@ -966,9 +963,9 @@ public abstract class BundleJob extends JobStatus {
 			try {
 				if ((bundle.getState() & (Bundle.RESOLVED | Bundle.STOPPING | Bundle.STARTING)) != 0) {
 					// Check for the output folder path in the cached version of the bundle
-					IPath path = BundleProjectSettings.getDefaultOutputFolder(bundleRegion
-							.getRegisteredBundleProject(bundle));
-					if (!ManifestOptions.verifyPathInClassPath(bundle, path)) {
+					IPath path = bundleProjectDesc.getDefaultOutputFolder(bundleRegion
+							.getProject(bundle));
+					if (!bundleProjectDesc.verifyPathInCachedClassPath(bundle, path)) {
 						if (null == errorBundles) {
 							bs = new BundleSorter();
 							errorBundles = new LinkedHashSet<Bundle>();
@@ -977,8 +974,8 @@ public abstract class BundleJob extends JobStatus {
 						errorBundles = bs.sortRequiringBundles(errorBundles);
 						String msg = null;
 						// Check if the not cached output folder path exist in the manifest file
-						Boolean binExist = BundleProjectSettings.isDefaultOutputFolder(bundleRegion
-								.getRegisteredBundleProject(bundle));
+						Boolean binExist = bundleProjectDesc.isDefaultOutputFolder(bundleRegion
+								.getProject(bundle));
 						if (binExist) {
 							msg = ErrorMessage.getInstance().formatString("missing_classpath_bundle_loaded",
 									bundle);
@@ -1003,7 +1000,7 @@ public abstract class BundleJob extends JobStatus {
 					}
 				}
 			} catch (InPlaceException e) {
-				addError(e, bundleRegion.getRegisteredBundleProject(bundle));
+				addError(e, bundleRegion.getProject(bundle));
 			} finally {
 				if (null != errorBundles) {
 					errorBundles.clear();
@@ -1032,15 +1029,14 @@ public abstract class BundleJob extends JobStatus {
 		IBundleStatus result = new BundleStatus(StatusCode.OK, InPlace.PLUGIN_ID, "");
 
 		try {
-			String symbolicName = BundleProjectSettings.getSymbolicName(project);
+			String symbolicName = bundleProjectDesc.getSymbolicName(project);
 			if (null == symbolicName) {
 				String msg = NLS.bind(Msg.SYMBOLIC_NAME_ERROR, project.getName());
 				result = addError(null, msg);
 			}
-			BundleProjectSettings.setDevClasspath(symbolicName, BundleProjectSettings
-					.getDefaultOutputFolder(project).toString());
+			bundleProjectDesc.setDevClasspath(project);
 			if (getOptionsService().isUpdateDefaultOutPutFolder()) {
-				BundleProjectSettings.addDefaultOutputFolder(project);
+				bundleProjectDesc.addDefaultOutputFolder(project);
 			}
 		} catch (InPlaceException e) {
 			String msg = ExceptionMessage.getInstance().formatString("error_resolve_class_path", project);
@@ -1058,7 +1054,7 @@ public abstract class BundleJob extends JobStatus {
 				workspaceBundles);
 		Collection<Bundle> bundles = null;
 		for (Bundle errorBundle : bErrorDepClosures) {
-			IProject errorProject = bundleRegion.getRegisteredBundleProject(errorBundle);
+			IProject errorProject = bundleRegion.getProject(errorBundle);
 			TransitionError transitionError = bundleTransition.getError(errorBundle);
 			if (null != errorProject
 					&& (transitionError == TransitionError.DUPLICATE || transitionError == TransitionError.CYCLE)) {
@@ -1071,7 +1067,7 @@ public abstract class BundleJob extends JobStatus {
 		}
 		if (null != bundles) {
 			if (null != pDepClosures) {
-				pDepClosures.removeAll(bundleRegion.getBundleProjects(bundles));
+				pDepClosures.removeAll(bundleRegion.getProjects(bundles));
 			}
 			if (null != bDepClosures) {
 				bDepClosures.removeAll(bundles);
@@ -1110,13 +1106,13 @@ public abstract class BundleJob extends JobStatus {
 				IProject duplicateProject1 = key.getValue();
 				try {
 					// If checked on an uninstalled bundle that is not registered yet
-					if (!bundleCommand.isBundleProjectRegistered(duplicateProject)) {
-						bundleCommand.registerBundleProject(duplicateProject, null, false);
+					if (!bundleRegion.isProjectRegistered(duplicateProject)) {
+						bundleRegion.registerBundleProject(duplicateProject, null, false);
 					}
 					bundleTransition.setTransitionError(duplicateProject, TransitionError.DUPLICATE);
 					DuplicateBundleException duplicateBundleException = new DuplicateBundleException(
 							"duplicate_of_ws_bundle", duplicateProject.getName(),
-							BundleProjectSettings.getSymbolicName(duplicateProject1),
+							bundleProjectDesc.getSymbolicName(duplicateProject1),
 							duplicateProject1.getLocation());
 					handleDuplicateException(duplicateProject, duplicateBundleException, message);
 					Collection<IProject> requiringProjects = ps.sortRequiringProjects(Collections
@@ -1181,8 +1177,8 @@ public abstract class BundleJob extends JobStatus {
 				IProject duplicate = key.getKey();
 				try {
 					// If checked on an uninstalled bundle that is not registered yet
-					if (!bundleCommand.isBundleProjectRegistered(duplicate)) {
-						bundleCommand.registerBundleProject(duplicate, null, false);
+					if (!bundleRegion.isProjectRegistered(duplicate)) {
+						bundleRegion.registerBundleProject(duplicate, null, false);
 					}
 					bundleTransition.setTransitionError(duplicate, TransitionError.DUPLICATE);
 					String msg = ErrorMessage.getInstance().formatString("duplicate_of_jar_bundle",
@@ -1193,7 +1189,7 @@ public abstract class BundleJob extends JobStatus {
 					if (requiringProjects.size() > 0) {
 						String affectedBundlesMsg = ErrorMessage.getInstance().formatString(
 								"duplicate_affected_bundles", duplicate.getName(),
-								BundleProjectState.formatProjectList(requiringProjects));
+								bundleProject.formatProjectList(requiringProjects));
 						addInfoMessage(affectedBundlesMsg);
 						for (IProject reqProject : requiringProjects) {
 							bundleTransition.removePending(reqProject, Transition.UPDATE);
@@ -1226,7 +1222,7 @@ public abstract class BundleJob extends JobStatus {
 	/**
 	 * Compares bundle projects for the same symbolic name and version. Each specified project is
 	 * compared to all other valid workspace projects as specified by
-	 * {@link BundleCandidates#getInstallable()}.
+	 * {@link BundleProject#getInstallable()}.
 	 * <p>
 	 * When duplicates are detected the providing project - if any - in a set of duplicates is treated
 	 * as the one to be installed or updated while the rest of the duplicates in the set are those
@@ -1267,7 +1263,7 @@ public abstract class BundleJob extends JobStatus {
 		}
 		ProjectSorter ps = new ProjectSorter();
 		ps.setAllowCycles(true);
-		Collection<IProject> installableProjects = BundleCandidates.getInstallable();
+		Collection<IProject> installableProjects = bundleProject.getInstallable();
 		installableProjects.remove(duplicateProject);
 		for (IProject duplicateProjectCandidate : installableProjects) {
 			IBundleStatus startStatus = null;
@@ -1288,8 +1284,8 @@ public abstract class BundleJob extends JobStatus {
 				String msg = null;
 				try {
 					msg = ErrorMessage.getInstance().formatString("duplicate_error",
-							BundleProjectSettings.getSymbolicName(duplicateProject),
-							BundleProjectSettings.getBundleVersion(duplicateProject));
+							bundleProjectDesc.getSymbolicName(duplicateProject),
+							bundleProjectDesc.getBundleVersion(duplicateProject));
 					startStatus = addError(e, msg, duplicateProject);
 					addError(null, e.getLocalizedMessage());
 					addError(duplicateException, duplicateException.getLocalizedMessage(), duplicateProject);
@@ -1300,7 +1296,7 @@ public abstract class BundleJob extends JobStatus {
 					if (duplicateClosureSet.size() > 0) {
 						String affectedBundlesMsg = ErrorMessage.getInstance().formatString(
 								"duplicate_affected_bundles", duplicateProject.getName(),
-								BundleProjectState.formatProjectList(duplicateClosureSet));
+								bundleProject.formatProjectList(duplicateClosureSet));
 						addInfoMessage(affectedBundlesMsg);
 					}
 					if (null != message) {

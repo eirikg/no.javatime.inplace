@@ -15,11 +15,9 @@ import java.util.Collections;
 
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.builder.JavaTimeNature;
-import no.javatime.inplace.bundleproject.BundleProjectSettings;
 import no.javatime.inplace.msg.Msg;
-import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
-import no.javatime.inplace.region.project.BundleCandidates;
+import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
@@ -111,9 +109,9 @@ public abstract class NatureJob extends BundleJob {
 				if (Category.getState(Category.progressBar))
 					sleep(sleepTime);
 				localMonitor.subTask(NatureJob.disableNatureSubTaskName + project.getName());
-				if (BundleCandidates.isNatureEnabled(project)) {
+				if (bundleProject.isNatureEnabled(project)) {
 					if (getOptionsService().isUpdateDefaultOutPutFolder()) {
-						BundleProjectSettings.removeDefaultOutputFolder(project);
+						bundleProjectDesc.removeDefaultOutputFolder(project);
 					}
 					// Deactivate project
 					toggleNatureActivation(project, new SubProgressMonitor(monitor, 1));
@@ -151,20 +149,20 @@ public abstract class NatureJob extends BundleJob {
 		for (IProject project : projectsToActivate) {
 			try {
 				localMonitor.subTask(NatureJob.enableNatureSubTaskName + project.getName());
-				if (BundleCandidates.isCandidate(project) && !BundleCandidates.isNatureEnabled(project)) {
+				if (bundleProject.isCandidate(project) && !bundleProject.isNatureEnabled(project)) {
 					// Set the JavaTime nature
 					toggleNatureActivation(project, new SubProgressMonitor(monitor, 1));
 					result = resolveBundleClasspath(project);
-					Bundle bundle = bundleRegion.get(project);
+					Bundle bundle = bundleRegion.getBundle(project);
 					try {
 						if (getOptionsService().isEagerOnActivate()) {
-							Boolean isLazy = BundleProjectSettings.getActivationPolicy(project.getProject());
+							Boolean isLazy = bundleProjectDesc.getActivationPolicy(project.getProject());
 							if (isLazy) {
-								BundleProjectSettings.toggleActivationPolicy(project);
+								bundleProjectDesc.toggleActivationPolicy(project);
 								// Uninstall and install bundles when toggling from lazy to eager activation policy
 								if (null != bundle) {
 									reInstall(Collections.<IProject>singletonList(project), new SubProgressMonitor(monitor, 1));
-									bundle = bundleRegion.get(project);
+									bundle = bundleRegion.getBundle(project);
 								}
 							}
 						}
@@ -173,7 +171,7 @@ public abstract class NatureJob extends BundleJob {
 					}
 					boolean isInstalled = null != bundle ? true : false;
 					// Wait to set the bundle as activated to after it is installed 
-					bundleCommand.registerBundleProject(project, bundle, isInstalled);
+					bundleRegion.registerBundleProject(project, bundle, isInstalled);
 					// Adopt any external operations on bundle in an active workspace
 					bundleTransition.removePending(project, Transition.EXTERNAL);
 					if (isInstalled) {
@@ -220,7 +218,7 @@ public abstract class NatureJob extends BundleJob {
 						description.setNatureIds(newNatures);
 						project.setDescription(description, null);
 						if (InPlace.get().getMsgOpt().isBundleOperations()) {
-							Bundle bundle = bundleRegion.get(project);
+							Bundle bundle = bundleRegion.getBundle(project);
 							if (null == bundle) {
 								addTrace(Msg.DISABLE_NATURE_TRACE, new Object[] {project.getName()}, project);
 							} else {
@@ -239,7 +237,7 @@ public abstract class NatureJob extends BundleJob {
 				description.setNatureIds(newNatures);
 				project.setDescription(description, null);
 				if (InPlace.get().getMsgOpt().isBundleOperations()) {
-					Bundle bundle = bundleRegion.get(project);
+					Bundle bundle = bundleRegion.getBundle(project);
 					if (null == bundle) {
 						addTrace(Msg.ENABLE_NATURE_TRACE, new Object[] {project.getName()}, project);
 					} else {

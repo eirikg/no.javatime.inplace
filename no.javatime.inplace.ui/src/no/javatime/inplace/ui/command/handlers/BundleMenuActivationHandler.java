@@ -32,9 +32,8 @@ import no.javatime.inplace.extender.intface.Extension;
 import no.javatime.inplace.log.intface.BundleLogView;
 import no.javatime.inplace.pl.console.intface.BundleConsoleFactory;
 import no.javatime.inplace.pl.dependencies.intface.DependencyDialog;
+import no.javatime.inplace.region.intface.BundleProject;
 import no.javatime.inplace.region.intface.InPlaceException;
-import no.javatime.inplace.region.project.BundleCandidates;
-import no.javatime.inplace.region.project.BundleProjectState;
 import no.javatime.inplace.ui.Activator;
 import no.javatime.inplace.ui.command.contributions.BundleCommandsContributionItems;
 import no.javatime.inplace.ui.views.BundleProperties;
@@ -94,7 +93,7 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 		if (so.saveModifiedFiles()) {
 			OpenProjectHandler.waitOnBuilder();
 			ActivateProjectJob activateJob = null;
-			if (BundleCandidates.getNatureEnabled().size() > 0) {
+			if (Activator.getBundleProjectService().getNatureEnabled().size() > 0) {
 				activateJob = new ActivateProjectJob(ActivateProjectJob.activateProjectsJobName, projects);
 			} else {
 				activateJob = new ActivateProjectJob(ActivateProjectJob.activateWorkspaceJobName, projects);
@@ -111,7 +110,7 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 	static public void deactivateHandler(Collection<IProject> projects) {
 
 		DeactivateJob deactivateJob = null;
-		if (BundleCandidates.getNatureEnabled().size() <= projects.size()) {
+		if (Activator.getBundleProjectService().getNatureEnabled().size() <= projects.size()) {
 			deactivateJob = new DeactivateJob(DeactivateJob.deactivateWorkspaceJobName, projects);			
 		} else {
 			deactivateJob = new DeactivateJob(DeactivateJob.deactivateJobName, projects);
@@ -284,18 +283,18 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 	 * @param projects to display in the bundle view
 	 */
 	protected void bundleViewHandler(Collection<IProject> projects) {
-
+		BundleProject bundleProject = Activator.getBundleProjectService();
 		if (!ViewUtil.isVisible(BundleView.ID)) {
 			ViewUtil.show(BundleView.ID);
-			updateBundleListPage(BundleProjectState.toJavaProjects(BundleCandidates.getInstallable()));
+			updateBundleListPage(bundleProject.toJavaProjects(bundleProject.getInstallable()));
 		} else {
 			BundleView bv = BundleCommandsContributionItems.getBundleView();
-			Collection<IJavaProject> javaProjects = BundleProjectState.toJavaProjects(projects);
+			Collection<IJavaProject> javaProjects = bundleProject.toJavaProjects(projects);
 			int size = javaProjects.size();
 			// Show list page
 			if (bv.isDetailsPageActive()) {
 				if (size <= 1) {
-					bv.showProjects(BundleProjectState.toJavaProjects(BundleCandidates.getInstallable()), true);
+					bv.showProjects(bundleProject.toJavaProjects(bundleProject.getInstallable()), true);
 				} else {
 					bv.showProjects(javaProjects, true);
 				}
@@ -445,7 +444,7 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 			// The Java project must also be a plug-in project
 			if (null != javaProject) {
 				try {
-					if (!javaProject.getProject().hasNature(BundleProjectState.PLUGIN_NATURE_ID)) {
+					if (!javaProject.getProject().hasNature(BundleProject.PLUGIN_NATURE_ID)) {
 						return null;
 					}
 				} catch (Exception e) {

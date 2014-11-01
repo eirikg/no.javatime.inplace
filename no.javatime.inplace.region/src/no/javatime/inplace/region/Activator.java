@@ -8,12 +8,16 @@ import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.extender.intface.Extenders;
 import no.javatime.inplace.extender.intface.Extension;
 import no.javatime.inplace.region.intface.BundleCommand;
+import no.javatime.inplace.region.intface.BundleProject;
+import no.javatime.inplace.region.intface.BundleProjectDescription;
 import no.javatime.inplace.region.intface.BundleRegion;
 import no.javatime.inplace.region.intface.BundleTransition;
 import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.manager.BundleCommandServiceFactory;
 import no.javatime.inplace.region.manager.BundleRegionServiceFactory;
 import no.javatime.inplace.region.manager.BundleTransitionServiceFactory;
+import no.javatime.inplace.region.project.BundleProjectDescriptionServiceFactory;
+import no.javatime.inplace.region.project.BundleProjectServiceFactory;
 import no.javatime.inplace.region.resolver.BundleResolveHookFactory;
 import no.javatime.inplace.region.state.BundleStateEvents;
 
@@ -38,16 +42,20 @@ public class Activator extends AbstractUIPlugin {
 
 	private BundleStateEvents bundleEvents = new BundleStateEvents();;
 
-	private ServiceTracker<IBundleProjectService, IBundleProjectService> bundleProjectTracker;
+	private static ServiceTracker<IBundleProjectService, IBundleProjectService> bundleProjectTracker;
 	private Extension<MessageOptions> messageOptions;
 	private Extension<CommandOptions> commandOptions;
 	private Extension<DependencyOptions> dependencyOptions;
+
 	private static Extender<BundleCommand> extenderCommand;
 	private static Extender<BundleRegion> extenderRegion;
 	private static Extender<BundleTransition> extenderTransition;
+	private static Extender<BundleProject> extenderBudleProject;
+	private static Extender<BundleProjectDescription> extenderBudleProjectDescription;
 
 	/**
-	 * Factory creating resolver hook objects for filtering and detection of duplicate bundle instances
+	 * Factory creating resolver hook objects for filtering and detection of duplicate bundle
+	 * instances
 	 */
 	protected BundleResolveHookFactory resolverHookFactory = new BundleResolveHookFactory();
 
@@ -61,39 +69,45 @@ public class Activator extends AbstractUIPlugin {
 
 	/*
 	 * (non-Javadoc)
+	 * 
 	 * @see org.eclipse.ui.plugin.AbstractUIPlugin#start(org.osgi.framework.BundleContext)
 	 */
 	public void start(BundleContext context) throws Exception {
 		super.start(context);
 		plugin = this;
-		Activator.context = context;		
+		Activator.context = context;
 		registerResolverHook();
 		Activator.context.addBundleListener(bundleEvents);
 
-		extenderCommand = Extenders.register(context.getBundle(), BundleCommand.class.getName(), 
-				new BundleCommandServiceFactory(),null);
-		//BundleCommandImpl.INSTANCE.initFrameworkWiring();
-		extenderRegion = Extenders.register(context.getBundle(), BundleRegion.class.getName(), 
-				new BundleRegionServiceFactory(),null);
-		extenderTransition = Extenders.register(context.getBundle(), BundleTransition.class.getName(), 
-				new BundleTransitionServiceFactory(),null);
+		extenderCommand = Extenders.register(context.getBundle(), BundleCommand.class.getName(),
+				new BundleCommandServiceFactory(), null);
+		extenderRegion = Extenders.register(context.getBundle(), BundleRegion.class.getName(),
+				new BundleRegionServiceFactory(), null);
+		extenderTransition = Extenders.register(context.getBundle(), BundleTransition.class.getName(),
+				new BundleTransitionServiceFactory(), null);
+		extenderBudleProject = Extenders.register(context.getBundle(), BundleProject.class.getName(),
+				new BundleProjectServiceFactory(), null);
+		bundleProjectTracker = new ServiceTracker<IBundleProjectService, IBundleProjectService>(
+				context, IBundleProjectService.class.getName(), null);
+		bundleProjectTracker.open();
+		extenderBudleProjectDescription = Extenders.register(context.getBundle(),
+				BundleProjectDescription.class.getName(), new BundleProjectDescriptionServiceFactory(),
+				null);
 
-		commandOptions = Extenders.getExtension(CommandOptions.class.getName()); 
+		commandOptions = Extenders.getExtension(CommandOptions.class.getName());
 		messageOptions = Extenders.getExtension(MessageOptions.class.getName());
 		dependencyOptions = Extenders.getExtension(DependencyOptions.class.getName());
-		bundleProjectTracker =  new ServiceTracker<IBundleProjectService, IBundleProjectService>
-				(context, IBundleProjectService.class.getName(), null);
-		bundleProjectTracker.open();
 	}
 
 	/*
 	 * (non-Javadoc)
+	 * 
 	 * @see org.eclipse.ui.plugin.AbstractUIPlugin#stop(org.osgi.framework.BundleContext)
 	 */
 	public void stop(BundleContext context) throws Exception {
 		Activator.context.removeBundleListener(bundleEvents);
 		bundleProjectTracker.close();
-		bundleProjectTracker = null;		
+		bundleProjectTracker = null;
 		unregisterResolverHook();
 		super.stop(context);
 		plugin = null;
@@ -112,6 +126,14 @@ public class Activator extends AbstractUIPlugin {
 		return extenderTransition;
 	}
 
+	public static Extender<BundleProject> getExtenderBundleProject() {
+		return extenderBudleProject;
+	}
+
+	public static Extender<BundleProjectDescription> getExtenderBundleProjectDescription() {
+		return extenderBudleProjectDescription;
+	}
+
 	/**
 	 * Obtain the resolver hook factory for singletons.
 	 * 
@@ -122,8 +144,8 @@ public class Activator extends AbstractUIPlugin {
 	}
 
 	public void registerResolverHook() {
-		resolveHookRegistration = getContext().registerService(ResolverHookFactory.class, resolverHookFactory,
-				null);		
+		resolveHookRegistration = getContext().registerService(ResolverHookFactory.class,
+				resolverHookFactory, null);
 	}
 
 	/**
@@ -135,21 +157,21 @@ public class Activator extends AbstractUIPlugin {
 		resolveHookRegistration.unregister();
 	}
 
-
 	/**
 	 * Finds and return the bundle description for a given project.
+	 * 
 	 * @param project to get the bundle description for
 	 * @return the bundle description for the specified project
 	 * @throws InPlaceException if the description could not be obtained or is invalid
 	 */
-	public IBundleProjectDescription getBundleDescription(IProject project) throws InPlaceException {
+	public static IBundleProjectDescription getBundleDescription(IProject project) throws InPlaceException {
 
 		IBundleProjectService bundleProjectService = null;
 
 		bundleProjectService = bundleProjectTracker.getService();
-			if (null == bundleProjectService) {
-				throw new InPlaceException("invalid_project_description_service", project.getName());	
-			}
+		if (null == bundleProjectService) {
+			throw new InPlaceException("invalid_project_description_service", project.getName());
+		}
 		try {
 			return bundleProjectService.getDescription(project);
 		} catch (CoreException e) {
@@ -162,12 +184,12 @@ public class Activator extends AbstractUIPlugin {
 		}
 	}
 
-	public IBundleProjectService getBundleProjectService(IProject project) throws InPlaceException {
+	public static IBundleProjectService getBundleProjectService(IProject project) throws InPlaceException {
 
 		IBundleProjectService bundleProjectService = null;
 		bundleProjectService = bundleProjectTracker.getService();
 		if (null == bundleProjectService) {
-			throw new InPlaceException("invalid_project_description_service", project.getName());	
+			throw new InPlaceException("invalid_project_description_service", project.getName());
 		}
 		return bundleProjectService;
 	}
@@ -180,19 +202,19 @@ public class Activator extends AbstractUIPlugin {
 	 * @throws InPlaceException if the command options service returns null
 	 */
 	public CommandOptions getCommandOptionsService() throws InPlaceException, ExtenderException {
-		
+
 		CommandOptions cmdOpt = commandOptions.getService();
 		if (null == cmdOpt) {
-			throw new InPlaceException("invalid_service", CommandOptions.class.getName());			
+			throw new InPlaceException("invalid_service", CommandOptions.class.getName());
 		}
 		return cmdOpt;
 	}
 
-	public MessageOptions msgOpt() throws InPlaceException {
+	public MessageOptions getMsgOptService() throws InPlaceException {
 
 		MessageOptions msgOpt = messageOptions.getService();
 		if (null == msgOpt) {
-			throw new InPlaceException("invalid_service", MessageOptions.class.getName());			
+			throw new InPlaceException("invalid_service", MessageOptions.class.getName());
 		}
 		return msgOpt;
 	}
@@ -200,14 +222,14 @@ public class Activator extends AbstractUIPlugin {
 	public DependencyOptions getDependencyOptionsService() throws InPlaceException {
 		DependencyOptions dpOpt = dependencyOptions.getService();
 		if (null == dpOpt) {
-			throw new InPlaceException("invalid_service", DependencyOptions.class.getName());			
+			throw new InPlaceException("invalid_service", DependencyOptions.class.getName());
 		}
 		return dpOpt;
 	}
 
 	/**
 	 * Returns the shared instance
-	 *
+	 * 
 	 * @return the shared instance
 	 */
 	public static Activator getDefault() {

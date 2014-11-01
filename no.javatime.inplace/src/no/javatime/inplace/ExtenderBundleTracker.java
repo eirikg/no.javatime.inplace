@@ -29,6 +29,7 @@ public class ExtenderBundleTracker extends BundleTracker<Extender<?>> {
 	public Extender<?> addingBundle(Bundle bundle, BundleEvent event) {
 
 		try { 
+			// Get the service name from the bundle providing the service
 			String bundleLogSvcName = bundle.getHeaders().get(BundleLog.BUNDLE_LOG_HEADER);
 			// Extend and register the bundle log as a service if not registered by others
 			if (null != bundleLogSvcName && null == Extenders.getExtender(BundleLog.class.getName())) {

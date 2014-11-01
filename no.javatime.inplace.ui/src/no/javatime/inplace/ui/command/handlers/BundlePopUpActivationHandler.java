@@ -13,7 +13,6 @@ package no.javatime.inplace.ui.command.handlers;
 import java.util.Collections;
 import java.util.Map;
 
-import no.javatime.inplace.bundleproject.BundleProjectSettings;
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.region.closure.BuildErrorClosure;
 import no.javatime.inplace.region.intface.InPlaceException;
@@ -151,7 +150,7 @@ public class BundlePopUpActivationHandler extends BundleMenuActivationHandler im
 			IProject project = javaProject.getProject();
 			try {
 				// Set current activation policy from manifest
-				boolean isLazy = BundleProjectSettings.getActivationPolicy(project);
+				boolean isLazy = Activator.getBundleProjectDescriptionService().getActivationPolicy(project);
 				element.setChecked(!isLazy);
 			} catch (InPlaceException e) {
 				// Don't spam this meassage.

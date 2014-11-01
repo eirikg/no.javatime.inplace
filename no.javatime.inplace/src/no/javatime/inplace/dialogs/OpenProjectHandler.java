@@ -16,7 +16,6 @@ import java.util.LinkedHashSet;
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundlejobs.BundleJob;
 import no.javatime.inplace.msg.Msg;
-import no.javatime.inplace.region.project.BundleProjectState;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 
@@ -68,7 +67,7 @@ public class OpenProjectHandler extends SaveScopeResourcesHandler {
 		if (!isDirty) {
 			return Boolean.TRUE;
 		}	
-		Collection<IProject> projects = BundleProjectState.getProjects();
+		Collection<IProject> projects = InPlace.getBundleProjectService().getProjects();
     IPreferenceStore store = DebugUIPlugin.getDefault().getPreferenceStore();
     String save = store.getString(IInternalDebugUIConstants.PREF_SAVE_DIRTY_EDITORS_BEFORE_LAUNCH);
     int ret = showSaveDialog(projects.toArray(new IProject[projects.size()]), !save.equals(MessageDialogWithToggle.NEVER), save.equals(MessageDialogWithToggle.PROMPT));
@@ -176,7 +175,7 @@ public class OpenProjectHandler extends SaveScopeResourcesHandler {
 	 */
 	public Boolean areResourcesDirty () {
 		
-		Collection<IProject> projects = BundleProjectState.getProjects();	
+		Collection<IProject> projects = InPlace.getBundleProjectService().getProjects();	
 		IResource[] resources = getScopedDirtyResources(projects.toArray(new IProject[projects.size()]));
 		if (resources.length > 0) {
 			this.dirtyProjects.clear();

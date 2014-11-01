@@ -14,7 +14,6 @@ import java.util.Collection;
 import java.util.Collections;
 
 import no.javatime.inplace.InPlace;
-import no.javatime.inplace.bundleproject.BundleProjectSettings;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Operation;
 import no.javatime.inplace.msg.Msg;
@@ -87,10 +86,6 @@ public class StopJob extends BundleJob {
 		super(name, project);
 	}
 	
-	public StopJob(String name, Bundle bundle) {
-		super(name, BundleProjectSettings.getProject(bundle));
-	}
-
 	/**
 	 * Runs the bundle(s) start operation.
 	 * 

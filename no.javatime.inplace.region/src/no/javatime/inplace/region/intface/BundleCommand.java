@@ -4,7 +4,6 @@ import java.io.InputStream;
 import java.util.Collection;
 import java.util.List;
 
-import no.javatime.inplace.region.project.BundleCandidates;
 import no.javatime.inplace.region.resolver.BundleResolveHookFactory;
 import no.javatime.inplace.region.state.BundleStateEvents;
 
@@ -35,7 +34,7 @@ public interface BundleCommand {
 	 * internal bundle state
 	 * <p>
 	 * The activation status of a project can be obtained from
-	 * {@link BundleCandidates#isNatureEnabled(IProject) isProjectActivated(IProject)}. A project is
+	 * {@link BundleProject#isNatureEnabled(IProject) isProjectActivated(IProject)}. A project is
 	 * activated before the bundle and is said to be activated when assigned an internal nature.
 	 * <p>
 	 * The location identifier is obtained from {@link #getBundleLocationIdentifier(IProject)} .
@@ -55,7 +54,6 @@ public interface BundleCommand {
 	 * @throws ProjectLocationException if the specified project is null or the location of the
 	 * specified project could not be found
 	 * @see #install(IProject)
-	 * @see #registerBundleNode(IProject, Bundle, Boolean)
 	 * @see BundleStateEvents#bundleChanged(BundleEvent)
 	 */
 	public Bundle install(IProject project, Boolean activate) throws InPlaceException,
@@ -228,20 +226,6 @@ public interface BundleCommand {
 	public String getStateName(FrameworkEvent event);
 
 	/**
-	 * The bundle context object.
-	 * 
-	 * @return the bundle context object for this bundle
-	 */
-	public BundleContext getContext();
-
-	/**
-	 * The framework wiring object.
-	 * 
-	 * @return the framework wiring object used by this bundle manager
-	 */
-	public FrameworkWiring getFrameworkWiring();
-
-	/**
 	 * Convenience method that returns the current revision of the specified bundle.
 	 * 
 	 * @param bundle object of an installed bundle
@@ -261,54 +245,6 @@ public interface BundleCommand {
 	 * @see Bundle#adapt(Class)
 	 */
 	public List<BundleRevision> getBundleRevisions(Bundle bundle) throws InPlaceException;
-
-	/**
-	 * Register the specified project as a workspace region bundle project.
-	 * <p>
-	 * The bundle and the project is registered automatically when installed. When the same project is
-	 * registered multiple times the bundle and the activation status of the bundle is updated and any
-	 * additional information about the bundle project is kept.
-	 * 
-	 * @param project project to register. Must not be null
-	 * @param bundle bundle to register. May be null
-	 * @param acivateBundle true to mark the bundle as activated and false to mark the bundle as
-	 * deactivated.
-	 * @see #unregisterBundleProject(IProject)
-	 * @see #install(IProject, Boolean)
-	 */
-	public void registerBundleProject(IProject project, Bundle bundle, boolean activateBundle);
-
-	/**
-	 * Unregister the specified workspace region project. Unregistering a project also unregisters
-	 * it's associated bundle
-	 * 
-	 * @param bundle bundle project to unregister
-	 * @see #registerBundleProject(IProject, Bundle, boolean)
-	 * @see #isBundleProjectRegistered(IProject)
-	 * @see #uninstall(Bundle, Boolean)
-	 */
-	public void unregisterBundleProject(IProject project);
-
-	/**
-	 * Unregister a workspace bundle from the workspace region. The bundle activation status is set to
-	 * false and the bundle is removed from it associated project.
-	 * <p>
-	 * If the registered project associated with the bundle (the bundle project) is inaccessible the
-	 * project is also removed (unregistered) from the region. 
-	 * 
-	 * @param bundle bundle to unregister form the workspace region.
-	 * @see #unregisterBundleProject(IProject)
-	 * @see #registerBundleProject(IProject, Bundle, boolean)
-	 */
-	public void unregisterBundle(Bundle bundle);
-
-	/**
-	 * Check if the specified project is registered as a workspace bundle project
-	 * 
-	 * @param project to check for registration as a workspace bundle project
-	 * @return true if bundle project is registered as a bundle project and false if not
-	 */
-	public boolean isBundleProjectRegistered(IProject project);
 
 	public Bundle getCurrentBundle();
 

@@ -14,12 +14,11 @@ import no.javatime.inplace.region.closure.BuildErrorClosure;
 import no.javatime.inplace.region.closure.BuildErrorClosure.ActivationScope;
 import no.javatime.inplace.region.closure.CircularReferenceException;
 import no.javatime.inplace.region.closure.ProjectSorter;
+import no.javatime.inplace.region.intface.BundleProject;
 import no.javatime.inplace.region.intface.BundleRegion;
 import no.javatime.inplace.region.intface.BundleTransition;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
 import no.javatime.inplace.region.intface.BundleTransition.TransitionError;
-import no.javatime.inplace.region.project.BundleCandidates;
-import no.javatime.inplace.region.project.BundleProjectState;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
@@ -54,7 +53,7 @@ public class UpdateScheduler {
 
 		UpdateJob updateJob = new UpdateJob(UpdateJob.updateJobName);
 		for (IProject project : projects) {
-			if (BundleCandidates.isNatureEnabled(project)
+			if (InPlace.getBundleProjectService().isNatureEnabled(project)
 					&& InPlace.getBundleTransitionService().containsPending(project, Transition.UPDATE, false)) {
 				addProjectToUpdateJob(project, updateJob);
 			}
@@ -113,11 +112,11 @@ public class UpdateScheduler {
 	 * activated bundles with build errors when resolved.
 	 * </ol>
 	 * 
-	 * @param bundleProject to add to the specified update job or to be ignored
+	 * @param project to add to the specified update job or to be ignored
 	 * @param updateJob the job to add the specified project to
 	 * @return true if the specified project is added to the specified update job and false if not
 	 */
-	static public boolean addProjectToUpdateJob(IProject bundleProject, UpdateJob updateJob) {
+	static public boolean addProjectToUpdateJob(IProject project, UpdateJob updateJob) {
 
 		boolean update = true;
 		// Do not update when there are activated requiring projects or deactivated proving projects
@@ -127,11 +126,12 @@ public class UpdateScheduler {
 		// capabilities from the project to update
 		try {
 			BuildErrorClosure be = new BuildErrorClosure(
-					Collections.<IProject> singletonList(bundleProject), Transition.UPDATE, Closure.REQUIRING);
+					Collections.<IProject> singletonList(project), Transition.UPDATE, Closure.REQUIRING);
+			BundleProject bundlePrject = InPlace.getBundleProjectService();
 			if (be.hasBuildErrors()) {
 				if (InPlace.get().getMsgOpt().isBundleOperations()) {
 					String msg = NLS.bind(Msg.UPDATE_BUILD_ERROR_INFO, new Object[] {
-							bundleProject.getName(), BundleProjectState.formatProjectList(be.getBuildErrors()) });
+							project.getName(), bundlePrject.formatProjectList(be.getBuildErrors()) });
 					be.setBuildErrorHeaderMessage(msg);
 					IBundleStatus bundleStatus = be.getErrorClosureStatus();
 					if (null != bundleStatus) {
@@ -142,12 +142,12 @@ public class UpdateScheduler {
 			}
 			// Deactivated providing closure. Deactivated projects with build errors providing
 			// capabilities to project to update
-			be = new BuildErrorClosure(Collections.<IProject> singletonList(bundleProject),
+			be = new BuildErrorClosure(Collections.<IProject> singletonList(project),
 					Transition.UPDATE, Closure.PROVIDING, Bundle.UNINSTALLED, ActivationScope.DEACTIVATED);
 			if (be.hasBuildErrors()) {
 				if (InPlace.get().getMsgOpt().isBundleOperations()) {
 					String msg = NLS.bind(Msg.UPDATE_BUILD_ERROR_INFO, new Object[] {
-							bundleProject.getName(), BundleProjectState.formatProjectList(be.getBuildErrors()) });
+							project.getName(), bundlePrject.formatProjectList(be.getBuildErrors()) });
 					be.setBuildErrorHeaderMessage(msg);
 					IBundleStatus bundleStatus = be.getErrorClosureStatus();
 					if (null != bundleStatus) {
@@ -157,12 +157,12 @@ public class UpdateScheduler {
 				update = false;
 			}
 			if (update) {
-				updateJob.addPendingProject(bundleProject);
+				updateJob.addPendingProject(project);
 			}
 		} catch (CircularReferenceException e) {
 			String msg = ExceptionMessage.getInstance().formatString("circular_reference_termination");
 			IBundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID,
-					bundleProject, msg, null);
+					project, msg, null);
 			multiStatus.add(e.getStatusList());
 			StatusManager.getManager().handle(multiStatus, StatusManager.LOG);
 			update = false;
@@ -200,7 +200,7 @@ public class UpdateScheduler {
 				updateJob.getPendingProjects(), true);
 		if (installedRequirers.size() > 0) {
 			for (IProject project : installedRequirers) {
-				Bundle bundle = bundleRegion.get(project);
+				Bundle bundle = bundleRegion.getBundle(project);
 				if (null != bundle
 						&& (InPlace.getBundleCommandService().getState(bundle) & (Bundle.INSTALLED | Bundle.UNINSTALLED)) != 0) {
 					if (null == postActivateBundleJob) {
@@ -248,9 +248,8 @@ public class UpdateScheduler {
 		Map<IProject, String> symbolicKeymap = getModifiedSymbolicKey(updateJob.getPendingProjects());
 		if (symbolicKeymap.size() > 0) {
 			// Install/update and update all projects that are duplicates to the current symbolic key
-			// (before this
-			// update) of changed bundles
-			Collection<IProject> projects = BundleCandidates.getInstallable();
+			// (before this update) of changed bundles
+			Collection<IProject> projects = InPlace.getBundleProjectService().getInstallable();
 			projects.removeAll(symbolicKeymap.keySet());
 			for (IProject project : projects) {
 				String duplicateProjectKey = bundleRegion.getSymbolicKey(null, project);
@@ -258,7 +257,7 @@ public class UpdateScheduler {
 					continue;
 				}
 				if (symbolicKeymap.containsValue(duplicateProjectKey)) {
-					Bundle bundle = bundleRegion.get(project);
+					Bundle bundle = bundleRegion.getBundle(project);
 					if (null == bundle) {
 						if (bundleTransition.getError(project) == TransitionError.DUPLICATE) {
 							if (null == postActivateBundleJob) {
@@ -297,7 +296,7 @@ public class UpdateScheduler {
 
 		for (IProject project : projects) {
 			String newProjectKey = bundleRegion.getSymbolicKey(null, project);
-			Bundle bundle = bundleRegion.get(project);
+			Bundle bundle = bundleRegion.getBundle(project);
 			// Do not include activated projects that are not installed. They are in an erroneous state
 			if (newProjectKey.length() > 0 && null != bundle) {
 				String oldBundleKey = bundleRegion.getSymbolicKey(bundle, null);

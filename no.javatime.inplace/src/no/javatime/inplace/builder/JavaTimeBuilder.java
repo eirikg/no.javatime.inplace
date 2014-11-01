@@ -23,15 +23,14 @@ import no.javatime.inplace.region.closure.CircularReferenceException;
 import no.javatime.inplace.region.closure.ProjectDependencies;
 import no.javatime.inplace.region.closure.ProjectSorter;
 import no.javatime.inplace.region.intface.BundleCommand;
+import no.javatime.inplace.region.intface.BundleProject;
+import no.javatime.inplace.region.intface.BundleProjectDescription;
 import no.javatime.inplace.region.intface.BundleRegion;
 import no.javatime.inplace.region.intface.BundleTransition;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
 import no.javatime.inplace.region.intface.BundleTransition.TransitionError;
 import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.intface.ProjectLocationException;
-import no.javatime.inplace.region.project.BundleCandidates;
-import no.javatime.inplace.region.project.BundleProjectState;
-import no.javatime.inplace.region.project.ManifestOptions;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
@@ -78,6 +77,7 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 	public static final String JAVATIME_BUILDER_ID = "no.javatime.inplace.JavaTimeBuilder";
 
 	private static Collection<IBundleStatus> builds = new ArrayList<IBundleStatus>();
+	final private BundleProject bundleProject = InPlace.getBundleProjectService();
 
 	public JavaTimeBuilder() {
 	}
@@ -115,7 +115,7 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 						TraceMessage.getInstance().getString("changed_resource", resource.getName());
 				}
 				if (resource instanceof IFile
-						&& resource.getName().endsWith(ManifestOptions.MANIFEST_FILE_NAME)) {
+						&& resource.getName().endsWith(BundleProjectDescription.MANIFEST_FILE_NAME)) {
 					if (Category.DEBUG && Category.getState(Category.build))
 						TraceMessage.getInstance().getString("changed_resource", resource.getName());
 				}
@@ -135,7 +135,7 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 					TraceMessage.getInstance().getString("full_build_resource", resource.getName());
 			}
 			if (resource instanceof IFile
-					&& resource.getName().endsWith(ManifestOptions.MANIFEST_FILE_NAME)) {
+					&& resource.getName().endsWith(BundleProjectDescription.MANIFEST_FILE_NAME)) {
 				if (Category.DEBUG && Category.getState(Category.build))
 					TraceMessage.getInstance().getString("full_build_resource", resource.getName());
 			}
@@ -162,7 +162,7 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 				incrementalBuild(delta, monitor);
 			}
 			BundleRegion bundleRegion = InPlace.getBundleRegionService();
-			Bundle bundle = bundleRegion.get(project);
+			Bundle bundle = bundleRegion.getBundle(project);
 			// Uninstalled project with no deltas
 			IResourceDelta[] resourceDelta = null;
 			if (null != delta) {
@@ -192,14 +192,14 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 			// Activated project is imported, opened or has new requirements on UI plug-in(s), when UI
 			// plug-ins are not allowed
 			if (!InPlace.get().getCommandOptionsService().isAllowUIContributions()
-					&& BundleCandidates.getUIContributors().contains(project)) {
+					&& bundleProject.getUIContributors().contains(project)) {
 				if (null == bundle) {
-					if (!bundleCommand.isBundleProjectRegistered(project)) {
-						bundleCommand.registerBundleProject(project, bundle, null != bundle ? true : false);
+					if (!bundleRegion.isProjectRegistered(project)) {
+						bundleRegion.registerBundleProject(project, bundle, null != bundle ? true : false);
 					}
 					// When an activated project is imported or opened, install in an activated workspace
 					// before deactivating the bundle
-					if (BundleCandidates.getNatureEnabled().size() > 1) {
+					if (bundleProject.getNatureEnabled().size() > 1) {
 						bundleTransition.addPending(project, Transition.INSTALL);
 					}
 				}
@@ -235,8 +235,8 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 						}
 					} else {
 						// Always tag an uninstalled activated project for bundle activation
-						if (!bundleCommand.isBundleProjectRegistered(project)) {
-							bundleCommand.registerBundleProject(project, bundle, null != bundle ? true : false);
+						if (!bundleRegion.isProjectRegistered(project)) {
+							bundleRegion.registerBundleProject(project, bundle, null != bundle ? true : false);
 							bundleTransition.addPending(project, Transition.ACTIVATE_BUNDLE);
 						}
 					}
@@ -255,7 +255,7 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 	protected void fullBuild(final IProgressMonitor monitor) throws CoreException {
 		if (InPlace.get().getMsgOpt().isBundleOperations()) {
 			IProject project = getProject();
-			Bundle bundle = InPlace.getBundleRegionService().get(project);
+			Bundle bundle = InPlace.getBundleRegionService().getBundle(project);
 			String msg = NLS.bind(Msg.FULL_BUILD_TRACE, new Object[] { project.getName(),
 					project.getLocation().toOSString() });
 			IBundleStatus status = new BundleStatus(StatusCode.INFO, bundle, project, msg, null);
@@ -269,7 +269,7 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 			throws CoreException {
 		if (InPlace.get().getMsgOpt().isBundleOperations()) {
 			IProject project = getProject();
-			Bundle bundle = InPlace.getBundleRegionService().get(project);
+			Bundle bundle = InPlace.getBundleRegionService().getBundle(project);
 			String msg = NLS.bind(Msg.INCREMENTAL_BUILD_TRACE, new Object[] { project.getName(),
 					project.getLocation().toOSString() });
 			IBundleStatus status = new BundleStatus(StatusCode.INFO, bundle, project, msg, null);
@@ -281,10 +281,9 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 
 	private boolean isMoveOperation(IProject project) throws ProjectLocationException {
 
-		String projectLoaction = BundleProjectState.getLocationIdentifier(project,
-				BundleProjectState.BUNDLE_REF_LOC_SCHEME);
+		String projectLoaction = InPlace.getBundleRegionService().getProjectLocationIdentifier(project, null);
 		String bundleLocation = InPlace.getBundleRegionService().getBundleLocationIdentifier(project);
-		if (!projectLoaction.equals(bundleLocation) && BundleCandidates.isInstallable(project)) {
+		if (!projectLoaction.equals(bundleLocation) && bundleProject.isInstallable(project)) {
 			return true;
 		}
 		return false;
@@ -324,7 +323,7 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 			}
 			if (!cycle && InPlace.get().getMsgOpt().isBundleOperations()) {
 				String msg = null;
-				Bundle bundle = InPlace.getBundleRegionService().get(project);
+				Bundle bundle = InPlace.getBundleRegionService().getBundle(project);
 				if (InPlace.get().getCommandOptionsService().isUpdateOnBuild()) {
 					msg = NLS.bind(Msg.BUILD_ERROR_UPDATE_TRACE, project.getName());
 				} else {
@@ -334,7 +333,7 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 						null);
 				if (be.hasBuildErrors()) {
 					String buildMsg = NLS.bind(Msg.UPDATE_BUILD_ERROR_INFO, new Object[] { project.getName(),
-							BundleProjectState.formatProjectList(be.getBuildErrors()) });
+							bundleProject.formatProjectList(be.getBuildErrors()) });
 					be.setBuildErrorHeaderMessage(buildMsg);
 					IBundleStatus errorStatus = be.getErrorClosureStatus();
 					buildStatus.add(errorStatus);
@@ -369,9 +368,9 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 		try {
 			ProjectSorter ps = new ProjectSorter();
 			Collection<IProject> projects = ps.sortProvidingProjects(Collections.singleton(project));
-			Collection<IProject> uiContributers = BundleCandidates.getUIContributors();
+			Collection<IProject> uiContributers = bundleProject.getUIContributors();
 			projects.retainAll(uiContributers);
-			if (!BundleCandidates.isUIContributor(project)) {
+			if (!bundleProject.isUIContributor(project)) {
 				projects.remove(project);
 			}
 			IBundleStatus buildStatus = null;
@@ -382,7 +381,7 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 
 			} else {
 				String msg = WarnMessage.getInstance().formatString("uicontributors_deactivate",
-						project.getName(), BundleProjectState.formatProjectList(projects));
+						project.getName(), bundleProject.formatProjectList(projects));
 				buildStatus = new BundleStatus(StatusCode.WARNING, InPlace.PLUGIN_ID, project, msg, null);
 				msg = WarnMessage.getInstance().formatString("uicontributors_deactivate_info_deactivate",
 						project.getName());

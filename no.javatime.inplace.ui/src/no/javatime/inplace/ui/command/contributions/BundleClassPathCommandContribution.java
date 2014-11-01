@@ -3,14 +3,11 @@ package no.javatime.inplace.ui.command.contributions;
 import java.util.ArrayList;
 import java.util.Collection;
 
-import no.javatime.inplace.bundleproject.BundleProjectSettings;
 import no.javatime.inplace.dl.preferences.intface.MessageOptions;
 import no.javatime.inplace.extender.intface.Extenders;
 import no.javatime.inplace.extender.intface.Extension;
 import no.javatime.inplace.region.closure.BuildErrorClosure;
 import no.javatime.inplace.region.intface.InPlaceException;
-import no.javatime.inplace.region.project.BundleCandidates;
-import no.javatime.inplace.region.project.BundleProjectState;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import no.javatime.inplace.ui.Activator;
@@ -41,8 +38,7 @@ public class BundleClassPathCommandContribution extends BundleMainCommandsContri
 
 		ArrayList<ContributionItem> contributions = new ArrayList<ContributionItem>();
 
-		ArrayList<ContributionItem> classPathContributions = addClassPath(BundleCandidates
-				.getPlugIns());
+		ArrayList<ContributionItem> classPathContributions = addClassPath(Activator.getBundleProjectService().getPlugIns());
 		if (null != classPathContributions) {
 			contributions.addAll(classPathContributions);
 		}
@@ -70,7 +66,7 @@ public class BundleClassPathCommandContribution extends BundleMainCommandsContri
 			for (IProject project : projects) {
 				try {
 					if (!BuildErrorClosure.hasManifestBuildErrors(project)) {
-						if (!BundleProjectSettings.isDefaultOutputFolder(project)) {
+						if (!Activator.getBundleProjectDescriptionService().isDefaultOutputFolder(project)) {
 							nAdd++;
 						} else {
 							nRemove++;
@@ -91,7 +87,7 @@ public class BundleClassPathCommandContribution extends BundleMainCommandsContri
 						&& (optServicet.isInfoMessages() || optServicet.isBundleEvents() || optServicet
 								.isBundleOperations())) {
 					String msg = WarnMessage.getInstance().formatString("error_not_update_classpath",
-							BundleProjectState.formatProjectList(errProjects));
+							Activator.getBundleProjectService().formatProjectList(errProjects));
 					StatusManager.getManager()
 							.handle(new BundleStatus(StatusCode.ERROR, Activator.PLUGIN_ID, msg, null),
 									StatusManager.LOG);

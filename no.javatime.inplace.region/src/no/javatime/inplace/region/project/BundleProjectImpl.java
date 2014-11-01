@@ -16,6 +16,7 @@ import java.util.LinkedHashSet;
 import no.javatime.inplace.region.Activator;
 import no.javatime.inplace.region.closure.CircularReferenceException;
 import no.javatime.inplace.region.closure.ProjectSorter;
+import no.javatime.inplace.region.intface.BundleProject;
 import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
@@ -29,7 +30,6 @@ import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.pde.core.project.IBundleProjectDescription;
 import org.eclipse.pde.core.project.IRequiredBundleDescription;
 import org.eclipse.ui.statushandlers.StatusManager;
-import org.osgi.framework.Bundle;
 
 /**
  * Utility to:
@@ -44,23 +44,22 @@ import org.osgi.framework.Bundle;
  * <p>
  * The workspace is activated if one or more projects have the JavaTime nature.
  */
-public class BundleCandidates {
+public class BundleProjectImpl extends BundleProjectStateImpl implements BundleProject {
+	
+	public final static BundleProjectImpl INSTANCE = new BundleProjectImpl();
+	final public static String JAVATIME_NATURE_ID = "no.javatime.inplace.builder.javatimenature";
 
-	/**
-	 * Find all projects that fulfill the requirements to be activated. Already activated projects and projects
-	 * that contributes to the UI when UI contributors are not allowed are not part of the returned collection
-	 * 
-	 * @return all projects that may be activated or an empty collection
-	 * @see #isCandidate(IProject)
+	/* (non-Javadoc)
+	 * @see no.javatime.inplace.region.project.BundleCandidates#getCandidates()
 	 */
-	public static Collection<IProject> getCandidates() {
+	public Collection<IProject> getCandidates() {
 
 		Collection<IProject> projects = new LinkedHashSet<IProject>();
 
-		for (IProject project : BundleProjectState.getProjects()) {
+		for (IProject project : BundleProjectImpl.INSTANCE.getProjects()) {
 			try {
-				if (project.isNatureEnabled(JavaCore.NATURE_ID) && project.isNatureEnabled(BundleProjectState.PLUGIN_NATURE_ID)
-						&& !BundleCandidates.isNatureEnabled(project)) {
+				if (project.isNatureEnabled(JavaCore.NATURE_ID) && project.isNatureEnabled(PLUGIN_NATURE_ID)
+						&& !BundleProjectImpl.INSTANCE.isNatureEnabled(project)) {
 					projects.add(project);
 				}
 			} catch (CoreException e) {
@@ -82,18 +81,14 @@ public class BundleCandidates {
 		return projects;
 	}
 
-	/**
-	 * Return all plug-in projects that have Java and plug-in nature enabled and not contributes to the UI if UI
-	 * contributors are not allowed
-	 * 
-	 * @return all plug-in projects with Java, plug-in nature and not contributing to the UI, when not allowed
-	 *         or an empty collection
+	/* (non-Javadoc)
+	 * @see no.javatime.inplace.region.project.BundleCandidates#getInstallable()
 	 */
-	public static Collection<IProject> getInstallable() {
+	public Collection<IProject> getInstallable() {
 		Collection<IProject> projects = new LinkedHashSet<IProject>();
-		for (IProject project : BundleProjectState.getProjects()) {
+		for (IProject project : BundleProjectImpl.INSTANCE.getProjects()) {
 			try {
-				if (project.isNatureEnabled(JavaCore.NATURE_ID) && project.isNatureEnabled(BundleProjectState.PLUGIN_NATURE_ID)) {
+				if (project.isNatureEnabled(JavaCore.NATURE_ID) && project.isNatureEnabled(PLUGIN_NATURE_ID)) {
 					projects.add(project);
 				}
 			} catch (CoreException e) {
@@ -115,17 +110,14 @@ public class BundleCandidates {
 		return projects;
 	}
 
-	/**
-	 * Return all plug-in projects that have the Java and plug-in nature enabled. 
-	 * Closed and non-existing projects are discarded
-	 * 
-	 * @return all plug-in projects with Java and plug-in nature or an empty collection
+	/* (non-Javadoc)
+	 * @see no.javatime.inplace.region.project.BundleCandidates#getPlugIns()
 	 */
-	public static Collection<IProject> getPlugIns() {
+	public Collection<IProject> getPlugIns() {
 		Collection<IProject> projects = new LinkedHashSet<IProject>();
-		for (IProject project : BundleProjectState.getProjects()) {
+		for (IProject project : BundleProjectImpl.INSTANCE.getProjects()) {
 			try {
-				if (project.hasNature(JavaCore.NATURE_ID) && project.isNatureEnabled(BundleProjectState.PLUGIN_NATURE_ID)) {
+				if (project.hasNature(JavaCore.NATURE_ID) && project.isNatureEnabled(PLUGIN_NATURE_ID)) {
 					projects.add(project);
 				}
 			} catch (CoreException e) {
@@ -135,14 +127,12 @@ public class BundleCandidates {
 		return projects;
 	}
 
-	/**
-	 * Checks if this project has the Java and plug-in nature enabled.
-	 * 
-	 * @return true if this is a Java plug-in project or false
+	/* (non-Javadoc)
+	 * @see no.javatime.inplace.region.project.BundleCandidates#isPlugIn(org.eclipse.core.resources.IProject)
 	 */
-	public static Boolean isPlugIn(IProject project) {
+	public Boolean isPlugIn(IProject project) {
 		try {
-			if (project.hasNature(JavaCore.NATURE_ID) && project.isNatureEnabled(BundleProjectState.PLUGIN_NATURE_ID)) {
+			if (project.hasNature(JavaCore.NATURE_ID) && project.isNatureEnabled(PLUGIN_NATURE_ID)) {
 				return true;
 			}
 		} catch (CoreException e) {
@@ -151,32 +141,24 @@ public class BundleCandidates {
 		return false;
 	}
 
-	/**
-	 * Checks if this project has the Java and plug-in or the JavaTime nature enabled. Projects in the UI name space are
-	 * included if UI contributed projects are allowed.
-	 * 
-	 * @return true if this is a Java plug-in or JavaTime project or false
+	/* (non-Javadoc)
+	 * @see no.javatime.inplace.region.project.BundleCandidates#isInstallable(org.eclipse.core.resources.IProject)
 	 */
-	public static Boolean isInstallable(IProject project) {
+	public Boolean isInstallable(IProject project) {
 
-		if (isCandidate(project) || BundleCandidates.isNatureEnabled(project)) {
+		if (isCandidate(project) || BundleProjectImpl.INSTANCE.isNatureEnabled(project)) {
 			return true;
 		}
 		return false;
 	}
 
-	/**
-	 * A project is a candidate project if it is not activated, has the plug-in and Java nature enabled, and not
-	 * contributes to the UI if UI contributors are not allowed
-	 * 
-	 * @param project to check for candidate nature attributes
-	 * @return true if project is not activated, a plug-in project with Java, plug-in nature and not
-	 *         contributing to the UI, when not allowed. Otherwise false.
+	/* (non-Javadoc)
+	 * @see no.javatime.inplace.region.project.BundleCandidates#isCandidate(org.eclipse.core.resources.IProject)
 	 */
-	public static Boolean isCandidate(IProject project) {
+	public Boolean isCandidate(IProject project) {
 		try {
-			if (project.hasNature(JavaCore.NATURE_ID) && project.isNatureEnabled(BundleProjectState.PLUGIN_NATURE_ID)
-					&& !BundleCandidates.isNatureEnabled(project)) {
+			if (project.hasNature(JavaCore.NATURE_ID) && project.isNatureEnabled(PLUGIN_NATURE_ID)
+					&& !BundleProjectImpl.INSTANCE.isNatureEnabled(project)) {
 				if (Activator.getDefault().getCommandOptionsService().isAllowUIContributions()) {
 					return true;
 				} else {
@@ -202,17 +184,14 @@ public class BundleCandidates {
 		return false;
 	}
 
-	/**
-	 * Get all plug-in projects that contributes to the UI and their requiring projects
-	 * 
-	 * @return set of plug-in projects contributing to the UI or an empty collection
-	 * @throws CircularReferenceException if cycles are detected in the project graph
+	/* (non-Javadoc)
+	 * @see no.javatime.inplace.region.project.BundleCandidates#getUIContributors()
 	 */
-	public static Collection<IProject> getUIContributors() throws CircularReferenceException {
+	public Collection<IProject> getUIContributors() throws CircularReferenceException {
 		Collection<IProject> projects = new LinkedHashSet<IProject>();
-		for (IProject project : BundleProjectState.getProjects()) {
+		for (IProject project : BundleProjectImpl.INSTANCE.getProjects()) {
 			try {
-				if (project.hasNature(JavaCore.NATURE_ID) && project.isNatureEnabled(BundleProjectState.PLUGIN_NATURE_ID)
+				if (project.hasNature(JavaCore.NATURE_ID) && project.isNatureEnabled(PLUGIN_NATURE_ID)
 						&& isUIContributor(project)) {
 					projects.add(project);
 				}
@@ -231,19 +210,15 @@ public class BundleCandidates {
 		return projects;
 	}
 
-	/**
-	 * Check if this project is dependent on the Eclipse UI plug-in (org.eclipse.ui)
-	 * 
-	 * @param project to check for dependency on the UI plug-in
-	 * @return true if this project is dependent on the UI plug-in, otherwise false
-	 * @throws InPlaceException if project is null or failed to get the bundle project description
+	/* (non-Javadoc)
+	 * @see no.javatime.inplace.region.project.BundleCandidates#isUIContributor(org.eclipse.core.resources.IProject)
 	 */
-	public static Boolean isUIContributor(IProject project) throws InPlaceException {
+	public Boolean isUIContributor(IProject project) throws InPlaceException {
 
 		if (null == project) {
 			throw new InPlaceException("project_null_location");
 		}
-		IBundleProjectDescription bundleProjDesc = Activator.getDefault().getBundleDescription(project);
+		IBundleProjectDescription bundleProjDesc = Activator.getBundleDescription(project);
 		if (null == bundleProjDesc) {
 			return false;
 		}
@@ -259,34 +234,24 @@ public class BundleCandidates {
 		return false;
 	}
 
-	/**
-	 * Check if a project is JavaTime nature enabled (activated). The condition is satisfied if one workspace
-	 * project is activated. This only implies that one or more projects are JavaTime enabled, and does not
-	 * necessary mean that the corresponding bundle is activated.
-	 * 
-	 * @return true if at least one project is activated and false if no projects are activated
+	/* (non-Javadoc)
+	 * @see no.javatime.inplace.region.project.BundleCandidates#isWorkspaceNatureEnabled()
 	 */
-	public static Boolean isWorkspaceNatureEnabled() {
-		for (IProject project : BundleProjectState.getProjects()) {
-			if (BundleCandidates.isNatureEnabled(project)) {
+	public Boolean isWorkspaceNatureEnabled() {
+		for (IProject project : BundleProjectImpl.INSTANCE.getProjects()) {
+			if (BundleProjectImpl.INSTANCE.isNatureEnabled(project)) {
 				return true;
 			}
 		}
 		return false;
 	}
 
-	/**
-	 * When a project has JavaTime nature enabled the project is activated.
-	 * 
-	 * @param project to check for JavaTime nature
-	 * @return true if JavaTime nature is enabled for the project and false if not
-	 * @see no.javatime.inplace.region.manager.BundleWorkspaceRegionImpl#isActivated(IProject)
-	 * @see no.javatime.inplace.region.manager.BundleWorkspaceRegionImpl#isActivated(Long)
-	 * @see no.javatime.inplace.region.manager.BundleWorkspaceRegionImpl#isActivated(Bundle)
+	/* (non-Javadoc)
+	 * @see no.javatime.inplace.region.project.BundleCandidates#isNatureEnabled(org.eclipse.core.resources.IProject)
 	 */
-	public static Boolean isNatureEnabled(IProject project) {
+	public Boolean isNatureEnabled(IProject project) {
 		try {
-			if (null != project && project.isNatureEnabled(BundleProjectState.JAVATIME_NATURE_ID)) {
+			if (null != project && project.isNatureEnabled(BundleProjectImpl.JAVATIME_NATURE_ID)) {
 				return true;
 			}
 		} catch (CoreException e) {
@@ -295,29 +260,24 @@ public class BundleCandidates {
 		return false;
 	}
 
-	/**
-	 * Filters out all projects in the workspace registered with the JavaTime nature
-	 * 
-	 * @return a list of projects with the JavaTime nature or an empty collection
+	/* (non-Javadoc)
+	 * @see no.javatime.inplace.region.project.BundleCandidates#getNatureEnabled()
 	 */
-	public static Collection<IProject> getNatureEnabled() {
+	public Collection<IProject> getNatureEnabled() {
 	
 		Collection<IProject> projects = new LinkedHashSet<IProject>();
 	
-		for (IProject project : BundleProjectState.getProjects()) {
+		for (IProject project : BundleProjectImpl.INSTANCE.getProjects()) {
 			if (isNatureEnabled(project)) {
 				projects.add(project);
 			}
 		}
 		return projects;
 	}
-	/**
-	 * Enables auto build
-	 * 
-	 * @param autoBuild true to enable and false to disable
-	 * @return previous state of auto build
+	/* (non-Javadoc)
+	 * @see no.javatime.inplace.region.project.BundleCandidates#setAutoBuild(java.lang.Boolean)
 	 */
-	public static Boolean setAutoBuild(Boolean autoBuild) {
+	public Boolean setAutoBuild(Boolean autoBuild) {
 		Boolean autoBuilding = isAutoBuilding();
 		IWorkspace workspace = ResourcesPlugin.getWorkspace();
 		try {
@@ -330,12 +290,10 @@ public class BundleCandidates {
 		return autoBuilding;
 	}
 
-	/**
-	 * A delegate for checking if auto build is enabled
-	 * 
-	 * @return true if auto build is enabled, false if not
+	/* (non-Javadoc)
+	 * @see no.javatime.inplace.region.project.BundleCandidates#isAutoBuilding()
 	 */
-	public static Boolean isAutoBuilding() {
+	public Boolean isAutoBuilding() {
 		IWorkspace workspace = ResourcesPlugin.getWorkspace();
 		return workspace.isAutoBuilding();
 	}

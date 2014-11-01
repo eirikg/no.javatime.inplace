@@ -257,7 +257,7 @@ public class Extenders {
 	}
 
 	/**
-	 * Get an extender to access its service, query its meta data and get an extension for the
+	 * Get an extender to access its service, query its meta data or get an extension handed out by the
 	 * extender
 	 * 
 	 * @param serviceInterfaceName one of possible multiple interface names of the extension bundle.

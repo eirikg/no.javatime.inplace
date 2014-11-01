@@ -22,11 +22,9 @@ import no.javatime.inplace.region.closure.BuildErrorClosure;
 import no.javatime.inplace.region.closure.BuildErrorClosure.ActivationScope;
 import no.javatime.inplace.region.closure.BundleClosures;
 import no.javatime.inplace.region.closure.CircularReferenceException;
+import no.javatime.inplace.region.intface.BundleTransition.Transition;
 import no.javatime.inplace.region.intface.BundleTransitionListener;
 import no.javatime.inplace.region.intface.InPlaceException;
-import no.javatime.inplace.region.intface.BundleTransition.Transition;
-import no.javatime.inplace.region.project.BundleCandidates;
-import no.javatime.inplace.region.project.BundleProjectState;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
@@ -184,10 +182,10 @@ public class DeactivateJob extends NatureJob {
 
 		// Disable nature of uninstalled projects
 		// TODO Optimize. Only get uninstalled bundles
-		Collection<IProject> installeableProjects = BundleCandidates.getInstallable();
+		Collection<IProject> installeableProjects = bundleProject.getInstallable();
 		for (IProject project : installeableProjects) {
 			// If null the bundle is not installed
-			if (null == bundleRegion.get(project)) {
+			if (null == bundleRegion.getBundle(project)) {
 				deactivateNature(Collections.<IProject>singletonList(project), new SubProgressMonitor(monitor, 1));
 				removePendingProject(project);
 			}
@@ -199,7 +197,7 @@ public class DeactivateJob extends NatureJob {
 		pendingBundles = closure.bundleDeactivation(pendingBundles, activatedBundles);
 		// Collection<IProject> pendingProjects = closure.projectDeactivation(getPendingProjects(), true);
 
-		resetPendingProjects(bundleRegion.getBundleProjects(pendingBundles));
+		resetPendingProjects(bundleRegion.getProjects(pendingBundles));
 		if (InPlace.get().getMsgOpt().isBundleOperations() && isCheckBuildErrors()) {
 			deactivateBuildErrorClosure(getPendingProjects());
 		}
@@ -210,7 +208,7 @@ public class DeactivateJob extends NatureJob {
 			InPlace.get().savePluginSettings(true, true);
 		}
 		if (activatedBundles.size() <= pendingBundles.size()) {
-//		if (BundleProjectState.getNatureEnabledProjects().size() <= pendingProjects()) {
+//		if (BundleProjectImpl.INSTANCE.getNatureEnabledProjects().size() <= pendingProjects()) {
 			// This is the last project(s) to deactivate, move all bundles to state uninstalled
 			Collection<Bundle> allBundles = bundleRegion.getBundles();
 			allBundles = closure.bundleDeactivation(allBundles, allBundles);
@@ -288,8 +286,8 @@ public class DeactivateJob extends NatureJob {
 		if (be.hasBuildErrors()) {
 			Collection<IProject> buildErrorClosures = be.getBuildErrorClosures();
 			String msg = NLS.bind(Msg.DEACTIVATE_BUILD_ERROR_INFO,
-					new Object[] { BundleProjectState.formatProjectList(buildErrorClosures),
-					BundleProjectState.formatProjectList(be.getBuildErrors()) });
+					new Object[] { bundleProject.formatProjectList(buildErrorClosures),
+					bundleProject.formatProjectList(be.getBuildErrors()) });
 			be.setBuildErrorHeaderMessage(msg);
 			IBundleStatus bundleStatus = be.getErrorClosureStatus();
 			if (null != bundleStatus) {

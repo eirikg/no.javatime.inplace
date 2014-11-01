@@ -17,11 +17,10 @@ import no.javatime.inplace.bundlejobs.ActivateProjectJob;
 import no.javatime.inplace.dialogs.OpenProjectHandler;
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.region.intface.BundleCommand;
+import no.javatime.inplace.region.intface.BundleProject;
 import no.javatime.inplace.region.intface.BundleRegion;
-import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
-import no.javatime.inplace.region.project.BundleCandidates;
-import no.javatime.inplace.region.project.ManifestOptions;
+import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import no.javatime.inplace.ui.Activator;
@@ -56,8 +55,9 @@ public class BundleMainCommandsContributionItems extends BundleCommandsContribut
 	protected IContributionItem[] getContributionItems() {
 
 		ArrayList<ContributionItem> contributions = new ArrayList<ContributionItem>();
-		Collection<IProject> candidateProjects = BundleCandidates.getCandidates();
-		Collection<IProject> activatedProjects = BundleCandidates.getNatureEnabled();
+		BundleProject bundleProject = Activator.getBundleProjectService(); 
+		Collection<IProject> candidateProjects = bundleProject.getCandidates();
+		Collection<IProject> activatedProjects = bundleProject.getNatureEnabled();
 
 		try {
 			// Busy running bundle jobs.
@@ -153,7 +153,7 @@ public class BundleMainCommandsContributionItems extends BundleCommandsContribut
 		if (activatedProjects.size() > 0) {
 			int nStart = 0;
 			for (IProject project : activatedProjects) {
-				Bundle bundle = bundleRegion.get(project);
+				Bundle bundle = bundleRegion.getBundle(project);
 				// Uninstalled
 				if (null == bundle) {
 					// TODO Can not start an uninstalled bundle?
@@ -161,7 +161,7 @@ public class BundleMainCommandsContributionItems extends BundleCommandsContribut
 					continue;
 				}
 				int state = bundleCommand.getState(bundle);
-				if (!ManifestOptions.isFragment(bundle)
+				if (!Activator.getBundleProjectDescriptionService().isFragment(bundle)
 						&& (state & (Bundle.INSTALLED | Bundle.RESOLVED | Bundle.STOPPING)) != 0) {
 					nStart++;
 					continue;
@@ -194,7 +194,7 @@ public class BundleMainCommandsContributionItems extends BundleCommandsContribut
 		if (activatedProjects.size() > 0) {
 			int nStop = 0;
 			for (IProject project : activatedProjects) {
-				Bundle bundle = bundleRegion.get(project);
+				Bundle bundle = bundleRegion.getBundle(project);
 				// Uninstalled
 				if (null == bundle) {
 					continue;
@@ -231,7 +231,7 @@ public class BundleMainCommandsContributionItems extends BundleCommandsContribut
 			int nUpdate = 0;
 			for (IProject project : activatedProjects) {
 				// Uninstalled
-				if (null == bundleRegion.get(project)) {
+				if (null == bundleRegion.getBundle(project)) {
 					continue;
 				}
 				if (Activator.getBundleTransitionService().containsPending(project, Transition.UPDATE,
@@ -269,7 +269,7 @@ public class BundleMainCommandsContributionItems extends BundleCommandsContribut
 		if (activatedProjects.size() > 0) {
 			int nRefresh = 0;
 			for (IProject project : activatedProjects) {
-				Bundle bundle = bundleRegion.get(project);
+				Bundle bundle = bundleRegion.getBundle(project);
 				// Uninstalled
 				if (null == bundle) {
 					continue;

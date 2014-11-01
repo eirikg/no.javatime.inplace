@@ -18,8 +18,8 @@ import no.javatime.inplace.region.Activator;
 import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.intface.BundleTransition.TransitionError;
 import no.javatime.inplace.region.manager.BundleTransitionImpl;
-import no.javatime.inplace.region.project.BundleCandidates;
-import no.javatime.inplace.region.project.BundleProjectState;
+import no.javatime.inplace.region.project.BundleProjectImpl;
+import no.javatime.inplace.region.project.BundleProjectStateImpl;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import no.javatime.util.messages.ExceptionMessage;
@@ -154,7 +154,7 @@ public class ProjectSorter extends BaseSorter {
 			visited.add(child);
 			Collection<IProject> requirers = ProjectDependencies.getRequiringProjects(child);
 			for (IProject requirer : requirers) {
-				if (natureEnabled.equals(BundleCandidates.isNatureEnabled(requirer))) {
+				if (natureEnabled.equals(BundleProjectImpl.INSTANCE.isNatureEnabled(requirer))) {
 					visitRequiringProject(requirer, child, natureEnabled, visited);
 				}
 			}
@@ -261,7 +261,7 @@ public class ProjectSorter extends BaseSorter {
 			visited.add(child); // Overlook self providing
 			Collection<IProject> providers = ProjectDependencies.getProvidingProjects(child);
 			for (IProject provider : providers) {
-				if (natureEnabled.equals(BundleCandidates.isNatureEnabled(provider))) {
+				if (natureEnabled.equals(BundleProjectImpl.INSTANCE.isNatureEnabled(provider))) {
 					visitProvidingProject(provider, child, natureEnabled, visited);
 				}
 			}
@@ -292,7 +292,7 @@ public class ProjectSorter extends BaseSorter {
 		// Hosts can import packages from fragment (no complaints from PDE),
 		// even if fragment is an inherent part of the host. Is this a kind of self reference?
 		// Must check both parent and child, due to traversal order (providing or requiring)
-		if (!getAllowCycles() && (!BundleProjectState.isFragment(child) && !BundleProjectState.isFragment(parent))) {
+		if (!getAllowCycles() && (!BundleProjectImpl.INSTANCE.isFragment(child) && !BundleProjectImpl.INSTANCE.isFragment(parent))) {
 			ProjectSorter ps = new ProjectSorter();
 			ps.setAllowCycles(true);
 			Collection<IProject> projects = ps.sortRequiringProjects(Collections.<IProject>singletonList(parent));
@@ -303,7 +303,7 @@ public class ProjectSorter extends BaseSorter {
 				circularException = new CircularReferenceException();
 			}
 			String msg = ExceptionMessage.getInstance().formatString("affected_bundles",
-					BundleProjectState.formatProjectList(projects));
+					BundleProjectImpl.INSTANCE.formatProjectList(projects));
 			circularException.addToStatusList(new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, msg, null));
 			if (directRecursion) {
 				msg = ExceptionMessage.getInstance().formatString("direct_circular_reference_with_bundles",
@@ -325,6 +325,6 @@ public class ProjectSorter extends BaseSorter {
 		if (null == projectOrder) {
 			return;
 		}
-		System.out.println("Project topological Order " + BundleProjectState.formatProjectList(projectOrder));
+		System.out.println("Project topological Order " + BundleProjectImpl.INSTANCE.formatProjectList(projectOrder));
 	}
 }

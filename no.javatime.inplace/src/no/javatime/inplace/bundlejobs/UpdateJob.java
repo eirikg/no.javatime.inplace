@@ -195,7 +195,7 @@ public class UpdateJob extends BundleJob {
 			pendingBundles.removeAll(bundlesToUpdate);
 			if (pendingBundles.size() > 0) {
 				bundlesToUpdate.addAll(pendingBundles);
-				addPendingProjects(bundleRegion.getBundleProjects(pendingBundles));
+				addPendingProjects(bundleRegion.getProjects(pendingBundles));
 			}
 		}
 
@@ -214,7 +214,7 @@ public class UpdateJob extends BundleJob {
 			pendingBundles.removeAll(bundlesToUpdate);
 			if (pendingBundles.size() > 0) {
 				bundlesToUpdate.addAll(pendingBundles);
-				addPendingProjects(bundleRegion.getBundleProjects(pendingBundles));
+				addPendingProjects(bundleRegion.getProjects(pendingBundles));
 			}
 		} else {
 			// The requiring closure will be bound to the previous revision of the bundles to update and resolve
@@ -299,7 +299,7 @@ public class UpdateJob extends BundleJob {
 				Bundle bundle = bundleError.getBundle();
 				if (null != bundle) {
 					try {
-						IProject project = bundleRegion.getRegisteredBundleProject(bundle);
+						IProject project = bundleRegion.getProject(bundle);
 						Throwable updExp = bundleError.getException();
 						if (null != updExp && updExp instanceof DuplicateBundleException) {
 							bundleTransition.setTransitionError(project, TransitionError.DUPLICATE);
@@ -312,7 +312,7 @@ public class UpdateJob extends BundleJob {
 									.formatString("error_setting_bundle_error");
 							status = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg, null);
 						}
-						IProject project = bundleRegion.getRegisteredBundleProject(bundle);
+						IProject project = bundleRegion.getProject(bundle);
 						if (null != project) {
 							status.add(new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, project, project
 									.getName(), e));
@@ -349,7 +349,7 @@ public class UpdateJob extends BundleJob {
 						sleep(sleepTime);
 					bundleCommand.update(bundle);
 				} catch (DuplicateBundleException e) {
-					handleDuplicateException(bundleRegion.getRegisteredBundleProject(bundle), e, null);
+					handleDuplicateException(bundleRegion.getProject(bundle), e, null);
 					String msg = ErrorMessage.getInstance().formatString("duplicate_error",
 							bundle.getSymbolicName(), bundle.getVersion().toString());
 					IBundleStatus result = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID,
@@ -392,7 +392,7 @@ public class UpdateJob extends BundleJob {
 		}
 		// TODO detected by the update operation. do some more testing here
 		// duplicateProjects = removeWorkspaceDuplicates(projectsToUpdate, bDepClosures, null,
-		// BundleCandidates.getInstallableProjects(),
+		// BundleProjectImpl.INSTANCE.getInstallableProjects(),
 		// currentWorkspaceInstance);
 		// if (null != duplicateProjects) {
 		// bundlesToUpdate.removeAll(bundleRegion.getBundles(duplicateProjects));
@@ -449,7 +449,7 @@ public class UpdateJob extends BundleJob {
 			return bundlesToUpdate;
 		}
 		for (Bundle bundle : bundlesToUpdate) {
-			IProject project = bundleRegion.getRegisteredBundleProject(bundle);
+			IProject project = bundleRegion.getProject(bundle);
 			String newProjectKey = bundleRegion.getSymbolicKey(null, project);
 			String oldBundleKey = bundleRegion.getSymbolicKey(bundle, null);
 			if (newProjectKey.length() == 0 || oldBundleKey.length() == 0) {
@@ -462,7 +462,7 @@ public class UpdateJob extends BundleJob {
 				if (null == collisionProject) {
 					continue;
 				}
-				Bundle collisionBundle = bundleRegion.get(collisionProject);
+				Bundle collisionBundle = bundleRegion.getBundle(collisionProject);
 				if (null == collisionBundle) {
 					continue;
 				}

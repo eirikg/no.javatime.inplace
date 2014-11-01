@@ -19,10 +19,9 @@ import no.javatime.inplace.bundlemanager.BundleJobManager;
 import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.closure.CircularReferenceException;
 import no.javatime.inplace.region.closure.ProjectSorter;
+import no.javatime.inplace.region.intface.BundleProject;
 import no.javatime.inplace.region.intface.BundleTransition;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
-import no.javatime.inplace.region.project.BundleCandidates;
-import no.javatime.inplace.region.project.BundleProjectState;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
@@ -142,9 +141,10 @@ public class BundleJobListener extends JobChangeAdapter {
 	private void schedulePendingOperations() {
 
 		BundleTransition bundleTransition = InPlace.getBundleTransitionService();
+		BundleProject bundleProject = InPlace.getBundleProjectService();
 		BundleJob bundleJob = null;
 
-		Collection<IProject> deactivatedProjects = BundleCandidates.getCandidates();
+		Collection<IProject> deactivatedProjects = bundleProject.getCandidates();
 		// This usually comes from a delayed update when activated bundles to resolve depends on
 		// deactivated bundles
 		Collection<IProject> projectsToActivate = bundleTransition.getPendingProjects(
@@ -163,11 +163,11 @@ public class BundleJobListener extends JobChangeAdapter {
 						activatedProjects.remove(deactivatedProject);
 						if (activatedProjects.size() > 0) {
 							String msg = NLS.bind(Msg.IMPLICIT_ACTIVATION_INFO,
-									BundleProjectState.formatProjectList(activatedProjects),
+									bundleProject.formatProjectList(activatedProjects),
 									deactivatedProject.getName());
 							IBundleStatus status = new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, msg);
 							msg = NLS.bind(Msg.DELAYED_RESOLVE_INFO,
-									BundleProjectState.formatProjectList(activatedProjects),
+									bundleProject.formatProjectList(activatedProjects),
 									deactivatedProject.getName());
 							status.add(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, msg));
 							bundleJob.addTrace(status);
@@ -179,7 +179,7 @@ public class BundleJobListener extends JobChangeAdapter {
 			BundleJobManager.addBundleJob(bundleJob, 0);
 		}
 
-		Collection<IProject> activatedProjects = BundleCandidates.getNatureEnabled();
+		Collection<IProject> activatedProjects = bundleProject.getNatureEnabled();
 
 		Collection<IProject> projectsToRefresh = bundleTransition.getPendingProjects(activatedProjects,
 				Transition.REFRESH);

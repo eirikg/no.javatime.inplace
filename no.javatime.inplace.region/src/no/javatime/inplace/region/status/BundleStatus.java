@@ -13,10 +13,10 @@ package no.javatime.inplace.region.status;
 import java.util.Collection;
 
 import no.javatime.inplace.region.Activator;
-import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
+import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.manager.BundleTransitionImpl;
-import no.javatime.inplace.region.manager.BundleWorkspaceRegionImpl;
+import no.javatime.inplace.region.manager.WorkspaceRegionImpl;
 import no.javatime.util.messages.ErrorMessage;
 
 import org.eclipse.core.resources.IProject;
@@ -154,14 +154,14 @@ public class BundleStatus extends MultiStatus implements IBundleStatus {
 			bundleState = bundle.getState();
 			bundleTransition = BundleTransitionImpl.INSTANCE.getTransition(bundle);
 		} else if (null != project) {
-			bundle = BundleWorkspaceRegionImpl.INSTANCE.get(project);
+			bundle = WorkspaceRegionImpl.INSTANCE.getBundle(project);
 			if (null != bundle) {
 				symbolicName = bundle.getSymbolicName();
 				this.bundleId = bundle.getBundleId();
 				bundleState = bundle.getState();
 				bundleTransition = BundleTransitionImpl.INSTANCE.getTransition(bundle);
 			} else {
-				IBundleProjectDescription pd = Activator.getDefault().getBundleDescription(project);
+				IBundleProjectDescription pd = Activator.getBundleDescription(project);
 				symbolicName = pd.getSymbolicName();
 			}
 		} else {
@@ -172,7 +172,7 @@ public class BundleStatus extends MultiStatus implements IBundleStatus {
 					IWorkspace workspace = ResourcesPlugin.getWorkspace();
 					IWorkspaceRoot root = workspace.getRoot();
 					for (IProject bundleProject : root.getProjects()) {
-						IBundleProjectDescription bundleProjDesc = Activator.getDefault().getBundleDescription(bundleProject);
+						IBundleProjectDescription bundleProjDesc = Activator.getBundleDescription(bundleProject);
 						String pdSymbolicName = bundleProjDesc.getSymbolicName();
 						if (null != pdSymbolicName && pdSymbolicName.equals(symbolicName)) {
 							// Drop comparison with version. Use the first one available
@@ -181,13 +181,13 @@ public class BundleStatus extends MultiStatus implements IBundleStatus {
 						}
 					}
 					if (null != project) {
-						bundle = BundleWorkspaceRegionImpl.INSTANCE.get(project);
+						bundle = WorkspaceRegionImpl.INSTANCE.getBundle(project);
 						if (null != bundle) {
 							symbolicName = bundle.getSymbolicName();
 							this.bundleId = bundle.getBundleId();
 							bundleTransition = BundleTransitionImpl.INSTANCE.getTransition(bundle);
 						} else {
-							IBundleProjectDescription pd = Activator.getDefault().getBundleDescription(project);
+							IBundleProjectDescription pd = Activator.getBundleDescription(project);
 							symbolicName = pd.getSymbolicName();
 						}
 					}
@@ -329,7 +329,7 @@ public class BundleStatus extends MultiStatus implements IBundleStatus {
 		IWorkspaceRoot root = workspace.getRoot();
 		for (IProject project : root.getProjects()) {
 			try {
-				IBundleProjectDescription bundleProjDesc = Activator.getDefault().getBundleDescription(project);
+				IBundleProjectDescription bundleProjDesc = Activator.getBundleDescription(project);
 				String symbolicName = bundleProjDesc.getSymbolicName();
 				if (null != symbolicName && symbolicName.equals(bundle.getSymbolicName())) {
 					Version version = bundleProjDesc.getBundleVersion();

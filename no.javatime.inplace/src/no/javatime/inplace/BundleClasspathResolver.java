@@ -6,13 +6,13 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import no.javatime.inplace.region.intface.BundleProjectDescription;
+import no.javatime.inplace.region.intface.InPlaceException;
+
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.pde.core.IBundleClasspathResolver;
-
-import no.javatime.inplace.bundleproject.BundleProjectSettings;
-import no.javatime.inplace.region.intface.InPlaceException;
 
 /**
  * Adds default output location to source folders when dynamically generated bundles 
@@ -30,10 +30,11 @@ public class BundleClasspathResolver implements IBundleClasspathResolver {
 	@Override
 	public Map getAdditionalClasspathEntries(IJavaProject javaProject) {
 		Map<IPath, Collection<IPath>> additionalEntries = new HashMap<IPath, Collection<IPath>>(); 		
-		IPath defaultOutputlocation = BundleProjectSettings.getDefaultOutputFolder(javaProject.getProject());
+		BundleProjectDescription bpDesc = InPlace.getBundleProjectDescriptionService();
+		IPath defaultOutputlocation = bpDesc.getDefaultOutputFolder(javaProject.getProject());
 		Collection<IPath> srcPath = null;
 		try {
-			srcPath = BundleProjectSettings.getSourceFolders(javaProject.getProject());
+			srcPath = bpDesc.getSourceFolders(javaProject.getProject());
 			for (IPath path : srcPath) {
 				additionalEntries.put(path, Collections.<IPath>singletonList(defaultOutputlocation)); 
 			}

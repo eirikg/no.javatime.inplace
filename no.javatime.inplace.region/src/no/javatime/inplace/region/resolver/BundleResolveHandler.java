@@ -22,8 +22,8 @@ import no.javatime.inplace.region.closure.BundleDependencies;
 import no.javatime.inplace.region.intface.BundleTransition;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
 import no.javatime.inplace.region.manager.BundleTransitionImpl;
-import no.javatime.inplace.region.manager.BundleWorkspaceRegionImpl;
-import no.javatime.inplace.region.project.BundleCandidates;
+import no.javatime.inplace.region.manager.WorkspaceRegionImpl;
+import no.javatime.inplace.region.project.BundleProjectImpl;
 import no.javatime.inplace.region.state.BundleNode;
 import no.javatime.util.messages.Category;
 import no.javatime.util.messages.TraceMessage;
@@ -87,10 +87,10 @@ class BundleResolveHandler implements ResolverHook {
 	public void filterResolvable(Collection<BundleRevision> candidates) {
 
 		// Do not infer when workspace is deactivated
-		if (!BundleCandidates.isWorkspaceNatureEnabled()) {
+		if (!BundleProjectImpl.INSTANCE.isWorkspaceNatureEnabled()) {
 			return;
 		}
-		Collection<Bundle> bundles = BundleWorkspaceRegionImpl.INSTANCE.getBundles();
+		Collection<Bundle> bundles = WorkspaceRegionImpl.INSTANCE.getBundles();
 		if (bundles.size() == 0) {
 			return;
 		}
@@ -100,26 +100,16 @@ class BundleResolveHandler implements ResolverHook {
 		Collection<BundleRevision> workspaceCandidates = BundleDependencies.getRevisionsFrom(bundles);
 		// Restrict workspace candidate bundles to candidate bundles closures to resolve
 		workspaceCandidates.retainAll(candidates);
-//		boolean isExternal = true;
 		// Split candidates in those activated and those deactivated
 		for (BundleRevision workspaceCandidate : workspaceCandidates) {
 			Bundle bundle = workspaceCandidate.getBundle();
-			BundleNode node = BundleWorkspaceRegionImpl.INSTANCE.getBundleNode(bundle);
-//			if (node.isStateChanging()) {
-//				isExternal = false;
-//			}
+			BundleNode node = WorkspaceRegionImpl.INSTANCE.getBundleNode(bundle);
 			if (node.isActivated()) {
 				activatedBundles.add(workspaceCandidate);
 			} else {
 				deactivatedBundles.add(workspaceCandidate);
 			}
 		}
-//		if (Activator.getDefault().msgOpt().isBundleOperations()) {
-//			if (isExternal && !deactivatedBundles.isEmpty() && activatedBundles.isEmpty()) {
-//				StatusManager.getManager().handle(
-//						new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, Msg.NOT_RESOLVING_INFO), StatusManager.LOG);
-//			}
-//		}
 		// If no deactivated bundles, all error free bundles are activated and will be resolved
 		if (!deactivatedBundles.isEmpty()) {
 			candidates.removeAll(deactivatedBundles);
@@ -201,7 +191,7 @@ class BundleResolveHandler implements ResolverHook {
 		if (notResolveList.size() > 0) {
 			for (BundleRevision notResolveRev : notResolveList) {
 				Bundle notResloveBundle = notResolveRev.getBundle();
-				BundleNode node = BundleWorkspaceRegionImpl.INSTANCE.getBundleNode(notResloveBundle);
+				BundleNode node = WorkspaceRegionImpl.INSTANCE.getBundleNode(notResloveBundle);
 				node.rollBack();
 			}
 		}
@@ -216,24 +206,24 @@ class BundleResolveHandler implements ResolverHook {
 	@Override
 	public void filterSingletonCollisions(BundleCapability singleton,
 			Collection<BundleCapability> collisionCandidates) {
-		if (Category.DEBUG && Activator.getDefault().msgOpt().isBundleOperations())
+		if (Category.DEBUG && Activator.getDefault().getMsgOptService().isBundleOperations())
 			TraceMessage.getInstance().getString("singleton_collisions",
 					singleton.getRevision().getBundle().getSymbolicName(),
 					formatBundleCapabilityList(collisionCandidates));
 		if (null != groups) {
 			Set<Bundle> group = groups.get(singleton.getRevision().getBundle());
-			if (Category.DEBUG && Activator.getDefault().msgOpt().isBundleOperations())
+			if (Category.DEBUG && Activator.getDefault().getMsgOptService().isBundleOperations())
 				TraceMessage.getInstance().getString("singleton_collisions_group",
 						singleton.getRevision().getBundle().getSymbolicName(),
-						BundleWorkspaceRegionImpl.INSTANCE.formatBundleList(group, true));
+						WorkspaceRegionImpl.INSTANCE.formatBundleList(group, true));
 			for (Iterator<BundleCapability> i = collisionCandidates.iterator(); i.hasNext();) {
 				BundleCapability candidate = i.next();
 				Bundle candidateBundle = candidate.getRevision().getBundle();
 				Set<Bundle> otherGroup = groups.get(candidateBundle);
-				if (Category.DEBUG && Activator.getDefault().msgOpt().isBundleOperations())
+				if (Category.DEBUG && Activator.getDefault().getMsgOptService().isBundleOperations())
 					TraceMessage.getInstance().getString("singleton_collisions_other_group",
 							candidateBundle.getSymbolicName(),
-							BundleWorkspaceRegionImpl.INSTANCE.formatBundleList(otherGroup, true));
+							WorkspaceRegionImpl.INSTANCE.formatBundleList(otherGroup, true));
 				// If this singleton is in the group and at the same time is a candidate (other group)
 				// Remove it so the same but new updated instance of the bundle can be resolved
 				// Note this is opposite to the sample in the OSGI 4.3 specification
@@ -242,7 +232,7 @@ class BundleResolveHandler implements ResolverHook {
 				if (Category.getState(Category.bundleEvents)) {
 					TraceMessage.getInstance().getString("singleton_collision_remove_duplicate",
 							candidateBundle.getSymbolicName(),
-							BundleWorkspaceRegionImpl.INSTANCE.formatBundleList(otherGroup, true));
+							WorkspaceRegionImpl.INSTANCE.formatBundleList(otherGroup, true));
 				}
 			}
 		}

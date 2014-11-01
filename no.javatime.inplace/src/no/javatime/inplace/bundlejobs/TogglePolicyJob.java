@@ -14,12 +14,10 @@ import java.util.Collection;
 import java.util.Collections;
 
 import no.javatime.inplace.InPlace;
-import no.javatime.inplace.bundleproject.BundleProjectSettings;
 import no.javatime.inplace.msg.Msg;
+import no.javatime.inplace.region.intface.BundleTransition.Transition;
 import no.javatime.inplace.region.intface.BundleTransitionListener;
 import no.javatime.inplace.region.intface.InPlaceException;
-import no.javatime.inplace.region.intface.BundleTransition.Transition;
-import no.javatime.inplace.region.project.BundleCandidates;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
@@ -89,21 +87,21 @@ public class TogglePolicyJob extends BundleJob {
 			BundleTransitionListener.addBundleTransitionListener(this);
 			for (IProject project : getPendingProjects()) {
 				try {
-					BundleProjectSettings.toggleActivationPolicy(project);
+					bundleProjectDesc.toggleActivationPolicy(project);
 					// No bundle jobs (which updates the bundle view) are run when the project(s) are
 					// deactivated or auto build is off
-					Bundle bundle = bundleRegion.get(project);
-					if (!BundleCandidates.isAutoBuilding()) {
-						if (bundleRegion.isActivated(bundle)) {
+					Bundle bundle = bundleRegion.getBundle(project);
+					if (!bundleProject.isAutoBuilding()) {
+						if (bundleRegion.isBundleActivated(project)) {
 							String msg = WarnMessage.getInstance().formatString("policy_updated_auto_build_off",
 									project.getName());
-							addWarning(null, msg, project);
+							addInfoMessage(msg, project);
 						}
 					}
 					try {
 						if (InPlace.get().getMsgOpt().isBundleOperations()
 								&& !InPlace.get().getCommandOptionsService().isUpdateOnBuild()) {
-							if (bundleRegion.isActivated(bundle)) {
+							if (bundleRegion.isBundleActivated(project)) {
 								addInfoMessage(NLS.bind(Msg.AUTOUPDATE_OFF_INFO, project.getName()));
 							}
 						}

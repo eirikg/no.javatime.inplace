@@ -10,15 +10,15 @@ import org.osgi.framework.ServiceRegistration;
  * Factory creating service object for bundle commands. The service scope for this factory is restricted
  * to singleton.
  *
- * @param <S> type of service
+ * @param <BundleCommand> service interface for bundle commands
  */
 public class BundleCommandServiceFactory implements ServiceFactory<BundleCommand> {
 
 	@Override
 	public BundleCommand getService(Bundle bundle, ServiceRegistration<BundleCommand> registration) {
-		BundleCommandImpl bc = BundleCommandImpl.INSTANCE;
-		bc.initFrameworkWiring();
-		return bc;
+		BundleCommandImpl bundleCommand = BundleCommandImpl.INSTANCE;
+		bundleCommand.initFrameworkWiring();
+		return bundleCommand;
 	}
 
 	@Override

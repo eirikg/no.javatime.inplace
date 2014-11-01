@@ -12,11 +12,11 @@ package no.javatime.inplace.builder;
 
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.region.events.TransitionEvent;
-import no.javatime.inplace.region.intface.BundleTransitionListener;
+import no.javatime.inplace.region.intface.BundleProject;
 import no.javatime.inplace.region.intface.BundleTransition;
-import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
-import no.javatime.inplace.region.project.BundleCandidates;
+import no.javatime.inplace.region.intface.BundleTransitionListener;
+import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import no.javatime.util.messages.ExceptionMessage;
@@ -44,11 +44,12 @@ public class PreBuildListener implements IResourceChangeListener {
 	 */
 	public void resourceChanged(IResourceChangeEvent event) {
 
+		BundleProject bundleProject = InPlace.getBundleProjectService();
 		// Nothing to do in a deactivated workspace where all bundle projects are uninstalled
 		IResourceDelta rootDelta = event.getDelta();
 		IResourceDelta[] projectDeltas = rootDelta.getAffectedChildren(IResourceDelta.ADDED
 				| IResourceDelta.CHANGED, IResource.NONE);
-		boolean isWSActivated = BundleCandidates.isWorkspaceNatureEnabled();
+		boolean isWSActivated = bundleProject.isWorkspaceNatureEnabled();
 		for (IResourceDelta projectDelta : projectDeltas) {
 			IResource projectResource = projectDelta.getResource();
 			if (projectResource.isAccessible() && (projectResource.getType() & (IResource.PROJECT)) != 0) {
@@ -60,8 +61,8 @@ public class PreBuildListener implements IResourceChangeListener {
 						// The error should be visible in a deactivated workspace until the project is built
 						transition.clearTransitionError(project);
 					} else { 
-						if (BundleCandidates.isNatureEnabled(project)) {
-							if (!BundleCandidates.isAutoBuilding()) {
+						if (bundleProject.isNatureEnabled(project)) {
+							if (!bundleProject.isAutoBuilding()) {
 								transition.addPending(project, Transition.BUILD);
 							} else {
 								BundleTransitionListener.addBundleTransition(new TransitionEvent(project, Transition.BUILD));								

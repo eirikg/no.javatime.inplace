@@ -14,7 +14,7 @@ public class BundleTransitionImpl implements BundleTransition {
 
 	public final static BundleTransitionImpl INSTANCE = new BundleTransitionImpl();
 
-	private BundleWorkspaceRegionImpl ws = BundleWorkspaceRegionImpl.INSTANCE;
+	private WorkspaceRegionImpl ws = WorkspaceRegionImpl.INSTANCE;
 
 	public BundleTransitionImpl() {
 	}
@@ -97,7 +97,7 @@ public class BundleTransitionImpl implements BundleTransition {
 
 	@Override
 	public boolean hasTransitionError(TransitionError transitionError) {
-		for (IProject project : ws.getBundleProjects()) {
+		for (IProject project : ws.getProjects()) {
 			BundleNode bn = ws.getBundleNode(project);
 			if  (bn.hasTransitionError()) {
 				return true;
@@ -150,7 +150,7 @@ public class BundleTransitionImpl implements BundleTransition {
 	
 	@Override
 	public void removeTransitionError(TransitionError transitionError) throws ProjectLocationException {
-		for (IProject project : ws.getBundleProjects()) {
+		for (IProject project : ws.getProjects()) {
 			BundleNode bn = ws.getBundleNode(project);
 			if (null == bn) {
 				continue;

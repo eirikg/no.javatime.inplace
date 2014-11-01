@@ -7,19 +7,18 @@ import no.javatime.inplace.bundlejobs.ActivateBundleJob;
 import no.javatime.inplace.bundlejobs.BundleJob;
 import no.javatime.inplace.bundlejobs.DeactivateJob;
 import no.javatime.inplace.bundlemanager.BundleJobManager;
-import no.javatime.inplace.bundleproject.BundleProjectSettings;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.closure.BuildErrorClosure;
 import no.javatime.inplace.region.closure.BuildErrorClosure.ActivationScope;
 import no.javatime.inplace.region.closure.CircularReferenceException;
 import no.javatime.inplace.region.intface.BundleCommand;
+import no.javatime.inplace.region.intface.BundleProject;
 import no.javatime.inplace.region.intface.BundleRegion;
 import no.javatime.inplace.region.intface.BundleTransition;
+import no.javatime.inplace.region.intface.BundleTransition.Transition;
 import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.intface.ProjectLocationException;
-import no.javatime.inplace.region.intface.BundleTransition.Transition;
-import no.javatime.inplace.region.project.BundleCandidates;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
@@ -51,14 +50,14 @@ public class StartUp implements IStartup {
 	@Override
 	public void earlyStartup() {
 		if (InPlace.get().getMsgOpt().isBundleOperations()) {
-			String osgiDev = BundleProjectSettings.inDevelopmentMode();
+			String osgiDev = InPlace.getBundleProjectDescriptionService().inDevelopmentMode();
 			if (null != osgiDev) {
 				String msg = NLS.bind(Msg.CLASS_PATH_DEV_PARAM_INFO, osgiDev);
 				InPlace.get().log(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, msg));
 			}
 		}
 		try {
-			Collection<IProject> activatedProjects = BundleCandidates.getNatureEnabled();
+			Collection<IProject> activatedProjects = InPlace.getBundleProjectService().getNatureEnabled();
 			if (activatedProjects.size() > 0) {
 				Collection<IProject> deactivatedProjects = deactivateBuildErrorClosures(activatedProjects);
 				if (deactivatedProjects.size() > 0) {
@@ -162,17 +161,19 @@ public class StartUp implements IStartup {
 					BundleTransition bundleTransition = InPlace.getBundleTransitionService();
 					BundleCommand bundleCommand = InPlace.getBundleCommandService();
 					BundleRegion bundleRegion = InPlace.getBundleRegionService();
-					for (IProject project : BundleCandidates.getPlugIns()) {
+					BundleProject bundleProject = InPlace.getBundleProjectService();
+					Collection<IProject> plugins = bundleProject.getPlugIns();
+					for (IProject project : plugins) {
 						if (null != store) {
 							try {
 								String symbolicKey = bundleRegion.getSymbolicKey(null, project);
 								int state = store.getInt(symbolicKey, Transition.INSTALL.ordinal());
 								// Don't register the project if there is no transition history
 								if (state == Transition.UNINSTALL.ordinal()) {
-									bundleCommand.registerBundleProject(project, null, false);
+									bundleRegion.registerBundleProject(project, null, false);
 									bundleTransition.setTransition(project, Transition.UNINSTALL);
 								} else if (state == Transition.REFRESH.ordinal()) {
-									bundleCommand.registerBundleProject(project, null, false);
+									bundleRegion.registerBundleProject(project, null, false);
 									bundleTransition.setTransition(project, Transition.REFRESH);
 								}
 							} catch (ProjectLocationException e) {

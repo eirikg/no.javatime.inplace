@@ -24,13 +24,12 @@ import no.javatime.inplace.bundlejobs.UpdateScheduler;
 import no.javatime.inplace.bundlemanager.BundleJobManager;
 import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.intface.BundleCommand;
+import no.javatime.inplace.region.intface.BundleProject;
 import no.javatime.inplace.region.intface.BundleRegion;
 import no.javatime.inplace.region.intface.BundleTransition;
+import no.javatime.inplace.region.intface.BundleTransition.Transition;
 import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.intface.ProjectLocationException;
-import no.javatime.inplace.region.intface.BundleTransition.Transition;
-import no.javatime.inplace.region.project.BundleCandidates;
-import no.javatime.inplace.region.project.BundleProjectState;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
@@ -101,9 +100,10 @@ import org.osgi.framework.Bundle;
  */
 public class PostBuildListener implements IResourceChangeListener {
 
-	private BundleCommand bundleCommand = InPlace.getBundleCommandService();
-	private BundleRegion bundleRegion = InPlace.getBundleRegionService();
-	private BundleTransition bundleTransition = InPlace.getBundleTransitionService();
+	final private BundleCommand bundleCommand = InPlace.getBundleCommandService();
+	final private BundleRegion bundleRegion = InPlace.getBundleRegionService();
+	final private BundleTransition bundleTransition = InPlace.getBundleTransitionService();
+	final private BundleProject bundleProject = InPlace.getBundleProjectService();
 	private static int delay = 0;
 
 	/**
@@ -114,7 +114,7 @@ public class PostBuildListener implements IResourceChangeListener {
 	public void resourceChanged(IResourceChangeEvent event) {
 
 		// Nothing to do in a deactivated workspace where all bundle projects are uninstalled
-		if (!BundleCandidates.isWorkspaceNatureEnabled()) {
+		if (!bundleProject.isWorkspaceNatureEnabled()) {
 			return;
 		}
 		// After a build when source has changed and the project is pending for update and auto build is
@@ -144,7 +144,8 @@ public class PostBuildListener implements IResourceChangeListener {
 		// implies
 		// no change since last build, but the resource may have a pending transition
 		if (null == resourceDeltas || resourceDeltas.length == 0) {
-			for (IProject project : BundleCandidates.getInstallable()) {
+			BundleProject bundleProject = InPlace.getBundleProjectService();
+			for (IProject project : bundleProject.getInstallable()) {
 				try {
 					removePendingBuildTransition(buildType, project);
 					if (null != bundleTransition.getPendingTransitions(project)) {
@@ -214,7 +215,7 @@ public class PostBuildListener implements IResourceChangeListener {
 	private boolean scheduleJob(BundleJob job) {
 		if (null != job && job.hasPendingProjects()) {
 			if (job instanceof ActivateBundleJob) {
-				// Give the builder a chance to build all pending projects before activating
+				// Give the builder a chance to start building before activating
 				if (InPlace.get().getCommandOptionsService().isUpdateOnBuild()) {
 					delay = 1000;
 				}
@@ -235,7 +236,7 @@ public class PostBuildListener implements IResourceChangeListener {
 	 * transition does not have to be present before the build transition is cleared, Otherwise false,
 	 */
 	private boolean removePendingBuildTransition(int buildType, IProject project) {
-		if ((BundleCandidates.isAutoBuilding()
+		if ((bundleProject.isAutoBuilding()
 				|| buildType == IncrementalProjectBuilder.INCREMENTAL_BUILD
 				|| buildType == IncrementalProjectBuilder.FULL_BUILD || buildType == IncrementalProjectBuilder.CLEAN_BUILD)) {
 			// Build is no longer pending
@@ -298,7 +299,7 @@ public class PostBuildListener implements IResourceChangeListener {
 		}
 		if (bundleTransition.containsPending(project, Transition.ACTIVATE_BUNDLE, Boolean.TRUE)) {
 			// TODO Check this check
-			if (BundleCandidates.isInstallable(project)) {
+			if (bundleProject.isInstallable(project)) {
 				activateBundleJob.addPendingProject(project);
 				ishandled = true;
 			}
@@ -350,7 +351,7 @@ public class PostBuildListener implements IResourceChangeListener {
 	private boolean handleCRUDOperation(IResourceDelta projectDelta, IProject project,
 			ActivateBundleJob activateBundleJob) {
 
-		if (!BundleCandidates.isPlugIn(project)) {
+		if (!bundleProject.isPlugIn(project)) {
 			return false;
 		}
 		// A renamed project has already been uninstalled in pre change listener
@@ -361,7 +362,7 @@ public class PostBuildListener implements IResourceChangeListener {
 		} else if ((projectDelta.getKind() & (IResourceDelta.CHANGED)) != 0) {
 			// Move. Never in state uninstalled
 			if ((projectDelta.getFlags() & IResourceDelta.DESCRIPTION) != 0) {
-				Bundle bundle = bundleRegion.get(project);
+				Bundle bundle = bundleRegion.getBundle(project);
 				boolean unInstalled = (bundleCommand.getState(bundle) & (Bundle.UNINSTALLED)) != 0;
 				if (!unInstalled && addMovedProject(project, activateBundleJob)) {
 					return true;
@@ -387,13 +388,12 @@ public class PostBuildListener implements IResourceChangeListener {
 	private boolean addMovedProject(IProject project, ActivateBundleJob activateBundleJob) {
 
 		try {
-			String projectLoaction = BundleProjectState.getLocationIdentifier(project,
-					BundleProjectState.BUNDLE_REF_LOC_SCHEME);
+			String projectLoaction = InPlace.getBundleRegionService().getProjectLocationIdentifier(project, null);
 			String bundleLocation = bundleRegion.getBundleLocationIdentifier(project);
 			// If path is different its a move (the path of the project description is changed)
 			// The replaced flag is set on files being moved but not set on project level.
 			// For all other modifications of the project description, use update bundle
-			if (!projectLoaction.equals(bundleLocation) && BundleCandidates.isInstallable(project)) {
+			if (!projectLoaction.equals(bundleLocation) && bundleProject.isInstallable(project)) {
 				UninstallJob uninstallJob = new UninstallJob(UninstallJob.uninstallJobName, project);
 				BundleJobManager.addBundleJob(uninstallJob, 0);
 				activateBundleJob.addPendingProject(project);

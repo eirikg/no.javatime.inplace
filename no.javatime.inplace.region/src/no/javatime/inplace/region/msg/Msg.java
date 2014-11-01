@@ -7,7 +7,7 @@ public class Msg extends NLS {
 	// Error messages
 	public static String SYSTEM_BUNDLE_ERROR;
 	public static String SYMBOLIC_NAME_ERROR;
-
+	public static String STATE_CHANGE_ERROR;
 	// Warning messages 	
 	public static String REQUIRING_BUNDLES_BUILD_ERROR_WARN;
 	public static String BUILD_ERROR_WARN;
@@ -32,6 +32,7 @@ public class Msg extends NLS {
 	public static String BUNDLE_ID_FILE_SCHEME_REF;
 	public static String MANIFEST_FILE_RELATIVE_PATH_REF;
 	public static String MANIFEST_FILE_NAME_REF;
+	public static String PLUGIN_ID_NATURE_ID;
 	
 	private static final String BUNDLE_NAME = "no.javatime.inplace.region.msg.messages"; //$NON-NLS-1$
 

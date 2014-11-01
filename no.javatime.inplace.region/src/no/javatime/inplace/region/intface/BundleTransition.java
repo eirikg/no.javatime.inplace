@@ -133,6 +133,10 @@ public interface BundleTransition {
 		 */
 		UPDATE_ACTIVATION_POLICY,
 		/**
+		 * Updates the class path of the bundle with symbolic name as a framework property
+		 */
+		UPDATE_DEV_CLASSPATH,
+		/**
 		 * Rename of project with the JavaTime nature enabled
 		 */
 		RENAME,

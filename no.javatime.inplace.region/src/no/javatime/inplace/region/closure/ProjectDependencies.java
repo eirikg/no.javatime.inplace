@@ -3,8 +3,9 @@ package no.javatime.inplace.region.closure;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 
+import no.javatime.inplace.region.intface.BundleProject;
 import no.javatime.inplace.region.intface.InPlaceException;
-import no.javatime.inplace.region.project.BundleProjectState;
+import no.javatime.inplace.region.project.BundleProjectImpl;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
@@ -34,12 +35,12 @@ public class ProjectDependencies {
 				for (int i = 0; i < referencedProjects.length; i++) {
 					IProject refProject = referencedProjects[i];
 						if (refProject.hasNature(JavaCore.NATURE_ID) 
-								&& refProject.isNatureEnabled(BundleProjectState.PLUGIN_NATURE_ID)) {
+								&& refProject.isNatureEnabled(BundleProject.PLUGIN_NATURE_ID)) {
 							projects.add(refProject);
 						}
 				}
 			} catch (CoreException e) {
-				throw new InPlaceException(e, "error_get_providing_projects", BundleProjectState.formatProjectList(projects));
+				throw new InPlaceException(e, "error_get_providing_projects", BundleProjectImpl.INSTANCE.formatProjectList(projects));
 			}
 		}
 		return projects;
@@ -63,7 +64,7 @@ public class ProjectDependencies {
 					getProvidingProjects(referencedProjects[i], projects);
 				}
 			} catch (CoreException e) {
-				throw new InPlaceException(e, "error_get_providing_projects", BundleProjectState.formatProjectList(projects));
+				throw new InPlaceException(e, "error_get_providing_projects", BundleProjectImpl.INSTANCE.formatProjectList(projects));
 			}
 		}
 		return projects;
@@ -90,11 +91,11 @@ public class ProjectDependencies {
 				try {
 					IProject refProject = referencingProjects[i];
 					if (refProject.hasNature(JavaCore.NATURE_ID) 
-							&& refProject.isNatureEnabled(BundleProjectState.PLUGIN_NATURE_ID)) {
+							&& refProject.isNatureEnabled(BundleProject.PLUGIN_NATURE_ID)) {
 						projects.add(refProject);
 					}
 				} catch (CoreException e) {
-					throw new InPlaceException(e, "error_get_requiring_projects", BundleProjectState.formatProjectList(projects));
+					throw new InPlaceException(e, "error_get_requiring_projects", BundleProjectImpl.INSTANCE.formatProjectList(projects));
 				}
 			}
 		}
@@ -121,11 +122,11 @@ public class ProjectDependencies {
 				try {
 					IProject refProject = referencingProjects[i];
 					if (refProject.hasNature(JavaCore.NATURE_ID) 
-							&& refProject.isNatureEnabled(BundleProjectState.PLUGIN_NATURE_ID)) {
+							&& refProject.isNatureEnabled(BundleProject.PLUGIN_NATURE_ID)) {
 						getRequiringProjects(referencingProjects[i], projects);
 					}
 				} catch (CoreException e) {
-					throw new InPlaceException(e, "error_get_requiring_projects", BundleProjectState.formatProjectList(projects));
+					throw new InPlaceException(e, "error_get_requiring_projects", BundleProjectImpl.INSTANCE.formatProjectList(projects));
 				}
 			}
 		}

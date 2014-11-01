@@ -20,9 +20,11 @@ import java.util.Dictionary;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 
+import no.javatime.inplace.region.intface.BundleProject;
+import no.javatime.inplace.region.intface.BundleRegion;
 import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.intface.ProjectLocationException;
-import no.javatime.inplace.region.msg.Msg;
+import no.javatime.inplace.region.manager.WorkspaceRegionImpl;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
@@ -42,24 +44,15 @@ import org.osgi.framework.Constants;
  * 
  * @see BundleProject
  */
-public class ManifestOptions {
+public class CachedManifestOperationsImpl {
 
-	/**
-	 * Path to manifest file relative to workspace root
-	 */
-	final public static String MANIFEST_RELATIVE_PATH = Msg.MANIFEST_FILE_RELATIVE_PATH_REF; 
-
-	/**
-	 * Standard file name of the manifest file
-	 */
-	final public static String MANIFEST_FILE_NAME =  Msg.MANIFEST_FILE_NAME_REF; // Message.getInstance().formatString("manifest_file_name");
-
-	private static void setActivationPolicy(Collection<IProject> projects, Boolean eagerActivation) {
+	@SuppressWarnings("unused")
+	private void setActivationPolicy(Collection<IProject> projects, Boolean eagerActivation) {
 		if (null == projects) {
 			return;
 		}
 		for (IProject project : projects) {
-			IFile manifestFile = project.getFile(MANIFEST_FILE_NAME);
+			IFile manifestFile = project.getFile(BundleProjectDescriptionImpl.MANIFEST_FILE_NAME);
 			Manifest manifest = loadManifest(project, manifestFile);
 			Attributes attributes = manifest.getMainAttributes();
 			String lazyPolicy = attributes.getValue(Constants.BUNDLE_ACTIVATIONPOLICY);
@@ -88,11 +81,12 @@ public class ManifestOptions {
 	 * 
 	 * @param project of bundle containing the activation policy
 	 */
-	private static void setActivationPolicy(IProject project) {
+	@SuppressWarnings("unused")
+	private void setActivationPolicy(IProject project) {
 		if (null == project) {
 			return;
 		}
-		IFile manifestFile = project.getFile(MANIFEST_FILE_NAME);
+		IFile manifestFile = project.getFile(BundleProjectDescriptionImpl.MANIFEST_FILE_NAME);
 		Manifest manifest = loadManifest(project, manifestFile);
 		Attributes attributes = manifest.getMainAttributes();
 		String policy = attributes.getValue(Constants.BUNDLE_ACTIVATIONPOLICY);
@@ -110,13 +104,10 @@ public class ManifestOptions {
 		}
 	}
 
-	/**
-	 * Gets the cached activation policy header
-	 * 
-	 * @param bundle containing the meta information
-	 * @return true if lazy activation and false if eager
+	/* (non-Javadoc)
+	 * @see no.javatime.inplace.region.project.CachedmanifestOperations#getCachedActivationPolicy(org.osgi.framework.Bundle)
 	 */
-	public static Boolean getActivationPolicy(Bundle bundle) throws InPlaceException {
+	public Boolean getCachedActivationPolicy(Bundle bundle) throws InPlaceException {
 		if (null == bundle) {
 			throw new InPlaceException("null_bundle_activation_policy");
 		}
@@ -128,14 +119,10 @@ public class ManifestOptions {
 		return false;
 	}
 
-	/**
-	 * Checks if this bundle is a fragment
-	 * 
-	 * @param bundle bundle to check
-	 * @return true if the bundle is a fragment. Otherwise false.
-	 * @throws InPlaceException if bundle is null or a security violation
+	/* (non-Javadoc)
+	 * @see no.javatime.inplace.region.project.CachedmanifestOperations#isFragment(org.osgi.framework.Bundle)
 	 */
-	public static Boolean isFragment(Bundle bundle) throws InPlaceException {
+	public Boolean isFragment(Bundle bundle) throws InPlaceException {
 		if (null == bundle) {
 			throw new InPlaceException("null_bundle_check_fragment");
 		}
@@ -152,32 +139,22 @@ public class ManifestOptions {
 		return false;
 	}
 
-	/**
-	 * Verify that the specified path is part of the cached class path in the specified bundle
-	 * 
-	 * @param bundle containing class path
-	 * @param path a single path that is checked for existence within the specified class path
-	 * @return true if the specified path is contained in the class path of the specified bundle
-	 * @exception InPlaceException if paring error or an i/o error occurs reading the manifest
+	/* (non-Javadoc)
+	 * @see no.javatime.inplace.region.project.CachedmanifestOperations#verifyPathInCachedClassPath(org.osgi.framework.Bundle, org.eclipse.core.runtime.IPath)
 	 */
-	public static Boolean verifyPathInClassPath(Bundle bundle, IPath path) throws InPlaceException {
+	public Boolean verifyPathInCachedClassPath(Bundle bundle, IPath path) throws InPlaceException {
 		if (null == bundle) {
 			return false;
 		}
 		Dictionary<String, String> headers = bundle.getHeaders();
 		String classPath = headers.get(Constants.BUNDLE_CLASSPATH);
-		return verifyPathInClassPath(path, classPath, bundle.getSymbolicName());
+		return verifyPathInCachedClassPath(path, classPath, bundle.getSymbolicName());
 	}
 
-	/**
-	 * Verify that the specified path is part of the specified class path.
-	 * 
-	 * @param path a single path that is checked for existence within the specified class path
-	 * @param classPath containing class path
-	 * @return true if the specified path is contained in the class path of the specified class path string
-	 * @exception InPlaceException if parsing error or an i/o error occurs reading the manifest
+	/* (non-Javadoc)
+	 * @see no.javatime.inplace.region.project.CachedmanifestOperations#verifyPathInCachedClassPath(org.eclipse.core.runtime.IPath, java.lang.String, java.lang.String)
 	 */
-	public static Boolean verifyPathInClassPath(IPath path, String classPath, String name) throws InPlaceException {
+	public Boolean verifyPathInCachedClassPath(IPath path, String classPath, String name) throws InPlaceException {
 		try {
 
 			// Class path header does not exist
@@ -223,11 +200,12 @@ public class ManifestOptions {
 	 * @exception InPlaceException if {@code Bundle#getEntry(String)} return null or an i/o error occurs reading
 	 *              the manifest
 	 */
-	private static Manifest loadManifest(Bundle bundle) throws InPlaceException {
+	@SuppressWarnings("unused")
+	private Manifest loadManifest(Bundle bundle) throws InPlaceException {
 
 		URL url = null;
 		try {
-			url = bundle.getEntry(MANIFEST_FILE_NAME);
+			url = bundle.getEntry(BundleProjectDescriptionImpl.MANIFEST_FILE_NAME);
 		} catch (IllegalStateException e) {
 			throw new InPlaceException(e, "bundle_state_error", bundle.getSymbolicName());
 		} catch (NullPointerException e) {
@@ -255,7 +233,8 @@ public class ManifestOptions {
 	 * @param resource the manifest resource
 	 * @return the content of the manifest file
 	 */
-	private static Manifest loadManifest(IResource resource) {
+	@SuppressWarnings("unused")
+	private Manifest loadManifest(IResource resource) {
 		Manifest manifest = null;
 		if (resource instanceof IFile) {
 			manifest = loadManifest(resource.getProject(), (IFile) resource);
@@ -270,7 +249,7 @@ public class ManifestOptions {
 	 * @param file the manifest file
 	 * @return the content of the manifest file
 	 */
-	private static Manifest loadManifest(IProject project, IFile file) {
+	private Manifest loadManifest(IProject project, IFile file) {
 		try {
 			InputStream is = null;
 			try {
@@ -296,16 +275,16 @@ public class ManifestOptions {
 	 *           project could not be found, manifest file not found, write error or any other IO error updating
 	 *           the manifest file.
 	 */
-	private static void saveManifest(IProject project, Manifest manifest) throws InPlaceException, ProjectLocationException {
+	private void saveManifest(IProject project, Manifest manifest) throws InPlaceException, ProjectLocationException {
 		String location = null;
-		location = BundleProjectState.getLocationIdentifier(project, BundleProjectState.BUNDLE_FILE_LOC_SCHEME);
+		location = WorkspaceRegionImpl.INSTANCE.getProjectLocationIdentifier(project, BundleRegion.BUNDLE_FILE_LOC_SCHEME);
 		URL urlLoc;
 		try {
 			FileOutputStream os = null;
 			try {
 				urlLoc = new URL(location);
 				String path = urlLoc.getPath();
-				path = path.concat(MANIFEST_FILE_NAME);
+				path = path.concat(BundleProjectDescriptionImpl.MANIFEST_FILE_NAME);
 				os = new FileOutputStream(path);
 				manifest.write(os);
 			} finally {

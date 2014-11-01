@@ -12,16 +12,16 @@ package no.javatime.inplace.region.state;
 
 import no.javatime.inplace.region.Activator;
 import no.javatime.inplace.region.events.TransitionEvent;
-import no.javatime.inplace.region.intface.BundleTransitionListener;
-import no.javatime.inplace.region.intface.ProjectLocationException;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
 import no.javatime.inplace.region.intface.BundleTransition.TransitionError;
+import no.javatime.inplace.region.intface.BundleTransitionListener;
+import no.javatime.inplace.region.intface.ProjectLocationException;
 import no.javatime.inplace.region.manager.BundleCommandImpl;
 import no.javatime.inplace.region.manager.BundleTransitionImpl;
-import no.javatime.inplace.region.manager.BundleWorkspaceRegionImpl;
+import no.javatime.inplace.region.manager.WorkspaceRegionImpl;
 import no.javatime.inplace.region.msg.Msg;
-import no.javatime.inplace.region.project.BundleCandidates;
-import no.javatime.inplace.region.project.ManifestOptions;
+import no.javatime.inplace.region.project.BundleProjectDescriptionImpl;
+import no.javatime.inplace.region.project.BundleProjectImpl;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import no.javatime.util.messages.Category;
@@ -81,7 +81,7 @@ import org.osgi.framework.SynchronousBundleListener;
  * </ol>
  * <p>
  * The design supports a concept of a region bounded bundle structure (
- * {@link BundleWorkspaceRegionImpl}) acted on by bundle operations ({@link BundleCommandImpl}),
+ * {@link WorkspaceRegionImpl}) acted on by bundle operations ({@link BundleCommandImpl}),
  * which in turn creates a result (events) to interpret and react upon ({@code BundleStateEvents}).
  * This interrelationship is not interpreted as a sequence or a flow, although present, but as a
  * structural coherence.
@@ -89,7 +89,7 @@ import org.osgi.framework.SynchronousBundleListener;
  */
 public class BundleStateEvents implements SynchronousBundleListener {
 
-	private final BundleWorkspaceRegionImpl bundleRegion = BundleWorkspaceRegionImpl.INSTANCE;
+	private final WorkspaceRegionImpl bundleRegion = WorkspaceRegionImpl.INSTANCE;
 	private final BundleCommandImpl bundleCommand = BundleCommandImpl.INSTANCE;
 	private final BundleTransitionImpl bundleTransition = BundleTransitionImpl.INSTANCE;
 
@@ -129,16 +129,16 @@ public class BundleStateEvents implements SynchronousBundleListener {
 
 		final Bundle bundle = event.getBundle();
 		// Consider all workspace bundle projects
-		final IProject project = bundleRegion.getBundleProject(bundle);
+		final IProject project = WorkspaceRegionImpl.INSTANCE.getWorkspaceBundleProject(bundle);
 		if (null == project) {
 			return; // jar bundle or java project
 		}
 		BundleNode node = bundleRegion.getBundleNode(project);
-		// Project is not registered yet or it is registered but not its bundle
+		// This is always true if it is an external install
 		if (null == node || null == node.getBundleId()) {
-			// Bundle node will be registered as long as the project exists
-			node = bundleCommand.registerBundleNode(project, bundle,
-					BundleCandidates.isNatureEnabled(project));
+			// Project is not registered yet or it is registered but not its bundle
+			node = WorkspaceRegionImpl.INSTANCE.registerBundleNode(project, bundle,
+					BundleProjectImpl.INSTANCE.isNatureEnabled(project));
 		}
 		/*
 		 * Examine all bundle events and update state by executing intermediate transitions, identify
@@ -243,12 +243,12 @@ public class BundleStateEvents implements SynchronousBundleListener {
 			if (!node.isStateChanging()) {
 				node.getState().external(node, event, StateFactory.INSTANCE.uninstalledState,
 						Transition.EXTERNAL);
-				if (BundleCandidates.isWorkspaceNatureEnabled()) {
+				if (BundleProjectImpl.INSTANCE.isWorkspaceNatureEnabled()) {
 					bundleTransition.setTransitionError(bundle, TransitionError.UNINSTALL);
 					BundleTransitionListener.addBundleTransition(new TransitionEvent(bundle, node.getTransition()));
 				} else {
 					// Remove the externally uninstalled bundle from the workspace region
-					bundleCommand.unregisterBundle(bundle);
+					bundleRegion.unregisterBundle(bundle);
 				}
 			}
 			break;
@@ -282,7 +282,7 @@ public class BundleStateEvents implements SynchronousBundleListener {
 		 */
 		case BundleEvent.STARTING: {
 			if (node.getTransition() == Transition.EXTERNAL) {
-				if (ManifestOptions.getActivationPolicy(node.getBundle())) {
+				if (BundleProjectDescriptionImpl.INSTANCE.getCachedActivationPolicy(node.getBundle())) {
 					node.getState().external(node, event, StateFactory.INSTANCE.startingState,
 							Transition.EXTERNAL);
 				} else {

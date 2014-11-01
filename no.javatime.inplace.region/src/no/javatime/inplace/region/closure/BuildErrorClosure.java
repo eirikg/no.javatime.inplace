@@ -6,15 +6,16 @@ import java.util.LinkedHashSet;
 
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.region.Activator;
+import no.javatime.inplace.region.intface.BundleProjectDescription;
 import no.javatime.inplace.region.intface.BundleRegion;
 import no.javatime.inplace.region.intface.BundleTransition;
-import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
+import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.manager.BundleTransitionImpl;
-import no.javatime.inplace.region.manager.BundleWorkspaceRegionImpl;
+import no.javatime.inplace.region.manager.WorkspaceRegionImpl;
 import no.javatime.inplace.region.msg.Msg;
-import no.javatime.inplace.region.project.BundleProjectState;
-import no.javatime.inplace.region.project.ManifestOptions;
+import no.javatime.inplace.region.project.BundleProjectDescriptionImpl;
+import no.javatime.inplace.region.project.BundleProjectImpl;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
@@ -55,7 +56,7 @@ import org.osgi.framework.Bundle;
  */
 public class BuildErrorClosure {
 
-	final static private BundleRegion bundleRegion = BundleWorkspaceRegionImpl.INSTANCE;
+	final static private BundleRegion bundleRegion = WorkspaceRegionImpl.INSTANCE;
 	final static private BundleTransition bundleTransition = BundleTransitionImpl.INSTANCE;
 
 	public enum ActivationScope {
@@ -215,7 +216,7 @@ public class BuildErrorClosure {
 			default:
 				break;
 			}
-			return bundleRegion.getBundleProjects(bundleClosures);
+			return bundleRegion.getProjects(bundleClosures);
 		} else {
 			Collection<IProject> projectClosures = null;
 			ProjectSorter ps = new ProjectSorter();
@@ -373,7 +374,7 @@ public class BuildErrorClosure {
 		Collection<IProject> buildErrors = getBuildErrors();
 		if (buildErrors.size() == 0) {
 			String okMsg = NLS.bind(Msg.NO_BUILD_ERROR_INFO,
-					BundleProjectState.formatProjectList(getProjectClosures()));
+					BundleProjectImpl.INSTANCE.formatProjectList(getProjectClosures()));
 			return new BundleStatus(StatusCode.OK, Activator.PLUGIN_ID, okMsg, null);
 		}
 		Collection<IProject> buildErrorClosures = getBuildErrorClosures();
@@ -381,8 +382,8 @@ public class BuildErrorClosure {
 		String msg = getBuildErrorHeaderMessage();
 		if (null == msg) {
 			msg = NLS.bind(Msg.AWAITING_BUILD_ERROR_INFO,
-					new Object[] { name, BundleProjectState.formatProjectList(buildErrorClosures),
-							BundleProjectState.formatProjectList(buildErrors) });
+					new Object[] { name, BundleProjectImpl.INSTANCE.formatProjectList(buildErrorClosures),
+							BundleProjectImpl.INSTANCE.formatProjectList(buildErrors) });
 		}
 		IBundleStatus buildStatus = new BundleStatus(StatusCode.WARNING, Activator.PLUGIN_ID, msg, null);
 		for (IProject errorProject : buildErrors) {
@@ -397,7 +398,7 @@ public class BuildErrorClosure {
 			}
 			if (projectClosures.size() > 0) {
 				msg = NLS.bind(Msg.PROVIDING_BUNDLES_INFO,
-						errProjectIdent, BundleProjectState.formatProjectList(projectClosures));
+						errProjectIdent, BundleProjectImpl.INSTANCE.formatProjectList(projectClosures));
 				buildStatus.add(new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, msg));
 			}
 			projectClosures = getBundleProjectClosures(
@@ -406,7 +407,7 @@ public class BuildErrorClosure {
 			projectClosures.remove(errorProject);
 			if (projectClosures.size() > 0) {
 				msg = NLS.bind(Msg.REQUIRING_BUNDLES_INFO,
-						errProjectIdent, BundleProjectState.formatProjectList(projectClosures));
+						errProjectIdent, BundleProjectImpl.INSTANCE.formatProjectList(projectClosures));
 				buildStatus.add(new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, msg));
 			}
 		}
@@ -485,7 +486,7 @@ public class BuildErrorClosure {
 			throw new InPlaceException("null_project_build_state");
 		}
 		if (project.isAccessible()) {
-			IJavaProject javaProject = BundleProjectState.getJavaProject(project.getName());
+			IJavaProject javaProject = BundleProjectImpl.INSTANCE.getJavaProject(project.getName());
 			if (javaProject.hasBuildState()) {
 				return true;
 			}
@@ -503,8 +504,8 @@ public class BuildErrorClosure {
 	 * @return true if the manifest file does not exist or contains build errors and false otherwise
 	 * @throws InPlaceException if a core exception occurs. The exception contains a status object describing the failure
 	 * @see #hasManifest(IProject)
-	 * @see ManifestOptions#MANIFEST_RELATIVE_PATH
-	 * @see ManifestOptions#MANIFEST_FILE_NAME
+	 * @see BundleProjectDescription#MANIFEST_RELATIVE_PATH
+	 * @see BundleProjectDescription#MANIFEST_FILE_NAME
 	 */
 	public static boolean hasManifestBuildErrors(IProject project) throws InPlaceException {
 		
@@ -518,7 +519,7 @@ public class BuildErrorClosure {
 				if (IMarker.SEVERITY_ERROR == problems[problemsIndex].getAttribute(IMarker.SEVERITY,
 						IMarker.SEVERITY_INFO)) {
 					IResource resource = problems[problemsIndex].getResource();
-					if (resource instanceof IFile && resource.getName().equals(ManifestOptions.MANIFEST_FILE_NAME)) {
+					if (resource instanceof IFile && resource.getName().equals(BundleProjectDescriptionImpl.MANIFEST_FILE_NAME)) {
 						return true;
 					}
 				}
@@ -534,12 +535,12 @@ public class BuildErrorClosure {
 	 * 
 	 * @param project to check for the existence of a manifest file at the default location
 	 * @return true if the manifest file exist at the default location and false otherwise
-	 * @see ManifestOptions#MANIFEST_RELATIVE_PATH
-	 * @see ManifestOptions#MANIFEST_FILE_NAME
+	 * @see BundleProjectDescription#MANIFEST_RELATIVE_PATH
+	 * @see BundleProjectDescription#MANIFEST_FILE_NAME
 	 */
 	public static Boolean hasManifest(IProject project) {
 		if (null != project && project.isAccessible()) {
-			IFile manifestFile = project.getFile(ManifestOptions.MANIFEST_RELATIVE_PATH + ManifestOptions.MANIFEST_FILE_NAME);
+			IFile manifestFile = project.getFile(BundleProjectDescription.MANIFEST_RELATIVE_PATH + BundleProjectDescriptionImpl.MANIFEST_FILE_NAME);
 			if (manifestFile.exists()) {
 				return true;
 			}

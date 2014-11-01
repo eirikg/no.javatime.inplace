@@ -10,7 +10,7 @@ import org.osgi.framework.ServiceRegistration;
  * Factory creating service object for the bundle command. The service scope for this factory is restricted
  * to singleton
  *
- * @param <S> type of service
+ * @param <BundleTransition> service interface for bundle transitions
  */
 public class BundleTransitionServiceFactory implements ServiceFactory<BundleTransition> {
 

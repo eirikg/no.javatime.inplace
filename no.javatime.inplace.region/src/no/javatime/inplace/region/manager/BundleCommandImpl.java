@@ -36,12 +36,12 @@ import no.javatime.inplace.region.intface.BundleActivatorException;
 import no.javatime.inplace.region.intface.BundleCommand;
 import no.javatime.inplace.region.intface.BundleStateChangeException;
 import no.javatime.inplace.region.intface.BundleThread;
+import no.javatime.inplace.region.intface.BundleTransition.Transition;
+import no.javatime.inplace.region.intface.BundleTransition.TransitionError;
 import no.javatime.inplace.region.intface.BundleTransitionListener;
 import no.javatime.inplace.region.intface.DuplicateBundleException;
 import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.intface.ProjectLocationException;
-import no.javatime.inplace.region.intface.BundleTransition.Transition;
-import no.javatime.inplace.region.intface.BundleTransition.TransitionError;
 import no.javatime.inplace.region.msg.Msg;
 import no.javatime.inplace.region.resolver.BundleResolveHookFactory;
 import no.javatime.inplace.region.state.BundleNode;
@@ -55,6 +55,7 @@ import no.javatime.util.messages.TraceMessage;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.Status;
+import org.eclipse.osgi.util.NLS;
 import org.eclipse.ui.statushandlers.StatusManager;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -74,20 +75,23 @@ import org.osgi.framework.wiring.FrameworkWiring;
  * Installed workspace bundles are added and uninstalled workspace bundles are removed from the workspace
  * region.
  * 
- * @see BundleWorkspaceRegionImpl
+ * @see WorkspaceRegionImpl
  */
 public class BundleCommandImpl implements BundleCommand {
 
 	public final static BundleCommandImpl INSTANCE = new BundleCommandImpl();
 
-	private BundleWorkspaceRegionImpl bundleRegion = BundleWorkspaceRegionImpl.INSTANCE;
+	private WorkspaceRegionImpl bundleRegion = WorkspaceRegionImpl.INSTANCE;
 	private BundleTransitionImpl bundleTransition = BundleTransitionImpl.INSTANCE;
 
 	// Used in wait loop, waiting for the refresh thread to notify that it has finished refreshing bundles
-	private boolean refreshed;
+	private volatile boolean refreshed;
 
 	// The bundle currently in a transition (state changing)
 	private static Bundle currentBundle;
+
+	/* internal object to use for synchronization */
+	private final Object stateLock = new Object();
 
 	/**
 	 * Access to the wiring framework API and used internally to refresh and resolve bundles.
@@ -111,7 +115,7 @@ public class BundleCommandImpl implements BundleCommand {
 	 */
 	public void initFrameworkWiring() {
 		if (null == frameworkWiring) {
-			Bundle systemBundle = getContext().getBundle(0); // Platform.getBundle("org.eclipse.osgi");
+			Bundle systemBundle = Activator.getContext().getBundle(0);
 			if (null != systemBundle) {
 				frameworkWiring = systemBundle.adapt(FrameworkWiring.class);
 			} else {
@@ -127,53 +131,17 @@ public class BundleCommandImpl implements BundleCommand {
 	}
 
 	@Override
-	public boolean isBundleProjectRegistered(IProject project) {
-		BundleNode node = bundleRegion.getBundleNode(project);
-		if (null != node) {
-			return true;
-		}
-		return false;
-	}
-
-	/**
-	 * Register a project and its associated workspace bundle in the workspace region. The bundle must be
-	 * registered during or after it is installed but before it is resolved. 
-	 * <p>
-	 * If the bundle does not exists it is initialized with state {@code StateLess} and {@code Transition.NOTRANSITION}
-	 * <p>
-	 * @param project the project project to register. Must not be null.
-	 * @param bundle the bundle to register. May be null.
-	 * @param activateBundle true if the project is activated (nature enabled) and false if not activated
-	 * @return the new updated bundle node
-	 */
-	public BundleNode registerBundleNode(IProject project, Bundle bundle, Boolean activateBundle) {
-	
-		BundleNode node = bundleRegion.getBundleNode(project);
-		try {
-			node = bundleRegion.put(project, bundle, activateBundle);
-		} catch (InPlaceException e) {
-			// Assume project not null
-		}
-		return node;
-	}
-
-	@Override
-	public void registerBundleProject(IProject project, Bundle bundle, boolean activateBundle) {
-		registerBundleNode(project, bundle, activateBundle);		
-	}
-
-	@Override
 	public Bundle install(IProject project, Boolean activate) throws InPlaceException,
 			DuplicateBundleException, ProjectLocationException {
 		
 		// Register or update the bundle project. The bundle can not be registered before it is installed
-		BundleNode bundleNode = registerBundleNode(project, null, activate);
+		BundleNode bundleNode = WorkspaceRegionImpl.INSTANCE.registerBundleNode(project, null, activate);
 		// The bundle will be registered and associated with the project when 
 		// the bundle becomes available in the bundle listener			
 		Bundle bundle = install(project);
 		// If the bundle listener for some reason did not register the bundle
 		if (null == bundleNode.getBundleId()) {
-			bundleNode = registerBundleNode(project, bundle, activate);			
+			bundleNode = WorkspaceRegionImpl.INSTANCE.registerBundleNode(project, bundle, activate);			
 		}
 		return bundle;
 	}
@@ -274,7 +242,7 @@ public class BundleCommandImpl implements BundleCommand {
 	public Boolean resolve(Collection<Bundle> bundles) throws InPlaceException {
 		boolean resolved = true;
 		if (null == frameworkWiring) {
-			if (Category.DEBUG && Activator.getDefault().msgOpt().isBundleOperations())
+			if (Category.DEBUG && Activator.getDefault().getMsgOptService().isBundleOperations())
 				TraceMessage.getInstance().getString("null_admin_bundle");
 			throw new InPlaceException("null_framework");
 		}
@@ -343,7 +311,7 @@ public class BundleCommandImpl implements BundleCommand {
 		}
 		try { // wait block
 			for (Bundle bundle : bundles) {
-				if (BundleWorkspaceRegionImpl.INSTANCE.exist(bundle)) {
+				if (WorkspaceRegionImpl.INSTANCE.exist(bundle)) {
 					BundleNode node = bundleRegion.getBundleNode(bundle);
 					node.getState().refresh(node);
 				}
@@ -489,7 +457,9 @@ public class BundleCommandImpl implements BundleCommand {
 		BundleNode node = bundleRegion.getBundleNode(bundle);
 		long startTime = System.currentTimeMillis();
 		try {
-			currentBundle = bundle;
+			synchronized (stateLock) {
+				currentBundle = bundle;
+			}
 			node.getState().start(node);
 			bundle.start(startOption);
 		} catch (IllegalStateException e) {
@@ -516,8 +486,10 @@ public class BundleCommandImpl implements BundleCommand {
 		} finally {
 			msec = System.currentTimeMillis() - startTime;
 			BundleTransitionListener.addBundleTransition(new TransitionEvent(bundle, node.getTransition())); 
-			if (!(node.getTransitionError() == TransitionError.STATECHANGE)) {
-				currentBundle = null;
+			synchronized (stateLock) {
+				if (!(node.getTransitionError() == TransitionError.STATECHANGE)) {
+					currentBundle = null;
+				}
 			}
 			// The framework moves the bundle to state resolve for incomplete (exceptions) start commands   
 			if (node.hasTransitionError()) {
@@ -595,7 +567,9 @@ public class BundleCommandImpl implements BundleCommand {
 		BundleNode node = bundleRegion.getBundleNode(bundle);
 		long startTime = System.currentTimeMillis();
 		try {
-			currentBundle = bundle;
+			synchronized (stateLock) {
+				currentBundle = bundle;
+			}
 			node.getState().stop(node);
 			if (!stopTransient) {
 				bundle.stop();
@@ -630,26 +604,33 @@ public class BundleCommandImpl implements BundleCommand {
 				node.getState().commit(node);
 			}
 			msec = System.currentTimeMillis() - startTime;
-			if (!(bundleTransition.getError(bundle) == TransitionError.STATECHANGE)) {
-				currentBundle = null;
+			synchronized (stateLock) {			
+				if (!(bundleTransition.getError(bundle) == TransitionError.STATECHANGE)) {
+					currentBundle = null;
+				}
 			}
 		}
 	}
 
 	@Override
 	public Bundle getCurrentBundle() {
-		return currentBundle;
+		
+		synchronized (stateLock) {
+			return currentBundle;			
+		}
 	}
 
 	@Override
 	public void setCurrentBundle(Bundle bundle) {
-		currentBundle = bundle;
-		boolean stateChanging = BundleThread.isStateChanging(bundle);
-		if (null == bundle && stateChanging) {
-			System.out.println("Error finnishing state change for bundle" + bundle);
-		}
-		if (null != bundle && !stateChanging) {
-			System.out.println("Error in state change for bundle" + bundle);
+		synchronized (stateLock) {
+			currentBundle = bundle;
+			boolean stateChanging = BundleThread.isStateChanging(bundle);
+			if ((null == bundle && stateChanging) || (null != bundle && !stateChanging)) {
+				String msg = NLS.bind(Msg.STATE_CHANGE_ERROR, bundle);
+				StatusManager.getManager().handle(
+						new BundleStatus(StatusCode.WARNING, Activator.PLUGIN_ID, bundle, msg, null),
+						StatusManager.LOG);				
+			}
 		}
 	}
 	
@@ -740,7 +721,7 @@ public class BundleCommandImpl implements BundleCommand {
 			project = uninstall(bundle);
 		} finally {
 			if (unregister) {
-				unregisterBundleProject(project);
+				bundleRegion.unregisterBundleProject(project);
 			}
 		}
 		return project;
@@ -766,7 +747,7 @@ public class BundleCommandImpl implements BundleCommand {
 			bundle.uninstall();
 		} catch (IllegalStateException e) {
 			node.setTransitionError(TransitionError.EXCEPTION);
-			if (Category.DEBUG && Activator.getDefault().msgOpt().isBundleOperations())
+			if (Category.DEBUG && Activator.getDefault().getMsgOptService().isBundleOperations())
 				TraceMessage.getInstance().getString("state_error_uninstall_bundle", bundle, e.getLocalizedMessage());
 			throw new InPlaceException(e, "bundle_state_error", bundle);
 		} catch (SecurityException e) {
@@ -786,26 +767,6 @@ public class BundleCommandImpl implements BundleCommand {
 			}
 		}
 		return project;
-	}
-
-	@Override
-	public void unregisterBundle(Bundle bundle) {
-		
-		BundleNode node = bundleRegion.getBundleNode(bundle);
-		if (null != node) {
-			IProject project = node.getProject();
-			if (!project.isAccessible()) {
-				unregisterBundleProject(project);
-			} else {
-				node.setBundleId(null);
-				node.setActivated(false);
-			}
-		}
-	}
-	
-	@Override
-	public void unregisterBundleProject(IProject project) {
-		bundleRegion.remove(project);
 	}
 
 	/**
@@ -837,7 +798,7 @@ public class BundleCommandImpl implements BundleCommand {
 	@Override
 	public Collection<Bundle> getRemovalPending() throws InPlaceException {
 		if (null == frameworkWiring) {
-			if (Category.DEBUG && Activator.getDefault().msgOpt().isBundleOperations())
+			if (Category.DEBUG && Activator.getDefault().getMsgOptService().isBundleOperations())
 				TraceMessage.getInstance().getString("null_admin_bundle");
 			throw new InPlaceException("null_framework");
 		}
@@ -1001,26 +962,6 @@ public class BundleCommandImpl implements BundleCommand {
 			break;
 		}
 		return typeName;
-	}
-
-	/**
-	 * The bundle context object.
-	 * 
-	 * @return the bundle context object for this bundle
-	 */
-	@Override
-	public BundleContext getContext() {
-		return Activator.getContext();
-	}
-
-	/**
-	 * The framework wiring object.
-	 * 
-	 * @return the framework wiring object used by this bundle manager
-	 */
-	@Override
-	public FrameworkWiring getFrameworkWiring() {
-		return frameworkWiring;
 	}
 
 	/**
