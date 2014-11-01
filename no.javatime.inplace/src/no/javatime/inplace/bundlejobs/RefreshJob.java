@@ -173,7 +173,7 @@ public class RefreshJob extends BundleJob {
 		}
 		start(bundlesToRestart, Closure.PROVIDING,
 				new SubProgressMonitor(monitor, 1));
-		return getLastStatus();
+		return getLastErrorStatus();
 	}
 	
 	/**

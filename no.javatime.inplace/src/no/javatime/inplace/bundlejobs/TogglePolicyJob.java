@@ -94,15 +94,23 @@ public class TogglePolicyJob extends BundleJob {
 					if (!bundleProject.isAutoBuilding()) {
 						if (bundleRegion.isBundleActivated(project)) {
 							String msg = WarnMessage.getInstance().formatString("policy_updated_auto_build_off",
-									project.getName());
-							addInfoMessage(msg, project);
+									project.getName());							
+							//  Force this to be displayed in the bundle log view
+							if (!InPlace.get().getMsgOpt().isBundleOperations()) {
+								InPlace.get().log(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, project, msg, null));								
+							}
+							addLogStatus(msg, bundle, project);
 						}
 					}
 					try {
-						if (InPlace.get().getMsgOpt().isBundleOperations()
-								&& !InPlace.get().getCommandOptionsService().isUpdateOnBuild()) {
+						if (!InPlace.get().getCommandOptionsService().isUpdateOnBuild()) {
 							if (bundleRegion.isBundleActivated(project)) {
-								addInfoMessage(NLS.bind(Msg.AUTOUPDATE_OFF_INFO, project.getName()));
+								String msg = NLS.bind(Msg.AUTOUPDATE_OFF_INFO, project.getName());
+								//  Force this to be displayed in the bundle log view
+								if (!InPlace.get().getMsgOpt().isBundleOperations()) {
+									InPlace.get().log(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID,project, msg, null));								
+								}
+								addLogStatus(msg, bundle, project);
 							}
 						}
 					} catch (InPlaceException e) {

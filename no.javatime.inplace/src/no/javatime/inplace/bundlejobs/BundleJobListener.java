@@ -68,7 +68,13 @@ public class BundleJobListener extends JobChangeAdapter {
 	}
 
 	/**
-	 * Log bundle error and log status objects from bundle jobs.
+	 * Log all log (trace) status objects from a bundle job to the bundle log. The error and warning
+	 * status object list is forwarded to the custom status handler.
+	 * <p>
+	 * If the option to log bundle operations is off and the job contains bundle status information
+	 * they will not be displayed in the bundle log. To force status information to be displayed
+	 * either turn on the log bundle operations switch or send status information directly to the
+	 * bundle log
 	 */
 	@Override
 	public void done(IJobChangeEvent event) {
@@ -76,7 +82,7 @@ public class BundleJobListener extends JobChangeAdapter {
 		if (job instanceof BundleJob) {
 			final BundleJob bundleJob = (BundleJob) job;
 			if (InPlace.get().getMsgOpt().isBundleOperations()) {
-				final Collection<IBundleStatus> traceList = bundleJob.getTraceList();
+				final Collection<IBundleStatus> traceList = bundleJob.getLogStatusList();
 				if (traceList.size() > 0) {
 					Runnable trace = new Runnable() {
 						public void run() {
@@ -117,12 +123,12 @@ public class BundleJobListener extends JobChangeAdapter {
 	 * 
 	 * @param bundleJob the job that may contain a cancel status
 	 * 
-	 * @return a copy of the status list with the cancel status removed from the status list or a copy
-	 * of the status list if it does not contain any cancel status
+	 * @return a copy of the error status list with the cancel status removed from the status list or
+	 * a copy of the status list if it does not contain any cancel status
 	 */
 	private Collection<IBundleStatus> logCancelStatus(BundleJob bundleJob) {
 
-		Collection<IBundleStatus> statusList = bundleJob.getStatusList();
+		Collection<IBundleStatus> statusList = bundleJob.getErrorStatusList();
 		for (IBundleStatus status : statusList) {
 			if (status.hasStatus(StatusCode.CANCEL)) {
 				StatusManager.getManager().handle(status, StatusManager.LOG);
@@ -163,14 +169,12 @@ public class BundleJobListener extends JobChangeAdapter {
 						activatedProjects.remove(deactivatedProject);
 						if (activatedProjects.size() > 0) {
 							String msg = NLS.bind(Msg.IMPLICIT_ACTIVATION_INFO,
-									bundleProject.formatProjectList(activatedProjects),
-									deactivatedProject.getName());
+									bundleProject.formatProjectList(activatedProjects), deactivatedProject.getName());
 							IBundleStatus status = new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, msg);
 							msg = NLS.bind(Msg.DELAYED_RESOLVE_INFO,
-									bundleProject.formatProjectList(activatedProjects),
-									deactivatedProject.getName());
+									bundleProject.formatProjectList(activatedProjects), deactivatedProject.getName());
 							status.add(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, msg));
-							bundleJob.addTrace(status);
+							bundleJob.addLogStatus(status);
 						}
 					}
 				} catch (CircularReferenceException e) {

@@ -14,30 +14,30 @@ public interface Status {
 	 * 
 	 * @return a list of status trace objects or an empty list
 	 * 
-	 * @see #addTrace(String, Bundle, IProject)
-	 * @see #addTrace(String, Object[], Object)
+	 * @see #addLogStatus(String, Bundle, IProject)
+	 * @see #addLogStatus(String, Object[], Object)
 	 */
-	public Collection<IBundleStatus> getTraceList();
+	public Collection<IBundleStatus> getLogStatusList();
 
 	/**
 	 * Get all status information added by this job
 	 * 
 	 * @return a list of status objects where each status object describes the nature of the status or an empty list
 	 */
-	public Collection<IBundleStatus> getStatusList();
+	public Collection<IBundleStatus> getErrorStatusList();
 
 	/**
 	 * Number of status elements registered
 	 * 
 	 * @return number of status elements
 	 */
-	public int statusList();
+	public int errorStatusList();
 
 	/**
 	 * Check if any bundle status objects have been added to the status list
 	 * 
 	 * @return true if bundle status objects exists in the status list, otherwise false
 	 */
-	public boolean hasStatus();
+	public boolean hasErrorStatus();
 
 }

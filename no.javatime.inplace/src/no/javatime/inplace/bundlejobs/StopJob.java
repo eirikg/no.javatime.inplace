@@ -168,11 +168,11 @@ public class StopJob extends BundleJob {
 							bundleRegion.getBundles(Bundle.RESOLVED | Bundle.STOPPING));
 					String msg =	WarnMessage.getInstance().formatString("has_stopped_requiring_bundles",
 							bundleRegion.formatBundleList(requiringBundles, true), bundleRegion.formatBundleList(providingBundles, true)); 
-					addTrace(new BundleStatus(StatusCode.WARNING, InPlace.PLUGIN_ID, msg));
+					addLogStatus(new BundleStatus(StatusCode.WARNING, InPlace.PLUGIN_ID, msg));
 				}
 			}
 		}
-		return getLastStatus();
+		return getLastErrorStatus();
 	}
 
 	/**

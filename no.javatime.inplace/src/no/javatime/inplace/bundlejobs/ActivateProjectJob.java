@@ -162,7 +162,7 @@ public class ActivateProjectJob extends NatureJob {
 	 * @throws InPlaceException when failing to enable nature or if one of the specified projects does
 	 * not exist or is closed
 	 * @throws CircularReferenceException if cycles are detected in the project graph
-	 * @see #getStatusList()
+	 * @see #getErrorStatusList()
 	 */
 	private IBundleStatus activate(IProgressMonitor monitor) throws InPlaceException,
 			InterruptedException, CircularReferenceException {
@@ -179,7 +179,7 @@ public class ActivateProjectJob extends NatureJob {
 			if (errorClosure.size() > 0) {
 				removePendingProjects(errorClosure);
 				if (pendingProjects() == 0) {
-					return getLastStatus();
+					return getLastErrorStatus();
 				}
 			}
 			// Uninstall any installed bundles before activating workspace
@@ -205,7 +205,7 @@ public class ActivateProjectJob extends NatureJob {
 				InPlace.get().log(
 						new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, Msg.NO_PROJECTS_TO_ACTIVATE_INFO));
 			}
-			return getLastStatus();
+			return getLastErrorStatus();
 		}
 		if (InPlace.get().getMsgOpt().isBundleOperations() && !bundleProject.isAutoBuilding()) {
 			IBundleStatus status = new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID,
@@ -214,7 +214,7 @@ public class ActivateProjectJob extends NatureJob {
 					Msg.BUILDER_OFF_LIST_INFO, bundleProject.formatProjectList(getPendingProjects()))));
 			InPlace.get().log(status);
 		}
-		return getLastStatus();
+		return getLastErrorStatus();
 	}
 
 	/**
@@ -299,7 +299,7 @@ public class ActivateProjectJob extends NatureJob {
 		if (be.hasBuildErrors()) {
 			Collection<IProject> errorClosure = be.getBuildErrorClosures();
 			if (InPlace.get().getMsgOpt().isBundleOperations()) {
-				addTrace(be.getErrorClosureStatus());
+				addLogStatus(be.getErrorClosureStatus());
 			}
 			return errorClosure;
 		}
@@ -340,7 +340,7 @@ public class ActivateProjectJob extends NatureJob {
 				}
 			}
 		}
-		return getLastStatus();
+		return getLastErrorStatus();
 	}
 
 	/**
@@ -360,7 +360,7 @@ public class ActivateProjectJob extends NatureJob {
 	private IBundleStatus uninstallBundles(Collection<Bundle> bundlesToUninstall,
 			IProgressMonitor monitor) throws OperationCanceledException, InterruptedException,
 			CircularReferenceException {
-		int entrySize = statusList();
+		int entrySize = errorStatusList();
 		IBundleStatus status = stop(bundlesToUninstall, null, new SubProgressMonitor(monitor, 1));
 		if (monitor.isCanceled()) {
 			throw new OperationCanceledException();
@@ -378,7 +378,7 @@ public class ActivateProjectJob extends NatureJob {
 								bundleRegion.formatBundleList(bundlesToUninstall, true))));
 			}
 		}
-		return statusList() > entrySize ? getLastStatus() : status;
+		return errorStatusList() > entrySize ? getLastErrorStatus() : status;
 	}
 
 	/**

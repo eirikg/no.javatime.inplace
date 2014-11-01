@@ -126,7 +126,7 @@ public abstract class NatureJob extends BundleJob {
 				localMonitor.worked(1);
 			}
 		}
-		return getLastStatus();
+		return getLastErrorStatus();
 	}
 	
 	/**
@@ -220,9 +220,9 @@ public abstract class NatureJob extends BundleJob {
 						if (InPlace.get().getMsgOpt().isBundleOperations()) {
 							Bundle bundle = bundleRegion.getBundle(project);
 							if (null == bundle) {
-								addTrace(Msg.DISABLE_NATURE_TRACE, new Object[] {project.getName()}, project);
+								addLogStatus(Msg.DISABLE_NATURE_TRACE, new Object[] {project.getName()}, project);
 							} else {
-								addTrace(Msg.DISABLE_NATURE_TRACE, new Object[] {project.getName()}, bundle);							
+								addLogStatus(Msg.DISABLE_NATURE_TRACE, new Object[] {project.getName()}, bundle);							
 							}
 						}
 						localMonitor.worked(1);
@@ -239,9 +239,9 @@ public abstract class NatureJob extends BundleJob {
 				if (InPlace.get().getMsgOpt().isBundleOperations()) {
 					Bundle bundle = bundleRegion.getBundle(project);
 					if (null == bundle) {
-						addTrace(Msg.ENABLE_NATURE_TRACE, new Object[] {project.getName()}, project);
+						addLogStatus(Msg.ENABLE_NATURE_TRACE, new Object[] {project.getName()}, project);
 					} else {
-						addTrace(Msg.ENABLE_NATURE_TRACE, new Object[] {project.getName()}, bundle);							
+						addLogStatus(Msg.ENABLE_NATURE_TRACE, new Object[] {project.getName()}, bundle);							
 					}
 				}
 				localMonitor.worked(1);

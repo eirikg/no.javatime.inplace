@@ -231,7 +231,7 @@ public class UpdateJob extends BundleJob {
 		}
 
 		if (!bundleTransition.containsPending(bundlesToUpdate, Transition.UPDATE, false)) {
-			return getLastStatus();
+			return getLastErrorStatus();
 		}
 
 		// (4) Collect all bundles to restart after update and refresh
@@ -324,7 +324,7 @@ public class UpdateJob extends BundleJob {
 				addStatus(status);
 			}
 		}
-		return getLastStatus();
+		return getLastErrorStatus();
 	}
 
 	/**

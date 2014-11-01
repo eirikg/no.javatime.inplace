@@ -226,7 +226,7 @@ public class ActivateBundleJob extends BundleJob implements ActivateBundle {
 				}
 			}
 			activatedBundles = install(getPendingProjects(), monitor);
-			if (!getLastStatus().isOK()) {
+			if (!getLastErrorStatus().isOK()) {
 				DeactivateJob daj = new DeactivateJob(DeactivateJob.deactivateJobName, getPendingProjects());
 				BundleJobManager.addBundleJob(daj, 0);
 				return addStatus(new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID, Msg.INSTALL_ERROR));
@@ -255,7 +255,7 @@ public class ActivateBundleJob extends BundleJob implements ActivateBundle {
 		}
 		// No projects are activated or no activated bundle projects have been installed
 		if (null == activatedBundles || activatedBundles.size() == 0) {
-			return getLastStatus();
+			return getLastErrorStatus();
 		}
 		if (monitor.isCanceled()) {
 			throw new OperationCanceledException();
@@ -273,9 +273,9 @@ public class ActivateBundleJob extends BundleJob implements ActivateBundle {
 		}
 		if (bundlesToResolve.size() == 0) {
 			if (InPlace.get().getMsgOpt().isBundleOperations())
-				addTrace(Msg.ACTIVATED_BUNDLES_INFO, new Object[] { bundleRegion.formatBundleList(
+				addLogStatus(Msg.ACTIVATED_BUNDLES_INFO, new Object[] { bundleRegion.formatBundleList(
 						activatedBundles, true) }, InPlace.getContext().getBundle());
-			return getLastStatus();
+			return getLastErrorStatus();
 		}
 		Collection<Bundle> notResolvedBundles = resolve(bundlesToResolve, new SubProgressMonitor(
 				monitor, 1));
@@ -300,7 +300,7 @@ public class ActivateBundleJob extends BundleJob implements ActivateBundle {
 		}
 		restoreSessionStates(activatedBundles);
 		start(activatedBundles, Closure.PROVIDING, new SubProgressMonitor(monitor, 1));
-		return getLastStatus();
+		return getLastErrorStatus();
 	}
 
 	@SuppressWarnings("unused")
@@ -317,7 +317,7 @@ public class ActivateBundleJob extends BundleJob implements ActivateBundle {
 				projectErrorClosures = be.getBuildErrorClosures();
 				activatedProjects.removeAll(projectErrorClosures);
 				if (InPlace.get().getMsgOpt().isBundleOperations()) {
-					addTrace(be.getErrorClosureStatus());
+					addLogStatus(be.getErrorClosureStatus());
 				}
 			}
 			be = new BuildErrorClosure(activatedProjects, Transition.ACTIVATE_BUNDLE, Closure.PROVIDING,
@@ -329,7 +329,7 @@ public class ActivateBundleJob extends BundleJob implements ActivateBundle {
 					projectErrorClosures = be.getBuildErrorClosures();
 				}
 				if (InPlace.get().getMsgOpt().isBundleOperations()) {
-					addTrace(be.getErrorClosureStatus());
+					addLogStatus(be.getErrorClosureStatus());
 				}
 			}
 			if (null != projectErrorClosures) {
@@ -453,7 +453,7 @@ public class ActivateBundleJob extends BundleJob implements ActivateBundle {
 										String msg = NLS.bind(Msg.UNINSTALLED_REQUIRING_BUNDLES_INFO, 
 												new Object[] {bundleRegion.formatBundleList(reqBundles, true), 
 												bundleRegion.getSymbolicKey(bundle, null)});
-										addTrace(msg, bundle, null);
+										addLogStatus(msg, bundle, null);
 									}
 									startBundle = true;
 									break;
@@ -468,7 +468,7 @@ public class ActivateBundleJob extends BundleJob implements ActivateBundle {
 								bundles.remove(bundle); // Do not start this bundle
 							} else {
 								if (InPlace.get().getMsgOpt().isBundleOperations()) {
-									addTrace(NLS.bind(Msg.CONDITIONAL_START_BUNDLE_INFO, bundle), bundle, null);
+									addLogStatus(NLS.bind(Msg.CONDITIONAL_START_BUNDLE_INFO, bundle), bundle, null);
 								}
 							}
 						} else {

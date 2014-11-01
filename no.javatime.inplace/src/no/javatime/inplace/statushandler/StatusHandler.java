@@ -92,15 +92,32 @@ public class StatusHandler extends WorkbenchErrorHandler {
 			InPlace.get().getLog().log(criticalErrorStatus);
 			return;
 		}
+		// Only consider bundle status objects
 		if (status instanceof BundleStatus) {
+			IBundleStatus bundleStatus = (IBundleStatus) status;
+			// Also send the error status objects to the bundle log
 			if (InPlace.get().getMsgOpt().isBundleOperations()) {
-				InPlace.get().log((BundleStatus) status);
+				InPlace.get().log(bundleStatus);
 			}
-			// Do not send info messages to the error log
-			if (((BundleStatus)status).getStatusCode() != StatusCode.INFO) {
-				InPlace.get().getLog().log(status);
+			// Do not send a list of info messages to the error log
+			if (bundleStatus.isMultiStatus()) {
+				for (IStatus statusObject : bundleStatus.getChildren()) {
+					if (statusObject instanceof BundleStatus) {
+						if (((BundleStatus)statusObject).getStatusCode() != StatusCode.INFO) {
+							super.handle(statusAdapter, style);
+							// InPlace.get().getLog().log(bundleStatus);	
+							break;
+						}
+					}
+				}
+			} else {
+				if (((BundleStatus)status).getStatusCode() != StatusCode.INFO) {
+					super.handle(statusAdapter, style);
+					//InPlace.get().getLog().log(status);
+				}
 			}
 		} else {
+			// Forward any other type of status objects to the standard error handler 
 			super.handle(statusAdapter, style);
 		}
 	}

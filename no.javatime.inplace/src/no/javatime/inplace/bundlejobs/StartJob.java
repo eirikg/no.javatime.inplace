@@ -200,11 +200,11 @@ public class StartJob extends BundleJob {
 							bundleRegion.getBundles(Bundle.ACTIVE | Bundle.STARTING));
 					String msg = WarnMessage.getInstance().formatString("has_started_providing_bundles",
 							bundleRegion.formatBundleList(providingBundles, true), bundleRegion.formatBundleList(requiringBundles, true));
-					addTrace(new BundleStatus(StatusCode.WARNING, InPlace.PLUGIN_ID, msg));
+					addLogStatus(new BundleStatus(StatusCode.WARNING, InPlace.PLUGIN_ID, msg));
 				}
 			}
 		}
-		return getLastStatus();
+		return getLastErrorStatus();
 	}
 
 	/**

@@ -874,7 +874,7 @@ public abstract class BundleJob extends JobStatus {
 					if (InPlace.get().getMsgOpt().isBundleOperations()) {
 						IBundleStatus bundleStatus = be.getErrorClosureStatus();
 						if (null != bundleStatus) {
-							addTrace(bundleStatus);
+							addLogStatus(bundleStatus);
 						}
 					}
 				}
@@ -1238,7 +1238,7 @@ public abstract class BundleJob extends JobStatus {
 	 * @param message TODO
 	 * @return a list of duplicate tuples. Returns an empty list if no duplicates are found.
 	 * @throws CircularReferenceException if cycles are detected in the project graph
-	 * @see #getStatusList()
+	 * @see #getErrorStatusList()
 	 */
 	Collection<IProject> handleDuplicateException(IProject duplicateProject,
 			DuplicateBundleException duplicateException, String message)

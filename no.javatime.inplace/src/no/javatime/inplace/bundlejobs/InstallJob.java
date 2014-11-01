@@ -171,7 +171,7 @@ public class InstallJob extends BundleJob {
 				if (InPlace.get().getMsgOpt().isBundleOperations()) {
 					IBundleStatus bundleStatus = be.getErrorClosureStatus();
 					if (null != bundleStatus) {
-						addTrace(bundleStatus);			
+						addLogStatus(bundleStatus);			
 					}
 				}
 			}

@@ -380,7 +380,7 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 				jobManager.join(BundleJob.FAMILY_BUNDLE_LIFECYCLE, null);
 				jobManager.join(ResourcesPlugin.FAMILY_AUTO_BUILD, null);
 				jobManager.join(ResourcesPlugin.FAMILY_MANUAL_BUILD, null);
-				if (shutDownJob.getStatusList().size() > 0) {
+				if (shutDownJob.getErrorStatusList().size() > 0) {
 					final IBundleStatus multiStatus = shutDownJob.createMultiStatus(new BundleStatus(
 							StatusCode.ERROR, InPlace.PLUGIN_ID, shutDownJob.getName()));
 					// The custom or standard status handler is not invoked at shutdown

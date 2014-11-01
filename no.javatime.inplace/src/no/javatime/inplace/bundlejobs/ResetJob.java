@@ -211,7 +211,7 @@ public class ResetJob {
 						} finally {
 							monitor.done();
 						}
-						if (getStatusList().size() > 0) {
+						if (getErrorStatusList().size() > 0) {
 							return new BundleStatus(StatusCode.JOBINFO, InPlace.PLUGIN_ID, null);
 						}
 						return new BundleStatus(StatusCode.OK, InPlace.PLUGIN_ID, null);
@@ -297,7 +297,7 @@ public class ResetJob {
 						} finally {
 							monitor.done();
 						}
-						if (getStatusList().size() > 0) {
+						if (getErrorStatusList().size() > 0) {
 							return new BundleStatus(StatusCode.JOBINFO, InPlace.PLUGIN_ID, null);
 						}
 						return new BundleStatus(StatusCode.OK, InPlace.PLUGIN_ID, null);

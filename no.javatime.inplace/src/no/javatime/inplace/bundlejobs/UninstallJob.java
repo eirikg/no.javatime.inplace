@@ -157,7 +157,7 @@ public class UninstallJob extends NatureJob {
 
 		Collection<Bundle> pendingBundles = bundleRegion.getBundles(getPendingProjects());
 		if (pendingBundles.size() == 0) {
-			return getLastStatus();
+			return getLastErrorStatus();
 		}
 		Collection<Bundle> bundlesToUninstall = null;
 		if (includeRequiring){
@@ -175,7 +175,7 @@ public class UninstallJob extends NatureJob {
 		if (monitor.isCanceled()) {
 			throw new OperationCanceledException();
 		}
-		return getLastStatus();
+		return getLastErrorStatus();
 	}
 
 	/**

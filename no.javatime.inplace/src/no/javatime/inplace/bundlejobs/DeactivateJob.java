@@ -175,7 +175,7 @@ public class DeactivateJob extends NatureJob {
 	 * @throws OperationCanceledException cancels at appropriate places on a cancel request from an
 	 * external source
 	 * @see #addPendingProject(IProject)
-	 * @see #getStatusList()
+	 * @see #getErrorStatusList()
 	 */
 	public IBundleStatus deactivate(IProgressMonitor monitor) throws InPlaceException,
 			InterruptedException, CircularReferenceException, OperationCanceledException {
@@ -276,7 +276,7 @@ public class DeactivateJob extends NatureJob {
 				addError(e, msg);
 			}
 		}
-		return getLastStatus();
+		return getLastErrorStatus();
 	}
 
 	private Collection<IProject> deactivateBuildErrorClosure(Collection<IProject> activatedProjects) {
@@ -291,7 +291,7 @@ public class DeactivateJob extends NatureJob {
 			be.setBuildErrorHeaderMessage(msg);
 			IBundleStatus bundleStatus = be.getErrorClosureStatus();
 			if (null != bundleStatus) {
-				addTrace(bundleStatus);
+				addLogStatus(bundleStatus);
 			}
 			return buildErrorClosures;
 		}
