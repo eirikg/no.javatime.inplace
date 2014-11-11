@@ -37,7 +37,7 @@ import org.osgi.framework.Bundle;
 /**
  * Toggles between lazy and eager activation
  */
-public class TogglePolicyJob extends BundleJob {
+public class TogglePolicyJob extends NatureJob {
 
 	/** Standard name of a toggle policy job job */
 	final public static String policyJobName = Message.getInstance().formatString(
@@ -87,11 +87,11 @@ public class TogglePolicyJob extends BundleJob {
 			BundleTransitionListener.addBundleTransitionListener(this);
 			for (IProject project : getPendingProjects()) {
 				try {
-					bundleProjectDesc.toggleActivationPolicy(project);
+					bundleProjectMeta.toggleActivationPolicy(project);
 					// No bundle jobs (which updates the bundle view) are run when the project(s) are
 					// deactivated or auto build is off
 					Bundle bundle = bundleRegion.getBundle(project);
-					if (!bundleProject.isAutoBuilding()) {
+					if (!bundleProjectCandidates.isAutoBuilding()) {
 						if (bundleRegion.isBundleActivated(project)) {
 							String msg = WarnMessage.getInstance().formatString("policy_updated_auto_build_off",
 									project.getName());							

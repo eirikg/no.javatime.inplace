@@ -23,7 +23,7 @@ import java.util.Properties;
 import no.javatime.inplace.region.Activator;
 import no.javatime.inplace.region.closure.BuildErrorClosure;
 import no.javatime.inplace.region.events.TransitionEvent;
-import no.javatime.inplace.region.intface.BundleProjectDescription;
+import no.javatime.inplace.region.intface.BundleProjectMeta;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
 import no.javatime.inplace.region.intface.BundleTransitionListener;
 import no.javatime.inplace.region.intface.InPlaceException;
@@ -57,13 +57,20 @@ import org.osgi.framework.Constants;
 import org.osgi.framework.Version;
 
 @SuppressWarnings("restriction")
-public class BundleProjectDescriptionImpl extends CachedManifestOperationsImpl implements BundleProjectDescription {
+public class BundleProjectMetaImpl extends CachedManifestOperationsImpl implements BundleProjectMeta {
 
-	public final static BundleProjectDescriptionImpl INSTANCE = new BundleProjectDescriptionImpl();
+	public final static BundleProjectMetaImpl INSTANCE = new BundleProjectMetaImpl();
 
-	/* (non-Javadoc)
-	 * @see no.javatime.inplace.region.project.BundleProjectDescription#isDefaultOutputFolder(org.eclipse.core.resources.IProject)
-	 */
+	@Override
+	public IBundleProjectService getBundleProjectService(IProject project) throws InPlaceException {
+		return Activator.getBundleProjectService(project);
+	}
+	
+	@Override
+	public IBundleProjectDescription getBundleProjectDescription(IProject project) throws InPlaceException {
+		return Activator.getBundleDescription(project);
+	}
+	
 	@Override
 	public Boolean isDefaultOutputFolder(IProject project) throws InPlaceException {
 		if (!BuildErrorClosure.hasManifest(project)) {
@@ -81,7 +88,7 @@ public class BundleProjectDescriptionImpl extends CachedManifestOperationsImpl i
 			TraceMessage.getInstance().getString("default_output_folder", project.getName(),
 					defaultOutpUtPath);
 		}
-		return BundleProjectDescriptionImpl.INSTANCE.verifyPathInCachedClassPath(defaultOutpUtPath, bundleClassPath,
+		return BundleProjectMetaImpl.INSTANCE.verifyPathInCachedClassPath(defaultOutpUtPath, bundleClassPath,
 				project.getName());
 	}
 
@@ -147,7 +154,7 @@ public class BundleProjectDescriptionImpl extends CachedManifestOperationsImpl i
 	public Collection<IPath> getSourceFolders(IProject project)
 			throws JavaModelException, InPlaceException {
 		ArrayList<IPath> paths = new ArrayList<IPath>();
-		IJavaProject javaProject = BundleProjectImpl.INSTANCE.getJavaProject(project);
+		IJavaProject javaProject = BundleProjectCandidatesImpl.INSTANCE.getJavaProject(project);
 		IClasspathEntry[] classpathEntries = javaProject.getResolvedClasspath(true);
 		for (int i = 0; i < classpathEntries.length; i++) {
 			IClasspathEntry entry = classpathEntries[i];

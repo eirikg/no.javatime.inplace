@@ -141,4 +141,7 @@ public interface IBundleStatus extends IStatus {
 	 * @see org.eclipse.core.runtime.MultiStatus#merge(IStatus)
 	 */
 	void merge(IStatus status);
+
+	public void setStatusCode();
+
 }

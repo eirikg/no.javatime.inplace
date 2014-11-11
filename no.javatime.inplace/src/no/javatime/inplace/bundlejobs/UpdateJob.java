@@ -392,7 +392,7 @@ public class UpdateJob extends BundleJob {
 		}
 		// TODO detected by the update operation. do some more testing here
 		// duplicateProjects = removeWorkspaceDuplicates(projectsToUpdate, bDepClosures, null,
-		// BundleProjectImpl.INSTANCE.getInstallableProjects(),
+		// BundleProjectCandidatesImpl.INSTANCE.getInstallableProjects(),
 		// currentWorkspaceInstance);
 		// if (null != duplicateProjects) {
 		// bundlesToUpdate.removeAll(bundleRegion.getBundles(duplicateProjects));

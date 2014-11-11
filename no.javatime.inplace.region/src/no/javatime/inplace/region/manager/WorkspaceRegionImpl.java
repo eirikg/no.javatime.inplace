@@ -26,8 +26,6 @@ import no.javatime.inplace.region.intface.BundleRegion;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
 import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.intface.ProjectLocationException;
-import no.javatime.inplace.region.project.BundleProjectImpl;
-import no.javatime.inplace.region.project.BundleProjectStateImpl;
 import no.javatime.inplace.region.state.BundleNode;
 import no.javatime.inplace.region.state.BundleState;
 import no.javatime.util.messages.Category;
@@ -51,10 +49,10 @@ public class WorkspaceRegionImpl implements BundleRegion {
 
 	public final static WorkspaceRegionImpl INSTANCE = new WorkspaceRegionImpl();
 
+	private boolean autoBuild;
+
 	// Default initial capacity of 16 assume peak on 22 bundles in workspace to avoid rehash
 	private static int initialCapacity = Math.round(20 / 0.75f) + 1;
-
-	private boolean autoBuild;
 
 	/**
 	 * Internal hash of bundle project nodes. Viewed as a DAG when used in combination with the OSGI
@@ -175,20 +173,10 @@ public class WorkspaceRegionImpl implements BundleRegion {
 		}
 	}
 
-	/**
-	 * Check if the workspace is activated. The condition is satisfied if one project is JavaTime
-	 * nature enabled and its bundle project is at least installed.
-	 * 
-	 * @return true if at least one project is JavaTime nature enabled and its bundle project is not
-	 * uninstalled. Otherwise false
-	 * @see WorkspaceRegionImpl#isBundleActivated(Bundle)
-	 * @see BundleProjectStateImpl#isProjectWorkspaceNatureActivated()
-	 */
 	@Override
-	public Boolean isBundleWorkspaceActivated() {
+	public Boolean isRegionActivated() {
 		for (BundleNode node : projectNodes.values()) {
 			if (null != node.getBundle()) {
-				// if (node.isActivated()) {
 				return true;
 			}
 		}
@@ -254,25 +242,6 @@ public class WorkspaceRegionImpl implements BundleRegion {
 		remove(project);
 	}
 
-//	public Boolean isProjectActivated(IProject bundleProject) {
-//		BundleNode node = getNode(bundleProject);
-//		if (null == node) {
-//			return false;
-//		} else {
-//			return node.isActivated();
-//		}
-//	}
-
-	/**
-	 * Check if the bundle of the specified projects is activated. The condition is satisfied if the
-	 * project is JavaTime nature enabled and its bundle project is at least installed.
-	 * 
-	 * @param bundleProject to check for activation
-	 * @return true if the specified project is JavaTime nature enabled and its bundle project is not
-	 * uninstalled. Otherwise false
-	 * @see WorkspaceRegionImpl#isBundleActivated(Bundle)
-	 * @see BundleProjectImpl#isWorkspaceNatureEnabled()
-	 */
 	@Override
 	public Boolean isBundleActivated(IProject bundleProject) {
 		BundleNode node = getNode(bundleProject);
@@ -301,6 +270,18 @@ public class WorkspaceRegionImpl implements BundleRegion {
 		} else {
 			return node.isActivated();
 		}
+	}
+		
+	@Override
+	public Collection<IProject> getActivatedProjects() {
+		
+		Collection<IProject> projects = new LinkedHashSet<IProject>();
+		for (IProject project : getProjects()) {
+			if (isBundleActivated(project)) {
+				projects.add(project);
+			}
+		}
+		return projects;
 	}
 
 	@Override
@@ -565,7 +546,8 @@ public class WorkspaceRegionImpl implements BundleRegion {
 		}
 		return false;
 	}
-
+	
+	@Override
 	public boolean setActivation(IProject project, Boolean status) {
 		BundleNode node = getNode(project);
 		if (null != node) {
@@ -574,7 +556,7 @@ public class WorkspaceRegionImpl implements BundleRegion {
 		}
 		return false;
 	}
-
+	
 	@Override
 	public Boolean exist(String symbolicName, String version) {
 		BundleNode bn = getNode(symbolicName, version);

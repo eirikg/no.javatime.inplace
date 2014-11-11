@@ -11,8 +11,9 @@
 package no.javatime.inplace.builder;
 
 import no.javatime.inplace.InPlace;
+import no.javatime.inplace.bundlejobs.NatureJob;
 import no.javatime.inplace.region.events.TransitionEvent;
-import no.javatime.inplace.region.intface.BundleProject;
+import no.javatime.inplace.region.intface.BundleProjectCandidates;
 import no.javatime.inplace.region.intface.BundleTransition;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
 import no.javatime.inplace.region.intface.BundleTransitionListener;
@@ -30,8 +31,9 @@ import org.eclipse.ui.statushandlers.StatusManager;
 
 /**
  * Listen to projects that are going to be built. This callback is also invoked when auto build is
- * switched off. Register a bundle as pending for build after workspace resources have been changed.
- * Listen to pre build notifications. Also clears any errors (not build errors) on uninstalled bundle projects.
+ * switched off. Register opened, created and imported projects and add a pending build transition
+ * after workspace resources have been changed. Listen to pre build notifications. Also clears any
+ * errors (not build errors) on uninstalled bundle projects.
  */
 public class PreBuildListener implements IResourceChangeListener {
 
@@ -44,28 +46,31 @@ public class PreBuildListener implements IResourceChangeListener {
 	 */
 	public void resourceChanged(IResourceChangeEvent event) {
 
-		BundleProject bundleProject = InPlace.getBundleProjectService();
 		// Nothing to do in a deactivated workspace where all bundle projects are uninstalled
 		IResourceDelta rootDelta = event.getDelta();
 		IResourceDelta[] projectDeltas = rootDelta.getAffectedChildren(IResourceDelta.ADDED
 				| IResourceDelta.CHANGED, IResource.NONE);
-		boolean isWSActivated = bundleProject.isWorkspaceNatureEnabled();
+		boolean isWSNatureEnabled = NatureJob.isWorkspaceNatureEnabled();
 		for (IResourceDelta projectDelta : projectDeltas) {
 			IResource projectResource = projectDelta.getResource();
 			if (projectResource.isAccessible() && (projectResource.getType() & (IResource.PROJECT)) != 0) {
 				IProject project = projectResource.getProject();
 				try {
 					BundleTransition transition = InPlace.getBundleTransitionService();
-					if (!isWSActivated) {
-						// Clear any errors detected from last activation that caused the workspace to be deactivated
-						// The error should be visible in a deactivated workspace until the project is built
+					if (!isWSNatureEnabled) {
+						// Clear any errors detected from last activation that caused the workspace to be
+						// deactivated. The error should be visible in a deactivated workspace until the project
+						// is built
 						transition.clearTransitionError(project);
-					} else { 
-						if (bundleProject.isNatureEnabled(project)) {
-							if (!bundleProject.isAutoBuilding()) {
+					} else {
+						if (NatureJob.isNatureEnabled(project)) {
+							BundleProjectCandidates bundleProjectCandidates = InPlace
+									.getBundleProjectCandidatesService();
+							if (!bundleProjectCandidates.isAutoBuilding()) {
 								transition.addPending(project, Transition.BUILD);
 							} else {
-								BundleTransitionListener.addBundleTransition(new TransitionEvent(project, Transition.BUILD));								
+								BundleTransitionListener.addBundleTransition(new TransitionEvent(project,
+										Transition.BUILD));
 							}
 						}
 					}

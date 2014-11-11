@@ -7,9 +7,11 @@ import no.javatime.inplace.region.msg.Msg;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.jdt.core.JavaModelException;
+import org.eclipse.pde.core.project.IBundleProjectDescription;
+import org.eclipse.pde.core.project.IBundleProjectService;
 import org.osgi.framework.Bundle;
 
-public interface BundleProjectDescription {
+public interface BundleProjectMeta {
 
 	/**
 	 * Path to manifest file relative to workspace root
@@ -18,7 +20,26 @@ public interface BundleProjectDescription {
 	/**
 	 * Standard file name of the manifest file
 	 */
-	final public static String MANIFEST_FILE_NAME = Msg.MANIFEST_FILE_NAME_REF; // Message.getInstance().formatString("manifest_file_name");
+	final public static String MANIFEST_FILE_NAME = Msg.MANIFEST_FILE_NAME_REF; 
+
+	/**
+	 * Convenience method. Finds and return the bundle service for a given project.
+	 * 
+	 * @param project to get the bundle service for
+	 * @return the bundle service for the specified project
+	 * @throws InPlaceException if the service could not be obtained or is invalid
+	 */
+	IBundleProjectService getBundleProjectService(IProject project) throws InPlaceException;
+	
+	/**
+	 * Convenience method. Finds and return the bundle description for a given project.
+	 * 
+	 * @param project to get the bundle description for
+	 * @return the bundle description for the specified project
+	 * @throws InPlaceException if the description could not be obtained or is invalid
+	 * @see IBundleProjectService#getDescription(IProject)
+	 */
+	IBundleProjectDescription getBundleProjectDescription(IProject project) throws InPlaceException;
 
 	/**
 	 * Verify that the default output folder is part of the bundle class path header in the manifest

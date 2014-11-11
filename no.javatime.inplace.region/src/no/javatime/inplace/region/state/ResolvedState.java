@@ -1,7 +1,7 @@
 package no.javatime.inplace.region.state;
 
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
-import no.javatime.inplace.region.project.BundleProjectDescriptionImpl;
+import no.javatime.inplace.region.project.BundleProjectMetaImpl;
 
 import org.osgi.framework.BundleEvent;
 
@@ -75,7 +75,7 @@ public class ResolvedState extends BundleState {
 	 * @param bundleNode saves and updates the current transition and state of the bundle
 	 */
 	public void start(BundleNode bundleNode) {
-		if (BundleProjectDescriptionImpl.INSTANCE.getCachedActivationPolicy(bundleNode.getBundle())) {
+		if (BundleProjectMetaImpl.INSTANCE.getCachedActivationPolicy(bundleNode.getBundle())) {
 			bundleNode.begin(Transition.LAZY_ACTIVATE, StateFactory.INSTANCE.startingState);
 		} else {
 			bundleNode.begin(Transition.START, StateFactory.INSTANCE.activeState);

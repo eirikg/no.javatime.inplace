@@ -11,8 +11,8 @@ import no.javatime.inplace.region.closure.ProjectSorter;
 import no.javatime.inplace.region.events.BundleTransitionEvent;
 import no.javatime.inplace.region.events.BundleTransitionEventListener;
 import no.javatime.inplace.region.intface.BundleCommand;
-import no.javatime.inplace.region.intface.BundleProject;
-import no.javatime.inplace.region.intface.BundleProjectDescription;
+import no.javatime.inplace.region.intface.BundleProjectCandidates;
+import no.javatime.inplace.region.intface.BundleProjectMeta;
 import no.javatime.inplace.region.intface.BundleRegion;
 import no.javatime.inplace.region.intface.BundleTransition;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
@@ -48,9 +48,9 @@ public abstract class JobStatus extends WorkspaceJob implements BundleTransition
 	final protected BundleCommand bundleCommand = InPlace.getBundleCommandService();
 	final protected BundleTransition bundleTransition = InPlace.getBundleTransitionService();
 	final protected BundleRegion bundleRegion = InPlace.getBundleRegionService();
-	final protected BundleProject bundleProject = InPlace.getBundleProjectService();
-	final protected BundleProjectDescription bundleProjectDesc = InPlace
-			.getBundleProjectDescriptionService();
+	final protected BundleProjectCandidates bundleProjectCandidates = InPlace.getBundleProjectCandidatesService();
+	final protected BundleProjectMeta bundleProjectMeta = InPlace
+			.getbundlePrrojectMetaService();
 
 	/**
 	 * Construct a job with the name of the job to run
@@ -92,6 +92,7 @@ public abstract class JobStatus extends WorkspaceJob implements BundleTransition
 	 */
 	@Override
 	public void bundleTransitionChanged(BundleTransitionEvent event) {
+
 		if (!InPlace.get().getMsgOpt().isBundleOperations()) {
 			return;
 		}
@@ -101,7 +102,6 @@ public abstract class JobStatus extends WorkspaceJob implements BundleTransition
 		String bundleClassPath = null;
 
 		try {
-
 			switch (transition) {
 			case RESOLVE:
 				addLogStatus(Msg.RESOLVE_BUNDLE_OP_TRACE, new Object[] { bundle.getSymbolicName() }, bundle);
@@ -117,7 +117,7 @@ public abstract class JobStatus extends WorkspaceJob implements BundleTransition
 				addLogStatus(Msg.REFRESH_BUNDLE_OP_TRACE, new Object[] { bundle.getSymbolicName() }, bundle);
 				break;
 			case START:
-				if (bundleProjectDesc.getCachedActivationPolicy(bundle)) {
+				if (bundleProjectMeta.getCachedActivationPolicy(bundle)) {
 					addLogStatus(Msg.ON_DEMAND_BUNDLE_START_OP_TRACE,
 							new Object[] { bundle.getSymbolicName() }, bundle);
 				} else {
@@ -149,24 +149,24 @@ public abstract class JobStatus extends WorkspaceJob implements BundleTransition
 						bundleCommand.getStateName(bundle) }, bundle);
 				break;
 			case UPDATE_CLASSPATH:
-				bundleClassPath = bundleProjectDesc.getBundleClassPath(project);
+				bundleClassPath = bundleProjectMeta.getBundleClassPath(project);
 				addLogStatus(Msg.UPDATE_BUNDLE_CLASSPATH_TRACE, new Object[] { bundleClassPath,
-						bundleProjectDesc.getDefaultOutputFolder(project), project.getName() }, project);
+						bundleProjectMeta.getDefaultOutputFolder(project), project.getName() }, project);
 				break;
 			case REMOVE_CLASSPATH:
-				bundleClassPath = bundleProjectDesc.getBundleClassPath(project);
+				bundleClassPath = bundleProjectMeta.getBundleClassPath(project);
 				if (null == bundleClassPath) {
 					addLogStatus(
 							Msg.REMOVE_BUNDLE_CLASSPATH_TRACE,
-							new Object[] { bundleProjectDesc.getDefaultOutputFolder(project), project.getName() },
+							new Object[] { bundleProjectMeta.getDefaultOutputFolder(project), project.getName() },
 							project);
 				} else {
 					addLogStatus(Msg.REMOVE_BUNDLE_CLASSPATH_ENTRY_TRACE, new Object[] { bundleClassPath,
-							bundleProjectDesc.getDefaultOutputFolder(project), project.getName() }, project);
+							bundleProjectMeta.getDefaultOutputFolder(project), project.getName() }, project);
 				}
 				break;
 			case UPDATE_ACTIVATION_POLICY:
-				Boolean policy = bundleProjectDesc.getActivationPolicy(project);
+				Boolean policy = bundleProjectMeta.getActivationPolicy(project);
 				addLogStatus(
 						Msg.TOGGLE_ACTIVATION_POLICY_TRACE,
 						// Changing from (old policy) to (new policy)
@@ -174,13 +174,26 @@ public abstract class JobStatus extends WorkspaceJob implements BundleTransition
 								project.getName() }, project);
 				break;
 			case UPDATE_DEV_CLASSPATH:
-				String osgiDev = bundleProjectDesc.inDevelopmentMode();
-				String symbolicName = bundleProjectDesc.getSymbolicName(project);
+				String osgiDev = bundleProjectMeta.inDevelopmentMode();
+				String symbolicName = bundleProjectMeta.getSymbolicName(project);
 				addLogStatus(Msg.CLASS_PATH_COMMON_INFO, new Object[] { osgiDev, symbolicName }, project);
 				break;
 			case EXTERNAL:
 				addLogStatus(Msg.FRAMEWORK_BUNDLE_OP_TRACE, new Object[] { bundle.getSymbolicName(),
 						bundleCommand.getStateName(bundle) }, bundle);
+				break;
+			case REMOVE_PROJECT:
+				// Do not use nature method. Project files are not accessible at this point
+//				String remActivated = NatureJob.isNatureEnabled(project) ? "activated" : "deactivated";
+				String remActivated = bundleRegion.isBundleActivated(project) ? "activated" : "deactivated";
+				addLogStatus(Msg.REMOVE_PROJECT_OP_TRACE, new Object[] { remActivated,
+						project.getName() }, project);			
+				break;
+			case NEW_PROJECT:
+				String addActivated = NatureJob.isNatureEnabled(project) ? "activated" : "deactivated";
+				addLogStatus(Msg.ADD_PROJECT_OP_TRACE, new Object[] { addActivated,
+						project.getName() }, project);
+				break;
 			default:
 				break;
 			}
@@ -265,7 +278,7 @@ public abstract class JobStatus extends WorkspaceJob implements BundleTransition
 	 * 
 	 * @param key a {@code NLS} identifier
 	 * @param substitutions parameters to the {@code NLS} string
-	 * @param bundleProject a {@code Bundle} or an {@code IProject}. Must not be null
+	 * @param bundleProjectCandidates a {@code Bundle} or an {@code IProject}. Must not be null
 	 * @see #addLogStatus(String, Bundle, IProject)
 	 * @see #getLogStatusList()
 	 */
@@ -568,7 +581,7 @@ public abstract class JobStatus extends WorkspaceJob implements BundleTransition
 					duplicateClosureSet.remove(project);
 					if (duplicateClosureSet.size() > 0) {
 						String msg = ErrorMessage.getInstance().formatString("duplicate_affected_bundles",
-								project.getName(), bundleProject.formatProjectList(duplicateClosureSet));
+								project.getName(), bundleProjectCandidates.formatProjectList(duplicateClosureSet));
 						rootStatus.add(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, msg));
 					}
 				}

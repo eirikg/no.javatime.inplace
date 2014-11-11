@@ -20,8 +20,7 @@ import no.javatime.inplace.region.manager.BundleCommandImpl;
 import no.javatime.inplace.region.manager.BundleTransitionImpl;
 import no.javatime.inplace.region.manager.WorkspaceRegionImpl;
 import no.javatime.inplace.region.msg.Msg;
-import no.javatime.inplace.region.project.BundleProjectDescriptionImpl;
-import no.javatime.inplace.region.project.BundleProjectImpl;
+import no.javatime.inplace.region.project.BundleProjectMetaImpl;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import no.javatime.util.messages.Category;
@@ -131,14 +130,13 @@ public class BundleStateEvents implements SynchronousBundleListener {
 		// Consider all workspace bundle projects
 		final IProject project = WorkspaceRegionImpl.INSTANCE.getWorkspaceBundleProject(bundle);
 		if (null == project) {
-			return; // jar bundle or java project
+			return; // not a workspace project (jar bundle)
 		}
 		BundleNode node = bundleRegion.getBundleNode(project);
 		// This is always true if it is an external install
 		if (null == node || null == node.getBundleId()) {
-			// Project is not registered yet or it is registered but not its bundle
-			node = WorkspaceRegionImpl.INSTANCE.registerBundleNode(project, bundle,
-					BundleProjectImpl.INSTANCE.isNatureEnabled(project));
+			boolean activated = null != node ? node.isActivated() : false; 
+			node = WorkspaceRegionImpl.INSTANCE.registerBundleNode(project, bundle, activated);
 		}
 		/*
 		 * Examine all bundle events and update state by executing intermediate transitions, identify
@@ -243,7 +241,7 @@ public class BundleStateEvents implements SynchronousBundleListener {
 			if (!node.isStateChanging()) {
 				node.getState().external(node, event, StateFactory.INSTANCE.uninstalledState,
 						Transition.EXTERNAL);
-				if (BundleProjectImpl.INSTANCE.isWorkspaceNatureEnabled()) {
+				if (WorkspaceRegionImpl.INSTANCE.isRegionActivated()) {
 					bundleTransition.setTransitionError(bundle, TransitionError.UNINSTALL);
 					BundleTransitionListener.addBundleTransition(new TransitionEvent(bundle, node.getTransition()));
 				} else {
@@ -282,7 +280,7 @@ public class BundleStateEvents implements SynchronousBundleListener {
 		 */
 		case BundleEvent.STARTING: {
 			if (node.getTransition() == Transition.EXTERNAL) {
-				if (BundleProjectDescriptionImpl.INSTANCE.getCachedActivationPolicy(node.getBundle())) {
+				if (BundleProjectMetaImpl.INSTANCE.getCachedActivationPolicy(node.getBundle())) {
 					node.getState().external(node, event, StateFactory.INSTANCE.startingState,
 							Transition.EXTERNAL);
 				} else {

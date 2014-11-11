@@ -6,8 +6,10 @@ import java.util.LinkedHashSet;
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundlejobs.NatureJob;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
+import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.closure.BundleClosures;
 import no.javatime.inplace.region.closure.CircularReferenceException;
+import no.javatime.inplace.region.events.TransitionEvent;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
 import no.javatime.inplace.region.intface.BundleTransitionListener;
 import no.javatime.inplace.region.intface.InPlaceException;
@@ -32,8 +34,10 @@ import org.osgi.framework.Bundle;
  * incomplete. This inconsistency is solved by deactivating the requiring bundles in the closure
  * before uninstalling.
  */
-public class RemoveBundleProjectJob extends NatureJob {
-
+ class RemoveBundleProjectJob extends NatureJob {
+	
+	final public static String removeBundleProjectName = Msg.REMOVE_BUNDLE_PROJECT_JOB;
+	
 	public RemoveBundleProjectJob(String name) {
 		super(name);
 	}
@@ -82,7 +86,7 @@ public class RemoveBundleProjectJob extends NatureJob {
 			deactivateNature(reqProjects, new SubProgressMonitor(monitor, 1));
 			// If workspace is deactivated after deactivating requiring projects, uninstall all projects
 			// Closed or deleted projects will not be included in this check due to inaccessibility
-			if (!InPlace.getBundleProjectService().isWorkspaceNatureEnabled()) {
+			if (!InPlace.getBundleRegionService().isRegionActivated()) {
 				pendingBundles.addAll(bundleRegion.getBundles());
 			} else {
 				// The deactivated projects are excluded from the uninstall (or requiring) closure, but are
@@ -94,6 +98,11 @@ public class RemoveBundleProjectJob extends NatureJob {
 				for (IProject reqProject : reqProjects) {
 					bundleTransition.addPending(reqProject, Transition.UNRESOLVE);
 				}
+			}
+			for (IProject project : bundleRegion.getProjects(pendingBundles)) {
+				BundleTransitionListener.addBundleTransition(new TransitionEvent(project,
+						Transition.REMOVE_PROJECT));
+				bundleTransition.removePending(project, Transition.REMOVE_PROJECT);
 			}
 			// Uninstall, refresh and unregister the bundles.
 			// The closed or removed projects should be inaccessible at this time and removed from

@@ -16,6 +16,7 @@ import java.util.Collections;
 import java.util.Map;
 
 import no.javatime.inplace.InPlace;
+import no.javatime.inplace.bundlejobs.NatureJob;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.closure.BuildErrorClosure;
@@ -23,8 +24,8 @@ import no.javatime.inplace.region.closure.CircularReferenceException;
 import no.javatime.inplace.region.closure.ProjectDependencies;
 import no.javatime.inplace.region.closure.ProjectSorter;
 import no.javatime.inplace.region.intface.BundleCommand;
-import no.javatime.inplace.region.intface.BundleProject;
-import no.javatime.inplace.region.intface.BundleProjectDescription;
+import no.javatime.inplace.region.intface.BundleProjectCandidates;
+import no.javatime.inplace.region.intface.BundleProjectMeta;
 import no.javatime.inplace.region.intface.BundleRegion;
 import no.javatime.inplace.region.intface.BundleTransition;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
@@ -77,7 +78,7 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 	public static final String JAVATIME_BUILDER_ID = "no.javatime.inplace.JavaTimeBuilder";
 
 	private static Collection<IBundleStatus> builds = new ArrayList<IBundleStatus>();
-	final private BundleProject bundleProject = InPlace.getBundleProjectService();
+	final private BundleProjectCandidates bundleProjectCandidates = InPlace.getBundleProjectCandidatesService();
 
 	public JavaTimeBuilder() {
 	}
@@ -115,7 +116,7 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 						TraceMessage.getInstance().getString("changed_resource", resource.getName());
 				}
 				if (resource instanceof IFile
-						&& resource.getName().endsWith(BundleProjectDescription.MANIFEST_FILE_NAME)) {
+						&& resource.getName().endsWith(BundleProjectMeta.MANIFEST_FILE_NAME)) {
 					if (Category.DEBUG && Category.getState(Category.build))
 						TraceMessage.getInstance().getString("changed_resource", resource.getName());
 				}
@@ -135,7 +136,7 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 					TraceMessage.getInstance().getString("full_build_resource", resource.getName());
 			}
 			if (resource instanceof IFile
-					&& resource.getName().endsWith(BundleProjectDescription.MANIFEST_FILE_NAME)) {
+					&& resource.getName().endsWith(BundleProjectMeta.MANIFEST_FILE_NAME)) {
 				if (Category.DEBUG && Category.getState(Category.build))
 					TraceMessage.getInstance().getString("full_build_resource", resource.getName());
 			}
@@ -192,14 +193,15 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 			// Activated project is imported, opened or has new requirements on UI plug-in(s), when UI
 			// plug-ins are not allowed
 			if (!InPlace.get().getCommandOptionsService().isAllowUIContributions()
-					&& bundleProject.getUIContributors().contains(project)) {
+					&& bundleProjectCandidates.getUIPlugins().contains(project)) {
 				if (null == bundle) {
 					if (!bundleRegion.isProjectRegistered(project)) {
-						bundleRegion.registerBundleProject(project, bundle, null != bundle ? true : false);
+						boolean natureEnabled = NatureJob.isNatureEnabled(project);
+						bundleRegion.registerBundleProject(project, bundle, natureEnabled);
 					}
 					// When an activated project is imported or opened, install in an activated workspace
 					// before deactivating the bundle
-					if (bundleProject.getNatureEnabled().size() > 1) {
+					if (NatureJob.getNatureEnabled().size() > 1) {
 						bundleTransition.addPending(project, Transition.INSTALL);
 					}
 				}
@@ -207,6 +209,7 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 				bundleTransition.addPending(project, Transition.DEACTIVATE);
 			} else {
 				if (!BuildErrorClosure.hasBuildErrors(project) && BuildErrorClosure.hasBuildState(project)) {
+					// Do not handle newly opened, created or imported bundles
 					if (null != bundle) {
 						// Moved projects requires a reactivate (uninstall and bundle activate)
 						try {
@@ -232,12 +235,6 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 							IBundleStatus status = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg,
 									e);
 							StatusManager.getManager().handle(status, StatusManager.LOG);
-						}
-					} else {
-						// Always tag an uninstalled activated project for bundle activation
-						if (!bundleRegion.isProjectRegistered(project)) {
-							bundleRegion.registerBundleProject(project, bundle, null != bundle ? true : false);
-							bundleTransition.addPending(project, Transition.ACTIVATE_BUNDLE);
 						}
 					}
 				} else {
@@ -283,7 +280,7 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 
 		String projectLoaction = InPlace.getBundleRegionService().getProjectLocationIdentifier(project, null);
 		String bundleLocation = InPlace.getBundleRegionService().getBundleLocationIdentifier(project);
-		if (!projectLoaction.equals(bundleLocation) && bundleProject.isInstallable(project)) {
+		if (!projectLoaction.equals(bundleLocation) && bundleProjectCandidates.isInstallable(project)) {
 			return true;
 		}
 		return false;
@@ -333,7 +330,7 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 						null);
 				if (be.hasBuildErrors()) {
 					String buildMsg = NLS.bind(Msg.UPDATE_BUILD_ERROR_INFO, new Object[] { project.getName(),
-							bundleProject.formatProjectList(be.getBuildErrors()) });
+							bundleProjectCandidates.formatProjectList(be.getBuildErrors()) });
 					be.setBuildErrorHeaderMessage(buildMsg);
 					IBundleStatus errorStatus = be.getErrorClosureStatus();
 					buildStatus.add(errorStatus);
@@ -368,9 +365,9 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 		try {
 			ProjectSorter ps = new ProjectSorter();
 			Collection<IProject> projects = ps.sortProvidingProjects(Collections.singleton(project));
-			Collection<IProject> uiContributers = bundleProject.getUIContributors();
+			Collection<IProject> uiContributers = bundleProjectCandidates.getUIPlugins();
 			projects.retainAll(uiContributers);
-			if (!bundleProject.isUIContributor(project)) {
+			if (!bundleProjectCandidates.isUIPlugin(project)) {
 				projects.remove(project);
 			}
 			IBundleStatus buildStatus = null;
@@ -381,7 +378,7 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 
 			} else {
 				String msg = WarnMessage.getInstance().formatString("uicontributors_deactivate",
-						project.getName(), bundleProject.formatProjectList(projects));
+						project.getName(), bundleProjectCandidates.formatProjectList(projects));
 				buildStatus = new BundleStatus(StatusCode.WARNING, InPlace.PLUGIN_ID, project, msg, null);
 				msg = WarnMessage.getInstance().formatString("uicontributors_deactivate_info_deactivate",
 						project.getName());

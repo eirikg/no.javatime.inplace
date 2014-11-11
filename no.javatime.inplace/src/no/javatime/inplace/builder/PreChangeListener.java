@@ -12,9 +12,10 @@ package no.javatime.inplace.builder;
 
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundlejobs.BundleJob;
+import no.javatime.inplace.bundlejobs.NatureJob;
 import no.javatime.inplace.bundlejobs.UninstallJob;
 import no.javatime.inplace.bundlemanager.BundleJobManager;
-import no.javatime.inplace.region.intface.BundleProject;
+import no.javatime.inplace.dialogs.SaveProjectHandler;
 import no.javatime.inplace.region.intface.BundleRegion;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
 
@@ -37,11 +38,12 @@ import org.osgi.framework.Bundle;
  * <p>
  * It is only possible to rename one project at the time from the UI. When a project is renamed an
  * uninstall job is scheduled causing all requiring bundles to be uninstalled as well. The project
- * closure is scheduled for install and start again after build of the renamed project in the post
- * build listener.
+ * closure is scheduled for install and resolve again after build of the renamed project. This job is
+ * scheduled by the post build listener.
  * <p>
  * This is the only place projects are removed (closed or deleted) and renamed from the workspace.
  * Removed projects are always unregistered (removed) from the bundle project workspace region.
+ * 
  * @see RemoveBundleProjectJob
  */
 public class PreChangeListener implements IResourceChangeListener {
@@ -52,44 +54,48 @@ public class PreChangeListener implements IResourceChangeListener {
 	@Override
 	public void resourceChanged(IResourceChangeEvent event) {
 
-		BundleProject bundleProject = InPlace.getBundleProjectService();
-		if (!bundleProject.isWorkspaceNatureEnabled()) {
+		BundleRegion bundleRegion = InPlace.getBundleRegionService();
+		// Do not return if waiting for additional projects to uninstall
+		// May occur if the workspace becomes deactivated while waiting for new projects to remove
+		if (!NatureJob.isWorkspaceNatureEnabled() && 
+				!(SaveProjectHandler.getWaitingBundleJob() instanceof RemoveBundleProjectJob)) {
 			return;
 		}
 		final IResource resource = event.getResource();
 		if (null != resource && resource.isAccessible()
 				&& (resource.getType() & (IResource.PROJECT)) != 0) {
 			final IProject project = resource.getProject();
-			BundleRegion bundleRegion = InPlace.getBundleRegionService();
 			Bundle bundle = bundleRegion.getBundle(project);
 			if (null == bundle) {
 				return;
 			}
-			if (InPlace.getBundleTransitionService().containsPending(bundle, Transition.RENAME, true)) {
-				// The renamed bundle and requiring bundles are scheduled for install again in the post
-				// build listener with the new name after they have been built
+			if (InPlace.getBundleTransitionService().containsPending(bundle, Transition.RENAME_PROJECT,
+					true)) {
+				// The renamed bundle and requiring bundles are scheduled for install again by the post
+				// build listener with the new name after the bundle projects have been built
 				UninstallJob uninstallJob = new UninstallJob(UninstallJob.uninstallJobName, project);
 				BundleJobManager.addBundleJob(uninstallJob, 0);
 			} else {
 				// Schedule the removed project for uninstall
-				scheduleUninstall(project);
+				scheduleRemoveBundleProjects(project);
 			}
 		}
 	}
 
 	/**
 	 * Add the specified removed (deleted or closed) project for uninstall and get the scheduled job
-	 * handling removal of projects. If there exists such a bundle job in state waiting return it,
-	 * otherwise schedule and return a new instance of the job.
+	 * handling removal of projects. If there exists such a bundle job in state waiting add the
+	 * specified project and return it, otherwise add the project and schedule and return a new
+	 * instance of the job.
 	 * <p>
 	 * The removal (uninstall) bundle job is typically waiting on the Eclipse removal job to finish
-	 * before running. This gives the resource listener a chance to add the project to remove to the
+	 * before running. This gives this resource listener a chance to add the project to remove to the
 	 * same bundle job as previous added projects due to the waiting state of the bundle job.
 	 * 
 	 * @param project this project is added to the returned job
 	 * @return a scheduled bundle job handling removal of bundle projects. Never null.
 	 */
-	private BundleJob scheduleUninstall(IProject project) {
+	private BundleJob scheduleRemoveBundleProjects(IProject project) {
 
 		IJobManager jobMan = Job.getJobManager();
 		Job[] jobs = jobMan.find(BundleJob.FAMILY_BUNDLE_LIFECYCLE);
@@ -101,7 +107,7 @@ public class PreChangeListener implements IResourceChangeListener {
 				return bj;
 			}
 		}
-		RemoveBundleProjectJob rj = new RemoveBundleProjectJob(UninstallJob.uninstallJobName, project);
+		RemoveBundleProjectJob rj = new RemoveBundleProjectJob(RemoveBundleProjectJob.removeBundleProjectName, project);
 		BundleJobManager.addBundleJob(rj, 0);
 		return rj;
 	}

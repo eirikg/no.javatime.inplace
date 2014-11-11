@@ -19,8 +19,8 @@ import no.javatime.inplace.region.closure.BundleSorter;
 import no.javatime.inplace.region.closure.CircularReferenceException;
 import no.javatime.inplace.region.closure.ProjectSorter;
 import no.javatime.inplace.region.intface.BundleCommand;
-import no.javatime.inplace.region.intface.BundleProject;
-import no.javatime.inplace.region.intface.BundleProjectDescription;
+import no.javatime.inplace.region.intface.BundleProjectCandidates;
+import no.javatime.inplace.region.intface.BundleProjectMeta;
 import no.javatime.inplace.region.intface.BundleRegion;
 import no.javatime.inplace.region.intface.BundleTransition;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
@@ -93,11 +93,11 @@ public class BundleProperties {
 	private Bundle bundle = null;
 	static private final BundleSorter bundleSorter = new BundleSorter();
 	static private final ProjectSorter projectSorter = new ProjectSorter();
-	private final BundleProject bundleProject = Activator.getBundleProjectService();
+	private final BundleProjectCandidates bundleProjectCandidates = Activator.getBundleProjectCandidatesService();
 	private final BundleCommand bundleCommand = Activator.getBundleCommandService(); 
 	private static final BundleTransition bundleTransition = Activator.getBundleTransitionService();
 	private final BundleRegion bundleRegion = Activator.getBundleRegionService();
-	private final BundleProjectDescription bundleProjectDesc = Activator.getBundleProjectDescriptionService();
+	private final BundleProjectMeta bundlePrrojectMeta = Activator.getBundleProjectMetaService();
 	
 	public BundleProperties(IProject project) {
 		this.project = project;
@@ -145,8 +145,8 @@ public class BundleProperties {
 		String version = null;
 		if (null == bundle) { // Uninstalled
 			try {
-				symbolicName = bundleProjectDesc.getSymbolicName(project);
-				version = bundleProjectDesc.getBundleVersion(project);
+				symbolicName = bundlePrrojectMeta.getSymbolicName(project);
+				version = bundlePrrojectMeta.getBundleVersion(project);
 			} catch (InPlaceException e) {
 			}
 			if (null == symbolicName || null == version) {
@@ -180,7 +180,7 @@ public class BundleProperties {
 		}
 		if (null == name) {
 			try {
-				name = bundleProjectDesc.getSymbolicName(project);
+				name = bundlePrrojectMeta.getSymbolicName(project);
 			} catch (Exception e) {
 				return project.getName() + " (P)";
 			}
@@ -203,7 +203,7 @@ public class BundleProperties {
 		}
 		if (null == ver) {
 			try {
-				ver = bundleProjectDesc.getBundleVersion(project);
+				ver = bundlePrrojectMeta.getBundleVersion(project);
 			} catch (Exception e) {
 				return "?";
 			}
@@ -230,7 +230,7 @@ public class BundleProperties {
 	}
 
 	public String getActivationMode() {
-		boolean activated = bundleProject.isNatureEnabled(project);
+		boolean activated = bundleRegion.isBundleActivated(project);
 		if (activated) {
 			return "Activated";
 		} else {
@@ -240,7 +240,7 @@ public class BundleProperties {
 
 	public String getBundleStatus() {
 
-		boolean isProjectActivated = bundleProject.isNatureEnabled(project);
+		boolean isProjectActivated = bundleRegion.isBundleActivated(project);
 
 		try {
 			if (!BuildErrorClosure.hasBuildState(project)) {
@@ -361,9 +361,9 @@ public class BundleProperties {
 
 		try {
 			if ((null == bundle || (bundle.getState() & (Bundle.INSTALLED)) != 0)) {
-				return (bundleProjectDesc.getActivationPolicy(project)) ? lazyyValueName : eagerValueName;
+				return (bundlePrrojectMeta.getActivationPolicy(project)) ? lazyyValueName : eagerValueName;
 			} else {
-				return (bundleProjectDesc.getCachedActivationPolicy(bundle)) ? lazyyValueName : eagerValueName;
+				return (bundlePrrojectMeta.getCachedActivationPolicy(bundle)) ? lazyyValueName : eagerValueName;
 			}
 		} catch (InPlaceException e) {
 			// Don't spam this meassage.
@@ -420,7 +420,7 @@ public class BundleProperties {
 			try {
 				Collection<IProject> projects = projectSorter.sortRequiringProjects(Collections.singleton(project));
 				projects.remove(project);
-				requires = bundleProject.formatProjectList(projects);
+				requires = bundleProjectCandidates.formatProjectList(projects);
 			} catch (CircularReferenceException e) {
 				requires = "Cycles";
 			}
@@ -481,7 +481,7 @@ public class BundleProperties {
 			try {
 				Collection<IProject> projects = projectSorter.sortProvidingProjects(Collections.singleton(project));
 				projects.remove(project);
-				providers = bundleProject.formatProjectList(projects);
+				providers = bundleProjectCandidates.formatProjectList(projects);
 			} catch (CircularReferenceException e) {
 				providers = "Cycles";
 			}
@@ -524,7 +524,7 @@ public class BundleProperties {
 	public String getUIExtension() {
 		Boolean uiExtensions = false;
 		try {
-			uiExtensions = bundleProject.isUIContributor(project);
+			uiExtensions = bundleProjectCandidates.isUIPlugin(project);
 		} catch (InPlaceException e) {
 		}
 		return uiExtensions.toString();

@@ -88,11 +88,11 @@ public class UpdateBundleClassPathJob extends BundleJob {
 				try {
 					if (!BuildErrorClosure.hasManifestBuildErrors(project)) {
 						if (addToPath) {
-							if (bundleProjectDesc.addDefaultOutputFolder(project)) {
+							if (bundleProjectMeta.addDefaultOutputFolder(project)) {
 								resetJob.addPendingProject(project);
 							}
 						} else {
-							if (bundleProjectDesc.removeDefaultOutputFolder(project)) {
+							if (bundleProjectMeta.removeDefaultOutputFolder(project)) {
 								resetJob.addPendingProject(project);
 							}
 						}
@@ -103,7 +103,7 @@ public class UpdateBundleClassPathJob extends BundleJob {
 					addError(e, msg, project);
 				}
 			}
-			if (pendingProjects() > 0 && !bundleProject.isAutoBuilding()) {
+			if (pendingProjects() > 0 && !bundleProjectCandidates.isAutoBuilding()) {
 				if (InPlace.get().getMsgOpt().isBundleOperations()) {
 					addInfoMessage(Msg.ATOBUILD_OFF_RESET_INFO);
 				}

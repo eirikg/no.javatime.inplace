@@ -15,7 +15,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import no.javatime.inplace.bundlejobs.BundleJob;
-import no.javatime.inplace.dialogs.OpenProjectHandler;
+import no.javatime.inplace.dialogs.SaveProjectHandler;
 import no.javatime.inplace.dl.preferences.intface.CommandOptions;
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.extender.intface.Extenders;
@@ -132,7 +132,7 @@ public abstract class BundleCommandsContributionItems extends CompoundContributi
 
 		CommandOptions cmdOpt = Activator.getDefault().getCommandOptionsService();
 		boolean timeOut = cmdOpt.isTimeOut();
-		BundleJob job = OpenProjectHandler.getRunningBundleJob();
+		BundleJob job = SaveProjectHandler.getRunningBundleJob();
 		if (null != job && !timeOut && BundleJob.isStateChanging()) {
 			// A job currently executing a start or stop operation and the manual terminate of endless
 			// operations option is enabled
@@ -152,7 +152,7 @@ public abstract class BundleCommandsContributionItems extends CompoundContributi
 	 * or a message that the job is about to terminate if there is no job running
 	 */
 	protected CommandContributionItem addInterrupt(String menuId, String commandId) {
-		BundleJob job = OpenProjectHandler.getRunningBundleJob();
+		BundleJob job = SaveProjectHandler.getRunningBundleJob();
 		String menuLabel;
 		if (null == job) {
 			menuLabel = Msg.ABOUT_TO_FINISH_JOB_LABEL;

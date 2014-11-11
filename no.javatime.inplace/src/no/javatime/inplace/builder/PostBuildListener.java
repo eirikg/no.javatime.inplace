@@ -18,13 +18,14 @@ import no.javatime.inplace.bundlejobs.ActivateProjectJob;
 import no.javatime.inplace.bundlejobs.BundleJob;
 import no.javatime.inplace.bundlejobs.DeactivateJob;
 import no.javatime.inplace.bundlejobs.InstallJob;
+import no.javatime.inplace.bundlejobs.NatureJob;
 import no.javatime.inplace.bundlejobs.UninstallJob;
 import no.javatime.inplace.bundlejobs.UpdateJob;
 import no.javatime.inplace.bundlejobs.UpdateScheduler;
 import no.javatime.inplace.bundlemanager.BundleJobManager;
 import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.intface.BundleCommand;
-import no.javatime.inplace.region.intface.BundleProject;
+import no.javatime.inplace.region.intface.BundleProjectCandidates;
 import no.javatime.inplace.region.intface.BundleRegion;
 import no.javatime.inplace.region.intface.BundleTransition;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
@@ -66,16 +67,14 @@ import org.osgi.framework.Bundle;
  * The following determines which jobs are scheduled for different CRU operations in an activated
  * workspace:
  * <ol>
- * <li>Create (create new, import and open):
+ * <li>Create (create new, import, open and deactivated renamed projects):
  * <ol>
- * <li>New projects are scheduled for installation (not activated) in the activate bundle job
- * <li>Opened and imported projects are started if they were activated before they where closed or
- * exported, otherwise they are installed by the activate bundle job.
+ * <li>New projects are delegated to the new project job for install and if activated, resolve
  * </ol>
  * <li>Rename and move
  * <ol>
  * <li>If a project is renamed, the project with the new name is started if it was activated before
- * the rename operation. Otherwise it is installed.
+ * the rename operation. Otherwise it is delegated to the new project job.
  * <li>A project that is moved is first uninstalled and then installed and in addition resolved and
  * started if it is activated.
  * </ol>
@@ -103,7 +102,8 @@ public class PostBuildListener implements IResourceChangeListener {
 	final private BundleCommand bundleCommand = InPlace.getBundleCommandService();
 	final private BundleRegion bundleRegion = InPlace.getBundleRegionService();
 	final private BundleTransition bundleTransition = InPlace.getBundleTransitionService();
-	final private BundleProject bundleProject = InPlace.getBundleProjectService();
+	final private BundleProjectCandidates bundleProjectCandidates = InPlace
+			.getBundleProjectCandidatesService();
 	private static int delay = 0;
 
 	/**
@@ -114,12 +114,18 @@ public class PostBuildListener implements IResourceChangeListener {
 	public void resourceChanged(IResourceChangeEvent event) {
 
 		// Nothing to do in a deactivated workspace where all bundle projects are uninstalled
-		if (!bundleProject.isWorkspaceNatureEnabled()) {
+//		if (!bundleRegion.isRegionActivated()) {
+//			return;
+//		}
+		if (!NatureJob.isWorkspaceNatureEnabled()) {
 			return;
 		}
 		// After a build when source has changed and the project is pending for update and auto build is
 		// on
 		UpdateJob updateJob = new UpdateJob(UpdateJob.updateJobName);
+		ActivateProjectJob activateProjectJob = new ActivateProjectJob(
+				ActivateProjectJob.activateProjectsJobName);
+
 		// Projects that are moved, renamed, created, opened and imported in an active workspace and
 		// projects with activate as pending transition
 		ActivateBundleJob activateBundleJob = new ActivateBundleJob(ActivateBundleJob.activateJobName);
@@ -130,6 +136,7 @@ public class PostBuildListener implements IResourceChangeListener {
 		// When a project is activated and in state uninstalled or deactivated and in state
 		// uninstalled in an activated workspace
 		InstallJob installJob = new InstallJob(InstallJob.installJobName);
+		AddBundleProjectJob newBundleProjectJob = new AddBundleProjectJob(AddBundleProjectJob.addBundleProjectName);
 		traceBuilds();
 		int buildType = event.getBuildKind();
 		IResourceDelta rootDelta = event.getDelta();
@@ -141,10 +148,9 @@ public class PostBuildListener implements IResourceChangeListener {
 					IResource.NONE);
 		}
 		// A null resource delta implies an unspecified change or a full build. An empty resource delta
-		// implies
-		// no change since last build, but the resource may have a pending transition
+		// implies no change since last build, but the resource may have pending transitions
 		if (null == resourceDeltas || resourceDeltas.length == 0) {
-			BundleProject bundleProject = InPlace.getBundleProjectService();
+			BundleProjectCandidates bundleProject = InPlace.getBundleProjectCandidatesService();
 			for (IProject project : bundleProject.getInstallable()) {
 				try {
 					removePendingBuildTransition(buildType, project);
@@ -161,8 +167,7 @@ public class PostBuildListener implements IResourceChangeListener {
 			}
 		} else {
 			// Cycle all built projects with a delta and schedule appropriate bundle jobs according to
-			// type of
-			// transition and project CRUD operation
+			// type of transition and project CRUD operation
 			for (IResourceDelta projectDelta : resourceDeltas) {
 				IResource projectResource = projectDelta.getResource();
 				if (projectResource.isAccessible()
@@ -174,7 +179,7 @@ public class PostBuildListener implements IResourceChangeListener {
 						removePendingBuildTransition(buildType, project);
 						if (!handlePendingTransition(project, activateBundleJob, updateJob, deactivateJob,
 								uninstallJob, installJob)) {
-							handleCRUDOperation(projectDelta, project, activateBundleJob);
+							handleCRUDOperation(projectDelta, project, activateBundleJob, newBundleProjectJob);
 						}
 					} catch (InPlaceException e) {
 						String msg = ExceptionMessage.getInstance().formatString("schedule_bundle_jobs",
@@ -198,9 +203,11 @@ public class PostBuildListener implements IResourceChangeListener {
 					new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, e.getMessage(), e),
 					StatusManager.LOG);
 		}
+		scheduleJob(newBundleProjectJob);
 		scheduleJob(uninstallJob);
 		scheduleJob(installJob);
 		scheduleJob(deactivateJob);
+		scheduleJob(activateProjectJob);
 		scheduleJob(activateBundleJob);
 		scheduleJob(updateJob);
 		scheduleJob(postActivateBundleJob);
@@ -217,7 +224,7 @@ public class PostBuildListener implements IResourceChangeListener {
 			if (job instanceof ActivateBundleJob) {
 				// Give the builder a chance to start building before activating
 				if (InPlace.get().getCommandOptionsService().isUpdateOnBuild()) {
-					delay = 1000;
+					delay = 500;
 				}
 			}
 			BundleJobManager.addBundleJob(job, delay);
@@ -236,7 +243,7 @@ public class PostBuildListener implements IResourceChangeListener {
 	 * transition does not have to be present before the build transition is cleared, Otherwise false,
 	 */
 	private boolean removePendingBuildTransition(int buildType, IProject project) {
-		if ((bundleProject.isAutoBuilding()
+		if ((bundleProjectCandidates.isAutoBuilding()
 				|| buildType == IncrementalProjectBuilder.INCREMENTAL_BUILD
 				|| buildType == IncrementalProjectBuilder.FULL_BUILD || buildType == IncrementalProjectBuilder.CLEAN_BUILD)) {
 			// Build is no longer pending
@@ -274,8 +281,7 @@ public class PostBuildListener implements IResourceChangeListener {
 		// Update activated modified projects. Deactivated projects are usually not updated but may be
 		if (bundleTransition.containsPending(project, Transition.UPDATE, Boolean.FALSE)) {
 			// If this project is part of an activate process and auto update is off, the project is
-			// tagged
-			// with an update on activate transition and should be updated
+			// tagged with an update on activate transition and should be updated
 			try {
 				if (InPlace.get().getCommandOptionsService().isUpdateOnBuild()
 						|| bundleTransition.containsPending(project, Transition.UPDATE_ON_ACTIVATE,
@@ -299,7 +305,7 @@ public class PostBuildListener implements IResourceChangeListener {
 		}
 		if (bundleTransition.containsPending(project, Transition.ACTIVATE_BUNDLE, Boolean.TRUE)) {
 			// TODO Check this check
-			if (bundleProject.isInstallable(project)) {
+			if (bundleProjectCandidates.isInstallable(project)) {
 				activateBundleJob.addPendingProject(project);
 				ishandled = true;
 			}
@@ -320,44 +326,44 @@ public class PostBuildListener implements IResourceChangeListener {
 	}
 
 	/**
-	 * Schedules an uninstall job for the specified bundle project when it has been moved and adds a
-	 * moved, imported, opened, created or a renamed project as pending to the specified activate
-	 * bundle job.
-	 * <p>
-	 * Create operations for uninstalled projects including import, open and create (always
-	 * deactivated) are added as pending to the activate bundle job.
+	 * Schedules an uninstall job and than an activate job for the specified bundle project when it
+	 * has been moved. Adds imported, opened, created and renamed projects as pending to the specified
+	 * new project job.
 	 * <p>
 	 * Deactivated bundle projects being renamed, are uninstalled in the pre change listener and added
-	 * as a pending project to the specified activate bundle job. Activated renamed bundle projects
-	 * have a pending activate transition and are scheduled for an activate bundle job in
+	 * as a pending project to the specified new project job. Deleted and closed projects are
+	 * uninstalled in the pre change listener and not considered here.
+	 * <p>
+	 * Adds a pending {@code Transition.NEW_PROJECT} and delegates the activation and dependency
+	 * closure handling of imported, opened, created and renamed projects to the to new project job.
+	 * 
+	 * Activated renamed bundle projects have a pending activate transition and are scheduled for an
+	 * activate bundle job in
 	 * {@link #handlePendingTransition(IProject, ActivateBundleJob, UpdateJob, DeactivateJob, UninstallJob, InstallJob)
 	 * handlePendingTransition}.
 	 * <p>
-	 * A project that has been moved (classified as a rename operation) is always at least in state
-	 * installed. A moved project is first scheduled for an uninstall job and than added as a pending
-	 * project to the activate bundle job
-	 * <p>
-	 * Deleted and closed projects are uninstalled in the pre change listener and not considered here.
-	 * <p>
-	 * It is a prerequisite that the project is accessible (exists and open)
+	 * A project that has been moved is always at least in state installed. A moved project is first
+	 * scheduled for an uninstall job and than added as a pending project to the activate bundle job
 	 * 
 	 * @param projectDelta changes in a project specified as deltas since the last build
-	 * @param project which has a specified delta
-	 * @param activateBundleJob installs deactivated projects and installs, resolves and optionally
-	 * starts activated projects
+	 * @param project The project has a specified delta which is the basis for which bundle operation
+	 * to perform
+	 * @param activateBundleJob add moved projects to this activate job
+	 * @param newBundleProjectJob add imported, created, opened and renamed projects to this job
 	 * @return true if the specified project has been added as a pending project to the specified
-	 * activate bundle job. Otherwise false.
+	 * activate bundle and/or new project job. Otherwise false.
 	 */
 	private boolean handleCRUDOperation(IResourceDelta projectDelta, IProject project,
-			ActivateBundleJob activateBundleJob) {
+			ActivateBundleJob activateBundleJob, AddBundleProjectJob newBundleProjectJob) {
 
-		if (!bundleProject.isPlugIn(project)) {
+		if (!bundleProjectCandidates.isBundleProject(project)) {
 			return false;
 		}
 		// A renamed project has already been uninstalled in pre change listener
-		// Create, import and rename (only deactivated projects). Always in state uninstalled
+		// Create (always deactivated), import and rename. All always in state uninstalled
 		if ((projectDelta.getKind() & (IResourceDelta.ADDED)) != 0) {
-			activateBundleJob.addPendingProject(project);
+			bundleTransition.addPending(project, Transition.NEW_PROJECT);
+			newBundleProjectJob.addPendingProject(project);
 			return true;
 		} else if ((projectDelta.getKind() & (IResourceDelta.CHANGED)) != 0) {
 			// Move. Never in state uninstalled
@@ -370,7 +376,8 @@ public class PostBuildListener implements IResourceChangeListener {
 			}
 			// Open. Always in state uninstalled
 			if ((projectDelta.getFlags() & IResourceDelta.OPEN) != 0) {
-				activateBundleJob.addPendingProject(project);
+				bundleTransition.addPending(project, Transition.NEW_PROJECT);
+				newBundleProjectJob.addPendingProject(project);
 				return true;
 			}
 		}
@@ -388,12 +395,13 @@ public class PostBuildListener implements IResourceChangeListener {
 	private boolean addMovedProject(IProject project, ActivateBundleJob activateBundleJob) {
 
 		try {
-			String projectLoaction = InPlace.getBundleRegionService().getProjectLocationIdentifier(project, null);
+			String projectLoaction = InPlace.getBundleRegionService().getProjectLocationIdentifier(
+					project, null);
 			String bundleLocation = bundleRegion.getBundleLocationIdentifier(project);
 			// If path is different its a move (the path of the project description is changed)
 			// The replaced flag is set on files being moved but not set on project level.
 			// For all other modifications of the project description, use update bundle
-			if (!projectLoaction.equals(bundleLocation) && bundleProject.isInstallable(project)) {
+			if (!projectLoaction.equals(bundleLocation) && bundleProjectCandidates.isInstallable(project)) {
 				UninstallJob uninstallJob = new UninstallJob(UninstallJob.uninstallJobName, project);
 				BundleJobManager.addBundleJob(uninstallJob, 0);
 				activateBundleJob.addPendingProject(project);
@@ -402,7 +410,7 @@ public class PostBuildListener implements IResourceChangeListener {
 		} catch (ProjectLocationException e) {
 			String msg = ErrorMessage.getInstance().formatString("project_location", project.getName());
 			IBundleStatus status = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg, e);
-			msg  = NLS.bind(Msg.REFRESH_HINT_INFO, project.getName()); 
+			msg = NLS.bind(Msg.REFRESH_HINT_INFO, project.getName());
 			status.add(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, project, msg, null));
 			StatusManager.getManager().handle(status, StatusManager.LOG);
 		}

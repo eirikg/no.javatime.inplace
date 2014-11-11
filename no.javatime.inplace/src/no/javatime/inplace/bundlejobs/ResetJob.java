@@ -323,7 +323,7 @@ public class ResetJob {
 						errorProjects = removeExternalDuplicates(projectsToReset, null, null);
 						if (null != errorProjects) {
 							projectsToReset.removeAll(errorProjects);
-							String msg = ErrorMessage.getInstance().formatString("bundle_errors_reset", bundleProject.formatProjectList((errorProjects)));
+							String msg = ErrorMessage.getInstance().formatString("bundle_errors_reset", bundleProjectCandidates.formatProjectList((errorProjects)));
 							addError(null, msg);
 						}
 					}

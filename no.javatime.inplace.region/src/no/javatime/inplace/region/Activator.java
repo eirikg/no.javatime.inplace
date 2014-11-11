@@ -8,16 +8,16 @@ import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.extender.intface.Extenders;
 import no.javatime.inplace.extender.intface.Extension;
 import no.javatime.inplace.region.intface.BundleCommand;
-import no.javatime.inplace.region.intface.BundleProject;
-import no.javatime.inplace.region.intface.BundleProjectDescription;
+import no.javatime.inplace.region.intface.BundleProjectCandidates;
+import no.javatime.inplace.region.intface.BundleProjectMeta;
 import no.javatime.inplace.region.intface.BundleRegion;
 import no.javatime.inplace.region.intface.BundleTransition;
 import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.manager.BundleCommandServiceFactory;
 import no.javatime.inplace.region.manager.BundleRegionServiceFactory;
 import no.javatime.inplace.region.manager.BundleTransitionServiceFactory;
-import no.javatime.inplace.region.project.BundleProjectDescriptionServiceFactory;
-import no.javatime.inplace.region.project.BundleProjectServiceFactory;
+import no.javatime.inplace.region.project.BundleProjectMetaServiceFactory;
+import no.javatime.inplace.region.project.BundleProjectCandidatesServiceFactory;
 import no.javatime.inplace.region.resolver.BundleResolveHookFactory;
 import no.javatime.inplace.region.state.BundleStateEvents;
 
@@ -50,8 +50,8 @@ public class Activator extends AbstractUIPlugin {
 	private static Extender<BundleCommand> extenderCommand;
 	private static Extender<BundleRegion> extenderRegion;
 	private static Extender<BundleTransition> extenderTransition;
-	private static Extender<BundleProject> extenderBudleProject;
-	private static Extender<BundleProjectDescription> extenderBudleProjectDescription;
+	private static Extender<BundleProjectCandidates> extenderBudleProjectCandidates;
+	private static Extender<BundleProjectMeta> extenderBudleProjectMeta;
 
 	/**
 	 * Factory creating resolver hook objects for filtering and detection of duplicate bundle
@@ -85,13 +85,13 @@ public class Activator extends AbstractUIPlugin {
 				new BundleRegionServiceFactory(), null);
 		extenderTransition = Extenders.register(context.getBundle(), BundleTransition.class.getName(),
 				new BundleTransitionServiceFactory(), null);
-		extenderBudleProject = Extenders.register(context.getBundle(), BundleProject.class.getName(),
-				new BundleProjectServiceFactory(), null);
+		extenderBudleProjectCandidates = Extenders.register(context.getBundle(), BundleProjectCandidates.class.getName(),
+				new BundleProjectCandidatesServiceFactory(), null);
 		bundleProjectTracker = new ServiceTracker<IBundleProjectService, IBundleProjectService>(
 				context, IBundleProjectService.class.getName(), null);
 		bundleProjectTracker.open();
-		extenderBudleProjectDescription = Extenders.register(context.getBundle(),
-				BundleProjectDescription.class.getName(), new BundleProjectDescriptionServiceFactory(),
+		extenderBudleProjectMeta = Extenders.register(context.getBundle(),
+				BundleProjectMeta.class.getName(), new BundleProjectMetaServiceFactory(),
 				null);
 
 		commandOptions = Extenders.getExtension(CommandOptions.class.getName());
@@ -126,12 +126,12 @@ public class Activator extends AbstractUIPlugin {
 		return extenderTransition;
 	}
 
-	public static Extender<BundleProject> getExtenderBundleProject() {
-		return extenderBudleProject;
+	public static Extender<BundleProjectCandidates> getExtenderBundleCandidatesProject() {
+		return extenderBudleProjectCandidates;
 	}
 
-	public static Extender<BundleProjectDescription> getExtenderBundleProjectDescription() {
-		return extenderBudleProjectDescription;
+	public static Extender<BundleProjectMeta> getExtenderBundleProjectDescription() {
+		return extenderBudleProjectMeta;
 	}
 
 	/**

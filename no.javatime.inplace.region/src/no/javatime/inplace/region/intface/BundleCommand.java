@@ -4,8 +4,8 @@ import java.io.InputStream;
 import java.util.Collection;
 import java.util.List;
 
+import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.region.resolver.BundleResolveHookFactory;
-import no.javatime.inplace.region.state.BundleStateEvents;
 
 import org.eclipse.core.resources.IProject;
 import org.osgi.framework.Bundle;
@@ -26,42 +26,98 @@ public interface BundleCommand {
 	public BundleResolveHookFactory getResolverHookFactory();
 
 	/**
-	 * Installs the workspace bundle project and records the installed bundle along with the project
-	 * (bundle project) and activation status as a workspace bundle in the bundle workspace region.
+	 * Register and activates (install, resolve and start) the specified bundle project with this
+	 * region.
 	 * <p>
-	 * A bundle project is a registered project along with its associated bundle, activation status of
-	 * the bundle, any pending transitions, current or last transition, any transition error and an
-	 * internal bundle state
+	 * For the bundle to start on the development platform the default output folder should be added
+	 * to the Bundle-ClassPath in the manifest file of the specified project before the bundle project
+	 * is activated
 	 * <p>
-	 * The activation status of a project can be obtained from
-	 * {@link BundleProject#isNatureEnabled(IProject) isProjectActivated(IProject)}. A project is
-	 * activated before the bundle and is said to be activated when assigned an internal nature.
+	 * If the project has a lazy activation policy the bundle is started with the
+	 * {@code Bundle#START_ACTIVATION_POLICY} otherwise the {@code Bundle#START_TRANSIENT} start
+	 * option is used
 	 * <p>
-	 * The location identifier is obtained from {@link #getBundleLocationIdentifier(IProject)} .
-	 * <p>
-	 * If already installed return the existing {@code bundle} object.
+	 * The start operation uses the timeout option if it is set to true.
 	 * 
-	 * @param project install a workspace bundle finding the bundle location identifier based on this
-	 * project
-	 * @param activate true to register the bundle as an activated workspace region bundle. If false
-	 * the bundle is registered as a deactivated bundle
-	 * @return the installed bundle object
-	 * @throws InPlaceException if the specified project is null, the location of the specified
-	 * project could not be found or any of the
-	 * {@link BundleContext#installBundle(String, InputStream)} exceptions except duplicate bundles
+	 * @param project the project to register and activate
+	 * @return the activated bundle. The returned state
+	 * @throws InPlaceException if "dev.mode" is off, an IO or property error occurs updating build
+	 * properties file, default output folder is missing or any of the
+	 * {@link BundleContext#installBundle(String, InputStream)} exceptions except the duplicate bundle
+	 * exception
 	 * @throws DuplicateBundleException if a bundle with the same symbolic name and version already
 	 * exists
 	 * @throws ProjectLocationException if the specified project is null or the location of the
 	 * specified project could not be found
-	 * @see #install(IProject)
-	 * @see BundleStateEvents#bundleChanged(BundleEvent)
+	 * @throws InterruptedException if the start operation is interrupted
+	 * @throws IllegalStateException is thrown if the start operation terminates abnormally
+	 * @throws BundleStateChangeException failed to complete the requested life cycle state change
+	 * @throws ExtenderException if the command options service is invalid or null
+	 * @see BundleProjectMeta#addDefaultOutputFolder(IProject)
+	 * @see BundleCommand#install(IProject, Boolean)
+	 * @see BundleCommand#resolve(Collection)
+	 * @see BundleCommand#start(Bundle, int)
+	 * @see BundleCommand#start(Bundle, int, int)
+	 */
+	public Bundle activate(IProject project) throws InPlaceException, DuplicateBundleException,
+			ProjectLocationException, InterruptedException, IllegalStateException, ExtenderException;
+
+	/**
+	 * Not implemented yet
+	 * 
+	 * @param project
+	 * @return
+	 * @throws InPlaceException
+	 */
+	public Bundle deactivate(IProject project) throws InPlaceException;
+
+	/**
+	 * Installs the workspace bundle project and records the installed bundle along with the project
+	 * and activation mode as a workspace bundle with this region.
+	 * <p>
+	 * An activated bundle is a bundle that is resolvable and a deactivated bundle is not. If the
+	 * specified activation parameter is {@code Boolean.FALSE} the bundle is installed and recorded as
+	 * a deactivated bundle. A deactivated bundle, as opposed to an activated bundle, will be silently
+	 * rejected by the resolver hook when resolved. If the activation parameter is
+	 * {@code Boolean.TRUE} the bundle is activated and will be accepted by the resolver hook when
+	 * resolved.
+	 * <p>
+	 * A {@link BundleTransition.Transition#ACTIVATE_BUNDLE Transition.ACTIVATE_BUNDLE} is added as a
+	 * pending transition to an activated bundle if it has not been resolved before invoking install
+	 * and a {@link BundleTransition.Transition#DEACTIVATE Transition.DEACTIVATE} is added as a
+	 * pending transition to a deactivated bundle if it has been resolved before invoking install.
+	 * <p>
+	 * If the bundle is already installed the installed bundle is returned.
+	 * <p>
+	 * To activate or deactivate an already installed bundle, use {@code BundleRegion#setActivation(IProject,
+	 * Boolean)} or {@code BundleRegion#setActivation(Bundle, Boolean)}.
+	 * <p>
+	 * The activation mode of a bundle project can be obtained from
+	 * {@code BundleRegion#isProjectActivated(IProject)} .
+	 * <p>
+	 * The location identifier of an uninstalled bundle can be obtained from
+	 * {@link BundleRegion#getBundleLocationIdentifier(IProject)} and {@link Bundle#getLocation()} for an
+	 * installed bundle.
+	 * 
+	 * @param project installs the associated bundle based on the location identifier of the project
+	 * @param activate true to register the bundle as an activated workspace region bundle. If false
+	 * the bundle is registered as a deactivated bundle
+	 * @return the installed bundle object
+	 * @throws InPlaceException Any of the {@link BundleContext#installBundle(String, InputStream)}
+	 * exceptions except duplicate bundles
+	 * @throws DuplicateBundleException if a bundle with the same symbolic name and version already
+	 * exists
+	 * @throws ProjectLocationException if the specified project is null or the location of the
+	 * specified project could not be found
+	 * @see BundleContext#installBundle(String)
+	 * @see BundleContext#installBundle(String, InputStream)
 	 */
 	public Bundle install(IProject project, Boolean activate) throws InPlaceException,
-			DuplicateBundleException;
+			DuplicateBundleException, ProjectLocationException;
 
 	/**
 	 * Resolves the specified set of bundles. If no bundles are specified, then the Framework will
-	 * attempt to resolve all unresolved bundles.
+	 * attempt to resolve all activated unresolved bundles.
 	 * 
 	 * @param bundles bundles to resolve.
 	 * @return true if all specified bundles are resolved; false otherwise.
@@ -108,6 +164,7 @@ public interface BundleCommand {
 	 * @param bundle the bundle to stop
 	 * @param stopTransient true to stop the bundle transient, otherwise false
 	 * @throws InPlaceException if bundle is null or any of the {@link Bundle#stop(int)} exceptions
+	 * @throws BundleStateChangeException failed to complete the requested lifecycle state change
 	 */
 	public void stop(Bundle bundle, Boolean stopTransient) throws InPlaceException,
 			BundleStateChangeException;
@@ -190,6 +247,14 @@ public interface BundleCommand {
 	 * @throws InPlaceException if the framework wiring is null
 	 */
 	public Collection<Bundle> getRemovalPending() throws InPlaceException;
+
+	/**
+	 * A bundle project is about to change its state while a bundle command is executing.
+	 * 
+	 * @param project check if the project is in a state changing process
+	 * @return true if the project is state changing. False if not.
+	 */
+	public boolean isStateChanging(IProject project);
 
 	/**
 	 * Get state constant of the specified bundle. If {@code Bundle} is {@code null} return

@@ -57,11 +57,27 @@ public interface BundleRegion {
 			InPlaceException;
 
 	/**
-	 * Register the specified project as a workspace region bundle project.
+	 * Register the specified project and the associated bundle with the region as a bundle project.
+	 * If the specified bundle does not exist, is invalid or is null it is initialized with state
+	 * {@code StateLess} and {@code Transition.NOTRANSITION}
 	 * <p>
-	 * The bundle and the project is registered automatically when installed. When the same project is
-	 * registered multiple times the bundle and the activation status of the bundle is updated and any
-	 * additional information about the bundle project is kept.
+	 * If the specified activation status is true and the bundle is in state
+	 * {@code Bundle#UNINSTALLED} or in state {@code Bundle#INSTALLED} a
+	 * {@code Transition#ACTIVATE_BUNDLE} is added a pending bundle command. This indicates that
+	 * the bundle should be resolved and optionally started.
+	 * <p>
+	 * If the the specified activation status is false and the bundle state is {@code Bundle#RESOLVED}, {@code Bundle#STARTING}, {@code Bundle#ACTIVE} or {@code Bundle#STOPPING} a
+	 * {@code Transition#DEACTIVATE} is added as a pending bundle command. This indicates that the
+	 * bundle should be deactivated.
+	 * <p>
+	 * You can control this manually by removing pending operations on a registered bundle, and then
+	 * invoke one or more of the bundle commands
+	 * <p>
+	 * A bundle project is otherwise registered automatically when installed. If the bundle project is
+	 * already registered it is updated with the specified bundle and the specified activation status
+	 * 
+	 * When the same bundle project is registered multiple times the bundle and the activation status
+	 * of the bundle is updated and any existing information about the bundle project is kept.
 	 * 
 	 * @param project project to register. Must not be null
 	 * @param bundle bundle to register. May be null
@@ -70,7 +86,7 @@ public interface BundleRegion {
 	 * @see #unregisterBundleProject(IProject)
 	 * @see #install(IProject, Boolean)
 	 */
-	public void registerBundleProject(IProject project, Bundle bundle, boolean activateBundle);
+	public void registerBundleProject(IProject project, Bundle bundle, boolean activate);
 
 	/**
 	 * Unregister the specified workspace region project. Unregistering a project also unregisters
@@ -156,25 +172,20 @@ public interface BundleRegion {
 	public IProject getProject(String symbolicName, String version);
 
 	/**
-	 * Check if the workspace is activated. The condition is satisfied if one project is JavaTime
-	 * nature enabled and its bundle project is at least installed.
+	 * Check if the workspace is activated. The condition is satisfied if one bundle is activated
 	 * 
 	 * @return true if at least one project is JavaTime nature enabled and its bundle project is not
 	 * uninstalled. Otherwise false
 	 * @see BundleRegion#isBundleActivated(Bundle)
-	 * @see BundleProject#isWorkspaceNatureEnabled()
 	 */
-	public Boolean isBundleWorkspaceActivated();
+	public Boolean isRegionActivated();
 
 	/**
-	 * Check if the bundle is activated. The condition is satisfied if the project is JavaTime nature
-	 * enabled and its bundle project is at least installed.
+	 * Check if the bundle associated with the specified project is activated 
 	 * 
 	 * @param bundleProject to check for activation
-	 * @return true if the specified project is JavaTime nature enabled and its bundle project is not
-	 * uninstalled. Otherwise false
+	 * @return true if the specified project is activated. Otherwise false
 	 * @see BundleRegion#isBundleActivated(Bundle)
-	 * @see BundleProject#isWorkspaceNatureEnabled()
 	 */
 	public Boolean isBundleActivated(IProject bundleProject);
 
@@ -196,6 +207,8 @@ public interface BundleRegion {
 	 * null, false is returned.
 	 */
 	public Boolean isBundleActivated(Bundle bundle);
+	
+	public Collection<IProject> getActivatedProjects();
 
 	/**
 	 * Get all activated bundles.

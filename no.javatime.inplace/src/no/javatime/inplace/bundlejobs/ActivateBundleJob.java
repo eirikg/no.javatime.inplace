@@ -86,7 +86,7 @@ import org.osgi.framework.Bundle;
  * @see DeactivateJob
  * 
  */
-public class ActivateBundleJob extends BundleJob implements ActivateBundle {
+public class ActivateBundleJob extends NatureJob implements ActivateBundle {
 
 	/** Reactivating or activating bundles at start up */
 	final public static String activateStartupJobName = Message.getInstance().formatString(
@@ -211,29 +211,23 @@ public class ActivateBundleJob extends BundleJob implements ActivateBundle {
 		Collection<Bundle> activatedBundles = null;
 		ProjectSorter projectSorter = new ProjectSorter();
 		// At least one project must be activated (nature enabled) for workspace bundles to be activated
-		if (bundleProject.isWorkspaceNatureEnabled()) {
+		if (isWorkspaceNatureEnabled()) {
 			// If this is the first set of workspace project(s) that have been activated no bundle(s) have
-			// been activated yet
-			// and all deactivated bundles should be installed in an activated workspace
-			if (!bundleRegion.isBundleWorkspaceActivated()) {
-				addPendingProjects(bundleProject.getPlugIns());
+			// been activated yet and all deactivated bundles should be installed in an activated workspace
+			if (!bundleRegion.isRegionActivated()) {
+				addPendingProjects(bundleProjectCandidates.getBundleProjects());
 			} else {
+				Collection<IProject> projects = bundleProjectCandidates.getBundleProjects();
+				projects.removeAll(getPendingProjects());
 				// If any, add uninstalled bundles to be installed in an activated workspace
-				for (IProject project : bundleProject.getPlugIns()) {
+				for (IProject project : projects) {
 					if (null == bundleRegion.getBundle(project)) {
 						addPendingProject(project);
 					}
 				}
 			}
-			activatedBundles = install(getPendingProjects(), monitor);
-			if (!getLastErrorStatus().isOK()) {
-				DeactivateJob daj = new DeactivateJob(DeactivateJob.deactivateJobName, getPendingProjects());
-				BundleJobManager.addBundleJob(daj, 0);
-				return addStatus(new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID, Msg.INSTALL_ERROR));
-			}
 			// Add providing projects and remove projects with build errors, cycles, duplicates and
-			// affected
-			// dependent projects before installing
+			// affected dependent projects before installing
 			try {
 				resetPendingProjects(projectSorter.sortProvidingProjects(getPendingProjects()));
 			} catch (CircularReferenceException e) {
@@ -246,8 +240,15 @@ public class ActivateBundleJob extends BundleJob implements ActivateBundle {
 					removePendingProjects(e.getProjects());
 				}
 			}
+			activatedBundles = install(getPendingProjects(), monitor);
+			if (!getLastErrorStatus().isOK()) {
+				DeactivateJob daj = new DeactivateJob(DeactivateJob.deactivateJobName, getPendingProjects());
+				BundleJobManager.addBundleJob(daj, 0);
+				return addStatus(new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID, Msg.INSTALL_ERROR));
+			}			
 			// All circular references, closed and non-existing projects should have been discarded by now
 			handleDuplicates(projectSorter, activatedBundles);
+
 			// Build errors are checked upon project activation
 			if (getName().equals(activateStartupJobName)) {
 				// removeBuildErrorClosures(activatedBundles);
@@ -261,8 +262,7 @@ public class ActivateBundleJob extends BundleJob implements ActivateBundle {
 			throw new OperationCanceledException();
 		}
 		// At this point the workspace is activated and all remaining workspace bundles are free of
-		// errors and at
-		// least installed. Resolve and start activated bundles
+		// errors and at least installed. Resolve and start activated bundles
 		// Only resolve bundles in state installed
 		Collection<Bundle> bundlesToResolve = new LinkedHashSet<Bundle>(activatedBundles.size());
 		// Only resolve bundles in state installed
@@ -289,7 +289,7 @@ public class ActivateBundleJob extends BundleJob implements ActivateBundle {
 		// Set the bundle class path on start up if settings (dev and/or update bundle class path) are
 		// changed
 		if (getName().equals(ActivateBundleJob.activateStartupJobName)
-				&& (null != bundleProjectDesc.inDevelopmentMode() || getOptionsService()
+				&& (null != bundleProjectMeta.inDevelopmentMode() || getOptionsService()
 						.isUpdateDefaultOutPutFolder())) {
 			for (Bundle bundle : activatedBundles) {
 				resolveBundleClasspath(bundleRegion.getProject(bundle));
@@ -381,7 +381,7 @@ public class ActivateBundleJob extends BundleJob implements ActivateBundle {
 		bundleTransition.removeTransitionError(TransitionError.DUPLICATE);
 		removeExternalDuplicates(getPendingProjects(), null, null);
 		Collection<IProject> duplicates = removeWorkspaceDuplicates(getPendingProjects(), null, null,
-				bundleProject.getInstallable(), duplicateMessage);
+				bundleProjectCandidates.getInstallable(), duplicateMessage);
 		if (null != duplicates) {
 			Collection<IProject> installedRequirers = projectSorter.sortRequiringProjects(duplicates,
 					true);
@@ -413,7 +413,7 @@ public class ActivateBundleJob extends BundleJob implements ActivateBundle {
 			}
 			// Default is to start the bundle, so it is sufficient to handle bundles with state resolved
 			for (Bundle bundle : bundleRegion.getActivatedBundles()) {
-				if (bundles.contains(bundle) && !bundleProjectDesc.isFragment(bundle)) {
+				if (bundles.contains(bundle) && !bundleProjectMeta.isFragment(bundle)) {
 					String symbolicKey = bundleRegion.getSymbolicKey(bundle, null);
 					if (symbolicKey.isEmpty()) {
 						continue;
@@ -434,7 +434,7 @@ public class ActivateBundleJob extends BundleJob implements ActivateBundle {
 						if (reqBundles.size() > 0) {
 							for (Bundle reqBundle : reqBundles) {
 								// Fragments are only resolved (not started)
-								if (bundleProjectDesc.isFragment(reqBundle)) {
+								if (bundleProjectMeta.isFragment(reqBundle)) {
 									continue;
 								}
 								int reqState = 0;

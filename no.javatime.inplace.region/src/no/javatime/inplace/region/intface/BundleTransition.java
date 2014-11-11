@@ -137,9 +137,17 @@ public interface BundleTransition {
 		 */
 		UPDATE_DEV_CLASSPATH,
 		/**
+		 * Remove project from workspace 
+		 */
+		REMOVE_PROJECT,
+		/**
 		 * Rename of project with the JavaTime nature enabled
 		 */
-		RENAME,
+		RENAME_PROJECT,
+		/**
+		 * Open, import and create new project
+		 */
+		NEW_PROJECT,
 		/**
 		 * No transition defined. This is also the case if a transition is canceled or rejected
 		 */

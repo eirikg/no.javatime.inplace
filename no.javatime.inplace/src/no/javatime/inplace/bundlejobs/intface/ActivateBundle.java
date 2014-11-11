@@ -15,7 +15,7 @@ package no.javatime.inplace.bundlejobs.intface;
 						// Specific factory for activate job
 //						new BundleJobServiceFactory());
 		ActivateBundle activate = activateExtender.getService();
-		activate.addPendingProjects(BundleProjectImpl.INSTANCE.getCandidateProjects());
+		activate.addPendingProjects(BundleProjectCandidatesImpl.INSTANCE.getCandidateProjects());
 		activateExtender.unregisterService();
 		activateExtender.registerService();
 		activate = activateExtender.getService();

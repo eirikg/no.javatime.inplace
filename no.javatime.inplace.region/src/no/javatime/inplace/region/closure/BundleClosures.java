@@ -531,7 +531,7 @@ public class BundleClosures {
 	@SuppressWarnings("unused")
 	private boolean isInstalled(Collection<Bundle> initialBundleSet, Collection<Bundle> scope) {
 
-		return bundleRegion.isBundleWorkspaceActivated();
+		return bundleRegion.isRegionActivated();
 		// if (initialBundleSet.size() > 0 && scope.size() > 0) {
 		// if (bundleRegion.getBundles(initialBundleSet, Bundle.UNINSTALLED).size() == 0
 		// && bundleRegion.getBundles(scope, Bundle.UNINSTALLED).size() == 0) {

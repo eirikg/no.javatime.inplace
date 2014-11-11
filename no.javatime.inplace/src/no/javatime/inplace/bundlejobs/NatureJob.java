@@ -12,16 +12,21 @@ package no.javatime.inplace.bundlejobs;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.builder.JavaTimeNature;
 import no.javatime.inplace.msg.Msg;
+import no.javatime.inplace.region.intface.BundleProjectCandidates;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
+import no.javatime.inplace.region.intface.DuplicateBundleException;
 import no.javatime.inplace.region.intface.InPlaceException;
+import no.javatime.inplace.region.intface.ProjectLocationException;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import no.javatime.util.messages.Category;
+import no.javatime.util.messages.ErrorMessage;
 import no.javatime.util.messages.Message;
 import no.javatime.util.messages.WarnMessage;
 
@@ -32,6 +37,7 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.core.runtime.SubProgressMonitor;
+import org.eclipse.osgi.util.NLS;
 import org.osgi.framework.Bundle;
 
 /**
@@ -78,6 +84,47 @@ public abstract class NatureJob extends BundleJob {
 	public NatureJob(String name, IProject project) {
 		super(name, project);
 	}
+	/**
+	 * Check if the project is JavaTime nature enabled using the {@link JavaTimeNature#JAVATIME_NATURE_ID}
+	 * 
+	 * @param project to check for the JavaTime nature
+	 * @return true if the specified project is nature enabled, and false if the specified project is null,
+	 * if project is closed, non-existing or not JavaTime nature enabled 
+	 */
+	public static Boolean isNatureEnabled(IProject project) {
+		try {
+			if (null != project && project.isNatureEnabled(JavaTimeNature.JAVATIME_NATURE_ID)) {
+				return true;
+			}
+		} catch (CoreException e) {
+			// Ignore closed or non-existing project
+		}
+		return false;
+
+	}
+
+	public static Boolean isWorkspaceNatureEnabled() {
+		BundleProjectCandidates bundleProjectCandidates = InPlace.getBundleProjectCandidatesService();
+		for (IProject project : bundleProjectCandidates.getProjects()) {
+			if (isNatureEnabled(project)) {
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	public static Collection<IProject> getNatureEnabled() {
+		
+		BundleProjectCandidates bundleProjectCandidates = InPlace.getBundleProjectCandidatesService();
+		Collection<IProject> projects = new LinkedHashSet<IProject>();
+	
+		for (IProject project : bundleProjectCandidates.getProjects()) {
+			if (isNatureEnabled(project)) {
+				projects.add(project);
+			}
+		}
+		return projects;
+	}
 
 	/**
 	 * Runs the bundle(s) nature operation.
@@ -85,6 +132,146 @@ public abstract class NatureJob extends BundleJob {
 	@Override
 	public IBundleStatus runInWorkspace(IProgressMonitor monitor) throws CoreException {
 		return super.runInWorkspace(monitor);
+	}
+
+	/**
+	 * Installs pending bundles and set activation status on the bundles. All failures to install are
+	 * added to the job status list
+	 * 
+	 * @param projectsToInstall a collection of bundle projects to install
+	 * @param monitor monitor the progress monitor to use for reporting progress to the user.
+	 * @return activated installed bundle projects. The returned list is never {@code null}
+	 */
+	protected Collection<Bundle> install(Collection<IProject> projectsToInstall,
+			IProgressMonitor monitor) {
+
+		SubMonitor progress = SubMonitor.convert(monitor, projectsToInstall.size());
+		Collection<Bundle> activatedBundles = new LinkedHashSet<Bundle>();
+
+		for (IProject project : projectsToInstall) {
+			Bundle bundle = null; // Assume not installed
+			try {
+				if (Category.getState(Category.progressBar))
+					sleep(sleepTime);
+				progress.subTask(installSubtaskName + project.getName());
+				// Get the activation status of the corresponding project
+				Boolean activated = isNatureEnabled(project);
+				bundle = bundleCommand.install(project, activated);
+				// Project must be activated and bundle must be successfully installed to be activated
+				if (null != bundle && activated) {
+					activatedBundles.add(bundle);
+				}
+			} catch (DuplicateBundleException e) {
+				String msg = null;
+				try {
+					handleDuplicateException(project, e, null);
+				} catch (InPlaceException e1) {
+					msg = e1.getLocalizedMessage();
+					addError(e, msg, project);
+				}
+			} catch (ProjectLocationException e) {
+				IBundleStatus status = addError(e, e.getLocalizedMessage());
+				String msg = ErrorMessage.getInstance().formatString("project_location", project.getName());
+				status.add(new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID, project, msg, null));
+				msg = NLS.bind(Msg.REFRESH_HINT_INFO, project.getName());
+				status.add(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, project, msg, null));
+			} catch (InPlaceException e) {
+				String msg = ErrorMessage.getInstance().formatString("install_error_project",
+						project.getName());
+				addError(e, msg, project);
+			} finally {
+				progress.worked(1);
+			}
+		}
+		return activatedBundles;
+	}
+
+	/**
+	 * Uninstall and refresh the specified bundles. Errors are added to this job for bundles that fail
+	 * to uninstall.
+	 * 
+	 * @param bundles to uninstall
+	 * @param monitor monitor the progress monitor to use for reporting progress to the user.
+	 * @param unregister If true the bundle is removed from the internal workspace region. Will be
+	 * registered again automatically when installed
+	 * @return status object describing the result of uninstalling with {@code StatusCode.OK} if no
+	 * failure, otherwise one of the failure codes are returned. If more than one bundle fails, status
+	 * of the last failed bundle is returned. All failures are added to the job status list
+	 * @throws InPlaceException if this thread is interrupted, security violation, illegal argument
+	 * (not same framework) or illegal monitor (current thread not owner of monitor)
+	 */
+	protected IBundleStatus uninstall(Collection<Bundle> bundles, IProgressMonitor monitor,
+			boolean unregister) throws InPlaceException {
+
+		IBundleStatus result = createStatus();
+
+		if (null != bundles && bundles.size() > 0) {
+			SubMonitor localMonitor = SubMonitor.convert(monitor, bundles.size());
+			for (Bundle bundle : bundles) {
+				if (Category.getState(Category.progressBar))
+					sleep(sleepTime);
+				localMonitor.subTask(UninstallJob.uninstallSubtaskName + bundle.getSymbolicName());
+				try {
+					// Unregister after refresh
+					bundleCommand.uninstall(bundle, false);
+				} catch (InPlaceException e) {
+					result = addError(e, e.getLocalizedMessage(), bundle.getBundleId());
+				} finally {
+					localMonitor.worked(1);
+				}
+			}
+			refresh(bundles, new SubProgressMonitor(monitor, 1));
+			if (unregister) {
+				for (Bundle bundle : bundles) {
+					bundleRegion.unregisterBundleProject(bundleRegion.getProject(bundle));
+				}
+			} else {
+				for (Bundle bundle : bundles) {
+					bundleRegion.unregisterBundle(bundle);
+				}
+			}
+		}
+		return result;
+	}
+
+	/**
+	 * Reinstalls the specified bundle projects. Failures to reinstall are added to the job status
+	 * list. Only specified bundle projects in state INSTALLED are re-installed.
+	 * 
+	 * @param projectsToInstall a collection of bundle projects to re install
+	 * @param monitor monitor the progress monitor to use for reporting progress to the user.
+	 * @return installed and activated bundle projects. An empty set means that zero or more
+	 * deactivated bundles have been installed
+	 */
+	protected IBundleStatus reInstall(Collection<IProject> projectsToReinstall,
+			IProgressMonitor monitor) {
+
+		IBundleStatus status = new BundleStatus(StatusCode.OK, InPlace.PLUGIN_ID, "");
+		SubMonitor progress = SubMonitor.convert(monitor, projectsToReinstall.size());
+
+		for (IProject project : projectsToReinstall) {
+			Bundle bundle = bundleRegion.getBundle(project);
+			if ((null != bundle) && (bundle.getState() & (Bundle.INSTALLED)) != 0) {
+				try {
+					if (Category.getState(Category.progressBar))
+						sleep(sleepTime);
+					progress.subTask(reInstallSubtaskName + project.getName());
+					IBundleStatus result = uninstall(Collections.<Bundle> singletonList(bundle),
+							new SubProgressMonitor(monitor, 1), false);
+					if (result.hasStatus(StatusCode.OK)) {
+						install(Collections.<IProject> singletonList(project), new SubProgressMonitor(monitor,
+								1));
+					}
+				} catch (DuplicateBundleException e) {
+					addError(e, e.getLocalizedMessage(), project);
+				} catch (InPlaceException e) {
+					addError(e, e.getLocalizedMessage(), project);
+				} finally {
+					progress.worked(1);
+				}
+			}
+		}
+		return status;
 	}
 
 	/**
@@ -109,14 +296,13 @@ public abstract class NatureJob extends BundleJob {
 				if (Category.getState(Category.progressBar))
 					sleep(sleepTime);
 				localMonitor.subTask(NatureJob.disableNatureSubTaskName + project.getName());
-				if (bundleProject.isNatureEnabled(project)) {
+				if (isNatureEnabled(project)) {
 					if (getOptionsService().isUpdateDefaultOutPutFolder()) {
-						bundleProjectDesc.removeDefaultOutputFolder(project);
+						bundleProjectMeta.removeDefaultOutputFolder(project);
 					}
-					// Deactivate project
 					toggleNatureActivation(project, new SubProgressMonitor(monitor, 1));
-					// Deactivate bundle
 					bundleRegion.setActivation(project, false);
+					//bundleRegion.setNatureEnabled(project, false);
 					bundleTransition.clearTransitionError(project);
 				}
 			} catch (InPlaceException e) {
@@ -149,16 +335,16 @@ public abstract class NatureJob extends BundleJob {
 		for (IProject project : projectsToActivate) {
 			try {
 				localMonitor.subTask(NatureJob.enableNatureSubTaskName + project.getName());
-				if (bundleProject.isCandidate(project) && !bundleProject.isNatureEnabled(project)) {
+				if (bundleProjectCandidates.isCandidate(project) && !isNatureEnabled(project)) {
 					// Set the JavaTime nature
 					toggleNatureActivation(project, new SubProgressMonitor(monitor, 1));
 					result = resolveBundleClasspath(project);
 					Bundle bundle = bundleRegion.getBundle(project);
 					try {
 						if (getOptionsService().isEagerOnActivate()) {
-							Boolean isLazy = bundleProjectDesc.getActivationPolicy(project.getProject());
+							Boolean isLazy = bundleProjectMeta.getActivationPolicy(project.getProject());
 							if (isLazy) {
-								bundleProjectDesc.toggleActivationPolicy(project);
+								bundleProjectMeta.toggleActivationPolicy(project);
 								// Uninstall and install bundles when toggling from lazy to eager activation policy
 								if (null != bundle) {
 									reInstall(Collections.<IProject>singletonList(project), new SubProgressMonitor(monitor, 1));

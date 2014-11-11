@@ -297,26 +297,26 @@ public class ProjectChangeListener implements IResourceChangeListener {
 			break;
 		default:
 		}
-		TraceMessage.getInstance().getString("{0}", buffer.toString());
+		TraceMessage.getInstance().getString(TraceMessage.defKey, buffer.toString());
 	}
 
 	public static void printKind(int kind) {
 
 		if (kind == IResourceDelta.ADDED) {
 
-			TraceMessage.getInstance().getString("{0}", "Kind --> Added");
+			TraceMessage.getInstance().getString(TraceMessage.defKey, "Kind --> Added");
 		}
 		if (kind == IResourceDelta.CHANGED) {
-			TraceMessage.getInstance().getString("{0}", "Kind --> Changed");
+			TraceMessage.getInstance().getString(TraceMessage.defKey, "Kind --> Changed");
 		}
 		if (kind == IResourceDelta.REMOVED) {
-			TraceMessage.getInstance().getString("{0}", "Kind --> Removed");
+			TraceMessage.getInstance().getString(TraceMessage.defKey, "Kind --> Removed");
 		}
 		if (kind == IResourceDelta.REMOVED_PHANTOM) {
-			TraceMessage.getInstance().getString("{0}", "Kind --> Removed phantom");
+			TraceMessage.getInstance().getString(TraceMessage.defKey, "Kind --> Removed phantom");
 		}
 		if (kind == IResourceDelta.ADDED_PHANTOM) {
-			TraceMessage.getInstance().getString("{0}", "Kind --> Added phantom");
+			TraceMessage.getInstance().getString(TraceMessage.defKey, "Kind --> Added phantom");
 		}
 	}
 

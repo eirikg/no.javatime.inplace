@@ -15,7 +15,7 @@ import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.closure.ProjectSorter;
 import no.javatime.inplace.region.events.BundleTransitionEvent;
 import no.javatime.inplace.region.events.BundleTransitionEventListener;
-import no.javatime.inplace.region.intface.BundleProject;
+import no.javatime.inplace.region.intface.BundleProjectCandidates;
 import no.javatime.inplace.region.intface.BundleRegion;
 import no.javatime.inplace.region.intface.BundleTransition;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
@@ -69,10 +69,10 @@ public class ExternalTransition implements BundleTransitionEventListener {
 			@Override
 			public void run() {
 				final BundleRegion bundleRegion = InPlace.getBundleRegionService();
-				final BundleProject bundleProject = InPlace.getBundleProjectService();
+				final BundleProjectCandidates bundleProjectcandidates = InPlace.getBundleProjectCandidatesService();
 				IBundleStatus reqStatus = null;
 				int autoDependencyAction = 1; // Default auto dependency action
-				new OpenProjectHandler().saveModifiedFiles();
+				new SaveProjectHandler().saveModifiedFiles();
 				Boolean dependencies = false;
 				Collection<IProject> reqProjects = Collections.<IProject> emptySet();
 				if (bundleRegion.isBundleActivated(bundle)) {
@@ -84,7 +84,7 @@ public class ExternalTransition implements BundleTransitionEventListener {
 					dependencies = reqProjects.size() > 0;
 					if (dependencies) {
 						String msg = NLS.bind(Msg.REQUIRING_BUNDLES_WARN,
-								new Object[] { InPlace.getBundleProjectService().formatProjectList(reqProjects), symbolicName });
+								new Object[] { InPlace.getBundleProjectCandidatesService().formatProjectList(reqProjects), symbolicName });
 						reqStatus = new BundleStatus(StatusCode.WARNING, symbolicName, msg);
 					}
 				}
@@ -95,7 +95,7 @@ public class ExternalTransition implements BundleTransitionEventListener {
 						int index = 0;
 						if (dependencies) {
 							question = NLS.bind(Msg.DEACTIVATE_QUESTION_REQ_DLG, new Object[] { symbolicName,
-									location, bundleProject.formatProjectList(reqProjects) });
+									location, bundleProjectcandidates.formatProjectList(reqProjects) });
 							index = 1;
 						} else {
 							question = NLS.bind(Msg.DEACTIVATE_QUESTION_DLG, new Object[] { symbolicName,
@@ -114,7 +114,7 @@ public class ExternalTransition implements BundleTransitionEventListener {
 				BundleJob bundleJob = null;
 				// Reactivate uninstalled bundle
 				if (autoDependencyAction == 0) {
-					if (bundleProject.isNatureEnabled(project)) {
+					if (bundleRegion.isBundleActivated(project)) {
 						bundleJob = new ActivateBundleJob(ActivateBundleJob.activateJobName, project);
 						if (dependencies) {
 							// Bring workspace back to a consistent state before restoring
@@ -124,22 +124,22 @@ public class ExternalTransition implements BundleTransitionEventListener {
 							bundleJob.addPendingProjects(reqProjects);
 						}
 					} else {
-						if (!bundleProject.isWorkspaceNatureEnabled()) {
+						if (!bundleRegion.isRegionActivated()) {
 							// External uninstall may have been issued on multiple bundles (uninstall A B)
 							bundleJob = new ActivateProjectJob(ActivateProjectJob.activateProjectsJobName,
 									project);
 						} else {
 							// Workspace is activated but bundle is not. Install the bundle and other uninstalled
 							// bundles
-							bundleJob = new InstallJob(InstallJob.installJobName, project); // BundleProjectImpl.INSTANCE.getInstallableProjects());
+							bundleJob = new InstallJob(InstallJob.installJobName, project); // BundleProjectCandidatesImpl.INSTANCE.getInstallableProjects());
 						}
 					}
 					// Deactivate workspace
 				} else if (autoDependencyAction == 1) {
 					// Deactivate workspace to obtain a consistent state between all workspace bundles
-					if (bundleProject.isWorkspaceNatureEnabled()) {
+					if (bundleRegion.isRegionActivated()) {
 						bundleJob = new DeactivateJob(DeactivateJob.deactivateWorkspaceJobName);
-						bundleJob.addPendingProjects(bundleProject.getNatureEnabled());
+						bundleJob.addPendingProjects(bundleRegion.getActivatedProjects());
 					}
 				}
 				if (null != bundleJob) {

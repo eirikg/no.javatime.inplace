@@ -308,6 +308,29 @@ public class BundleStatus extends MultiStatus implements IBundleStatus {
 			add(status);
 		}
 	}
+	
+	/**
+	 * Set highest severity from children
+	 */
+	public void setStatusCode() {
+		
+		StatusCode statusCode = StatusCode.INFO;
+		for (IStatus status : getChildren()) {
+			if (status instanceof IBundleStatus) {
+				IBundleStatus bundleStatus = (IBundleStatus) status;
+				if (bundleStatus.getStatusCode() == StatusCode.ERROR) {
+					statusCode = StatusCode.ERROR;
+					break;
+				} else if (bundleStatus.getStatusCode() == StatusCode.BUILDERROR) {
+						statusCode = StatusCode.BUILDERROR;
+						break;
+				} else if (bundleStatus.getStatusCode() == StatusCode.WARNING) {
+					statusCode = StatusCode.WARNING;					
+				}
+			}
+		}
+		setStatusCode(statusCode);
+	}
 
 	@Override
 	public final IProject getProject() {

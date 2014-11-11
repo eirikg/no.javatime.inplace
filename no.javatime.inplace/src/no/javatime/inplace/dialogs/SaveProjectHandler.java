@@ -37,7 +37,7 @@ import org.eclipse.osgi.util.NLS;
  *
  */
 @SuppressWarnings("restriction")
-public class OpenProjectHandler extends SaveScopeResourcesHandler {
+public class SaveProjectHandler extends SaveScopeResourcesHandler {
 	
 	private Collection<IProject> dirtyProjects = new LinkedHashSet<IProject>();
 
@@ -67,7 +67,7 @@ public class OpenProjectHandler extends SaveScopeResourcesHandler {
 		if (!isDirty) {
 			return Boolean.TRUE;
 		}	
-		Collection<IProject> projects = InPlace.getBundleProjectService().getProjects();
+		Collection<IProject> projects = InPlace.getBundleProjectCandidatesService().getProjects();
     IPreferenceStore store = DebugUIPlugin.getDefault().getPreferenceStore();
     String save = store.getString(IInternalDebugUIConstants.PREF_SAVE_DIRTY_EDITORS_BEFORE_LAUNCH);
     int ret = showSaveDialog(projects.toArray(new IProject[projects.size()]), !save.equals(MessageDialogWithToggle.NEVER), save.equals(MessageDialogWithToggle.PROMPT));
@@ -121,6 +121,7 @@ public class OpenProjectHandler extends SaveScopeResourcesHandler {
 	/**
 	 * Check if there is a job belonging to the {@code BundleJob.FAMILY_BUNDLE_LIFECYCLE} and
 	 * is either running, waiting or sleeping
+	 * 
 	 * @return true if a bundle job is running, waiting or sleeping, otherwise false.
 	 */
 	static public Boolean getBundlesJobRunState() {
@@ -133,8 +134,28 @@ public class OpenProjectHandler extends SaveScopeResourcesHandler {
 			return false;
 		}
 	}
+
+	/** 
+	 * Find the first waiting bundle job
+	 * 
+	 * @return bundle job running or null if no bundle is in state running
+	 */
+	static public BundleJob getWaitingBundleJob() {
+
+		IJobManager jobMan = Job.getJobManager();
+		Job[] jobs = jobMan.find(BundleJob.FAMILY_BUNDLE_LIFECYCLE); 
+		for (int i = 0; i < jobs.length; i++) {
+			Job job = jobs[i];
+			if (job.getState() == Job.WAITING && job instanceof BundleJob) {
+				return (BundleJob) job;
+			}
+		}
+		return null;
+	}
 	
-	/** Find the running bundle job
+	/** 
+	 * Find the running bundle job
+	 * 
 	 * @return bundle job running or null if no bundle is in state running
 	 */
 	static public BundleJob getRunningBundleJob() {
@@ -175,7 +196,7 @@ public class OpenProjectHandler extends SaveScopeResourcesHandler {
 	 */
 	public Boolean areResourcesDirty () {
 		
-		Collection<IProject> projects = InPlace.getBundleProjectService().getProjects();	
+		Collection<IProject> projects = InPlace.getBundleProjectCandidatesService().getProjects();	
 		IResource[] resources = getScopedDirtyResources(projects.toArray(new IProject[projects.size()]));
 		if (resources.length > 0) {
 			this.dirtyProjects.clear();

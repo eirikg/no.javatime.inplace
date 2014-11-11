@@ -15,7 +15,7 @@ import java.util.Collection;
 import no.javatime.inplace.bundlejobs.DeactivateJob;
 import no.javatime.inplace.bundlemanager.BundleJobManager;
 import no.javatime.inplace.dl.preferences.intface.CommandOptions;
-import no.javatime.inplace.region.intface.BundleProject;
+import no.javatime.inplace.region.intface.BundleProjectCandidates;
 import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.ui.Activator;
 import no.javatime.inplace.ui.msg.Msg;
@@ -32,15 +32,15 @@ public class UIContributorsHandler extends AbstractOptionsHandler {
 	@Override
 	protected void storeValue(Boolean value) throws InPlaceException {
 		CommandOptions cmdStore = getOptionsService();
-		final BundleProject bundleProject = Activator.getBundleProjectService();
+		final BundleProjectCandidates bundleProjectCandidates = Activator.getBundleProjectCandidatesService();
 		Boolean storedValue = cmdStore.isAllowUIContributions();
-		Collection<IProject> uIProjects = bundleProject.getUIContributors();
+		Collection<IProject> uIProjects = bundleProjectCandidates.getUIPlugins();
 		if (!storedValue.equals(value) && uIProjects.size() > 0) {
 			cmdStore.setIsAllowUIContributions(value);
 			Activator.getDisplay().asyncExec(new Runnable() {
 				@Override
 				public void run() {
-					BundleMenuActivationHandler.updateBundleListPage(bundleProject.toJavaProjects(bundleProject.getInstallable()));
+					BundleMenuActivationHandler.updateBundleListPage(bundleProjectCandidates.toJavaProjects(bundleProjectCandidates.getInstallable()));
 				}			
 			});
 			if (!value) {

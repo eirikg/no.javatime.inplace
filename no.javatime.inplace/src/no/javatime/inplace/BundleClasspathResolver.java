@@ -6,7 +6,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import no.javatime.inplace.region.intface.BundleProjectDescription;
+import no.javatime.inplace.region.intface.BundleProjectMeta;
 import no.javatime.inplace.region.intface.InPlaceException;
 
 import org.eclipse.core.runtime.IPath;
@@ -30,11 +30,11 @@ public class BundleClasspathResolver implements IBundleClasspathResolver {
 	@Override
 	public Map getAdditionalClasspathEntries(IJavaProject javaProject) {
 		Map<IPath, Collection<IPath>> additionalEntries = new HashMap<IPath, Collection<IPath>>(); 		
-		BundleProjectDescription bpDesc = InPlace.getBundleProjectDescriptionService();
-		IPath defaultOutputlocation = bpDesc.getDefaultOutputFolder(javaProject.getProject());
+		BundleProjectMeta bundleProjectMeta = InPlace.getbundlePrrojectMetaService();
+		IPath defaultOutputlocation = bundleProjectMeta.getDefaultOutputFolder(javaProject.getProject());
 		Collection<IPath> srcPath = null;
 		try {
-			srcPath = bpDesc.getSourceFolders(javaProject.getProject());
+			srcPath = bundleProjectMeta.getSourceFolders(javaProject.getProject());
 			for (IPath path : srcPath) {
 				additionalEntries.put(path, Collections.<IPath>singletonList(defaultOutputlocation)); 
 			}

@@ -38,7 +38,7 @@ public class BundleClassPathCommandContribution extends BundleMainCommandsContri
 
 		ArrayList<ContributionItem> contributions = new ArrayList<ContributionItem>();
 
-		ArrayList<ContributionItem> classPathContributions = addClassPath(Activator.getBundleProjectService().getPlugIns());
+		ArrayList<ContributionItem> classPathContributions = addClassPath(Activator.getBundleProjectCandidatesService().getBundleProjects());
 		if (null != classPathContributions) {
 			contributions.addAll(classPathContributions);
 		}
@@ -66,7 +66,7 @@ public class BundleClassPathCommandContribution extends BundleMainCommandsContri
 			for (IProject project : projects) {
 				try {
 					if (!BuildErrorClosure.hasManifestBuildErrors(project)) {
-						if (!Activator.getBundleProjectDescriptionService().isDefaultOutputFolder(project)) {
+						if (!Activator.getBundleProjectMetaService().isDefaultOutputFolder(project)) {
 							nAdd++;
 						} else {
 							nRemove++;
@@ -87,7 +87,7 @@ public class BundleClassPathCommandContribution extends BundleMainCommandsContri
 						&& (optServicet.isInfoMessages() || optServicet.isBundleEvents() || optServicet
 								.isBundleOperations())) {
 					String msg = WarnMessage.getInstance().formatString("error_not_update_classpath",
-							Activator.getBundleProjectService().formatProjectList(errProjects));
+							Activator.getBundleProjectCandidatesService().formatProjectList(errProjects));
 					StatusManager.getManager()
 							.handle(new BundleStatus(StatusCode.ERROR, Activator.PLUGIN_ID, msg, null),
 									StatusManager.LOG);

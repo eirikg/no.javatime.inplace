@@ -16,8 +16,9 @@ import java.util.LinkedHashSet;
 import no.javatime.inplace.region.Activator;
 import no.javatime.inplace.region.closure.CircularReferenceException;
 import no.javatime.inplace.region.closure.ProjectSorter;
-import no.javatime.inplace.region.intface.BundleProject;
+import no.javatime.inplace.region.intface.BundleProjectCandidates;
 import no.javatime.inplace.region.intface.InPlaceException;
+import no.javatime.inplace.region.manager.WorkspaceRegionImpl;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 
@@ -44,9 +45,9 @@ import org.eclipse.ui.statushandlers.StatusManager;
  * <p>
  * The workspace is activated if one or more projects have the JavaTime nature.
  */
-public class BundleProjectImpl extends BundleProjectStateImpl implements BundleProject {
+public class BundleProjectCandidatesImpl extends BundleProjectStateImpl implements BundleProjectCandidates {
 	
-	public final static BundleProjectImpl INSTANCE = new BundleProjectImpl();
+	public final static BundleProjectCandidatesImpl INSTANCE = new BundleProjectCandidatesImpl();
 	final public static String JAVATIME_NATURE_ID = "no.javatime.inplace.builder.javatimenature";
 
 	/* (non-Javadoc)
@@ -56,10 +57,10 @@ public class BundleProjectImpl extends BundleProjectStateImpl implements BundleP
 
 		Collection<IProject> projects = new LinkedHashSet<IProject>();
 
-		for (IProject project : BundleProjectImpl.INSTANCE.getProjects()) {
+		for (IProject project : getProjects()) {
 			try {
 				if (project.isNatureEnabled(JavaCore.NATURE_ID) && project.isNatureEnabled(PLUGIN_NATURE_ID)
-						&& !BundleProjectImpl.INSTANCE.isNatureEnabled(project)) {
+						&& !WorkspaceRegionImpl.INSTANCE.isBundleActivated(project)) {
 					projects.add(project);
 				}
 			} catch (CoreException e) {
@@ -67,7 +68,7 @@ public class BundleProjectImpl extends BundleProjectStateImpl implements BundleP
 			}
 			try {
 				if (!Activator.getDefault().getCommandOptionsService().isAllowUIContributions()) {
-					projects.removeAll(getUIContributors());
+					projects.removeAll(getUIPlugins());
 				}
 			} catch (CircularReferenceException e) {
 				// Ignore. Cycles are detected in any bundle job
@@ -86,7 +87,7 @@ public class BundleProjectImpl extends BundleProjectStateImpl implements BundleP
 	 */
 	public Collection<IProject> getInstallable() {
 		Collection<IProject> projects = new LinkedHashSet<IProject>();
-		for (IProject project : BundleProjectImpl.INSTANCE.getProjects()) {
+		for (IProject project : getProjects()) {
 			try {
 				if (project.isNatureEnabled(JavaCore.NATURE_ID) && project.isNatureEnabled(PLUGIN_NATURE_ID)) {
 					projects.add(project);
@@ -96,7 +97,7 @@ public class BundleProjectImpl extends BundleProjectStateImpl implements BundleP
 			}
 			try {
 				if (!Activator.getDefault().getCommandOptionsService().isAllowUIContributions()) {
-					projects.removeAll(getUIContributors());
+					projects.removeAll(getUIPlugins());
 				}
 			} catch (CircularReferenceException e) {
 				// Ignore. Cycles are detected in any bundle job
@@ -113,9 +114,9 @@ public class BundleProjectImpl extends BundleProjectStateImpl implements BundleP
 	/* (non-Javadoc)
 	 * @see no.javatime.inplace.region.project.BundleCandidates#getPlugIns()
 	 */
-	public Collection<IProject> getPlugIns() {
+	public Collection<IProject> getBundleProjects() {
 		Collection<IProject> projects = new LinkedHashSet<IProject>();
-		for (IProject project : BundleProjectImpl.INSTANCE.getProjects()) {
+		for (IProject project : getProjects()) {
 			try {
 				if (project.hasNature(JavaCore.NATURE_ID) && project.isNatureEnabled(PLUGIN_NATURE_ID)) {
 					projects.add(project);
@@ -130,7 +131,7 @@ public class BundleProjectImpl extends BundleProjectStateImpl implements BundleP
 	/* (non-Javadoc)
 	 * @see no.javatime.inplace.region.project.BundleCandidates#isPlugIn(org.eclipse.core.resources.IProject)
 	 */
-	public Boolean isPlugIn(IProject project) {
+	public Boolean isBundleProject(IProject project) {
 		try {
 			if (project.hasNature(JavaCore.NATURE_ID) && project.isNatureEnabled(PLUGIN_NATURE_ID)) {
 				return true;
@@ -146,7 +147,7 @@ public class BundleProjectImpl extends BundleProjectStateImpl implements BundleP
 	 */
 	public Boolean isInstallable(IProject project) {
 
-		if (isCandidate(project) || BundleProjectImpl.INSTANCE.isNatureEnabled(project)) {
+		if (isCandidate(project) || WorkspaceRegionImpl.INSTANCE.isBundleActivated(project)) {
 			return true;
 		}
 		return false;
@@ -158,11 +159,11 @@ public class BundleProjectImpl extends BundleProjectStateImpl implements BundleP
 	public Boolean isCandidate(IProject project) {
 		try {
 			if (project.hasNature(JavaCore.NATURE_ID) && project.isNatureEnabled(PLUGIN_NATURE_ID)
-					&& !BundleProjectImpl.INSTANCE.isNatureEnabled(project)) {
+					&& !WorkspaceRegionImpl.INSTANCE.isBundleActivated(project)) {
 				if (Activator.getDefault().getCommandOptionsService().isAllowUIContributions()) {
 					return true;
 				} else {
-					Collection<IProject> uiContributors = getUIContributors();
+					Collection<IProject> uiContributors = getUIPlugins();
 					if (uiContributors.contains(project)) {
 						return false;
 					} else {
@@ -187,12 +188,12 @@ public class BundleProjectImpl extends BundleProjectStateImpl implements BundleP
 	/* (non-Javadoc)
 	 * @see no.javatime.inplace.region.project.BundleCandidates#getUIContributors()
 	 */
-	public Collection<IProject> getUIContributors() throws CircularReferenceException {
+	public Collection<IProject> getUIPlugins() throws CircularReferenceException {
 		Collection<IProject> projects = new LinkedHashSet<IProject>();
-		for (IProject project : BundleProjectImpl.INSTANCE.getProjects()) {
+		for (IProject project : getProjects()) {
 			try {
 				if (project.hasNature(JavaCore.NATURE_ID) && project.isNatureEnabled(PLUGIN_NATURE_ID)
-						&& isUIContributor(project)) {
+						&& isUIPlugin(project)) {
 					projects.add(project);
 				}
 			} catch (CoreException e) {
@@ -213,7 +214,7 @@ public class BundleProjectImpl extends BundleProjectStateImpl implements BundleP
 	/* (non-Javadoc)
 	 * @see no.javatime.inplace.region.project.BundleCandidates#isUIContributor(org.eclipse.core.resources.IProject)
 	 */
-	public Boolean isUIContributor(IProject project) throws InPlaceException {
+	public Boolean isUIPlugin(IProject project) throws InPlaceException {
 
 		if (null == project) {
 			throw new InPlaceException("project_null_location");
@@ -234,46 +235,6 @@ public class BundleProjectImpl extends BundleProjectStateImpl implements BundleP
 		return false;
 	}
 
-	/* (non-Javadoc)
-	 * @see no.javatime.inplace.region.project.BundleCandidates#isWorkspaceNatureEnabled()
-	 */
-	public Boolean isWorkspaceNatureEnabled() {
-		for (IProject project : BundleProjectImpl.INSTANCE.getProjects()) {
-			if (BundleProjectImpl.INSTANCE.isNatureEnabled(project)) {
-				return true;
-			}
-		}
-		return false;
-	}
-
-	/* (non-Javadoc)
-	 * @see no.javatime.inplace.region.project.BundleCandidates#isNatureEnabled(org.eclipse.core.resources.IProject)
-	 */
-	public Boolean isNatureEnabled(IProject project) {
-		try {
-			if (null != project && project.isNatureEnabled(BundleProjectImpl.JAVATIME_NATURE_ID)) {
-				return true;
-			}
-		} catch (CoreException e) {
-			// Ignore closed or non-existing project
-		}
-		return false;
-	}
-
-	/* (non-Javadoc)
-	 * @see no.javatime.inplace.region.project.BundleCandidates#getNatureEnabled()
-	 */
-	public Collection<IProject> getNatureEnabled() {
-	
-		Collection<IProject> projects = new LinkedHashSet<IProject>();
-	
-		for (IProject project : BundleProjectImpl.INSTANCE.getProjects()) {
-			if (isNatureEnabled(project)) {
-				projects.add(project);
-			}
-		}
-		return projects;
-	}
 	/* (non-Javadoc)
 	 * @see no.javatime.inplace.region.project.BundleCandidates#setAutoBuild(java.lang.Boolean)
 	 */

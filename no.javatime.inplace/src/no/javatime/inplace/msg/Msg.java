@@ -39,7 +39,9 @@ public class Msg extends NLS {
 	public static String UNDEFINED_CONTEXT_ERROR_TRACE;
 	public static String JOB_NAME_TRACE;
 	public static String FRAMEWORK_BUNDLE_OP_TRACE;
-
+	public static String ADD_PROJECT_OP_TRACE;
+	public static String REMOVE_PROJECT_OP_TRACE;
+	
 	// Build trace operations
 	public static String BUILD_HEADER_TRACE;
 	public static String NO_RESOURCE_DELTA_BUILD_TRACE;
@@ -55,7 +57,9 @@ public class Msg extends NLS {
 	public static String ACTIVATE_WORKSPACE_JOB;
 	public static String INIT_DEACTIVATED_WORKSPACE_JOB;
   public static String UPDATE_BUNDLE_CLASS_PATH_JOB; 
-
+  public static String REMOVE_BUNDLE_PROJECT_JOB;
+  public static String ADD_BUNDLE_PROJECT_JOB;
+  
 	// Errors
 	public static String BEGIN_SHUTDOWN_ERROR;
 	public static String END_SHUTDOWN_ERROR;
@@ -65,6 +69,8 @@ public class Msg extends NLS {
 	public static String MANIFEST_BUILD_ERROR;
 	public static String BUILD_STATE_ERROR;
 	public static String END_JOB_ROOT_ERROR;
+	public static String GET_SERVICE_ERROR;
+	public static String INIT_BUNDLE_STATE_ERROR;
 
 	// Warnings
 	public static String EXTERNAL_UNINSTALL_WARN;

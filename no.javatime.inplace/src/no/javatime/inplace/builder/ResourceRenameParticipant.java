@@ -24,7 +24,7 @@ import org.eclipse.ltk.core.refactoring.participants.ResourceChangeChecker;
 import org.eclipse.osgi.util.NLS;
 
 /**
- * Add {@code Transition.RENAME} as a pending transition when a JavaTime nature enabled
+ * Add {@code Transition.RENAME_PROJECT} as a pending transition when a JavaTime nature enabled
  * project is refactored.
  * <p>
  * Log a warning to the bundle log if illegal project name
@@ -97,7 +97,7 @@ public class ResourceRenameParticipant extends RenameParticipant {
 	protected boolean initialize(Object arg0) {
 		if (arg0 instanceof IProject) {
 			fromProject = (IProject) arg0;
-			InPlace.getBundleTransitionService().addPending(fromProject, Transition.RENAME);
+			InPlace.getBundleTransitionService().addPending(fromProject, Transition.RENAME_PROJECT);
 			return true;
 		}
 		return false;

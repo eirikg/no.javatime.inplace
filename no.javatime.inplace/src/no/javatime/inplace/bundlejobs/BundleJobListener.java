@@ -19,7 +19,8 @@ import no.javatime.inplace.bundlemanager.BundleJobManager;
 import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.closure.CircularReferenceException;
 import no.javatime.inplace.region.closure.ProjectSorter;
-import no.javatime.inplace.region.intface.BundleProject;
+import no.javatime.inplace.region.intface.BundleProjectCandidates;
+import no.javatime.inplace.region.intface.BundleRegion;
 import no.javatime.inplace.region.intface.BundleTransition;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
 import no.javatime.inplace.region.status.BundleStatus;
@@ -81,28 +82,31 @@ public class BundleJobListener extends JobChangeAdapter {
 		final Job job = event.getJob();
 		if (job instanceof BundleJob) {
 			final BundleJob bundleJob = (BundleJob) job;
+			// Send the log list to the bundle log
 			if (InPlace.get().getMsgOpt().isBundleOperations()) {
-				final Collection<IBundleStatus> traceList = bundleJob.getLogStatusList();
-				if (traceList.size() > 0) {
+				final Collection<IBundleStatus> logList = bundleJob.getLogStatusList();
+				if (logList.size() > 0) {
 					Runnable trace = new Runnable() {
 						public void run() {
 							IBundleStatus multiStatus = new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID,
 									NLS.bind(Msg.JOB_NAME_TRACE, bundleJob.getName(),
 											Long.toString(System.currentTimeMillis() - startTime)));
-							for (IBundleStatus status : traceList) {
+							for (IBundleStatus status : logList) {
 								multiStatus.add(status);
 							}
+							multiStatus.setStatusCode();
 							InPlace.get().log(multiStatus);
 						}
 					};
 					trace.run();
 				}
 			}
-			Collection<IBundleStatus> statusList = logCancelStatus(bundleJob);
-			if (statusList.size() > 0) {
+			// Send the error list to the error log
+			Collection<IBundleStatus> errorList = logCancelStatus(bundleJob);
+			if (errorList.size() > 0) {
 				IBundleStatus multiStatus = new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID, NLS.bind(
 						Msg.END_JOB_ROOT_ERROR, bundleJob.getName()));
-				for (IBundleStatus status : statusList) {
+				for (IBundleStatus status : errorList) {
 					multiStatus.add(status);
 				}
 				// The custom or the standard status handler is not invoked
@@ -117,7 +121,7 @@ public class BundleJobListener extends JobChangeAdapter {
 			schedulePendingOperations();
 		}
 	}
-
+		
 	/**
 	 * If the bundle job has been cancelled, log it
 	 * 
@@ -147,10 +151,11 @@ public class BundleJobListener extends JobChangeAdapter {
 	private void schedulePendingOperations() {
 
 		BundleTransition bundleTransition = InPlace.getBundleTransitionService();
-		BundleProject bundleProject = InPlace.getBundleProjectService();
+		BundleProjectCandidates bundleProjectcandidates = InPlace.getBundleProjectCandidatesService();
+		BundleRegion bundleRegion = InPlace.getBundleRegionService();
 		BundleJob bundleJob = null;
 
-		Collection<IProject> deactivatedProjects = bundleProject.getCandidates();
+		Collection<IProject> deactivatedProjects = bundleProjectcandidates.getCandidates();
 		// This usually comes from a delayed update when activated bundles to resolve depends on
 		// deactivated bundles
 		Collection<IProject> projectsToActivate = bundleTransition.getPendingProjects(
@@ -169,10 +174,10 @@ public class BundleJobListener extends JobChangeAdapter {
 						activatedProjects.remove(deactivatedProject);
 						if (activatedProjects.size() > 0) {
 							String msg = NLS.bind(Msg.IMPLICIT_ACTIVATION_INFO,
-									bundleProject.formatProjectList(activatedProjects), deactivatedProject.getName());
+									bundleProjectcandidates.formatProjectList(activatedProjects), deactivatedProject.getName());
 							IBundleStatus status = new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, msg);
 							msg = NLS.bind(Msg.DELAYED_RESOLVE_INFO,
-									bundleProject.formatProjectList(activatedProjects), deactivatedProject.getName());
+									bundleProjectcandidates.formatProjectList(activatedProjects), deactivatedProject.getName());
 							status.add(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, msg));
 							bundleJob.addLogStatus(status);
 						}
@@ -183,7 +188,7 @@ public class BundleJobListener extends JobChangeAdapter {
 			BundleJobManager.addBundleJob(bundleJob, 0);
 		}
 
-		Collection<IProject> activatedProjects = bundleProject.getNatureEnabled();
+		Collection<IProject> activatedProjects = bundleRegion.getActivatedProjects();
 
 		Collection<IProject> projectsToRefresh = bundleTransition.getPendingProjects(activatedProjects,
 				Transition.REFRESH);

@@ -14,9 +14,9 @@ import java.util.EnumSet;
 
 import no.javatime.inplace.region.Activator;
 import no.javatime.inplace.region.intface.BundleTransition;
-import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
 import no.javatime.inplace.region.intface.BundleTransition.TransitionError;
+import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.manager.BundleCommandImpl;
 import no.javatime.inplace.region.manager.WorkspaceRegionImpl;
 import no.javatime.util.messages.Category;
@@ -39,18 +39,18 @@ import org.osgi.framework.Bundle;
  */
 public class BundleNode {
 
-	// Initialize with no pending pendingCommands
+	// Initialize with no pending commands
 	private EnumSet<BundleTransition.Transition> pendingCommands = EnumSet.noneOf(Transition.class);
 	private IProject project; // The link between the bundle and the project (bundle project)
 	private Long bundleId; // Keep the id instead of the bundle object
-	private Boolean activated; // True when project is nature enabled and bundle has been installed
+	private Boolean activated; // Explicit set, indicating whether the bundle is deactivated or activated
 	private BundleState state = StateFactory.INSTANCE.stateLess; // Current state determined by the last transition
 	private BundleState prevState = StateFactory.INSTANCE.stateLess; // Previous state
 	private Transition transition = Transition.NOTRANSITION;; // Current or last executed transition on a bundle
 	private Transition prevTransition = Transition.NOTRANSITION; // Previous transition
 	private TransitionError transitionError = TransitionError.NOERROR; // Last error caused by a transition
 	private TransitionError prevTransitionError = TransitionError.NOERROR; // Error caused by the previous transition
-	private boolean isStateChanging = false; // Set to true while executing a bundle command
+	private boolean isStateChanging; // Set to true while executing a bundle command
 
 	/**
 	 * Creates a bundle node with a one-to-one relationship between a project and a bundle, called a
@@ -59,7 +59,7 @@ public class BundleNode {
 	 * 
 	 * @param bundle may be null
 	 * @param project must not be null
-	 * @param activate should be true if the project is nature enabled and the bundle is installed
+	 * @param activate should be true to activate (resolvable) the bundle
 	 */
 	public BundleNode(Bundle bundle, IProject project, Boolean activate) {
 		this.project = project;
@@ -310,7 +310,7 @@ public class BundleNode {
 	public final void setActivated(Boolean activate) {
 		this.activated = activate;
 	}
-
+	
 	/**
 	 * All pending operations of this bundle
 	 * 
@@ -333,9 +333,10 @@ public class BundleNode {
 	 * Add a pending bundle operation to the bundle.
 	 * 
 	 * @param operation pending operation to add to the bundle
+	 * @return true if the operation was added and false if it already exist
 	 */
-	public void addPendingCommand(BundleTransition.Transition operation) {
-		pendingCommands.add(operation);
+	public boolean addPendingCommand(BundleTransition.Transition operation) {
+			return pendingCommands.add(operation);
 	}
 
 	/**
@@ -556,8 +557,14 @@ public class BundleNode {
 			case UPDATE_ACTIVATION_POLICY:
 				typeName = "UPDATE_ACTIVATION_POLICY";
 				break;
-			case RENAME:
-				typeName = "RENAME";
+			case REMOVE_PROJECT:
+				typeName = "REMOVE_PROJECT";
+				break;
+			case RENAME_PROJECT:
+				typeName = "RENAME_PROJECT";
+				break;
+			case NEW_PROJECT:
+				typeName = "NEW_PROJECT";
 				break;
 			case NOTRANSITION:
 			default:

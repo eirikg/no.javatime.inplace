@@ -20,7 +20,7 @@ import java.util.Dictionary;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 
-import no.javatime.inplace.region.intface.BundleProject;
+import no.javatime.inplace.region.intface.BundleProjectCandidates;
 import no.javatime.inplace.region.intface.BundleRegion;
 import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.intface.ProjectLocationException;
@@ -42,7 +42,7 @@ import org.osgi.framework.Constants;
  * through the bundle may be different. To synchronize the manifest headers an update followed by a refresh is
  * not enough. A re-installation of the bundle is necessary.
  * 
- * @see BundleProject
+ * @see BundleProjectCandidates
  */
 public class CachedManifestOperationsImpl {
 
@@ -52,7 +52,7 @@ public class CachedManifestOperationsImpl {
 			return;
 		}
 		for (IProject project : projects) {
-			IFile manifestFile = project.getFile(BundleProjectDescriptionImpl.MANIFEST_FILE_NAME);
+			IFile manifestFile = project.getFile(BundleProjectMetaImpl.MANIFEST_FILE_NAME);
 			Manifest manifest = loadManifest(project, manifestFile);
 			Attributes attributes = manifest.getMainAttributes();
 			String lazyPolicy = attributes.getValue(Constants.BUNDLE_ACTIVATIONPOLICY);
@@ -86,7 +86,7 @@ public class CachedManifestOperationsImpl {
 		if (null == project) {
 			return;
 		}
-		IFile manifestFile = project.getFile(BundleProjectDescriptionImpl.MANIFEST_FILE_NAME);
+		IFile manifestFile = project.getFile(BundleProjectMetaImpl.MANIFEST_FILE_NAME);
 		Manifest manifest = loadManifest(project, manifestFile);
 		Attributes attributes = manifest.getMainAttributes();
 		String policy = attributes.getValue(Constants.BUNDLE_ACTIVATIONPOLICY);
@@ -205,7 +205,7 @@ public class CachedManifestOperationsImpl {
 
 		URL url = null;
 		try {
-			url = bundle.getEntry(BundleProjectDescriptionImpl.MANIFEST_FILE_NAME);
+			url = bundle.getEntry(BundleProjectMetaImpl.MANIFEST_FILE_NAME);
 		} catch (IllegalStateException e) {
 			throw new InPlaceException(e, "bundle_state_error", bundle.getSymbolicName());
 		} catch (NullPointerException e) {
@@ -284,7 +284,7 @@ public class CachedManifestOperationsImpl {
 			try {
 				urlLoc = new URL(location);
 				String path = urlLoc.getPath();
-				path = path.concat(BundleProjectDescriptionImpl.MANIFEST_FILE_NAME);
+				path = path.concat(BundleProjectMetaImpl.MANIFEST_FILE_NAME);
 				os = new FileOutputStream(path);
 				manifest.write(os);
 			} finally {

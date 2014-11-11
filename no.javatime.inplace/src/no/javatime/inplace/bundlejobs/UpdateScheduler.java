@@ -7,14 +7,14 @@ import java.util.Map;
 
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundlemanager.BundleJobManager;
-import no.javatime.inplace.dialogs.OpenProjectHandler;
+import no.javatime.inplace.dialogs.SaveProjectHandler;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.closure.BuildErrorClosure;
 import no.javatime.inplace.region.closure.BuildErrorClosure.ActivationScope;
 import no.javatime.inplace.region.closure.CircularReferenceException;
 import no.javatime.inplace.region.closure.ProjectSorter;
-import no.javatime.inplace.region.intface.BundleProject;
+import no.javatime.inplace.region.intface.BundleProjectCandidates;
 import no.javatime.inplace.region.intface.BundleRegion;
 import no.javatime.inplace.region.intface.BundleTransition;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
@@ -53,7 +53,7 @@ public class UpdateScheduler {
 
 		UpdateJob updateJob = new UpdateJob(UpdateJob.updateJobName);
 		for (IProject project : projects) {
-			if (InPlace.getBundleProjectService().isNatureEnabled(project)
+			if (InPlace.getBundleRegionService().isBundleActivated(project)
 					&& InPlace.getBundleTransitionService().containsPending(project, Transition.UPDATE, false)) {
 				addProjectToUpdateJob(project, updateJob);
 			}
@@ -127,11 +127,11 @@ public class UpdateScheduler {
 		try {
 			BuildErrorClosure be = new BuildErrorClosure(
 					Collections.<IProject> singletonList(project), Transition.UPDATE, Closure.REQUIRING);
-			BundleProject bundlePrject = InPlace.getBundleProjectService();
+			BundleProjectCandidates bundleProjectCandidates = InPlace.getBundleProjectCandidatesService();
 			if (be.hasBuildErrors()) {
 				if (InPlace.get().getMsgOpt().isBundleOperations()) {
 					String msg = NLS.bind(Msg.UPDATE_BUILD_ERROR_INFO, new Object[] {
-							project.getName(), bundlePrject.formatProjectList(be.getBuildErrors()) });
+							project.getName(), bundleProjectCandidates.formatProjectList(be.getBuildErrors()) });
 					be.setBuildErrorHeaderMessage(msg);
 					IBundleStatus bundleStatus = be.getErrorClosureStatus();
 					if (null != bundleStatus) {
@@ -147,7 +147,7 @@ public class UpdateScheduler {
 			if (be.hasBuildErrors()) {
 				if (InPlace.get().getMsgOpt().isBundleOperations()) {
 					String msg = NLS.bind(Msg.UPDATE_BUILD_ERROR_INFO, new Object[] {
-							project.getName(), bundlePrject.formatProjectList(be.getBuildErrors()) });
+							project.getName(), bundleProjectCandidates.formatProjectList(be.getBuildErrors()) });
 					be.setBuildErrorHeaderMessage(msg);
 					IBundleStatus bundleStatus = be.getErrorClosureStatus();
 					if (null != bundleStatus) {
@@ -249,7 +249,7 @@ public class UpdateScheduler {
 		if (symbolicKeymap.size() > 0) {
 			// Install/update and update all projects that are duplicates to the current symbolic key
 			// (before this update) of changed bundles
-			Collection<IProject> projects = InPlace.getBundleProjectService().getInstallable();
+			Collection<IProject> projects = InPlace.getBundleProjectCandidatesService().getInstallable();
 			projects.removeAll(symbolicKeymap.keySet());
 			for (IProject project : projects) {
 				String duplicateProjectKey = bundleRegion.getSymbolicKey(null, project);
@@ -319,9 +319,9 @@ public class UpdateScheduler {
 	 */
 	static public void jobHandler(WorkspaceJob job, long delay) {
 
-		OpenProjectHandler so = new OpenProjectHandler();
+		SaveProjectHandler so = new SaveProjectHandler();
 		if (so.saveModifiedFiles()) {
-			OpenProjectHandler.waitOnBuilder();
+			SaveProjectHandler.waitOnBuilder();
 			BundleJobManager.addBundleJob(job, delay);
 		}
 	}

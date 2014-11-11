@@ -14,10 +14,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 import no.javatime.inplace.bundlejobs.ActivateProjectJob;
-import no.javatime.inplace.dialogs.OpenProjectHandler;
+import no.javatime.inplace.dialogs.SaveProjectHandler;
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.region.intface.BundleCommand;
-import no.javatime.inplace.region.intface.BundleProject;
+import no.javatime.inplace.region.intface.BundleProjectCandidates;
 import no.javatime.inplace.region.intface.BundleRegion;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
 import no.javatime.inplace.region.intface.InPlaceException;
@@ -55,14 +55,15 @@ public class BundleMainCommandsContributionItems extends BundleCommandsContribut
 	protected IContributionItem[] getContributionItems() {
 
 		ArrayList<ContributionItem> contributions = new ArrayList<ContributionItem>();
-		BundleProject bundleProject = Activator.getBundleProjectService(); 
-		Collection<IProject> candidateProjects = bundleProject.getCandidates();
-		Collection<IProject> activatedProjects = bundleProject.getNatureEnabled();
+		BundleProjectCandidates bundleProjectCandidates = Activator.getBundleProjectCandidatesService(); 
+		BundleRegion bundleRegion = Activator.getBundleRegionService();
+		Collection<IProject> candidateProjects = bundleProjectCandidates.getCandidates();
+		Collection<IProject> activatedProjects = bundleRegion.getActivatedProjects();
 
 		try {
 			// Busy running bundle jobs.
 			// Do not add contributions for bundles that are dependent on their current state
-			if (OpenProjectHandler.getBundlesJobRunState()) {
+			if (SaveProjectHandler.getBundlesJobRunState()) {
 				contribute(addStopTaskOperation(menuId, dynamicMainCommandId), contributions);
 				contribute(addInterrupt(menuId, dynamicMainCommandId), contributions);
 			} else {
@@ -161,7 +162,7 @@ public class BundleMainCommandsContributionItems extends BundleCommandsContribut
 					continue;
 				}
 				int state = bundleCommand.getState(bundle);
-				if (!Activator.getBundleProjectDescriptionService().isFragment(bundle)
+				if (!Activator.getBundleProjectMetaService().isFragment(bundle)
 						&& (state & (Bundle.INSTALLED | Bundle.RESOLVED | Bundle.STOPPING)) != 0) {
 					nStart++;
 					continue;

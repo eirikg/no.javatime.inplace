@@ -24,7 +24,7 @@ import no.javatime.inplace.bundlejobs.TogglePolicyJob;
 import no.javatime.inplace.bundlejobs.UpdateBundleClassPathJob;
 import no.javatime.inplace.bundlejobs.UpdateScheduler;
 import no.javatime.inplace.bundlemanager.BundleJobManager;
-import no.javatime.inplace.dialogs.OpenProjectHandler;
+import no.javatime.inplace.dialogs.SaveProjectHandler;
 import no.javatime.inplace.extender.intface.Extender;
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.extender.intface.Extenders;
@@ -32,7 +32,7 @@ import no.javatime.inplace.extender.intface.Extension;
 import no.javatime.inplace.log.intface.BundleLogView;
 import no.javatime.inplace.pl.console.intface.BundleConsoleFactory;
 import no.javatime.inplace.pl.dependencies.intface.DependencyDialog;
-import no.javatime.inplace.region.intface.BundleProject;
+import no.javatime.inplace.region.intface.BundleProjectCandidates;
 import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.ui.Activator;
 import no.javatime.inplace.ui.command.contributions.BundleCommandsContributionItems;
@@ -89,11 +89,11 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 	 */
 	static public void activateProjectHandler(Collection<IProject> projects) {
 
-		OpenProjectHandler so = new OpenProjectHandler();
+		SaveProjectHandler so = new SaveProjectHandler();
 		if (so.saveModifiedFiles()) {
-			OpenProjectHandler.waitOnBuilder();
+			SaveProjectHandler.waitOnBuilder();
 			ActivateProjectJob activateJob = null;
-			if (Activator.getBundleProjectService().getNatureEnabled().size() > 0) {
+			if (Activator.getBundleRegionService().getActivatedProjects().size() > 0) {
 				activateJob = new ActivateProjectJob(ActivateProjectJob.activateProjectsJobName, projects);
 			} else {
 				activateJob = new ActivateProjectJob(ActivateProjectJob.activateWorkspaceJobName, projects);
@@ -110,7 +110,7 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 	static public void deactivateHandler(Collection<IProject> projects) {
 
 		DeactivateJob deactivateJob = null;
-		if (Activator.getBundleProjectService().getNatureEnabled().size() <= projects.size()) {
+		if (Activator.getBundleRegionService().getActivatedProjects().size() <= projects.size()) {
 			deactivateJob = new DeactivateJob(DeactivateJob.deactivateWorkspaceJobName, projects);			
 		} else {
 			deactivateJob = new DeactivateJob(DeactivateJob.deactivateJobName, projects);
@@ -169,9 +169,9 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 	 */
 	static public void resetHandler(final Collection<IProject> projects) {
 
-		OpenProjectHandler so = new OpenProjectHandler();
+		SaveProjectHandler so = new SaveProjectHandler();
 		if (so.saveModifiedFiles()) {
-			OpenProjectHandler.waitOnBuilder();
+			SaveProjectHandler.waitOnBuilder();
 			ResetJob resetJob = new ResetJob(projects);
 			resetJob.reset(ResetJob.resetJobName);		
 		}
@@ -182,9 +182,9 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 	 */
 	protected  void interruptHandler() {
 		
-		OpenProjectHandler so = new OpenProjectHandler();
+		SaveProjectHandler so = new SaveProjectHandler();
 		if (so.saveModifiedFiles()) {
-			BundleJob job = OpenProjectHandler.getRunningBundleJob();
+			BundleJob job = SaveProjectHandler.getRunningBundleJob();
 			if (null != job) {
 				Thread thread = job.getThread();
 				if (null != thread) {
@@ -205,13 +205,13 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 	 */
 	protected void stopOperationHandler() throws InPlaceException {
 		
-		OpenProjectHandler so = new OpenProjectHandler();
+		SaveProjectHandler so = new SaveProjectHandler();
 		if (so.saveModifiedFiles()) {
 			Activator.getDisplay().asyncExec(new Runnable() {
 				@Override
 				public void run() {
 					if (!Activator.getDefault().getCommandOptionsService().isTimeOut()) {
-						BundleJob job = OpenProjectHandler.getRunningBundleJob();
+						BundleJob job = SaveProjectHandler.getRunningBundleJob();
 						if (null != job && BundleJob.isStateChanging()) {			
 							job.stopCurrentBundleOperation(new NullProgressMonitor());
 						}
@@ -228,9 +228,9 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 	 */
 	protected void policyHandler(final Collection<IProject> projects) {
 
-		OpenProjectHandler so = new OpenProjectHandler();
+		SaveProjectHandler so = new SaveProjectHandler();
 		if (so.saveModifiedFiles()) {
-			OpenProjectHandler.waitOnBuilder();		
+			SaveProjectHandler.waitOnBuilder();		
 			TogglePolicyJob pj = new TogglePolicyJob(TogglePolicyJob.policyJobName, projects);
 			BundleJobManager.addBundleJob(pj, 0);
 		}
@@ -245,9 +245,9 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 	 */
 	public static void updateClassPathHandler(final Collection<IProject> projects, final boolean addToPath) {
 
-		OpenProjectHandler so = new OpenProjectHandler();
+		SaveProjectHandler so = new SaveProjectHandler();
 		if (so.saveModifiedFiles()) {
-			OpenProjectHandler.waitOnBuilder();
+			SaveProjectHandler.waitOnBuilder();
 			UpdateBundleClassPathJob updBundleClasspath = 
 					new UpdateBundleClassPathJob(UpdateBundleClassPathJob.updateBundleClassJobName, projects);
 			updBundleClasspath.setAddToPath(addToPath);
@@ -283,18 +283,18 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 	 * @param projects to display in the bundle view
 	 */
 	protected void bundleViewHandler(Collection<IProject> projects) {
-		BundleProject bundleProject = Activator.getBundleProjectService();
+		BundleProjectCandidates bundleProjectCandidates = Activator.getBundleProjectCandidatesService();
 		if (!ViewUtil.isVisible(BundleView.ID)) {
 			ViewUtil.show(BundleView.ID);
-			updateBundleListPage(bundleProject.toJavaProjects(bundleProject.getInstallable()));
+			updateBundleListPage(bundleProjectCandidates.toJavaProjects(bundleProjectCandidates.getInstallable()));
 		} else {
 			BundleView bv = BundleCommandsContributionItems.getBundleView();
-			Collection<IJavaProject> javaProjects = bundleProject.toJavaProjects(projects);
+			Collection<IJavaProject> javaProjects = bundleProjectCandidates.toJavaProjects(projects);
 			int size = javaProjects.size();
 			// Show list page
 			if (bv.isDetailsPageActive()) {
 				if (size <= 1) {
-					bv.showProjects(bundleProject.toJavaProjects(bundleProject.getInstallable()), true);
+					bv.showProjects(bundleProjectCandidates.toJavaProjects(bundleProjectCandidates.getInstallable()), true);
 				} else {
 					bv.showProjects(javaProjects, true);
 				}
@@ -444,7 +444,7 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 			// The Java project must also be a plug-in project
 			if (null != javaProject) {
 				try {
-					if (!javaProject.getProject().hasNature(BundleProject.PLUGIN_NATURE_ID)) {
+					if (!javaProject.getProject().hasNature(BundleProjectCandidates.PLUGIN_NATURE_ID)) {
 						return null;
 					}
 				} catch (Exception e) {
@@ -526,9 +526,9 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 	 */
 	static public void jobHandler(WorkspaceJob job) {
 
-		OpenProjectHandler so = new OpenProjectHandler();
+		SaveProjectHandler so = new SaveProjectHandler();
 		if (so.saveModifiedFiles()) {
-			OpenProjectHandler.waitOnBuilder();
+			SaveProjectHandler.waitOnBuilder();
 			BundleJobManager.addBundleJob(job, 0);
 		}
 	}

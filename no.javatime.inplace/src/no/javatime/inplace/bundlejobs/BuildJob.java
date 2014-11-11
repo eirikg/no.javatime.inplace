@@ -151,7 +151,7 @@ public class BuildJob extends NatureJob {
 	 */
 	private void fullBuild(IProgressMonitor monitor) throws CoreException {
 
-		if (pendingProjects() == bundleProject.getInstallable().size()
+		if (pendingProjects() == bundleProjectCandidates.getInstallable().size()
 				|| IncrementalProjectBuilder.CLEAN_BUILD == buildType) {
 			ResourcesPlugin.getWorkspace().build(buildType, new SubProgressMonitor(monitor, 1));
 		} else {

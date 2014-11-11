@@ -6,14 +6,15 @@ import java.util.Collections;
 import no.javatime.inplace.bundlejobs.ActivateBundleJob;
 import no.javatime.inplace.bundlejobs.BundleJob;
 import no.javatime.inplace.bundlejobs.DeactivateJob;
+import no.javatime.inplace.bundlejobs.NatureJob;
 import no.javatime.inplace.bundlemanager.BundleJobManager;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
+import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.closure.BuildErrorClosure;
 import no.javatime.inplace.region.closure.BuildErrorClosure.ActivationScope;
 import no.javatime.inplace.region.closure.CircularReferenceException;
-import no.javatime.inplace.region.intface.BundleCommand;
-import no.javatime.inplace.region.intface.BundleProject;
+import no.javatime.inplace.region.intface.BundleProjectCandidates;
 import no.javatime.inplace.region.intface.BundleRegion;
 import no.javatime.inplace.region.intface.BundleTransition;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
@@ -46,30 +47,39 @@ public class StartUp implements IStartup {
 
 	/**
 	 * Restore bundle projects to the same state as they had at shutdown.
+	 * <p>
+	 * Any errors are sent to the error log
 	 */
 	@Override
 	public void earlyStartup() {
-		if (InPlace.get().getMsgOpt().isBundleOperations()) {
-			String osgiDev = InPlace.getBundleProjectDescriptionService().inDevelopmentMode();
-			if (null != osgiDev) {
-				String msg = NLS.bind(Msg.CLASS_PATH_DEV_PARAM_INFO, osgiDev);
-				InPlace.get().log(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, msg));
-			}
-		}
 		try {
-			Collection<IProject> activatedProjects = InPlace.getBundleProjectService().getNatureEnabled();
+			if (InPlace.get().getMsgOpt().isBundleOperations()) {
+				String osgiDev = InPlace.getbundlePrrojectMetaService().inDevelopmentMode();
+				if (null != osgiDev) {
+					String msg = NLS.bind(Msg.CLASS_PATH_DEV_PARAM_INFO, osgiDev);
+					InPlace.get().log(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, msg));
+				}
+			}
+			ActivateBundleJob activateJob = new ActivateBundleJob(ActivateBundleJob.activateStartupJobName);
+			Collection<IProject> activatedProjects = NatureJob.getNatureEnabled();
 			if (activatedProjects.size() > 0) {
 				Collection<IProject> deactivatedProjects = deactivateBuildErrorClosures(activatedProjects);
 				if (deactivatedProjects.size() > 0) {
 					initDeactivatedWorkspace();
 				} else {
-					// Restore bundles to state from previous session
-					bundleStartUpActivation(activatedProjects);
+					// Install all projects and set activated projects to the same state as they had at shutdown
+					activateJob.addPendingProjects(activatedProjects);
+					activateJob.setUseStoredState(true);
+					BundleJobManager.addBundleJob(activateJob, 0);
 				}
 			} else {
 				// Register all projects as bundle projects and set their initial transition
 				initDeactivatedWorkspace();
 			}
+		} catch (InPlaceException | ExtenderException e) {
+			IBundleStatus status = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, 
+					Msg.INIT_BUNDLE_STATE_ERROR, e);
+			StatusManager.getManager().handle(status, StatusManager.LOG);			
 		} finally {
 			// Add resource listeners as soon as possible after scheduling bundle start up activation
 			// This prevent other bundle jobs from being scheduled before the start up activation job
@@ -78,18 +88,6 @@ public class StartUp implements IStartup {
 		}
 	}
 
-	/**
-	 * Install all projects and set activated projects to the same state as they had at shutdown
-	 * 
-	 * @param activatedProjects activated bundle projects to same state as in previous session
-	 */
-	private void bundleStartUpActivation(Collection<IProject> activatedProjects) {
-
-		ActivateBundleJob activateJob = new ActivateBundleJob(ActivateBundleJob.activateStartupJobName,
-				activatedProjects);
-		activateJob.setUseStoredState(true);
-		BundleJobManager.addBundleJob(activateJob, 0);
-	}
 
 	/**
 	 * Deactivate workspace if there are any build error closures. Build error closures are
@@ -159,10 +157,9 @@ public class StartUp implements IStartup {
 						return super.runInWorkspace(monitor);
 					}
 					BundleTransition bundleTransition = InPlace.getBundleTransitionService();
-					BundleCommand bundleCommand = InPlace.getBundleCommandService();
 					BundleRegion bundleRegion = InPlace.getBundleRegionService();
-					BundleProject bundleProject = InPlace.getBundleProjectService();
-					Collection<IProject> plugins = bundleProject.getPlugIns();
+					BundleProjectCandidates bundleProjectCandidates = InPlace.getBundleProjectCandidatesService();
+					Collection<IProject> plugins = bundleProjectCandidates.getBundleProjects();
 					for (IProject project : plugins) {
 						if (null != store) {
 							try {

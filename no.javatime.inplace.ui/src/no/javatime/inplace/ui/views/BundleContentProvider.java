@@ -12,7 +12,7 @@ package no.javatime.inplace.ui.views;
 
 import java.util.Collection;
 
-import no.javatime.inplace.region.intface.BundleProject;
+import no.javatime.inplace.region.intface.BundleProjectCandidates;
 import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.intface.ProjectLocationException;
 import no.javatime.inplace.region.status.BundleStatus;
@@ -134,12 +134,12 @@ class BundleContentProvider implements IStructuredContentProvider {
 	private BundleProperties[] getBundleProperties(IJavaProject javaProject) {
 
 		BundleProperties bp = new BundleProperties(javaProject);
-		BundleProject bundleProject = Activator.getBundleProjectService();
+		BundleProjectCandidates bundleProjectCandidates = Activator.getBundleProjectCandidatesService();
 		IProject project = bp.getProject();
 		Boolean uiExtensions = false;
 		String locationIdentifier = null;
 		try {
-			uiExtensions = bundleProject.isUIContributor(project);
+			uiExtensions = bundleProjectCandidates.isUIPlugin(project);
 		} catch (InPlaceException e) {
 		}
 
@@ -159,7 +159,7 @@ class BundleContentProvider implements IStructuredContentProvider {
 			locationIdentifier = e.getLocalizedMessage();
 		}
 		try {
-			Boolean installeable = bundleProject.isInstallable(project);
+			Boolean installeable = bundleProjectCandidates.isInstallable(project);
 			if (!installeable && !uiExtensions) {  // Not a plug-in project
 				return new BundleProperties[] {
 						new BundleProperties(project, BundleProperties.projectLabelName, bp.getProjectName()),

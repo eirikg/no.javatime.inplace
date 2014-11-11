@@ -150,7 +150,7 @@ public class BundlePopUpActivationHandler extends BundleMenuActivationHandler im
 			IProject project = javaProject.getProject();
 			try {
 				// Set current activation policy from manifest
-				boolean isLazy = Activator.getBundleProjectDescriptionService().getActivationPolicy(project);
+				boolean isLazy = Activator.getBundleProjectMetaService().getActivationPolicy(project);
 				element.setChecked(!isLazy);
 			} catch (InPlaceException e) {
 				// Don't spam this meassage.

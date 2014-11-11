@@ -8,7 +8,7 @@ import java.util.Collection;
 import java.util.Iterator;
 
 import no.javatime.inplace.region.Activator;
-import no.javatime.inplace.region.intface.BundleProject;
+import no.javatime.inplace.region.intface.BundleProjectCandidates;
 import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.intface.ProjectLocationException;
 import no.javatime.inplace.region.manager.WorkspaceRegionImpl;
@@ -101,7 +101,7 @@ public class BundleProjectStateImpl {
 	
 		for (IProject project : root.getProjects()) {
 			try {
-				if (project.hasNature(JavaCore.NATURE_ID) && project.hasNature(BundleProject.PLUGIN_NATURE_ID) && project.isOpen()) {
+				if (project.hasNature(JavaCore.NATURE_ID) && project.hasNature(BundleProjectCandidates.PLUGIN_NATURE_ID) && project.isOpen()) {
 					URL pLoc = new URL(WorkspaceRegionImpl.INSTANCE.getProjectLocationIdentifier(project, locationScheme));
 					URL bLoc = new URL(location);
 					if (Category.DEBUG) {

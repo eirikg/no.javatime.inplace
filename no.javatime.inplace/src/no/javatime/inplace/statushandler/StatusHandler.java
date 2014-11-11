@@ -15,7 +15,7 @@ import java.util.Set;
 
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundlejobs.BundleJob;
-import no.javatime.inplace.dialogs.OpenProjectHandler;
+import no.javatime.inplace.dialogs.SaveProjectHandler;
 import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
@@ -93,28 +93,18 @@ public class StatusHandler extends WorkbenchErrorHandler {
 			return;
 		}
 		// Only consider bundle status objects
-		if (status instanceof BundleStatus) {
+		if (status instanceof IBundleStatus) {
 			IBundleStatus bundleStatus = (IBundleStatus) status;
+			if (bundleStatus.isMultiStatus()) {
+				bundleStatus.setStatusCode();
+			}
 			// Also send the error status objects to the bundle log
 			if (InPlace.get().getMsgOpt().isBundleOperations()) {
 				InPlace.get().log(bundleStatus);
 			}
-			// Do not send a list of info messages to the error log
-			if (bundleStatus.isMultiStatus()) {
-				for (IStatus statusObject : bundleStatus.getChildren()) {
-					if (statusObject instanceof BundleStatus) {
-						if (((BundleStatus)statusObject).getStatusCode() != StatusCode.INFO) {
-							super.handle(statusAdapter, style);
-							// InPlace.get().getLog().log(bundleStatus);	
-							break;
-						}
-					}
-				}
-			} else {
-				if (((BundleStatus)status).getStatusCode() != StatusCode.INFO) {
-					super.handle(statusAdapter, style);
-					//InPlace.get().getLog().log(status);
-				}
+			// Send to error log
+			if (bundleStatus.getStatusCode() != StatusCode.INFO) {
+				super.handle(statusAdapter, style);				
 			}
 		} else {
 			// Forward any other type of status objects to the standard error handler 
@@ -156,7 +146,7 @@ public class StatusHandler extends WorkbenchErrorHandler {
 	 */
 	private boolean interruptBundleJob() {
 
-		BundleJob job = OpenProjectHandler.getRunningBundleJob();
+		BundleJob job = SaveProjectHandler.getRunningBundleJob();
 		if (null != job) {
 			job.cancel();
 			Thread thread = job.getThread();

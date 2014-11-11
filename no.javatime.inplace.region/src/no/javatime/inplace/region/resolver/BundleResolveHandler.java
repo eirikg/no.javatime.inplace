@@ -23,7 +23,6 @@ import no.javatime.inplace.region.intface.BundleTransition;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
 import no.javatime.inplace.region.manager.BundleTransitionImpl;
 import no.javatime.inplace.region.manager.WorkspaceRegionImpl;
-import no.javatime.inplace.region.project.BundleProjectImpl;
 import no.javatime.inplace.region.state.BundleNode;
 import no.javatime.util.messages.Category;
 import no.javatime.util.messages.TraceMessage;
@@ -87,7 +86,7 @@ class BundleResolveHandler implements ResolverHook {
 	public void filterResolvable(Collection<BundleRevision> candidates) {
 
 		// Do not infer when workspace is deactivated
-		if (!BundleProjectImpl.INSTANCE.isWorkspaceNatureEnabled()) {
+		if (!WorkspaceRegionImpl.INSTANCE.isRegionActivated()) {
 			return;
 		}
 		Collection<Bundle> bundles = WorkspaceRegionImpl.INSTANCE.getBundles();

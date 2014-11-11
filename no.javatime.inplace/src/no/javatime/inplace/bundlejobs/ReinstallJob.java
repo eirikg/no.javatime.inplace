@@ -36,7 +36,7 @@ import org.eclipse.osgi.util.NLS;
  * projects in state INSTALLED are reinstalled and no dependency closures are calculated
  * 
  */
-public class ReinstallJob extends BundleJob {
+public class ReinstallJob extends NatureJob {
 
 	/** Standard name of a start job */
 	final public static String reinstallJobName = Message.getInstance().formatString("reinstall_job_name");
