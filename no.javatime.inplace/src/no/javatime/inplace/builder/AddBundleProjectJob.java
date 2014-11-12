@@ -14,7 +14,6 @@ import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.closure.BundleClosures;
 import no.javatime.inplace.region.closure.CircularReferenceException;
 import no.javatime.inplace.region.events.TransitionEvent;
-import no.javatime.inplace.region.intface.BundleRegion;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
 import no.javatime.inplace.region.intface.BundleTransitionListener;
 import no.javatime.inplace.region.intface.InPlaceException;
@@ -85,56 +84,51 @@ class AddBundleProjectJob extends NatureJob {
 			if (newProjects.size() == 0) {
 				return super.runInWorkspace(monitor);
 			}
-			BundleRegion bundleRegion = InPlace.getBundleRegionService();
-			// Are there any nature enabled projects among thos to aqdd
-			boolean natureEnabled = false;
-			for (IProject project : newProjects) {
-				natureEnabled = isNatureEnabled(project);
-				if (natureEnabled) {
-					break;
-				}
-			}
-			if (!bundleRegion.isRegionActivated() && !natureEnabled) {
+			// New (deactivated and activated) projects added to the workspace are already opened
+			// New projects should be in state uninstalled in a deactivated workspace
+			if (!isWorkspaceNatureEnabled()) {
 				return super.runInWorkspace(monitor);
 			}
+			// Install all new projects in an activated workspace
 			InstallJob installJob = new InstallJob(InstallJob.installJobName, newProjects);
 			BundleJobManager.addBundleJob(installJob, 0);
-
+			// New and existing deactivated projects that provides capabilities to new and existing
+			// projects
 			Collection<IProject> deactivatedProviders = new LinkedHashSet<>();
-			Collection<IProject> newBundleProjects = new LinkedHashSet<>();
-			Collection<IProject> newActivatedRequiringProjects = new LinkedHashSet<>();
+			// New projects that have the JavaTime nature enabled
+			Collection<IProject> newActivatedBundleProjects = new LinkedHashSet<>();
+
 			BundleClosures closures = new BundleClosures();
 			// Divide new projects in activated projects requiring capabilities from
-			// deactivated projects and activated and deactivated projects independent on deactivated
+			// deactivated projects and activated projects independent on deactivated
 			// projects. Also collect all deactivated providers
 			for (IProject newProject : newProjects) {
 				BundleTransitionListener.addBundleTransition(new TransitionEvent(newProject,
 						Transition.NEW_PROJECT));
 				bundleTransition.removePending(newProject, Transition.NEW_PROJECT);
+				// Deactivated projects that are not providers are already installed
 				// Use the nature methods. Project is not registered with the workspace yet.
 				if (isNatureEnabled(newProject)) {
-					// Get any deactivated providers
+					// Get any deactivated providers to this new project
 					Collection<IProject> providers = closures.projectActivation(
 							Collections.<IProject> singletonList(newProject), false);
 					providers.remove(newProject);
 					if (providers.size() > 0) {
-						newActivatedRequiringProjects.add(newProject);
 						deactivatedProviders.addAll(providers);
 					} else {
-						newBundleProjects.add(newProject);
+						newActivatedBundleProjects.add(newProject);
 					}
-				} else {
-					newBundleProjects.add(newProject);
 				}
 			}
-			if (newActivatedRequiringProjects.size() > 0) {
+			// Activate all deactivated provider projects
+			if (deactivatedProviders.size() > 0) {
 				ActivateProjectJob activateProjectJob = new ActivateProjectJob(
 						ActivateProjectJob.activateProjectsJobName, deactivatedProviders);
 				// Do not add requiring projects. They will be resolved as part of the requiring
 				// closure when providers are resolved
 				BundleJobManager.addBundleJob(activateProjectJob, 0);
 			}
-
+			// Provide information when auto build is turned off
 			if (InPlace.get().getMsgOpt().isBundleOperations()
 					&& !bundleProjectCandidates.isAutoBuilding()) {
 				IBundleStatus status = new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID,
@@ -145,10 +139,11 @@ class AddBundleProjectJob extends NatureJob {
 				addStatus(status);
 			}
 			// Deactivated providers are handled by the activate project job
-			newBundleProjects.removeAll(deactivatedProviders);
-			if (newBundleProjects.size() > 0) {
+			newActivatedBundleProjects.removeAll(deactivatedProviders);
+			// Activate bundles for all new projects that are activated
+			if (newActivatedBundleProjects.size() > 0) {
 				ActivateBundleJob activateBundleJob = new ActivateBundleJob(
-						ActivateBundleJob.activateJobName, newBundleProjects);
+						ActivateBundleJob.activateJobName, newActivatedBundleProjects);
 				BundleJobManager.addBundleJob(activateBundleJob, 0);
 			}
 			return super.runInWorkspace(monitor);

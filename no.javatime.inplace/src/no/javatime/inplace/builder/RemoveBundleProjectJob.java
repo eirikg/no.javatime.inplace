@@ -34,10 +34,10 @@ import org.osgi.framework.Bundle;
  * incomplete. This inconsistency is solved by deactivating the requiring bundles in the closure
  * before uninstalling.
  */
- class RemoveBundleProjectJob extends NatureJob {
-	
+class RemoveBundleProjectJob extends NatureJob {
+
 	final public static String removeBundleProjectName = Msg.REMOVE_BUNDLE_PROJECT_JOB;
-	
+
 	public RemoveBundleProjectJob(String name) {
 		super(name);
 	}
@@ -85,8 +85,9 @@ import org.osgi.framework.Bundle;
 			reqProjects.removeAll(getPendingProjects());
 			deactivateNature(reqProjects, new SubProgressMonitor(monitor, 1));
 			// If workspace is deactivated after deactivating requiring projects, uninstall all projects
-			// Closed or deleted projects will not be included in this check due to inaccessibility
-			if (!InPlace.getBundleRegionService().isRegionActivated()) {
+			// Projects to remove are already closed or deleted - but not renamed projects - and will not
+			// be included in this check
+			if (!isWorkspaceNatureEnabled()) {
 				pendingBundles.addAll(bundleRegion.getBundles());
 			} else {
 				// The deactivated projects are excluded from the uninstall (or requiring) closure, but are
@@ -99,7 +100,7 @@ import org.osgi.framework.Bundle;
 					bundleTransition.addPending(reqProject, Transition.UNRESOLVE);
 				}
 			}
-			for (IProject project : bundleRegion.getProjects(pendingBundles)) {
+			for (IProject project : getPendingProjects()) {
 				BundleTransitionListener.addBundleTransition(new TransitionEvent(project,
 						Transition.REMOVE_PROJECT));
 				bundleTransition.removePending(project, Transition.REMOVE_PROJECT);
