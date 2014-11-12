@@ -10,6 +10,7 @@
  *******************************************************************************/
 package no.javatime.inplace.builder;
 
+import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.intface.InPlaceException;
 
 import org.eclipse.core.resources.ICommand;
@@ -26,7 +27,7 @@ public class JavaTimeNature implements IProjectNature {
 	/**
 	 * ID of the JavaTime project nature
 	 */
-	public static final String JAVATIME_NATURE_ID = "no.javatime.inplace.builder.javatimenature";
+	public static final String JAVATIME_NATURE_ID = Msg.JAVATIME_ID_NATURE_ID;
 
 	private IProject project;
 

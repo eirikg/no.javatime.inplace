@@ -747,7 +747,7 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 				}
 			} else {
 				BundleProjectCandidates bundleProject = getBundleProjectCandidatesService();
-				Collection<IProject> projects = bundleProject.getProjects();
+				Collection<IProject> projects = bundleProject.getBundleProjects();
 				for (IProject project : projects) {
 					try {
 						Transition transition = InPlace.getBundleTransitionService().getTransition(project);

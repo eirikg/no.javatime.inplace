@@ -23,7 +23,7 @@ public interface BundleProjectMeta {
 	final public static String MANIFEST_FILE_NAME = Msg.MANIFEST_FILE_NAME_REF; 
 
 	/**
-	 * Convenience method. Finds and return the bundle service for a given project.
+	 * Convenience method. Finds and return the bundle project service for a given project.
 	 * 
 	 * @param project to get the bundle service for
 	 * @return the bundle service for the specified project
@@ -32,7 +32,7 @@ public interface BundleProjectMeta {
 	IBundleProjectService getBundleProjectService(IProject project) throws InPlaceException;
 	
 	/**
-	 * Convenience method. Finds and return the bundle description for a given project.
+	 * Convenience method. Finds and return the bundle project description for a given project.
 	 * 
 	 * @param project to get the bundle description for
 	 * @return the bundle description for the specified project

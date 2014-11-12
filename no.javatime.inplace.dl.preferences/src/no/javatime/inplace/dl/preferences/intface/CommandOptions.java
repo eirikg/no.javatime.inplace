@@ -33,9 +33,9 @@ public interface CommandOptions extends ManifestOptions {
 	public abstract boolean getDefaultIsAllowUIContributions();
 
 	/**
-	 * Set if UI contributions using extensions should be allowed
+	 * Set if UI contributions using the Eclipse extension mechanism should be allowed
 	 * 
-	 * @param automatic true to allow UI contributions using extensions and false to not
+	 * @param contributions true to allow UI contributions using UI extensions and false to not
 	 */
 	public abstract void setIsAllowUIContributions(boolean contributions);
 

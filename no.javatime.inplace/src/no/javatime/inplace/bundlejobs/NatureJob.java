@@ -16,6 +16,7 @@ import java.util.LinkedHashSet;
 
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.builder.JavaTimeNature;
+import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.intface.BundleProjectCandidates;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
@@ -53,8 +54,8 @@ public abstract class NatureJob extends BundleJob {
 			"disable_nature_subtask_name");
 
 	/** Task name for the build operation */
-	final protected static String buildTaskName = Message.getInstance().formatString("build_task_name");
-
+	final protected static String buildTaskName = Message.getInstance().formatString(
+			"build_task_name");
 
 	/**
 	 * Construct a nature based job with a given job name
@@ -84,41 +85,60 @@ public abstract class NatureJob extends BundleJob {
 	public NatureJob(String name, IProject project) {
 		super(name, project);
 	}
+
 	/**
-	 * Check if the project is JavaTime nature enabled using the {@link JavaTimeNature#JAVATIME_NATURE_ID}
+	 * Check if the project is JavaTime nature enabled using the
+	 * {@link JavaTimeNature#JAVATIME_NATURE_ID}
 	 * 
 	 * @param project to check for the JavaTime nature
-	 * @return true if the specified project is nature enabled, and false if the specified project is null,
-	 * if project is closed, non-existing or not JavaTime nature enabled 
+	 * @return true if the specified project is nature enabled, and false if the specified project is
+	 * null, if project is closed, non-existing or not JavaTime nature enabled
+	 * @throws InPlaceException if the specified project is null, open but does not exist or a core
+	 * exception is thrown internally (should not be the case for open and existing projects)
 	 */
-	public static Boolean isNatureEnabled(IProject project) {
-		try {
-			if (null != project && project.isNatureEnabled(JavaTimeNature.JAVATIME_NATURE_ID)) {
-				return true;
-			}
-		} catch (CoreException e) {
-			// Ignore closed or non-existing project
+	public static Boolean isNatureEnabled(IProject project) throws InPlaceException {
+		BundleProjectCandidates bundleProjectCandidates = InPlace.getBundleProjectCandidatesService();
+		if (bundleProjectCandidates.isNatureEnabled(project, JavaTimeNature.JAVATIME_NATURE_ID)) {
+			return true;
 		}
 		return false;
 
 	}
 
-	public static Boolean isWorkspaceNatureEnabled() {
+	/**
+	 * Check if the workspace is JavaTime nature enabled using the
+	 * {@link JavaTimeNature#JAVATIME_NATURE_ID}
+	 * 
+	 * @return true if one open project in the workspace is nature enabled, and false if no projects are
+	 * @throws InPlaceException open projects that does not exist or a core exception when accessing
+	 * projects is thrown internally (should not be the case for open and existing projects)
+	 */
+	public static Boolean isWorkspaceNatureEnabled() throws InPlaceException {
 		BundleProjectCandidates bundleProjectCandidates = InPlace.getBundleProjectCandidatesService();
-		for (IProject project : bundleProjectCandidates.getProjects()) {
+		for (IProject project : bundleProjectCandidates.getBundleProjects()) {
 			if (isNatureEnabled(project)) {
 				return true;
 			}
 		}
 		return false;
 	}
-	
-	public static Collection<IProject> getNatureEnabled() {
-		
+
+	/**
+	 * Get all JavaTime nature enabled bundle projects using the
+	 * {@link JavaTimeNature#JAVATIME_NATURE_ID}
+	 * 
+	 * @return a list of JavaTime nature enabled projects or an empty set
+	 * @throws InPlaceException if the returned project candidate service id null, any open projects
+	 * that does not exist or a core exception when accessing projects is thrown internally (should
+	 * not be the case for open and existing projects)
+	 * @throws ExtenderException if the extender for the project candidates could not be obtained
+	 */
+	public static Collection<IProject> getNatureEnabled() throws InPlaceException, ExtenderException {
+
 		BundleProjectCandidates bundleProjectCandidates = InPlace.getBundleProjectCandidatesService();
 		Collection<IProject> projects = new LinkedHashSet<IProject>();
-	
-		for (IProject project : bundleProjectCandidates.getProjects()) {
+
+		for (IProject project : bundleProjectCandidates.getBundleProjects()) {
 			if (isNatureEnabled(project)) {
 				projects.add(project);
 			}
@@ -276,18 +296,19 @@ public abstract class NatureJob extends BundleJob {
 
 	/**
 	 * Deactivates the specified projects by removing the JavaTime nature from the projects. If update
-	 * Bundle-ClassPat on Activate/Deactivate is switched on, remove the default output folder from the header.
+	 * Bundle-ClassPat on Activate/Deactivate is switched on, remove the default output folder from
+	 * the header.
 	 * 
-	 * @param projectsToDeactivate are the projects to deactivate by removing the JavaTime nature from the
-	 *          projects
+	 * @param projectsToDeactivate are the projects to deactivate by removing the JavaTime nature from
+	 * the projects
 	 * @param monitor the progress monitor to use for reporting progress.
-	 * @return status object describing the result of deactivating nature with {@code StatusCode.OK} if no
-	 *         failure, otherwise one of the failure codes are returned. If more than one bundle fails, status
-	 *         of the last failed bundle is returned. All failures are added to the job status list
+	 * @return status object describing the result of deactivating nature with {@code StatusCode.OK}
+	 * if no failure, otherwise one of the failure codes are returned. If more than one bundle fails,
+	 * status of the last failed bundle is returned. All failures are added to the job status list
 	 * @throws InPlaceException failed to remove nature or the default output folder
 	 */
 	protected IBundleStatus deactivateNature(Collection<IProject> projectsToDeactivate,
-			SubProgressMonitor monitor) throws InPlaceException{
+			SubProgressMonitor monitor) throws InPlaceException {
 
 		SubMonitor localMonitor = SubMonitor.convert(monitor, projectsToDeactivate.size());
 
@@ -302,7 +323,7 @@ public abstract class NatureJob extends BundleJob {
 					}
 					toggleNatureActivation(project, new SubProgressMonitor(monitor, 1));
 					bundleRegion.setActivation(project, false);
-					//bundleRegion.setNatureEnabled(project, false);
+					// bundleRegion.setNatureEnabled(project, false);
 					bundleTransition.clearTransitionError(project);
 				}
 			} catch (InPlaceException e) {
@@ -314,20 +335,21 @@ public abstract class NatureJob extends BundleJob {
 		}
 		return getLastErrorStatus();
 	}
-	
+
 	/**
-	 * Activates the specified projects by adding the JavaTime nature to the projects. Updates output folder and
-	 * reinstalls bundles with lazy activation policy when the Set Activation Policy to Eager on activate option
-	 * is set in an activated workspace.
+	 * Activates the specified projects by adding the JavaTime nature to the projects. Updates output
+	 * folder and reinstalls bundles with lazy activation policy when the Set Activation Policy to
+	 * Eager on activate option is set in an activated workspace.
 	 * 
 	 * 
 	 * @param projectsToActivate are the projects to activate by assigning the JavaTime nature to them
 	 * @param monitor the progress monitor to use for reporting progress.
-	 * @return status object describing the result of activating nature with {@code StatusCode.OK} if no
-	 *         failure, otherwise one of the failure codes are returned. If more than one bundle fails, status
-	 *         of the last failed bundle is returned. All failures are added to the job status list
+	 * @return status object describing the result of activating nature with {@code StatusCode.OK} if
+	 * no failure, otherwise one of the failure codes are returned. If more than one bundle fails,
+	 * status of the last failed bundle is returned. All failures are added to the job status list
 	 */
-	protected IBundleStatus activateNature(Collection<IProject> projectsToActivate, SubProgressMonitor monitor) {
+	protected IBundleStatus activateNature(Collection<IProject> projectsToActivate,
+			SubProgressMonitor monitor) {
 
 		IBundleStatus result = new BundleStatus(StatusCode.OK, InPlace.PLUGIN_ID, "");
 		SubMonitor localMonitor = SubMonitor.convert(monitor, projectsToActivate.size());
@@ -347,7 +369,8 @@ public abstract class NatureJob extends BundleJob {
 								bundleProjectMeta.toggleActivationPolicy(project);
 								// Uninstall and install bundles when toggling from lazy to eager activation policy
 								if (null != bundle) {
-									reInstall(Collections.<IProject>singletonList(project), new SubProgressMonitor(monitor, 1));
+									reInstall(Collections.<IProject> singletonList(project), new SubProgressMonitor(
+											monitor, 1));
 									bundle = bundleRegion.getBundle(project);
 								}
 							}
@@ -356,17 +379,17 @@ public abstract class NatureJob extends BundleJob {
 						result = addError(e, e.getLocalizedMessage(), project);
 					}
 					boolean isInstalled = null != bundle ? true : false;
-					// Wait to set the bundle as activated to after it is installed 
+					// Wait to set the bundle as activated to after it is installed
 					bundleRegion.registerBundleProject(project, bundle, isInstalled);
 					// Adopt any external operations on bundle in an active workspace
 					bundleTransition.removePending(project, Transition.EXTERNAL);
 					if (isInstalled) {
 						// Always tag with update when installed.The post build listener
 						// does not always receive all projects after they have been marked by
-						// the JavaTimeBuilder after a project has been nature enabled 
+						// the JavaTimeBuilder after a project has been nature enabled
 						bundleTransition.addPending(project, Transition.UPDATE);
 					} else {
-						// Assure that the bundle is activated when installed 
+						// Assure that the bundle is activated when installed
 						bundleTransition.addPending(project, Transition.ACTIVATE_BUNDLE);
 					}
 				}
@@ -380,14 +403,15 @@ public abstract class NatureJob extends BundleJob {
 	}
 
 	/**
-	 * Toggles JavaTime nature on a project. If the project has the JavaTime nature, the nature is removed and
-	 * if the the project is not nature enabled, the JavaTime nature is added.
+	 * Toggles JavaTime nature on a project. If the project has the JavaTime nature, the nature is
+	 * removed and if the the project is not nature enabled, the JavaTime nature is added.
 	 * 
 	 * @param project the project to add or remove JavaTime nature on
 	 * @param monitor the progress monitor to use for reporting progress.
 	 * @throws InPlaceException Fails to remove or add the nature from/to the project.
 	 */
-	public void toggleNatureActivation(IProject project, IProgressMonitor monitor) throws InPlaceException {
+	public void toggleNatureActivation(IProject project, IProgressMonitor monitor)
+			throws InPlaceException {
 
 		if (project.exists() && project.isOpen()) {
 			try {
@@ -406,9 +430,9 @@ public abstract class NatureJob extends BundleJob {
 						if (InPlace.get().getMsgOpt().isBundleOperations()) {
 							Bundle bundle = bundleRegion.getBundle(project);
 							if (null == bundle) {
-								addLogStatus(Msg.DISABLE_NATURE_TRACE, new Object[] {project.getName()}, project);
+								addLogStatus(Msg.DISABLE_NATURE_TRACE, new Object[] { project.getName() }, project);
 							} else {
-								addLogStatus(Msg.DISABLE_NATURE_TRACE, new Object[] {project.getName()}, bundle);							
+								addLogStatus(Msg.DISABLE_NATURE_TRACE, new Object[] { project.getName() }, bundle);
 							}
 						}
 						localMonitor.worked(1);
@@ -425,9 +449,9 @@ public abstract class NatureJob extends BundleJob {
 				if (InPlace.get().getMsgOpt().isBundleOperations()) {
 					Bundle bundle = bundleRegion.getBundle(project);
 					if (null == bundle) {
-						addLogStatus(Msg.ENABLE_NATURE_TRACE, new Object[] {project.getName()}, project);
+						addLogStatus(Msg.ENABLE_NATURE_TRACE, new Object[] { project.getName() }, project);
 					} else {
-						addLogStatus(Msg.ENABLE_NATURE_TRACE, new Object[] {project.getName()}, bundle);							
+						addLogStatus(Msg.ENABLE_NATURE_TRACE, new Object[] { project.getName() }, bundle);
 					}
 				}
 				localMonitor.worked(1);
@@ -435,10 +459,12 @@ public abstract class NatureJob extends BundleJob {
 				throw new InPlaceException(e, "error_changing_nature", project.getName());
 			}
 		} else {
-			String msg = WarnMessage.getInstance().formatString("add_nature_project_invalid", project.getName());
+			String msg = WarnMessage.getInstance().formatString("add_nature_project_invalid",
+					project.getName());
 			addWarning(null, msg, project);
 		}
 	}
+
 	/**
 	 * Builds the collection of projects
 	 * 

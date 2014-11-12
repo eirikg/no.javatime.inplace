@@ -14,8 +14,8 @@ import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.manager.BundleTransitionImpl;
 import no.javatime.inplace.region.manager.WorkspaceRegionImpl;
 import no.javatime.inplace.region.msg.Msg;
-import no.javatime.inplace.region.project.BundleProjectMetaImpl;
 import no.javatime.inplace.region.project.BundleProjectCandidatesImpl;
+import no.javatime.inplace.region.project.BundleProjectMetaImpl;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
@@ -479,17 +479,14 @@ public class BuildErrorClosure {
 	 * 
 	 * @param project to check for build state
 	 * @return true if the project has build state, otherwise false
+	 * @throws InPlaceException if the specified project is null, open but does not exist or a core
+	 * exception is thrown (should not be the case)
 	 */
 	public static boolean hasBuildState(IProject project) throws InPlaceException {
 
-		if (null == project) {
-			throw new InPlaceException("null_project_build_state");
-		}
-		if (project.isAccessible()) {
-			IJavaProject javaProject = BundleProjectCandidatesImpl.INSTANCE.getJavaProject(project.getName());
-			if (javaProject.hasBuildState()) {
-				return true;
-			}
+		IJavaProject javaProject = BundleProjectCandidatesImpl.INSTANCE.getJavaProject(project);
+		if (javaProject.hasBuildState()) {
+			return true;
 		}
 		return false;
 	}

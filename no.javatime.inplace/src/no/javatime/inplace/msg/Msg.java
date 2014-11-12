@@ -124,6 +124,9 @@ public class Msg extends NLS {
 	// Dialog and View messages
 	public static String DEACTIVATE_QUESTION_DLG;
 	public static String DEACTIVATE_QUESTION_REQ_DLG;
+
+	// Location references
+	public static String JAVATIME_ID_NATURE_ID;
 	
 	private static final String BUNDLE_NAME = "no.javatime.inplace.msg.messages"; //$NON-NLS-1$
 

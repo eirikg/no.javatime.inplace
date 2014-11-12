@@ -12,8 +12,10 @@
  Listen to resource and build change events of projects and schedules bundle life cycle jobs depending on type of change event and
  state of a bundle.
  <p>
- There is a 1:1 relationship between a project and its bundle. The term bundle project refers to the project, the relation and the
- bundle combined when the bundle is at least in state installed.
+ There is a 1:1 relationship between a project and its bundle. The term bundle project refers to a project that has the java and 
+ plug-in nature enabled, the relation between them (e.g. the symbolic name and version as the primary key or the location 
+ identifier as the primary key) and the bundle combined. The relation is said to be implemented or realized when the  bundle is at 
+ least in state installed.
  <p>
  A project is either activated or deactivated. If one or more projects are activated the workspace is said to be activated.  
  A project is activated when it is assigned a JavaTime nature. In an activated workspace all activated bundle projects are at least in state resolved
@@ -29,7 +31,7 @@
  Removal (delete and close) of projects are acted on by the pre change listener scheduling an uninstall job for removed projects and deactivation
  of projects requiring capabilities from the removed projects. The post build listener schedules an add project (import, open, create and rename) 
  job where each added project and providing projects are installed or resolved (and started) based on the activation mode of a project.  
-  
+
  <!-- Put @see and @since tags down here. -->
  */
 package no.javatime.inplace.builder;
