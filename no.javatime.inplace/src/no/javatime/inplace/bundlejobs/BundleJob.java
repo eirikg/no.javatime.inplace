@@ -896,12 +896,19 @@ public abstract class BundleJob extends JobStatus {
 				String msg = NLS.bind(Msg.SYMBOLIC_NAME_ERROR, project.getName());
 				result = addError(null, msg);
 			}
-			bundleProjectMeta.setDevClasspath(project);
+			try {
+				if (null != bundleProjectMeta.inDevelopmentMode()) {
+					bundleProjectMeta.setDevClasspath(project);
+				}
+			} catch (InPlaceException e) {
+				String msg = ExceptionMessage.getInstance().formatString("error_resolve_class_path", project.getName());
+				result = addError(e, msg);
+			}
 			if (getOptionsService().isUpdateDefaultOutPutFolder()) {
 				bundleProjectMeta.addDefaultOutputFolder(project);
 			}
 		} catch (InPlaceException e) {
-			String msg = ExceptionMessage.getInstance().formatString("error_resolve_class_path", project);
+			String msg = ExceptionMessage.getInstance().formatString("error_resolve_class_path", project.getName());
 			result = addError(e, msg);
 		}
 		return result;
