@@ -853,7 +853,7 @@ public abstract class BundleJob extends JobStatus {
 						if (binExist) {
 							msg = NLS.bind(Msg.MISSING_CLASSPATH_BUNDLE_LOADED_INFO, bundle);
 						} else {
-							msg = Msg.MISSING_CLASSPATH_BUNDLE_INFO;
+							msg = NLS.bind(Msg.MISSING_CLASSPATH_BUNDLE_INFO, bundle);
 						}
 						result.add(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, bundle.getBundleId(),
 								msg, null));
