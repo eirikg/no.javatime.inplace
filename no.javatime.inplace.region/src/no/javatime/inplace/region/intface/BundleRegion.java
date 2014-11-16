@@ -8,10 +8,75 @@ import no.javatime.inplace.region.msg.Msg;
 import org.eclipse.core.resources.IProject;
 import org.osgi.framework.Bundle;
 
+/**
+ * The bundle region isolates all bundles that can be associated with a workspace project from other
+ * bundles. Use the bundle region to access, add and modify bundle projects and their attributes.
+ * <p>
+ * You can access related service interfaces from the bundle region service to manage bundle life
+ * cycle, bundle transitions, bundle meta data, project descriptions, and identify candidate bundle
+ * projects.
+ * <p>
+ * There is a 1:1 relationship between a project and its bundle. The term bundle project refers to a
+ * project with the java and plug-in nature enabled, the relation (e.g. the symbolic name and
+ * version or the location identifier) and the bundle combined.
+ * <p>
+ * A bundle project is either activated or deactivated. A bundle project is activated when
+ * registered or installed with the activated attribute set to {@code true}. A deactivated bundle
+ * can be installed but not resolved. If one or more bundle projects are activated the workspace is
+ * said to be activated. In a deactivated workspace all bundles are deactivated and individual
+ * bundles are in state uninstalled or installed.
+ * 
+ */
 public interface BundleRegion {
-
+	/**
+	 * Reference location of bundle projects used when installing bundles.
+	 * 
+	 * @see #getBundleLocationIdentifier(IProject)
+	 */
 	final public static String BUNDLE_REF_LOC_SCHEME = Msg.BUNDLE_ID_REF_SCHEME_REF;
+
+	/**
+	 * File location scheme
+	 * 
+	 * @see #getProjectLocationIdentifier(IProject, String)
+	 */
 	final public static String BUNDLE_FILE_LOC_SCHEME = Msg.BUNDLE_ID_FILE_SCHEME_REF;
+
+	/**
+	 * Get the bundle command service
+	 * <p>
+	 * Any extender exceptions are sent to the error log view and null is returned
+	 * 
+	 * @return the bundle command service interface or null if not available
+	 */
+	public BundleCommand getCommandService();
+
+	/**
+	 * Get the bundle transition service
+	 * <p>
+	 * Any extender exceptions are sent to the error log view and null is returned
+	 * 
+	 * @return the bundle transition service interface or null if not available
+	 */
+	public BundleTransition getTransitionService();
+
+	/**
+	 * Get the bundle project candidates service
+	 * <p>
+	 * Any extender exceptions are sent to the error log view and null is returned
+	 * 
+	 * @return the bundle project candidates service interface or null if not available
+	 */
+	public BundleProjectCandidates getCanidatesService();
+
+	/**
+	 * Get the bundle project meta service
+	 * <p>
+	 * Any extender exceptions are sent to the error log view and null is returned
+	 * 
+	 * @return the project meta service interface or null if not available
+	 */
+	public BundleProjectMeta getMetaService();
 
 	/**
 	 * Retrieves the project location identifier as an absolute file system path of the specified
@@ -63,8 +128,8 @@ public interface BundleRegion {
 	 * <p>
 	 * If the specified activation status is true and the bundle is in state
 	 * {@code Bundle#UNINSTALLED} or in state {@code Bundle#INSTALLED} a
-	 * {@code Transition#ACTIVATE_BUNDLE} is added a pending bundle command. This indicates that
-	 * the bundle should be resolved and optionally started.
+	 * {@code Transition#ACTIVATE_BUNDLE} is added a pending bundle command. This indicates that the
+	 * bundle should be resolved and optionally started.
 	 * <p>
 	 * If the the specified activation status is false and the bundle state is {@code Bundle#RESOLVED}, {@code Bundle#STARTING}, {@code Bundle#ACTIVE} or {@code Bundle#STOPPING} a
 	 * {@code Transition#DEACTIVATE} is added as a pending bundle command. This indicates that the
@@ -97,15 +162,18 @@ public interface BundleRegion {
 	 * @see #isProjectRegistered(IProject)
 	 * @see #uninstall(Bundle, Boolean)
 	 */
-	// TODO hide this? Only used when uninstalling
 	public void unregisterBundleProject(IProject project);
 
 	/**
 	 * Unregister a workspace bundle from the workspace region. The bundle activation status is set to
-	 * false and the bundle is removed from it associated project.
+	 * false, any pending transitions are removed and the bundle is detached from its associated
+	 * project.
 	 * <p>
 	 * If the registered project associated with the bundle (the bundle project) is inaccessible the
-	 * project is also removed (unregistered) from the region.
+	 * project is also removed (unregistered) from the region. Use
+	 * {@link #isProjectRegistered(IProject)} to check if the project is registered with the region
+	 * and {@link #getBundle(IProject)} to check if the bundle is registered with the project in the
+	 * region.
 	 * 
 	 * @param bundle bundle to unregister form the workspace region.
 	 * @see #unregisterBundleProject(IProject)
@@ -122,7 +190,7 @@ public interface BundleRegion {
 	public boolean isProjectRegistered(IProject project);
 
 	/**
-	 * Get associated projects for all installed (activated and not activated) bundles
+	 * Get associated projects for all installed (activated and deactivated) bundles
 	 * 
 	 * @return associated projects for all installed bundles
 	 */
@@ -137,8 +205,7 @@ public interface BundleRegion {
 	public Collection<IProject> getProjects(Collection<Bundle> bundles);
 
 	/**
-	 * Get either all deactivated projects in an activated workspace or all activated projects
-	 * dependent on the specified activated switch
+	 * Get all deactivated projects in an activated workspace or all activated projects
 	 * 
 	 * @param activated if true get all activated projects. If false get all deactivated projects.
 	 * @return all activated projects if the specified activation parameter is true, otherwise return
@@ -153,7 +220,6 @@ public interface BundleRegion {
 	 * If a project is not registered as bundle project manually using
 	 * {@link BundleCommand#registerBundleProject(IProject, Bundle, boolean)} it will always be
 	 * registered by the {@link BundleCommand#install(IProject, Boolean)} command
-	 * 
 	 * 
 	 * @param bundle the bundle associated with the project to return
 	 * @return the associated project of the specified bundle or null if no project is found
@@ -174,46 +240,54 @@ public interface BundleRegion {
 	/**
 	 * Check if the workspace is activated. The condition is satisfied if one bundle is activated
 	 * 
-	 * @return true if at least one project is JavaTime nature enabled and its bundle project is not
-	 * uninstalled. Otherwise false
+	 * @return true if at least one bundle activated Otherwise false
 	 * @see BundleRegion#isBundleActivated(Bundle)
 	 */
 	public Boolean isRegionActivated();
 
 	/**
-	 * Check if the bundle associated with the specified project is activated 
+	 * Check if the bundle associated with the specified project is activated. The condition is
+	 * satisfied if the project and the associated bundle is registered with the region.
 	 * 
 	 * @param bundleProject to check for activation
-	 * @return true if the specified project is activated. Otherwise false
+	 * @return true if the specified project is registered with the region and the bundle object is
+	 * registered and activated. If not activated or the specified project or the bundle is not
+	 * registered with the region, false is returned.
 	 * @see BundleRegion#isBundleActivated(Bundle)
 	 */
 	public Boolean isBundleActivated(IProject bundleProject);
 
 	/**
-	 * Check if the bundle with the specified bundle id is activated. The condition is satisfied if it
-	 * associated project is JavaTime nature enabled and the bundle is at least installed.
+	 * Check if the bundle with the specified bundle id is activated. The condition is satisfied if
+	 * the project and the associated bundle is registered with the region.
 	 * 
 	 * @param bundleId id of bundle object to check for activation mode
-	 * @return true if the bundle object of the specified bundle id is activated. Otherwise false
+	 * @return true if the bundle object is activated. If not activated or the specified bundle is not
+	 * registered with the region, false is returned.
 	 */
 	public Boolean isBundleActivated(Long bundleId);
 
 	/**
-	 * Check if the specified bundle is activated. The condition is satisfied if it associated project
-	 * is JavaTime nature enabled and the bundle is at least installed.
+	 * Check if the specified bundle is activated. The condition is satisfied if the associated
+	 * project of the bundle and the specified bundle is registered with the region.
 	 * 
 	 * @param bundle bundle object to check for activation mode
-	 * @return true if the bundle object is activated. Otherwise false. If the specified bundle is
-	 * null, false is returned.
+	 * @return true if the bundle object is activated. If not activated or the specified bundle is not
+	 * registered with the region, false is returned.
 	 */
 	public Boolean isBundleActivated(Bundle bundle);
-	
+
+	/**
+	 * Get all activated projects
+	 * 
+	 * @return all activated projects or an empty collection
+	 */
 	public Collection<IProject> getActivatedProjects();
 
 	/**
 	 * Get all activated bundles.
 	 * 
-	 * @return all activated bundles.
+	 * @return all activated bundles or an empty collection
 	 */
 	public Collection<Bundle> getActivatedBundles();
 
@@ -228,7 +302,7 @@ public interface BundleRegion {
 	 * Get all deactivated (installed) bundles in an activated workspace. If the workspace is
 	 * deactivated all bundles are in state {@code Bundle#UNINSTALLED}
 	 * 
-	 * @return all deactivated bundles.
+	 * @return all deactivated bundles or an empty collection
 	 */
 	public Collection<Bundle> getDeactivatedBundles();
 
@@ -238,22 +312,26 @@ public interface BundleRegion {
 	 * 
 	 * @param state a bundle state obtained from on or more of the {@Bundle} state constants
 	 * except {@linkplain Bundle#UNINSTALLED}
-	 * @return all bundles that matches the specified state(s) or an empty set
+	 * @return all bundles that matches the specified state(s) or an empty collection
 	 */
 	public Collection<Bundle> getBundles(int state);
 
 	/**
 	 * Return all specified bundles with the specified state(s).
+	 * <p>
+	 * Bundles not registered with the associated project in the region are ignored.
 	 * 
 	 * @param bundles bundles to check for the specified state
 	 * @param state a bundle state obtained from on or more of the {@Bundle} state constants
 	 * except {@linkplain Bundle#UNINSTALLED}
-	 * @return all bundles that matches the specified state(s) or an empty set
+	 * @return all bundles that matches the specified state(s) or an empty collection
 	 */
 	public Collection<Bundle> getBundles(Collection<Bundle> bundles, int state);
 
 	/**
-	 * Get associated bundles for the specified projects
+	 * Get associated bundles for the specified projects.
+	 * <p>
+	 * Bundles not registered with the associated project in the region are ignored.
 	 * 
 	 * @param projects with associated bundles
 	 * @return associated bundles of the specified projects, or an empty collection
@@ -261,10 +339,11 @@ public interface BundleRegion {
 	public Collection<Bundle> getBundles(Collection<IProject> projects);
 
 	/**
-	 * Get the bundle associated with specifies project
+	 * Get the bundle associated with the specified project
 	 * 
-	 * @param project project with an associated bundle
+	 * @param project bundle project with an associated bundle
 	 * @return the associated bundle of the specified project or null if the bundle is not registered
+	 * with the project in the region or null is returned by the framework 
 	 */
 	public Bundle getBundle(IProject project);
 
@@ -272,7 +351,8 @@ public interface BundleRegion {
 	 * Get the bundle object from the specified bundle id
 	 * 
 	 * @param bundleId the id used to retrieve the bundle object
-	 * @return the bundle object or null
+	 * @return the associated bundle of the specified project or null if the bundle is not registered
+	 * with the project in the region or null is returned by the framework 
 	 */
 	public Bundle getBundle(Long bundleId);
 
@@ -289,7 +369,7 @@ public interface BundleRegion {
 	 * are compared
 	 * 
 	 * @param projects duplicate candidates
-	 * @param scope TODO
+	 * @param scope a set of projects to find duplicates among
 	 * @return map containing the specified project and the bundle which the specified project is a
 	 * duplicate of
 	 */
@@ -316,9 +396,7 @@ public interface BundleRegion {
 
 	/**
 	 * A bundle exist in the bundle region if it at least is installed. In an activated workspace all
-	 * bundles are at least installed. An exception is if at shutdown a bundle is a duplicate or part
-	 * of a cycle. The bundle will then be in state uninstalled at startup, but installed and if
-	 * activated started when the error is corrected.
+	 * bundles are at least installed.
 	 * 
 	 * @param bundle the bundle to check for existence
 	 * @return true if the bundle exist in the bundle region. Otherwise false
@@ -327,9 +405,7 @@ public interface BundleRegion {
 
 	/**
 	 * A bundle exist in the bundle region if it at least is installed. In an activated workspace all
-	 * bundles are at least installed. An exception is if at shutdown a bundle is a duplicate or part
-	 * of a cycle. The bundle will then be in state uninstalled at startup, but installed and if
-	 * activated started when the error is corrected.
+	 * bundles are at least installed.
 	 * 
 	 * @param symbolicName the symbolic name of bundle to check for existence
 	 * @param version the version of the bundle with the specified symbolic name
@@ -391,15 +467,12 @@ public interface BundleRegion {
 	public void setAutoBuildChanged(boolean autoBuild);
 
 	/**
-	 * Formats the collection as a comma separated list.
+	 * Formats a comma separated list of bundle symbolic names optionally appended with the version
 	 * 
-	 * @param bundles collection of bundles to format
-	 * @return a comma separated list of bundles or an empty string
+	 * @param bundles bundles to format
+	 * @param includeVersion appends the version to the symbolic name. The symbolic name end version
+	 * is delimited with an underscore
+	 * @return a comma separated list of bundle or an empty string
 	 */
 	public String formatBundleList(Collection<Bundle> bundles, boolean includeVersion);
-
-	// TODO Duplicated from bundleproject
-	public String getSymbolicNameFromManifest(IProject project) throws InPlaceException;
-
-	public String getBundleVersionFromManifest(IProject project) throws InPlaceException;
 }

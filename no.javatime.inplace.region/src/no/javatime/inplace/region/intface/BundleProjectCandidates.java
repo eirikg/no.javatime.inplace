@@ -30,7 +30,9 @@ import org.eclipse.jdt.core.IJavaProject;
  * Use the OSGi service layer or the {@link Extenders} to access this service
  * interface.
  * <p>
+ * <pre>
  * {@code Extension<BundleProjectCandidates> candidates = Extenders.getExtension(BundleProjectCandidates.class.getName());}
+ * </pre>
  * 
  * @see CommandOptions#isAllowUIContributions()
  * @see CommandOptions#setIsAllowUIContributions(boolean)

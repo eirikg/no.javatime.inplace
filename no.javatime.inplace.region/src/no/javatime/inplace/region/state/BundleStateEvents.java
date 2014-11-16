@@ -244,9 +244,6 @@ public class BundleStateEvents implements SynchronousBundleListener {
 				if (WorkspaceRegionImpl.INSTANCE.isRegionActivated()) {
 					bundleTransition.setTransitionError(bundle, TransitionError.UNINSTALL);
 					BundleTransitionListener.addBundleTransition(new TransitionEvent(bundle, node.getTransition()));
-				} else {
-					// Remove the externally uninstalled bundle from the workspace region
-					bundleRegion.unregisterBundle(bundle);
 				}
 			}
 			break;

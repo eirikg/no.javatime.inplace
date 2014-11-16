@@ -197,13 +197,14 @@ public abstract class JobStatus extends WorkspaceJob implements BundleTransition
 			default:
 				break;
 			}
-		} catch (InPlaceException e) {
+		} catch (InPlaceException e) {		
 			addLogStatus(new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, project,
-					"Trace suppressed", e));
+					Msg.LOG_TRACE_EXP, e));
 		} catch (NullPointerException e) {
 			addLogStatus(new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, project,
-					"Trace suppressed", e));
+					Msg.LOG_TRACE_EXP, e));
 		}
+		// TODO Check and add exceptions to catch
 	}
 
 	/**

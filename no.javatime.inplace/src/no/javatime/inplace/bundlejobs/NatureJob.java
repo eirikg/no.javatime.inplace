@@ -10,6 +10,7 @@
  *******************************************************************************/
 package no.javatime.inplace.bundlejobs;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashSet;
@@ -102,7 +103,6 @@ public abstract class NatureJob extends BundleJob {
 			return true;
 		}
 		return false;
-
 	}
 
 	/**
@@ -224,7 +224,8 @@ public abstract class NatureJob extends BundleJob {
 			boolean unregister) throws InPlaceException {
 
 		IBundleStatus result = createStatus();
-
+		Collection<Bundle> errorBundles = null;
+		
 		if (null != bundles && bundles.size() > 0) {
 			SubMonitor localMonitor = SubMonitor.convert(monitor, bundles.size());
 			for (Bundle bundle : bundles) {
@@ -234,22 +235,25 @@ public abstract class NatureJob extends BundleJob {
 				try {
 					// Unregister after refresh
 					bundleCommand.uninstall(bundle, false);
-				} catch (InPlaceException e) {
+				} catch (InPlaceException | ProjectLocationException e) {
+					if (null == errorBundles) {
+						errorBundles = new ArrayList<>(bundles.size());
+					}
+					errorBundles.add(bundle);
 					result = addError(e, e.getLocalizedMessage(), bundle.getBundleId());
 				} finally {
 					localMonitor.worked(1);
 				}
 			}
+			if (errorBundles.size() > 0) {
+				bundles.removeAll(errorBundles);
+			}
 			refresh(bundles, new SubProgressMonitor(monitor, 1));
 			if (unregister) {
-				for (Bundle bundle : bundles) {
-					bundleRegion.unregisterBundleProject(bundleRegion.getProject(bundle));
+				for (Bundle errorBundle : errorBundles) {
+					bundleRegion.unregisterBundleProject(bundleRegion.getProject(errorBundle));					
 				}
-			} else {
-				for (Bundle bundle : bundles) {
-					bundleRegion.unregisterBundle(bundle);
-				}
-			}
+			} 
 		}
 		return result;
 	}
@@ -318,14 +322,13 @@ public abstract class NatureJob extends BundleJob {
 					sleep(sleepTime);
 				localMonitor.subTask(NatureJob.disableNatureSubTaskName + project.getName());
 				if (isNatureEnabled(project)) {
-					if (getOptionsService().isUpdateDefaultOutPutFolder()) {
-						bundleProjectMeta.removeDefaultOutputFolder(project);
-					}
 					toggleNatureActivation(project, new SubProgressMonitor(monitor, 1));
-					bundleRegion.setActivation(project, false);
-					// bundleRegion.setNatureEnabled(project, false);
-					bundleTransition.clearTransitionError(project);
 				}
+				if (getOptionsService().isUpdateDefaultOutPutFolder()) {
+					bundleProjectMeta.removeDefaultOutputFolder(project);
+				}
+				bundleTransition.clearTransitionError(project);
+				bundleRegion.setActivation(project, false);
 			} catch (InPlaceException e) {
 				addError(e, e.getLocalizedMessage(), project);
 				throw e;
@@ -357,9 +360,11 @@ public abstract class NatureJob extends BundleJob {
 		for (IProject project : projectsToActivate) {
 			try {
 				localMonitor.subTask(NatureJob.enableNatureSubTaskName + project.getName());
-				if (bundleProjectCandidates.isCandidate(project) && !isNatureEnabled(project)) {
+				if (bundleProjectCandidates.isCandidate(project)) {
 					// Set the JavaTime nature
-					toggleNatureActivation(project, new SubProgressMonitor(monitor, 1));
+					if (!isNatureEnabled(project)) {
+						toggleNatureActivation(project, new SubProgressMonitor(monitor, 1));
+					}
 					result = resolveBundleClasspath(project);
 					Bundle bundle = bundleRegion.getBundle(project);
 					try {

@@ -50,8 +50,8 @@ public class Activator extends AbstractUIPlugin {
 	private static Extender<BundleCommand> extenderCommand;
 	private static Extender<BundleRegion> extenderRegion;
 	private static Extender<BundleTransition> extenderTransition;
-	private static Extender<BundleProjectCandidates> extenderBudleProjectCandidates;
-	private static Extender<BundleProjectMeta> extenderBudleProjectMeta;
+	private static Extender<BundleProjectCandidates> extenderBundleProjectCandidates;
+	private static Extender<BundleProjectMeta> extenderBundleProjectMeta;
 
 	/**
 	 * Factory creating resolver hook objects for filtering and detection of duplicate bundle
@@ -85,12 +85,12 @@ public class Activator extends AbstractUIPlugin {
 				new BundleRegionServiceFactory(), null);
 		extenderTransition = Extenders.register(context.getBundle(), BundleTransition.class.getName(),
 				new BundleTransitionServiceFactory(), null);
-		extenderBudleProjectCandidates = Extenders.register(context.getBundle(), BundleProjectCandidates.class.getName(),
+		extenderBundleProjectCandidates = Extenders.register(context.getBundle(), BundleProjectCandidates.class.getName(),
 				new BundleProjectCandidatesServiceFactory(), null);
 		bundleProjectTracker = new ServiceTracker<IBundleProjectService, IBundleProjectService>(
 				context, IBundleProjectService.class.getName(), null);
 		bundleProjectTracker.open();
-		extenderBudleProjectMeta = Extenders.register(context.getBundle(),
+		extenderBundleProjectMeta = Extenders.register(context.getBundle(),
 				BundleProjectMeta.class.getName(), new BundleProjectMetaServiceFactory(),
 				null);
 
@@ -127,11 +127,11 @@ public class Activator extends AbstractUIPlugin {
 	}
 
 	public static Extender<BundleProjectCandidates> getExtenderBundleCandidatesProject() {
-		return extenderBudleProjectCandidates;
+		return extenderBundleProjectCandidates;
 	}
 
-	public static Extender<BundleProjectMeta> getExtenderBundleProjectDescription() {
-		return extenderBudleProjectMeta;
+	public static Extender<BundleProjectMeta> getExtenderBundleMeta() {
+		return extenderBundleProjectMeta;
 	}
 
 	/**

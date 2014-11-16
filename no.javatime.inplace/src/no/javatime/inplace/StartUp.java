@@ -14,9 +14,6 @@ import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.closure.BuildErrorClosure;
 import no.javatime.inplace.region.closure.BuildErrorClosure.ActivationScope;
 import no.javatime.inplace.region.closure.CircularReferenceException;
-import no.javatime.inplace.region.intface.BundleProjectCandidates;
-import no.javatime.inplace.region.intface.BundleRegion;
-import no.javatime.inplace.region.intface.BundleTransition;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
 import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.intface.ProjectLocationException;
@@ -148,7 +145,9 @@ public class StartUp implements IStartup {
 		WorkspaceJob initWorkspaceJob = new BundleJob(Msg.INIT_DEACTIVATED_WORKSPACE_JOB) {
 			@Override
 			public IBundleStatus runInWorkspace(IProgressMonitor monitor) throws CoreException {
+
 				IBundleStatus status = null;
+				
 				try {
 					final IEclipsePreferences store = InPlace.getEclipsePreferenceStore();
 					if (null == store) {
@@ -156,9 +155,6 @@ public class StartUp implements IStartup {
 								Msg.INIT_WORKSPACE_STORE_WARN, null));
 						return super.runInWorkspace(monitor);
 					}
-					BundleTransition bundleTransition = InPlace.getBundleTransitionService();
-					BundleRegion bundleRegion = InPlace.getBundleRegionService();
-					BundleProjectCandidates bundleProjectCandidates = InPlace.getBundleProjectCandidatesService();
 					Collection<IProject> plugins = bundleProjectCandidates.getBundleProjects();
 					for (IProject project : plugins) {
 						if (null != store) {

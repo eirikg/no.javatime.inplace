@@ -58,6 +58,7 @@ public class BuildErrorClosure {
 
 	final static private BundleRegion bundleRegion = WorkspaceRegionImpl.INSTANCE;
 	final static private BundleTransition bundleTransition = BundleTransitionImpl.INSTANCE;
+	final static private BundleProjectMeta bundleMeta = BundleProjectMetaImpl.INSTANCE;
 
 	public enum ActivationScope {
 		ACTIVATED, DEACTIVATED, ALL
@@ -391,7 +392,7 @@ public class BuildErrorClosure {
 					Collections.<IProject> singletonList(errorProject), Closure.PROVIDING,
 					ActivationScope.ALL);
 			projectClosures.remove(errorProject);
-			String errProjectIdent = bundleRegion.getSymbolicNameFromManifest(errorProject);
+			String errProjectIdent = bundleMeta.getSymbolicName(errorProject);
 			if (null == errProjectIdent) {
 				errProjectIdent = errorProject.getName();
 				errProjectIdent += " (P)";

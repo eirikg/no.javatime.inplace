@@ -21,13 +21,22 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import no.javatime.inplace.extender.intface.Extender;
+import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.region.Activator;
+import no.javatime.inplace.region.intface.BundleCommand;
+import no.javatime.inplace.region.intface.BundleProjectCandidates;
+import no.javatime.inplace.region.intface.BundleProjectMeta;
 import no.javatime.inplace.region.intface.BundleRegion;
+import no.javatime.inplace.region.intface.BundleTransition;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
 import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.intface.ProjectLocationException;
+import no.javatime.inplace.region.msg.Msg;
 import no.javatime.inplace.region.state.BundleNode;
 import no.javatime.inplace.region.state.BundleState;
+import no.javatime.inplace.region.status.BundleStatus;
+import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import no.javatime.util.messages.Category;
 import no.javatime.util.messages.TraceMessage;
 
@@ -36,7 +45,9 @@ import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
+import org.eclipse.osgi.util.NLS;
 import org.eclipse.pde.core.project.IBundleProjectDescription;
+import org.eclipse.ui.statushandlers.StatusManager;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.Version;
 
@@ -67,6 +78,58 @@ public class WorkspaceRegionImpl implements BundleRegion {
 
 	protected WorkspaceRegionImpl() {
 		super();
+	}
+
+	public BundleCommand getCommandService() {
+
+		try {			
+			Extender<BundleCommand> extender = Activator.getExtenderCommand();
+			return extender.getService();
+		} catch (ExtenderException e) {
+			String msg = NLS.bind(Msg.GET_SERVICE_EXP, BundleCommand.class.getName());
+			StatusManager.getManager().handle(
+					new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, Activator.getContext().getBundle(), msg, e), StatusManager.LOG);
+		}
+		return null;
+	}
+	
+	public BundleTransition getTransitionService() {
+	
+		try {
+			Extender<BundleTransition> extender = Activator.getExtenderTransition();
+			return extender.getService();
+		} catch (ExtenderException e) {
+			String msg = NLS.bind(Msg.GET_SERVICE_EXP, BundleCommand.class.getName());
+			StatusManager.getManager().handle(
+					new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, Activator.getContext().getBundle(), msg, e), StatusManager.LOG);
+		}
+		return null;
+	}
+	
+	public BundleProjectCandidates getCanidatesService() {
+
+		try {	
+			Extender<BundleProjectCandidates> extender = Activator.getExtenderBundleCandidatesProject();
+			return extender.getService();
+		} catch (ExtenderException e) {
+			String msg = NLS.bind(Msg.GET_SERVICE_EXP, BundleProjectCandidates.class.getName());
+			StatusManager.getManager().handle(
+					new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, Activator.getContext().getBundle(), msg, e), StatusManager.LOG);
+		}
+		return null;
+	}
+
+	public BundleProjectMeta getMetaService() {
+
+		try {
+			Extender<BundleProjectMeta> extender = Activator.getExtenderBundleMeta();
+			return extender.getService();
+		} catch (ExtenderException e) {
+			String msg = NLS.bind(Msg.GET_SERVICE_EXP, BundleProjectMeta.class.getName());
+			StatusManager.getManager().handle(
+					new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, Activator.getContext().getBundle(), msg, e), StatusManager.LOG);
+		}
+		return null;
 	}
 
 	public boolean isAutoBuildActivated(boolean disable) {
@@ -225,16 +288,15 @@ public class WorkspaceRegionImpl implements BundleRegion {
 	@Override
 	public void unregisterBundle(Bundle bundle) {
 
-		BundleNode node = getBundleNode(bundle);
-		if (null != node) {
-			IProject project = node.getProject();
-			if (!project.isAccessible()) {
-				unregisterBundleProject(project);
-			} else {
-				node.setBundleId(null);
-				node.setActivated(false);
-			}
-		}
+//		BundleNode node = getBundleNode(bundle);
+//		if (null != node) {
+//			IProject project = node.getProject();
+//			if (!project.isAccessible()) {
+//				unregisterBundleProject(project);
+//			} else {
+//				node.removeBundle();
+//			}
+//		}
 	}
 
 	@Override
@@ -406,7 +468,6 @@ public class WorkspaceRegionImpl implements BundleRegion {
 			if (null != bundle) {
 				bundles.add(bundle);
 			} else {
-				// Bundle is uninstalled, but node not removed
 				if (Category.DEBUG && Category.getState(Category.dag))
 					TraceMessage.getInstance().getString("bundle_not_installed", project.getName());
 			}
@@ -835,32 +896,6 @@ public class WorkspaceRegionImpl implements BundleRegion {
 		} else {
 			if (Category.DEBUG && Category.getState(Category.dag))
 				TraceMessage.getInstance().getString("null_remove_node", project.getName());
-		}
-		return null;
-	}
-
-	/**
-	 * Remove a bundle
-	 * 
-	 * @param bundle to remove
-	 * @return the bundle id or null if the bundle is not registered
-	 */
-	protected Long remove(Bundle bundle) {
-		BundleNode node = getNode(bundle);
-		if (null != node) {
-			BundleNode deletedNode = projectNodes.remove(node.getProject());
-			if (null == deletedNode) {
-				if (Category.DEBUG && Category.getState(Category.dag))
-					TraceMessage.getInstance().getString("failed_remove_node", bundle.toString());
-				return null;
-			} else {
-				if (Category.DEBUG && Category.getState(Category.dag))
-					TraceMessage.getInstance().getString("removed_node", bundle.toString());
-				return deletedNode.getBundleId();
-			}
-		} else {
-			if (Category.DEBUG && Category.getState(Category.dag))
-				TraceMessage.getInstance().getString("null_remove_node", bundle.toString());
 		}
 		return null;
 	}

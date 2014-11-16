@@ -11,16 +11,32 @@ import org.eclipse.pde.core.project.IBundleProjectDescription;
 import org.eclipse.pde.core.project.IBundleProjectService;
 import org.osgi.framework.Bundle;
 
+/**
+ * Use this service interface to modify and obtain meta data most relevant for a workspace bundle
+ * project.
+ * <p>
+ * To be able to start a bundle on the development (or source) platform after it is installed and
+ * resolved the default output folder should be added to the Bundle-ClassPah header of the bundle.
+ * Use {@link #addDefaultOutputFolder(IProject) to add the folder.
+ * <p><p>
+ * 
+ * After a bundle is installed using e.g. {@link BundleCommand#install(IProject, Boolean)} the
+ * actual header information in the manifest file and the cached manifest accessed through the bundle may
+ * over time be different. To synchronize the manifest headers an update followed by a refresh is not enough.
+ * A re-installation of the bundle is necessary.  
+ * 
+ */
 public interface BundleProjectMeta {
 
 	/**
 	 * Path to manifest file relative to workspace root
 	 */
 	final public static String MANIFEST_RELATIVE_PATH = Msg.MANIFEST_FILE_RELATIVE_PATH_REF;
+
 	/**
 	 * Standard file name of the manifest file
 	 */
-	final public static String MANIFEST_FILE_NAME = Msg.MANIFEST_FILE_NAME_REF; 
+	final public static String MANIFEST_FILE_NAME = Msg.MANIFEST_FILE_NAME_REF;
 
 	/**
 	 * Convenience method. Finds and return the bundle project service for a given project.
@@ -30,7 +46,7 @@ public interface BundleProjectMeta {
 	 * @throws InPlaceException if the service could not be obtained or is invalid
 	 */
 	IBundleProjectService getBundleProjectService(IProject project) throws InPlaceException;
-	
+
 	/**
 	 * Convenience method. Finds and return the bundle project description for a given project.
 	 * 
@@ -53,14 +69,20 @@ public interface BundleProjectMeta {
 	public Boolean isDefaultOutputFolder(IProject project) throws InPlaceException;
 
 	/**
-	 * Returns a project relative path for the bundle's default output folder used on the
-	 * Java build path, or null to indicate the default output location is used.
+	 * Returns a project relative path for the bundle's default output folder used on the Java build
+	 * path, or null to indicate the default output location is used.
 	 * 
 	 * @param project The project with a default output folder
 	 * @return Default project relative output folder path or null
 	 */
 	public IPath getDefaultOutputFolder(IProject project);
 
+	/**
+	 * Get the Bundle-ClassPath header for the specified project
+	 * 
+	 * @param project project to get the Bundle-ClassPath header from
+	 * @return the Bundle-ClassPath header information or null
+	 */
 	public String getBundleClassPath(IProject project);
 
 	/**
@@ -162,11 +184,14 @@ public interface BundleProjectMeta {
 	 * additional class path entries to add to the bundles class path. This is a design choice of PDE
 	 * that provides an approximation of the bundles content when run directly out of the workspace.
 	 * 
-	 * @return true if the osgi.dev property file with the default output folder for the specified project was inserted. True otherwise
-	 * @throws InPlaceException if "dev.mode" is off, an IO or property error occurs updating build properties file or if
-	 * the symbolic name of the specified project is null or default output folder is missing 
+	 * @return true if the osgi.dev property file with the default output folder for the specified
+	 * project was inserted. True otherwise
+	 * @throws InPlaceException if "dev.mode" is off, an IO or property error occurs updating build
+	 * properties file or if the symbolic name of the specified project is null or default output
+	 * folder is missing
 	 */
 	public Boolean setDevClasspath(IProject project) throws InPlaceException;
+
 	/**
 	 * Gets the cached activation policy header
 	 * 
@@ -199,7 +224,8 @@ public interface BundleProjectMeta {
 	 * 
 	 * @param path a single path that is checked for existence within the specified class path
 	 * @param classPath containing class path
-	 * @return true if the specified path is contained in the class path of the specified class path string
+	 * @return true if the specified path is contained in the class path of the specified class path
+	 * string
 	 * @exception InPlaceException if parsing error or an i/o error occurs reading the manifest
 	 */
 	public Boolean verifyPathInCachedClassPath(IPath path, String classPath, String name)

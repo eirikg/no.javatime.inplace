@@ -32,7 +32,7 @@ import org.osgi.framework.Bundle;
  * <p>
  * When removing bundle projects with requiring bundles the requiring closure set becomes
  * incomplete. This inconsistency is solved by deactivating the requiring bundles in the closure
- * before uninstalling.
+ * before uninstalling the removed projects.
  */
 class RemoveBundleProjectJob extends NatureJob {
 
@@ -105,9 +105,7 @@ class RemoveBundleProjectJob extends NatureJob {
 						Transition.REMOVE_PROJECT));
 				bundleTransition.removePending(project, Transition.REMOVE_PROJECT);
 			}
-			// Uninstall, refresh and unregister the bundles.
-			// The closed or removed projects should be inaccessible at this time and removed from
-			// the region by uninstall
+			// Uninstall & refresh
 			uninstall(pendingBundles, new SubProgressMonitor(monitor, 1), false);
 			// Also refresh any deactivated bundles
 			refresh(bundleRegion.getBundles(reqProjects), new SubProgressMonitor(monitor, 1));
@@ -128,6 +126,10 @@ class RemoveBundleProjectJob extends NatureJob {
 			String msg = ErrorMessage.getInstance().formatString("error_end_job", getName());
 			return new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID, msg, e);
 		} finally {
+			// Unregister the removed projects from the workspace
+			for (IProject removedProject : getPendingProjects()) {
+				bundleRegion.unregisterBundleProject(removedProject);
+			}
 			BundleTransitionListener.removeBundleTransitionListener(this);
 		}
 		try {

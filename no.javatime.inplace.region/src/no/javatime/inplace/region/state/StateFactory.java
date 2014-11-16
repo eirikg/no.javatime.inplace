@@ -18,7 +18,7 @@ public class StateFactory {
 	public final ActiveState activeState = new ActiveState();
 	public final StoppingState stoppingState = new StoppingState();
 	
-	private HashMap<Integer, BundleState> states = new HashMap<Integer, BundleState>();
+	private HashMap<Integer, BundleState> states = new HashMap<>();
 	
 	private StateFactory() {
 		states.put(STATELESS, stateLess);

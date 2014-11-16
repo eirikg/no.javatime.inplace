@@ -69,7 +69,6 @@ public class Msg extends NLS {
 	public static String MANIFEST_BUILD_ERROR;
 	public static String BUILD_STATE_ERROR;
 	public static String END_JOB_ROOT_ERROR;
-	public static String GET_SERVICE_ERROR;
 	public static String INIT_BUNDLE_STATE_ERROR;
 
 	// Warnings
@@ -81,6 +80,10 @@ public class Msg extends NLS {
 	public static String INSTALL_CONTEXT_FOR_ACTION_SET_WARN;
 	public static String NOT_RESOLVED_ROOT_WARN;
 	
+	// Exceptions
+	public static String GET_SERVICE_EXP;
+	public static String LOG_TRACE_EXP;
+
 	// Info messages
 	public static String DEACTIVATE_BUILD_ERROR_INFO;
 	public static String UPDATE_BUILD_ERROR_INFO;

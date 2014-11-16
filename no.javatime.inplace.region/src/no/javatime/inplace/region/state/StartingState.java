@@ -3,7 +3,7 @@ package no.javatime.inplace.region.state;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
 
 /**
- * Begins a outgoing start and stop transition with {@link org.osgi.framework.Bundle#STARTING
+ * Begins an outgoing start and stop transition with {@link org.osgi.framework.Bundle#STARTING
  * STARTING} as the current state. Each method in this class represents a valid transition for a
  * bundle in state starting.
  * <p>
@@ -12,9 +12,6 @@ import no.javatime.inplace.region.intface.BundleTransition.Transition;
  * diagram should include a stop transition with starting as the initial state and stopping or
  * resolve as the terminal state. The bundle has not yet reached state active and there is no
  * transition to move the bundle to state resolved.
- * <p>
- * For a discussion about stopping lazy activated bundles see:
- * http://osdir.com/ml/java-osgi-devel/2009-07/msg00020.html
  */
 public class StartingState extends BundleState {
 
@@ -28,6 +25,8 @@ public class StartingState extends BundleState {
 	 * Bundles with lazy activation policy (lazy activation) in state starting are stopped
 	 * <p>
 	 * This is not according to the FSM specification.
+	 * For a discussion about stopping lazy activated bundles see:
+	 * http://osdir.com/ml/java-osgi-devel/2009-07/msg00020.html
 	 * 
 	 * @param bundleNode saves and updates the current transition and state of the bundle
 	 */

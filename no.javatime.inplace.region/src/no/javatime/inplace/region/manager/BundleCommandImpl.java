@@ -148,50 +148,63 @@ public class BundleCommandImpl implements BundleCommand {
 
 	@Override
 	public Bundle activate(IProject project) throws InPlaceException, DuplicateBundleException,
-			ProjectLocationException, InterruptedException, IllegalStateException, ExtenderException {
+	ProjectLocationException, InterruptedException, IllegalStateException, ExtenderException {
 
 		Bundle bundle = null;
-		bundle = install(project, true);
-		BundleProjectMetaImpl.INSTANCE.setDevClasspath(project);
-		if (resolve(Collections.singletonList(bundle))) {
-			CommandOptions cmdOpt = Activator.getDefault().getCommandOptionsService();
-			boolean timeout = true;
-			int timeoutVal = 5000;
-			timeout = cmdOpt.isTimeOut();
-			if (timeout) {
-				timeoutVal = cmdOpt.getDeafultTimeout();
+			bundle = install(project, true);
+			BundleProjectMetaImpl.INSTANCE.setDevClasspath(project);
+			if (resolve(Collections.singletonList(bundle))) {
+				CommandOptions cmdOpt = Activator.getDefault().getCommandOptionsService();
+				boolean timeout = true;
+				int timeoutVal = 5000;
+				timeout = cmdOpt.isTimeOut();
+				if (timeout) {
+					timeoutVal = cmdOpt.getDeafultTimeout();
+				}
+				int startOption = Bundle.START_TRANSIENT;
+				if (BundleProjectMetaImpl.INSTANCE.getCachedActivationPolicy(bundle)) {
+					startOption = Bundle.START_ACTIVATION_POLICY;
+				}
+				if (timeout) {
+					start(bundle, startOption, timeoutVal);
+				} else {
+					start(bundle, startOption);
+				}
 			}
-			int startOption = Bundle.START_TRANSIENT;
-			if (BundleProjectMetaImpl.INSTANCE.getCachedActivationPolicy(bundle)) {
-				startOption = Bundle.START_ACTIVATION_POLICY;
-			}
-			if (timeout) {
-				start(bundle, startOption, timeoutVal);
-			} else {
-				start(bundle, startOption);
+		return bundle;
+	}
+	
+	
+	@Override
+	public Bundle deactivate(IProject project) throws InPlaceException {
+		Bundle bundle = null;
+		if (bundleRegion.isBundleActivated(project)) {
+			bundle = bundleRegion.getBundle(project);
+			if (null != bundle) {
+				stop(bundle, false);
+				uninstall(bundle, true);
 			}
 		}
 		return bundle;
 	}
 	
 	@Override
-	public Bundle deactivate(IProject project) throws InPlaceException {
-		// TODO Implement
-		return null;
-	}
-	
-	@Override
 	public Bundle install(IProject project, Boolean activate) throws InPlaceException,
 			DuplicateBundleException, ProjectLocationException {
 
-		// Register or update the bundle project. The bundle can not be registered before it is
-		// installed
+		// Register or update the bundle project. 
+		Bundle bundle = bundleRegion.getBundle(project);
+		if (null != bundle) {
+			// Already installed
+			bundleRegion.setActivation(project, activate);
+			return bundle;
+		}
 		BundleNode bundleNode = WorkspaceRegionImpl.INSTANCE
 				.registerBundleNode(project, null, activate);
 		// The bundle will be registered and associated with the project when
 		// the bundle becomes available in the bundle listener
-		Bundle bundle = install(project);
-		// If the bundle listener for some reason did not register the bundle
+		bundle = install(project);
+		// If the bundle listener did not register the bundle (e.g. already installed)
 		if (null == bundleNode.getBundleId()) {
 			bundleNode = WorkspaceRegionImpl.INSTANCE.registerBundleNode(project, bundle, activate);
 		}

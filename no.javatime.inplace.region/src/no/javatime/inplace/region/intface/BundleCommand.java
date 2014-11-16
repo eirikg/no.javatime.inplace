@@ -72,7 +72,7 @@ public interface BundleCommand {
 	public Bundle deactivate(IProject project) throws InPlaceException;
 
 	/**
-	 * Installs the workspace bundle project and records the installed bundle along with the project
+	 * Installs the workspace bundle project and register the installed bundle along with the project
 	 * and activation mode as a workspace bundle with this region.
 	 * <p>
 	 * An activated bundle is a bundle that is resolvable and a deactivated bundle is not. If the
@@ -89,15 +89,16 @@ public interface BundleCommand {
 	 * <p>
 	 * If the bundle is already installed the installed bundle is returned.
 	 * <p>
-	 * To activate or deactivate an already installed bundle, use {@code BundleRegion#setActivation(IProject,
+	 * To activate or deactivate an already installed bundle, use
+	 * {@code BundleRegion#setActivation(IProject,
 	 * Boolean)} or {@code BundleRegion#setActivation(Bundle, Boolean)}.
 	 * <p>
 	 * The activation mode of a bundle project can be obtained from
 	 * {@code BundleRegion#isProjectActivated(IProject)} .
 	 * <p>
 	 * The location identifier of an uninstalled bundle can be obtained from
-	 * {@link BundleRegion#getBundleLocationIdentifier(IProject)} and {@link Bundle#getLocation()} for an
-	 * installed bundle.
+	 * {@link BundleRegion#getBundleLocationIdentifier(IProject)} and {@link Bundle#getLocation()} for
+	 * an installed bundle.
 	 * 
 	 * @param project installs the associated bundle based on the location identifier of the project
 	 * @param activate true to register the bundle as an activated workspace region bundle. If false
@@ -208,21 +209,32 @@ public interface BundleCommand {
 	public void refresh(final Collection<Bundle> bundles) throws InPlaceException;
 
 	/**
-	 * Uninstalls, and if the unregister parameter is true, removes the specified workspace bundle
-	 * from the bundle workspace region if it exists as a workspace bundle.
+	 * Uninstall the specified bundle. If the unregister parameter is set to true, the specified
+	 * workspace project and the associated bundle is removed from the workspace region. If set to
+	 * false the project and the bundle will exist in the workspace region until unregistered.
+	 * <p>
+	 * When unregistering is deferred use {@link BundleRegion#unregisterBundle(Bundle)} to remove the
+	 * bundle and {@link BundleRegion#unregisterBundleProject(IProject)} to remove both the project
+	 * and the bundle from the workspace region after uninstall.
+	 * <p>
+	 * To {@link #refresh(Collection) refresh} the bundle after it has been uninstall, defer
+	 * unregistering the bundle until after refresh.
 	 * 
 	 * @param bundle the bundle object to uninstall
-	 * @param unregister if true the bundle will be unregistered.
-	 * @return the bundle project of the uninstalled bundle or null if the bundle project is not
-	 * registered
+	 * @param unregister if true the project and the bundle will will be unregistered and thus removed
+	 * from the workspace region.
+	 * @return the project associated with the uninstalled bundle or null if the bundle project could
+	 * not be registered
 	 * @throws InPlaceException if bundle is null or any of the {@link Bundle#uninstall()} exceptions
+	 * @see BundleRegion#unregisterBundle(Bundle)
+	 * @see BundleRegion#unregisterBundleProject(IProject)
 	 */
 	public IProject uninstall(Bundle bundle, Boolean unregister) throws InPlaceException,
 			ProjectLocationException;
 
 	/**
-	 * Uninstalls the bundle. The bundle project is not removed from the workspace region if it exists
-	 * as workspace bundle
+	 * Uninstalls the bundle. The bundle is not removed from the workspace region if it exists as
+	 * workspace bundle
 	 * 
 	 * @param bundle the bundle object to uninstall
 	 * @return the bundle project of the uninstalled bundle or null if the bundle project is not

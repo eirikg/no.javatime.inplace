@@ -184,7 +184,7 @@ public class DeactivateJob extends NatureJob {
 		// TODO Optimize. Only get uninstalled bundles
 		Collection<IProject> installeableProjects = bundleProjectCandidates.getInstallable();
 		for (IProject project : installeableProjects) {
-			// If null the bundle is not installed
+			// If null the bundle is not registered
 			if (null == bundleRegion.getBundle(project)) {
 				deactivateNature(Collections.<IProject>singletonList(project), new SubProgressMonitor(monitor, 1));
 				removePendingProject(project);

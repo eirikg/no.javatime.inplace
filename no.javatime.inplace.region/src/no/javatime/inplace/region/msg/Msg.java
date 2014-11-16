@@ -27,11 +27,13 @@ public class Msg extends NLS {
 	public static String EXT_BUNDLE_OP_INFO;
 	public static String INCOMPLETE_BUNDLE_OP_INFO;
 	public static String NOT_RESOLVING_INFO;
+
 	// Exceptions
 	public static String PROJECT_OPEN_NOT_EXIST_EXP;
 	public static String PROJECT_NATURE_NULL_EXP;
 	public static String PROJECT_NATURE_CORE_EXP;
-	
+	public static String GET_SERVICE_EXP;
+
 	// Location references
 	public static String BUNDLE_ID_REF_SCHEME_REF;
 	public static String BUNDLE_ID_FILE_SCHEME_REF;

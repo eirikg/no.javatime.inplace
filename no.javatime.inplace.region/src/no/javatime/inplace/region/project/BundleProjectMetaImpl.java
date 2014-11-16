@@ -353,6 +353,9 @@ public class BundleProjectMetaImpl extends CachedManifestOperationsImpl implemen
 	public String getSymbolicName(IProject project) throws InPlaceException {
 
 		IBundleProjectDescription bundleProjDesc = Activator.getBundleDescription(project);
+		if (null == bundleProjDesc) {
+			return null;
+		}
 		return bundleProjDesc.getSymbolicName();
 	}
 

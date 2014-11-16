@@ -106,8 +106,9 @@ class AddBundleProjectJob extends NatureJob {
 				BundleTransitionListener.addBundleTransition(new TransitionEvent(newProject,
 						Transition.NEW_PROJECT));
 				bundleTransition.removePending(newProject, Transition.NEW_PROJECT);
-				// Deactivated projects that are not providers are already installed
-				// Use the nature methods. Project is not registered with the workspace yet.
+				// Deactivated projects that are not providers are already scheduled for install
+				// Use the nature methods.
+				// Project is not registered (install job is in waiting state) with the workspace yet.
 				if (isNatureEnabled(newProject)) {
 					// Get any deactivated providers to this new project
 					Collection<IProject> providers = closures.projectActivation(

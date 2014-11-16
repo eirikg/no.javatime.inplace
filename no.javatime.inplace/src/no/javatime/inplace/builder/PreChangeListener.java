@@ -39,10 +39,7 @@ import org.osgi.framework.Bundle;
  * It is only possible to rename one project at the time from the UI. When a project is renamed an
  * uninstall job is scheduled causing all requiring bundles to be uninstalled as well. The project
  * closure is scheduled for install and resolve again after build of the renamed project. This job is
- * scheduled by the post build listener.
- * <p>
- * This is the only place projects are removed (closed or deleted) and renamed from the workspace.
- * Removed projects are always unregistered (removed) from the bundle project workspace region.
+ * typically scheduled by the post build listener.
  * 
  * @see RemoveBundleProjectJob
  */
@@ -83,14 +80,14 @@ public class PreChangeListener implements IResourceChangeListener {
 	}
 
 	/**
-	 * Add the specified removed (deleted or closed) project for uninstall and get the scheduled job
+	 * Add the specified removed (deleted or closed) project for uninstall and return the scheduled job
 	 * handling removal of projects. If there exists such a bundle job in state waiting add the
-	 * specified project and return it, otherwise add the project and schedule and return a new
+	 * specified project and return the job, otherwise add the project and schedule and return a new
 	 * instance of the job.
 	 * <p>
 	 * The removal (uninstall) bundle job is typically waiting on the Eclipse removal job to finish
 	 * before running. This gives this resource listener a chance to add the project to remove to the
-	 * same bundle job as previous added projects due to the waiting state of the bundle job.
+	 * same bundle job as previous added projects to remove due to the waiting state of the bundle job.
 	 * 
 	 * @param project this project is added to the returned job
 	 * @return a scheduled bundle job handling removal of bundle projects. Never null.
