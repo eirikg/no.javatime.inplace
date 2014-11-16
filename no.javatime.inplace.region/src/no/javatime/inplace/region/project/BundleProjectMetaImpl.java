@@ -421,7 +421,7 @@ public class BundleProjectMetaImpl extends CachedManifestOperationsImpl implemen
 		String osgiDev = inDevelopmentMode();
 		String symbolicName = getSymbolicName(project);
 		if (null == symbolicName) {
-			throw new InPlaceException(Msg.SYMBOLIC_NAME_ERROR, symbolicName);			
+			throw new InPlaceException(Msg.SYMBOLIC_NAME_ERROR, project.getName());			
 		}
 		if (null == osgiDev) {
 			throw new InPlaceException("classpath_property_error", symbolicName);
