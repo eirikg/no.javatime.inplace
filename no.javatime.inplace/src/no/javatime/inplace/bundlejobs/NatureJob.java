@@ -245,13 +245,13 @@ public abstract class NatureJob extends BundleJob {
 					localMonitor.worked(1);
 				}
 			}
-			if (errorBundles.size() > 0) {
-				bundles.removeAll(errorBundles);
-			}
 			refresh(bundles, new SubProgressMonitor(monitor, 1));
 			if (unregister) {
-				for (Bundle errorBundle : errorBundles) {
-					bundleRegion.unregisterBundleProject(bundleRegion.getProject(errorBundle));					
+				if (null != errorBundles) {
+					bundles.removeAll(errorBundles);
+				}
+				for (Bundle bundle : bundles) {
+					bundleRegion.unregisterBundleProject(bundleRegion.getProject(bundle));					
 				}
 			} 
 		}

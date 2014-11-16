@@ -160,14 +160,17 @@ public class StartUp implements IStartup {
 						if (null != store) {
 							try {
 								String symbolicKey = bundleRegion.getSymbolicKey(null, project);
-								int state = store.getInt(symbolicKey, Transition.INSTALL.ordinal());
-								// Don't register the project if there is no transition history
+								int state = store.getInt(symbolicKey, Transition.UNINSTALL.ordinal());
+								// Register all projects
 								if (state == Transition.UNINSTALL.ordinal()) {
 									bundleRegion.registerBundleProject(project, null, false);
-									bundleTransition.setTransition(project, Transition.UNINSTALL);
+									bundleTransition.setTransition(project, Transition.NOTRANSITION);
 								} else if (state == Transition.REFRESH.ordinal()) {
 									bundleRegion.registerBundleProject(project, null, false);
 									bundleTransition.setTransition(project, Transition.REFRESH);
+								} else {
+									bundleRegion.registerBundleProject(project, null, false);
+									bundleTransition.setTransition(project, Transition.NOTRANSITION);									
 								}
 							} catch (ProjectLocationException e) {
 								if (null == status) {

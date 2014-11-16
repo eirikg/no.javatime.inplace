@@ -394,7 +394,7 @@ public class ActivateBundleJob extends NatureJob implements ActivateBundle {
 	}
 
 	/**
-	 * Restore bundle state from previous session. If active bundles to start has requirements on a
+	 * Restore bundle state from previous session. If activated bundles to start has requirements on a
 	 * bundle to resolve, start the bundle to resolve if the dependency option on the bundle allows
 	 * it.
 	 * 

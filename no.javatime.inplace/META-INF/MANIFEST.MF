@@ -4,7 +4,8 @@ Require-Bundle: org.eclipse.ui,
  org.eclipse.jdt.core,
  org.eclipse.debug.ui,
  org.eclipse.pde.core,
- org.eclipse.ltk.core.refactoring
+ org.eclipse.ltk.core.refactoring,
+ org.eclipse.core.filesystem;bundle-version="1.3.200"
 Export-Package: no.javatime.inplace.bundlejobs;
   uses:="org.eclipse.core.runtime,
    no.javatime.inplace.region.status,
