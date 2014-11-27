@@ -10,6 +10,7 @@
  *******************************************************************************/
 package no.javatime.inplace.pl.console.impl;
 
+import no.javatime.inplace.extender.intface.Extender;
 import no.javatime.inplace.pl.console.Activator;
 import no.javatime.inplace.pl.console.intface.BundleConsoleFactory;
 import no.javatime.inplace.pl.console.view.BundleConsole;
@@ -26,19 +27,27 @@ import org.eclipse.ui.console.IConsoleManager;
 import org.eclipse.ui.internal.console.ConsoleView;
 
 /**
- * Factory extension opening and closing the bundle console.
+ * Console factory extension and service opening and closing the bundle console. This factory both
+ * implements the console factory plug-in extension and the console service exposed through the
+ * {@link Extender} interface.
+ * <p>
+ * The {@code #openConsole()} callback from the console extension point declared in
+ * {@code IConsoleFactory} is hidden but wrapped in {@code #showConsoleView()} method and thus
+ * available through the service interface.
  * <p>
  * {@code ConsoleView} is discouraged.
  */
 @SuppressWarnings("restriction")
-public class BundleConsoleFactoryImpl implements IConsoleFactory, BundleConsoleFactory { 
-	
+public class BundleConsoleFactoryImpl implements IConsoleFactory, BundleConsoleFactory {
+
 	@Override
 	public ImageDescriptor getConsoleViewImage() {
 		return BundleConsole.consoleViewImage;
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see no.javatime.inplace.pl.console.view.BundleConsoleFactory#isConsoleViewVisible()
 	 */
 	@Override
@@ -53,7 +62,9 @@ public class BundleConsoleFactoryImpl implements IConsoleFactory, BundleConsoleF
 		return false;
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see no.javatime.inplace.pl.console.view.BundleConsoleFactory#showConsoleView()
 	 */
 	@Override
@@ -62,7 +73,9 @@ public class BundleConsoleFactoryImpl implements IConsoleFactory, BundleConsoleF
 		ViewUtil.show(IConsoleConstants.ID_CONSOLE_VIEW);
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see no.javatime.inplace.pl.console.view.BundleConsoleFactory#closeConsoleView()
 	 */
 	@Override
@@ -72,30 +85,33 @@ public class BundleConsoleFactoryImpl implements IConsoleFactory, BundleConsoleF
 		// Only the console page
 		IConsoleManager manager = ConsolePlugin.getDefault().getConsoleManager();
 		IConsole[] consoles = manager.getConsoles();
-		if (consoles.length == 0) { 
+		if (consoles.length == 0) {
 			ViewUtil.hide(IConsoleConstants.ID_CONSOLE_VIEW);
 		}
 	}
-	
+
 	@Override
 	public void setSystemOutToBundleConsole() {
 		getConsole().setSystemOutToBundleConsole();
 	}
-	
+
 	@Override
 	public void setSystemOutToIDEDefault() {
 		getConsole().setSystemOutToIDEDefault();
 	}
-	
-	/** Opens the bundle console
+
+	/**
+	 * Opens the bundle console
+	 * 
 	 * @see #showConsole()
 	 */
 	public void openConsole() {
-	  showConsole();
+		showConsole();
 	}
 
 	/**
-	 * Use the console in the current IDE. 
+	 * Use the console in the current IDE.
+	 * 
 	 * @param name name of the console
 	 * @return an existing or a new console
 	 */
@@ -126,22 +142,23 @@ public class BundleConsoleFactoryImpl implements IConsoleFactory, BundleConsoleF
 		IConsoleManager manager = ConsolePlugin.getDefault().getConsoleManager();
 		BundleConsole console = getConsole();
 		if (console != null) {
-			manager.removeConsoles(new IConsole[] {console});
+			manager.removeConsoles(new IConsole[] { console });
 		}
 	}
-	
+
 	/**
 	 * Terminates the JVM unconditionally
 	 */
 	public static void shutDown() {
 		System.exit(0);
 	}
-	
+
 	/**
 	 * Check if the bundle console is the current visible console in the console view
+	 * 
 	 * @return true if the bundle console is visible in the console view. Else false.
 	 */
-	private Boolean isConsoleVisible () {
+	private Boolean isConsoleVisible() {
 		BundleConsole console = getConsole();
 		if (console != null) {
 			IConsoleManager manager = ConsolePlugin.getDefault().getConsoleManager();
@@ -174,9 +191,10 @@ public class BundleConsoleFactoryImpl implements IConsoleFactory, BundleConsoleF
 
 	/**
 	 * Get the bundle console
+	 * 
 	 * @return the bundle console
 	 */
-	private static BundleConsole getConsole () {
+	private static BundleConsole getConsole() {
 		return Activator.getDefault().getBundleConsole();
 	}
 
@@ -195,11 +213,11 @@ public class BundleConsoleFactoryImpl implements IConsoleFactory, BundleConsoleF
 				}
 			}
 			if (!exists) {
-				manager.addConsoles(new IConsole[] {console});
-				ConsolePlugin.getDefault().getConsoleManager().addConsoleListener(console.new ConsoleLifecycle());
+				manager.addConsoles(new IConsole[] { console });
+				ConsolePlugin.getDefault().getConsoleManager()
+						.addConsoleListener(console.new ConsoleLifecycle());
 			}
 			console.activate();
 		}
 	}
 }
-

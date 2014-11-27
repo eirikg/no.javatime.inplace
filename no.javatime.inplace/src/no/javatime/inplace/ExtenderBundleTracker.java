@@ -21,6 +21,7 @@ import org.osgi.util.tracker.BundleTrackerCustomizer;
  */
 public class ExtenderBundleTracker extends BundleTracker<Extender<?>> {
 
+
 	public ExtenderBundleTracker(BundleContext context, int stateMask, BundleTrackerCustomizer<Extender<?>> customizer) {
 		super(context, stateMask, customizer);
 	}
@@ -36,10 +37,10 @@ public class ExtenderBundleTracker extends BundleTracker<Extender<?>> {
 				return Extenders.register(this, bundle, context.getBundle(), 
 						BundleLog.class.getName(), bundleLogSvcName, null);
 			}
-			String bundleConsoleViewSvcname = bundle.getHeaders().get(BundleConsoleFactory.BUNDLE_CONSOLE_HEADER);
-			if (null != bundleConsoleViewSvcname && null == Extenders.getExtender(BundleConsoleFactory.class.getName())) {
+			String bundleConsoleViewSvcName = bundle.getHeaders().get(BundleConsoleFactory.BUNDLE_CONSOLE_HEADER);
+			if (null != bundleConsoleViewSvcName && null == Extenders.getExtender(BundleConsoleFactory.class.getName())) {
 				return Extenders.register(this, bundle, context.getBundle(), BundleConsoleFactory.class.getName(),
-						bundleConsoleViewSvcname, null);
+						bundleConsoleViewSvcName, null);
 			}
 		} catch(InPlaceException | ExtenderException e) {
 			StatusManager.getManager().handle(

@@ -16,6 +16,7 @@ import java.util.LinkedHashSet;
 
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
+import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.closure.BuildErrorClosure;
 import no.javatime.inplace.region.closure.BuildErrorClosure.ActivationScope;
@@ -127,7 +128,7 @@ public class ActivateProjectJob extends NatureJob {
 			addStatus(multiStatus);
 			// Remove error on the duplicates that are deactivated
 			InPlace.getBundleTransitionService().removeTransitionError(TransitionError.CYCLE);
-		} catch (InPlaceException e) {
+		} catch (InPlaceException | ExtenderException e) {
 			String msg = ExceptionMessage.getInstance().formatString("terminate_job_with_errors",
 					getName());
 			addError(e, msg);
@@ -365,7 +366,7 @@ public class ActivateProjectJob extends NatureJob {
 		if (monitor.isCanceled()) {
 			throw new OperationCanceledException();
 		}
-		status = uninstall(bundlesToUninstall, new SubProgressMonitor(monitor, 1), false);
+		status = uninstall(bundlesToUninstall, new SubProgressMonitor(monitor, 1), true, false);
 		if (!status.hasStatus(StatusCode.OK)) {
 			String msg = ErrorMessage.getInstance().formatString("failed_uninstall_before_activate");
 			IBundleStatus multiStatus = new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID, msg);

@@ -313,7 +313,8 @@ public class BundleNode {
 	}
 
 	/**
-	 * A bundle is activated if it has the JavaTime nature and at least installed.
+	 * A bundle is activated if it has the JavaTime nature, at least installed and the activated flag
+	 * set to {@code true}.
 	 * 
 	 * @return true if this bundle node is activated
 	 */

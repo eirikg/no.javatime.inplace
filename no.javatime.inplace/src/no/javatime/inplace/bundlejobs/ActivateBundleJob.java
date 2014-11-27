@@ -19,6 +19,7 @@ import no.javatime.inplace.bundlejobs.intface.ActivateBundle;
 import no.javatime.inplace.bundlemanager.BundleJobManager;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Operation;
+import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.closure.BuildErrorClosure;
 import no.javatime.inplace.region.closure.BuildErrorClosure.ActivationScope;
@@ -80,7 +81,7 @@ import org.osgi.framework.Bundle;
  * list and then resolved when the deactivated project is activated.
  * <p>
  * This job is only run at startup of the IDE and when the workspace is activated (after project(s)
- * are activated.
+ * are activated).
  * 
  * @see ActivateProjectJob
  * @see DeactivateJob
@@ -164,7 +165,7 @@ public class ActivateBundleJob extends NatureJob implements ActivateBundle {
 			BundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg);
 			multiStatus.add(e.getStatusList());
 			addStatus(multiStatus);
-		} catch (InPlaceException e) {
+		} catch (InPlaceException | ExtenderException e) {
 			String msg = ExceptionMessage.getInstance().formatString("terminate_job_with_errors",
 					getName());
 			addError(e, msg);

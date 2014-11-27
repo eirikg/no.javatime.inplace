@@ -53,6 +53,7 @@ public class Msg extends NLS {
 	public static String USING_CURRENT_REVISION_TRACE;
 	
 	// Bundle job names
+	public static String INIT_WORKSPACE_JOB;
 	public static String ACTIVATE_PROJECTS_JOB;
 	public static String ACTIVATE_WORKSPACE_JOB;
 	public static String INIT_DEACTIVATED_WORKSPACE_JOB;
@@ -79,7 +80,8 @@ public class Msg extends NLS {
 	public static String INIT_WORKSPACE_STORE_WARN;
 	public static String INSTALL_CONTEXT_FOR_ACTION_SET_WARN;
 	public static String NOT_RESOLVED_ROOT_WARN;
-	
+	public static String AUTO_BUILD_LISTENER_NOT_ADDED_WARN;
+	public static String DYNAMIC_MONITORING_WARN;
 	// Exceptions
 	public static String GET_SERVICE_EXP;
 	public static String LOG_TRACE_EXP;

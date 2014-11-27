@@ -223,6 +223,24 @@ public class DynamicExtensionContribution {
 		return statusHandlerId.toString();
 	}
 
+	// TODO generalize and move as package/service to the extender bundle
+	@SuppressWarnings("unused")
+	private void addExtension() {
+		IExtensionRegistry reg = RegistryFactory.getRegistry();
+	  // ExtensionRegistry is internal!!!!
+	  Object key = ((ExtensionRegistry) reg).getTemporaryUserToken();
+	  Bundle bundle = InPlace.get().getBundle();
+	  IContributor contributor = ContributorFactoryOSGi.createContributor(bundle);
+	  try {
+	   //  I have the content of my dynamic plugin in a file 
+	   // called dynamicplugin.xml
+	   InputStream is = FileLocator.openStream(bundle,new Path("dynamicplugin.xml"), false);
+	   reg.addContribution(is, contributor, false, null, null, key);
+	  } catch (IOException e) {
+	  }
+	}
+	
+
 	/**
 	 * Adds an extension specified in the string parameter. The extension must be a complete containing the xml
 	 * and plugin tags.

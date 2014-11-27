@@ -10,6 +10,7 @@ import no.javatime.inplace.bundlejobs.ActivateProjectJob;
 import no.javatime.inplace.bundlejobs.InstallJob;
 import no.javatime.inplace.bundlejobs.NatureJob;
 import no.javatime.inplace.bundlemanager.BundleJobManager;
+import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.closure.BundleClosures;
 import no.javatime.inplace.region.closure.CircularReferenceException;
@@ -116,9 +117,8 @@ class AddBundleProjectJob extends NatureJob {
 					providers.remove(newProject);
 					if (providers.size() > 0) {
 						deactivatedProviders.addAll(providers);
-					} else {
-						newActivatedBundleProjects.add(newProject);
 					}
+					newActivatedBundleProjects.add(newProject);
 				}
 			}
 			// Activate all deactivated provider projects
@@ -153,7 +153,7 @@ class AddBundleProjectJob extends NatureJob {
 			BundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg);
 			multiStatus.add(e.getStatusList());
 			addStatus(multiStatus);
-		} catch (InPlaceException e) {
+		} catch (InPlaceException | ExtenderException e) {
 			String msg = ExceptionMessage.getInstance().formatString("terminate_job_with_errors",
 					getName());
 			addError(e, msg);

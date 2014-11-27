@@ -16,13 +16,19 @@ import org.eclipse.osgi.util.NLS;
 
 public class Msg extends NLS {
 
+	// Button text
 	public static String SYSTEM_OUT_BUTTON_TXT;
-	public static String SYSTEM_OUT_ACTION_TOOLTIP;
 	public static String SYSTEM_EXIT_BUTTON_TXT;
-	public static String SYSTEM_EXIT_ACTION_TOOLTIP;
 	
-	private static final String BUNDLE_NAME = "no.javatime.inplace.pl.console.msg.messages"; //$NON-NLS-1$
+	// Button tooltip
+	public static String SYSTEM_OUT_ACTION_TOOLTIP;
+	public static String SYSTEM_EXIT_ACTION_TOOLTIP;
 
+	// Warnings
+	public static String CMD_PROVIDER_NOT_STARTED_WARN;
+
+	private static final String BUNDLE_NAME = "no.javatime.inplace.pl.console.msg.messages"; //$NON-NLS-1$
+	
 	static {
 		NLS.initializeMessages(BUNDLE_NAME, Msg.class);
 	}

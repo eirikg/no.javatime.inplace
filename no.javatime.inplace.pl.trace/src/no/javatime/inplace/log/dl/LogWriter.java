@@ -60,7 +60,7 @@ public class LogWriter implements SynchronousLogListener, LogFilter {
 	}
 	//Constants for rotating log file
 	/** The default size a log file can grow before it is rotated */
-	private static final int DEFAULT_LOG_SIZE = 500;
+	private static final int DEFAULT_LOG_SIZE = 128;
 	/** The default number of backup log files */
 	private static final int DEFAULT_LOG_FILES = 10;
 	/** The minimum size limit for log rotation */
@@ -70,7 +70,7 @@ public class LogWriter implements SynchronousLogListener, LogFilter {
 	private static final String PROP_LOG_LEVEL = "eclipse.log.level"; //$NON-NLS-1$
 	/** The system property used to specify size a log file can grow before it is rotated */
 	private static final String PROP_LOG_SIZE_MAX = "eclipse.log.size.max"; //$NON-NLS-1$
-	/** The system property used to specify the maximim number of backup log files to use */
+	/** The system property used to specify the maximum number of backup log files to use */
 	private static final String PROP_LOG_FILE_MAX = "eclipse.log.backup.max"; //$NON-NLS-1$
 	/** The extension used for log files */
 	private static final String LOG_EXT = ".bundle.log"; //$NON-NLS-1$
@@ -229,14 +229,10 @@ public class LogWriter implements SynchronousLogListener, LogFilter {
 			String key = "eclipse.buildId"; //$NON-NLS-1$
 			String value = environmentInfo.getProperty(key);
 			writeln(key + "=" + value); //$NON-NLS-1$
-
 			key = "java.fullversion"; //$NON-NLS-1$
 			value = System.getProperty(key);
 			if (value == null) {
 				key = "java.version"; //$NON-NLS-1$
-				value = System.getProperty(key);
-				writeln(key + "=" + value); //$NON-NLS-1$
-				key = "java.vendor"; //$NON-NLS-1$
 				value = System.getProperty(key);
 				writeln(key + "=" + value); //$NON-NLS-1$
 			} else {
@@ -246,17 +242,9 @@ public class LogWriter implements SynchronousLogListener, LogFilter {
 			// If we're not allowed to get the values of these properties
 			// then just skip over them.
 		}
-		writeln ("OSGi Framework version=" + Activator.getContext().getProperty("org.osgi.framework.version"));
-		// The Bootloader has some information that we might be interested in.
-		write("BootLoader constants: OS=" + environmentInfo.getOS()); //$NON-NLS-1$
-		write(", ARCH=" + environmentInfo.getOSArch()); //$NON-NLS-1$
-		write(", WS=" + environmentInfo.getWS()); //$NON-NLS-1$
-		writeln(", NL=" + environmentInfo.getNL()); //$NON-NLS-1$
-		// Add the command-line arguments used to invoke the platform 
-		// XXX: this includes runtime-private arguments - should we do that?
-		if (includeCommandLine) {
-			writeArgs("Framework arguments: ", environmentInfo.getNonFrameworkArgs()); //$NON-NLS-1$
-			writeArgs("Command-line arguments: ", environmentInfo.getCommandLineArgs()); //$NON-NLS-1$
+		String osgiVer = Activator.getContext().getProperty("org.osgi.framework.version");
+		if (null != osgiVer) {
+			writeln ("org.osgi.framework.version=" + osgiVer);
 		}
 	}
 
@@ -634,7 +622,7 @@ public class LogWriter implements SynchronousLogListener, LogFilter {
 	/**
 	 * Checks the log file size.  If the log file size reaches the limit then the log 
 	 * is rotated
-	 * @return false if an error occured trying to rotate the log
+	 * @return false if an error occurred trying to rotate the log
 	 */
 	private boolean checkLogFileSize() {
 		if (maxLogSize == 0)

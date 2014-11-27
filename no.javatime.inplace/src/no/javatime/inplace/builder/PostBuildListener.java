@@ -44,6 +44,7 @@ import org.eclipse.core.resources.IResourceChangeEvent;
 import org.eclipse.core.resources.IResourceChangeListener;
 import org.eclipse.core.resources.IResourceDelta;
 import org.eclipse.core.resources.IncrementalProjectBuilder;
+import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.ui.statushandlers.StatusManager;
 import org.osgi.framework.Bundle;
@@ -209,6 +210,17 @@ public class PostBuildListener implements IResourceChangeListener {
 		scheduleJob(deactivateJob);
 		scheduleJob(activateProjectJob);
 		scheduleJob(activateBundleJob);
+		// Post build listener is not always called with all activated projects that have been built
+		if (InPlace.get().getCommandOptionsService().isUpdateOnBuild()) {
+			Collection<IProject> activatedProjects = bundleRegion.getActivatedProjects();
+			Collection<IProject> projectsToUpdate = bundleTransition.getPendingProjects(activatedProjects,
+					Transition.UPDATE);
+			if (projectsToUpdate.size() > 0) {
+				for (IProject projectToUpdate : projectsToUpdate) {
+					UpdateScheduler.addProjectToUpdateJob(projectToUpdate, updateJob);
+				}
+			}
+		}
 		scheduleJob(updateJob);
 		scheduleJob(postActivateBundleJob);
 	}
@@ -222,12 +234,12 @@ public class PostBuildListener implements IResourceChangeListener {
 	private boolean scheduleJob(BundleJob job) {
 		if (null != job && job.hasPendingProjects()) {
 			if (job instanceof ActivateBundleJob) {
-				// Give the builder a chance to start building before activating
-				if (InPlace.get().getCommandOptionsService().isUpdateOnBuild()) {
-					delay = 500;
-				}
+				// Wait for builder
+				job.setPriority(Job.DECORATE);
+				delay = 70*((ActivateBundleJob)job).pendingProjects();
 			}
 			BundleJobManager.addBundleJob(job, delay);
+			delay = 0;
 			return true;
 		}
 		return false;

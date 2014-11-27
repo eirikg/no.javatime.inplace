@@ -1,19 +1,19 @@
 Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
-Bundle-Name: Console
+Bundle-Name: Bundle Console
 Bundle-SymbolicName: no.javatime.inplace.pl.console;singleton:=true
-Bundle-Version: 0.1.0.qualifier
+Bundle-Version: 0.1.1.qualifier
 Bundle-Activator: no.javatime.inplace.pl.console.Activator
 Require-Bundle: org.eclipse.ui,
  org.eclipse.core.runtime,
  org.eclipse.ui.console
-Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Import-Package: no.javatime.inplace.dl.preferences.intface,
  no.javatime.inplace.extender.intface,
  no.javatime.inplace.region.intface,
- no.javatime.util.messages,
+ no.javatime.inplace.region.status,
  no.javatime.util.view
-Bundle-ActivationPolicy: lazy
 Bundle-Console-Factory: no.javatime.inplace.pl.console.impl.BundleConsoleFactoryImpl 
 Export-Package: no.javatime.inplace.pl.console.intface
+Bundle-ActivationPolicy: lazy
+Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 

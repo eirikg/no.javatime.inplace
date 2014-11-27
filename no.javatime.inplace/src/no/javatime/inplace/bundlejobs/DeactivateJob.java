@@ -17,6 +17,7 @@ import java.util.Map;
 
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
+import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.closure.BuildErrorClosure;
 import no.javatime.inplace.region.closure.BuildErrorClosure.ActivationScope;
@@ -132,7 +133,7 @@ public class DeactivateJob extends NatureJob {
 			addStatus(multiStatus);
 		} catch (OperationCanceledException e) {
 			addCancelMessage(e, NLS.bind(Msg.CANCEL_JOB_INFO, getName()));
-		} catch (InPlaceException e) {
+		} catch (InPlaceException | ExtenderException e) {
 			String msg = ExceptionMessage.getInstance().formatString("terminate_job_with_errors",
 					getName());
 			addError(e, msg);
@@ -214,7 +215,7 @@ public class DeactivateJob extends NatureJob {
 			allBundles = closure.bundleDeactivation(allBundles, allBundles);
 			try {
 				stop(pendingBundles, null, new SubProgressMonitor(monitor, 1));
-				uninstall(allBundles, new SubProgressMonitor(monitor, 1), false);
+				uninstall(allBundles, new SubProgressMonitor(monitor, 1), true, false);
 				if (monitor.isCanceled()) {
 					throw new OperationCanceledException();
 				}

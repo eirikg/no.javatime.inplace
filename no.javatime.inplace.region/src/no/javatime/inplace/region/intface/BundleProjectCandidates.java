@@ -98,9 +98,8 @@ public interface BundleProjectCandidates {
 	 * 
 	 * @param name a project name
 	 * @return the project or null if the given project is null
-	 * @throws InPlaceException project is null
 	 */
-	public IProject getProject(String name) throws InPlaceException;
+	public IProject getProject(String name);
 
 	/**
 	 * Returns the Java project corresponding to the given project.

@@ -29,7 +29,7 @@ import org.eclipse.ui.console.MessageConsoleStream;
  */
 public class BundleConsole extends MessageConsole {
 
-	final public static ImageDescriptor consoleViewImage = Activator.getImageDescriptor("icons/console_view.gif"); //$NON-NLS-1$
+	final public static ImageDescriptor consoleViewImage = Activator.getImageDescriptor("icons/console_page.gif"); //$NON-NLS-1$
 
 	// Misc. stream for directing output to the bundle console.
 	private MessageConsoleStream messageOut = null;

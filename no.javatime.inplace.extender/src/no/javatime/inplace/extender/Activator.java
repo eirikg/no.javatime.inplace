@@ -60,7 +60,6 @@ public class Activator implements BundleActivator {
 		extenderBundleTrackerCustomizer = new ExtenderBundleTracker();
 		extenderBundleTracker = new BundleTracker<ExtenderImpl<?>>(context, Bundle.ACTIVE, extenderBundleTrackerCustomizer);
 		extenderBundleTracker.open();
-		// getextenders();
 	}
 	
 	
@@ -79,7 +78,6 @@ public class Activator implements BundleActivator {
 		 extenderBundleTracker.close();
 		 extenderBundleTracker = null;
 		context.removeServiceListener(extenderListener);
-		;
 		Activator.context = null;
 		plugin = null;
 	}

@@ -156,6 +156,7 @@ public class BundleJobListener extends JobChangeAdapter {
 		BundleJob bundleJob = null;
 
 		Collection<IProject> deactivatedProjects = bundleProjectcandidates.getCandidates();
+		
 		// This usually comes from a delayed update when activated bundles to resolve depends on
 		// deactivated bundles
 		Collection<IProject> projectsToActivate = bundleTransition.getPendingProjects(
@@ -189,6 +190,16 @@ public class BundleJobListener extends JobChangeAdapter {
 		}
 
 		Collection<IProject> activatedProjects = bundleRegion.getActivatedProjects();
+
+//		Collection<IProject> projectsToUpdate = bundleTransition.getPendingProjects(activatedProjects,
+//				Transition.UPDATE);
+//		if (projectsToUpdate.size() > 0) {
+//			UpdateJob updateJob = new UpdateJob(UpdateJob.updateJobName);
+//			for (IProject project : projectsToUpdate) {
+//				UpdateScheduler.addProjectToUpdateJob(project, updateJob);
+//			}
+//			BundleJobManager.addBundleJob(bundleJob, 0);
+//		}		
 
 		Collection<IProject> projectsToRefresh = bundleTransition.getPendingProjects(activatedProjects,
 				Transition.REFRESH);

@@ -47,12 +47,6 @@
       </resolver>
    </extension>
    <extension
-         point="org.eclipse.ui.startup">
-      <startup
-            class="no.javatime.inplace.StartUp">
-      </startup>
-   </extension>
-   <extension
          point="org.eclipse.ltk.core.refactoring.renameParticipants">
       <renameParticipant
             class="no.javatime.inplace.builder.ResourceRenameParticipant"
@@ -69,6 +63,12 @@
       </with>
     </enablement>
       </renameParticipant>
+   </extension>
+   <extension
+	 point="org.eclipse.ui.startup">
+	 <startup
+	   class="no.javatime.inplace.StartUp">
+	 </startup>
    </extension>
 <!-- ================================================================================= -->
 <!-- Implemented as a dynamic extension                                                  -->

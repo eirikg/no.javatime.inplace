@@ -5,18 +5,19 @@
          point="org.eclipse.ui.console.consolePageParticipants">
       <consolePageParticipant
             class="no.javatime.inplace.pl.console.view.BundleConsolePageParticipant"
-            id="no.javatime.inplace.pl.console.view.MessageConsolePageParticipant">
+            id="no.javatime.inplace.pl.console.view.BundleConsolePageParticipant">
          <enablement>
             <instanceof
                   value="no.javatime.inplace.pl.console.view.BundleConsole">
-            </instanceof></enablement>
+            </instanceof>
+         </enablement>
       </consolePageParticipant>
    </extension>
    <extension
          point="org.eclipse.ui.console.consoleFactories">
       <consoleFactory
             class="no.javatime.inplace.pl.console.impl.BundleConsoleFactoryImpl"
-            icon="icons/console_view.gif"
+            icon="icons/console_page.gif"
             label="Bundle Console">
       </consoleFactory>
    </extension>

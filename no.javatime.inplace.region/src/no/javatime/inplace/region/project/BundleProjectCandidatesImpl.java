@@ -159,7 +159,7 @@ public class BundleProjectCandidatesImpl implements BundleProjectCandidates {
 		return projects;
 	}
 
-	public IProject getProject(String name) throws InPlaceException {
+	public IProject getProject(String name) {
 		if (null == name) {
 			throw new InPlaceException("project_null");
 		}

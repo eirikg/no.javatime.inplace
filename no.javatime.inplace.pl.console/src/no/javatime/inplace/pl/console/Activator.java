@@ -4,25 +4,39 @@ import no.javatime.inplace.dl.preferences.intface.MessageOptions;
 import no.javatime.inplace.extender.intface.Extenders;
 import no.javatime.inplace.extender.intface.Extension;
 import no.javatime.inplace.pl.console.impl.BundleConsoleFactoryImpl;
+import no.javatime.inplace.pl.console.msg.Msg;
 import no.javatime.inplace.pl.console.view.BundleConsole;
 import no.javatime.inplace.region.intface.InPlaceException;
+import no.javatime.inplace.region.status.BundleStatus;
+import no.javatime.inplace.region.status.IBundleStatus;
+import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 
 import org.eclipse.jface.resource.ImageDescriptor;
+import org.eclipse.osgi.framework.console.ConsoleSession;
+import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
+import org.eclipse.ui.statushandlers.StatusManager;
+import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
+import org.osgi.framework.BundleException;
+import org.osgi.framework.Constants;
+import org.osgi.framework.Filter;
+import org.osgi.framework.ServiceEvent;
+import org.osgi.framework.ServiceListener;
+import org.osgi.framework.ServiceReference;
 
 /**
  * The activator class controls the plug-in life cycle
  */
-public class Activator extends AbstractUIPlugin {
+public class Activator extends AbstractUIPlugin implements ServiceListener {
 
 	// The plug-in ID
 	public static final String PLUGIN_ID = "no.javatime.inplace.pl.console"; //$NON-NLS-1$
-
+	 
 	/**
 	 * Console of the current IDE
 	 */
@@ -51,11 +65,10 @@ public class Activator extends AbstractUIPlugin {
 		super.start(context);
 		plugin = this;
 		Activator.context = context;
-		// Delegate to user bundles
-		//		Extenders.register(context.getBundle(), BundleConsoleFactory.class.getName(),
-		//				new BundleConsoleFactoryImpl(), null);
 		messageOptions = Extenders.getExtension(MessageOptions.class.getName());
-		bundleConsole = BundleConsoleFactoryImpl.findConsole(CONSOLE_NAME);
+		Filter filter=context.createFilter("(" + Constants.OBJECTCLASS + "=" + ConsoleSession.class.getName()+ ")");
+		context.addServiceListener(this, filter.toString());
+
 	}
 
 	/*
@@ -64,11 +77,15 @@ public class Activator extends AbstractUIPlugin {
 	 * @see org.eclipse.ui.plugin.AbstractUIPlugin#stop(org.osgi.framework.BundleContext)
 	 */
 	public void stop(BundleContext context) throws Exception {
+		context.removeServiceListener(this);
 		plugin = null;
 		super.stop(context);
 	}
 
 	public BundleConsole getBundleConsole() {
+		if (null == bundleConsole) {
+			bundleConsole = BundleConsoleFactoryImpl.findConsole(CONSOLE_NAME);
+		}
 		return bundleConsole;
 	}
 
@@ -161,4 +178,45 @@ public class Activator extends AbstractUIPlugin {
 		return AbstractUIPlugin.imageDescriptorFromPlugin(PLUGIN_ID, path);
 	}
 
+	/**
+	 * Lazy start of the bundle command provider until the OSGi console opens
+	 */
+	@Override
+	public void serviceChanged(ServiceEvent event) {
+		final ServiceReference<?> sr = (ServiceReference<?>) event.getServiceReference();
+
+		switch (event.getType()) {
+		case ServiceEvent.REGISTERED:
+			if (Activator.getContext().getService(sr) instanceof ConsoleSession) {
+				Bundle[] bundles = Activator.getContext().getBundles();
+				for (int i = 0; i < bundles.length; i++) {
+					if ((bundles[i].getState() & (Bundle.RESOLVED)) != 0) {					
+						String provider = bundles[i].getHeaders().get(Constants.BUNDLE_NAME);
+						if (null != provider && provider.startsWith("Bundle Project")) {
+							try {
+								bundles[i].start(Bundle.START_TRANSIENT);
+							} catch (BundleException | IllegalStateException | SecurityException e) {
+								String msg = NLS.bind(Msg.CMD_PROVIDER_NOT_STARTED_WARN, bundles[i].getSymbolicName());
+								IBundleStatus status = new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, msg, e);
+								StatusManager.getManager().handle(status, StatusManager.LOG);
+							}					
+						}
+					}
+				}
+				// Direct lookup of bundle
+//				Bundle bundle = Platform.getBundle("no.javatime.inplace.cmd.console");
+//				// String symbolicName = bundle.getHeaders().get(Constants.BUNDLE_SYMBOLICNAME);
+//				if (null != bundle && (bundle.getState() & (Bundle.RESOLVED)) != 0) {
+//					try {
+//						bundle.start(Bundle.START_TRANSIENT);
+//					} catch (BundleException | IllegalStateException | SecurityException e) {
+//						String msg = NLS.bind(Msg.CMD_PROVIDER_NOT_STARTED_WARN, bundle.getSymbolicName());
+//						IBundleStatus status = new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, msg, e);
+//					StatusManager.getManager().handle(status, StatusManager.LOG);
+//					}
+//				}
+			}
+			break;
+		}
+	}
 }

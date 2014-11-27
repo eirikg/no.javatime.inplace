@@ -38,19 +38,19 @@ public class ExtenderServiceListener<S> implements ServiceListener {
 		switch (event.getType()) {
 		case ServiceEvent.REGISTERED:
 			// extenders.addExtender(sr, getExtender());
-			System.out.println("ServiceTracker.Tracked.register. SID: (" + sid + ") Type: ["
-					+ event.getType() + "]:" + extender.getServiceInterfaceName());
+			// System.out.println("ServiceTracker.Tracked.register. SID: (" + sid + ") Type: ["
+			//		+ event.getType() + "]:" + extender.getServiceInterfaceName());
 			break;
 		case ServiceEvent.MODIFIED:
-			System.out.println("ServiceTracker.Tracked.modified. SID: (" + sid + ") Type: ["
-					+ event.getType() + "]: " + extender.getServiceInterfaceName());
+			// System.out.println("ServiceTracker.Tracked.modified. SID: (" + sid + ") Type: ["
+			//		+ event.getType() + "]: " + extender.getServiceInterfaceName());
 			break;
 		case ServiceEvent.MODIFIED_ENDMATCH:
 			break;
 		case ServiceEvent.UNREGISTERING:
 			extender = extenders.removeExtender(sr);
-			System.out.println("ServiceTracker.Tracked.unregister. SID: (" + sid + ") Type: ["
-					+ event.getType() + "]: " + extender.getServiceInterfaceName());
+			// System.out.println("ServiceTracker.Tracked.unregister. SID: (" + sid + ") Type: ["
+			//		+ event.getType() + "]: " + extender.getServiceInterfaceName());
 			break;
 		}
 	}

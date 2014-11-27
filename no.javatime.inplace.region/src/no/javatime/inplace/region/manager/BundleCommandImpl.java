@@ -818,7 +818,6 @@ public class BundleCommandImpl implements BundleCommand {
 		IProject project = null;
 		try {
 			if (null == node) {
-				bundle.uninstall();
 				throw new InPlaceException("bundle_unregistered", bundle);
 			}
 			state = node.getState();

@@ -4,8 +4,7 @@ Require-Bundle: org.eclipse.ui,
  org.eclipse.jdt.core,
  org.eclipse.debug.ui,
  org.eclipse.pde.core,
- org.eclipse.ltk.core.refactoring,
- org.eclipse.core.filesystem;bundle-version="1.3.200"
+ org.eclipse.ltk.core.refactoring
 Export-Package: no.javatime.inplace.bundlejobs;
   uses:="org.eclipse.core.runtime,
    no.javatime.inplace.region.status,
@@ -25,7 +24,7 @@ Export-Package: no.javatime.inplace.bundlejobs;
    org.eclipse.core.commands.contexts,
    org.eclipse.ui.statushandlers"
 Bundle-Vendor: JavaTime
-Bundle-Version: 0.1.9.qualifier
+Bundle-Version: 0.2.0.qualifier
 Bundle-Name: InPlace Activator Bundle Manager
 Bundle-Activator: no.javatime.inplace.InPlace
 Bundle-ManifestVersion: 2

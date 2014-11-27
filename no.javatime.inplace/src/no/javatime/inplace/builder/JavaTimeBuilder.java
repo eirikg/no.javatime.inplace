@@ -236,6 +236,9 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 									e);
 							StatusManager.getManager().handle(status, StatusManager.LOG);
 						}
+					} else {
+						// Any source change is safeguarded by install. Implies that any update is superfluous 
+						bundleTransition.removePending(project, Transition.UPDATE);
 					}
 				} else {
 					logBuildError(project);

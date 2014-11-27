@@ -1,0 +1,21 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Bundle Project Command Provider
+Command-Provider: Bundle Project Command Provider
+Bundle-SymbolicName: no.javatime.inplace.cmd.console
+Bundle-Version: 0.1.0.qualifier
+Bundle-Activator: no.javatime.inplace.cmd.console.Activator
+Export-Package: no.javatime.inplace.cmd.console
+Require-Bundle: org.eclipse.core.runtime,
+ org.eclipse.jdt.core,
+ org.eclipse.pde.core,
+ org.eclipse.core.resources
+Bundle-RequiredExecutionEnvironment: JavaSE-1.7
+Import-Package: no.javatime.inplace.bundlejobs,
+ no.javatime.inplace.dl.preferences.intface,
+ no.javatime.inplace.extender.intface,
+ no.javatime.inplace.region.intface,
+ no.javatime.inplace.region.status,
+ org.eclipse.osgi.framework.console,
+ org.osgi.framework
+

@@ -33,7 +33,7 @@ public class Activator extends AbstractUIPlugin {
 
 	// Log path and file
 	public static final String F_META_AREA = ".metadata"; //$NON-NLS-1$
-	public static final String F_TRACE = "bundle.log"; //$NON-NLS-1$
+	public static final String F_TRACE = ".bundle.log"; //$NON-NLS-1$
 
 	// Path to log file
 	private IPath traceLogPath;

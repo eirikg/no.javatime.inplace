@@ -240,7 +240,7 @@ public interface BundleRegion {
 	/**
 	 * Check if the workspace is activated. The condition is satisfied if one bundle is activated
 	 * 
-	 * @return true if at least one bundle activated Otherwise false
+	 * @return true if at least one bundle is activated. Otherwise false
 	 * @see BundleRegion#isBundleActivated(Bundle)
 	 */
 	public Boolean isRegionActivated();

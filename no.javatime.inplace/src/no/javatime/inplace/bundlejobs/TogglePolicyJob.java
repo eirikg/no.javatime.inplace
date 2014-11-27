@@ -14,6 +14,7 @@ import java.util.Collection;
 import java.util.Collections;
 
 import no.javatime.inplace.InPlace;
+import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
 import no.javatime.inplace.region.intface.BundleTransitionListener;
@@ -133,7 +134,7 @@ public class TogglePolicyJob extends NatureJob {
 			}
 		} catch (OperationCanceledException e) {
 			addCancelMessage(e, NLS.bind(Msg.CANCEL_JOB_INFO, getName()));
-		} catch (InPlaceException e) {
+		} catch (InPlaceException | ExtenderException e) {
 			String msg = ExceptionMessage.getInstance().formatString("terminate_job_with_errors",
 					getName());
 			addError(e, msg);

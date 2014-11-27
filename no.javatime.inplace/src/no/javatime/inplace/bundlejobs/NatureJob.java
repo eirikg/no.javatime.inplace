@@ -43,7 +43,8 @@ import org.eclipse.osgi.util.NLS;
 import org.osgi.framework.Bundle;
 
 /**
- * Enabling and disabling the JavaTime nature of projects. Checks and reports on duplicate bundles.
+ * Installing, uninstalling andeEnabling/disabling the JavaTime nature of projects. Checks and
+ * reports on duplicate bundles.
  */
 public abstract class NatureJob extends BundleJob {
 
@@ -109,7 +110,8 @@ public abstract class NatureJob extends BundleJob {
 	 * Check if the workspace is JavaTime nature enabled using the
 	 * {@link JavaTimeNature#JAVATIME_NATURE_ID}
 	 * 
-	 * @return true if one open project in the workspace is nature enabled, and false if no projects are
+	 * @return true if one open project in the workspace is nature enabled, and false if no projects
+	 * are
 	 * @throws InPlaceException open projects that does not exist or a core exception when accessing
 	 * projects is thrown internally (should not be the case for open and existing projects)
 	 */
@@ -212,6 +214,7 @@ public abstract class NatureJob extends BundleJob {
 	 * 
 	 * @param bundles to uninstall
 	 * @param monitor monitor the progress monitor to use for reporting progress to the user.
+	 * @param refresh true to refresh the uninstalled bundles and false to not refresh.
 	 * @param unregister If true the bundle is removed from the internal workspace region. Will be
 	 * registered again automatically when installed
 	 * @return status object describing the result of uninstalling with {@code StatusCode.OK} if no
@@ -221,11 +224,11 @@ public abstract class NatureJob extends BundleJob {
 	 * (not same framework) or illegal monitor (current thread not owner of monitor)
 	 */
 	protected IBundleStatus uninstall(Collection<Bundle> bundles, IProgressMonitor monitor,
-			boolean unregister) throws InPlaceException {
+			boolean refresh, boolean unregister) throws InPlaceException {
 
 		IBundleStatus result = createStatus();
 		Collection<Bundle> errorBundles = null;
-		
+
 		if (null != bundles && bundles.size() > 0) {
 			SubMonitor localMonitor = SubMonitor.convert(monitor, bundles.size());
 			for (Bundle bundle : bundles) {
@@ -245,15 +248,17 @@ public abstract class NatureJob extends BundleJob {
 					localMonitor.worked(1);
 				}
 			}
-			refresh(bundles, new SubProgressMonitor(monitor, 1));
+			if (null == errorBundles && refresh) {
+				refresh(bundles, new SubProgressMonitor(monitor, 1));
+			}
 			if (unregister) {
 				if (null != errorBundles) {
 					bundles.removeAll(errorBundles);
 				}
 				for (Bundle bundle : bundles) {
-					bundleRegion.unregisterBundleProject(bundleRegion.getProject(bundle));					
+					bundleRegion.unregisterBundleProject(bundleRegion.getProject(bundle));
 				}
-			} 
+			}
 		}
 		return result;
 	}
@@ -281,7 +286,7 @@ public abstract class NatureJob extends BundleJob {
 						sleep(sleepTime);
 					progress.subTask(reInstallSubtaskName + project.getName());
 					IBundleStatus result = uninstall(Collections.<Bundle> singletonList(bundle),
-							new SubProgressMonitor(monitor, 1), false);
+							new SubProgressMonitor(monitor, 1), true, false);
 					if (result.hasStatus(StatusCode.OK)) {
 						install(Collections.<IProject> singletonList(project), new SubProgressMonitor(monitor,
 								1));

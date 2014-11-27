@@ -182,11 +182,11 @@ public abstract class BundleCommandsContributionItems extends CompoundContributi
 					BundleConsoleFactory.class.getName());
 		}
 		if (!bundleConsoleService.isConsoleViewVisible()) {
-			ext.ungetService();
+			// ext.ungetService();
 			return createContibution(menuId, commandId, showConsolePage, bundleConsolePageParamId,
 					CommandContributionItem.STYLE_PUSH, bundleConsoleService.getConsoleViewImage());
 		} else {
-			ext.ungetService();
+			// ext.ungetService();
 			return createContibution(menuId, commandId, hideConsolePage, bundleConsolePageParamId,
 					CommandContributionItem.STYLE_PUSH, bundleConsoleService.getConsoleViewImage());
 		}

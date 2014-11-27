@@ -79,8 +79,6 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchWindow;
-import org.eclipse.ui.PlatformUI;
-import org.eclipse.ui.commands.ICommandService;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.eclipse.ui.statushandlers.StatusManager;
 import org.osgi.framework.Bundle;
@@ -131,13 +129,13 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 	private IResourceChangeListener preBuildListener;
 	// Debug listener.
 	private IResourceChangeListener projectChangeListener;
-	// Listens to scheduled bundles
+	// Listen to scheduled bundles
 	private BundleJobListener jobChangeListener = new BundleJobListener();
 	// Listen to external bundle commands
 	private ExternalTransition externalTransitionListener = new ExternalTransition();
 	// Listen to toggling of auto build
 	private Command autoBuildCommand;
-	// Register (extend) services provided by other bundles  
+	// Register (extend) services provided by other bundles
 	private ExtenderBundleTracker extenderBundleTracker;
 	// Workspace bundle region
 	private static Extension<BundleRegion> bundleRegion;
@@ -159,8 +157,7 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 	private Extension<BundleConsoleFactory> bundleConsoleFactory;
 	// Log for bundle commands
 	private Extension<BundleLog> bundleLog;
-	
-	
+
 	public InPlace() {
 	}
 
@@ -179,40 +176,28 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 		bundleTransition = Extenders.getExtension(BundleTransition.class.getName());
 		bundleProjectCandidates = Extenders.getExtension(BundleProjectCandidates.class.getName());
 		bundlePrrojectMeta = Extenders.getExtension(BundleProjectMeta.class.getName());
-		commandOptions = Extenders.getExtension(CommandOptions.class.getName()); 
-		dependencyOptions = Extenders.getExtension(DependencyOptions.class.getName()); 
-		messageOptions = Extenders.getExtension(MessageOptions.class.getName()); 
-		bundleConsoleFactory = Extenders.getExtension(BundleConsoleFactory.class.getName()); 
+		commandOptions = Extenders.getExtension(CommandOptions.class.getName());
+		dependencyOptions = Extenders.getExtension(DependencyOptions.class.getName());
+		messageOptions = Extenders.getExtension(MessageOptions.class.getName());
+		bundleConsoleFactory = Extenders.getExtension(BundleConsoleFactory.class.getName());
 		bundleLog = Extenders.getExtension(BundleLog.class.getName());
-		addDynamicExtensions();
-		//InPlace.context.addBundleListener(bundleEvents);
+		// addDynamicExtensions();
 		BundleTransitionListener.addBundleTransitionListener(externalTransitionListener);
 		Job.getJobManager().addJobChangeListener(jobChangeListener);
 		BundleJobManager.addBundleJobListener(get());
-		IWorkbench workbench = PlatformUI.getWorkbench();
-		if (null != workbench) {
-			ICommandService service = (ICommandService) workbench.getService(ICommandService.class);
-			autoBuildCommand = service.getCommand("org.eclipse.ui.project.buildAutomatically");
-			if (autoBuildCommand.isDefined()) {
-				autoBuildCommand.addCommandListener(this);
-			}
-		}
 	}
 
 	@Override
 	public void stop(BundleContext context) throws Exception {
 		try {
-			// InPlace.context.removeBundleListener(bundleEvents);
 			// Remove resource listeners as soon as possible to prevent scheduling of new bundle jobs
 			removeResourceListeners();
+			removeAutoBuildListener();
 			shutDownBundles();
 		} finally {
 			extenderBundleTracker.close();
 			extenderBundleTracker = null;
 			BundleJobManager.removeBundleJobListener(get());
-			if (autoBuildCommand.isDefined()) {
-				autoBuildCommand.removeCommandListener(this);
-			}
 			BundleTransitionListener.removeBundleTransitionListener(externalTransitionListener);
 			Job.getJobManager().removeJobChangeListener(jobChangeListener);
 			removeDynamicExtensions();
@@ -221,12 +206,12 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 			InPlace.context = null;
 		}
 	}
-	
+
 	public static BundleRegion getBundleRegionService() throws InPlaceException, ExtenderException {
 
 		BundleRegion br = bundleRegion.getService(context.getBundle());
 		if (null == br) {
-			throw new InPlaceException(Msg.GET_SERVICE_EXP, BundleRegion.class.getName());			
+			throw new InPlaceException(Msg.GET_SERVICE_EXP, BundleRegion.class.getName());
 		}
 		return br;
 	}
@@ -235,34 +220,37 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 
 		BundleCommand br = bundleCommand.getService(context.getBundle());
 		if (null == br) {
-			throw new InPlaceException(Msg.GET_SERVICE_EXP, BundleCommand.class.getName());			
+			throw new InPlaceException(Msg.GET_SERVICE_EXP, BundleCommand.class.getName());
 		}
 		return br;
 	}
-	
-	public static BundleTransition getBundleTransitionService() throws InPlaceException, ExtenderException {
-		
+
+	public static BundleTransition getBundleTransitionService() throws InPlaceException,
+			ExtenderException {
+
 		BundleTransition bt = bundleTransition.getService(context.getBundle());
 		if (null == bt) {
-			throw new InPlaceException(Msg.GET_SERVICE_EXP, BundleTransition.class.getName());			
+			throw new InPlaceException(Msg.GET_SERVICE_EXP, BundleTransition.class.getName());
 		}
 		return bt;
 	}
 
-	public static BundleProjectCandidates getBundleProjectCandidatesService() throws InPlaceException, ExtenderException {
-		
+	public static BundleProjectCandidates getBundleProjectCandidatesService()
+			throws InPlaceException, ExtenderException {
+
 		BundleProjectCandidates bp = bundleProjectCandidates.getService(context.getBundle());
 		if (null == bp) {
-			throw new InPlaceException(Msg.GET_SERVICE_EXP, BundleProjectCandidates.class.getName());			
+			throw new InPlaceException(Msg.GET_SERVICE_EXP, BundleProjectCandidates.class.getName());
 		}
 		return bp;
 	}
 
-	public static BundleProjectMeta getbundlePrrojectMetaService() throws InPlaceException, ExtenderException {
-		
+	public static BundleProjectMeta getbundlePrrojectMetaService() throws InPlaceException,
+			ExtenderException {
+
 		BundleProjectMeta bpd = bundlePrrojectMeta.getService(context.getBundle());
 		if (null == bpd) {
-			throw new InPlaceException(Msg.GET_SERVICE_EXP, BundleProjectMeta.class.getName());			
+			throw new InPlaceException(Msg.GET_SERVICE_EXP, BundleProjectMeta.class.getName());
 		}
 		return bpd;
 	}
@@ -275,7 +263,7 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 	 * @throws InPlaceException if the command options service returns null
 	 */
 	public CommandOptions getCommandOptionsService() throws InPlaceException, ExtenderException {
-		
+
 		return getService(commandOptions);
 	}
 
@@ -301,7 +289,7 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 	public DependencyOptions getDependencyOptionsService() throws InPlaceException, ExtenderException {
 		return getService(dependencyOptions);
 	}
-	
+
 	/**
 	 * Return the bundle console service view
 	 * 
@@ -316,7 +304,7 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 	/**
 	 * Log the specified status object to the bundle log
 	 * 
-	 * @return the bundle status message 
+	 * @return the bundle status message
 	 * @throws ExtenderException if failing to get the extender service for the bundle log
 	 * @throws InPlaceException if the bundle log service returns null
 	 */
@@ -326,20 +314,21 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 	}
 
 	/**
-	 * Utility returning a service for an extension but never null 
+	 * Utility returning a service for an extension but never null
 	 * 
 	 * @return the service
-	 * @throws ExtenderException if failing to get the extender service 
+	 * @throws ExtenderException if failing to get the extender service
 	 * @throws InPlaceException if the service returns null
 	 */
 	private <S> S getService(Extension<S> extension) throws InPlaceException, ExtenderException {
 
 		S s = extension.getService(context.getBundle());
 		if (null == s) {
-			throw new InPlaceException(Msg.GET_SERVICE_EXP, extension.getExtender().getServiceInterfaceName());
+			throw new InPlaceException(Msg.GET_SERVICE_EXP, extension.getExtender()
+					.getServiceInterfaceName());
 		}
 		return s;
-}
+	}
 
 	/**
 	 * Uninstalls or deactivates (optional) all workspace bundles. Bundle closures with build errors
@@ -499,7 +488,7 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 	 * Adds custom status handler, a command extension for the debug line break point and management
 	 * for defining undefined action sets.
 	 */
-	private void addDynamicExtensions() {
+	public void addDynamicExtensions() {
 		DynamicExtensionContribution.INSTANCE.addCustomStatusHandler();
 		// Add missing line break point command
 		DynamicExtensionContribution.INSTANCE.addToggleLineBreakPointCommand();
@@ -523,6 +512,35 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 		DynamicExtensionContribution.INSTANCE.removeExtension(
 				DynamicExtensionContribution.statusHandlerExtensionPointId,
 				DynamicExtensionContribution.statusHandlerExtensionId);
+	}
+
+	/**
+	 * Remove the listener for the auto build service command
+	 */
+	void removeAutoBuildListener() {
+		if (null != autoBuildCommand && autoBuildCommand.isDefined()) {
+			autoBuildCommand.removeCommandListener(this);
+		}
+	}
+	
+	public Command getAutoBuildCommand() {
+		return autoBuildCommand;
+	}
+	
+	/**
+	 * Add the listener for the auto build command
+	 * <p>
+	 * The auto build command service parameter must be created after the workbench has been started.
+	 * This may not always be true in this start method. If not set changes in auto build will not be
+	 * reacted upon by the the listener
+	 * 
+	 * @param autoBuildCommand the auto build command service to listen to
+	 */
+	void addAutobuildListener(Command autoBuildCommand) {
+		if (null != autoBuildCommand && autoBuildCommand.isDefined()) {
+			this.autoBuildCommand = autoBuildCommand;
+			autoBuildCommand.addCommandListener(this);
+		}
 	}
 
 	/**
