@@ -24,7 +24,7 @@ Export-Package: no.javatime.inplace.bundlejobs;
    org.eclipse.core.commands.contexts,
    org.eclipse.ui.statushandlers"
 Bundle-Vendor: JavaTime
-Bundle-Version: 0.2.0.qualifier
+Bundle-Version: 0.2.1.qualifier
 Bundle-Name: InPlace Activator Bundle Manager
 Bundle-Activator: no.javatime.inplace.InPlace
 Bundle-ManifestVersion: 2

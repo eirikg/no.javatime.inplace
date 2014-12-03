@@ -239,7 +239,7 @@ public class WorkspaceRegionImpl implements BundleRegion {
 	@Override
 	public Boolean isRegionActivated() {
 		for (BundleNode node : projectNodes.values()) {
-			if (null != node.getBundle() && node.isActivated()) {	
+			if (null != node && node.isActivated()) {	
 				return true;
 			}
 		}
@@ -320,11 +320,7 @@ public class WorkspaceRegionImpl implements BundleRegion {
 	@Override
 	public Boolean isBundleActivated(Bundle bundle) {
 		BundleNode node = getNode(bundle);
-		if (null == node) {
-			return false;
-		} else {
-			return node.isActivated();
-		}
+		return null == node ? false : node.isActivated();
 	}
 		
 	@Override

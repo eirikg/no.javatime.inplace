@@ -413,7 +413,8 @@ public class ActivateBundleJob extends NatureJob implements ActivateBundle {
 				return;
 			}
 			// Default is to start the bundle, so it is sufficient to handle bundles with state resolved
-			for (Bundle bundle : bundleRegion.getActivatedBundles()) {
+			Collection<Bundle> activatedBundles = bundleRegion.getActivatedBundles();
+			for (Bundle bundle : activatedBundles) {
 				if (bundles.contains(bundle) && !bundleProjectMeta.isFragment(bundle)) {
 					String symbolicKey = bundleRegion.getSymbolicKey(bundle, null);
 					if (symbolicKey.isEmpty()) {
@@ -429,7 +430,7 @@ public class ActivateBundleJob extends NatureJob implements ActivateBundle {
 						// If active bundles to start have requirements on this bundle,
 						// start the bundle if the dependency option allow it
 						Collection<Bundle> reqBundles = bundleSorter.sortRequiringBundles(
-								Collections.<Bundle> singletonList(bundle), bundleRegion.getActivatedBundles());
+								Collections.<Bundle> singletonList(bundle), activatedBundles);
 						reqBundles.remove(bundle);
 						Boolean startBundle = false;
 						if (reqBundles.size() > 0) {

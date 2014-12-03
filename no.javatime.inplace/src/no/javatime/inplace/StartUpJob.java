@@ -157,30 +157,28 @@ public class StartUpJob extends NatureJob {
 			}
 			Collection<IProject> plugins = bundleProjectCandidates.getBundleProjects();
 			for (IProject project : plugins) {
-				if (null != store) {
-					try {
-						String symbolicKey = bundleRegion.getSymbolicKey(null, project);
-						int state = store.getInt(symbolicKey, Transition.UNINSTALL.ordinal());
-						// Register all projects
-						if (state == Transition.UNINSTALL.ordinal()) {
-							bundleRegion.registerBundleProject(project, null, false);
-							bundleTransition.setTransition(project, Transition.NOTRANSITION);
-						} else if (state == Transition.REFRESH.ordinal()) {
-							bundleRegion.registerBundleProject(project, null, false);
-							bundleTransition.setTransition(project, Transition.REFRESH);
-						} else {
-							bundleRegion.registerBundleProject(project, null, false);
-							bundleTransition.setTransition(project, Transition.NOTRANSITION);									
-						}
-					} catch (ProjectLocationException e) {
-						if (null == status) {
-							String msg = ExceptionMessage.getInstance().formatString("project_init_location");
-							status = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg, null);
-						}
-						status.add(new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, project,
-								project.getName(), e));
-						addStatus(status);
+				try {
+					String symbolicKey = bundleRegion.getSymbolicKey(null, project);
+					int state = store.getInt(symbolicKey, Transition.UNINSTALL.ordinal());
+					// Register all projects
+					if (state == Transition.UNINSTALL.ordinal()) {
+						bundleRegion.registerBundleProject(project, null, false);
+						bundleTransition.setTransition(project, Transition.NOTRANSITION);
+					} else if (state == Transition.REFRESH.ordinal()) {
+						bundleRegion.registerBundleProject(project, null, false);
+						bundleTransition.setTransition(project, Transition.REFRESH);
+					} else {
+						bundleRegion.registerBundleProject(project, null, false);
+						bundleTransition.setTransition(project, Transition.NOTRANSITION);									
 					}
+				} catch (ProjectLocationException e) {
+					if (null == status) {
+						String msg = ExceptionMessage.getInstance().formatString("project_init_location");
+						status = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg, null);
+					}
+					status.add(new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, project,
+							project.getName(), e));
+					addStatus(status);
 				}
 			}
 		} catch (CircularReferenceException e) {
