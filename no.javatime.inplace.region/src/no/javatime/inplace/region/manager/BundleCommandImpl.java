@@ -204,7 +204,7 @@ public class BundleCommandImpl implements BundleCommand {
 		// The bundle will be registered and associated with the project when
 		// the bundle becomes available in the bundle listener
 		bundle = install(project);
-		// If the bundle listener did not register the bundle (e.g. already installed)
+		// If the bundle listener did not register the bundle
 		if (null == bundleNode.getBundleId()) {
 			bundleNode = WorkspaceRegionImpl.INSTANCE.registerBundleNode(project, bundle, activate);
 		}

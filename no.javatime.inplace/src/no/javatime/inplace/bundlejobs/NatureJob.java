@@ -243,7 +243,7 @@ public abstract class NatureJob extends BundleJob {
 						errorBundles = new ArrayList<>(bundles.size());
 					}
 					errorBundles.add(bundle);
-					result = addError(e, e.getLocalizedMessage(), bundle.getBundleId());
+					result = addError(e, e.getLocalizedMessage(), bundle);
 				} finally {
 					localMonitor.worked(1);
 				}

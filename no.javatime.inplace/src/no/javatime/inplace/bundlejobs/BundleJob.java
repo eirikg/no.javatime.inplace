@@ -346,7 +346,7 @@ public abstract class BundleJob extends JobStatus {
 						}
 					}
 				} catch (BundleActivatorException e) {
-					result = addError(e, e.getLocalizedMessage(), bundle.getBundleId());
+					result = addError(e, e.getLocalizedMessage(), bundle);
 					// Only check for output folder in class path if class path is set to be updated on
 					// activation
 					// If missing instruct the bundle and its requiring bundles to resolve, but not start.
@@ -360,7 +360,7 @@ public abstract class BundleJob extends JobStatus {
 					}
 					exceptionBundles.add(bundle);
 				} catch (IllegalStateException e) {
-					result = addError(e, e.getLocalizedMessage(), bundle.getBundleId());
+					result = addError(e, e.getLocalizedMessage(), bundle);
 					if (null == exceptionBundles) {
 						exceptionBundles = new LinkedHashSet<Bundle>();
 					}
@@ -387,7 +387,7 @@ public abstract class BundleJob extends JobStatus {
 						stopCurrentBundleOperation(monitor);
 					}
 				} catch (InPlaceException e) {
-					result = addError(e, e.getLocalizedMessage(), bundle.getBundleId());
+					result = addError(e, e.getLocalizedMessage(), bundle);
 					if (null == exceptionBundles) {
 						exceptionBundles = new LinkedHashSet<Bundle>();
 					}
@@ -458,7 +458,7 @@ public abstract class BundleJob extends JobStatus {
 						}
 					}
 				} catch (IllegalStateException e) {
-					result = addError(e, e.getLocalizedMessage(), bundle.getBundleId());
+					result = addError(e, e.getLocalizedMessage(), bundle);
 				} catch (BundleStateChangeException e) {
 					addError(e, e.getMessage());
 					Throwable cause = e.getCause();
@@ -477,7 +477,7 @@ public abstract class BundleJob extends JobStatus {
 						stopCurrentBundleOperation(monitor);
 					}
 				} catch (InPlaceException e) {
-					result = addError(e, e.getLocalizedMessage(), bundle.getBundleId());
+					result = addError(e, e.getLocalizedMessage(), bundle);
 				} finally {
 					localMonitor.worked(1);
 				}

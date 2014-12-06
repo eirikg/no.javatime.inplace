@@ -133,11 +133,6 @@ public class BundleStateEvents implements SynchronousBundleListener {
 			return; // not a workspace project (jar bundle)
 		}
 		BundleNode node = bundleRegion.getBundleNode(project);
-		// This is always true if it is an external install
-		if (null == node || null == node.getBundleId()) {
-			boolean activated = null != node ? node.isActivated() : false; 
-			node = WorkspaceRegionImpl.INSTANCE.registerBundleNode(project, bundle, activated);
-		}
 		/*
 		 * Examine all bundle events and update state by executing intermediate transitions, identify
 		 * and recover from transition errors and sync with external bundle commands
@@ -149,6 +144,9 @@ public class BundleStateEvents implements SynchronousBundleListener {
 		 * commands force the bundle to state installed.
 		 */
 		case BundleEvent.INSTALLED: {
+			// Register or update the installed bundle as soon as possible
+			boolean activated = null != node ? node.isActivated() : false; 
+			node = WorkspaceRegionImpl.INSTANCE.registerBundleNode(project, bundle, activated);
 			if (!node.isStateChanging()) {
 				node.commit(Transition.EXTERNAL, StateFactory.INSTANCE.installedState);
 				final String originName = bundleRegion.getSymbolicKey(event.getOrigin(), null);

@@ -165,23 +165,6 @@ public interface BundleRegion {
 	public void unregisterBundleProject(IProject project);
 
 	/**
-	 * Unregister a workspace bundle from the workspace region. The bundle activation status is set to
-	 * false, any pending transitions are removed and the bundle is detached from its associated
-	 * project.
-	 * <p>
-	 * If the registered project associated with the bundle (the bundle project) is inaccessible the
-	 * project is also removed (unregistered) from the region. Use
-	 * {@link #isProjectRegistered(IProject)} to check if the project is registered with the region
-	 * and {@link #getBundle(IProject)} to check if the bundle is registered with the project in the
-	 * region.
-	 * 
-	 * @param bundle bundle to unregister form the workspace region.
-	 * @see #unregisterBundleProject(IProject)
-	 * @see #registerBundleProject(IProject, Bundle, boolean)
-	 */
-	public void unregisterBundle(Bundle bundle);
-
-	/**
 	 * Check if the specified project is registered as a workspace bundle project
 	 * 
 	 * @param project to check for registration as a workspace bundle project

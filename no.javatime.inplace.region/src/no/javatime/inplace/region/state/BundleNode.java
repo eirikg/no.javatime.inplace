@@ -279,12 +279,6 @@ public class BundleNode {
 		return null;
 	}
 
-	public final void removeBundle() {
-		bundleId = null;
-		activated = false;
-		pendingTranitions.clear();
-	}
-
 	/**
 	 * The unique bundle id of the bundle
 	 * 

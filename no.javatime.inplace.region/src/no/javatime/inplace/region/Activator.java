@@ -16,8 +16,8 @@ import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.manager.BundleCommandServiceFactory;
 import no.javatime.inplace.region.manager.BundleRegionServiceFactory;
 import no.javatime.inplace.region.manager.BundleTransitionServiceFactory;
-import no.javatime.inplace.region.project.BundleProjectMetaServiceFactory;
 import no.javatime.inplace.region.project.BundleProjectCandidatesServiceFactory;
+import no.javatime.inplace.region.project.BundleProjectMetaServiceFactory;
 import no.javatime.inplace.region.resolver.BundleResolveHookFactory;
 import no.javatime.inplace.region.state.BundleStateEvents;
 
@@ -239,5 +239,4 @@ public class Activator extends AbstractUIPlugin {
 	public static BundleContext getContext() {
 		return context;
 	}
-
 }

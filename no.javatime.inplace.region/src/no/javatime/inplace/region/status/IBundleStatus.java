@@ -108,9 +108,9 @@ public interface IBundleStatus extends IStatus {
 	/**
 	 * Associate a bundle with this status object
 	 * 
-	 * @param bundleId the bundle id to associate with the status object
+	 * @param bundle the bundle to associate with the status object
 	 */
-	void setBundle(Long bundleId);
+	void setBundle(Bundle bundle);
 
 	/**
 	 * Sets the severity status

@@ -360,7 +360,7 @@ public class UpdateJob extends BundleJob {
 					}
 					statusList.add(result);
 				} catch (InPlaceException e) {
-					IBundleStatus result = addError(e, e.getLocalizedMessage(), bundle.getBundleId());
+					IBundleStatus result = addError(e, e.getLocalizedMessage(), bundle);
 					if (null == statusList) {
 						statusList = new LinkedHashSet<IBundleStatus>();
 					}

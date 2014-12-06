@@ -213,10 +213,6 @@ public interface BundleCommand {
 	 * workspace project and the associated bundle is removed from the workspace region. If set to
 	 * false the project and the bundle will exist in the workspace region until unregistered.
 	 * <p>
-	 * When unregistering is deferred use {@link BundleRegion#unregisterBundle(Bundle)} to remove the
-	 * bundle and {@link BundleRegion#unregisterBundleProject(IProject)} to remove both the project
-	 * and the bundle from the workspace region after uninstall.
-	 * <p>
 	 * To {@link #refresh(Collection) refresh} the bundle after it has been uninstall, defer
 	 * unregistering the bundle until after refresh.
 	 * 
@@ -226,7 +222,6 @@ public interface BundleCommand {
 	 * @return the project associated with the uninstalled bundle or null if the bundle project could
 	 * not be registered
 	 * @throws InPlaceException if bundle is null or any of the {@link Bundle#uninstall()} exceptions
-	 * @see BundleRegion#unregisterBundle(Bundle)
 	 * @see BundleRegion#unregisterBundleProject(IProject)
 	 */
 	public IProject uninstall(Bundle bundle, Boolean unregister) throws InPlaceException,

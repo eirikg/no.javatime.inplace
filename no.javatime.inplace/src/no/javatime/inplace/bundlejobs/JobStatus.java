@@ -304,37 +304,18 @@ public abstract class JobStatus extends WorkspaceJob implements BundleTransition
 	 * 
 	 * @param e the exception belonging to the error
 	 * @param message an error message
-	 * @param bundleId the bundle id of the bundle that the error belongs to
-	 * @return the newly created error status object with an exception, a message and a bundle id
+	 * @param bundle the bundle object the error belongs to
+	 * @return the newly created error status object with an exception, a message and a bundle object
 	 */
-	public IBundleStatus addError(Throwable e, String message, Long bundleId) {
-		IBundleStatus status = new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID, bundleId, message,
+	public IBundleStatus addError(Throwable e, String message, Bundle bundle) {
+		IBundleStatus status = new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID, bundle, message,
 				e);
 		this.errStatusList.add(status);
 		try {
 			bundleTransition
-					.setTransitionError(bundleRegion.getProject(bundleRegion.getBundle(bundleId)));
+					.setTransitionError(bundleRegion.getProject(bundle));
 		} catch (ProjectLocationException locEx) {
-			errorSettingTransition(bundleRegion.getProject(bundleRegion.getBundle(bundleId)), locEx);
-		}
-		return status;
-	}
-
-	/**
-	 * Adds an error to the status list
-	 * 
-	 * @param e the exception belonging to the error
-	 * @param bundleId the bundle id of the bundle that the error belongs to
-	 * @return the newly created error status object with an exception and a bundle id
-	 */
-	public IBundleStatus addError(Throwable e, Long bundleId) {
-		IBundleStatus status = new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID, bundleId, null, e);
-		this.errStatusList.add(status);
-		try {
-			bundleTransition
-					.setTransitionError(bundleRegion.getProject(bundleRegion.getBundle(bundleId)));
-		} catch (ProjectLocationException locEx) {
-			errorSettingTransition(bundleRegion.getProject(bundleRegion.getBundle(bundleId)), locEx);
+			errorSettingTransition(bundleRegion.getProject(bundle), locEx);
 		}
 		return status;
 	}

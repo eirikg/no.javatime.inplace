@@ -13,6 +13,7 @@ package no.javatime.inplace.region.status;
 import java.util.Collection;
 
 import no.javatime.inplace.region.Activator;
+import no.javatime.inplace.region.intface.BundleRegion;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
 import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.manager.BundleTransitionImpl;
@@ -29,7 +30,6 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.pde.core.project.IBundleProjectDescription;
 import org.eclipse.ui.statushandlers.StatusManager;
 import org.osgi.framework.Bundle;
-import org.osgi.framework.Version;
 
 /**
  * Bundle status object containing status codes, exceptions and messages associated with a bundle project.
@@ -39,7 +39,7 @@ public class BundleStatus extends MultiStatus implements IBundleStatus {
 	/** Overrules the {@code IStatus} status codes */
 	private StatusCode statusCode;
 	private IProject project;
-	private Long bundleId;
+	private Bundle bundle;
 	private int bundleState = 0;
 	private Transition bundleTransition = Transition.NOTRANSITION;;
 	
@@ -104,7 +104,7 @@ public class BundleStatus extends MultiStatus implements IBundleStatus {
 	 * 
 	 * @param statusCode one of the <code>StatusCode</code> constants
 	 * @param pluginId the unique identifier of the relevant plug-in
-	 * @param bundleId associated with this status object
+	 * @param bundle associated with this status object
 	 * @param message a verbose message related to the status
 	 * @param exception an exception or <code>null</code> if not applicable
 	 * @see #convertToSeverity(no.javatime.inplace.region.status.IBundleStatus.StatusCode)
@@ -150,14 +150,14 @@ public class BundleStatus extends MultiStatus implements IBundleStatus {
 		// Must have a symbolic name
 		if (null != bundle) {
 			symbolicName = bundle.getSymbolicName();
-			this.bundleId = bundle.getBundleId();
+			this.bundle = bundle;
 			bundleState = bundle.getState();
 			bundleTransition = BundleTransitionImpl.INSTANCE.getTransition(bundle);
 		} else if (null != project) {
 			bundle = WorkspaceRegionImpl.INSTANCE.getBundle(project);
 			if (null != bundle) {
 				symbolicName = bundle.getSymbolicName();
-				this.bundleId = bundle.getBundleId();
+				this.bundle = bundle;
 				bundleState = bundle.getState();
 				bundleTransition = BundleTransitionImpl.INSTANCE.getTransition(bundle);
 			} else {
@@ -184,7 +184,7 @@ public class BundleStatus extends MultiStatus implements IBundleStatus {
 						bundle = WorkspaceRegionImpl.INSTANCE.getBundle(project);
 						if (null != bundle) {
 							symbolicName = bundle.getSymbolicName();
-							this.bundleId = bundle.getBundleId();
+							this.bundle = bundle;
 							bundleTransition = BundleTransitionImpl.INSTANCE.getTransition(bundle);
 						} else {
 							IBundleProjectDescription pd = Activator.getBundleDescription(project);
@@ -334,40 +334,11 @@ public class BundleStatus extends MultiStatus implements IBundleStatus {
 
 	@Override
 	public final IProject getProject() {
-		if (null == project && null != bundleId) {
-			return getProject(Activator.getContext().getBundle(bundleId));
-			
+		if (null == project && null != bundle) {
+			BundleRegion bundleRegion = WorkspaceRegionImpl.INSTANCE; 
+			return bundleRegion.getProject(bundle);		
 		}
 		return project;
-	}
-
-	/**
-	 * Returns the project with the same symbolic name and version as the specified bundle
-	 * 
-	 * @param bundle of the corresponding project to find
-	 * @return project with the same symbolic name an version as the specified bundle or null
-	 */
-	private IProject getProject(Bundle bundle) {
-		IWorkspace workspace = ResourcesPlugin.getWorkspace();
-		IWorkspaceRoot root = workspace.getRoot();
-		for (IProject project : root.getProjects()) {
-			try {
-				IBundleProjectDescription bundleProjDesc = Activator.getBundleDescription(project);
-				String symbolicName = bundleProjDesc.getSymbolicName();
-				if (null != symbolicName && symbolicName.equals(bundle.getSymbolicName())) {
-					Version version = bundleProjDesc.getBundleVersion();
-					if (null != version && version.equals(bundle.getVersion())) {
-						return project;
-					}
-				}
-			} catch (InPlaceException e) {
-				String msg = ErrorMessage.getInstance().formatString("manifest_missing");
-				// Do not use bundle status due to infinite recursion
-				StatusManager.getManager().handle(new Status(IStatus.ERROR, Activator.PLUGIN_ID, msg, e),
-						StatusManager.LOG);
-			}
-		}
-		return null;
 	}
 
 	@Override
@@ -377,14 +348,16 @@ public class BundleStatus extends MultiStatus implements IBundleStatus {
 
 	@Override
 	public Bundle getBundle() {
-		if (null != bundleId) {
-			return Activator.getContext().getBundle(bundleId);
+		if (null == bundle && null != project) {
+			BundleRegion bundleRegion = WorkspaceRegionImpl.INSTANCE; 
+			return bundleRegion.getBundle(project);
+			
 		}
-		return null;
+		return bundle;
 	}
 
 	@Override
-	public void setBundle(Long bundleId) {
-		this.bundleId = bundleId;
+	public void setBundle(Bundle bundle) {
+		this.bundle = bundle;
 	}
 }

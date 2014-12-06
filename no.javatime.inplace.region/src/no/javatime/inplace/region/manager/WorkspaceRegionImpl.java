@@ -76,10 +76,14 @@ public class WorkspaceRegionImpl implements BundleRegion {
 	private Map<IProject, BundleNode> projectNodes = new ConcurrentHashMap<IProject, BundleNode>(
 			initialCapacity, 1);
 
+	private Map<Long, IProject> bundleNodes = new ConcurrentHashMap<Long, IProject>(
+			initialCapacity, 1);
+
 	protected WorkspaceRegionImpl() {
 		super();
 	}
 
+	@Override
 	public BundleCommand getCommandService() {
 
 		try {			
@@ -93,6 +97,7 @@ public class WorkspaceRegionImpl implements BundleRegion {
 		return null;
 	}
 	
+	@Override
 	public BundleTransition getTransitionService() {
 	
 		try {
@@ -106,6 +111,7 @@ public class WorkspaceRegionImpl implements BundleRegion {
 		return null;
 	}
 	
+	@Override
 	public BundleProjectCandidates getCanidatesService() {
 
 		try {	
@@ -119,6 +125,7 @@ public class WorkspaceRegionImpl implements BundleRegion {
 		return null;
 	}
 
+	@Override
 	public BundleProjectMeta getMetaService() {
 
 		try {
@@ -132,6 +139,7 @@ public class WorkspaceRegionImpl implements BundleRegion {
 		return null;
 	}
 
+	@Override
 	public boolean isAutoBuildActivated(boolean disable) {
 		boolean autoBuild = this.autoBuild;
 		if (disable) {
@@ -140,6 +148,7 @@ public class WorkspaceRegionImpl implements BundleRegion {
 		return autoBuild;
 	}
 
+	@Override
 	public void setAutoBuildChanged(boolean autoBuild) {
 		this.autoBuild = autoBuild;
 	}
@@ -286,20 +295,6 @@ public class WorkspaceRegionImpl implements BundleRegion {
 	}
 
 	@Override
-	public void unregisterBundle(Bundle bundle) {
-
-//		BundleNode node = getBundleNode(bundle);
-//		if (null != node) {
-//			IProject project = node.getProject();
-//			if (!project.isAccessible()) {
-//				unregisterBundleProject(project);
-//			} else {
-//				node.removeBundle();
-//			}
-//		}
-	}
-
-	@Override
 	public void unregisterBundleProject(IProject project) {
 		remove(project);
 	}
@@ -415,6 +410,7 @@ public class WorkspaceRegionImpl implements BundleRegion {
 		return bundles;
 	}
 
+	@Override
 	public Collection<Bundle> getBundles(Collection<Bundle> bundles, int state) {
 		Collection<Bundle> bundleStates = new ArrayList<Bundle>();
 		for (Bundle bundle : bundles) {
@@ -476,6 +472,7 @@ public class WorkspaceRegionImpl implements BundleRegion {
 		return null;
 	}
 
+	@Override
 	public Bundle getBundle(Long bundleId) {
 		BundleNode node = getNode(bundleId);
 		if (null != node) {
@@ -484,6 +481,7 @@ public class WorkspaceRegionImpl implements BundleRegion {
 		return null;
 	}
 
+	@Override
 	public Map<IProject, IProject> getWorkspaceDuplicates(Collection<IProject> candidateProjects,
 			Collection<IProject> scope) {
 
@@ -515,6 +513,7 @@ public class WorkspaceRegionImpl implements BundleRegion {
 		return duplicateMap;
 	}
 
+	@Override
 	public Map<IProject, Bundle> getSymbolicNameDuplicates(Collection<IProject> projects,
 			Collection<Bundle> candidateBundles, boolean disjoint) {
 
@@ -826,7 +825,7 @@ public class WorkspaceRegionImpl implements BundleRegion {
 	}
 
 	/**
-	 * Record the bundle and its associated project. The project may or may not be activated
+	 * Register the bundle and its associated project. The project may or may not be activated
 	 * 
 	 * @param project project to register. Must not be null
 	 * @param bundle the bundle to register. May be null
@@ -845,11 +844,13 @@ public class WorkspaceRegionImpl implements BundleRegion {
 		// Update node
 		if (null != node) {
 			node.setProject(project);
+			// Replace the bundle id
 			if (null != bundle) {
-				Long id = bundle.getBundleId();
-				node.setBundleId(id);
-			} else {
-				node.setBundleId(null);
+				Long oldBundleid = node.getBundleId();
+				if (null != oldBundleid) {
+					bundleNodes.remove(oldBundleid);
+				}
+				node.setBundleId(bundle.getBundleId());
 			}
 			node.setActivated(activate);
 			projectNodes.put(project, node);
@@ -866,27 +867,27 @@ public class WorkspaceRegionImpl implements BundleRegion {
 						projectNodes.get(project).getProject());
 			}
 		}
+		if (null != bundle) {
+			bundleNodes.put(bundle.getBundleId(), project);
+		}
 		return node;
 	}
 
 	protected Long remove(IProject project) {
-		BundleNode node = getNode(project);
-		if (null != node) {
-			BundleNode deletedNode = projectNodes.remove(project);
-			if (null == deletedNode) {
-				if (Category.DEBUG && Category.getState(Category.dag))
-					TraceMessage.getInstance().getString("failed_remove_node", project.getName());
-				return null;
-			} else {
-				if (Category.DEBUG && Category.getState(Category.dag))
-					TraceMessage.getInstance().getString("removed_node", project.getName());
-				return deletedNode.getBundleId();
-			}
-		} else {
+		BundleNode deletedNode = projectNodes.remove(project);
+		if (null == deletedNode) {
 			if (Category.DEBUG && Category.getState(Category.dag))
 				TraceMessage.getInstance().getString("null_remove_node", project.getName());
+			return null;
+		} else {
+			if (Category.DEBUG && Category.getState(Category.dag))
+				TraceMessage.getInstance().getString("removed_node", project.getName());
+			Long bundleId = deletedNode.getBundleId();
+			if (null != bundleId) {
+				bundleNodes.remove(bundleId);
+			}
+			return bundleId;
 		}
-		return null;
 	}
 
 	/**
@@ -896,10 +897,8 @@ public class WorkspaceRegionImpl implements BundleRegion {
 	 * @return the bundle node or null
 	 */
 	private BundleNode getNode(IProject project) {
-		if (null != project) {
-			return projectNodes.get(project);
-		}
-		return null;
+
+		return null != project ? projectNodes.get(project) : null;
 	}
 
 	/**
@@ -910,12 +909,24 @@ public class WorkspaceRegionImpl implements BundleRegion {
 	 */
 	private BundleNode getNode(Bundle bundle) {
 		if (null != bundle) {
-			for (BundleNode node : projectNodes.values()) {
-				Long bundleId = node.getBundleId();
-				if (null != bundleId && bundleId == bundle.getBundleId()) {
-					return node;
-				}
-			}
+			// Bundle id never reused and must return the bundle id in state uninstalled
+			IProject project = bundleNodes.get(bundle.getBundleId());
+			return null != project ? projectNodes.get(project) : null;
+		}
+		return null;
+	}
+
+	/**
+	 * Get a bundle node based on the bundle id of a bundle
+	 * 
+	 * @param bundleId the bundle id of the bundle
+	 * @return the bundle node for this workspace bundle or null if it does not exist
+	 */
+	private BundleNode getNode(Long bundleId) {
+		if (null != bundleId) {
+			// Bundle id never reused and must return the bundle id in state uninstalled
+			IProject project = bundleNodes.get(bundleId);
+			return null != project ? projectNodes.get(project) : null;
 		}
 		return null;
 	}
@@ -932,24 +943,6 @@ public class WorkspaceRegionImpl implements BundleRegion {
 			for (BundleNode node : projectNodes.values()) {
 				String symbolicKey = node.getSymbolicKey();
 				if (null != symbolicKey && symbolicKey.equals(symbolicName + version)) {
-					return node;
-				}
-			}
-		}
-		return null;
-	}
-
-	/**
-	 * Get a bundle node based on the bundle id of a bundle
-	 * 
-	 * @param bundleId the bundle id of the bundle
-	 * @return the bundle node for this workspace bundle or null if it does not exist
-	 */
-	private BundleNode getNode(Long bundleId) {
-		if (null != bundleId) {
-			for (BundleNode node : projectNodes.values()) {
-				Long id = node.getBundleId();
-				if (null != id && id.equals(bundleId)) {
 					return node;
 				}
 			}
