@@ -51,7 +51,7 @@ public class BundleNode {
 	// The primary key of the project
 	private IProject project;
 	// The primary key of the bundle. Keeps the id instead of the bundle object
-	private Long bundleId;
+	private Bundle bundle;
 	// Explicit set, indicating whether the bundle is activated or deactivated
 	private Boolean activated;
 	// Current bundle state. Terminal state of the current transition
@@ -84,9 +84,7 @@ public class BundleNode {
 	public BundleNode(Bundle bundle, IProject project, Boolean activate) {
 		this.project = project;
 		this.activated = activate;
-		if (null != bundle) {
-			this.bundleId = bundle.getBundleId();
-		}
+		this.bundle = bundle;
 	}
 
 	public Transition getTransition() {
@@ -183,16 +181,13 @@ public class BundleNode {
 	 */
 	public void setCurrentState(BundleState currentState) {
 		if (Category.DEBUG && Category.getState(Category.fsm)) {
-			if (null != bundleId) {
-				Bundle bundle = Activator.getContext().getBundle(bundleId);
-				if (null != bundle) {
-					TraceMessage.getInstance().getString("state_change",
-							Activator.getContext().getBundle(bundleId), this.state.getClass().getSimpleName(),
-							currentState.getClass().getSimpleName());
-				} else {
-					TraceMessage.getInstance().getString("state_change", project.getName(),
-							this.state.getClass().getSimpleName(), currentState.getClass().getSimpleName());
-				}
+			if (null != bundle) {
+				TraceMessage.getInstance().getString("state_change",
+						bundle, this.state.getClass().getSimpleName(),
+						currentState.getClass().getSimpleName());
+			} else {
+				TraceMessage.getInstance().getString("state_change", project.getName(),
+						this.state.getClass().getSimpleName(), currentState.getClass().getSimpleName());
 			}
 		}
 		this.state = currentState;
@@ -206,10 +201,6 @@ public class BundleNode {
 	 * @throws InPlaceException if there exists a bundle id and the bundle could not be retrieved
 	 */
 	public final String getSymbolicKey() throws InPlaceException {
-		if (null == bundleId) {
-			return null;
-		}
-		Bundle bundle = Activator.getContext().getBundle(bundleId);
 		if (null == bundle) {
 			throw new InPlaceException("illegal_bundle_id", project.getName());
 		}
@@ -254,16 +245,20 @@ public class BundleNode {
 	 * @return the bundle Id or null
 	 */
 	public final Long getBundleId() {
-		return bundleId;
+
+		return null != bundle ? bundle.getBundleId() : null;
 	}
 
 	/**
 	 * Get the bundle object from the specified bundle id
 	 * 
-	 * @param bundleId the id used to retrieve the bundle object
+	 * @param bundle the id used to retrieve the bundle object
 	 * @return the bundle object or null
 	 */
 	public final Bundle getBundle(Long bundleId) {
+		if (null != bundle && bundleId.longValue() ==  bundle.getBundleId()) {
+			return bundle;
+		}
 		return Activator.getContext().getBundle(bundleId);
 	}
 
@@ -273,19 +268,16 @@ public class BundleNode {
 	 * @return the bundle object or null
 	 */
 	public final Bundle getBundle() {
-		if (null != bundleId) {
-			return Activator.getContext().getBundle(bundleId);
-		}
-		return null;
+		return bundle;
 	}
 
 	/**
-	 * The unique bundle id of the bundle
+	 * The bundle object
 	 * 
-	 * @param bundleId the unique bundleId to set
+	 * @param bundle the bundle to set
 	 */
-	public final void setBundleId(Long bundleId) {
-		this.bundleId = bundleId;
+	public final void setBundle(Bundle bundle) {
+		this.bundle = bundle;
 	}
 
 	/**

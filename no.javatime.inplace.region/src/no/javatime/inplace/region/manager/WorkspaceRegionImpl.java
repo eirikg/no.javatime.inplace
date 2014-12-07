@@ -76,7 +76,11 @@ public class WorkspaceRegionImpl implements BundleRegion {
 	private Map<IProject, BundleNode> projectNodes = new ConcurrentHashMap<IProject, BundleNode>(
 			initialCapacity, 1);
 
-	private Map<Long, IProject> bundleNodes = new ConcurrentHashMap<Long, IProject>(
+	/**
+	 * Bundle nodes as bundle projects. Hash for direct access to projects and bundle nodes with
+	 * the bundle id as key
+	 */
+	private Map<Long, IProject> bundleProjects = new ConcurrentHashMap<Long, IProject>(
 			initialCapacity, 1);
 
 	protected WorkspaceRegionImpl() {
@@ -826,15 +830,18 @@ public class WorkspaceRegionImpl implements BundleRegion {
 
 	/**
 	 * Register the bundle and its associated project. The project may or may not be activated
-	 * 
-	 * @param project project to register. Must not be null
-	 * @param bundle the bundle to register. May be null
+	 * <p>
+	 * Also register bundle project in a separate hash map for direct access
+	 *  
+	 * @param project project to register or update. Must not be null
+	 * @param bundle the bundle to register or update. May be null
 	 * @param activate true if bundle is activated and false if not
 	 * @return the new or updated bundle node
 	 * @throws InPlaceException if the specified project parameter is null
 	 */
 	protected BundleNode put(IProject project, Bundle bundle, Boolean activate)
 			throws InPlaceException {
+
 		if (null == project) {
 			if (Category.DEBUG && Category.getState(Category.dag))
 				TraceMessage.getInstance().getString("npe_project_cache");
@@ -848,9 +855,9 @@ public class WorkspaceRegionImpl implements BundleRegion {
 			if (null != bundle) {
 				Long oldBundleid = node.getBundleId();
 				if (null != oldBundleid) {
-					bundleNodes.remove(oldBundleid);
+					bundleProjects.remove(oldBundleid);
 				}
-				node.setBundleId(bundle.getBundleId());
+				node.setBundle(bundle);
 			}
 			node.setActivated(activate);
 			projectNodes.put(project, node);
@@ -868,12 +875,21 @@ public class WorkspaceRegionImpl implements BundleRegion {
 			}
 		}
 		if (null != bundle) {
-			bundleNodes.put(bundle.getBundleId(), project);
+			bundleProjects.put(bundle.getBundleId(), project);
 		}
 		return node;
 	}
 
+	/**
+	 * Remove the project and its associated bundle.
+	 * <p>
+	 * Also remove the bundle project from a separate hash map for direct access
+	 *  
+	 * @param project project to remove. Must not be null
+	 * @throws InPlaceException if the specified project parameter is null
+	 */
 	protected Long remove(IProject project) {
+
 		BundleNode deletedNode = projectNodes.remove(project);
 		if (null == deletedNode) {
 			if (Category.DEBUG && Category.getState(Category.dag))
@@ -884,7 +900,7 @@ public class WorkspaceRegionImpl implements BundleRegion {
 				TraceMessage.getInstance().getString("removed_node", project.getName());
 			Long bundleId = deletedNode.getBundleId();
 			if (null != bundleId) {
-				bundleNodes.remove(bundleId);
+				bundleProjects.remove(bundleId);
 			}
 			return bundleId;
 		}
@@ -910,7 +926,7 @@ public class WorkspaceRegionImpl implements BundleRegion {
 	private BundleNode getNode(Bundle bundle) {
 		if (null != bundle) {
 			// Bundle id never reused and must return the bundle id in state uninstalled
-			IProject project = bundleNodes.get(bundle.getBundleId());
+			IProject project = bundleProjects.get(bundle.getBundleId());
 			return null != project ? projectNodes.get(project) : null;
 		}
 		return null;
@@ -925,7 +941,7 @@ public class WorkspaceRegionImpl implements BundleRegion {
 	private BundleNode getNode(Long bundleId) {
 		if (null != bundleId) {
 			// Bundle id never reused and must return the bundle id in state uninstalled
-			IProject project = bundleNodes.get(bundleId);
+			IProject project = bundleProjects.get(bundleId);
 			return null != project ? projectNodes.get(project) : null;
 		}
 		return null;
