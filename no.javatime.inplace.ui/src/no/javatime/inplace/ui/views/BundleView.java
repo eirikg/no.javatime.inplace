@@ -16,6 +16,7 @@ import java.util.Collections;
 import java.util.List;
 
 import no.javatime.inplace.bundlejobs.BundleJob;
+import no.javatime.inplace.bundlejobs.NatureJob;
 import no.javatime.inplace.region.events.BundleTransitionEvent;
 import no.javatime.inplace.region.events.BundleTransitionEventListener;
 import no.javatime.inplace.region.intface.BundleProjectCandidates;
@@ -394,7 +395,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 		// Set input to list page and restore UI elements state
 		showProjects(javaProjects, true);
 		restoreState(memento);
-		if (!bundleRegion.isRegionActivated()) {
+		if (!NatureJob.isWorkspaceNatureEnabled()) {
 			pagebook.getDisplay().asyncExec(new Runnable() {
 				@Override
 				public void run() {
