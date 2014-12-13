@@ -868,11 +868,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 				IProject project = getSelectedProject();
 				if (null != project) {
 					if (bundleRegion.isBundleActivated(project)) {
-						boolean update = Activator.getBundleTransitionService().containsPending(project, Transition.UPDATE,
-								Boolean.FALSE);
-						if (update) {
 							BundleMenuActivationHandler.updateHandler(Collections.<IProject>singletonList(project));
-						}
 					}
 				}
 			}
@@ -890,9 +886,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 						Bundle bundle = Activator.getBundleRegionService().getBundle(project);
 						if (null != bundle) {
 							try {								
-								if (Activator.getBundleCommandService().getBundleRevisions(bundle).size() > 1) {
 									BundleMenuActivationHandler.refreshHandler(Collections.<IProject>singletonList(project));
-								}
 							} catch (InPlaceException e) {
 								StatusManager.getManager()
 								.handle(new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID,
@@ -1068,21 +1062,11 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 	private void setUpdateRefresh(boolean enable, Bundle bundle) {
 
 		if (enable && null != bundle) {
-			if (Activator.getBundleTransitionService().containsPending(bundle, Transition.UPDATE, Boolean.FALSE)) {
 				setUIElement(updateAction, true, updateText, updateText,
 						BundleCommandsContributionItems.updateImage);
-			} else {
-				setUIElement(updateAction, false, updateGeneralText, updateGeneralText,
-						BundleCommandsContributionItems.updateImage);
-			}
 			try {				
-				if (Activator.getBundleCommandService().getBundleRevisions(bundle).size() > 1) {
 					setUIElement(refreshAction, true, refreshText, refreshText,
 							BundleCommandsContributionItems.refreshImage);
-				} else {
-					setUIElement(refreshAction, false, refreshGeneralText, refreshGeneralText,
-							BundleCommandsContributionItems.refreshImage);
-				}
 			} catch (InPlaceException e) {
 				setUIElement(refreshAction, false, refreshGeneralText, refreshGeneralText,
 						BundleCommandsContributionItems.refreshImage);

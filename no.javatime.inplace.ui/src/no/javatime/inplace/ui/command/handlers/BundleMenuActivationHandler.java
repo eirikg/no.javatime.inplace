@@ -33,6 +33,7 @@ import no.javatime.inplace.log.intface.BundleLogView;
 import no.javatime.inplace.pl.console.intface.BundleConsoleFactory;
 import no.javatime.inplace.pl.dependencies.intface.DependencyDialog;
 import no.javatime.inplace.region.intface.BundleProjectCandidates;
+import no.javatime.inplace.region.intface.BundleTransition.Transition;
 import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.ui.Activator;
 import no.javatime.inplace.ui.command.contributions.BundleCommandsContributionItems;
@@ -62,8 +63,8 @@ import org.eclipse.ui.handlers.RegistryToggleState;
 import org.eclipse.ui.navigator.CommonNavigator;
 
 /**
- * Executes bundle menu commands for one or more projects. The bundle commands are
- * common for the bundle main menu and bundle pop-up menus.
+ * Executes bundle menu commands for one or more projects. The bundle commands are common for the
+ * bundle main menu and bundle pop-up menus.
  */
 public abstract class BundleMenuActivationHandler extends AbstractHandler {
 
@@ -82,8 +83,8 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 	}
 
 	/**
-	 * Schedule an activate project job for the specified projects. An activate project job enables the JavaTime
-	 * nature for the specified projects
+	 * Schedule an activate project job for the specified projects. An activate project job enables
+	 * the JavaTime nature for the specified projects
 	 * 
 	 * @param projects to activate
 	 */
@@ -111,7 +112,7 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 
 		DeactivateJob deactivateJob = null;
 		if (Activator.getBundleRegionService().getActivatedProjects().size() <= projects.size()) {
-			deactivateJob = new DeactivateJob(DeactivateJob.deactivateWorkspaceJobName, projects);			
+			deactivateJob = new DeactivateJob(DeactivateJob.deactivateWorkspaceJobName, projects);
 		} else {
 			deactivateJob = new DeactivateJob(DeactivateJob.deactivateJobName, projects);
 		}
@@ -139,7 +140,7 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 		StopJob stopJob = new StopJob(StopJob.stopJobName, projects);
 		jobHandler(stopJob);
 	}
-		
+
 	/**
 	 * Schedules a refresh job for the specified projects
 	 * 
@@ -152,19 +153,27 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 	}
 
 	/**
-	 * Schedules an update job for the specified projects. Projects members in any build error
-	 * closure will not updated.
+	 * Schedules an update job for the specified projects.
+	 * <p>
+	 * A pending update transition is added to each of the specified bundle projects.
+	 * <p>
+	 * If any of the specified bundle projects are members in any build error closure they will not
+	 * updated.
 	 * 
 	 * @param projects bundle projects to update
 	 */
 	static public void updateHandler(Collection<IProject> projects) {
 
+		for (IProject project : projects) {
+			Activator.getBundleTransitionService().addPending(project, Transition.UPDATE);
+		}
 		UpdateScheduler.scheduleUpdateJob(projects, 0);
 	}
-		
+
 	/**
-	 * Schedules a reset job for the specified projects by running an uninstall
-	 * job and an activate bundle job in sequence.
+	 * Schedules a reset job for the specified projects by running an uninstall job and an activate
+	 * bundle job in sequence.
+	 * 
 	 * @param projects to reset
 	 */
 	static public void resetHandler(final Collection<IProject> projects) {
@@ -173,15 +182,15 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 		if (so.saveModifiedFiles()) {
 			SaveProjectHandler.waitOnBuilder();
 			ResetJob resetJob = new ResetJob(projects);
-			resetJob.reset(ResetJob.resetJobName);		
+			resetJob.reset(ResetJob.resetJobName);
 		}
 	}
-	
+
 	/**
 	 * Interrupts the current running bundle job
 	 */
-	protected  void interruptHandler() {
-		
+	protected void interruptHandler() {
+
 		SaveProjectHandler so = new SaveProjectHandler();
 		if (so.saveModifiedFiles()) {
 			BundleJob job = SaveProjectHandler.getRunningBundleJob();
@@ -194,17 +203,18 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 			}
 		}
 	}
-	
+
 	/**
-	 * Stops the current thread running the start and stop operation if the
-	 * option for terminating endless start and stop operations is set to manual.
+	 * Stops the current thread running the start and stop operation if the option for terminating
+	 * endless start and stop operations is set to manual.
 	 * <p>
-	 * If the option for terminating endless start and stop operations is set to 
-	 * time out, the operation will be terminated automatically on time out
+	 * If the option for terminating endless start and stop operations is set to time out, the
+	 * operation will be terminated automatically on time out
+	 * 
 	 * @throws InPlaceException if failing to get the command options service
 	 */
 	protected void stopOperationHandler() throws InPlaceException {
-		
+
 		SaveProjectHandler so = new SaveProjectHandler();
 		if (so.saveModifiedFiles()) {
 			Activator.getDisplay().asyncExec(new Runnable() {
@@ -212,7 +222,7 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 				public void run() {
 					if (!Activator.getDefault().getCommandOptionsService().isTimeOut()) {
 						BundleJob job = SaveProjectHandler.getRunningBundleJob();
-						if (null != job && BundleJob.isStateChanging()) {			
+						if (null != job && BundleJob.isStateChanging()) {
 							job.stopCurrentBundleOperation(new NullProgressMonitor());
 						}
 					}
@@ -220,7 +230,7 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 			});
 		}
 	}
-	
+
 	/**
 	 * Toggles between lazy and eager activation
 	 * 
@@ -230,26 +240,27 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 
 		SaveProjectHandler so = new SaveProjectHandler();
 		if (so.saveModifiedFiles()) {
-			SaveProjectHandler.waitOnBuilder();		
+			SaveProjectHandler.waitOnBuilder();
 			TogglePolicyJob pj = new TogglePolicyJob(TogglePolicyJob.policyJobName, projects);
 			BundleJobManager.addBundleJob(pj, 0);
 		}
 	}
 
 	/**
-	 * Removes or inserts the default output folder in Bundle-ClassPath and schedules a reset job for bundle projects that have been 
-	 * updated when auto build is off.
+	 * Removes or inserts the default output folder in Bundle-ClassPath and schedules a reset job for
+	 * bundle projects that have been updated when auto build is off.
 	 * 
-	 * @param projects to update the  default output folder of
+	 * @param projects to update the default output folder of
 	 * @param addToPath add default output folder if true and remove default output folder if false
 	 */
-	public static void updateClassPathHandler(final Collection<IProject> projects, final boolean addToPath) {
+	public static void updateClassPathHandler(final Collection<IProject> projects,
+			final boolean addToPath) {
 
 		SaveProjectHandler so = new SaveProjectHandler();
 		if (so.saveModifiedFiles()) {
 			SaveProjectHandler.waitOnBuilder();
-			UpdateBundleClassPathJob updBundleClasspath = 
-					new UpdateBundleClassPathJob(UpdateBundleClassPathJob.updateBundleClassJobName, projects);
+			UpdateBundleClassPathJob updBundleClasspath = new UpdateBundleClassPathJob(
+					UpdateBundleClassPathJob.updateBundleClassJobName, projects);
 			updBundleClasspath.setAddToPath(addToPath);
 			BundleJobManager.addBundleJob(updBundleClasspath, 0);
 		}
@@ -263,22 +274,24 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 	 */
 	protected void dependencyDialogHandler() throws InPlaceException, ExtenderException {
 
-		// Exploring the extender service and introspection. May be replaced by the other code in this method.
-		//		DependencyDialogExtension depService = new DependencyDialogExtension();
-		//		depService.open();
-			Extender<DependencyDialog> depExt = Extenders.getExtender(DependencyDialog.class.getName());
-			DependencyDialog depService = depExt.getService();
-			if (null == depService) {
-				throw new InPlaceException("failed_to_get_service_for_interface", DependencyDialog.class.getName());
-			}
-			depService.open();
+		// Exploring the extender service and introspection. May be replaced by the other code in this
+		// method.
+		// DependencyDialogExtension depService = new DependencyDialogExtension();
+		// depService.open();
+		Extender<DependencyDialog> depExt = Extenders.getExtender(DependencyDialog.class.getName());
+		DependencyDialog depService = depExt.getService();
+		if (null == depService) {
+			throw new InPlaceException("failed_to_get_service_for_interface",
+					DependencyDialog.class.getName());
+		}
+		depService.open();
 	}
-	
+
 	/**
-	 * Shows the bundle view if it is hidden and hides it if it is open and there is no 
-	 * selected project (in list page or a details page) in the view. 
-	 * If visible, show details page if one project is specified and selected in the list page and 
-	 * show the list page if multiple projects are specified and the details page is active.
+	 * Shows the bundle view if it is hidden and hides it if it is open and there is no selected
+	 * project (in list page or a details page) in the view. If visible, show details page if one
+	 * project is specified and selected in the list page and show the list page if multiple projects
+	 * are specified and the details page is active.
 	 * 
 	 * @param projects to display in the bundle view
 	 */
@@ -286,7 +299,8 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 		BundleProjectCandidates bundleProjectCandidates = Activator.getBundleProjectCandidatesService();
 		if (!ViewUtil.isVisible(BundleView.ID)) {
 			ViewUtil.show(BundleView.ID);
-			updateBundleListPage(bundleProjectCandidates.toJavaProjects(bundleProjectCandidates.getInstallable()));
+			updateBundleListPage(bundleProjectCandidates.toJavaProjects(bundleProjectCandidates
+					.getInstallable()));
 		} else {
 			BundleView bv = BundleCommandsContributionItems.getBundleView();
 			Collection<IJavaProject> javaProjects = bundleProjectCandidates.toJavaProjects(projects);
@@ -294,11 +308,13 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 			// Show list page
 			if (bv.isDetailsPageActive()) {
 				if (size <= 1) {
-					bv.showProjects(bundleProjectCandidates.toJavaProjects(bundleProjectCandidates.getInstallable()), true);
+					bv.showProjects(
+							bundleProjectCandidates.toJavaProjects(bundleProjectCandidates.getInstallable()),
+							true);
 				} else {
 					bv.showProjects(javaProjects, true);
 				}
-			} else if (null != getSelectedProject()){
+			} else if (null != getSelectedProject()) {
 				// Show details page
 				if (size == 1) {
 					bv.showProject(projects.toArray(new IProject[projects.size()])[0]);
@@ -314,11 +330,12 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 				// Bundle view is open but there is no selection or detail page
 				ViewUtil.hide(BundleView.ID);
 			}
-		} 
+		}
 	}
 
 	/**
-	 * Updates project status information in the list page in the bundle view for the specified projects
+	 * Updates project status information in the list page in the bundle view for the specified
+	 * projects
 	 * 
 	 * @param projects to refresh. Must not be null.
 	 */
@@ -331,7 +348,7 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 		display.asyncExec(new Runnable() {
 			@Override
 			public void run() {
-				if (ViewUtil.isVisible(BundleView.ID)) {						
+				if (ViewUtil.isVisible(BundleView.ID)) {
 					BundleView bundleView = (BundleView) ViewUtil.get(BundleView.ID);
 					if (bundleView != null) {
 						bundleView.showProjects(projects, true);
@@ -349,11 +366,13 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 	 */
 	protected void bundleConsoleHandler() throws InPlaceException, ExtenderException {
 
-		Extension<BundleConsoleFactory> ext = Extenders.getExtension(BundleConsoleFactory.class.getName());
+		Extension<BundleConsoleFactory> ext = Extenders.getExtension(BundleConsoleFactory.class
+				.getName());
 		BundleConsoleFactory bundleConsoleService = ext.getService();
 		if (null == bundleConsoleService) {
-			throw new InPlaceException("failed_to_get_service_for_interface", BundleConsoleFactory.class.getName());
-		}	
+			throw new InPlaceException("failed_to_get_service_for_interface",
+					BundleConsoleFactory.class.getName());
+		}
 		if (!bundleConsoleService.isConsoleViewVisible()) {
 			bundleConsoleService.showConsoleView();
 		} else {
@@ -372,7 +391,8 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 		Extension<BundleLogView> ext = Extenders.getExtension(BundleLogView.class.getName());
 		BundleLogView viewService = ext.getService();
 		if (null == viewService) {
-			throw new InPlaceException("failed_to_get_service_for_interface", BundleLogView.class.getName());
+			throw new InPlaceException("failed_to_get_service_for_interface",
+					BundleLogView.class.getName());
 		}
 		if (viewService.isVisible()) {
 			viewService.hide();
@@ -380,7 +400,7 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 			viewService.show();
 		}
 	}
-	
+
 	/**
 	 * Get the selected Java plug-in project in the currently active part.
 	 * 
@@ -406,14 +426,15 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 			selection = page.getSelection(PROJECT_EXPLORER_ID);
 		}
 		if (null != selection && !selection.isEmpty()) {
-			return getSelectedJavaProject(selection);			
+			return getSelectedJavaProject(selection);
 		}
 		return null;
 	}
-	
+
 	/**
-	 * Get the selected Java plug-in project from a selection in package explorer,
-	 * project explorer or bundle list page.
+	 * Get the selected Java plug-in project from a selection in package explorer, project explorer or
+	 * bundle list page.
+	 * 
 	 * @param selection to get the selected project from
 	 * @return The selected Java project or null if selection is empty
 	 */
@@ -452,7 +473,7 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 				}
 			}
 		}
-		return javaProject;	
+		return javaProject;
 	}
 
 	/**
@@ -484,14 +505,15 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 			selection = page.getSelection(PROJECT_EXPLORER_ID);
 		}
 		if (null != selection && !selection.isEmpty()) {
-			return getSelectedProject(selection);			
+			return getSelectedProject(selection);
 		}
 		return null;
 	}
 
 	/**
-	 * Get the selected plug-in project from a selection in package explorer,
-	 * project explorer or bundle list page.
+	 * Get the selected plug-in project from a selection in package explorer, project explorer or
+	 * bundle list page.
+	 * 
 	 * @param selection to get the selected project from
 	 * @return The selected project or null if selection is empty
 	 */
@@ -513,14 +535,13 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 				project = (IProject) element;
 			}
 		}
-		return project;	
+		return project;
 	}
-		
+
 	/**
-	 * Default way to schedule jobs, with no delay, saving files before schedule, 
-	 * waiting on builder to finish, no progress dialog, run the job via the bundle view 
-	 * if visible showing a half busy cursor and also displaying the job name in the 
-	 * content bar of the bundle view
+	 * Default way to schedule jobs, with no delay, saving files before schedule, waiting on builder
+	 * to finish, no progress dialog, run the job via the bundle view if visible showing a half busy
+	 * cursor and also displaying the job name in the content bar of the bundle view
 	 * 
 	 * @param job to schedule
 	 */
@@ -534,13 +555,13 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 	}
 
 	/**
-	 * Restore state of a checked menu entry, and set the state of the specified
-	 * category id to the state of the restored menu entry
+	 * Restore state of a checked menu entry, and set the state of the specified category id to the
+	 * state of the restored menu entry
 	 * 
 	 * @param commandId id of the menu contribution
 	 * @param categoryId category id corresponding to the command id (and menu id)
-	 * @return the command object of the corresponding command id or null if the
-	 * command or state of the checked menu entry could not be obtained
+	 * @return the command object of the corresponding command id or null if the command or state of
+	 * the checked menu entry could not be obtained
 	 */
 	static public Command setCheckedMenuEntry(String categoryId, String commandId) {
 

@@ -18,7 +18,6 @@ import no.javatime.inplace.region.closure.BuildErrorClosure;
 import no.javatime.inplace.region.intface.BundleCommand;
 import no.javatime.inplace.region.intface.BundleProjectMeta;
 import no.javatime.inplace.region.intface.BundleRegion;
-import no.javatime.inplace.region.intface.BundleTransition.Transition;
 import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
@@ -209,7 +208,7 @@ public class BundlePopUpCommandsContributionItems extends BundleCommandsContribu
 			throws InPlaceException {
 
 		// Conditional enabling of refresh
-		if (activated && bundleCommand.getBundleRevisions(bundle).size() > 1) {
+		if (activated) {
 			return createContibution(menuId, dynamicPopUpCommandId, refreshParamId, refreshParamId,
 					CommandContributionItem.STYLE_PUSH, refreshImage);
 		}
@@ -226,10 +225,7 @@ public class BundlePopUpCommandsContributionItems extends BundleCommandsContribu
 	 * transition
 	 */
 	private CommandContributionItem addUpdate(Boolean activated, IProject project, Bundle bundle) {
-		if (null != bundle
-				&& activated
-				&& Activator.getBundleTransitionService().containsPending(project, Transition.UPDATE,
-						Boolean.FALSE)) {
+		if (null != bundle && activated) {
 			return createContibution(menuId, dynamicPopUpCommandId, updateParamId, updateParamId,
 					CommandContributionItem.STYLE_PUSH, updateImage);
 		}
