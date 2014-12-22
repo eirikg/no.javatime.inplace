@@ -17,6 +17,7 @@ import java.util.List;
 
 import no.javatime.inplace.bundlejobs.BundleJob;
 import no.javatime.inplace.bundlejobs.NatureJob;
+import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.region.events.BundleTransitionEvent;
 import no.javatime.inplace.region.events.BundleTransitionEventListener;
 import no.javatime.inplace.region.intface.BundleProjectCandidates;
@@ -70,6 +71,7 @@ import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.TableViewer;
+import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.widgets.Composite;
@@ -817,10 +819,17 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 			public void run() {
 				IProject project = getSelectedProject();
 				if (null != project) {
-					if (!Activator.getBundleProjectMetaService().isDefaultOutputFolder(project)) {
-						BundleMenuActivationHandler.updateClassPathHandler(Collections.<IProject>singletonList(project), true);
-					} else {
-						BundleMenuActivationHandler.updateClassPathHandler(Collections.<IProject>singletonList(project), false);
+					try {
+						if (!Activator.getBundleProjectMetaService().isDefaultOutputFolder(project)) {
+							BundleMenuActivationHandler.updateClassPathHandler(Collections.<IProject>singletonList(project), true);
+						} else {
+							BundleMenuActivationHandler.updateClassPathHandler(Collections.<IProject>singletonList(project), false);
+						}
+					} catch (InPlaceException | ExtenderException e) {
+						String msg = NLS.bind(Msg.ADD_MENU_EXEC_ERROR, updateClassPathAction);
+						StatusManager.getManager()
+						.handle(new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID,
+								project, msg, e), StatusManager.LOG);
 					}
 				}
 			}
@@ -886,11 +895,12 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 						Bundle bundle = Activator.getBundleRegionService().getBundle(project);
 						if (null != bundle) {
 							try {								
-									BundleMenuActivationHandler.refreshHandler(Collections.<IProject>singletonList(project));
-							} catch (InPlaceException e) {
+								BundleMenuActivationHandler.refreshHandler(Collections.<IProject>singletonList(project));
+							} catch (InPlaceException | ExtenderException e) {
+								String msg = NLS.bind(Msg.ADD_MENU_EXEC_ERROR, refreshText);
 								StatusManager.getManager()
 								.handle(new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID,
-										bundle, Msg.ADD_MENU_EXEC_ERROR, e), StatusManager.LOG);
+										bundle, msg, e), StatusManager.LOG);
 							}
 						}
 					}
@@ -910,10 +920,17 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 						Bundle bundle = Activator.getBundleRegionService().getBundle(project);
 						if (bundle != null) {
 							Collection<IProject> projects = Collections.<IProject>singletonList(project);
-							if ((bundle.getState() & (Bundle.ACTIVE | Bundle.STARTING)) != 0) {
-								BundleMenuActivationHandler.stopHandler(projects);
-							} else {
-								BundleMenuActivationHandler.startHandler(projects);
+							try {
+								if ((bundle.getState() & (Bundle.ACTIVE | Bundle.STARTING)) != 0) {
+									BundleMenuActivationHandler.stopHandler(projects);
+								} else {
+									BundleMenuActivationHandler.startHandler(projects);
+								}
+							} catch (InPlaceException | ExtenderException e) {
+								String msg = NLS.bind(Msg.ADD_MENU_EXEC_ERROR, startStopGeneralText);
+								StatusManager.getManager()
+								.handle(new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID,
+										bundle, msg, e), StatusManager.LOG);
 							}
 						}
 					}
@@ -927,13 +944,21 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 			 */
 			@Override
 			public void run() {
-				if (isListPageActive()) {
-					IProject project = getSelectedProject();
-					if (null != project) {
-						showProject(project);
+				IProject project = null;
+				try {
+					if (isListPageActive()) {
+						project = getSelectedProject();
+						if (null != project) {
+							showProject(project);
+						}
+					} else {
+						showProjects(bundleProjectCandidates.toJavaProjects(bundleProjectCandidates.getInstallable()), true);
 					}
-				} else {
-					showProjects(bundleProjectCandidates.toJavaProjects(bundleProjectCandidates.getInstallable()), true);
+				} catch (InPlaceException e) {
+					String msg = NLS.bind(Msg.ADD_MENU_EXEC_ERROR, flipListGeneralText);
+					StatusManager.getManager()
+					.handle(new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID,
+							project, msg, e), StatusManager.LOG);
 				}
 			}
 		};
@@ -964,11 +989,16 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 							try {
 								page.openEditor(editorInput, editorDesc.getId());
 							} catch (PartInitException e) {
-								// TODO Add exception to error log
+								StatusManager.getManager()
+								.handle(new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID,
+										project, Msg.ADD_MENU_EXEC_ERROR, e), StatusManager.LOG);
 							}
 						}
 					} else { 
-					// TODO Add message about missing manifest
+						String msg = NLS.bind(Msg.MANIFEST_ERROR, project.getName());
+						StatusManager.getManager()
+						.handle(new BundleStatus(StatusCode.ERROR, Activator.PLUGIN_ID,
+								project, msg, null), StatusManager.LOG);
 					}
 				}
 			}

@@ -31,6 +31,7 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jface.viewers.IStructuredSelection;
+import org.eclipse.osgi.util.NLS;
 import org.eclipse.ui.commands.IElementUpdater;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.menus.UIElement;
@@ -128,10 +129,11 @@ public class BundlePopUpActivationHandler extends BundleMenuActivationHandler im
 				break;
 			}
 		} catch (InPlaceException | ExtenderException e) {
+			String msg = NLS.bind(Msg.ADD_MENU_EXEC_ERROR, parameterId);
 			StatusManager.getManager()
 			.handle(
 					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID,
-							Msg.ADD_MENU_EXEC_ERROR, e), StatusManager.LOG);
+							msg, e), StatusManager.LOG);
 		}
 		return null;
 	}

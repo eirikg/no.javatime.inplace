@@ -11,7 +11,9 @@ public class Msg extends NLS {
 	// Errors
 	public static String ADD_CONTRIBUTION_ERROR;
 	public static String ADD_MENU_EXEC_ERROR;
+	public static String MANIFEST_ERROR;
 	
+	// Field and menu labels
 	public static String IS_TIMEOUT_LABEL;
 	public static String TIMEOUT_SECONDS_LABEL;
 	public static String IS_DEACTIVATE_ON_EXIT_LABEL;

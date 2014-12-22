@@ -29,6 +29,7 @@ import no.javatime.inplace.ui.msg.Msg;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.resources.IProject;
+import org.eclipse.osgi.util.NLS;
 import org.eclipse.ui.statushandlers.StatusManager;
 import org.osgi.framework.Bundle;
 
@@ -140,10 +141,11 @@ public class BundleMainActivationHandler extends BundleMenuActivationHandler {
 				break;
 			}
 		} catch (InPlaceException | ExtenderException e) {
+			String msg = NLS.bind(Msg.ADD_MENU_EXEC_ERROR, parameterId);
 			StatusManager.getManager()
 			.handle(
 					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID,
-							Msg.ADD_MENU_EXEC_ERROR, e), StatusManager.LOG);
+							msg, e), StatusManager.LOG);
 		}
 		return null; 
 	}

@@ -36,7 +36,7 @@ import org.osgi.framework.Bundle;
 
 /**
  * Container class for bundle status objects added during a bundle job. A status object contains a
- * status code and one or more elements of type exception, message, project and a bundle id.
+ * status code and one or more elements of type exception, message, project and bundle.
  * 
  * @see no.javatime.inplace.region.status.IBundleStatus
  */

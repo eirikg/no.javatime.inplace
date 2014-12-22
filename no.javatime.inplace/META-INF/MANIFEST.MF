@@ -4,25 +4,14 @@ Require-Bundle: org.eclipse.ui,
  org.eclipse.jdt.core,
  org.eclipse.debug.ui,
  org.eclipse.pde.core,
- org.eclipse.ltk.core.refactoring
-Export-Package: no.javatime.inplace.bundlejobs;
-  uses:="org.eclipse.core.runtime,
-   no.javatime.inplace.region.status,
-   org.eclipse.core.runtime.jobs,
-   no.javatime.inplace.region.manager,
-   org.eclipse.core.resources,
-   org.osgi.framework,
-   no.javatime.inplace.region.events,
-   no.javatime.inplace.dl.preferences.intface",
+ org.eclipse.ltk.core.refactoring,
+ org.eclipse.jdt.launching
+Export-Package: no.javatime.inplace.bundlejobs,
  no.javatime.inplace.bundlejobs.events;uses:="org.eclipse.core.resources",
  no.javatime.inplace.bundlejobs.intface,
- no.javatime.inplace.bundlemanager;uses:="no.javatime.inplace.region.manager,no.javatime.inplace.bundlejobs.events,org.eclipse.core.resources",
- no.javatime.inplace.dialogs;uses:="no.javatime.inplace.bundlejobs,org.eclipse.debug.internal.ui.launchConfigurations,no.javatime.inplace.region.events",
- no.javatime.inplace.statushandler;
-  uses:="org.eclipse.core.runtime.dynamichelpers,
-   org.eclipse.core.runtime,
-   org.eclipse.core.commands.contexts,
-   org.eclipse.ui.statushandlers"
+ no.javatime.inplace.bundlemanager,
+ no.javatime.inplace.dialogs,
+ no.javatime.inplace.statushandler
 Bundle-Vendor: JavaTime
 Bundle-Version: 0.2.1.qualifier
 Bundle-Name: InPlace Activator Bundle Manager
