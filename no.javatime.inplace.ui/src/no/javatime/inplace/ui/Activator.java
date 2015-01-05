@@ -106,10 +106,9 @@ public class Activator extends AbstractUIPlugin implements BundleJobEventListene
 			bundleCommand = Extenders.getExtension(BundleCommand.class.getName());
 			bundleTransition = Extenders.getExtension(BundleTransition.class.getName());
 			bundleProjectCandidates = Extenders.getExtension(BundleProjectCandidates.class.getName());
-			bundlePrrojectMeta = Extenders.getExtension(BundleProjectMeta.class.getName());
-	
+			bundlePrrojectMeta = Extenders.getExtension(BundleProjectMeta.class.getName());	
 			loadCheckedMenus();
-		} catch (IllegalStateException | InPlaceException e) {
+		} catch (IllegalStateException | InPlaceException | ExtenderException e) {
 			StatusManager.getManager().handle(
 					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),
 					StatusManager.LOG);			
@@ -253,33 +252,33 @@ public class Activator extends AbstractUIPlugin implements BundleJobEventListene
 		}
 		CommandOptions cmdOpt = getCommandOptionsService();
 		Command command = service.getCommand(EagerActivationHandler.commandId);
-		State state = command.getState(EagerActivationHandler.stateId);
+		State state = command.getState(EagerActivationHandler.getCommandStateId());
 		state.setValue(cmdOpt.isEagerOnActivate());
 
 		command = service.getCommand(AutoExternalCommandHandler.commandId);
-		state = command.getState(AutoExternalCommandHandler.stateId);
+		state = command.getState(AutoExternalCommandHandler.getCommandStateId());
 		state.setValue(cmdOpt.isAutoHandleExternalCommands());
 
 		command = service.getCommand(AutoRefreshHandler.commandId);
-		state = command.getState(AutoRefreshHandler.stateId);
+		state = command.getState(AutoRefreshHandler.getCommandStateId());
 		state.setValue(cmdOpt.isRefreshOnUpdate());
-		service.refreshElements(command.getId(), null);
 
 		command = service.getCommand(AutoUpdateHandler.commandId);
-		state = command.getState(AutoUpdateHandler.stateId);
+		state = command.getState(AutoUpdateHandler.getCommandStateId());
 		state.setValue(cmdOpt.isUpdateOnBuild());
 
 		command = service.getCommand(DeactivateOnExitHandler.commandId);
-		state = command.getState(DeactivateOnExitHandler.stateId);
+		state = command.getState(DeactivateOnExitHandler.getCommandStateId());
 		state.setValue(cmdOpt.isDeactivateOnExit());
 
 		command = service.getCommand(UpdateClassPathOnActivateHandler.commandId);
-		state = command.getState(UpdateClassPathOnActivateHandler.stateId);
+		state = command.getState(UpdateClassPathOnActivateHandler.getCommandStateId());
 		state.setValue(cmdOpt.isUpdateDefaultOutPutFolder());
 
 		command = service.getCommand(UIContributorsHandler.commandId);
-		state = command.getState(UIContributorsHandler.stateId);
+		state = command.getState(UIContributorsHandler.getCommandStateId());
 		state.setValue(cmdOpt.isAllowUIContributions());
+		service.refreshElements(command.getId(), null);
 	}
 
 	/**

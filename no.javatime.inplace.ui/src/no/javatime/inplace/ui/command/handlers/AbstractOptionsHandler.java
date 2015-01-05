@@ -33,17 +33,17 @@ import org.osgi.service.prefs.BackingStoreException;
 /**
  * Abstract menu handler class for menu options.
  * <p>
- * Concrete classes provides the command id and loads and store the value of the relevant command option 
+ * Concrete classes must provide methods for getting the command id and loading and storing the value of the relevant command option 
  * @see CommandOptions
- *
  */
 public abstract class AbstractOptionsHandler extends AbstractHandler implements IElementUpdater {
 
-	public static String stateId = "org.eclipse.ui.commands.toggleState";
+	private static String commandStateId = "org.eclipse.ui.commands.toggleState";
 
 	
 	/**
 	 * Store the specified value in options store
+	 * 
 	 * @param value saved in options store  
 	 * @throws InPlaceException if the options store service could not be obtained
 	 */
@@ -51,6 +51,7 @@ public abstract class AbstractOptionsHandler extends AbstractHandler implements 
 
 	/**
 	 * Retrieves the stored value from the options store
+	 * 
 	 * @return the stored value
 	 * @throws InPlaceException if the options store service could not be obtained
 	 */
@@ -60,20 +61,23 @@ public abstract class AbstractOptionsHandler extends AbstractHandler implements 
 	
 	/**
 	 * The command id of the menu element
+	 * 
 	 * @return the command id
 	 */
-	abstract protected String getCommandId();
+	abstract public String getCommandId();
 	
 	/**
 	 * The state id of the menu element
 	 * @return the state id
 	 */
-	protected String getStateId() {
-		return stateId;
+	public static String getCommandStateId() {
+
+		return commandStateId;
 	}
 		
 	/**
 	 * The options command service
+	 * 
 	 * @return the options command service
 	 * @throws InPlaceException if the options store service could not be obtained
 	 */
@@ -86,8 +90,9 @@ public abstract class AbstractOptionsHandler extends AbstractHandler implements 
 	 */
 	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
+
 		try {
-		State state = event.getCommand().getState(getStateId());
+		State state = event.getCommand().getState(getCommandStateId());
 		// Flip state value, sync state with store and update state
 		Boolean stateVal = !(Boolean) state.getValue();
 		storeValue(stateVal);
@@ -114,6 +119,7 @@ public abstract class AbstractOptionsHandler extends AbstractHandler implements 
 	 */
 	@Override
 	public void updateElement(UIElement element, @SuppressWarnings("rawtypes") Map parameters) {
+
 		try {
 			boolean storedValue = getStoredValue();
 			element.setChecked(storedValue);
@@ -128,6 +134,7 @@ public abstract class AbstractOptionsHandler extends AbstractHandler implements 
 	 * The is enabled method is called before the menu is shown. If the stored state is different from the
 	 * state of this command, update the command state and broadcast the change to update the checked state
 	 * of the UI element. This may also happen if the stored value has been updated elsewhere. 
+	 * 
 	 * @return always return true 
 	 */
 	@Override
@@ -137,7 +144,7 @@ public abstract class AbstractOptionsHandler extends AbstractHandler implements 
 			if (null != service) {
 				// Get stored value and synch with state. 
 				Command command = service.getCommand(getCommandId());
-				State state = command.getState(getStateId());
+				State state = command.getState(getCommandStateId());
 				Boolean stateVal = (Boolean) state.getValue();
 				Boolean storeVal = getStoredValue();
 				// Values may be different if stored  value has been changed elsewhere (e.g. preference page)
@@ -155,6 +162,7 @@ public abstract class AbstractOptionsHandler extends AbstractHandler implements 
 	 */
 	@Override
 	public boolean isHandled() {
+
 		return true;
 	}
 }

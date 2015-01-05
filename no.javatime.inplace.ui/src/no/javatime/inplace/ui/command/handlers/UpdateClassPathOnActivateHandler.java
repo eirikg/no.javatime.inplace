@@ -13,24 +13,31 @@ package no.javatime.inplace.ui.command.handlers;
 import no.javatime.inplace.dl.preferences.intface.CommandOptions;
 import no.javatime.inplace.region.intface.InPlaceException;
 
+
+/**
+ * Checked menu item to update the Bundle-ClassPath on bundle activation/deactivation
+ */
 public class UpdateClassPathOnActivateHandler extends AbstractOptionsHandler {
 
 	public static String commandId = "no.javatime.inplace.command.activateclasspath";
 
 	@Override
 	protected void storeValue(Boolean value) throws InPlaceException {
+
 		CommandOptions cmdStore = getOptionsService();
 		cmdStore.setIsUpdateDefaultOutPutFolder(value);
 	}
 
 	@Override
 	protected boolean getStoredValue() throws InPlaceException {
+
 		CommandOptions cmdStore = getOptionsService();
 		return cmdStore.isUpdateDefaultOutPutFolder();
 	}
 
 	@Override
-	protected String getCommandId() {
+	public String getCommandId() {
+
 		return commandId;
 	}
 }

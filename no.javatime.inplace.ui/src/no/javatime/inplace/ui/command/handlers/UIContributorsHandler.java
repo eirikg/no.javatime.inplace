@@ -31,35 +31,40 @@ public class UIContributorsHandler extends AbstractOptionsHandler {
 
 	@Override
 	protected void storeValue(Boolean value) throws InPlaceException {
+
 		CommandOptions cmdStore = getOptionsService();
 		final BundleProjectCandidates bundleProjectCandidates = Activator.getBundleProjectCandidatesService();
 		Boolean storedValue = cmdStore.isAllowUIContributions();
 		Collection<IProject> uIProjects = bundleProjectCandidates.getUIPlugins();
-		if (!storedValue.equals(value) && uIProjects.size() > 0) {
+		if (!storedValue.equals(value)) {
 			cmdStore.setIsAllowUIContributions(value);
-			Activator.getDisplay().asyncExec(new Runnable() {
-				@Override
-				public void run() {
-					BundleMenuActivationHandler.updateBundleListPage(bundleProjectCandidates.toJavaProjects(bundleProjectCandidates.getInstallable()));
-				}			
-			});
-			if (!value) {
-				// Deactivate projects allowing UI extensions
-				DeactivateJob daj = 
-						new DeactivateJob(Msg.DEACTIVATE_UI_CONTRIBOTRS_JOB, uIProjects);			
-				BundleJobManager.addBundleJob(daj, 0);
+			if (uIProjects.size() > 0) {
+				Activator.getDisplay().asyncExec(new Runnable() {
+					@Override
+					public void run() {
+						BundleMenuActivationHandler.updateBundleListPage(bundleProjectCandidates.toJavaProjects(bundleProjectCandidates.getInstallable()));
+					}			
+				});
+				if (!value) {
+					// Deactivate projects allowing UI extensions
+					DeactivateJob daj = 
+							new DeactivateJob(Msg.DEACTIVATE_UI_CONTRIBOTRS_JOB, uIProjects);			
+					BundleJobManager.addBundleJob(daj, 0);
+				}
 			}
 		}
 	}
 
 	@Override
 	protected boolean getStoredValue() throws InPlaceException {
+
 		CommandOptions cmdStore = getOptionsService();
 		return cmdStore.isAllowUIContributions();
 	}
 
 	@Override
-	protected String getCommandId() {
+	public String getCommandId() {
+
 		return commandId;
 	}
 }
