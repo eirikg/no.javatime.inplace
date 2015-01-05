@@ -15,24 +15,36 @@ import org.eclipse.ui.part.ViewPart;
  */
 public class ViewUtil {
 
+	private static boolean isVisible;
+
 	/**
 	 * Check if the view specified by the part id is visible in the workbench
 	 * 
 	 * @param partId part id of the view
 	 * @return true if visible
 	 */
-	public static Boolean isVisible(String partId) {
-		IWorkbenchPage page = Activator.getDefault().getActivePage();
-		if (null != page) {
-			IViewReference viewReference = page.findViewReference(partId);
-			if (null != viewReference) {
-				final IViewPart view = viewReference.getView(false);
-				if (null != view) {
-					return page.isPartVisible(view);
+	public static Boolean isVisible(final String partId) {
+
+		isVisible = false;
+		Display display = Activator.getDisplay();
+		if (null == display) {
+			return false;
+		}
+		display.syncExec(new Runnable() {
+			public void run() {
+				IWorkbenchPage page = Activator.getDefault().getActivePage();
+				if (null != page) {
+					IViewReference viewReference = page.findViewReference(partId);
+					if (null != viewReference) {
+						final IViewPart view = viewReference.getView(false);
+						if (null != view) {
+							isVisible = page.isPartVisible(view);
+						}
+					}
 				}
 			}
-		}
-		return false;
+		});		
+		return isVisible;
 	}
 
 	/**
@@ -41,19 +53,29 @@ public class ViewUtil {
 	 * @param part the class instance of the view to check for visibility
 	 * @return true if the view is visible and false if not
 	 */
-	public static Boolean isVisible(Class<? extends ViewPart> part) {
+	public static Boolean isVisible(final Class<? extends ViewPart> part) {
 	
-		IWorkbenchPage page = Activator.getDefault().getActivePage();
-		if (page != null) {
-			IViewReference[] vRefs = page.getViewReferences();
-			for (IViewReference vr : vRefs) {
-				IViewPart vp = vr.getView(false);
-				if (null != vp && vp.getClass().equals(part)) {
-					return true;
+		isVisible = false;
+		Display display = Activator.getDisplay();
+		if (null == display) {
+			return false;
+		}
+		display.syncExec(new Runnable() {
+			public void run() {
+				IWorkbenchPage page = Activator.getDefault().getActivePage();
+				if (null != page) {
+					IViewReference[] vRefs = page.getViewReferences();
+					for (IViewReference vr : vRefs) {
+						IViewPart vp = vr.getView(false);
+						if (null != vp && vp.getClass().equals(part)) {
+							isVisible = true;
+							return;
+						}
+					}
 				}
 			}
-		}
-		return false;
+		});		
+		return isVisible;
 	}
 	
 	/**
