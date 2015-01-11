@@ -48,6 +48,15 @@ public class InPlaceException extends RuntimeException {
 	}
 	
 	/**
+	 * Outputs and logs the specified message
+	 * 
+	 * @param msg message to log
+	 */
+	public InPlaceException(String msg) {
+		super(msg);
+	}
+
+	/**
 	 * Outputs and logs a message based on message key
 	 * 
 	 * @param key to access message from resource bundle

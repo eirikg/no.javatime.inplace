@@ -3,12 +3,17 @@ package no.javatime.inplace.log.intface;
 import org.eclipse.jface.resource.ImageDescriptor;
 
 /**
- * The bundle log view interface. 
+ * Manages visibility of the bundle log view. 
  * <p>
- * The view can be extended as service. The name of the service can be obtained from
- * the manifest by using {@code #BUNDLE_LOG_VIEW_HEADER}. 
+ * The view can be extended as a service. The name of the service can be obtained from
+ * the manifest by using {@code BUNDLE_LOG_VIEW_IMPL}. 
  * <p>
  * The service is read-only and the service scope can be singleton.
+ * <p>
+ * Messages and status objects are logged by using the {@link BundleLog} service
+ * interface.
+ * 
+ * @see BundleLog
  */
 public interface BundleLogView {
 	
@@ -18,7 +23,7 @@ public interface BundleLogView {
 	 * 
 	 * The content of the header is the class implementing this message view interface
 	 */
-	public final static String BUNDLE_LOG_VIEW_HEADER = "BundleLog-View";
+	public final static String BUNDLE_LOG_VIEW_IMPL = "BundleLog-View-Service";
 
 	/**
 	 * Get the default image for the log view as an image descriptor

@@ -38,6 +38,7 @@ import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.JavaCore;
+import org.eclipse.osgi.util.NLS;
 import org.eclipse.pde.core.project.IBundleProjectDescription;
 import org.eclipse.pde.core.project.IHostDescription;
 import org.eclipse.pde.core.project.IRequiredBundleDescription;
@@ -286,18 +287,18 @@ public class BundleProjectCandidatesImpl implements BundleProjectCandidates {
 	public Boolean isNatureEnabled(IProject project, String natureId) throws InPlaceException {
 	
 		if (null == project) {
-			throw new InPlaceException(Msg.PROJECT_NATURE_NULL_EXP, natureId);
+			throw new InPlaceException(NLS.bind(Msg.PROJECT_NATURE_NULL_EXP, natureId));
 		}
 		if (project.isOpen()) {
 			if (!project.exists()) {
 				// This should not be the case for projects
-				throw new InPlaceException(Msg.PROJECT_OPEN_NOT_EXIST_EXP, natureId);
+				throw new InPlaceException(NLS.bind(Msg.PROJECT_OPEN_NOT_EXIST_EXP, natureId));
 			}
 			try {
 				return project.hasNature(natureId) ? true : false;
 			} catch (CoreException e) {
 				// Closed or non-existing project should not happen at this point
-				throw new InPlaceException(Msg.PROJECT_NATURE_CORE_EXP, natureId);
+				throw new InPlaceException(NLS.bind(Msg.PROJECT_NATURE_CORE_EXP, natureId));
 			}
 		}
 		return false;

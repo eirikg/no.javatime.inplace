@@ -47,6 +47,7 @@ import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.IPackageFragmentRoot;
 import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.osgi.util.ManifestElement;
+import org.eclipse.osgi.util.NLS;
 import org.eclipse.pde.core.project.IBundleClasspathEntry;
 import org.eclipse.pde.core.project.IBundleProjectDescription;
 import org.eclipse.pde.core.project.IBundleProjectService;
@@ -421,7 +422,7 @@ public class BundleProjectMetaImpl extends CachedManifestOperationsImpl implemen
 		String osgiDev = inDevelopmentMode();
 		String symbolicName = getSymbolicName(project);
 		if (null == symbolicName) {
-			throw new InPlaceException(Msg.SYMBOLIC_NAME_ERROR, project.getName());			
+			throw new InPlaceException(NLS.bind(Msg.SYMBOLIC_NAME_ERROR, project.getName()));			
 		}
 		if (null == osgiDev) {
 			throw new InPlaceException("classpath_property_error", symbolicName);

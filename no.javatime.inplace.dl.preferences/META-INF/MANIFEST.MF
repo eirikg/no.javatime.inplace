@@ -12,7 +12,7 @@ Import-Package: no.javatime.inplace.extender.intface,
  org.osgi.framework,
  org.osgi.service.prefs
 Bundle-ActivationPolicy: lazy
-Command-Options: no.javatime.inplace.dl.preferences.impl.CommandOptionsImpl
-Dependency-Options: no.javatime.inplace.dl.preferences.impl.DependencyOptionsImpl
-Message-Options: no.javatime.inplace.dl.preferences.impl.MessageOptionsImpl
+Command-Options-Service: no.javatime.inplace.dl.preferences.impl.CommandOptionsImpl
+Dependency-Options-Service: no.javatime.inplace.dl.preferences.impl.DependencyOptionsImpl
+Message-Options-Service: no.javatime.inplace.dl.preferences.impl.MessageOptionsImpl
 Service-Component: OSGI-INF/preferences.xml

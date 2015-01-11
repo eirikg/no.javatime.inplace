@@ -75,6 +75,7 @@ import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.jface.resource.ImageDescriptor;
+import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkbenchPage;
@@ -211,7 +212,7 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 
 		BundleRegion br = bundleRegion.getService(context.getBundle());
 		if (null == br) {
-			throw new InPlaceException(Msg.GET_SERVICE_EXP, BundleRegion.class.getName());
+			throw new InPlaceException(NLS.bind(Msg.GET_SERVICE_EXP, BundleRegion.class.getName()));
 		}
 		return br;
 	}
@@ -220,7 +221,7 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 
 		BundleCommand br = bundleCommand.getService(context.getBundle());
 		if (null == br) {
-			throw new InPlaceException(Msg.GET_SERVICE_EXP, BundleCommand.class.getName());
+			throw new InPlaceException(NLS.bind(Msg.GET_SERVICE_EXP, BundleCommand.class.getName()));
 		}
 		return br;
 	}
@@ -230,7 +231,7 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 
 		BundleTransition bt = bundleTransition.getService(context.getBundle());
 		if (null == bt) {
-			throw new InPlaceException(Msg.GET_SERVICE_EXP, BundleTransition.class.getName());
+			throw new InPlaceException(NLS.bind(Msg.GET_SERVICE_EXP, BundleTransition.class.getName()));
 		}
 		return bt;
 	}
@@ -240,7 +241,7 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 
 		BundleProjectCandidates bp = bundleProjectCandidates.getService(context.getBundle());
 		if (null == bp) {
-			throw new InPlaceException(Msg.GET_SERVICE_EXP, BundleProjectCandidates.class.getName());
+			throw new InPlaceException(NLS.bind(Msg.GET_SERVICE_EXP, BundleProjectCandidates.class.getName()));
 		}
 		return bp;
 	}
@@ -250,7 +251,7 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 
 		BundleProjectMeta bpd = bundlePrrojectMeta.getService(context.getBundle());
 		if (null == bpd) {
-			throw new InPlaceException(Msg.GET_SERVICE_EXP, BundleProjectMeta.class.getName());
+			throw new InPlaceException(NLS.bind(Msg.GET_SERVICE_EXP, BundleProjectMeta.class.getName()));
 		}
 		return bpd;
 	}
@@ -310,7 +311,7 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 	 */
 	public String log(IBundleStatus status) throws InPlaceException, ExtenderException {
 		BundleLog t = getService(bundleLog);
-		return t.trace(status);
+		return t.log(status);
 	}
 
 	/**
@@ -324,8 +325,8 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 
 		S s = extension.getService(context.getBundle());
 		if (null == s) {
-			throw new InPlaceException(Msg.GET_SERVICE_EXP, extension.getExtender()
-					.getServiceInterfaceName());
+			throw new InPlaceException(NLS.bind(Msg.GET_SERVICE_EXP, extension.getExtender()
+					.getServiceInterfaceName()));
 		}
 		return s;
 	}

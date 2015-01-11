@@ -16,7 +16,7 @@ public interface DependencyDialog {
 	 * Manifest header for accessing the implementation class name of the bundle console.
 	 * May be used when extending this bundle
 	 */
-	public final static String DEPENDENCY_DIALOG_HEADER = "Dependency-Dialog";
+	public final static String DEPENDENCY_DIALOG_IMPL = "Dependency-Dialog-Service";
 
 	/**
 	 * Open the dependency dialog

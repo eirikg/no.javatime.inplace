@@ -15,6 +15,8 @@ import org.eclipse.ui.part.ViewPart;
 public class BundleLogViewImpl implements BundleLogView {
 
 	public static String MESSAGE_VIEW_ID = "no.javatime.inplace.log.view";
+	
+	private boolean isVisible;
 
 	public ImageDescriptor getLogViewImage() {
 		return LogView.messageViewImage;
@@ -97,37 +99,56 @@ public class BundleLogViewImpl implements BundleLogView {
 	 * @param part the view to check
 	 * @return true if the view is visible and false if not
 	 */
-	public Boolean isViewVisible(Class<? extends ViewPart> part) {
+	public Boolean isViewVisible(final Class<? extends ViewPart> part) {
 
-		IWorkbenchPage page = Activator.getDefault().getActivePage();
-		if (page != null) {
-			IViewReference[] vRefs = page.getViewReferences();
-			for (IViewReference vr : vRefs) {
-				IViewPart vp = vr.getView(false);
-				if (null != vp && vp.getClass().equals(part)) {
-					return true;
+		isVisible = false;
+		Display display = Activator.getDisplay();
+		if (null == display) {
+			return false;
+		}
+		display.syncExec(new Runnable() {
+			public void run() {
+				IWorkbenchPage page = Activator.getDefault().getActivePage();
+				if (null != page) {
+					IViewReference[] vRefs = page.getViewReferences();
+					for (IViewReference vr : vRefs) {
+						IViewPart vp = vr.getView(false);
+						if (null != vp && vp.getClass().equals(part)) {
+							isVisible = true;
+							return;
+						}
+					}
 				}
 			}
-		}
-		return false;
+		});		
+		return isVisible;
 	}
 
 	public boolean isVisible() {
 		return isVisible(getViewId());
 	}
 
-	public boolean isVisible(String viewId) {
+	public boolean isVisible(final String viewId) {
 
-		IWorkbenchPage page = Activator.getDefault().getActivePage();
-		if (null != page) {
-			IViewReference viewReference = page.findViewReference(viewId);
-			if (null != viewReference) {
-				final IViewPart view = viewReference.getView(false);
-				if (null != view) {
-					return page.isPartVisible(view);
+		isVisible = false;
+		Display display = Activator.getDisplay();
+		if (null == display) {
+			return false;
+		}
+		display.syncExec(new Runnable() {
+			public void run() {
+				IWorkbenchPage page = Activator.getDefault().getActivePage();
+				if (null != page) {
+					IViewReference viewReference = page.findViewReference(viewId);
+					if (null != viewReference) {
+						final IViewPart view = viewReference.getView(false);
+						if (null != view) {
+							isVisible = page.isPartVisible(view);
+						}
+					}
 				}
 			}
-		}
-		return false;
+		});		
+		return isVisible;		
 	}
 }

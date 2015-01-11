@@ -31,13 +31,13 @@ public class ExtenderBundleTracker extends BundleTracker<Extender<?>> {
 
 		try { 
 			// Get the service name from the bundle providing the service
-			String bundleLogSvcName = bundle.getHeaders().get(BundleLog.BUNDLE_LOG_HEADER);
+			String bundleLogSvcName = bundle.getHeaders().get(BundleLog.BUNDLE_LOG_IMPL);
 			// Extend and register the bundle log as a service if not registered by others
 			if (null != bundleLogSvcName && null == Extenders.getExtender(BundleLog.class.getName())) {
 				return Extenders.register(this, bundle, context.getBundle(), 
 						BundleLog.class.getName(), bundleLogSvcName, null);
 			}
-			String bundleConsoleViewSvcName = bundle.getHeaders().get(BundleConsoleFactory.BUNDLE_CONSOLE_HEADER);
+			String bundleConsoleViewSvcName = bundle.getHeaders().get(BundleConsoleFactory.BUNDLE_CONSOLE_IMPL);
 			if (null != bundleConsoleViewSvcName && null == Extenders.getExtender(BundleConsoleFactory.class.getName())) {
 				return Extenders.register(this, bundle, context.getBundle(), BundleConsoleFactory.class.getName(),
 						bundleConsoleViewSvcName, null);

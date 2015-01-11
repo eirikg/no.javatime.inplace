@@ -12,7 +12,7 @@ Import-Package: no.javatime.inplace.dl.preferences.intface,
  no.javatime.inplace.region.intface,
  no.javatime.inplace.region.status,
  no.javatime.util.view
-Bundle-Console-Factory: no.javatime.inplace.pl.console.impl.BundleConsoleFactoryImpl 
+Bundle-Console-Service: no.javatime.inplace.pl.console.impl.BundleConsoleFactoryImpl 
 Export-Package: no.javatime.inplace.pl.console.intface
 Bundle-ActivationPolicy: lazy
 Bundle-RequiredExecutionEnvironment: JavaSE-1.7

@@ -3,7 +3,7 @@ Export-Package: no.javatime.inplace.pl.dependencies.intface
 Require-Bundle: org.eclipse.ui,org.eclipse.core.runtime
 Bundle-ActivationPolicy: lazy
 Bundle-Version: 0.1.2.qualifier
-Dependency-Dialog: no.javatime.inplace.pl.dependencies.impl.Depende
+Dependency-Dialog-Service: no.javatime.inplace.pl.dependencies.impl.Depende
  ncyDialogImpl
 Bundle-Name: Dependencies
 Bundle-Activator: no.javatime.inplace.pl.dependencies.Activator

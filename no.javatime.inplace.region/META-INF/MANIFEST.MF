@@ -7,13 +7,13 @@ Bundle-Activator: no.javatime.inplace.region.Activator
 Require-Bundle: org.eclipse.ui,
  org.eclipse.core.runtime,
  org.eclipse.core.resources,
- org.eclipse.pde.core
+ org.eclipse.pde.core,
+ org.eclipse.jdt.core
 Bundle-ActivationPolicy: lazy
 Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Import-Package: no.javatime.inplace.dl.preferences.intface,
  no.javatime.inplace.extender.intface,
- no.javatime.util.messages,
- org.eclipse.jdt.core
+ no.javatime.util.messages
 Export-Package: no.javatime.inplace.region.closure;
   uses:="no.javatime.inplace.region.status,
    no.javatime.inplace.region.manager,

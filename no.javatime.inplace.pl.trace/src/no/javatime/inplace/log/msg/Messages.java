@@ -16,6 +16,10 @@ import org.eclipse.osgi.util.NLS;
 
 public class Messages extends NLS {
 
+	// Exceptions
+	public static String GET_SERVICE_EXP;
+	public static String FORMAT_MSG_EXP;
+	
 	public static String LogView_column_message;
 	public static String LogView_column_plugin;
 	public static String LogView_column_date;

@@ -7,6 +7,7 @@ import no.javatime.inplace.pl.dependencies.msg.Msg;
 import no.javatime.inplace.region.intface.InPlaceException;
 
 import org.eclipse.jface.resource.ImageDescriptor;
+import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IWorkbench;
@@ -49,7 +50,7 @@ public class Activator extends AbstractUIPlugin {
 		/*
 		Bundle bundle = context.getBundle();
 		Dictionary<String, String> dictionary = bundle.getHeaders();		
-		String depDlgClassName = dictionary.get(DependencyDialog.DEPENDENCY_DIALOG_HEADER);
+		String depDlgClassName = dictionary.get(DependencyDialog.DEPENDENCY_DIALOG_IMPL);
 		ExtenderImpl.register(bundle, DependencyDialog.class, depDlgClassName);
 		*/
 	}
@@ -68,7 +69,7 @@ public class Activator extends AbstractUIPlugin {
 		
 		DependencyOptions dpOpt = dependencyOptions.getService();
 		if (null == dpOpt) {
-			throw new InPlaceException(Msg.INVALID_OPTIONS_SERVICE_EXCEPTION, DependencyOptions.class.getName());			
+			throw new InPlaceException(NLS.bind(Msg.INVALID_OPTIONS_SERVICE_EXCEPTION, DependencyOptions.class.getName()));			
 		}
 		return dpOpt;
 	}

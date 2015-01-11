@@ -5,8 +5,8 @@ Bundle-SymbolicName: no.javatime.inplace.log;singleton:=true
 Bundle-Version: 0.1.1.qualifier
 Bundle-Activator: no.javatime.inplace.log.Activator
 Bundle-Vendor: JavaTime
-BundleLog-Container: no.javatime.inplace.log.impl.BundleLogimpl
-BundleLog-View: no.javatime.inplace.log.impl.BundleLogViewImpl
+BundleLog-Service: no.javatime.inplace.log.impl.BundleLogimpl
+BundleLog-View-Service: no.javatime.inplace.log.impl.BundleLogViewImpl
 Require-Bundle: org.eclipse.core.runtime,
  org.eclipse.core.filesystem,
  org.eclipse.ui,
