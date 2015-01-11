@@ -314,7 +314,7 @@ public class BundleStatus extends MultiStatus implements IBundleStatus {
 	 */
 	public void setStatusCode() {
 		
-		StatusCode statusCode = StatusCode.INFO;
+		// If no children, use the severity from the root status object
 		for (IStatus status : getChildren()) {
 			if (status instanceof IBundleStatus) {
 				IBundleStatus bundleStatus = (IBundleStatus) status;
@@ -322,8 +322,8 @@ public class BundleStatus extends MultiStatus implements IBundleStatus {
 					statusCode = StatusCode.ERROR;
 					break;
 				} else if (bundleStatus.getStatusCode() == StatusCode.BUILDERROR) {
-						statusCode = StatusCode.BUILDERROR;
-						break;
+					statusCode = StatusCode.BUILDERROR;
+					break;
 				} else if (bundleStatus.getStatusCode() == StatusCode.WARNING) {
 					statusCode = StatusCode.WARNING;					
 				}

@@ -141,7 +141,11 @@ public interface IBundleStatus extends IStatus {
 	 * @see org.eclipse.core.runtime.MultiStatus#merge(IStatus)
 	 */
 	void merge(IStatus status);
-
+	
+	/**
+	 * If this status object has children, assign the status code from the children with
+	 * the highest ranking where the ranking in increasing order is {@code StatusCode#WARNING},
+	 * {@code StatusCode#BUILDERROR}, {@code StatusCode#ERROR}
+	 */
 	public void setStatusCode();
-
 }
