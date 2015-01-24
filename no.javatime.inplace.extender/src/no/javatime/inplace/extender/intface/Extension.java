@@ -14,7 +14,7 @@ public interface Extension<S> {
 	 * object. If instead a service object was specified this service object is shared among all
 	 * bundles.
 	 * <p>
-	 * Note: For OSGi R6 service scope may be used to specify service creation. The scopes are
+	 * Note: For OSGi R6 service SCOPE may be used to specify service creation. The scopes are
 	 * singleton (shared service), bundle (one service per bundle) and prototype (a new service for
 	 * each call to {@link #getService()} and {@link #getService(Bundle)}
 	 * <p>
@@ -40,7 +40,7 @@ public interface Extension<S> {
 	 * object. If instead a service object was specified this service object is shared among all
 	 * bundles.
 	 * <p>
-	 * Note: For OSGi R6 service scope may be used to specify service creation. The scopes are
+	 * Note: For OSGi R6 service SCOPE may be used to specify service creation. The scopes are
 	 * singleton (shared service), bundle (one service per bundle) and prototype (a new service for
 	 * each call to {@link #getService()} and {@link #getService(Bundle)}
 	 * <p>

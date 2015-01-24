@@ -19,6 +19,9 @@ public class Messages extends NLS {
 	// Exceptions
 	public static String GET_SERVICE_EXP;
 	public static String FORMAT_MSG_EXP;
+	public static String FORMAT_ARG_EXP;
+	public static String ADD_SIBLING_EXP;
+	public static String ADD_PARENT_EXP;
 	
 	public static String LogView_column_message;
 	public static String LogView_column_plugin;

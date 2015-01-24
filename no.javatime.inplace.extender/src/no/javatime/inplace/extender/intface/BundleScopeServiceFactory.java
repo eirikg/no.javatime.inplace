@@ -1,7 +1,11 @@
 package no.javatime.inplace.extender.intface;
 
+import no.javatime.inplace.extender.Activator;
+import no.javatime.inplace.extender.provider.ExtenderServiceMap;
+
 import org.osgi.framework.Bundle;
 import org.osgi.framework.ServiceFactory;
+import org.osgi.framework.ServiceReference;
 import org.osgi.framework.ServiceRegistration;
 
 /**
@@ -9,7 +13,7 @@ import org.osgi.framework.ServiceRegistration;
  * class.
  * <p>
  * Use this service factory when registering a service to obtain a new service object for each
- * bundle (bundle service scope) using the registered service
+ * bundle (bundle service SCOPE) using the registered service
  * <p>
  * The class name must be the name of a class that resides in the bundle specified as a parameter in the
  * callback method {@code #getService(Bundle, ServiceRegistration)}
@@ -36,8 +40,15 @@ public class BundleScopeServiceFactory<S> implements ServiceFactory<S> {
 	@Override
 	public S getService(Bundle bundle, ServiceRegistration<S> registration) {
 		try {
-			Class<S> serviceClass = Introspector.loadClass(bundle, serviceClassName);
-			return Introspector.createObject(serviceClass);
+			
+			ExtenderServiceMap<S> extServiceMap = Activator.getExtenderServiceMap();
+			ServiceReference<S> sr = registration.getReference();
+			Extender<S> extender = extServiceMap.get(sr);
+			if (null != extender) {
+				Bundle ownerBundle = extender.getOwnerBundle();
+				Class<S> serviceClass = Introspector.loadClass(ownerBundle, serviceClassName);
+				return Introspector.createObject(serviceClass);
+			}
 		} catch (ExtenderException e) {
 			// delegate to framework
 		}

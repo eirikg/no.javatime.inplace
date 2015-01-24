@@ -156,7 +156,7 @@ public class BundleCommandImpl implements BundleCommand {
 			if (resolve(Collections.singletonList(bundle))) {
 				CommandOptions cmdOpt = Activator.getDefault().getCommandOptionsService();
 				boolean timeout = true;
-				int timeoutVal = 5000;
+				long timeoutVal = 5000;
 				timeout = cmdOpt.isTimeOut();
 				if (timeout) {
 					timeoutVal = cmdOpt.getDeafultTimeout();
@@ -465,7 +465,7 @@ public class BundleCommandImpl implements BundleCommand {
 	}
 
 	@Override
-	public void start(Bundle bundle, int startOption, int timeOut) throws InPlaceException,
+	public void start(Bundle bundle, int startOption, long timeOut) throws InPlaceException,
 			InterruptedException, IllegalStateException {
 
 		class StartTask implements Callable<String> {
@@ -578,7 +578,7 @@ public class BundleCommandImpl implements BundleCommand {
 	}
 
 	@Override
-	public void stop(Bundle bundle, boolean stopTransient, int timeOut) throws InPlaceException,
+	public void stop(Bundle bundle, boolean stopTransient, long timeOut) throws InPlaceException,
 			InterruptedException, IllegalStateException {
 
 		class StopTask implements Callable<String> {

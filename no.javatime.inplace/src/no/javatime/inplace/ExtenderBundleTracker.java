@@ -1,5 +1,6 @@
 package no.javatime.inplace;
 
+import no.javatime.inplace.extender.intface.BundleScopeServiceFactory;
 import no.javatime.inplace.extender.intface.Extender;
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.extender.intface.Extenders;
@@ -35,7 +36,7 @@ public class ExtenderBundleTracker extends BundleTracker<Extender<?>> {
 			// Extend and register the bundle log as a service if not registered by others
 			if (null != bundleLogSvcName && null == Extenders.getExtender(BundleLog.class.getName())) {
 				return Extenders.register(this, bundle, context.getBundle(), 
-						BundleLog.class.getName(), bundleLogSvcName, null);
+						BundleLog.class.getName(), new BundleScopeServiceFactory<>(bundleLogSvcName), null);
 			}
 			String bundleConsoleViewSvcName = bundle.getHeaders().get(BundleConsoleFactory.BUNDLE_CONSOLE_IMPL);
 			if (null != bundleConsoleViewSvcName && null == Extenders.getExtender(BundleConsoleFactory.class.getName())) {

@@ -10,7 +10,8 @@
  *******************************************************************************/
 package no.javatime.inplace.extender.intface;
 
-import no.javatime.util.messages.ExceptionMessage;
+import java.text.MessageFormat;
+
 
 /**
  * Formats, outputs and logs exception messages.
@@ -33,27 +34,56 @@ public class ExtenderException extends RuntimeException {
 	 */
 	public ExtenderException (Throwable tex) {
 		super(tex);	
-		ExceptionMessage.getInstance().handleMessage(tex, null);
 	}
 	
+	public ExtenderException(String msg) {
+		super(msg);
+	}
+
 	/**
 	 * Outputs and logs exception and message based on message key
 	 * 
 	 * @param tex the current thrown exception
-	 * @param key to access message from resource bundle
+	 * @param pattern to access message from resource bundle
 	 * @param substitutions message strings to insert into the retrieved message
 	 */
-	public ExtenderException(Throwable tex, String key, Object ... substitutions) {
-		super(ExceptionMessage.getInstance().formatString(key, substitutions), tex);
+	public ExtenderException(Throwable tex, String pattern, Object ... substitutions) {
+		super(format(pattern, substitutions), tex);
 	}
 	
 	/**
 	 * Outputs and logs a message based on message key
 	 * 
-	 * @param key to access message from resource bundle
+	 * @param pattern to access message from resource bundle
 	 * @param substitutions message strings to insert into the retrieved message
 	 */
-	public ExtenderException(String key, Object ... substitutions) {
-		super(ExceptionMessage.getInstance().formatString(key, substitutions));
+	public ExtenderException(String pattern, Object ... substitutions) {
+		super(format(pattern, substitutions));
+	}
+
+	/**
+	 * Formats a message based on a pattern to format using a list of substitutions
+	 * <p>
+	 * If a formatting error occurs, substitute the resulting message with an error message.
+	 * 
+	 * @param pattern creates a message with the given pattern and uses it to format the given
+	 * substitutions
+	 * @param substitutions used by the pattern parameter to format the resulting message
+	 * @return the formatted message or if a formating error occurs, a verbose description of the
+	 * formatting error
+	 */
+	static private String format(String pattern, Object ... substitutions) {
+
+		String msg = null;
+		try {
+			msg = MessageFormat.format(pattern, substitutions);
+		} catch (IllegalArgumentException e) {
+			if (null != pattern) {
+				msg = MessageFormat.format("Failed to format: {0}", pattern);
+			} else {
+				msg = "Failed to format message with null pattern";
+			}
+		}
+		return msg;
 	}
 }

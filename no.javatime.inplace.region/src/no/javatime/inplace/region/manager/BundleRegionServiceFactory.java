@@ -1,9 +1,12 @@
 package no.javatime.inplace.region.manager;
 
+import no.javatime.inplace.extender.intface.Extender;
+import no.javatime.inplace.extender.intface.Extenders;
 import no.javatime.inplace.region.intface.BundleRegion;
 
 import org.osgi.framework.Bundle;
 import org.osgi.framework.ServiceFactory;
+import org.osgi.framework.ServiceReference;
 import org.osgi.framework.ServiceRegistration;
 
 /**
@@ -17,6 +20,12 @@ public class BundleRegionServiceFactory implements ServiceFactory<BundleRegion> 
 	@Override
 	public BundleRegion getService(Bundle bundle, ServiceRegistration<BundleRegion> registration) {
 		WorkspaceRegionImpl br = WorkspaceRegionImpl.INSTANCE;
+		// Set scope to singleton when returning the same instance each time
+		ServiceReference<BundleRegion> sr = registration.getReference();
+		Extender<BundleRegion> extender = Extenders.getExtender(sr);
+		if (null != extender) {
+			extender.setProperty(Extender.SCOPE, Extender.SINGLETON);
+		}
 		return br;
 	}
 	

@@ -6,8 +6,7 @@ Bundle-Version: 0.1.1.qualifier
 Bundle-Activator: no.javatime.inplace.extender.Activator
 Bundle-Vendor: Lingo as
 Bundle-RequiredExecutionEnvironment: JavaSE-1.7
-Import-Package: no.javatime.util.messages,
- org.osgi.framework,
+Import-Package: org.osgi.framework,
  org.osgi.util.tracker
 Bundle-ActivationPolicy: lazy
 Export-Package: no.javatime.inplace.extender.intface

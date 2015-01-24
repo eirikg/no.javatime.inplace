@@ -27,7 +27,7 @@ public class ExtendersImpl<S> implements IExtenders<S> {
 
 		@SuppressWarnings("unchecked")
 		ExtenderServiceMap<S> extMapService = (ExtenderServiceMap<S>) Activator.getExtenderServiceMap();
-		Extender<S> extender = extMapService.getExtender(interfaceName);
+		Extender<S> extender = extMapService.get(interfaceName);
 		Activator.ungetServiceMap();
 		return extender;
 	}

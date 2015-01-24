@@ -1,5 +1,6 @@
 package no.javatime.inplace.extender.intface;
 
+import java.util.Collection;
 import java.util.Dictionary;
 
 import no.javatime.inplace.extender.Activator;
@@ -13,7 +14,7 @@ import org.osgi.util.tracker.BundleTracker;
 /**
  * Register, unregister, re-register and access extenders and create extensions
  * <p>
- * Prior to OSGi R6 a service scope is implicit when registering a service. The scopes are singleton
+ * Prior to OSGi R6 a service SCOPE is implicit when registering a service. The scopes are singleton
  * (shared service), bundle (one service per bundle) and prototype (OSGi R6 only) (a new service for
  * each call to {@link #getService()} and {@link #getService(Bundle)}.
  * <p>
@@ -33,10 +34,10 @@ public class Extenders {
 	 * register and is registered from a bundle tracker when the bundle owing the service class is
 	 * activated.
 	 * <p>
-	 * The service scope is singleton when specifying a service name. Use
+	 * The service SCOPE is singleton when specifying a service name. Use
 	 * {@link BundleScopeServiceFactory} or your own customized service factory to to use bundle
-	 * scope. For prototype scope use the prototype factory supplied by the Framework. Note that it
-	 * is not possible to use the prototype service scope prior to OSGi R6 (pre. Luna)
+	 * SCOPE. For prototype SCOPE use the prototype factory supplied by the Framework. Note that it
+	 * is not possible to use the prototype service SCOPE prior to OSGi R6 (pre. Luna)
 	 * 
 	 * @param tracker The tracker that the extender was registered by. Can be null.
 	 * @param owner The bundle owing the class of the specified service name. Can be same as the
@@ -68,10 +69,10 @@ public class Extenders {
 	 * from a (registrar) bundle not containing (owing) the service to register and is registered from
 	 * a bundle tracker when the bundle owing the service class is activated.
 	 * <p>
-	 * If the specified service is a service factory object the service scope is bundle, and singleton
-	 * if the the specified service object is a service. For prototype scope use the prototype
+	 * If the specified service is a service factory object the service SCOPE is bundle, and singleton
+	 * if the the specified service object is a service. For prototype SCOPE use the prototype
 	 * factory supplied by the Framework. Note that it is not possible to use the prototype service
-	 * scope prior to OSGi R6 (pre. Luna)
+	 * SCOPE prior to OSGi R6 (pre. Luna)
 	 * 
 	 * @param tracker The tracker that the extender was registered by. Can be null.
 	 * @param owner The bundle owing the class of the specified service name. Can be same as the
@@ -99,7 +100,7 @@ public class Extenders {
 
 	/**
 	 * Registers the specified service object using a service name with the specified properties under
-	 * the specified interface class name with the Framework. The service scope is singleton. The
+	 * the specified interface class name with the Framework. The service SCOPE is singleton. The
 	 * extender is typically registered from a (registrar) bundle not containing (owing) the service
 	 * to register.
 	 * 
@@ -128,10 +129,10 @@ public class Extenders {
 
 	/**
 	 * Registers the specified service object with the specified properties under the specified
-	 * interface class name with the Framework. The service scope is singleton. The extender is
+	 * interface class name with the Framework. The service SCOPE is singleton. The extender is
 	 * typically registered from a (registrar) bundle not containing (owing) the service to register.
 	 * <p>
-	 * If the specified service is a service factory object the service scope is bundle, and singleton
+	 * If the specified service is a service factory object the service SCOPE is bundle, and singleton
 	 * if the the specified service object is a service.
 	 * 
 	 * @param owner The bundle owing the class of the specified service name. Can be same as the
@@ -158,11 +159,21 @@ public class Extenders {
 		return extender;
 	}
 
+	public static <S> Extender<S> register(Bundle ownerBundle, Bundle regBundle,
+			Class<S> serviceInterface, S service, Dictionary<String, Object> properties)
+			throws ExtenderException {
+
+		Extender<S> extender = new ExtenderImpl<>(ownerBundle, regBundle, serviceInterface.getName(),
+				service, properties);
+		extender.registerService();
+		return extender;
+	}
+
 	/**
 	 * Registers the specified service object with the specified properties under the specified
 	 * interface class name with the Framework.
 	 * <p>
-	 * If the specified service is a service factory object the service scope is bundle, and singleton
+	 * If the specified service is a service factory object the service SCOPE is bundle, and singleton
 	 * if the the specified service object is a service.
 	 * 
 	 * @param registrar The bundle registering the service with the Framework
@@ -188,7 +199,7 @@ public class Extenders {
 	 * Registers a service object with the properties, interface name and possible bundle tracker held
 	 * by the specified extender.
 	 * <p>
-	 * If the service is a service factory object the service scope is bundle, and singleton if the
+	 * If the service is a service factory object the service SCOPE is bundle, and singleton if the
 	 * the specified service object is a service or a service name.
 	 * <p>
 	 * An extender service may be unregistered and registered multiple times using the same extender
@@ -250,8 +261,8 @@ public class Extenders {
 	public static final <S> Extension<S> getExtension(String interfaceName) throws ExtenderException {
 
 		@SuppressWarnings("unchecked")
-		ExtenderServiceMap<S> extMapService = (ExtenderServiceMap<S>) Activator.getExtenderServiceMap();
-		Extender<S> extender = extMapService.getExtender(interfaceName);
+		ExtenderServiceMap<S> extServiceMap = (ExtenderServiceMap<S>) Activator.getExtenderServiceMap();
+		Extender<S> extender = extServiceMap.get(interfaceName);
 		Activator.ungetServiceMap();
 		return extender.getExtension();
 	}
@@ -267,11 +278,18 @@ public class Extenders {
 	 */
 	public static final <S> Extender<S> getExtender(String interfaceName) throws ExtenderException {
 
-		@SuppressWarnings("unchecked")
-		ExtenderServiceMap<S> extMapService = (ExtenderServiceMap<S>) Activator.getExtenderServiceMap();
-		Extender<S> extender = extMapService.getExtender(interfaceName);
+		ExtenderServiceMap<S> extServiceMap = Activator.getExtenderServiceMap();
+		Extender<S> extender = extServiceMap.get(interfaceName);
 		Activator.ungetServiceMap();
 		return extender;
+	}
+
+	public static final <S> Collection<Extender<S>> getExtenders(String serviceInterfaceName, String filter) throws ExtenderException {
+
+		ExtenderServiceMap<S> extServiceMap = Activator.getExtenderServiceMap();
+		Collection<Extender<S>> extenders =  extServiceMap.get(serviceInterfaceName, filter);
+		Activator.ungetServiceMap();
+		return extenders;
 	}
 
 	/**
@@ -288,10 +306,28 @@ public class Extenders {
 	 */
 	public static final <S> Extender<S> getExtender(Long serviceId) throws ExtenderException {
 
-		@SuppressWarnings("unchecked")
-		ExtenderServiceMap<S> extMapService = (ExtenderServiceMap<S>) Activator.getExtenderServiceMap();
-		Extender<S> extender = extMapService.get(serviceId);
+		ExtenderServiceMap<S> extServiceMap = Activator.getExtenderServiceMap();
+		Extender<S> extender = extServiceMap.get(serviceId);
 		Activator.ungetServiceMap();
 		return extender;
 	}
+
+	/**
+	 * Get an extender based on its service reference. The service reference is first available after the
+	 * service has been registered and before unregistered
+	 *  <p>
+	 * If the extender could not be found it may have been unregistered or not registered
+	 * 
+	 * @param serviceReference the unique service reference to locate the extender
+	 * @return the extender instance or null if the service is not tracked under the specified service id.
+	 * @throws ExtenderException if the bundle context used to get the extender is not valid or a
+	 * security permission is missing
+	 */
+	public static final <S> Extender<S> getExtender(ServiceReference<S> serviceReference) throws ExtenderException {
+
+		ExtenderServiceMap<S> extServiceMap = Activator.getExtenderServiceMap();
+		Extender<S> extender = extServiceMap.get(serviceReference);
+		Activator.ungetServiceMap();
+		return extender;
+	}	
 }

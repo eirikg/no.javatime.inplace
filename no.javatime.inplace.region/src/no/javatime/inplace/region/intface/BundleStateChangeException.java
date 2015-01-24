@@ -10,24 +10,27 @@
  *******************************************************************************/
 package no.javatime.inplace.region.intface;
 
-
-
-
+/**
+ * Thrown when an unexpected bundle state change occur.
+ * <p>
+ * E.g. if a timeout occurs while execution a bundle stop or start operation an unexpected state
+ * change occurs.
+ * 
+ */
 public class BundleStateChangeException extends InPlaceException {
 
 	private static final long serialVersionUID = 4698034779808044676L;
 
-	
-	public BundleStateChangeException () {
-		super();	
+	public BundleStateChangeException() {
+		super();
 	}
-	public BundleStateChangeException(Throwable tex, String key, Object ... substitutions) {
+
+	public BundleStateChangeException(Throwable tex, String key, Object... substitutions) {
 		super(tex, key, substitutions);
 	}
-	
-	public BundleStateChangeException(String key, Object ... substitutions) {
+
+	public BundleStateChangeException(String key, Object... substitutions) {
 		super(key, substitutions);
 	}
-	
-	
+
 }

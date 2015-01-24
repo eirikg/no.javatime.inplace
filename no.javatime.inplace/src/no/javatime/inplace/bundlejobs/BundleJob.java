@@ -300,7 +300,7 @@ public abstract class BundleJob extends JobStatus {
 			}
 			SubMonitor localMonitor = SubMonitor.convert(monitor, bundles.size());
 			boolean timeout = true;
-			int timeoutVal = 5000;
+			long timeoutVal = 5000;
 			try {
 				timeout = getOptionsService().isTimeOut();
 				if (timeout) {
@@ -374,7 +374,7 @@ public abstract class BundleJob extends JobStatus {
 					Throwable cause = e.getCause();
 					if (null != cause && cause instanceof TimeoutException) {
 						String msg = ExceptionMessage.getInstance().formatString("bundle_start_timeout_error",
-								Integer.toString(timeoutVal), bundle);
+								Long.toString(timeoutVal), bundle);
 						IBundleStatus errStat = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg,
 								e);
 						msg = WarnMessage.getInstance().formatString("timeout_termination", bundle);
@@ -436,7 +436,7 @@ public abstract class BundleJob extends JobStatus {
 			}
 			SubMonitor localMonitor = SubMonitor.convert(monitor, bundles.size());
 			boolean timeout = true;
-			int timeoutVal = 5000;
+			long timeoutVal = 5000;
 			try {
 				timeout = getOptionsService().isTimeOut();
 				if (timeout) {
@@ -464,7 +464,7 @@ public abstract class BundleJob extends JobStatus {
 					Throwable cause = e.getCause();
 					if (null != cause && cause instanceof TimeoutException) {
 						String msg = ExceptionMessage.getInstance().formatString("bundle_stop_timeout_error",
-								Integer.toString(timeoutVal), bundle);
+								Long.toString(timeoutVal), bundle);
 						IBundleStatus errStat = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg,
 								e);
 						msg = WarnMessage.getInstance().formatString("timeout_termination", bundle);

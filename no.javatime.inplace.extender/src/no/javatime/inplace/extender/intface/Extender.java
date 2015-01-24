@@ -1,18 +1,24 @@
 package no.javatime.inplace.extender.intface;
 
+import java.util.Dictionary;
+
 import org.osgi.framework.Bundle;
 import org.osgi.framework.ServiceReference;
 import org.osgi.util.tracker.BundleTracker;
 
 public interface Extender<S> {
 
+	public static final String SCOPE = "SCOPE";
+	public static final String SINGLETON = "Singleton";
+	public static final String BUNDLE = "Bundle";
+
 	/**
 	 * Create a new extension from this extender. Use the extension to access the service created when
 	 * this extender was registered.
 	 * <p>
-	 * Note that if the bundle creating this extension is different from the bundle that registered the
-	 * extender, and this is the first time an extension is created for this client bundle a new
-	 * service object will be created if the service scope is bundle; otherwise the service scope will
+	 * Note that if the bundle creating this extension is different from the bundle that registered
+	 * the extender, and this is the first time an extension is created for this client bundle a new
+	 * service object will be created if the service SCOPE is bundle; otherwise the service SCOPE will
 	 * be singleton or prototype (only for OSGi R6 @see {@link Extenders})
 	 * 
 	 * @return a new extension object or null if there is no registered service for this extender.
@@ -26,7 +32,7 @@ public interface Extender<S> {
 	 * extender was registered each bundle is exposed to one instance of the service object. If
 	 * instead a service object was specified this service object is shared among all bundles.
 	 * <p>
-	 * Note: For OSGi R6 service scope may be used to specify service creation. The scopes are
+	 * Note: For OSGi R6 service SCOPE may be used to specify service creation. The scopes are
 	 * singleton (shared service), bundle (one service per bundle) and prototype (a new service for
 	 * each call to {@link #getService()} and {@link #getService(Bundle)}
 	 * <p>
@@ -51,7 +57,7 @@ public interface Extender<S> {
 	 * extender was registered each bundle is exposed to one instance of the service object. If
 	 * instead a service object was specified this service object is shared among all bundles.
 	 * <p>
-	 * Note: For OSGi R6 service scope may be used to specify service creation. The scopes are
+	 * Note: For OSGi R6 service SCOPE may be used to specify service creation. The scopes are
 	 * singleton (shared service), bundle (one service per bundle) and prototype (a new service for
 	 * each call to {@link #getService()} and {@link #getService(Bundle)}
 	 * <p>
@@ -93,7 +99,9 @@ public interface Extender<S> {
 	 * from this name using the owner bundle specified when the extender was registered. Service
 	 * objects - including service factory objects - that are created must have a default constructor.
 	 * <p>
-	 * This is the same object as returned from {@link #getService(Bundle)} and {@link #getService()}
+	 * If SCOPE is Bundle {@link #getService(Bundle)} returns a new service object otherwise a shared
+	 * (Singleton SCOPE) service object is returned from both {@link #getService(Bundle)}and
+	 * {@link #getService()}
 	 * 
 	 * @return the service object of this extender
 	 * @throws ExtenderException if the bundle context of the owner bundle is not valid, the bundle is
@@ -170,7 +178,7 @@ public interface Extender<S> {
 	 * the extender. After unregistering the service can not be accessed.
 	 * <p>
 	 * After unregistering it is not possible to lookup the extender again using
-	 * {@link #getExtender(String)} or {@link #getExtension(String)}, but you can register the
+	 * {@link #get(String)} or {@link #getExtension(String)}, but you can register the
 	 * extender an a new service again with the specified extender parameter by using
 	 * {@link #registerService(Extender)} or {@link Extender#registerService()}.
 	 * 
@@ -210,6 +218,10 @@ public interface Extender<S> {
 	 * @return the bundle tracker or null if the extender was not registered with a bundle tracker
 	 */
 	public BundleTracker<Extender<?>> getBundleTracker();
+	
+	public Dictionary<String, Object> getProperties();
+
+	public boolean setProperty(String key, Object property);
 
 	/**
 	 * Return the owner bundle specified when this extender was registered.

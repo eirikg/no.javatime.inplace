@@ -48,7 +48,7 @@ public class ExtenderServiceListener<S> implements ServiceListener {
 		case ServiceEvent.MODIFIED_ENDMATCH:
 			break;
 		case ServiceEvent.UNREGISTERING:
-			extender = extenders.removeExtender(sr);
+			extender = extenders.remove(sr);
 			// System.out.println("ServiceTracker.Tracked.unregister. SID: (" + sid + ") Type: ["
 			//		+ event.getType() + "]: " + extender.getServiceInterfaceName());
 			break;

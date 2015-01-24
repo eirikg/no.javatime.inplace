@@ -13,11 +13,11 @@ import no.javatime.inplace.region.intface.BundleProjectMeta;
 import no.javatime.inplace.region.intface.BundleRegion;
 import no.javatime.inplace.region.intface.BundleTransition;
 import no.javatime.inplace.region.intface.InPlaceException;
-import no.javatime.inplace.region.manager.BundleCommandServiceFactory;
-import no.javatime.inplace.region.manager.BundleRegionServiceFactory;
-import no.javatime.inplace.region.manager.BundleTransitionServiceFactory;
-import no.javatime.inplace.region.project.BundleProjectCandidatesServiceFactory;
-import no.javatime.inplace.region.project.BundleProjectMetaServiceFactory;
+import no.javatime.inplace.region.manager.BundleCommandImpl;
+import no.javatime.inplace.region.manager.BundleTransitionImpl;
+import no.javatime.inplace.region.manager.WorkspaceRegionImpl;
+import no.javatime.inplace.region.project.BundleProjectCandidatesImpl;
+import no.javatime.inplace.region.project.BundleProjectMetaImpl;
 import no.javatime.inplace.region.resolver.BundleResolveHookFactory;
 import no.javatime.inplace.region.state.BundleStateEvents;
 
@@ -78,21 +78,27 @@ public class Activator extends AbstractUIPlugin {
 		Activator.context = context;
 		registerResolverHook();
 		Activator.context.addBundleListener(bundleEvents);
+		BundleCommandImpl bundleCommandImpl = BundleCommandImpl.INSTANCE;
+		bundleCommandImpl.initFrameworkWiring();
 
 		extenderCommand = Extenders.register(context.getBundle(), BundleCommand.class.getName(),
-				new BundleCommandServiceFactory(), null);
+				bundleCommandImpl, null);
+//				new BundleCommandServiceFactory(), null);
 		extenderRegion = Extenders.register(context.getBundle(), BundleRegion.class.getName(),
-				new BundleRegionServiceFactory(), null);
+				WorkspaceRegionImpl.INSTANCE, null);
+//				new BundleRegionServiceFactory(), null);
 		extenderTransition = Extenders.register(context.getBundle(), BundleTransition.class.getName(),
-				new BundleTransitionServiceFactory(), null);
+				BundleTransitionImpl.INSTANCE, null);
+//			new BundleTransitionServiceFactory(), null);
 		extenderBundleProjectCandidates = Extenders.register(context.getBundle(), BundleProjectCandidates.class.getName(),
-				new BundleProjectCandidatesServiceFactory(), null);
+				BundleProjectCandidatesImpl.INSTANCE, null);
+//				new BundleProjectCandidatesServiceFactory(), null);
 		bundleProjectTracker = new ServiceTracker<IBundleProjectService, IBundleProjectService>(
 				context, IBundleProjectService.class.getName(), null);
 		bundleProjectTracker.open();
 		extenderBundleProjectMeta = Extenders.register(context.getBundle(),
-				BundleProjectMeta.class.getName(), new BundleProjectMetaServiceFactory(),
-				null);
+				BundleProjectMeta.class.getName(), BundleProjectMetaImpl.INSTANCE, null);
+//				new BundleProjectMetaServiceFactory(), null);
 
 		commandOptions = Extenders.getExtension(CommandOptions.class.getName());
 		messageOptions = Extenders.getExtension(MessageOptions.class.getName());

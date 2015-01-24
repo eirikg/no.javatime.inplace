@@ -57,7 +57,7 @@ public interface BundleCommand {
 	 * @see BundleCommand#install(IProject, Boolean)
 	 * @see BundleCommand#resolve(Collection)
 	 * @see BundleCommand#start(Bundle, int)
-	 * @see BundleCommand#start(Bundle, int, int)
+	 * @see BundleCommand#start(Bundle, int, long)
 	 */
 	public Bundle activate(IProject project) throws InPlaceException, DuplicateBundleException,
 			ProjectLocationException, InterruptedException, IllegalStateException, ExtenderException;
@@ -156,7 +156,7 @@ public interface BundleCommand {
 	 * @throws IllegalStateException is thrown if the start operation timeouts
 	 * @throws BundleStateChangeException failed to complete the requested lifecycle state change
 	 */
-	public void start(Bundle bundle, int startOption, int timeOut) throws InPlaceException,
+	public void start(Bundle bundle, int startOption, long timeOut) throws InPlaceException,
 			InterruptedException, IllegalStateException, BundleStateChangeException;
 
 	/**
@@ -179,7 +179,7 @@ public interface BundleCommand {
 	 * @param timeOut terminates the stop operation after the specified timeout in seconds
 	 * @throws InPlaceException if bundle is null or any of the {@link Bundle#stop(int)} exceptions
 	 */
-	public void stop(Bundle bundle, boolean stopTransient, int timeOut) throws InPlaceException,
+	public void stop(Bundle bundle, boolean stopTransient, long timeOut) throws InPlaceException,
 			InterruptedException, IllegalStateException, BundleStateChangeException;
 
 	/**

@@ -22,17 +22,17 @@ public class Introspector {
 
 		try {
 			if(!hasDefaultConstructor(cls)) {
-				throw new ExtenderException("default_constructor", cls.getSimpleName());
+				throw new ExtenderException("Missing default constructor in class {0}", cls.getSimpleName());
 			}
 			return cls.newInstance();			
 		} catch (SecurityException e) {
-			throw new ExtenderException(e, "security_instantiation", cls.getSimpleName());
+			throw new ExtenderException(e, "Failed to instantiate class {0} due to security reasons", cls.getSimpleName());
 		} catch (InstantiationException e) {
-			throw new ExtenderException(e, "instantiation", cls.getSimpleName());
+			throw new ExtenderException(e, "Failed to instantiate Class {0}", cls.getSimpleName());
 		} catch (IllegalAccessException e) {
-			throw new ExtenderException(e, "illegal_access_class", cls.getSimpleName());
+			throw new ExtenderException(e, "Failed to access Class {0}. Is the class or its nullary constructor accessible?", cls.getSimpleName());
 		} catch (ExceptionInInitializerError e) {
-			throw new ExtenderException(e, "initializer_instantiation", cls.getSimpleName());
+			throw new ExtenderException(e, "Exception in a static initializer creating an instance of class {0}", cls.getSimpleName());
 		}
 	}
 
@@ -53,14 +53,14 @@ public class Introspector {
 		try {
 			return (Class<T>) bundle.loadClass(classname);					
 		} catch (ClassNotFoundException e) {
-			throw new ExtenderException(e, "load_class_not_found", classname, bundle);
+			throw new ExtenderException(e, "Failed to load class {0} from bundle: {1}", classname, bundle);
 		} catch (IllegalStateException e) {
-			throw new ExtenderException(e, "load_class_illegal_state", classname, bundle);
+			throw new ExtenderException(e, "{1} is in an illegal state (is bundle resolved?). Failed loading class {0}", classname, bundle);
 		} catch (NullPointerException e) {
 			if (null != classname) {
-				throw new ExtenderException("null_load_class", classname);
+				throw new ExtenderException(e, "Invalid bundle (null) loading class {0}", classname);
 			} else {
-				throw new ExtenderException("null_load_class_name");					
+				throw new ExtenderException(e, "Invalid or null bundle and null class name loading class");					
 			}
 		}					
 	}
@@ -89,13 +89,13 @@ public class Introspector {
 			method = getMethod(methodName, cls, paramDef); 
 			return method.invoke(obj, paramVal);
 		} catch (IllegalArgumentException e) {
-			throw new ExtenderException(e, "illegal_argument_method", methodName, cls.getSimpleName());
+			throw new ExtenderException(e, "Encountered an illegal argument while trying to execute method {0} in Class {1}", methodName, cls.getSimpleName());
 		} catch (IllegalAccessException e) {
-			throw new ExtenderException(e, "illegal_access_method", methodName, cls.getSimpleName());
+			throw new ExtenderException(e, "Failed to access method {0} in class {1}", methodName, cls.getSimpleName());
 		} catch (InvocationTargetException e) {
-			throw new ExtenderException(e, "method_invocation_target", cls.getSimpleName(), methodName);
+			throw new ExtenderException(e, "Execution failed in Class: {0} and Method: {1}", cls.getSimpleName(), methodName);
 		} catch (ExceptionInInitializerError e) {
-			throw new ExtenderException(e, "initializer_error", cls.getSimpleName(), methodName);
+			throw new ExtenderException(e, "Exception in a static initializer provoked by method {1} in class {0}", cls.getSimpleName(), methodName);
 		} catch (NullPointerException e) {
 			throw new ExtenderException(e);
 		}
@@ -140,9 +140,9 @@ public class Introspector {
 		try {
 			return cls.getMethod(methodName, paramDef);
 		} catch (SecurityException e) {
-	    throw new ExtenderException(e, "security_violation", methodName, cls.getSimpleName());
+	    throw new ExtenderException(e, "Security violation while executing method {0} in class {1}", methodName, cls.getSimpleName());
 		} catch (NoSuchMethodException e) {
-	    throw new ExtenderException(e, "no_such_method", methodName, cls.getSimpleName());
+	    throw new ExtenderException(e, "Method {0} in class {1} could not be found", methodName, cls.getSimpleName());
 		}
 	}
 	/**

@@ -86,7 +86,7 @@ public class ExtensionImpl<S> implements Extension<S> {
 				tracker.open();
 			} catch (IllegalStateException e) {
 				tracker = null;
-				throw new ExtenderException("failed_to_open_tracker", extender.getServiceInterfaceName());
+				throw new ExtenderException("Failed to open the tracker for interface {0}", extender.getServiceInterfaceName());
 			}
 		}
 	}
@@ -100,7 +100,7 @@ public class ExtensionImpl<S> implements Extension<S> {
 			return tracker.getService();
 		} catch (ExtenderException e) {
 			// Ignore
-			// throw new ExtenderException("failed_to_open_tracker", getServiceInterfaceName());
+			// throw new ExtenderException("Failed to open the tracker for interface {0}", getServiceInterfaceName());
 		}
 		return null;
 	}
