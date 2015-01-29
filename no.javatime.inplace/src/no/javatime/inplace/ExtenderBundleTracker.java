@@ -6,7 +6,6 @@ import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.extender.intface.Extenders;
 import no.javatime.inplace.log.intface.BundleLog;
 import no.javatime.inplace.pl.console.intface.BundleConsoleFactory;
-import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 
@@ -20,6 +19,10 @@ import org.osgi.util.tracker.BundleTrackerCustomizer;
 /**
  * Registers services provided by other bundles
  */
+
+//public class ExtenderBundleTracker extends BundleTracker<Collection<Extender<?>>> {
+//public Collection<Extender<?>> addingBundle(Bundle bundle, BundleEvent event) {
+
 public class ExtenderBundleTracker extends BundleTracker<Extender<?>> {
 
 
@@ -43,7 +46,7 @@ public class ExtenderBundleTracker extends BundleTracker<Extender<?>> {
 				return Extenders.register(this, bundle, context.getBundle(), BundleConsoleFactory.class.getName(),
 						bundleConsoleViewSvcName, null);
 			}
-		} catch(InPlaceException | ExtenderException e) {
+		} catch (ExtenderException |IllegalStateException e) {
 			StatusManager.getManager().handle(
 					new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, e.getMessage(), e),
 					StatusManager.LOG);						

@@ -1,11 +1,11 @@
 package no.javatime.inplace.ui;
 
 import no.javatime.inplace.extender.intface.Extender;
+import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.extender.intface.Extenders;
 import no.javatime.inplace.log.intface.BundleLogView;
 import no.javatime.inplace.pl.console.intface.BundleConsoleFactory;
 import no.javatime.inplace.pl.dependencies.intface.DependencyDialog;
-import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 
@@ -47,7 +47,7 @@ public class ExtenderBundleTracker extends BundleTracker<Extender<?>> {
 				return Extenders.register(this, bundle, context.getBundle(), BundleConsoleFactory.class.getName(),
 						bundleConsoleViewSvcname, null);
 			}
-		} catch (InPlaceException e) {
+		} catch (ExtenderException |IllegalStateException e) {
 			StatusManager.getManager().handle(
 					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),
 					StatusManager.LOG);

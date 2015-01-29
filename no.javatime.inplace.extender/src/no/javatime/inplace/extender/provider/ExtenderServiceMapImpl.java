@@ -71,9 +71,12 @@ public class ExtenderServiceMapImpl<S> extends ConcurrentHashMap<Long, Extender<
 
 		BundleContext context = Activator.getContext();
 		ServiceReference<?>[] srs;
+		if (null == filter) {
+			filter = ExtenderImpl.extenderFilter;
+		}
 		try {
 			srs = context.getServiceReferences(serviceInterfaceName, filter);
-		} catch (InvalidSyntaxException e) {
+		} catch (InvalidSyntaxException | IllegalStateException e) {
 			throw new ExtenderException(e, "Failed to parse filter: {0}", filter);
 		}
 		if (null != srs && srs.length > 0) {

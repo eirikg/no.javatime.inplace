@@ -1,5 +1,6 @@
 package no.javatime.inplace.extender.intface;
 
+import java.util.Collection;
 import java.util.Dictionary;
 
 import org.osgi.framework.Bundle;
@@ -8,9 +9,9 @@ import org.osgi.util.tracker.BundleTracker;
 
 public interface Extender<S> {
 
-	public static final String SCOPE = "SCOPE";
-	public static final String SINGLETON = "Singleton";
-	public static final String BUNDLE = "Bundle";
+	public static final String SCOPE = "scope";
+	public static final String SINGLETON = "singleton";
+	public static final String BUNDLE = "bundle";
 
 	/**
 	 * Create a new extension from this extender. Use the extension to access the service created when
@@ -181,10 +182,10 @@ public interface Extender<S> {
 	 * {@link #get(String)} or {@link #getExtension(String)}, but you can register the
 	 * extender an a new service again with the specified extender parameter by using
 	 * {@link #registerService(Extender)} or {@link Extender#registerService()}.
-	 * 
+	 * @throws ExtenderException If the service registered with this extender already has been unregistered
 	 * @see Extender#unregisterService()
 	 */
-	public void unregisterService();
+	public void unregisterService() throws ExtenderException;
 
 	/**
 	 * Release the service object held by this extender. The context bundle's use count for the
@@ -218,8 +219,10 @@ public interface Extender<S> {
 	 * @return the bundle tracker or null if the extender was not registered with a bundle tracker
 	 */
 	public BundleTracker<Extender<?>> getBundleTracker();
-	
-	public Dictionary<String, Object> getProperties();
+
+	public Collection<Extender<?>> getTrackedExtenders();
+
+	public Dictionary<String, ?> getProperties();
 
 	public boolean setProperty(String key, Object property);
 
@@ -246,4 +249,7 @@ public interface Extender<S> {
 	 * @see Extension#getService(Bundle)
 	 */
 	public Bundle getRegistrarBundle();
+	
+	public Collection<Bundle> getUsingBundles();
+
 }

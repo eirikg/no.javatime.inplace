@@ -34,23 +34,23 @@ public class BundleDependenciesCommandContribution extends BundleMainCommandsCon
 		Extension<DependencyDialog> ext = null;
 		try {
 			ext = Extenders.getExtension(DependencyDialog.class.getName());
-			DependencyDialog depDlgService = ext.getService();
-			if (null != depDlgService) {
-				contributions.add(createContibution(menuIdDependencies, dynamicMainCommandId, partialDependenciesLabel, dependencyDialogParamId,
-						CommandContributionItem.STYLE_PUSH, dependenciesImage));
-			} else {
-				InPlaceException e = new InPlaceException("failed_to_get_service_for_interface", DependencyDialog.class.getName());
-				StatusManager.getManager().handle(
-						new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, Msg.ADD_CONTRIBUTION_ERROR, e),
-						StatusManager.LOG);
+			if (null != ext) {
+				DependencyDialog depDlgService = ext.getService();
+				if (null != depDlgService) {
+					contributions.add(createContibution(menuIdDependencies, dynamicMainCommandId, partialDependenciesLabel, dependencyDialogParamId,
+							CommandContributionItem.STYLE_PUSH, dependenciesImage));
+				} else {
+					InPlaceException e = new InPlaceException("failed_to_get_service_for_interface", DependencyDialog.class.getName());
+					StatusManager.getManager().handle(
+							new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, Msg.ADD_CONTRIBUTION_ERROR, e),
+							StatusManager.LOG);
+				}
+				ext.ungetService();
 			}
 		} catch (ExtenderException e) {
 			StatusManager.getManager().handle(
 					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, Msg.ADD_CONTRIBUTION_ERROR, e),
 					StatusManager.LOG);
-		}
-		if (null != ext) {
-			ext.ungetService();
 		}
 		IContributionItem[] contributionArray = contributions.toArray(new ContributionItem[contributions.size()]);
 		return contributionArray;

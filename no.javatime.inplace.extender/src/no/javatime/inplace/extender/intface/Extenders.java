@@ -1,6 +1,7 @@
 package no.javatime.inplace.extender.intface;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Dictionary;
 
 import no.javatime.inplace.extender.Activator;
@@ -8,6 +9,7 @@ import no.javatime.inplace.extender.provider.ExtenderImpl;
 import no.javatime.inplace.extender.provider.ExtenderServiceMap;
 
 import org.osgi.framework.Bundle;
+import org.osgi.framework.Filter;
 import org.osgi.framework.ServiceReference;
 import org.osgi.util.tracker.BundleTracker;
 
@@ -36,8 +38,8 @@ public class Extenders {
 	 * <p>
 	 * The service SCOPE is singleton when specifying a service name. Use
 	 * {@link BundleScopeServiceFactory} or your own customized service factory to to use bundle
-	 * SCOPE. For prototype SCOPE use the prototype factory supplied by the Framework. Note that it
-	 * is not possible to use the prototype service SCOPE prior to OSGi R6 (pre. Luna)
+	 * SCOPE. For prototype SCOPE use the prototype factory supplied by the Framework. Note that it is
+	 * not possible to use the prototype service SCOPE prior to OSGi R6 (pre. Luna)
 	 * 
 	 * @param tracker The tracker that the extender was registered by. Can be null.
 	 * @param owner The bundle owing the class of the specified service name. Can be same as the
@@ -70,9 +72,9 @@ public class Extenders {
 	 * a bundle tracker when the bundle owing the service class is activated.
 	 * <p>
 	 * If the specified service is a service factory object the service SCOPE is bundle, and singleton
-	 * if the the specified service object is a service. For prototype SCOPE use the prototype
-	 * factory supplied by the Framework. Note that it is not possible to use the prototype service
-	 * SCOPE prior to OSGi R6 (pre. Luna)
+	 * if the the specified service object is a service. For prototype SCOPE use the prototype factory
+	 * supplied by the Framework. Note that it is not possible to use the prototype service SCOPE
+	 * prior to OSGi R6 (pre. Luna)
 	 * 
 	 * @param tracker The tracker that the extender was registered by. Can be null.
 	 * @param owner The bundle owing the class of the specified service name. Can be same as the
@@ -264,15 +266,16 @@ public class Extenders {
 		ExtenderServiceMap<S> extServiceMap = (ExtenderServiceMap<S>) Activator.getExtenderServiceMap();
 		Extender<S> extender = extServiceMap.get(interfaceName);
 		Activator.ungetServiceMap();
-		return extender.getExtension();
+		return null == extender ? null : extender.getExtension();
 	}
 
 	/**
-	 * Get an extender to access its service, query its meta data or get an extension handed out by the
-	 * extender
+	 * Get an extender to access its service, query its meta data or get an extension handed out by
+	 * the extender
 	 * 
 	 * @param serviceInterfaceName one of possible multiple interface names of the extension bundle.
-	 * @return the extender instance or null if the service is not tracked under the specified interface name.
+	 * @return the extender instance or null if the service is not tracked under the specified
+	 * interface name.
 	 * @throws ExtenderException if the bundle context of the extension is no longer valid or the
 	 * class object implementing the extension could not be created
 	 */
@@ -284,14 +287,61 @@ public class Extenders {
 		return extender;
 	}
 
-	public static final <S> Collection<Extender<S>> getExtenders(String serviceInterfaceName, String filter) throws ExtenderException {
+	/**
+	 * Returns a list of extenders. The returned list contains extenders that were registered under
+	 * the specified service interface name, match the specified filter expression, and the packages
+	 * for the class names under which the services registered by the extender match the context
+	 * bundle's packages as defined in {@link ServiceReference#isAssignableTo(Bundle, String)}.
+	 * 
+	 * The specified filter expression is used to select the registered extenders and their services
+	 * whose service properties contain keys and values which satisfy the filter expression. See
+	 * {@link Filter} for a description of the filter syntax. If the specified filter is null, all
+	 * registered extenders are considered to match the filter. If the specified filter expression
+	 * cannot be parsed, an ExtenderException will be thrown with a human readable message where the
+	 * filter became unparsable.
+	 * 
+	 * @param serviceInterfaceName The class name with which the service was registered or
+	 * {@code null} for all services.
+	 * @param filter The filter expression or {@code null} for all services.
+	 * @return a list of extenders matching the specified class service name and the specified filter
+	 * or {@code null} if no extenders are registered which satisfy the search.
+	 * @throws ExtenderException if this BundleContext of the extender bundle is no longer valid, a
+	 * missing security permission or the the filter contains syntax errors
+	 */
+	public static final <S> Collection<Extender<S>> getExtenders(String serviceInterfaceName,
+			String filter) throws ExtenderException {
 
 		ExtenderServiceMap<S> extServiceMap = Activator.getExtenderServiceMap();
-		Collection<Extender<S>> extenders =  extServiceMap.get(serviceInterfaceName, filter);
+		Collection<Extender<S>> extenders = extServiceMap.get(serviceInterfaceName, filter);
 		Activator.ungetServiceMap();
 		return extenders;
 	}
+	
+	public static final Collection<Extender<?>> getTrackedExtenders(BundleTracker<Extender<?>> bundleTracker) {
 
+		Collection<Extender<Object>> extenders = Extenders.getExtenders(null, null);
+		for (Extender<?> extender : extenders) {
+			BundleTracker<Extender<?>> extenderTracker = extender.getBundleTracker();
+			if (null != extenderTracker && extenderTracker.equals(bundleTracker)) {
+				return extender.getTrackedExtenders();
+			}
+		}
+		return Collections.<Extender<?>>emptyList();
+	}
+
+	public static final Collection<Extender<?>> getTrackedExtenders(Bundle bundle) {
+
+		Collection<Extender<Object>> extenders = Extenders.getExtenders(null, null);
+		for (Extender<?> extender : extenders) {
+			BundleTracker<Extender<?>> extenderTracker = extender.getBundleTracker();
+			Bundle registrar = extender.getRegistrarBundle();
+			if (null != extenderTracker && null != registrar &&  registrar.equals(bundle)) {
+				return extender.getTrackedExtenders();
+			}
+		}
+		return Collections.<Extender<?>>emptyList();
+	}
+	
 	/**
 	 * Get an extender based on its service id. When an extender is registered the unique service id
 	 * generated by the framework is automatically used to store and later access an extender
@@ -300,7 +350,8 @@ public class Extenders {
 	 * specified key
 	 * 
 	 * @param serviceId the unique key to locate the extender
-	 * @return the extender instance or null if the service is not tracked under the specified service id.
+	 * @return the extender instance or null if the service is not tracked under the specified service
+	 * id.
 	 * @throws ExtenderException if the bundle context used to get the extender is not valid or a
 	 * security permission is missing
 	 */
@@ -313,21 +364,23 @@ public class Extenders {
 	}
 
 	/**
-	 * Get an extender based on its service reference. The service reference is first available after the
-	 * service has been registered and before unregistered
-	 *  <p>
+	 * Get an extender based on its service reference. The service reference is first available after
+	 * the service has been registered and before unregistered
+	 * <p>
 	 * If the extender could not be found it may have been unregistered or not registered
 	 * 
 	 * @param serviceReference the unique service reference to locate the extender
-	 * @return the extender instance or null if the service is not tracked under the specified service id.
+	 * @return the extender instance or null if the service is not tracked under the specified service
+	 * id.
 	 * @throws ExtenderException if the bundle context used to get the extender is not valid or a
 	 * security permission is missing
 	 */
-	public static final <S> Extender<S> getExtender(ServiceReference<S> serviceReference) throws ExtenderException {
+	public static final <S> Extender<S> getExtender(ServiceReference<S> serviceReference)
+			throws ExtenderException {
 
 		ExtenderServiceMap<S> extServiceMap = Activator.getExtenderServiceMap();
 		Extender<S> extender = extServiceMap.get(serviceReference);
 		Activator.ungetServiceMap();
 		return extender;
-	}	
+	}
 }

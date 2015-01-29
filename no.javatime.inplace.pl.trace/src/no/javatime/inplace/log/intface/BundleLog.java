@@ -165,6 +165,8 @@ public interface BundleLog {
 	public String add(StatusCode statusCode, Bundle bundle, String pattern, Object... substitutions)
 			throws BundleLogException;
 
+	public String add(StatusCode statusCode, Bundle bundle, String msg);
+
 	/**
 	 * Creates a status object from the specified parameters and adds it as a parent to the current
 	 * status object. After the status object is added it becomes the current status object.
@@ -190,6 +192,8 @@ public interface BundleLog {
 	 */
 	public String addParent(StatusCode statusCode, Bundle bundle, String pattern,
 			Object... substitutions) throws BundleLogException;
+
+	public String addParent(StatusCode statusCode, Bundle bundle, String msg);
 
 	/**
 	 * Creates a status object from the specified parameters and adds it as a sibling to the current
@@ -218,6 +222,8 @@ public interface BundleLog {
 	public String addSibling(StatusCode statusCode, Bundle bundle, String pattern,
 			Object... substitutions) throws BundleLogException;
 
+	public String addSibling(StatusCode statusCode, Bundle bundle, String msg);
+
 	/**
 	 * Creates a status object from the specified parameters and adds it as a new root to the current
 	 * status object. After the status object is added it becomes the current status object.
@@ -244,6 +250,8 @@ public interface BundleLog {
 	 */
 	public String addRoot(StatusCode statusCode, Bundle bundle, String pattern,
 			Object... substitutions) throws BundleLogException;
+	
+	public String addRoot(StatusCode statusCode, Bundle bundle, String msg);
 
 	/**
 	 * Creates a status object from the specified parameters and adds it as a child to the root. After
@@ -270,6 +278,8 @@ public interface BundleLog {
 	 */
 	public String addToRoot(StatusCode statusCode, Bundle bundle, String pattern,
 			Object... substitutions) throws BundleLogException;
+	
+	public String addToRoot(StatusCode statusCode, Bundle bundle, String msg);
 
 	/**
 	 * Clears all added status objects since last {@code #clear()} or {@code #log()}

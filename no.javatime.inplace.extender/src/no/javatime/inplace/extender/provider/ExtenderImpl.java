@@ -3,6 +3,7 @@ package no.javatime.inplace.extender.provider;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Dictionary;
 import java.util.Enumeration;
 import java.util.Hashtable;
@@ -39,7 +40,7 @@ import org.osgi.util.tracker.BundleTracker;
  */
 public class ExtenderImpl<S> implements Extender<S> {
 
-	public static final String filter = "(" + Extender.class.getSimpleName() + "=true)";
+	public static final String extenderFilter = "(" + Extender.class.getSimpleName() + "=true)";
 
 	final private static BundleContext context = Activator.getContext();
 
@@ -148,7 +149,7 @@ public class ExtenderImpl<S> implements Extender<S> {
 	}
 
 	@Override
-	public void unregisterService() {
+	public void unregisterService() throws ExtenderException {
 		try {
 			synchronized (registrationLock) {
 				serviceRegistration.unregister();
@@ -175,14 +176,6 @@ public class ExtenderImpl<S> implements Extender<S> {
 		}
 	}
 
-	/**
-	 * Get the interface class of this extension
-	 * 
-	 * @return the interface class
-	 * @throws ExtenderException if the class object implementing this interface could not be created,
-	 * the class is not implementing the registered interface or if the bundle context of the
-	 * extension is no longer valid
-	 */
 	@Override
 	public Class<S> getInterfaceServiceClass() throws ExtenderException {
 		synchronized (registrationLock) {
@@ -203,13 +196,6 @@ public class ExtenderImpl<S> implements Extender<S> {
 		}
 	}
 
-	/**
-	 * Get the name of the extension interface.
-	 * <p>
-	 * The interface name is returned even if it is no longer tracked
-	 * 
-	 * @return the interface name
-	 */
 	@Override
 	public String getServiceInterfaceName() {
 		return serviceInterfaceName;
@@ -240,10 +226,7 @@ public class ExtenderImpl<S> implements Extender<S> {
 
 		// If service is null a service class name must have been specified at registration time
 		synchronized (registrationLock) {
-			if (null == service) {
-				service = Introspector.createObject(getServiceClass());
-			}
-			return service;
+			return null == service ? service = Introspector.createObject(getServiceClass()) : service;
 		}
 	}
 
@@ -361,6 +344,17 @@ public class ExtenderImpl<S> implements Extender<S> {
 		}
 		return false;
 	}
+
+	public Collection<Bundle> getUsingBundles() {
+		ServiceReference<?> sr = getServicereReference();
+		if (null != sr) {
+			Bundle[] using = sr.getUsingBundles();
+			if (null != using) {
+				return new ArrayList<Bundle>(Arrays.asList(using));
+			}
+		}
+		return Collections.<Bundle>emptyList();
+	}
 	
 	@SuppressWarnings("unused")
 	private void printServiceregInfo(ServiceReference<?> ref) {
@@ -385,10 +379,32 @@ public class ExtenderImpl<S> implements Extender<S> {
 	public BundleTracker<Extender<?>> getBundleTracker() {
 		return bundleTracker;
 	}
-
+	
+	public Collection<Extender<?>> getTrackedExtenders() {
+		
+		Collection<Extender<?>> trackedExtenders = new ArrayList<>();
+		if (null != bundleTracker) {
+			Map<Bundle, Extender<?>> tracked = bundleTracker.getTracked();
+			Iterator<Entry<Bundle, Extender<?>>> it = tracked.entrySet().iterator();
+			while (it.hasNext()) {
+				ConcurrentMap.Entry<Bundle, Extender<?>> entry = it.next();
+				trackedExtenders.add(entry.getValue());
+			}
+		}
+		return trackedExtenders;				
+	}
+	
 	@Override
-	public Dictionary<String, Object> getProperties() {
-		return properties;
+	public Dictionary<String, ?> getProperties() {
+
+		ServiceReference<?> sr = getServicereReference();
+		String[] propKeys = sr.getPropertyKeys();
+		Dictionary<String, Object> dict = new Hashtable<>();
+		for (int i = 0; i < propKeys.length; i++) {
+			String key = propKeys[i];
+			dict.put(key, sr.getProperty(key));
+		}
+		return dict;
 	}
 	
 	@Override

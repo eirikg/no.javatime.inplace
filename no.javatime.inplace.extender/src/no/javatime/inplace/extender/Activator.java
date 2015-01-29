@@ -56,7 +56,7 @@ public class Activator implements BundleActivator {
 		plugin = this;
 		extenderMap = new ExtenderServiceMapImpl<>();
 		extenderListener = new ExtenderServiceListener<>(extenderMap);
-		context.addServiceListener(extenderListener, ExtenderImpl.filter);
+		context.addServiceListener(extenderListener, ExtenderImpl.extenderFilter);
 		extenderBundleTrackerCustomizer = new ExtenderBundleTracker();
 		extenderBundleTracker = new BundleTracker<ExtenderImpl<?>>(context, Bundle.ACTIVE, extenderBundleTrackerCustomizer);
 		extenderBundleTracker.open();

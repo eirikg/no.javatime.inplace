@@ -124,10 +124,26 @@ public class BundleLogimpl implements BundleLog {
 	public String add(StatusCode statusCode, Bundle bundle, String pattern, Object... substitutions)
 			throws BundleLogException {
 
-		String msg = createStatus(statusCode, bundle, pattern, substitutions);
-		if (null != msg && currStatus != nextStatus) {
-			currStatus.add(nextStatus);
-			currStatus = nextStatus;
+		String msg = null;
+		try {
+			msg = MessageFormat.format(pattern, substitutions);
+			add(statusCode, bundle, msg);
+		} catch (IllegalArgumentException e) {
+			String errMsg = pattern != null ? NLS.bind(Messages.FORMAT_MSG_EXP, pattern)
+					: Messages.FORMAT_ARG_EXP;
+			throw new BundleLogException(e, errMsg);
+		}
+		return msg;
+	}
+
+	public String add(StatusCode statusCode, Bundle bundle, String msg) {
+
+		if (null != msg) {
+			createStatus(statusCode, bundle, msg);
+			if (currStatus != nextStatus) {
+				currStatus.add(nextStatus);
+				currStatus = nextStatus;
+			}
 		}
 		return msg;
 	}
@@ -136,7 +152,21 @@ public class BundleLogimpl implements BundleLog {
 	public String addParent(StatusCode statusCode, Bundle bundle, String pattern,
 			Object... substitutions) throws BundleLogException {
 
-		String msg = createStatus(statusCode, bundle, pattern, substitutions);
+		String msg = null;
+		try {
+			msg = MessageFormat.format(pattern, substitutions);
+			addParent(statusCode, bundle, msg);
+		} catch (IllegalArgumentException e) {
+			String errMsg = pattern != null ? NLS.bind(Messages.FORMAT_MSG_EXP, pattern)
+					: Messages.FORMAT_ARG_EXP;
+			throw new BundleLogException(e, errMsg);
+		}
+		return msg;
+	}
+
+	public String addParent(StatusCode statusCode, Bundle bundle, String msg) {
+
+		createStatus(statusCode, bundle, msg);
 		if (currStatus.equals(rootStatus) && !currStatus.equals(nextStatus)) {
 			// Adding a nextStatus object as parent to root adds this nextStatus object as the new root
 			nextStatus.add(rootStatus);
@@ -159,7 +189,21 @@ public class BundleLogimpl implements BundleLog {
 	public String addSibling(StatusCode statusCode, Bundle bundle, String pattern,
 			Object... substitutions) throws BundleLogException {
 
-		String msg = createStatus(statusCode, bundle, pattern, substitutions);
+		String msg = null;
+		try {
+			msg = MessageFormat.format(pattern, substitutions);
+			addSibling(statusCode, bundle, msg);
+		} catch (IllegalArgumentException e) {
+			String errMsg = pattern != null ? NLS.bind(Messages.FORMAT_MSG_EXP, pattern)
+					: Messages.FORMAT_ARG_EXP;
+			throw new BundleLogException(e, errMsg);
+		}
+		return msg;
+	}
+
+	public String addSibling(StatusCode statusCode, Bundle bundle, String msg) {
+
+		createStatus(statusCode, bundle, msg);
 		// Current nextStatus is root and not first nextStatus object added
 		if (currStatus.equals(rootStatus) && !currStatus.equals(nextStatus)) {
 			throw new BundleLogException(Messages.ADD_SIBLING_EXP);
@@ -170,11 +214,25 @@ public class BundleLogimpl implements BundleLog {
 		}
 		return msg;
 	}
-
+	@Override
 	public String addRoot(StatusCode statusCode, Bundle bundle, String pattern,
 			Object... substitutions) throws BundleLogException {
 
-		String msg = createStatus(statusCode, bundle, pattern, substitutions);
+		String msg = null;
+		try {
+			msg = MessageFormat.format(pattern, substitutions);
+			addRoot(statusCode, bundle, msg);
+		} catch (IllegalArgumentException e) {
+			String errMsg = pattern != null ? NLS.bind(Messages.FORMAT_MSG_EXP, pattern)
+					: Messages.FORMAT_ARG_EXP;
+			throw new BundleLogException(e, errMsg);
+		}
+		return msg;
+	}
+
+	public String addRoot(StatusCode statusCode, Bundle bundle, String msg) {
+
+		createStatus(statusCode, bundle, msg);
 		// Current nextStatus is root and not first nextStatus object added
 		if (!currStatus.equals(nextStatus)) {
 			nextStatus.add(rootStatus);
@@ -187,9 +245,25 @@ public class BundleLogimpl implements BundleLog {
 	public String addToRoot(StatusCode statusCode, Bundle bundle, String pattern,
 			Object... substitutions) throws BundleLogException {
 
-		String msg = createStatus(statusCode, bundle, pattern, substitutions);
-		rootStatus.add(nextStatus);
-		currStatus = nextStatus;
+		String msg = null;
+		try {
+			msg = MessageFormat.format(pattern, substitutions);
+			addToRoot(statusCode, bundle, msg);
+		} catch (IllegalArgumentException e) {
+			String errMsg = pattern != null ? NLS.bind(Messages.FORMAT_MSG_EXP, pattern)
+					: Messages.FORMAT_ARG_EXP;
+			throw new BundleLogException(e, errMsg);
+		}
+		return msg;
+	}
+
+	public String addToRoot(StatusCode statusCode, Bundle bundle, String msg) {
+
+		createStatus(statusCode, bundle, msg);
+		if (!currStatus.equals(nextStatus)) {
+			rootStatus.add(nextStatus);
+			currStatus = nextStatus;
+		}
 		return msg;
 	}
 
@@ -212,20 +286,11 @@ public class BundleLogimpl implements BundleLog {
 		return false;
 	}
 
-	private String createStatus(StatusCode statusCode, Bundle bundle, String pattern,
-			Object... substitutions) throws BundleLogException {
+	private String createStatus(StatusCode statusCode, Bundle bundle, String msg) {
 
-		String msg = null;
-		try {
-			msg = MessageFormat.format(pattern, substitutions);
-			nextStatus = new BundleStatus(statusCode, bundle.getSymbolicName(), bundle, msg, null);
-			if (null == rootStatus) {
-				rootStatus = currStatus = nextStatus;
-			}
-		} catch (IllegalArgumentException e) {
-			String errMsg = pattern != null ? NLS.bind(Messages.FORMAT_MSG_EXP, pattern)
-					: Messages.FORMAT_ARG_EXP;
-			throw new BundleLogException(e, errMsg);
+		nextStatus = new BundleStatus(statusCode, bundle.getSymbolicName(), bundle, msg, null);
+		if (null == rootStatus) {
+			rootStatus = currStatus = nextStatus;
 		}
 		return msg;
 	}
