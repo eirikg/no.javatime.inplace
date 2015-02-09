@@ -11,18 +11,27 @@ import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import org.osgi.framework.Bundle;
 
 /**
- * Save status objects to log file. Logged status objects are always displayed in the view defined
- * by the {@link BundleLogView} service interface.
+ * Save status objects to the log file. Logged status objects are always displayed in the view
+ * defined by the {@link BundleLogView} service interface.
  * <p>
- * The InPlace Activator uses the {@link MessageOptions} service interface or
- * {@link #enableLogging(boolean)} to determine if a status object should be logged or not. It is
- * possible to toggle this logging option from the user interface in the log view. Alternatively you
- * can use your own option to filter logging to be independent of the logging option used by the
- * InPlace Activator.
+ * The log is based on the {@link IBundleStatus} status object. To be independent of the status
+ * object use the methods associated with the {@code log()} method. The methods associated with the
+ * {@code log()} method uses the status object internally to build a tree structure of status
+ * objects to log while the {@code log(IBundleStatus)} methods accept a single status object, which
+ * in itself may be a tree. The rest of the log methods creates and sends a single status object to
+ * the log.
+ * <p>
+ * The InPlace Activator uses the {@link MessageOptions#setIsBundleOperations(boolean)} or
+ * {@link #enableLogging(boolean)} option to determine if a status object should be logged or not.
+ * It is possible to toggle this logging option from the user interface in the log view.
+ * Alternatively you can use your own option to filter logging to be independent of the logging
+ * option used by the InPlace Activator.
  * <p>
  * The service scope should be bundle (e.g. see
- * {@link Extenders#register(Bundle, Bundle, String, Object, java.util.Dictionary)} if {@code log()}
- * is used.
+ * {@link Extenders#register(Bundle, Bundle, String, Object, java.util.Dictionary)}) if
+ * {@link #log()} is used. The {@code log()} and its associated add methods are shared among all
+ * threads in a bundle. To acquire a separate bundle status tree for a thread you can register a
+ * separate extender with bundle scope for that thread.
  * 
  * @see BundleLogView
  * @see MessageOptions#isBundleEvents()
@@ -45,8 +54,10 @@ public interface BundleLog {
 	 * 
 	 * @param status the status object to log
 	 * @return the logged message of the specified status object
+	 * @throws BundleLogException If bundle in the specified status object is null and the
+	 * {@code #BundleContext} of this bundle is no longer valid
 	 */
-	public String log(IBundleStatus status);
+	public String log(IBundleStatus status) throws BundleLogException;
 
 	/**
 	 * Logs the specified status code, bundle symbolic name, bundle state and message.
@@ -55,89 +66,44 @@ public interface BundleLog {
 	 * 
 	 * @param statusCode the status code to log
 	 * @param bundle logs the bundle symbolic name and bundle state
-	 * @param pattern creates a message with the given pattern and uses it to format the given
+	 * @param exception the exception to log
+	 * @param pattern creates a message to log with the given pattern and uses it to format the given
 	 * substitutions
 	 * @param substitutions used by the pattern parameter to format the resulting message
-	 * @return the formatted message or null if the pattern is invalid, or if an argument in the
-	 * arguments array is not of the type expected by the format element(s) that use it.
-	 * @throws BundleLogException If an argument in the arguments array is not of the type expected by
-	 * the format element(s) that use it.
+	 * @return the formatted message
+	 * @throws BundleLogException if the pattern is invalid, or if an argument in the arguments array
+	 * is not of the type expected by the format element(s) that use it. If the specified bundle
+	 * parameter is null and the {@code #BundleContext} of this bundle is no longer valid
 	 */
-	public String logMsg(StatusCode statusCode, Bundle bundle, String pattern,
+	public String log(StatusCode statusCode, Bundle bundle, Exception exception, String pattern,
 			Object... substitutions) throws BundleLogException;
 
 	/**
-	 * Logs the specified bundle symbolic name, bundle state, message and exception with
-	 * {@link StatusCode#EXCEPTION}.
+	 * Logs the specified status code, bundle symbolic name, bundle state and message.
 	 * <p>
-	 * Uses {@link MessageFormat#format(String, Object...)} to format the message
+	 * If the specified bundle is null the bundle object of the {@code BundleLog} bundle is used
 	 * 
+	 * @param statusCode the status code to log
 	 * @param bundle logs the bundle symbolic name and bundle state
-	 * @param e the exception to log
-	 * @param pattern creates a message with the given pattern and uses it to format the given
-	 * substitutions
-	 * @param substitutions used by the pattern parameter to format the resulting message
-	 * @return the formatted message or null if the pattern is invalid, or if an argument in the
-	 * arguments array is not of the type expected by the format element(s) that use it.
-	 * @throws BundleLogException If an argument in the arguments array is not of the type expected by
-	 * the format element(s) that use it.
+	 * @param exception the exception to log
+	 * @param msg the message to log
+	 * @throws BundleLogException If the specified bundle parameter is null and the
+	 * {@code #BundleContext} of this bundle is no longer valid
 	 */
-	public String logExp(Bundle bundle, Exception e, String pattern, Object... substitutions)
+	public void log(StatusCode statusCode, Bundle bundle, Exception exception, String msg)
 			throws BundleLogException;
 
 	/**
-	 * Logs the specified bundle symbolic name, bundle state, and message with
-	 * {@link StatusCode#WARNING}.
+	 * Logs all added status objects since last {@code #clear()} or {@code #log()}
 	 * <p>
-	 * Uses {@link MessageFormat#format(String, Object...)} to format the message
+	 * All added status objects are cleared after they have been logged
 	 * 
-	 * @param bundle logs the bundle symbolic name and bundle state
-	 * @param pattern creates a message with the given pattern and uses it to format the given
-	 * substitutions
-	 * @param substitutions used by the pattern parameter to format the resulting message
-	 * @return the formatted message or null if the pattern is invalid, or if an argument in the
-	 * arguments array is not of the type expected by the format element(s) that use it.
-	 * @throws BundleLogException If an argument in the arguments array is not of the type expected by
-	 * the format element(s) that use it.
+	 * @throws BundleLogException If no root status object has been added or if the bundle in the
+	 * added root status object is null and the {@code #BundleContext} of this bundle is no longer
+	 * valid
+	 * @see #clear()
 	 */
-	public String logWarn(Bundle bundle, String pattern, Object... substitutions)
-			throws BundleLogException;
-
-	/**
-	 * Logs the specified bundle symbolic name, bundle state, and message with
-	 * {@link StatusCode#ERROR}.
-	 * <p>
-	 * Uses {@link MessageFormat#format(String, Object...)} to format the message
-	 * 
-	 * @param bundle logs the bundle symbolic name and bundle state
-	 * @param pattern creates a message with the given pattern and uses it to format the given
-	 * substitutions
-	 * @param substitutions used by the pattern parameter to format the resulting message
-	 * @return the formatted message or null if the pattern is invalid, or if an argument in the
-	 * arguments array is not of the type expected by the format element(s) that use it.
-	 * @throws BundleLogException If an argument in the arguments array is not of the type expected by
-	 * the format element(s) that use it.
-	 */
-	public String logErr(Bundle bundle, String pattern, Object... substitutions)
-			throws BundleLogException;
-
-	/**
-	 * Logs the specified bundle symbolic name, bundle state, and message with {@link StatusCode#INFO}
-	 * .
-	 * <p>
-	 * Uses {@link MessageFormat#format(String, Object...)} to format the message
-	 * 
-	 * @param bundle logs the bundle symbolic name and bundle state
-	 * @param pattern creates a message with the given pattern and uses it to format the given
-	 * substitutions
-	 * @param substitutions used by the pattern parameter to format the resulting message
-	 * @return the formatted message or null if the pattern is invalid, or if an argument in the
-	 * arguments array is not of the type expected by the format element(s) that use it.
-	 * @throws BundleLogException If an argument in the arguments array is not of the type expected by
-	 * the format element(s) that use it.
-	 */
-	public String logInfo(Bundle bundle, String pattern, Object... substitutions)
-			throws BundleLogException;
+	public void log() throws BundleLogException;
 
 	/**
 	 * Creates a status object from the specified parameters and adds it as a child to the current
@@ -147,25 +113,36 @@ public interface BundleLog {
 	 * objects are removed after they are logged or cleared.
 	 * 
 	 * @param statusCode the status code to log
-	 * @param bundle adds the bundle symbolic name and bundle state to the added status object
-	 * @param pattern creates a message with the given pattern and uses it to format the given
+	 * @param bundle adds the bundle symbolic name and bundle state to the log
+	 * @param exception the exception to log
+	 * @param pattern creates a message to log with the given pattern and uses it to format the given
 	 * substitutions
 	 * @param substitutions used by the pattern parameter to format the resulting message
-	 * @return the formatted message or null if the pattern is invalid, or if an argument in the
-	 * arguments array is not of the type expected by the format element(s) that use it.
-	 * @throws BundleLogException If an argument in the arguments array is not of the type expected by
-	 * the format element(s) that use it.
-	 * @see #addParent(StatusCode, Bundle, String, Object...)
-	 * @see #addSibling(StatusCode, Bundle, String, Object...)
-	 * @see #addRoot(StatusCode, Bundle, String, Object...)
-	 * @see #addToRoot(StatusCode, Bundle, String, Object...)
+	 * @return the formatted message
+	 * @throws BundleLogException If the pattern is invalid, or if an argument in the arguments array
+	 * is not of the type expected by the format element(s) that use it. If the specified bundle
+	 * parameter is null and the {@code #BundleContext} of this bundle is no longer valid
 	 * @see #clear()
 	 * @see #log()
 	 */
-	public String add(StatusCode statusCode, Bundle bundle, String pattern, Object... substitutions)
-			throws BundleLogException;
+	public String add(StatusCode statusCode, Bundle bundle, Exception exception, String pattern,
+			Object... substitutions) throws BundleLogException;
 
-	public String add(StatusCode statusCode, Bundle bundle, String msg);
+	/**
+	 * Creates a status object from the specified parameters and adds it as a child to the current
+	 * status object. After the status object is added it becomes the current status object.
+	 * <p>
+	 * If this is the first status object added, a new root status object is added. Added status
+	 * objects are removed after they are logged or cleared.
+	 * 
+	 * @param statusCode the status code to log
+	 * @param bundle adds the bundle symbolic name and bundle state to the log
+	 * @param exception the exception to log
+	 * @param msg the message to log
+	 * @see #clear()
+	 * @see #log()
+	 */
+	public void add(StatusCode statusCode, Bundle bundle, Exception exception, String msg);
 
 	/**
 	 * Creates a status object from the specified parameters and adds it as a parent to the current
@@ -175,25 +152,39 @@ public interface BundleLog {
 	 * objects are removed after they are logged or cleared.
 	 * 
 	 * @param statusCode the status code to log
-	 * @param bundle adds the bundle symbolic name and bundle state to the added status object
-	 * @param pattern creates a message with the given pattern and uses it to format the given
+	 * @param bundle adds the bundle symbolic name and bundle state to the log
+	 * @param exception the exception to log
+	 * @param pattern creates a message to log with the given pattern and uses it to format the given
 	 * substitutions
 	 * @param substitutions used by the pattern parameter to format the resulting message
 	 * @return the formatted message
-	 * @throws BundleLogException If the current status object is an immediate child to the root
-	 * status object or if an argument in the arguments array is not of the type expected by the
-	 * format element(s) that use it.
-	 * @see #add(StatusCode, Bundle, String, Object...)
-	 * @see #addSibling(StatusCode, Bundle, String, Object...)
-	 * @see #addRoot(StatusCode, Bundle, String, Object...)
-	 * @see #addToRoot(StatusCode, Bundle, String, Object...)
+	 * @throws BundleLogException If the current status object is an immediate child to the root.If
+	 * the pattern is invalid, or if an argument in the arguments array is not of the type expected by
+	 * the format element(s) that use it. If the specified bundle parameter is null and the
+	 * {@code #BundleContext} of this bundle is no longer valid
 	 * @see #clear()
 	 * @see #log()
 	 */
-	public String addParent(StatusCode statusCode, Bundle bundle, String pattern,
-			Object... substitutions) throws BundleLogException;
+	public String addParent(StatusCode statusCode, Bundle bundle, Exception exception,
+			String pattern, Object... substitutions) throws BundleLogException;
 
-	public String addParent(StatusCode statusCode, Bundle bundle, String msg);
+	/**
+	 * Creates a status object from the specified parameters and adds it as a parent to the current
+	 * status object. After the status object is added it becomes the current status object.
+	 * <p>
+	 * If this is the first status object added, a new root status object is added. Added status
+	 * objects are removed after they are logged or cleared.
+	 * 
+	 * @param statusCode the status code to log
+	 * @param bundle adds the bundle symbolic name and bundle state to the log
+	 * @param exception TODO
+	 * @param msg the message to log
+	 * @throws BundleLogException If the current status object is an immediate child to the root
+	 * @see #clear()
+	 * @see #log()
+	 */
+	public void addParent(StatusCode statusCode, Bundle bundle, Exception exception, String msg)
+			throws BundleLogException;
 
 	/**
 	 * Creates a status object from the specified parameters and adds it as a sibling to the current
@@ -203,26 +194,38 @@ public interface BundleLog {
 	 * objects are removed after they are logged or cleared.
 	 * 
 	 * @param statusCode the status code to log
-	 * @param bundle adds the bundle symbolic name and bundle state to the added status object
-	 * @param pattern creates a message with the given pattern and uses it to format the given
+	 * @param bundle adds the bundle symbolic name and bundle state to the log
+	 * @param exception the exception to log
+	 * @param pattern creates a message to log with the given pattern and uses it to format the given
 	 * substitutions
 	 * @param substitutions used by the pattern parameter to format the resulting message
-	 * @return the formatted message or null if the pattern is invalid, or if an argument in the
-	 * arguments array is not of the type expected by the format element(s) that use it.
+	 * @return the formatted message
 	 * @throws BundleLogException If the current status object is the root or if the pattern is
 	 * invalid, or if an argument in the arguments array is not of the type expected by the format
-	 * element(s) that use it.
-	 * @see #add(StatusCode, Bundle, String, Object...)
-	 * @see #addParent(StatusCode, Bundle, String, Object...)
-	 * @see #addRoot(StatusCode, Bundle, String, Object...)
-	 * @see #addToRoot(StatusCode, Bundle, String, Object...)
+	 * element(s) that use it. If the specified bundle parameter is null and the
+	 * {@code #BundleContext} of this bundle is no longer valid
 	 * @see #clear()
 	 * @see #log()
 	 */
-	public String addSibling(StatusCode statusCode, Bundle bundle, String pattern,
-			Object... substitutions) throws BundleLogException;
+	public String addSibling(StatusCode statusCode, Bundle bundle, Exception exception,
+			String pattern, Object... substitutions) throws BundleLogException;
 
-	public String addSibling(StatusCode statusCode, Bundle bundle, String msg);
+	/**
+	 * Creates a status object from the specified parameters and adds it as a sibling to the current
+	 * status object. After the status object is added it becomes the current status object.
+	 * <p>
+	 * If this is the first status object added, a new root status object is added. Added status
+	 * objects are removed after they are logged or cleared.
+	 * 
+	 * @param statusCode the status code to log
+	 * @param bundle adds the bundle symbolic name and bundle state to the log
+	 * @param exception the exception to log
+	 * @param msg the message to log
+	 * @throws BundleLogException If the current status object is the root
+	 * @see #clear()
+	 * @see #log()
+	 */
+	public void addSibling(StatusCode statusCode, Bundle bundle, Exception exception, String msg);
 
 	/**
 	 * Creates a status object from the specified parameters and adds it as a new root to the current
@@ -233,25 +236,52 @@ public interface BundleLog {
 	 * removed after they are logged or cleared.
 	 * 
 	 * @param statusCode the status code to log
-	 * @param bundle adds the bundle symbolic name and bundle state to the added status object
-	 * @param pattern creates a message with the given pattern and uses it to format the given
+	 * @param bundle adds the bundle symbolic name and bundle state to the log
+	 * @param exception the exception to log
+	 * @param pattern creates a message to log with the given pattern and uses it to format the given
 	 * substitutions
 	 * @param substitutions used by the pattern parameter to format the resulting message
-	 * @return the formatted message or null if the pattern is invalid, or if an argument in the
-	 * arguments array is not of the type expected by the format element(s) that use it.
-	 * @throws LogException If an argument in the arguments array is not of the type expected by the
-	 * format element(s) that use it.
-	 * @see #add(StatusCode, Bundle, String, Object...)
-	 * @see #addParent(StatusCode, Bundle, String, Object...)
-	 * @see #addSibling(StatusCode, Bundle, String, Object...)
-	 * @see #addToRoot(StatusCode, Bundle, String, Object...)
+	 * @return the formatted message
+	 * @throws BundleLogException If the pattern is invalid, or if an argument in the arguments array
+	 * is not of the type expected by the format element(s) that use it. If the specified bundle
+	 * parameter is null and the {@code #BundleContext} of this bundle is no longer valid
 	 * @see #clear()
 	 * @see #log()
 	 */
-	public String addRoot(StatusCode statusCode, Bundle bundle, String pattern,
+	public String addRoot(StatusCode statusCode, Bundle bundle, Exception exception, String pattern,
 			Object... substitutions) throws BundleLogException;
-	
-	public String addRoot(StatusCode statusCode, Bundle bundle, String msg);
+
+	/**
+	 * Creates a status object from the specified parameters and adds it as a new root to the current
+	 * status object. After the status object is added it becomes the current status object.
+	 * <p>
+	 * If this is not first status object added, a new root status object is added and the current
+	 * status object becomes the child of this new root status object. Added status objects are
+	 * removed after they are logged or cleared.
+	 * 
+	 * @param statusCode the status code to log
+	 * @param bundle adds the bundle symbolic name and bundle state to the log
+	 * @param exception the exception to log
+	 * @param msg the message to log
+	 * @see #clear()
+	 * @see #log()
+	 */
+	public void addRoot(StatusCode statusCode, Bundle bundle, Exception exception, String msg);
+
+	/**
+	 * Check if the current position in the status tree is root
+	 * 
+	 * @return true if the root of the status tree is the current status and false if not
+	 */
+	public boolean isRoot();
+
+	/**
+	 * Counts number of status object members in the tree
+	 * 
+	 * @return number of status object members in the tree. Returns zero if no status objects has been
+	 * added to the tree
+	 */
+	public int size();
 
 	/**
 	 * Creates a status object from the specified parameters and adds it as a child to the root. After
@@ -261,52 +291,45 @@ public interface BundleLog {
 	 * objects are removed after they are logged or cleared.
 	 * 
 	 * @param statusCode the status code to log
-	 * @param bundle adds the bundle symbolic name and bundle state to the added status object
-	 * @param pattern creates a message with the given pattern and uses it to format the given
+	 * @param bundle adds the bundle symbolic name and bundle state to the log
+	 * @param exception the exception to log
+	 * @param pattern creates a message to log with the given pattern and uses it to format the given
 	 * substitutions
 	 * @param substitutions used by the pattern parameter to format the resulting message
-	 * @return the formatted message or null if the pattern is invalid, or if an argument in the
-	 * arguments array is not of the type expected by the format element(s) that use it.
-	 * @throws LogException If an argument in the arguments array is not of the type expected by the
-	 * format element(s) that use it.
-	 * @see #add(StatusCode, Bundle, String, Object...)
-	 * @see #addParent(StatusCode, Bundle, String, Object...)
-	 * @see #addSibling(StatusCode, Bundle, String, Object...)
-	 * @see #addRoot(StatusCode, Bundle, String, Object...)
+	 * @return the formatted message
+	 * @throws BundleLogException If the pattern is invalid, or if an argument in the arguments array
+	 * is not of the type expected by the format element(s) that use it. If the specified bundle
+	 * parameter is null and the {@code #BundleContext} of this bundle is no longer valid
 	 * @see #clear()
 	 * @see #log()
 	 */
-	public String addToRoot(StatusCode statusCode, Bundle bundle, String pattern,
-			Object... substitutions) throws BundleLogException;
-	
-	public String addToRoot(StatusCode statusCode, Bundle bundle, String msg);
+	public String addToRoot(StatusCode statusCode, Bundle bundle, Exception exception,
+			String pattern, Object... substitutions) throws BundleLogException;
+
+	/**
+	 * Creates a status object from the specified parameters and adds it as a child to the root. After
+	 * the status object is added it becomes the current status object.
+	 * <p>
+	 * If this is not first status object added, a new root status object is added . Added status
+	 * objects are removed after they are logged or cleared.
+	 * 
+	 * @param statusCode the status code to log
+	 * @param bundle adds the bundle symbolic name and bundle state to the log
+	 * @param exception the exception to log
+	 * @param msg the message to log
+	 * @see #clear()
+	 * @see #log()
+	 */
+	public void addToRoot(StatusCode statusCode, Bundle bundle, Exception exception, String msg);
 
 	/**
 	 * Clears all added status objects since last {@code #clear()} or {@code #log()}
 	 * 
 	 * @return true if any status objects were cleared and false if no status objects have been
 	 * cleared
-	 * @see #add(StatusCode, Bundle, String, Object...)
-	 * @see #addParent(StatusCode, Bundle, String, Object...)
-	 * @see #addSibling(StatusCode, Bundle, String, Object...)
-	 * @see #addRoot(StatusCode, Bundle, String, Object...)
 	 * @see #log()
 	 */
 	public boolean clear();
-
-	/**
-	 * Logs all existing added status objects since last {@code #clear()} or {@code #log()}
-	 * <p>
-	 * All existing added status objects are cleared after they have been logged
-	 * 
-	 * @return true if any status objects are logged and false if not log
-	 * @see #add(StatusCode, Bundle, String, Object...)
-	 * @see #addParent(StatusCode, Bundle, String, Object...)
-	 * @see #addSibling(StatusCode, Bundle, String, Object...)
-	 * @see #addRoot(StatusCode, Bundle, String, Object...)
-	 * @see #clear()
-	 */
-	public boolean log();
 
 	/**
 	 * Enable/disable log messages. If the specified logging parameter is {@code true} messages are
