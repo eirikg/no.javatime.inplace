@@ -18,53 +18,81 @@ import org.osgi.framework.ServiceReference;
 public class ExtenderServiceMapImpl<S> extends ConcurrentHashMap<Long, Extender<S>> implements ExtenderServiceMap<S> {
 
 	private static final long serialVersionUID = 1L;
+	// Internal object to use for synchronization
+	// final private Object serviceLock = new Object();
+
 
 	public Extender<S> put(ServiceReference<?> sr, Extender<S> extender) throws ExtenderException {
 
-		if (null == sr) {
-			return null;
+		Extender<S> status = null;
+		try {
+			Long sid = (Long) sr.getProperty(Constants.SERVICE_ID);
+			status = put(sid, extender);			
+		} catch (NullPointerException e) {
+			if (null == extender) {
+				throw new ExtenderException("Null extender when storing to the service map" );												
+			} else {
+				throw new ExtenderException("Invalid service (service id or reference is null) for {0}" , extender.getServiceInterfaceName());								
+			}
 		}
-		Long sid = (Long) sr.getProperty(Constants.SERVICE_ID);
-		put(sid, extender);
-		return extender;
+		return status;
 	}
 
 	public Extender<S> put(Extender<S> extender) throws ExtenderException {
 
+		if (null == extender) {
+			return null;
+		}
 		Long sid = extender.getServiceId();
-		put(sid, extender);
-		return extender;
+		return null == sid ? null : put(sid, extender);
 	}
 
 	public Extender<S> remove(ServiceReference<?> sr) {
 		
-		if (null == sr) {
-			return null;
+		Extender<S> status = null;
+		try {
+			Long sid = (Long) sr.getProperty(Constants.SERVICE_ID);
+			status = remove(sid);			
+		} catch (NullPointerException e) {
+			if (null == sr) {
+				throw new ExtenderException("Null service reference when removing extender from the service map" );												
+			} else {
+				throw new ExtenderException("Null or invalid service (service id)");								
+			}
 		}
-		Long sid = (Long) sr.getProperty(Constants.SERVICE_ID);
-		return remove(sid);
+		return status;
 	}
 
-	public Extender<S> remove(Extender<S> extender) {
+	public void remove(Extender<S> extender) {
 		
-		Long sid = extender.getServiceId();
-		return remove(sid);
+		try {
+			Long sid = extender.getServiceId();
+			remove(sid);			
+		} catch (NullPointerException e) {
+			if (null == extender) {
+				throw new ExtenderException("Null extender when removing extender from the service map" );												
+			} else {
+				throw new ExtenderException("Invalid service (service id or reference is null) for {0}" , extender.getServiceInterfaceName());								
+			}
+		}
 	}
 	
 	public Extender<S> get(ServiceReference<?> sr) {
 		
-		if (null == sr) {
-			return null;
+		try {
+			Long sid = (Long) sr.getProperty(Constants.SERVICE_ID);
+			return get(sid);			
+		} catch (NullPointerException e) {
+			throw new ExtenderException("Invalid service ({0} is null) when getting service",
+					null == sr ? "reference" : "service id");								
 		}
-		Long sid = (Long) sr.getProperty(Constants.SERVICE_ID);
-		return get(sid);
 	}
 
 	public Extender<S> get(String serviceInterfaceName) throws ExtenderException {
 
 		BundleContext context = Activator.getContext();
 		ServiceReference<?> sr = context.getServiceReference(serviceInterfaceName);
-		return get(sr);
+		return null == sr ? null : get(sr);
 	}
 
 	public Collection<Extender<S>> get(String serviceInterfaceName, String filter) throws ExtenderException {
@@ -72,7 +100,7 @@ public class ExtenderServiceMapImpl<S> extends ConcurrentHashMap<Long, Extender<
 		BundleContext context = Activator.getContext();
 		ServiceReference<?>[] srs;
 		if (null == filter) {
-			filter = ExtenderImpl.extenderFilter;
+			filter = Extender.EXTENDER_FILTER;
 		}
 		try {
 			srs = context.getServiceReferences(serviceInterfaceName, filter);

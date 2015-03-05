@@ -15,7 +15,6 @@ import no.javatime.inplace.bundlejobs.events.BundleJobEvent;
 import no.javatime.inplace.bundlejobs.events.BundleJobEventListener;
 import no.javatime.inplace.bundlemanager.BundleJobManager;
 import no.javatime.inplace.dl.preferences.intface.CommandOptions;
-import no.javatime.inplace.extender.intface.Extender;
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.extender.intface.Extenders;
 import no.javatime.inplace.extender.intface.Extension;
@@ -56,7 +55,6 @@ import org.eclipse.ui.progress.IWorkbenchSiteProgressService;
 import org.eclipse.ui.statushandlers.StatusManager;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
-import org.osgi.util.tracker.BundleTracker;
 
 
 /**
@@ -83,7 +81,7 @@ public class Activator extends AbstractUIPlugin implements BundleJobEventListene
 	private static Extension<BundleProjectMeta> bundlePrrojectMeta;
 	
 	// Register (extend) services for use facilitated by other bundles  
-	private BundleTracker<Extender<?>> extenderBundleTracker;
+	private ExtenderTracker extenderBundleTracker;
 
 	public Activator() {
 	}
@@ -98,7 +96,7 @@ public class Activator extends AbstractUIPlugin implements BundleJobEventListene
 		plugin = this;
 		Activator.context = context;
 		try {			
-			extenderBundleTracker = new ExtenderBundleTracker(context, Bundle.ACTIVE, null);
+			extenderBundleTracker = new ExtenderTracker(context, Bundle.ACTIVE, null);
 			extenderBundleTracker.open();
 			BundleJobManager.addBundleJobListener(Activator.getDefault());
 			commandOptions = Extenders.getExtension(CommandOptions.class.getName());

@@ -1,6 +1,7 @@
 package no.javatime.inplace.log.intface;
 
 import java.text.MessageFormat;
+import java.util.Dictionary;
 
 import no.javatime.inplace.dl.preferences.intface.MessageOptions;
 import no.javatime.inplace.extender.intface.ExtenderException;
@@ -28,7 +29,7 @@ import org.osgi.framework.Bundle;
  * option used by the InPlace Activator.
  * <p>
  * The service scope should be bundle (e.g. see
- * {@link Extenders#register(Bundle, Bundle, String, Object, java.util.Dictionary)}) if
+ * {@link Extenders#register(Bundle, Bundle, String, Object, Dictionary)}) if
  * {@link #log()} is used. The {@code log()} and its associated add methods are shared among all
  * threads in a bundle. To acquire a separate bundle status tree for a thread you can register a
  * separate extender with bundle scope for that thread.
@@ -185,6 +186,48 @@ public interface BundleLog {
 	 */
 	public void addParent(StatusCode statusCode, Bundle bundle, Exception exception, String msg)
 			throws BundleLogException;
+
+	/**
+	 * Creates a status object from the specified parameters and adds it as a child to the current
+	 * status object. The current status object is unchanged.
+	 * <p>
+	 * If this is the first status object added, a new root status object is added. Added status
+	 * objects are removed after they are logged or cleared.
+	 * 
+	 * @param statusCode the status code to log
+	 * @param bundle adds the bundle symbolic name and bundle state to the log
+	 * @param exception the exception to log
+	 * @param pattern creates a message to log with the given pattern and uses it to format the given
+	 * substitutions
+	 * @param substitutions used by the pattern parameter to format the resulting message
+	 * @return the formatted message
+	 * @throws BundleLogException If the current status object is an immediate child to the root.If
+	 * the pattern is invalid, or if an argument in the arguments array is not of the type expected by
+	 * the format element(s) that use it. If the specified bundle parameter is null and the
+	 * {@code #BundleContext} of this bundle is no longer valid
+	 * @see #clear()
+	 * @see #log()
+	 */
+	public String addToParent(StatusCode statusCode, Bundle bundle, Exception exception,
+			String pattern, Object... substitutions) throws BundleLogException;
+
+	/**
+	 * Creates a status object from the specified parameters and adds it as a child to the current
+	 * status object. The current status object is unchanged.
+	 * <p>
+	 * If this is the first status object added, a new root status object is added. Added status
+	 * objects are removed after they are logged or cleared.
+	 * 
+	 * @param statusCode the status code to log
+	 * @param bundle adds the bundle symbolic name and bundle state to the log
+	 * @param exception TODO
+	 * @param msg the message to log
+	 * @throws BundleLogException If the current status object is an immediate child to the root
+	 * @see #clear()
+	 * @see #log()
+	 */
+	public void addToParent(StatusCode statusCode, Bundle bundle, Exception exception,
+			String msg) throws BundleLogException;
 
 	/**
 	 * Creates a status object from the specified parameters and adds it as a sibling to the current

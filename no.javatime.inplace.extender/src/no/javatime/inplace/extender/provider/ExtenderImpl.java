@@ -9,6 +9,7 @@ import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentMap;
@@ -18,6 +19,7 @@ import no.javatime.inplace.extender.intface.Extender;
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.extender.intface.Extension;
 import no.javatime.inplace.extender.intface.Introspector;
+import no.javatime.inplace.extender.intface.PrototypeServiceScopeFactory;
 
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -38,196 +40,302 @@ import org.osgi.util.tracker.BundleTracker;
  * 
  * @param <S> The type of the service being registered.
  */
-public class ExtenderImpl<S> implements Extender<S> {
+public final class ExtenderImpl<S> implements Extender<S> {
 
-	public static final String extenderFilter = "(" + Extender.class.getSimpleName() + "=true)";
+	// Context of the extender bundle
+	private static final BundleContext context = Activator.getContext();
+	// Extenders interface definition names
+	private final String[] serviceInterfaceNames;
+	// Context of bundle owing this service. Only used when loading the service class object with the
+	// class loader from the owing bundle
+	private final BundleContext ownerContext;
+	// Context of bundle registering this service. This is also the using bundle if not a using bundle
+	// is specified when getting this service
+	private final BundleContext regContext;
+	// The bundle tracker tracking this extender object(and possibly others) when registered with
+	// a bundle tracker
+	private final BundleTracker<Collection<Extender<?>>> bundleTracker;
 
-	final private static BundleContext context = Activator.getContext();
+	private final ServiceRegistration<?> serviceRegistration;
+	// Must be accessible after service is unregistered
+	private final ServiceReference<?> sr;
+	// Name of the service class
+	private final String serviceName;
+	// The service object or a service factory object
+	private final Object service;
 
-	/** Extenders interface definition name */
-	final private String serviceInterfaceName;
+	// Constructors
+	// Service interface name and service
+	public ExtenderImpl(Bundle ownerBundle, Bundle regBundle, String serviceInterfaceName,
+			Object service, Dictionary<String, ?> properties) throws ExtenderException {
+		this(null, ownerBundle, regBundle,
+				null != serviceInterfaceName ? new String[] { serviceInterfaceName } : null, service,
+				properties);
+	}
 
-	/** Interface class of the extension */
-	private Class<S> serviceInterfaceClass;
+	// Service interface names and service
+	public ExtenderImpl(Bundle ownerBundle, Bundle regBundle, String[] serviceInterfaceNames,
+			Object service, Dictionary<String, ?> properties) throws ExtenderException {
+		this(null, ownerBundle, regBundle, serviceInterfaceNames, service, properties);
+	}
 
-	/**
-	 * Context of bundle owing this service. Only used when loading the service class object with the
-	 * class loader from the owing bundle
-	 */
-	final private BundleContext ownerContext;
+	// Bundle tracker, service interface name and service
+	public ExtenderImpl(BundleTracker<Collection<Extender<?>>> bt, Bundle ownerBundle,
+			Bundle regBundle, String serviceInterfaceName, Object service,
+			Dictionary<String, ?> properties) throws ExtenderException {
+		this(bt, ownerBundle, regBundle,
+				null != serviceInterfaceName ? new String[] { serviceInterfaceName } : null, service,
+				properties);
+	}
 
-	/**
-	 * Context of bundle registering this service. This is also the using bundle if not a using bundle
-	 * is specified when getting this service
-	 */
-	final private BundleContext regContext;
-
-	/** Name of the service class */
-	final private String serviceName;
-	/** Service class loaded by the extender or obtained from service registry */
-	private Class<S> serviceClass;
-	/** Service registration object returned when the service is registered */
-	private ServiceRegistration<?> serviceRegistration;
-	/** The bundle tracker also holding the extender object when registered with a bundle tracker */
-	final private BundleTracker<Extender<?>> bundleTracker;
-	/** The service object or a service factory object */
-	private Object service;
-	final private Dictionary<String, Object> properties;
-
-	/* internal object to use for synchronization */
-	private final Object registrationLock = new Object();
-
-	private ExtenderImpl(BundleTracker<Extender<?>> bt, Bundle ownerBundle, Bundle regBundle,
-			String serviceInterfaceName, String serviceName, Object service,
-			Dictionary<String, Object> properties) {
+	// Bundle tracker, service interface names and service
+	public ExtenderImpl(BundleTracker<Collection<Extender<?>>> bt, Bundle ownerBundle,
+			Bundle regBundle, String[] serviceInterfaceNames, Object service,
+			Dictionary<String, ?> properties) throws ExtenderException {
 
 		this.bundleTracker = bt;
-		this.ownerContext = ownerBundle.getBundleContext();
-		this.regContext = regBundle.getBundleContext();
-		this.serviceInterfaceName = serviceInterfaceName;
-		this.serviceName = null != serviceName ? serviceName : service.getClass().getName();
-		this.service = service;
-		this.properties = new Hashtable<>();
-		synchronized (this.properties) {
+		try {
+
+			// Owner and registrar bundle
+			this.ownerContext = null != ownerBundle ? ownerBundle.getBundleContext() : null;
+			if (null == ownerContext) {
+				throw new ExtenderException("Missing owner bundle when registering extender");
+			}
+			this.regContext = null != regBundle ? regBundle.getBundleContext() : null;
+			if (null == regContext) {
+				throw new ExtenderException("Missing registrar bundle when registering extender");
+			}
+
+			// Service interface names
+			int size = null == serviceInterfaceNames ? 0 : serviceInterfaceNames.length;
+			if (size == 0) {
+				throw new ExtenderException(
+						"Missing service interface name(s) when registering extender for bundle {0}",
+						ownerContext.getBundle());
+			}
+			List<String> copy = new ArrayList<String>(size);
+			for (int i = 0; i < size; i++) {
+				String clazz = serviceInterfaceNames[i].intern();
+				if (!copy.contains(clazz)) {
+					copy.add(clazz);
+				}
+			}
+			this.serviceInterfaceNames = copy.toArray(new String[copy.size()]);
+
+			// Service and service name
+			if (null == service) {
+				throw new ExtenderException(
+						"Missing service object, service name or service factory object when registering extender for {0}",
+						getServiceInterfaceName());
+			}
+			if (service instanceof String) {
+				this.serviceName = (String) service;
+				this.service = Introspector.createObject(getServiceClass());
+			} else {
+				this.service = service;
+				this.serviceName = service.getClass().getName();
+			}
+
+			// Properties
+			Dictionary<String, Object> props = new Hashtable<>();
 			if (null != properties) {
 				for (Enumeration<String> e = properties.keys(); e.hasMoreElements();) {
 					String key = e.nextElement();
-					this.properties.put(key, properties.get(key));
+					props.put(key, properties.get(key));
 				}
 			}
-			this.properties.put(Extender.class.getSimpleName(), Boolean.valueOf(true));
+			props.put(Extender.class.getSimpleName().toLowerCase(), Boolean.valueOf(true));
+
+			if (service instanceof PrototypeServiceScopeFactory) {
+				props.put(SCOPE, PROTOTYPE);
+			} else if (service instanceof ServiceFactory) {
+				props.put(SCOPE, BUNDLE);
+			} else {
+				props.put(SCOPE, SINGLETON);
+			}
+			// props.put(SCOPE, service instanceof ServiceFactory<?> ? BUNDLE : SINGLETON);
+
+			// Register service
+			serviceRegistration = regContext.registerService(this.serviceInterfaceNames, this.service,
+					props);
+			sr = serviceRegistration.getReference();
+			if (!sr.isAssignableTo(getRegistrar(), getServiceClass().getName())) {
+				throw new ExtenderException(
+						"Bundle {0} is not compatible (same source package) as class {1}", getRegistrar(),
+						getServiceClass().getName());
+			}
+
+			// Register extender
+			@SuppressWarnings("unchecked")
+			ExtenderServiceMap<S> serviceMap = (ExtenderServiceMap<S>) Activator.getExtenderServiceMap();
+			if (null != serviceMap) {
+				serviceMap.put(getServiceId(), this);
+			} else {
+				throw new ExtenderException(
+						"Extender bundle context is invalid while trying to register {0}",
+						getServiceInterfaceName());
+			}
+		} catch (IllegalStateException | IllegalArgumentException | SecurityException
+				| NullPointerException e) {
+			throw new ExtenderException(e, "Failed to register the extender for {0}",
+					getServiceInterfaceName());
 		}
 	}
 
-	// Constructors
-	public ExtenderImpl(Bundle ownerBundle, Bundle regBundle, String serviceInterfaceName,
-			String serviceName, Dictionary<String, Object> properties) {
-		this(null, ownerBundle, regBundle, serviceInterfaceName, serviceName, null, properties);
+	@Override
+	public Extension<S> getExtension(String serviceInterfaceName, Bundle user)
+			throws ExtenderException {
+
+		try {
+			if (!getServiceInterfaceNames().contains(serviceInterfaceName)) {
+				throw new ExtenderException(
+						"The specified interface name {0} is not registered with this extender. ",
+						serviceInterfaceName);
+			}
+		} catch (NullPointerException e) {
+			throw new ExtenderException(e,
+					"Failed to get extension for for the specified service interface name");
+		}
+		return new ExtensionImpl<S>(serviceInterfaceName, user);
 	}
 
-	public ExtenderImpl(Bundle ownerBundle, Bundle regBundle, String serviceInterfaceName,
-			Object service, Dictionary<String, Object> properties) {
-		this(null, ownerBundle, regBundle, serviceInterfaceName, (String) null, service, properties);
-	}
+	@Override
+	public Extension<S> getExtension(Bundle user) {
 
-	public ExtenderImpl(BundleTracker<Extender<?>> bt, Bundle ownerBundle, Bundle regBundle,
-			String serviceInterfaceName, Object service, Dictionary<String, Object> properties) {
-		this(bt, ownerBundle, regBundle, serviceInterfaceName, null, service, properties);
-	}
-
-	public ExtenderImpl(BundleTracker<Extender<?>> bt, Bundle ownerBundle, Bundle regBundle,
-			String serviceInterfaceName, String serviceName, Dictionary<String, Object> properties) {
-		this(bt, ownerBundle, regBundle, serviceInterfaceName, serviceName, null, properties);
+		return new ExtensionImpl<S>(getServiceInterfaceName(), user);
 	}
 
 	@Override
 	public Extension<S> getExtension() {
 
-		return !isServiceRegistered() ? null : new ExtensionImpl<S>(getServiceInterfaceName(),
-				getRegistrarBundle());
+		return new ExtensionImpl<S>(getServiceInterfaceName(), getRegistrar());
 	}
 
-	@Override
-	public S getService(Bundle bundle) throws ExtenderException {
-
-		try {
-			ServiceReference<S> sr = getServicereReference();
-			return null == sr ? null : bundle.getBundleContext().getService(sr);
-		} catch (IllegalStateException | IllegalArgumentException | SecurityException e) {
-			throw new ExtenderException(e, e.getMessage());
-		}
-	}
-
+	@SuppressWarnings("unchecked")
 	@Override
 	public S getService() throws ExtenderException {
-		try {
-			ServiceReference<S> sr = getServicereReference();
-			return null == sr ? null : regContext.getService(sr);
-		} catch (IllegalStateException | IllegalArgumentException | SecurityException e) {
-			throw new ExtenderException(e);
-		}
-	}
 
-	@Override
-	public void unregisterService() throws ExtenderException {
 		try {
-			synchronized (registrationLock) {
-				serviceRegistration.unregister();
+			if (isPrototypeServiceScope(regContext.getBundle())) {
+				return ((PrototypeServiceScopeFactory<S>) service).getService(regContext.getBundle(),
+						(ServiceRegistration<S>) serviceRegistration);
+			} else {
+				return (S) regContext.getService(sr);
 			}
-		} catch (IllegalStateException e) {
-			// TODO: add info
-			throw new ExtenderException(e);
+		} catch (IllegalStateException | IllegalArgumentException | SecurityException
+				| NullPointerException e) {
+			throw new ExtenderException(e, "Failed to get the service for {0}", getServiceInterfaceName());
 		}
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
-	public Boolean ungetService() {
-		return ungetService(getRegistrarBundle());
-	}
+	public S getService(Bundle user) throws ExtenderException {
 
-	@Override
-	public Boolean ungetService(Bundle bundle) {
 		try {
-			ServiceReference<S> sr = getServicereReference();
-			return null == sr ? false : bundle.getBundleContext().ungetService(sr);
-		} catch (IllegalStateException | IllegalArgumentException e) {
-			// TODO: add info to this exception
-			throw new ExtenderException(e);
-		}
-	}
-
-	@Override
-	public Class<S> getInterfaceServiceClass() throws ExtenderException {
-		synchronized (registrationLock) {
-			if (null == serviceInterfaceClass) {
-				Class<S> serviceClass = getServiceClass();
-				if (null != serviceClass) {
-					if (serviceClass.getName().equals(getServiceInterfaceName())) {
-						// The interface service is a class
-						return serviceInterfaceClass = serviceClass;
-					} else {
-						// The interface service is an interface
-						serviceInterfaceClass = Introspector.getTypeInterface(serviceClass,
-								getServiceInterfaceName());
-					}
+			if (isPrototypeServiceScope(user)) {
+				synchronized (serviceRegistration) {
+					
+					return ((PrototypeServiceScopeFactory<S>) service).getService(user,
+							(ServiceRegistration<S>) serviceRegistration);					
 				}
+			} else {
+				return (S) user.getBundleContext().getService(sr);
 			}
-			return serviceInterfaceClass;
+		} catch (IllegalStateException | IllegalArgumentException | SecurityException
+				| NullPointerException e) {
+			throw new ExtenderException(e, "Failed to get the service for {0}", getServiceInterfaceName());
 		}
+	}
+
+	/**
+	 * This is a temporarily workaround which emulates prototype scope to support it on pre. OSGi 6
+	 * (pre Luna). To use it in a standardized way, OSGi 6 clients should use PrototypeServiceFactory
+	 * 
+	 * @param user using bundle
+	 * @return true if the service is of type {@code PrototypeServiceScopeFactory} and it is not the
+	 * first time the specified bundle is a using bundle. Otherwise false
+	 */
+	private boolean isPrototypeServiceScope(Bundle user) {
+		if (service instanceof PrototypeServiceScopeFactory) {
+			if (getUsingBundles().contains(user)) {
+				return true;
+			}
+		}
+		// The first time the using bundle calls the getService bundle scope is used
+		// and the framework will return a new service object
+		return false;
+
+	}
+
+	@Override
+	public Boolean ungetService() throws ExtenderException {
+
+		return ungetService(getRegistrar());
+	}
+
+	@Override
+	public Boolean ungetService(Bundle bundle) throws ExtenderException {
+
+		try {
+			return bundle.getBundleContext().ungetService(sr);
+		} catch (IllegalStateException | IllegalArgumentException e) {
+			throw new ExtenderException(e, "Failed to unget service for {0}", getServiceInterfaceName());
+		}
+	}
+
+	@Override
+	public Class<S> getServiceInterfaceClass() throws ExtenderException {
+
+		Class<S> serviceInterfaceClass = null;
+
+		Class<S> serviceClass = getServiceClass();
+		if (null != serviceClass) {
+			if (serviceClass.getName().equals(getServiceInterfaceName())) {
+				// The interface service is a class
+				serviceInterfaceClass = serviceClass;
+			} else {
+				// The interface service is an interface
+				serviceInterfaceClass = Introspector.getTypeInterface(serviceClass,
+						getServiceInterfaceName());
+			}
+		}
+		return serviceInterfaceClass;
 	}
 
 	@Override
 	public String getServiceInterfaceName() {
-		return serviceInterfaceName;
+
+		return this.serviceInterfaceNames[0];
+	}
+
+	public Collection<String> getServiceInterfaceNames() {
+
+		int size = serviceInterfaceNames.length;
+		List<String> copy = new ArrayList<String>(size);
+		for (int i = 0; i < size; i++) {
+			copy.add(serviceInterfaceNames[i]);
+		}
+		return copy;
 	}
 
 	@Override
 	public Class<S> getServiceClass() throws ExtenderException {
 
 		// must use class loader of bundle owing the class
-		Bundle bundle = getOwnerBundle();
+		Bundle bundle = getOwner();
 		if (null == bundle) {
-			throw new ExtenderException("Failed to get bundle with identifier {0}", getOwnerBundle()
+			throw new ExtenderException("Failed to get bundle with identifier {0}", getOwner()
 					.getBundleId());
 		}
-		synchronized (registrationLock) {
-			if (null == serviceClass) {
-				if (null == serviceName) {
-					throw new ExtenderException("Missing class name implementing extender interface");
-				}
-				serviceClass = Introspector.loadClass(bundle, serviceName);
-			}
-			return serviceClass;
-		}
+		return Introspector.loadClass(bundle, serviceName);
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
-	public Object getServiceObject() throws ExtenderException {
+	public ServiceFactory<S> getServiceFactoryObject() {
 
-		// If service is null a service class name must have been specified at registration time
-		synchronized (registrationLock) {
-			return null == service ? service = Introspector.createObject(getServiceClass()) : service;
-		}
+		return (ServiceFactory<S>) (service instanceof ServiceFactory ? service : null);
 	}
 
 	/**
@@ -236,204 +344,169 @@ public class ExtenderImpl<S> implements Extender<S> {
 	 * @return the bundle object or null if the bundle context of the extension is no longer valid
 	 */
 	@Override
-	public Bundle getOwnerBundle() {
+	public Bundle getOwner() throws ExtenderException {
 
-		return ownerContext.getBundle();
+		try {
+			return ownerContext.getBundle();
+		} catch (IllegalStateException e) {
+			throw new ExtenderException("The context of the owner bundle is invalid for service {0}",
+					serviceInterfaceNames[0]);
+		}
 	}
 
 	@Override
-	public Bundle getRegistrarBundle() {
+	public Bundle getRegistrar() throws ExtenderException {
 
-		return regContext.getBundle();
+		try {
+			return regContext.getBundle();
+		} catch (IllegalStateException e) {
+			throw new ExtenderException("The context of the registrar bundle is invalid for service {0}",
+					serviceInterfaceNames[0]);
+		}
 	}
 
 	@Override
 	public Long getServiceId() {
 
-		ServiceReference<S> sr = getServicereReference();
-		return null == sr ? null : (Long) sr.getProperty(Constants.SERVICE_ID);
+		return (Long) sr.getProperty(Constants.SERVICE_ID);
 	}
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public ServiceReference<S> getServicereReference() throws ExtenderException {
-		try {
-			synchronized (registrationLock) {
-				return null == serviceRegistration ? null : (ServiceReference<S>) serviceRegistration
-						.getReference();
-			}
-		} catch (SecurityException e) {
-			// TODO add info
-			throw new ExtenderException(e);
-		} catch (IllegalStateException e) {
-			// Service unregistered
-		}
-		return null;
+	public ServiceReference<S> getServiceReference() throws ExtenderException {
+
+		return (ServiceReference<S>) sr;
 	}
 
 	@Override
-	public Boolean isServiceRegistered() {
+	public Boolean isRegistered() {
 
-		synchronized (registrationLock) {
-			if (null != serviceRegistration) {
-				try {
-					serviceRegistration.getReference();
-					return true;
-				} catch (IllegalStateException | SecurityException e) {
-					// Service unregistered or security violation
-				}
-			}
-			serviceRegistration = null;
-			return false;
-		}
-	}
-
-	@Override
-	@SuppressWarnings("unchecked")
-	public Boolean registerService() throws ExtenderException {
 		try {
-			if (!isServiceRegistered()) {
-				if (null == serviceInterfaceName) {
-					throw new ExtenderException(
-							"Missing interface of implementation class {0} when registering service",
-							serviceClass);
-				}
-				synchronized (registrationLock) {
-					Activator.getDefault().getExtenderListener().setExtender(this);					
-					serviceRegistration = regContext.registerService(serviceInterfaceName,
-							getServiceObject(), properties);
-				}
-				// Validate the service
-				ServiceReference<?> serviceReference = getServicereReference();
-				if (null == serviceReference) {
-					throw new ExtenderException("Failed to get the service for interface {0}",
-							serviceInterfaceName);
-				}
-				if (!serviceReference.isAssignableTo(getRegistrarBundle(), getServiceClass().getName())) {
-					throw new ExtenderException(
-							"Bundle {0} is not compatible (same source package) as class {1}",
-							getRegistrarBundle(), getServiceClass().getName());
-				}
-				setScope(serviceReference);
-				// Add this registered extender to the service map
-				ExtenderServiceMap<S> esm = (ExtenderServiceMap<S>) Activator.getExtenderServiceMap();
-				if (null != esm) {
-					esm.put(serviceReference, this);
-					return true;
-				}
-				return false;
-			} else {
-				return false;
-			}
-		} catch (IllegalStateException | IllegalArgumentException | SecurityException e) {
-			throw new ExtenderException(e, e.getMessage());
-		}
-	}
-
-	private boolean setScope(ServiceReference<?> sr) {
-
-		if (null == sr.getProperty(SCOPE)) {
-			// This is for OSGi previous to R6 (Prototype SCOPE not supported)
-			synchronized (properties) {
-				if (service instanceof ServiceFactory) {
-					return setProperty(SCOPE, BUNDLE);
-				} else {
-					return setProperty(SCOPE, SINGLETON);
-				}
-			}
+			ExtenderServiceMap<S> map = Activator.getExtenderServiceMap();
+			Extender<S> e = map.get(getServiceId());
+			return e != null ? true : false;
+			// if (null != e) {
+			// Boolean eFilter = (Boolean) e.getProperty(Extender.class.getSimpleName().toLowerCase());
+			// if (null != eFilter && eFilter) {
+			// return true;
+			// }
+			// }
+		} catch (NullPointerException | ClassCastException e) {
 		}
 		return false;
 	}
 
-	public Collection<Bundle> getUsingBundles() {
-		ServiceReference<?> sr = getServicereReference();
-		if (null != sr) {
-			Bundle[] using = sr.getUsingBundles();
-			if (null != using) {
-				return new ArrayList<Bundle>(Arrays.asList(using));
-			}
-		}
-		return Collections.<Bundle>emptyList();
-	}
-	
-	@SuppressWarnings("unused")
-	private void printServiceregInfo(ServiceReference<?> ref) {
+	@Override
+	public void unregister() throws ExtenderException {
 
-		System.out.println("------------   Service Registation info:  --------------------\n");
-		System.out.println("Owner bundle           			 : " + getOwnerBundle().getSymbolicName());
-		System.out.println("Bundle registered service    : " + ref.getBundle().getSymbolicName());
-		System.out.println("Registration bundle    			 : " + getRegistrarBundle().getSymbolicName());
-		Bundle[] using = ref.getUsingBundles();
-		if (null != using) {
-			System.out.println("Using bundles                : "
-					+ formatBundleList(new ArrayList<Bundle>(Arrays.asList(using)), false));
+		try {
+			Long SID = getServiceId();
+			serviceRegistration.unregister();
+			ExtenderServiceMap<S> extenderMap = Activator.getExtenderServiceMap();
+			if (null != extenderMap) {
+				extenderMap.remove(SID);
+			} else {
+				throw new ExtenderException(
+						"Extender bundle context is invalid while trying to unregister {0}",
+						getServiceInterfaceName());
+			}
+		} catch (IllegalStateException | NullPointerException e) {
+			throw new ExtenderException(e, "Extender for {0} is already unregistered",
+					getServiceInterfaceName());
 		}
-		System.out.println("Serviceref Impl. Class       : "
-				+ getOwnerBundle().getBundleContext().getService(ref).getClass().getName());
-		System.out.println("ExtenderImpl Impl. Class         : " + getServiceClass().getName());
-		System.out
-				.println("ExtenderImpl Interface Class     : " + getInterfaceServiceClass().getName());
+	}
+
+	public Collection<Bundle> getUsingBundles() {
+
+		Bundle[] using = sr.getUsingBundles();
+		return null != using ? new ArrayList<Bundle>(Arrays.asList(using)) : Collections
+				.<Bundle> emptyList();
 	}
 
 	@Override
-	public BundleTracker<Extender<?>> getBundleTracker() {
+	public BundleTracker<Collection<Extender<?>>> getBundleTracker() {
+
 		return bundleTracker;
 	}
-	
+
 	public Collection<Extender<?>> getTrackedExtenders() {
-		
+
 		Collection<Extender<?>> trackedExtenders = new ArrayList<>();
 		if (null != bundleTracker) {
-			Map<Bundle, Extender<?>> tracked = bundleTracker.getTracked();
-			Iterator<Entry<Bundle, Extender<?>>> it = tracked.entrySet().iterator();
+			Map<Bundle, Collection<Extender<?>>> tracked = bundleTracker.getTracked();
+			Iterator<Entry<Bundle, Collection<Extender<?>>>> it = tracked.entrySet().iterator();
 			while (it.hasNext()) {
-				ConcurrentMap.Entry<Bundle, Extender<?>> entry = it.next();
-				trackedExtenders.add(entry.getValue());
+				ConcurrentMap.Entry<Bundle, Collection<Extender<?>>> entry = it.next();
+				for (Extender<?> e : entry.getValue()) {
+					trackedExtenders.add(e);
+				}
 			}
 		}
-		return trackedExtenders;				
+		return trackedExtenders;
 	}
-	
-	@Override
-	public Dictionary<String, ?> getProperties() {
 
-		ServiceReference<?> sr = getServicereReference();
+	@Override
+	public Dictionary<String, Object> getProperties() {
+
 		String[] propKeys = sr.getPropertyKeys();
 		Dictionary<String, Object> dict = new Hashtable<>();
 		for (int i = 0; i < propKeys.length; i++) {
 			String key = propKeys[i];
+			// Assume key not null
 			dict.put(key, sr.getProperty(key));
 		}
 		return dict;
 	}
-	
-	@Override
-	public boolean setProperty(String key, Object property) {
 
-		if (null != serviceRegistration) {
-			synchronized (properties) {
-				properties.put(key, property);				
-				serviceRegistration.setProperties(properties);
-				return true;
-			}
-		}
-		return false;
+	public String[] getPropertyKeys() {
+
+		String[] propKeys = sr.getPropertyKeys();
+		return propKeys;
 	}
-	
+
+	@Override
+	public Object getProperty(String key) {
+
+		return sr.getProperty(key);
+	}
+
+	@Override
+	public void setProperty(String key, Object value) throws ExtenderException {
+
+		Dictionary<String, Object> dict = getProperties();
+		dict.put(key, value);
+		try {
+			serviceRegistration.setProperties(dict);
+		} catch (IllegalArgumentException | IllegalStateException | NullPointerException e) {
+			throw new ExtenderException(e, "Failed to update prop for {0}", getServiceInterfaceName());
+		}
+	}
+
+	public void setProperties(Dictionary<String, ?> dictionary) {
+
+		try {
+			serviceRegistration.setProperties(dictionary);
+		} catch (IllegalArgumentException | IllegalStateException | NullPointerException e) {
+			throw new ExtenderException(e, "Failed to update prop for {0}", getServiceInterfaceName());
+		}
+	}
+
 	@SuppressWarnings("unused")
-	private static <S> Extender<?> getTrackedExtender(Extender<S> extender,
+	private static <S> Collection<Extender<?>> getTrackedExtender(Extender<S> extender,
 			String serviceInterfaceName) {
 
-		BundleTracker<Extender<?>> bt = extender.getBundleTracker();
+		BundleTracker<Collection<Extender<?>>> bt = extender.getBundleTracker();
 		if (null != bt) {
-			Map<Bundle, Extender<?>> trackedObjects = bt.getTracked();
-			Iterator<Entry<Bundle, Extender<?>>> it = trackedObjects.entrySet().iterator();
+			Map<Bundle, Collection<Extender<?>>> trackedObjects = bt.getTracked();
+			Iterator<Entry<Bundle, Collection<Extender<?>>>> it = trackedObjects.entrySet().iterator();
 			while (it.hasNext()) {
-				ConcurrentMap.Entry<Bundle, Extender<?>> entry = it.next();
-				Extender<?> trackedExtender = entry.getValue();
-				String id = trackedExtender.getServiceInterfaceName();
-				if (null != id && id.equals(serviceInterfaceName)) {
-					return trackedExtender;
+				ConcurrentMap.Entry<Bundle, Collection<Extender<?>>> entry = it.next();
+				Collection<Extender<?>> trackedExtender = entry.getValue();
+				for (Extender<?> e : trackedExtender) {
+					String id = e.getServiceInterfaceName();
+					if (null != id && id.equals(serviceInterfaceName)) {
+						return trackedExtender;
+					}
 				}
 			}
 		}
@@ -454,6 +527,7 @@ public class ExtenderImpl<S> implements Extender<S> {
 		return bundles;
 	}
 
+	@SuppressWarnings("unused")
 	private String formatBundleList(Collection<Bundle> bundles, boolean includeVersion) {
 		StringBuffer sb = new StringBuffer();
 		if (null != bundles && bundles.size() >= 1) {

@@ -17,11 +17,11 @@ public class DependencyDialogExtension implements Extension<DependencyDialog> {
 
 	
 	private Extender<DependencyDialog> extender;
-	private Object serviceObject = null;
+	private DependencyDialog serviceObject = null;
 
 	public DependencyDialogExtension() {
 		extender = getExtender();
-		serviceObject = extender.getServiceObject();
+		serviceObject = extender.getService();
 	}
 	
 	public int openAsService() {

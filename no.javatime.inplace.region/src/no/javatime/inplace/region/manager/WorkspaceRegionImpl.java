@@ -77,8 +77,8 @@ public class WorkspaceRegionImpl implements BundleRegion {
 			initialCapacity, 1);
 
 	/**
-	 * Bundle nodes as bundle projects. Hash for direct access to projects and bundle nodes with
-	 * the bundle id as key
+	 * Bundle nodes as bundle projects. Hash for direct access to projects and bundle nodes with the
+	 * bundle id as key
 	 */
 	private Map<Long, IProject> bundleProjects = new ConcurrentHashMap<Long, IProject>(
 			initialCapacity, 1);
@@ -90,41 +90,44 @@ public class WorkspaceRegionImpl implements BundleRegion {
 	@Override
 	public BundleCommand getCommandService() {
 
-		try {			
+		try {
 			Extender<BundleCommand> extender = Activator.getExtenderCommand();
 			return extender.getService();
 		} catch (ExtenderException e) {
 			String msg = NLS.bind(Msg.GET_SERVICE_EXP, BundleCommand.class.getName());
 			StatusManager.getManager().handle(
-					new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, Activator.getContext().getBundle(), msg, e), StatusManager.LOG);
+					new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID,
+							Activator.getContext().getBundle(), msg, e), StatusManager.LOG);
 		}
 		return null;
 	}
-	
+
 	@Override
 	public BundleTransition getTransitionService() {
-	
+
 		try {
 			Extender<BundleTransition> extender = Activator.getExtenderTransition();
 			return extender.getService();
 		} catch (ExtenderException e) {
 			String msg = NLS.bind(Msg.GET_SERVICE_EXP, BundleCommand.class.getName());
 			StatusManager.getManager().handle(
-					new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, Activator.getContext().getBundle(), msg, e), StatusManager.LOG);
+					new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID,
+							Activator.getContext().getBundle(), msg, e), StatusManager.LOG);
 		}
 		return null;
 	}
-	
+
 	@Override
 	public BundleProjectCandidates getCanidatesService() {
 
-		try {	
+		try {
 			Extender<BundleProjectCandidates> extender = Activator.getExtenderBundleCandidatesProject();
 			return extender.getService();
 		} catch (ExtenderException e) {
 			String msg = NLS.bind(Msg.GET_SERVICE_EXP, BundleProjectCandidates.class.getName());
 			StatusManager.getManager().handle(
-					new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, Activator.getContext().getBundle(), msg, e), StatusManager.LOG);
+					new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID,
+							Activator.getContext().getBundle(), msg, e), StatusManager.LOG);
 		}
 		return null;
 	}
@@ -138,7 +141,8 @@ public class WorkspaceRegionImpl implements BundleRegion {
 		} catch (ExtenderException e) {
 			String msg = NLS.bind(Msg.GET_SERVICE_EXP, BundleProjectMeta.class.getName());
 			StatusManager.getManager().handle(
-					new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, Activator.getContext().getBundle(), msg, e), StatusManager.LOG);
+					new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID,
+							Activator.getContext().getBundle(), msg, e), StatusManager.LOG);
 		}
 		return null;
 	}
@@ -183,25 +187,30 @@ public class WorkspaceRegionImpl implements BundleRegion {
 	 * First search registered bundle projects than search the entire workspace for the project
 	 * 
 	 * @param bundle the bundle associated with the project to return
-	 * @return the associated project of the specified bundle or null if no project is found
+	 * @return the associated project of the specified bundle or null if no project is found or
+	 * workspace is closed
 	 */
 	public IProject getWorkspaceBundleProject(Bundle bundle) {
 		if (null == bundle) {
 			return null;
 		}
-		BundleNode node = getNode(bundle);
-		if (null != node) {
-			return node.getProject();
-		} else {
-			// Uninstalled bundles are not registered in the workspace region
-			IWorkspace workspace = ResourcesPlugin.getWorkspace();
-			IPath bundlePathLoc = new Path(bundle.getLocation());
-			for (IProject bundleProject : workspace.getRoot().getProjects()) {
-				IPath projectPathLoc = new Path(getBundleLocationIdentifier(bundleProject));
-				if (bundlePathLoc.equals(projectPathLoc)) {
-					return bundleProject;
+		try {
+			BundleNode node = getNode(bundle);
+			if (null != node) {
+				return node.getProject();
+			} else {
+				// Uninstalled bundles are not registered in the workspace region
+				IWorkspace workspace = ResourcesPlugin.getWorkspace();
+				IPath bundlePathLoc = new Path(bundle.getLocation());
+				for (IProject bundleProject : workspace.getRoot().getProjects()) {
+					IPath projectPathLoc = new Path(getBundleLocationIdentifier(bundleProject));
+					if (bundlePathLoc.equals(projectPathLoc)) {
+						return bundleProject;
+					}
 				}
 			}
+		} catch (IllegalStateException e) {
+			// Workspace closed
 		}
 		return null;
 	}
@@ -252,7 +261,7 @@ public class WorkspaceRegionImpl implements BundleRegion {
 	@Override
 	public Boolean isRegionActivated() {
 		for (BundleNode node : projectNodes.values()) {
-			if (null != node && node.isActivated()) {	
+			if (null != node && node.isActivated()) {
 				return true;
 			}
 		}
@@ -305,7 +314,7 @@ public class WorkspaceRegionImpl implements BundleRegion {
 
 	@Override
 	public Boolean isBundleActivated(IProject bundleProject) {
-		
+
 		BundleNode node = getNode(bundleProject);
 		return null == node ? false : node.isActivated();
 	}
@@ -321,10 +330,10 @@ public class WorkspaceRegionImpl implements BundleRegion {
 		BundleNode node = getNode(bundle);
 		return null == node ? false : node.isActivated();
 	}
-		
+
 	@Override
 	public Collection<IProject> getActivatedProjects() {
-		
+
 		Collection<IProject> projects = new LinkedHashSet<IProject>();
 		for (IProject project : getProjects()) {
 			if (isBundleActivated(project)) {
@@ -599,7 +608,7 @@ public class WorkspaceRegionImpl implements BundleRegion {
 		}
 		return false;
 	}
-	
+
 	@Override
 	public boolean setActivation(IProject project, Boolean status) {
 		BundleNode node = getNode(project);
@@ -609,7 +618,7 @@ public class WorkspaceRegionImpl implements BundleRegion {
 		}
 		return false;
 	}
-	
+
 	@Override
 	public Boolean exist(String symbolicName, String version) {
 		BundleNode bn = getNode(symbolicName, version);
@@ -832,7 +841,7 @@ public class WorkspaceRegionImpl implements BundleRegion {
 	 * Register the bundle and its associated project. The project may or may not be activated
 	 * <p>
 	 * Also register bundle project in a separate hash map for direct access
-	 *  
+	 * 
 	 * @param project project to register or update. Must not be null
 	 * @param bundle the bundle to register or update. May be null
 	 * @param activate true if bundle is activated and false if not
@@ -884,7 +893,7 @@ public class WorkspaceRegionImpl implements BundleRegion {
 	 * Remove the project and its associated bundle.
 	 * <p>
 	 * Also remove the bundle project from a separate hash map for direct access
-	 *  
+	 * 
 	 * @param project project to remove. Must not be null
 	 * @throws InPlaceException if the specified project parameter is null
 	 */

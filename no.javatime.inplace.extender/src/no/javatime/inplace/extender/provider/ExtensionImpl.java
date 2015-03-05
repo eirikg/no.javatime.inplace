@@ -20,8 +20,8 @@ public class ExtensionImpl<S> implements Extension<S> {
 	/**
 	 * The extender this extension is part of
 	 */
-	private Extender<S> extender;
-	private Bundle userBundle;
+	private final Extender<S> extender;
+	private final Bundle userBundle;
 
 	private ServiceTracker<S, S> tracker;
 
@@ -39,13 +39,13 @@ public class ExtensionImpl<S> implements Extension<S> {
 
 	public ExtensionImpl(Class<S> intFace)  throws ExtenderException {
 		this.extender = Extenders.getExtender(intFace.getName());
-		userBundle = extender.getRegistrarBundle();
+		userBundle = extender.getRegistrar();
 	}
 
 	public ExtensionImpl(String interfaceName)  throws ExtenderException {
 
 		this.extender = Extenders.getExtender(interfaceName);
-		userBundle = extender.getRegistrarBundle();
+		userBundle = extender.getRegistrar();
 	}
 
 	public S getService(Bundle bundle) throws ExtenderException {		
@@ -72,16 +72,11 @@ public class ExtensionImpl<S> implements Extension<S> {
 		return userBundle;
 	}
 
-	public void setUserBundle(Bundle userBundle) {
-		closeServiceTracker();
-		this.userBundle = userBundle;
-	}
-	
 	public void openServiceTracker(Bundle userBundle,  ServiceTrackerCustomizer<S, S> customizer) throws ExtenderException {
 
 		if (null == tracker) {
 			try {
-				tracker = new ServiceTracker<S, S>(userBundle.getBundleContext(), extender.getServicereReference(),
+				tracker = new ServiceTracker<S, S>(userBundle.getBundleContext(), extender.getServiceReference(),
 						customizer);
 				tracker.open();
 			} catch (IllegalStateException e) {
@@ -96,6 +91,9 @@ public class ExtensionImpl<S> implements Extension<S> {
 		try {
 			if (null == tracker) {
 				openServiceTracker(userBundle, null);
+			}
+			if (tracker.getTrackingCount() == -1) {
+				tracker.open();
 			}
 			return tracker.getService();
 		} catch (ExtenderException e) {

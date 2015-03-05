@@ -26,8 +26,6 @@ import org.osgi.framework.BundleContext;
 
 public class BundleLogimpl implements BundleLog {
 
-	public BundleLogimpl() {
-	}
 
 	// The root of the bundle status tree
 	private IBundleStatus rootStatus = null;
@@ -35,6 +33,9 @@ public class BundleLogimpl implements BundleLog {
 	private IBundleStatus currStatus = null;
 	/* internal object to use for synchronization */
 	private final Object statusLock = new Object();
+
+	public BundleLogimpl() {
+	}
 
 	@Override
 	public String log(IBundleStatus status) throws BundleLogException {
@@ -161,6 +162,36 @@ public class BundleLogimpl implements BundleLog {
 		}
 	}
 
+	public String addToParent(StatusCode statusCode, Bundle bundle, Exception exception,
+			String pattern, Object... substitutions) throws BundleLogException {
+
+		String msg = null;
+		try {
+			msg = MessageFormat.format(pattern, substitutions);
+			addToParent(statusCode, bundle, exception, msg);
+		} catch (IllegalArgumentException e) {
+			String errMsg = pattern != null ? NLS.bind(Messages.FORMAT_MSG_EXP, pattern)
+					: Messages.FORMAT_ARG_EXP;
+			throw new BundleLogException(e, errMsg);
+		} catch (IllegalStateException e) {
+			String errMsg = NLS.bind(Messages.INVALID_CONTEXT_EXP, Activator.PLUGIN_ID);
+			throw new BundleLogException(e, errMsg);
+		}
+		return msg;
+	}
+
+	public void addToParent(StatusCode statusCode, Bundle bundle, Exception exception,
+			String msg) throws BundleLogException {
+
+		synchronized (statusLock) {
+			IBundleStatus nextStatus = createStatus(statusCode, bundle, exception, msg);
+			// This is not the first status object added
+			if (!currStatus.equals(nextStatus)) {
+				currStatus.add(nextStatus);
+			}
+		}
+	}
+
 	@Override
 	public String addSibling(StatusCode statusCode, Bundle bundle, Exception exception,
 			String pattern, Object... substitutions) throws BundleLogException {
@@ -225,7 +256,7 @@ public class BundleLogimpl implements BundleLog {
 			// Current status is not root
 			if (!currStatus.equals(nextStatus)) {
 				nextStatus.add(rootStatus);
-				rootStatus = nextStatus;
+				rootStatus = currStatus = nextStatus;
 			}
 		}
 	}

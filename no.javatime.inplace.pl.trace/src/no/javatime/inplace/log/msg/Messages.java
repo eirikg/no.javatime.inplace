@@ -22,7 +22,9 @@ public class Messages extends NLS {
 	public static String FORMAT_ARG_EXP;
 	public static String ADD_SIBLING_EXP;
 	public static String ADD_PARENT_EXP;
-	
+	public static String INVALID_CONTEXT_EXP;
+	public static String NULL_CONTEXT_EXP;
+	public static String NULL_ROOT_STATUS_EXP;
 	public static String LogView_column_message;
 	public static String LogView_column_plugin;
 	public static String LogView_column_date;

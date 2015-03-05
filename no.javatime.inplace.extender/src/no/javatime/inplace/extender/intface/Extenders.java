@@ -1,8 +1,12 @@
 package no.javatime.inplace.extender.intface;
 
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Dictionary;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentMap;
 
 import no.javatime.inplace.extender.Activator;
 import no.javatime.inplace.extender.provider.ExtenderImpl;
@@ -14,15 +18,20 @@ import org.osgi.framework.ServiceReference;
 import org.osgi.util.tracker.BundleTracker;
 
 /**
- * Register, unregister, re-register and access extenders and create extensions
+ * Use factory methods to register, unregister and find extenders and create extensions
  * <p>
- * Prior to OSGi R6 a service SCOPE is implicit when registering a service. The scopes are singleton
- * (shared service), bundle (one service per bundle) and prototype (OSGi R6 only) (a new service for
- * each call to {@link #getService()} and {@link #getService(Bundle)}.
  * <p>
- * The specified registrar bundle specified when registering a service is also the user bundle of
- * the service when {@link #getService()} is used. If {@link #getService(Bundle)} is used, the
- * specified bundle is the user bundle.
+ * Registered extenders registers its underlying service into the Framework and is also accessible
+ * by e.g. {@link org.osgi.framework.BundleContext#getServiceReference(String)}
+ * <p>
+ * Prior to OSGi R6 a service scope is implicit when registering a service. The scopes in R6 are
+ * singleton (shared service), bundle ({@code ServiceFactory} - one service per bundle) and
+ * prototype (OSGi R6 only) ({@code PrototypeServiceFactory} - a new service for each call to
+ * {@link #getService()} and {@link #getService(Bundle)}).
+ * 
+ * @see ExtenderBundleTracker
+ * @see Extender
+ * @see Extension
  */
 public class Extenders {
 
@@ -30,217 +39,146 @@ public class Extenders {
 	}
 
 	/**
-	 * Registers the specified service object using a service name with a bundle tracker and the
-	 * specified properties under the specified interface class name with the Framework. The extender
-	 * is typically registered from a (registrar) bundle not containing (owing) the service to
-	 * register and is registered from a bundle tracker when the bundle owing the service class is
-	 * activated.
-	 * <p>
-	 * The service SCOPE is singleton when specifying a service name. Use
-	 * {@link BundleScopeServiceFactory} or your own customized service factory to to use bundle
-	 * SCOPE. For prototype SCOPE use the prototype factory supplied by the Framework. Note that it is
-	 * not possible to use the prototype service SCOPE prior to OSGi R6 (pre. Luna)
+	 * Registers the specified service with the specified properties under the specified service
+	 * interface class names as an extender where {@code owner} is the bundle hosting the service and
+	 * the service interface class name and where the {@code registrar} is the bundle registering the
+	 * extender.
 	 * 
-	 * @param tracker The tracker that the extender was registered by. Can be null.
-	 * @param owner The bundle owing the class of the specified service name. Can be same as the
-	 * specified registrar bundle.
-	 * @param registrar The bundle registering the service with the Framework.
-	 * @param serviceInterfaceName The class name under which the service can be located.
-	 * @param serviceName A fully qualified class name of the service.
+	 * @param <S> Type of Service.
+	 * @param owner The bundle hosting the specified service and the service interface name
+	 * @param registrar The bundle registering the extender
+	 * @param serviceInterfaceNames Interface names under which the service can be located.
+	 * @param service A fully qualified class name where the class representing the class name has a
+	 * default or empty constructor, a service object or a {@code ServiceFactory} object
 	 * @param properties The properties for this service. Can be null.
-	 * @return An extender object of the registered service type. If the service was registered before
-	 * this registration the already registered extender object is returned.
+	 * @return An extender object of the registered service type.
 	 * @throws ExtenderException if the bundle context of the specified registrar or owner bundle is
 	 * no longer valid, the registered implementation class does not implement the registered
 	 * interface, the interface name is illegal, a security violation or if the service object could
 	 * not be obtained
+	 * @see org.osgi.framework.BundleContext#registerService(String[], Object, Dictionary)
 	 */
-	public static <S> Extender<S> register(BundleTracker<Extender<?>> tracker, Bundle owner,
-			Bundle registrar, String serviceInterfaceName, String serviceName,
-			Dictionary<String, Object> properties) throws ExtenderException {
-
-		Extender<S> extender = new ExtenderImpl<>(tracker, owner, registrar, serviceInterfaceName,
-				serviceName, properties);
-		extender.registerService();
-		return extender;
-	}
-
-	/**
-	 * Registers the specified service object with a bundle tracker and the specified properties under
-	 * the specified interface class name with the Framework. The extender is typically registered
-	 * from a (registrar) bundle not containing (owing) the service to register and is registered from
-	 * a bundle tracker when the bundle owing the service class is activated.
-	 * <p>
-	 * If the specified service is a service factory object the service SCOPE is bundle, and singleton
-	 * if the the specified service object is a service. For prototype SCOPE use the prototype factory
-	 * supplied by the Framework. Note that it is not possible to use the prototype service SCOPE
-	 * prior to OSGi R6 (pre. Luna)
-	 * 
-	 * @param tracker The tracker that the extender was registered by. Can be null.
-	 * @param owner The bundle owing the class of the specified service name. Can be same as the
-	 * specified registrar bundle.
-	 * @param registrar The bundle registering the service with the Framework.
-	 * @param serviceInterfaceName The class name under which the service can be located.
-	 * @param service The service object or a service factory object.
-	 * @param properties The properties for this service. Can be null.
-	 * @return An extender object of the registered service type. If the service was registered before
-	 * this registration the already registered extender object is returned.
-	 * @throws ExtenderException if the bundle context of the specified registrar or owner bundle is
-	 * no longer valid, the registered implementation class does not implement the registered
-	 * interface, the interface name is illegal, a security violation or if the service object could
-	 * not be obtained
-	 */
-	public static <S> Extender<S> register(BundleTracker<Extender<?>> tracker, Bundle owner,
-			Bundle registrar, String serviceInterfaceName, Object service,
-			Dictionary<String, Object> properties) throws ExtenderException {
-
-		Extender<S> extender = new ExtenderImpl<>(tracker, owner, registrar, serviceInterfaceName,
-				service, properties);
-		extender.registerService();
-		return extender;
-	}
-
-	/**
-	 * Registers the specified service object using a service name with the specified properties under
-	 * the specified interface class name with the Framework. The service SCOPE is singleton. The
-	 * extender is typically registered from a (registrar) bundle not containing (owing) the service
-	 * to register.
-	 * 
-	 * @param owner The bundle owing the class of the specified service name. Can be same as the
-	 * specified registrar bundle.
-	 * @param registrar The bundle registering the service with the Framework.
-	 * @param serviceInterfaceName The class name under which the service can be located.
-	 * @param serviceName A fully qualified class name of the service.
-	 * @param properties The properties for this service. Can be null.
-	 * @return An extender object of the registered service type. If the service was registered before
-	 * this registration the already registered extender object is returned.
-	 * @throws ExtenderException if the bundle context of the specified registrar or owner bundle is
-	 * no longer valid, the registered implementation class does not implement the registered
-	 * interface, the interface name is illegal, a security violation or if the service object could
-	 * not be obtained
-	 */
-	public static <S> Extender<S> register(Bundle ownerBundle, Bundle regBundle,
-			String serviceInterfaceName, String serviceName, Dictionary<String, Object> properties)
+	public static <S> Extender<S> register(Bundle owner, Bundle registrar,
+			String[] serviceInterfaceNames, Object service, Dictionary<String, ?> properties)
 			throws ExtenderException {
 
-		Extender<S> extender = new ExtenderImpl<>(ownerBundle, regBundle, serviceInterfaceName,
-				serviceName, properties);
-		extender.registerService();
+		Extender<S> extender = new ExtenderImpl<>(owner, registrar, serviceInterfaceNames, service,
+				properties);
 		return extender;
 	}
 
 	/**
-	 * Registers the specified service object with the specified properties under the specified
-	 * interface class name with the Framework. The service SCOPE is singleton. The extender is
-	 * typically registered from a (registrar) bundle not containing (owing) the service to register.
+	 * Registers the specified service with the specified properties under the specified service
+	 * interface class name as an extender where {@code owner} is the bundle hosting the service and
+	 * the service interface class name and where the {@code registrar} is the bundle registering the
+	 * extender.
 	 * <p>
-	 * If the specified service is a service factory object the service SCOPE is bundle, and singleton
-	 * if the the specified service object is a service.
+	 * This method is otherwise identical to
+	 * {@link #register(Bundle, Bundle, String[], Object, Dictionary)} and is provided as a
+	 * convenience when the {@code service} will only be registered under a single interface class
+	 * name.
 	 * 
-	 * @param owner The bundle owing the class of the specified service name. Can be same as the
-	 * specified registrar bundle.
-	 * @param registrar The bundle registering the service with the Framework.
-	 * @param interfaceService The class name under which the service can be located.
-	 * @param service The service object or a service factory object.
+	 * @param <S> Type of Service.
+	 * @param owner The bundle hosting the specified service and the service interface name
+	 * @param registrar The bundle registering the extender
+	 * @param serviceInterfaceName The class or interface name under which the service can be located.
+	 * @param service A fully qualified class name where the class representing the class name has a
+	 * default or empty constructor, a service object or a {@code ServiceFactory} object
 	 * @param properties The properties for this service. Can be null.
-	 * 
-	 * @return An extender object of the registered service type. If the service was registered before
-	 * this registration the already registered extender object is returned.
+	 * @return An extender object of the registered service type.
 	 * @throws ExtenderException if the bundle context of the specified registrar or owner bundle is
 	 * no longer valid, the registered implementation class does not implement the registered
 	 * interface, the interface name is illegal, a security violation or if the service object could
 	 * not be obtained
 	 */
-	public static <S> Extender<S> register(Bundle ownerBundle, Bundle regBundle,
-			String serviceInterfaceName, Object service, Dictionary<String, Object> properties)
+	public static <S> Extender<S> register(Bundle owner, Bundle registrar,
+			String serviceInterfaceName, Object service, Dictionary<String, ?> properties)
 			throws ExtenderException {
 
-		Extender<S> extender = new ExtenderImpl<>(ownerBundle, regBundle, serviceInterfaceName,
-				service, properties);
-		extender.registerService();
-		return extender;
-	}
-
-	public static <S> Extender<S> register(Bundle ownerBundle, Bundle regBundle,
-			Class<S> serviceInterface, S service, Dictionary<String, Object> properties)
-			throws ExtenderException {
-
-		Extender<S> extender = new ExtenderImpl<>(ownerBundle, regBundle, serviceInterface.getName(),
-				service, properties);
-		extender.registerService();
+		Extender<S> extender = new ExtenderImpl<>(owner, registrar, serviceInterfaceName, service,
+				properties);
 		return extender;
 	}
 
 	/**
-	 * Registers the specified service object with the specified properties under the specified
-	 * interface class name with the Framework.
+	 * Registers the specified service with the specified properties under the specified service
+	 * interface class name as an extender where {@code owner} is the bundle hosting the service and
+	 * the service interface class name and where the {@code registrar} is the bundle registering the
+	 * extender.
 	 * <p>
-	 * If the specified service is a service factory object the service SCOPE is bundle, and singleton
-	 * if the the specified service object is a service.
+	 * This method is otherwise identical to
+	 * {@link #register(Bundle, Bundle, String, Object, Dictionary)} and is provided to specify a type
+	 * safe service.
 	 * 
-	 * @param registrar The bundle registering the service with the Framework
-	 * @param serviceInterfaceName The class name under which the service can be located
-	 * @param service The service object or a service factory object.
-	 * @param properties The properties for this service.
-	 * @return An extender object of the registered service type. If the service was registered before
-	 * this registration the already registered extender object is returned.
-	 * @throws ExtenderException if the bundle context of the specified registrar bundle is no longer
-	 * valid, the registered implementation class does not implement the registered interface, the
-	 * interface name is illegal, a security violation or if the service object could not be obtained
+	 * @param <S> Type of Service.
+	 * @param owner The bundle hosting the specified service and the service interface name
+	 * @param registrar The bundle registering the extender
+	 * @param serviceInterfaceName The class or interface name under which the service can be located.
+	 * @param service A fully qualified class name where the class representing the class name has a
+	 * default or empty constructor, a service object or a {@code ServiceFactory} object
+	 * @param properties The properties for this service. Can be null.
+	 * @return An extender object of the registered service type.
+	 * @throws ExtenderException if the bundle context of the specified registrar or owner bundle is
+	 * no longer valid, the registered implementation class does not implement the registered
+	 * interface, the interface name is illegal, a security violation or if the service object could
+	 * not be obtained
 	 */
-	public static <S> Extender<S> register(Bundle registrar, String serviceInterfaceName,
-			Object service, Dictionary<String, Object> properties) throws ExtenderException {
+	public static <S> Extender<S> register(Bundle owner, Bundle registrar, Class<S> serviceInterface,
+			S service, Dictionary<String, ?> properties) throws ExtenderException {
 
-		Extender<S> extender = new ExtenderImpl<>(registrar, registrar, serviceInterfaceName, service,
-				null);
-		extender.registerService();
+		Extender<S> extender = new ExtenderImpl<>(owner, registrar, serviceInterface.getName(),
+				service, properties);
 		return extender;
 	}
 
 	/**
-	 * Registers a service object with the properties, interface name and possible bundle tracker held
-	 * by the specified extender.
+	 * Registers the specified service with the specified properties under the specified service
+	 * interface class name as an extender where {@code owner} is the bundle hosting the service and
+	 * the service interface class name and where the {@code registrar} is the bundle registering the
+	 * extender.
 	 * <p>
-	 * If the service is a service factory object the service SCOPE is bundle, and singleton if the
-	 * the specified service object is a service or a service name.
-	 * <p>
-	 * An extender service may be unregistered and registered multiple times using the same extender
-	 * object. If the extender is registered with a service when invoking this method the extender is
-	 * returned without doing any service registration.
+	 * This method is otherwise identical to
+	 * {@link #register(Bundle, Bundle, String, Object, Dictionary)} and is provided as a convenience
+	 * when the bundle registering the service also is the bundle hosting - or owing - the specified
+	 * service
 	 * 
-	 * @param extender An unregistered extender
-	 * @return True if a service object was registered and false if the specified extender is null or
-	 * a registered service object already exists.
-	 * @throws ExtenderException if the bundle context of the specified registrar bundle is no longer
-	 * valid, the registered implementation class does not implement the registered interface, the
-	 * interface name is illegal, a security violation or if the service object could not be obtained
-	 * @see #unregisterService(Extender)
+	 * @param <S> Type of Service.
+	 * @param owner The bundle owing the the service registered by the returned extender
+	 * @param serviceInterfaceName The class or interface name under which the service can be located.
+	 * @param service A fully qualified class name where the class representing the class name has a
+	 * default or empty constructor, a service object or a {@code ServiceFactory} object
+	 * @param properties The properties for this service. Can be null.
+	 * @return An extender object of the registered service type.
+	 * @throws ExtenderException if the bundle context of the specified registrar or owner bundle is
+	 * no longer valid, the registered implementation class does not implement the registered
+	 * interface, the interface name is illegal, a security violation or if the service object could
+	 * not be obtained
 	 */
-	public static <S> Boolean registerService(Extender<S> extender) throws ExtenderException {
+	public static <S> Extender<S> register(Bundle owner, String serviceInterfaceName, Object service,
+			Dictionary<String, ?> properties) throws ExtenderException {
 
-		return null == extender ? false : extender.registerService();
+		Extender<S> extender = new ExtenderImpl<>(owner, owner, serviceInterfaceName, service,
+				properties);
+		return extender;
 	}
 
 	/**
 	 * Unregister this extender and the service held by this extender. After unregistering the
 	 * extender, the service is removed from the framework and any references to it is removed from
-	 * the extender. After unregistering the service can not be accessed.
+	 * the extender.
 	 * <p>
-	 * After unregistering it is not possible to lookup the extender again using
-	 * {@link #getExtender(String)} or {@link #getExtension(String)}, but you can register the
-	 * extender and a new service again with the specified extender parameter by using
-	 * {@link #registerService(Extender)} or {@link Extender#registerService()}.
+	 * After unregistering the service is not accessible. Thus it is possible to access all fields
+	 * associated with the service through the public access methods of the specified extender
 	 * 
 	 * @param the extender to unregister
 	 * @see Extender#unregisterService()
-	 * @see #registerService(Extender)
 	 */
-	public static <S> void unregisterService(Extender<S> extender) {
-		extender.unregisterService();
+	public static <S> void unregister(Extender<S> extender) {
+		extender.unregister();
 	}
 
 	/**
-	 * Release the service object held by this extension. The context bundle's use count for the
+	 * Release the service object held by this extender. The context bundle's use count for the
 	 * service is decremented by one.
 	 * 
 	 * @return false if the context bundle's use count for the service is zero or if the service has
@@ -253,7 +191,31 @@ public class Extenders {
 	}
 
 	/**
-	 * Get an extension of the extender previously registered with the specified interface name
+	 * Create an extension of the extender registered with the specified interface name
+	 * <p>
+	 * 
+	 * @param interfaceName service interface name
+	 * @user The bundle using the extension
+	 * @return the extension interface or null if there is no registered service with the specified
+	 * interface name
+	 * @throws ExtenderException if fail to get the registered extension
+	 */
+	public static final <S> Extension<S> getExtension(String interfaceName, Bundle user)
+			throws ExtenderException {
+
+		@SuppressWarnings("unchecked")
+		ExtenderServiceMap<S> extServiceMap = (ExtenderServiceMap<S>) Activator.getExtenderServiceMap();
+		Extender<S> extender = extServiceMap.get(interfaceName);
+		Activator.ungetServiceMap();
+		return null == extender ? null : extender.getExtension(user);
+	}
+
+	/**
+	 * Create an extension of the extender registered with the specified interface name
+	 * <p>
+	 * This method is otherwise identical to {@link #getExtension(String, Bundle)} and is provided as
+	 * a convenience when the {@code user} bundle is the same as the bundle that registered the
+	 * extender for the specified interface name.
 	 * 
 	 * @param interfaceName service interface name
 	 * @return the extension interface or null if there is no registered service with the specified
@@ -270,8 +232,7 @@ public class Extenders {
 	}
 
 	/**
-	 * Get an extender to access its service, query its meta data or get an extension handed out by
-	 * the extender
+	 * Get the extender registered with the specified interface name
 	 * 
 	 * @param serviceInterfaceName one of possible multiple interface names of the extension bundle.
 	 * @return the extender instance or null if the service is not tracked under the specified
@@ -279,10 +240,11 @@ public class Extenders {
 	 * @throws ExtenderException if the bundle context of the extension is no longer valid or the
 	 * class object implementing the extension could not be created
 	 */
-	public static final <S> Extender<S> getExtender(String interfaceName) throws ExtenderException {
+	public static final <S> Extender<S> getExtender(String serviceInterfaceName)
+			throws ExtenderException {
 
 		ExtenderServiceMap<S> extServiceMap = Activator.getExtenderServiceMap();
-		Extender<S> extender = extServiceMap.get(interfaceName);
+		Extender<S> extender = extServiceMap.get(serviceInterfaceName);
 		Activator.ungetServiceMap();
 		return extender;
 	}
@@ -301,8 +263,8 @@ public class Extenders {
 	 * filter became unparsable.
 	 * 
 	 * @param serviceInterfaceName The class name with which the service was registered or
-	 * {@code null} for all services.
-	 * @param filter The filter expression or {@code null} for all services.
+	 * {@code null} for all extenders.
+	 * @param filter The filter expression or {@code null} for all extenders.
 	 * @return a list of extenders matching the specified class service name and the specified filter
 	 * or {@code null} if no extenders are registered which satisfy the search.
 	 * @throws ExtenderException if this BundleContext of the extender bundle is no longer valid, a
@@ -316,32 +278,59 @@ public class Extenders {
 		Activator.ungetServiceMap();
 		return extenders;
 	}
-	
-	public static final Collection<Extender<?>> getTrackedExtenders(BundleTracker<Extender<?>> bundleTracker) {
+
+	/**
+	 * Get all extenders tracked by the specified bundle tracker
+	 * 
+	 * @param bundleTracker the bundle tracker tracking extenders
+	 * @return a collection of extenders tracked by the specified bundle tracker or an empty
+	 * collection if no extenders are tracked by the specified bundle tracker. If the specified bundle
+	 * tracker is null an empty collection is returned.
+	 */
+	public static final Collection<Extender<?>> getTrackedExtenders(
+			BundleTracker<Collection<Extender<?>>> bundleTracker) {
+
+		Collection<Extender<?>> trackedExtenders = new ArrayList<>();
+		if (null != bundleTracker) {
+			Map<Bundle, Collection<Extender<?>>> tracked = bundleTracker.getTracked();
+			Iterator<Entry<Bundle, Collection<Extender<?>>>> it = tracked.entrySet().iterator();
+			while (it.hasNext()) {
+				ConcurrentMap.Entry<Bundle, Collection<Extender<?>>> entry = it.next();
+				for (Extender<?> e : entry.getValue()) {
+					trackedExtenders.add(e);
+				}
+			}
+		}
+		return trackedExtenders;
+	}
+
+	/**
+	 * Get all extenders tracked by the specified bundle using a bundle tracker
+	 * <p>
+	 * If the specified bundle has registered any extenders using a bundle tracker they are returned.
+	 * 
+	 * @param registrar the bundle registering any extenders by using a bundle tracker
+	 * @return a collection of extenders registered by the specified bundle using a bundle tracker or
+	 * an empty collection if no extenders have been registered with a bundle tracker by the specified
+	 * bundle. If the specified bundle is null an empty collection is returned.
+	 */
+	public static final Collection<Extender<?>> getTrackedExtenders(Bundle registrar) {
+
+		Collection<Extender<?>> trackedExtenders = new ArrayList<>();
 
 		Collection<Extender<Object>> extenders = Extenders.getExtenders(null, null);
 		for (Extender<?> extender : extenders) {
-			BundleTracker<Extender<?>> extenderTracker = extender.getBundleTracker();
-			if (null != extenderTracker && extenderTracker.equals(bundleTracker)) {
-				return extender.getTrackedExtenders();
+			Bundle ownerBundle = extender.getRegistrar();
+			if (null != registrar && ownerBundle.equals(registrar)) {
+				Collection<Extender<?>> tracked = extender.getTrackedExtenders();
+				if (null != tracked) {
+					trackedExtenders.addAll(tracked);
+				}
 			}
 		}
-		return Collections.<Extender<?>>emptyList();
+		return trackedExtenders;
 	}
 
-	public static final Collection<Extender<?>> getTrackedExtenders(Bundle bundle) {
-
-		Collection<Extender<Object>> extenders = Extenders.getExtenders(null, null);
-		for (Extender<?> extender : extenders) {
-			BundleTracker<Extender<?>> extenderTracker = extender.getBundleTracker();
-			Bundle registrar = extender.getRegistrarBundle();
-			if (null != extenderTracker && null != registrar &&  registrar.equals(bundle)) {
-				return extender.getTrackedExtenders();
-			}
-		}
-		return Collections.<Extender<?>>emptyList();
-	}
-	
 	/**
 	 * Get an extender based on its service id. When an extender is registered the unique service id
 	 * generated by the framework is automatically used to store and later access an extender

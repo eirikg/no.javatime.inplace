@@ -7,6 +7,9 @@ import java.lang.reflect.Type;
 
 import org.osgi.framework.Bundle;
 
+/**
+ * Reflection utility class and loading of classes using the class loader of specified bundles. 
+ */
 public class Introspector {
 
 	/**

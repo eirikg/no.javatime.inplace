@@ -137,7 +137,7 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 	// Listen to toggling of auto build
 	private Command autoBuildCommand;
 	// Register (extend) services provided by other bundles
-	private ExtenderBundleTracker extenderBundleTracker;
+	private ExtenderTracker extenderBundleTracker;
 	// Workspace bundle region
 	private static Extension<BundleRegion> bundleRegion;
 	// Bundle life cycle commands
@@ -167,7 +167,7 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 		super.start(context);
 		plugin = this;
 		InPlace.context = context;
-		extenderBundleTracker = new ExtenderBundleTracker(context, Bundle.ACTIVE, null);
+		extenderBundleTracker = new ExtenderTracker(context, Bundle.ACTIVE, null);
 		extenderBundleTracker.open();
 		String refreshBSNResult = context.getProperty(REFRESH_DUPLICATE_BSN);
 		allowRefreshDuplicateBSN = Boolean.TRUE.toString().equals(

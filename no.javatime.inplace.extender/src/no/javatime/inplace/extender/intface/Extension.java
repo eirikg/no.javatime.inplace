@@ -4,26 +4,33 @@ import org.osgi.framework.Bundle;
 import org.osgi.framework.ServiceReference;
 import org.osgi.util.tracker.ServiceTrackerCustomizer;
 
+
+	/**
+ * Extensions are users of extenders and the underlying services registered by extenders.
+ * <p>
+ * Create an extension by using {@link Extenders#getExtension(String, Bundle)} or
+ * {@link Extender#getExtension(Bundle)}. There are also two convenience methods where the using
+ * bundle is the same bundle as the one who registered the extender used by this extension.
+ * 
+ * @param <S> Type of Service
+ * @see Extenders#getExtension(String, Bundle)
+ * @see Extender#getExtension(String, Bundle)
+ */
 public interface Extension<S> {
 
 	/**
-	 * Get the service object for this extension using the registrar bundle as the user bundle.
+	 * Get the service object for this extension where the using bundle is the bundle specified when
+	 * this extension was created.
 	 * <p>
-	 * Uses the bundle context of the specified bundle. If a factory object was specified when the
-	 * extender of this extension was registered each bundle is exposed to one instance of the service
-	 * object. If instead a service object was specified this service object is shared among all
-	 * bundles.
-	 * <p>
-	 * Note: For OSGi R6 service SCOPE may be used to specify service creation. The scopes are
-	 * singleton (shared service), bundle (one service per bundle) and prototype (a new service for
-	 * each call to {@link #getService()} and {@link #getService(Bundle)}
+	 * If {@link Extender#getExtension()} was used to create this extension, the using bundle is the
+	 * registrar bundle specified when the extender was registered. See
+	 * {@link Extender#getRegistrar()}.
 	 * <p>
 	 * The behavior of this extension service is the same as the
 	 * {@link org.osgi.framework.BundleContext#getService(org.osgi.framework.ServiceReference) OSGi
 	 * getService} method.
 	 * 
-	 * @return the service object for for the interface specified at construction of this extension
-	 * object or null if no service is being tracked.
+	 * @return the service object or null if no service is being tracked.
 	 * @throws ExtenderException if the bundle context of the owner bundle is not valid, the bundle is
 	 * in an illegal state (uninstalled, installed or resolved), the service was not created by the
 	 * same framework instance as the BundleContext of the specified bundle or if the caller does not
@@ -33,7 +40,7 @@ public interface Extension<S> {
 	public S getService() throws ExtenderException;
 
 	/**
-	 * Get the service object for this extension using the specified bundle as the user bundle.
+	 * Get the service object for this extension. The specified bundle is the using bundle.
 	 * <p>
 	 * Uses the bundle context of the specified bundle. If a factory object was specified when the
 	 * extender of this extension was registered each bundle is exposed to one instance of the service
@@ -95,25 +102,27 @@ public interface Extension<S> {
 	 */
 	public Extender<S> getExtender() throws ExtenderException;
 
-	/** 
-	 * Open the service tracker. If the tracker is not open when calling {@link #getTrackedService()} the
-	 * tracker will be opened using the default customizer provide by the Framework. If the the tracker
-	 * already is open the opened tracker is returned.
+	/**
+	 * Creates and opens a new service tracker if not already created.
 	 * <p>
-	 * There can be at most one tracker object per extension, but it is possible to close the tracker and then
-	 * open a new one.
+	 * There can be at most one tracker object per extension, but it is possible to close the tracker
+	 * and then open a new one.
 	 * 
 	 * @param userBundle The bundle using this service
 	 * @param customizer A service tracker to track the life cycle of the service. Can be null.
-	 * @throws ExtenderException 
+	 * @throws ExtenderException
 	 */
-	public void openServiceTracker(Bundle userBundle,  ServiceTrackerCustomizer<S, S> customizer) throws ExtenderException;
+	public void openServiceTracker(Bundle userBundle, ServiceTrackerCustomizer<S, S> customizer)
+			throws ExtenderException;
 
 	/**
 	 * Uses the {@link org.osgi.util.tracker.ServiceTracker ServiceTracker} to get the service. This
-	 * is the same as using {@link #getService()}.
+	 * is the same as using {@link #getService()} without creating any tracker
 	 * <p>
-	 * If the the tracker is closed, it is opened with a default customizer before getting the tracked service.
+	 * If a tracker has not been created yet the tracker will be created and opened using the default
+	 * customizer provide by the Framework.
+	 * <p>
+	 * If the the tracker is closed, it is opened before getting the tracked service.
 	 * 
 	 * @return the service of this extension type or null if no service is being tracked
 	 * @throws ExtenderException if this call force opening the service tracker and the bundle context

@@ -7,8 +7,8 @@ package no.javatime.inplace.bundlejobs.intface;
 		Extension<Extender<?>> e;
 		e = Extenders.getExtension(Extender.class.getName());
 		Extender<?> ex = e.getService(context.getBundle());
-		BundleScopeServiceFactory<ActivateBundle> bundleScopeFactory = 
-				new BundleScopeServiceFactory<>(ActivateBundleJob.class.getName());
+		BundleServiceScopeFactory<ActivateBundle> bundleScopeFactory = 
+				new BundleServiceScopeFactory<>(ActivateBundleJob.class.getName());
 		Extender<ActivateBundle> activateExtender = 
 				Extenders.register(context.getBundle(), context.getBundle(), ActivateBundle.class.getName(), 
 						bundleScopeFactory);
