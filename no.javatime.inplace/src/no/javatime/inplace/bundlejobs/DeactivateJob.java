@@ -16,6 +16,7 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 
 import no.javatime.inplace.InPlace;
+import no.javatime.inplace.bundlejobs.intface.Deactivate;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.msg.Msg;
@@ -54,11 +55,12 @@ import org.osgi.framework.Bundle;
  * @see no.javatime.inplace.bundlejobs.ActivateProjectJob
  * @see no.javatime.inplace.bundlejobs.ActivateBundleJob
  */
-public class DeactivateJob extends NatureJob {
+public class DeactivateJob extends NatureJob implements Deactivate {
 
 	/** Standard name of an deactivate job */
 	final public static String deactivateJobName = Message.getInstance().formatString(
 			"deactivate_job_name");
+
 	final public static String deactivateWorkspaceJobName = Message.getInstance().formatString(
 			"deactivate_workspace_job_name");
 
@@ -71,14 +73,28 @@ public class DeactivateJob extends NatureJob {
 
 	boolean checkBuildErrors = false;
 
+	/* (non-Javadoc)
+	 * @see no.javatime.inplace.bundlejobs.Deactivate#isCheckBuildErrors()
+	 */
+	@Override
 	public boolean isCheckBuildErrors() {
 		return checkBuildErrors;
 	}
 
+	/* (non-Javadoc)
+	 * @see no.javatime.inplace.bundlejobs.Deactivate#setCheckBuildErrors(boolean)
+	 */
+	@Override
 	public void setCheckBuildErrors(boolean checkBuildErrors) {
 		this.checkBuildErrors = checkBuildErrors;
 	}
-
+	
+	/**
+	 * Default constructor wit a default job name
+	 */
+	public DeactivateJob() {
+		super(deactivateJobName);
+	}
 	/**
 	 * Construct a deactivate job with a given name
 	 * 
@@ -133,7 +149,9 @@ public class DeactivateJob extends NatureJob {
 			addStatus(multiStatus);
 		} catch (OperationCanceledException e) {
 			addCancelMessage(e, NLS.bind(Msg.CANCEL_JOB_INFO, getName()));
-		} catch (InPlaceException | ExtenderException e) {
+		} catch (ExtenderException e) {			
+			addError(e, NLS.bind(Msg.SERVICE_EXECUTOR_EXP, getName()));
+		} catch (InPlaceException e) {
 			String msg = ExceptionMessage.getInstance().formatString("terminate_job_with_errors",
 					getName());
 			addError(e, msg);

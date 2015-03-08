@@ -15,6 +15,7 @@ Bundle-Activator: no.javatime.inplace.ui.Activator
 Bundle-ManifestVersion: 2
 Import-Package: no.javatime.inplace.bundlejobs,
  no.javatime.inplace.bundlejobs.events,
+ no.javatime.inplace.bundlejobs.intface,
  no.javatime.inplace.bundlemanager,
  no.javatime.inplace.dialogs,
  no.javatime.inplace.dl.preferences.intface,

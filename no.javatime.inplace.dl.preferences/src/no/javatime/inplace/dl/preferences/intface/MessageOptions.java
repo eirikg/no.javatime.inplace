@@ -4,7 +4,7 @@ import org.osgi.service.prefs.BackingStoreException;
 
 public interface MessageOptions {
 	
-	public final static String MESSAGE_OPTIONS_IMPL = "Message-Options-Service";
+	public final static String MESSAGE_OPTIONS_SERVICE = "Message-Options-Service";
 
 	public static final String IS_BUNDLE_EVENTS = "isBundleEvents";
 	public static final String IS_BUNDLE_OPERATIONS = "isBundleOperations";

@@ -13,6 +13,8 @@ package no.javatime.inplace.bundlejobs;
 import java.util.Collection;
 
 import no.javatime.inplace.InPlace;
+import no.javatime.inplace.bundlejobs.intface.UpdateBundleClassPath;
+import no.javatime.inplace.bundlemanager.BundleJobManager;
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.closure.BuildErrorClosure;
@@ -34,13 +36,20 @@ import org.eclipse.osgi.util.NLS;
  * Removes or inserts the default output folder in the Bundle-ClassPath and schedules a reset job
  * for bundle projects that have been updated when auto build is off.
  */
-public class UpdateBundleClassPathJob extends BundleJob {
+public class UpdateBundleClassPathJob extends BundleJob implements UpdateBundleClassPath {
 
 	private boolean addToPath = true;
 
 	/** Standard name of an update bundle class path job */
 	final public static String updateBundleClassJobName = Msg.UPDATE_BUNDLE_CLASS_PATH_JOB;
-
+	
+	/**
+	 * Default constructor wit a default job name
+	 */
+	public UpdateBundleClassPathJob() {
+		super(updateBundleClassJobName);
+	}
+	
 	/**
 	 * Construct an update bundle class path job with a given name
 	 * 
@@ -108,11 +117,13 @@ public class UpdateBundleClassPathJob extends BundleJob {
 				if (InPlace.get().getMsgOpt().isBundleOperations()) {
 					addInfoMessage(Msg.ATOBUILD_OFF_RESET_INFO);
 				}
-				resetJob.reset(ResetJob.resetJobName);
+				BundleJobManager.addBundleJob(resetJob, 0);
 			}
 		} catch (OperationCanceledException e) {
 			addCancelMessage(e, NLS.bind(Msg.CANCEL_JOB_INFO, getName()));
-		} catch (InPlaceException | ExtenderException e) {
+		} catch (ExtenderException e) {			
+			addError(e, NLS.bind(Msg.SERVICE_EXECUTOR_EXP, getName()));
+		} catch (InPlaceException e) {
 			String msg = ExceptionMessage.getInstance().formatString("terminate_job_with_errors",
 					getName());
 			addError(e, msg);
@@ -134,25 +145,18 @@ public class UpdateBundleClassPathJob extends BundleJob {
 		}
 	}
 
-	/**
-	 * Determines whether the default output folder is added to the Bundle-ClassPath or removed from
-	 * the Bundle-ClassPath
-	 * 
-	 * @return true if the default output folder is added and false if default output folder is
-	 * removed
+	/* (non-Javadoc)
+	 * @see no.javatime.inplace.bundlejobs.UpdateBundleClassPath#isAddToPath()
 	 */
+	@Override
 	public boolean isAddToPath() {
 		return addToPath;
 	}
 
-	/**
-	 * Determines whether to add the default output folder to the Bundle-ClassPath or remove the
-	 * default output folder from the Bundle-ClassPath
-	 * <p>
-	 * Default is to add the default output folder to the Bundle-ClassPath
-	 * 
-	 * @param addToPath add default output folder if true and remove default output folder if false
+	/* (non-Javadoc)
+	 * @see no.javatime.inplace.bundlejobs.UpdateBundleClassPath#setAddToPath(boolean)
 	 */
+	@Override
 	public void setAddToPath(boolean addToPath) {
 		this.addToPath = addToPath;
 	}

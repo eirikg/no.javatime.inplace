@@ -100,7 +100,7 @@ public class StartUpJob extends NatureJob {
 					}
 				}
 				ActivateBundleJob activateJob = new ActivateBundleJob(ActivateBundleJob.activateStartupJobName);
-				Collection<IProject> activatedProjects = getNatureEnabled();
+				Collection<IProject> activatedProjects = getActivatedProjects();
 				if (activatedProjects.size() > 0) {
 					Collection<IProject> deactivatedProjects = deactivateBuildErrorClosures(activatedProjects);
 					if (deactivatedProjects.size() > 0) {
@@ -108,7 +108,7 @@ public class StartUpJob extends NatureJob {
 					} else {
 						// Install all projects and set activated projects to the same state as they had at shutdown
 						activateJob.addPendingProjects(activatedProjects);
-						activateJob.setUseStoredState(true);
+						activateJob.setPersistState(true);
 						BundleJobManager.addBundleJob(activateJob, 0);
 					}
 				} else {

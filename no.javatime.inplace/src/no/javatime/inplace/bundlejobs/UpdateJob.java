@@ -19,6 +19,7 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 
 import no.javatime.inplace.InPlace;
+import no.javatime.inplace.bundlejobs.intface.Update;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.msg.Msg;
@@ -48,29 +49,19 @@ import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.osgi.util.NLS;
 import org.osgi.framework.Bundle;
 
-/**
- * Job to update modified bundles after a build of activated projects. The job is automatically
- * scheduled after a build of activated bundle projects. The scheduled bundles are updated and
- * together with their requiring bundles, unresolved, resolved, optionally refreshed and started as
- * part of the update process.
- * <p>
- * Bundles are stopped and started again after update and resolve if ACTIVE/STARTING before update
- * or refreshed and resolved if in state RESOLVE when the job is scheduled.
- * <p>
- * Plug-ins are usually singletons, and it is a requirement, if the plug-in contributes to the UI.
- * When resolving bundles, a collision may occur with earlier resolved bundles with the same
- * symbolic name. In these cases the duplicate (the earlier resolved bundle) is removed in the
- * resolving process.
- * <p>
- * In case a bundle to be updated is dependent on other not activated bundles, it is handled in the
- * resolver hook. The resolver hook is visited by the framework during resolve.
- */
-public class UpdateJob extends BundleJob {
+public class UpdateJob extends BundleJob implements Update {
 
 	final private static String updateTaskName = Message.getInstance().formatString(
 			"update_task_name");
 	final private static String updateSubTaskName = Message.getInstance().formatString(
 			"update_subtask_name");
+
+	/**
+	 * Default constructor wit a default job name
+	 */
+	public UpdateJob() {
+		super(updateJobName);
+	}
 
 	/**
 	 * Construct an update job with a given name
@@ -128,7 +119,9 @@ public class UpdateJob extends BundleJob {
 			BundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg);
 			multiStatus.add(e.getStatusList());
 			addStatus(multiStatus);
-		} catch (InPlaceException | ExtenderException e) {
+		} catch (ExtenderException e) {			
+			addError(e, NLS.bind(Msg.SERVICE_EXECUTOR_EXP, getName()));
+		} catch (InPlaceException e) {
 			String msg = ExceptionMessage.getInstance().formatString("terminate_job_with_errors",
 					getName());
 			addError(e, msg);
@@ -430,7 +423,7 @@ public class UpdateJob extends BundleJob {
 	 * Detect circular symbolic name collisions and order the specified collection of bundles based on
 	 * existing and new symbolic keys (symbolic name and version) before they are updated.
 	 * <p>
-	 * Bundles must be ordered when a bundle changes its symbolic key to the same symbolic key as an
+	 * BundleExecutor must be ordered when a bundle changes its symbolic key to the same symbolic key as an
 	 * other bundle to update, and this other bundle at the same time changes its symbolic key to a
 	 * new value. The other bundle must then be updated first to avoid that the first bundle becomes a
 	 * duplicate of the other bundle. A special case, called a circular name collision, occurs if the

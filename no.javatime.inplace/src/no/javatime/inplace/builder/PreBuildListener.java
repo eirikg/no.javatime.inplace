@@ -11,7 +11,9 @@
 package no.javatime.inplace.builder;
 
 import no.javatime.inplace.InPlace;
-import no.javatime.inplace.bundlejobs.NatureJob;
+import no.javatime.inplace.bundlejobs.intface.ActivateProject;
+import no.javatime.inplace.extender.intface.Extenders;
+import no.javatime.inplace.extender.intface.Extension;
 import no.javatime.inplace.region.events.TransitionEvent;
 import no.javatime.inplace.region.intface.BundleProjectCandidates;
 import no.javatime.inplace.region.intface.BundleTransition;
@@ -37,6 +39,9 @@ import org.eclipse.ui.statushandlers.StatusManager;
  */
 public class PreBuildListener implements IResourceChangeListener {
 
+	final private Extension<ActivateProject> activateExtension = Extenders.getExtension(
+			ActivateProject.class.getName());
+
 	/**
 	 * Register bundle as pending for build when receiving the pre build change event and auto build
 	 * is off
@@ -46,11 +51,11 @@ public class PreBuildListener implements IResourceChangeListener {
 	 */
 	public void resourceChanged(IResourceChangeEvent event) {
 
-		// Nothing to do in a deactivated workspace where all bundle projects are uninstalled
 		IResourceDelta rootDelta = event.getDelta();
 		IResourceDelta[] projectDeltas = rootDelta.getAffectedChildren(IResourceDelta.ADDED
 				| IResourceDelta.CHANGED, IResource.NONE);
-		boolean isWSNatureEnabled = NatureJob.isWorkspaceNatureEnabled();
+		ActivateProject activate = activateExtension.getService();
+		boolean isWSNatureEnabled = activate.isProjectWorkspaceActivated();
 		for (IResourceDelta projectDelta : projectDeltas) {
 			IResource projectResource = projectDelta.getResource();
 			if (projectResource.isAccessible() && (projectResource.getType() & (IResource.PROJECT)) != 0) {
@@ -63,7 +68,7 @@ public class PreBuildListener implements IResourceChangeListener {
 						// is built
 						transition.clearTransitionError(project);
 					} else {
-						if (NatureJob.isNatureEnabled(project)) {
+						if (activate.isProjectActivated(project)) {
 							BundleProjectCandidates bundleProjectCandidates = InPlace
 									.getBundleProjectCandidatesService();
 							if (!bundleProjectCandidates.isAutoBuilding()) {

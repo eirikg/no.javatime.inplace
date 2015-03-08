@@ -16,8 +16,10 @@ import java.util.Collections;
 import java.util.List;
 
 import no.javatime.inplace.bundlejobs.BundleJob;
-import no.javatime.inplace.bundlejobs.NatureJob;
+import no.javatime.inplace.bundlejobs.intface.ActivateProject;
 import no.javatime.inplace.extender.intface.ExtenderException;
+import no.javatime.inplace.extender.intface.Extenders;
+import no.javatime.inplace.extender.intface.Extension;
 import no.javatime.inplace.region.events.BundleTransitionEvent;
 import no.javatime.inplace.region.events.BundleTransitionEventListener;
 import no.javatime.inplace.region.intface.BundleProjectCandidates;
@@ -337,7 +339,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 		// Open manifest editor on double click in both pages
 		bundleDetailsPage.addDoubleClickListener(bundleDoubleClickListener);
 		bundleListPage.addDoubleClickListener(bundleDoubleClickListener);
-		// Bundles, bundle jobs and resource listeners to update bundle status in pages
+		// BundleExecutor, bundle jobs and resource listeners to update bundle status in pages
 		Activator.getContext().addBundleListener(this);
 		Job.getJobManager().addJobChangeListener(this);
 		BundleTransitionListener.addBundleTransitionListener(this);
@@ -397,7 +399,10 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 		// Set input to list page and restore UI elements state
 		showProjects(javaProjects, true);
 		restoreState(memento);
-		if (!NatureJob.isWorkspaceNatureEnabled()) {
+		Extension<ActivateProject> activateExtension = Extenders.getExtension(
+				ActivateProject.class.getName(), Activator.getContext().getBundle());
+		ActivateProject activate = activateExtension.getService();
+		if (!activate.isProjectWorkspaceActivated()) {
 			pagebook.getDisplay().asyncExec(new Runnable() {
 				@Override
 				public void run() {

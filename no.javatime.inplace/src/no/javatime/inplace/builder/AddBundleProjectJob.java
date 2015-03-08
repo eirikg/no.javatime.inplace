@@ -87,7 +87,7 @@ class AddBundleProjectJob extends NatureJob {
 			}
 			// New (deactivated and activated) projects added to the workspace are already opened
 			// New projects should be in state uninstalled in a deactivated workspace
-			if (!isWorkspaceNatureEnabled()) {
+			if (!isProjectWorkspaceActivated()) {
 				return super.runInWorkspace(monitor);
 			}
 			// Install all new projects in an activated workspace
@@ -110,7 +110,7 @@ class AddBundleProjectJob extends NatureJob {
 				// Deactivated projects that are not providers are already scheduled for install
 				// Use the nature methods.
 				// Project is not registered (install job is in waiting state) with the workspace yet.
-				if (isNatureEnabled(newProject)) {
+				if (isProjectActivated(newProject)) {
 					// Get any deactivated providers to this new project
 					Collection<IProject> providers = closures.projectActivation(
 							Collections.<IProject> singletonList(newProject), false);
@@ -124,7 +124,7 @@ class AddBundleProjectJob extends NatureJob {
 			// Activate all deactivated provider projects
 			if (deactivatedProviders.size() > 0) {
 				ActivateProjectJob activateProjectJob = new ActivateProjectJob(
-						ActivateProjectJob.activateProjectsJobName, deactivatedProviders);
+						ActivateProjectJob.activateProjectJobName, deactivatedProviders);
 				// Do not add requiring projects. They will be resolved as part of the requiring
 				// closure when providers are resolved
 				BundleJobManager.addBundleJob(activateProjectJob, 0);

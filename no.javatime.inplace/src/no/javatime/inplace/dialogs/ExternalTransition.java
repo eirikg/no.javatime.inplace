@@ -126,7 +126,7 @@ public class ExternalTransition implements BundleTransitionEventListener {
 					} else {
 						if (!bundleRegion.isRegionActivated()) {
 							// External uninstall may have been issued on multiple bundles (uninstall A B)
-							bundleJob = new ActivateProjectJob(ActivateProjectJob.activateProjectsJobName,
+							bundleJob = new ActivateProjectJob(ActivateProjectJob.activateProjectJobName,
 									project);
 						} else {
 							// Workspace is activated but bundle is not. Install the bundle and other uninstalled

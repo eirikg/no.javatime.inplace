@@ -48,6 +48,7 @@ import no.javatime.util.messages.WarnMessage;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.core.resources.WorkspaceJob;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -67,7 +68,7 @@ import org.osgi.framework.BundleException;
  * Pending bundle projects are added to a job before it is scheduled and the bundle projects are
  * executed according to the job type.
  */
-public abstract class BundleJob extends JobStatus {
+public class BundleJob extends JobStatus {
 
 	/** Standard activate bundle job name */
 	final public static String activateJobName = Message.getInstance().formatString(
@@ -802,7 +803,7 @@ public abstract class BundleJob extends JobStatus {
 	}
 
 	/**
-	 * Verify that the specified bundles have a valid standard binary entry in class path. Bundles
+	 * Verify that the specified bundles have a valid standard binary entry in class path. BundleExecutor
 	 * that are missing a bin entry are tagged with {@code Transition.RESOLVE}.
 	 * 
 	 * @param bundles to check for a valid bin entry in class path
@@ -817,7 +818,7 @@ public abstract class BundleJob extends JobStatus {
 
 		IBundleStatus result = new BundleStatus(StatusCode.OK, InPlace.PLUGIN_ID, null);
 		BundleSorter bs = null;
-		// Bundles missing binary path and not to be started
+		// BundleExecutor missing binary path and not to be started
 		Collection<Bundle> errorBundles = null;
 		for (Bundle bundle : bundles) {
 			try {
@@ -1197,6 +1198,22 @@ public abstract class BundleJob extends JobStatus {
 		return InPlace.get().getCommandOptionsService();
 	}
 
+	public void execute(long delay) {
+		super.schedule(delay);
+	}
+
+	public void execute() {
+		super.schedule(0L);
+	}
+	
+	public void joinBundleExecutor() throws InterruptedException{
+	 super.join();	
+	}
+	
+	public WorkspaceJob getJob () {
+		return this;
+	}
+	
 	/**
 	 * Debug for synchronizing the progress monitor. Default number of mills to sleep
 	 */

@@ -217,7 +217,7 @@ public class UpdateScheduler {
 	 * The purpose is to automatically install and update bundles that are no longer duplicates due to
 	 * changes in projects to update.
 	 * <p>
-	 * Bundles are added to the specified update job or added to the returned bundle activation job
+	 * BundleExecutor are added to the specified update job or added to the returned bundle activation job
 	 * when the following conditions are satisfied:
 	 * <ol>
 	 * <li>There exist activated duplicate bundles in the workspace

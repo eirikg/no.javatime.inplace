@@ -6,7 +6,7 @@ import org.eclipse.jface.resource.ImageDescriptor;
  * Manages visibility of the bundle log view. 
  * <p>
  * The view can be extended as a service. The name of the service can be obtained from
- * the manifest by using {@code BUNDLE_LOG_VIEW_IMPL}. 
+ * the manifest by using {@code BUNDLE_LOG_VIEW_SERVICE}. 
  * <p>
  * The service is read-only and the service scope can be singleton.
  * <p>
@@ -23,7 +23,7 @@ public interface BundleLogView {
 	 * 
 	 * The content of the header is the class implementing this message view interface
 	 */
-	public final static String BUNDLE_LOG_VIEW_IMPL = "BundleLog-View-Service";
+	public final static String BUNDLE_LOG_VIEW_SERVICE = "BundleLog-View-Service";
 
 	/**
 	 * Get the default image for the log view as an image descriptor

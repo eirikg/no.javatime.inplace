@@ -417,7 +417,7 @@ public class BundleLogimpl implements BundleLog {
 		Extender<BundleLogView> extender = Extenders.getExtender(BundleLogView.class.getName());
 		if (null == extender) {
 			Bundle thisBundle = Activator.getContext().getBundle();
-			String bundleLogViewSvcName = thisBundle.getHeaders().get(BundleLogView.BUNDLE_LOG_VIEW_IMPL);
+			String bundleLogViewSvcName = thisBundle.getHeaders().get(BundleLogView.BUNDLE_LOG_VIEW_SERVICE);
 			if (null == bundleLogViewSvcName) {
 				throw new ExtenderException(NLS.bind(Messages.GET_SERVICE_EXP,
 						BundleLogView.class.getName()));

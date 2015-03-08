@@ -18,11 +18,13 @@ import no.javatime.inplace.bundlejobs.ActivateProjectJob;
 import no.javatime.inplace.bundlejobs.BundleJob;
 import no.javatime.inplace.bundlejobs.DeactivateJob;
 import no.javatime.inplace.bundlejobs.InstallJob;
-import no.javatime.inplace.bundlejobs.NatureJob;
 import no.javatime.inplace.bundlejobs.UninstallJob;
 import no.javatime.inplace.bundlejobs.UpdateJob;
 import no.javatime.inplace.bundlejobs.UpdateScheduler;
+import no.javatime.inplace.bundlejobs.intface.ActivateProject;
 import no.javatime.inplace.bundlemanager.BundleJobManager;
+import no.javatime.inplace.extender.intface.Extenders;
+import no.javatime.inplace.extender.intface.Extension;
 import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.intface.BundleCommand;
 import no.javatime.inplace.region.intface.BundleProjectCandidates;
@@ -106,6 +108,8 @@ public class PostBuildListener implements IResourceChangeListener {
 	final private BundleProjectCandidates bundleProjectCandidates = InPlace
 			.getBundleProjectCandidatesService();
 	private static int delay = 0;
+	final private Extension<ActivateProject> activateExtension = Extenders.getExtension(
+			ActivateProject.class.getName());
 
 	/**
 	 * Schedules bundle jobs for changed projects. Removed and closed projects are handled in the
@@ -115,17 +119,15 @@ public class PostBuildListener implements IResourceChangeListener {
 	public void resourceChanged(IResourceChangeEvent event) {
 
 		// Nothing to do in a deactivated workspace where all bundle projects are uninstalled
-//		if (!bundleRegion.isRegionActivated()) {
-//			return;
-//		}
-		if (!NatureJob.isWorkspaceNatureEnabled()) {
+		ActivateProject activate = activateExtension.getService();
+		if (!activate.isProjectWorkspaceActivated()) {
 			return;
 		}
 		// After a build when source has changed and the project is pending for update and auto build is
 		// on
 		UpdateJob updateJob = new UpdateJob(UpdateJob.updateJobName);
 		ActivateProjectJob activateProjectJob = new ActivateProjectJob(
-				ActivateProjectJob.activateProjectsJobName);
+				ActivateProjectJob.activateProjectJobName);
 
 		// Projects that are moved, renamed, created, opened and imported in an active workspace and
 		// projects with activate as pending transition

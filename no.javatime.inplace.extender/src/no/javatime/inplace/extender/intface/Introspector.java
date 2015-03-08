@@ -1,5 +1,6 @@
 package no.javatime.inplace.extender.intface;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
@@ -28,6 +29,29 @@ public class Introspector {
 				throw new ExtenderException("Missing default constructor in class {0}", cls.getSimpleName());
 			}
 			return cls.newInstance();			
+		} catch (SecurityException e) {
+			throw new ExtenderException(e, "Failed to instantiate class {0} due to security reasons", cls.getSimpleName());
+		} catch (InstantiationException e) {
+			throw new ExtenderException(e, "Failed to instantiate Class {0}", cls.getSimpleName());
+		} catch (IllegalAccessException e) {
+			throw new ExtenderException(e, "Failed to access Class {0}. Is the class or its nullary constructor accessible?", cls.getSimpleName());
+		} catch (ExceptionInInitializerError e) {
+			throw new ExtenderException(e, "Exception in a static initializer creating an instance of class {0}", cls.getSimpleName());
+		}
+	}
+
+	public static <T> T createObject(Class<T> cls, String param) throws ExtenderException {
+		try {
+			
+			Constructor<T> constructor =
+					cls.getConstructor(new Class[]{String.class});
+			return constructor.newInstance(param);
+		} catch (InvocationTargetException e) {
+			throw new ExtenderException(e, "Failed to instantiate class {0}", cls.getSimpleName());
+		} catch (IllegalArgumentException e) {
+			throw new ExtenderException(e, "Failed to instantiate class {0} illegal nummber of arguments", cls.getSimpleName());
+		} catch (NoSuchMethodException e) {
+			throw new ExtenderException(e, "Failed to instantiate class {0} no such constructor", cls.getSimpleName());
 		} catch (SecurityException e) {
 			throw new ExtenderException(e, "Failed to instantiate class {0} due to security reasons", cls.getSimpleName());
 		} catch (InstantiationException e) {

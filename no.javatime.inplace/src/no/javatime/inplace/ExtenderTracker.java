@@ -34,12 +34,12 @@ public class ExtenderTracker extends ExtenderBundleTracker {
 
 		try { 
 			// Get the service name from the bundle providing the service
-			String bundleLogSvcName = bundle.getHeaders().get(BundleLog.BUNDLE_LOG_IMPL);
+			String bundleLogSvcName = bundle.getHeaders().get(BundleLog.BUNDLE_LOG_SERVICE);
 			// Extend and register the bundle log as a service if not registered by others
 			if (null != bundleLogSvcName && null == Extenders.getExtender(BundleLog.class.getName())) {
 				register(bundle, BundleLog.class.getName(), new BundleServiceScopeFactory<>(bundleLogSvcName), null);
 			}
-			String bundleConsoleViewSvcName = bundle.getHeaders().get(BundleConsoleFactory.BUNDLE_CONSOLE_IMPL);
+			String bundleConsoleViewSvcName = bundle.getHeaders().get(BundleConsoleFactory.BUNDLE_CONSOLE_SERVICE);
 			if (null != bundleConsoleViewSvcName && null == Extenders.getExtender(BundleConsoleFactory.class.getName())) {
 				register(bundle, BundleConsoleFactory.class.getName(), bundleConsoleViewSvcName, null);
 			}

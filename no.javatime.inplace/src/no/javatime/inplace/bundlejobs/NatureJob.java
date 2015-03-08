@@ -43,7 +43,7 @@ import org.eclipse.osgi.util.NLS;
 import org.osgi.framework.Bundle;
 
 /**
- * Installing, uninstalling andeEnabling/disabling the JavaTime nature of projects. Checks and
+ * Installing, uninstalling and enabling/disabling the JavaTime nature of projects. Checks and
  * reports on duplicate bundles.
  */
 public abstract class NatureJob extends BundleJob {
@@ -88,17 +88,7 @@ public abstract class NatureJob extends BundleJob {
 		super(name, project);
 	}
 
-	/**
-	 * Check if the project is JavaTime nature enabled using the
-	 * {@link JavaTimeNature#JAVATIME_NATURE_ID}
-	 * 
-	 * @param project to check for the JavaTime nature
-	 * @return true if the specified project is nature enabled, and false if the specified project is
-	 * null, if project is closed, non-existing or not JavaTime nature enabled
-	 * @throws InPlaceException if the specified project is null, open but does not exist or a core
-	 * exception is thrown internally (should not be the case for open and existing projects)
-	 */
-	public static Boolean isNatureEnabled(IProject project) throws InPlaceException {
+	public Boolean isProjectActivated(IProject project) throws InPlaceException, ExtenderException {
 		BundleProjectCandidates bundleProjectCandidates = InPlace.getBundleProjectCandidatesService();
 		if (bundleProjectCandidates.isNatureEnabled(project, JavaTimeNature.JAVATIME_NATURE_ID)) {
 			return true;
@@ -115,10 +105,10 @@ public abstract class NatureJob extends BundleJob {
 	 * @throws InPlaceException open projects that does not exist or a core exception when accessing
 	 * projects is thrown internally (should not be the case for open and existing projects)
 	 */
-	public static Boolean isWorkspaceNatureEnabled() throws InPlaceException {
+	public Boolean isProjectWorkspaceActivated() throws InPlaceException, ExtenderException {
 		BundleProjectCandidates bundleProjectCandidates = InPlace.getBundleProjectCandidatesService();
 		for (IProject project : bundleProjectCandidates.getBundleProjects()) {
-			if (isNatureEnabled(project)) {
+			if (isProjectActivated(project)) {
 				return true;
 			}
 		}
@@ -135,13 +125,13 @@ public abstract class NatureJob extends BundleJob {
 	 * not be the case for open and existing projects)
 	 * @throws ExtenderException if the extender for the project candidates could not be obtained
 	 */
-	public static Collection<IProject> getNatureEnabled() throws InPlaceException, ExtenderException {
+	public Collection<IProject> getActivatedProjects() throws InPlaceException, ExtenderException {
 
 		BundleProjectCandidates bundleProjectCandidates = InPlace.getBundleProjectCandidatesService();
 		Collection<IProject> projects = new LinkedHashSet<IProject>();
 
 		for (IProject project : bundleProjectCandidates.getBundleProjects()) {
-			if (isNatureEnabled(project)) {
+			if (isProjectActivated(project)) {
 				projects.add(project);
 			}
 		}
@@ -149,7 +139,7 @@ public abstract class NatureJob extends BundleJob {
 	}
 
 	/**
-	 * Runs the bundle(s) nature operation.
+	 * Does nothing
 	 */
 	@Override
 	public IBundleStatus runInWorkspace(IProgressMonitor monitor) throws CoreException {
@@ -177,7 +167,7 @@ public abstract class NatureJob extends BundleJob {
 					sleep(sleepTime);
 				progress.subTask(installSubtaskName + project.getName());
 				// Get the activation status of the corresponding project
-				Boolean activated = isNatureEnabled(project);
+				boolean activated = isProjectActivated(project);
 				bundle = bundleCommand.install(project, activated);
 				// Project must be activated and bundle must be successfully installed to be activated
 				if (null != bundle && activated) {
@@ -326,7 +316,7 @@ public abstract class NatureJob extends BundleJob {
 				if (Category.getState(Category.progressBar))
 					sleep(sleepTime);
 				localMonitor.subTask(NatureJob.disableNatureSubTaskName + project.getName());
-				if (isNatureEnabled(project)) {
+				if (isProjectActivated(project)) {
 					toggleNatureActivation(project, new SubProgressMonitor(monitor, 1));
 				}
 				if (getOptionsService().isUpdateDefaultOutPutFolder()) {
@@ -367,7 +357,7 @@ public abstract class NatureJob extends BundleJob {
 				localMonitor.subTask(NatureJob.enableNatureSubTaskName + project.getName());
 				if (bundleProjectCandidates.isCandidate(project)) {
 					// Set the JavaTime nature
-					if (!isNatureEnabled(project)) {
+					if (!isProjectActivated(project)) {
 						toggleNatureActivation(project, new SubProgressMonitor(monitor, 1));
 					}
 					result = resolveBundleClasspath(project);

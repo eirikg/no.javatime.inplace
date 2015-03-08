@@ -14,6 +14,7 @@ import java.util.Collection;
 import java.util.Collections;
 
 import no.javatime.inplace.InPlace;
+import no.javatime.inplace.bundlejobs.intface.TogglePolicy;
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
@@ -38,12 +39,18 @@ import org.osgi.framework.Bundle;
 /**
  * Toggles between lazy and eager activation
  */
-public class TogglePolicyJob extends NatureJob {
+public class TogglePolicyJob extends NatureJob implements TogglePolicy {
 
 	/** Standard name of a toggle policy job job */
 	final public static String policyJobName = Message.getInstance().formatString(
 			"toggle_policy_job_name");
 
+	/**
+	 * Default constructor wit a default job name
+	 */
+	public TogglePolicyJob() {
+		super(policyJobName);
+	}
 	/**
 	 * Construct a toggle policy job with a given name
 	 * 
@@ -134,7 +141,9 @@ public class TogglePolicyJob extends NatureJob {
 			}
 		} catch (OperationCanceledException e) {
 			addCancelMessage(e, NLS.bind(Msg.CANCEL_JOB_INFO, getName()));
-		} catch (InPlaceException | ExtenderException e) {
+		} catch (ExtenderException e) {			
+			addError(e, NLS.bind(Msg.SERVICE_EXECUTOR_EXP, getName()));
+		} catch (InPlaceException e) {
 			String msg = ExceptionMessage.getInstance().formatString("terminate_job_with_errors",
 					getName());
 			addError(e, msg);

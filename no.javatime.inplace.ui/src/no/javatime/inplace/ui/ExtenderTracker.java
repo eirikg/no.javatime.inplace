@@ -32,17 +32,17 @@ public class ExtenderTracker extends ExtenderBundleTracker {
 
 		try {
 			String dependencyDialogSvcName = bundle.getHeaders().get(
-					DependencyDialog.DEPENDENCY_DIALOG_IMPL);
+					DependencyDialog.DEPENDENCY_DIALOG_SERVICE);
 			// Extend and register the dependency dialog as a service if not registered by others
 			if (null != dependencyDialogSvcName && null == Extenders.getExtender(DependencyDialog.class.getName())) {
 				register(bundle, DependencyDialog.class.getName(), dependencyDialogSvcName, null);
 			}
-			String bundleLogViewSvcName = bundle.getHeaders().get(BundleLogView.BUNDLE_LOG_VIEW_IMPL);
+			String bundleLogViewSvcName = bundle.getHeaders().get(BundleLogView.BUNDLE_LOG_VIEW_SERVICE);
 			// Extend and register the bundle log view as a service if not registered by others
 			if (null != bundleLogViewSvcName && null == Extenders.getExtender(BundleLogView.class.getName())) {
 					register(bundle, BundleLogView.class.getName(), bundleLogViewSvcName, null);
 			}
-			String bundleConsoleViewSvcname = bundle.getHeaders().get(BundleConsoleFactory.BUNDLE_CONSOLE_IMPL);
+			String bundleConsoleViewSvcname = bundle.getHeaders().get(BundleConsoleFactory.BUNDLE_CONSOLE_SERVICE);
 			if (null != bundleConsoleViewSvcname && null == Extenders.getExtender(BundleConsoleFactory.class.getName())) {
 				register(bundle, BundleConsoleFactory.class.getName(), bundleConsoleViewSvcname, null);
 			}

@@ -45,6 +45,7 @@ public class DependencyOptionsImpl implements DependencyOptions {
 
 
 	public DependencyOptionsImpl() {
+		getPrefs();
 	}
 
 	protected Preferences getPrefs() {

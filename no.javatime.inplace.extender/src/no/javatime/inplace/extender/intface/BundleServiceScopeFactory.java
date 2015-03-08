@@ -26,6 +26,8 @@ public class BundleServiceScopeFactory<S> implements ServiceFactory<S> {
 
 	private final String serviceClassName;
 	private Class<S> serviceClass;
+	/* internal object to use for synchronization */
+	private final Object serviceClassLock = new Object();
 
 	@SuppressWarnings("unused")
 	protected BundleServiceScopeFactory() {
@@ -33,7 +35,7 @@ public class BundleServiceScopeFactory<S> implements ServiceFactory<S> {
 	}
 
 	/**
-	 * The name of the service class to create a service object from
+	 * Creates a service based on the name of the service class to create a service object from
 	 * 
 	 * @param serviceClassName a fully qualified service class name
 	 * @throws ExstenderException if the specified service class name is null
@@ -63,7 +65,7 @@ public class BundleServiceScopeFactory<S> implements ServiceFactory<S> {
 			ServiceReference<S> sr = registration.getReference();
 			Extender<S> extender = extenderServiceMap.get(sr);
 			if (null != extender) {
-				synchronized (serviceClass) {
+				synchronized (serviceClassLock) {
 					if (null == serviceClass) {
 						Bundle ownerBundle = extender.getOwner();
 						serviceClass = Introspector.loadClass(ownerBundle, serviceClassName);

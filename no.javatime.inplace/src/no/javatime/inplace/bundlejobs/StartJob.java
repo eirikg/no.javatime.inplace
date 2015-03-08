@@ -15,6 +15,7 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 
 import no.javatime.inplace.InPlace;
+import no.javatime.inplace.bundlejobs.intface.Start;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Operation;
 import no.javatime.inplace.extender.intface.ExtenderException;
@@ -47,7 +48,7 @@ import org.osgi.framework.Bundle;
  * started according to the current dependency option. Providing bundles to pending bundle projects are always
  * added as pending bundle projects before bundles are started.
  */
-public class StartJob extends BundleJob {
+public class StartJob extends BundleJob implements Start {
 
 	/** Standard name of a start job */
 	final public static String startJobName = Message.getInstance().formatString("start_job_name");
@@ -56,6 +57,12 @@ public class StartJob extends BundleJob {
 	/** The name of the operation to start a bundle */
 	final protected static String startSubTaskName = Message.getInstance().formatString("start_subtask_name");
 
+	/**
+	 * Default constructor wit a default job name
+	 */
+	public StartJob() {
+		super(startJobName);
+	}
 	/**
 	 * Constructs a start job with a given name
 	 * 
@@ -113,7 +120,9 @@ public class StartJob extends BundleJob {
 			BundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg);
 			multiStatus.add(e.getStatusList());
 			addStatus(multiStatus);
-		} catch (InPlaceException | ExtenderException e) {
+		} catch (ExtenderException e) {			
+			addError(e, NLS.bind(Msg.SERVICE_EXECUTOR_EXP, getName()));
+		} catch (InPlaceException e) {
 			String msg = ExceptionMessage.getInstance().formatString("terminate_job_with_errors", getName());
 			addError(e, msg);
 		} catch (NullPointerException e) {
@@ -135,7 +144,7 @@ public class StartJob extends BundleJob {
 	}
 
 	/**
-	 * Starts bundles. Bundles in state INSTALLED are resolved before stated. Calculates dependency closures
+	 * Starts bundles. BundleExecutor in state INSTALLED are resolved before stated. Calculates dependency closures
 	 * according to dependency options and always adds providing bundles.
 	 * 
 	 * @param monitor the progress monitor to use for reporting progress and job cancellation.

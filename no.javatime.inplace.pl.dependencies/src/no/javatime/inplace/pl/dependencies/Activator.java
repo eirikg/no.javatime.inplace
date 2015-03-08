@@ -50,7 +50,7 @@ public class Activator extends AbstractUIPlugin {
 		/*
 		Bundle bundle = context.getBundle();
 		Dictionary<String, String> dictionary = bundle.getHeaders();		
-		String depDlgClassName = dictionary.get(DependencyDialog.DEPENDENCY_DIALOG_IMPL);
+		String depDlgClassName = dictionary.get(DependencyDialog.DEPENDENCY_DIALOG_SERVICE);
 		ExtenderImpl.register(bundle, DependencyDialog.class, depDlgClassName);
 		*/
 	}

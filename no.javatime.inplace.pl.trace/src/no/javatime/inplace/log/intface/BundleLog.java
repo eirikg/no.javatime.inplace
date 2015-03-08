@@ -44,7 +44,7 @@ public interface BundleLog {
 	 * Manifest header for accessing the default implementation class name of the bundle log. May be
 	 * used to register this interface as a service or extending this interface as a service.
 	 */
-	public final static String BUNDLE_LOG_IMPL = "BundleLog-Service";
+	public final static String BUNDLE_LOG_SERVICE = "BundleLog-Service";
 
 	/**
 	 * Logs the specified status object.

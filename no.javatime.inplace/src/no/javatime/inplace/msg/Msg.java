@@ -54,7 +54,7 @@ public class Msg extends NLS {
 	
 	// Bundle job names
 	public static String INIT_WORKSPACE_JOB;
-	public static String ACTIVATE_PROJECTS_JOB;
+	public static String ACTIVATE_PROJECT_JOB;
 	public static String ACTIVATE_WORKSPACE_JOB;
 	public static String INIT_DEACTIVATED_WORKSPACE_JOB;
   public static String UPDATE_BUNDLE_CLASS_PATH_JOB; 
@@ -86,7 +86,8 @@ public class Msg extends NLS {
 	// Exceptions
 	public static String GET_SERVICE_EXP;
 	public static String LOG_TRACE_EXP;
-
+	public static String SERVICE_EXECUTOR_EXP;
+	
 	// Info messages
 	public static String DEACTIVATE_BUILD_ERROR_INFO;
 	public static String UPDATE_BUILD_ERROR_INFO;

@@ -46,47 +46,6 @@ import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 import org.eclipse.osgi.util.NLS;
 import org.osgi.framework.Bundle;
 
-/**
- * Activates a bundle or set of bundles by installing, resolving and starting the bundle(s). A
- * bundle is only activated if its corresponding project already has been activated. See
- * {@link no.javatime.inplace.bundlejobs.ActivateProjectJob ActivateProjectJob} for activating
- * projects. The workspace is activated if this is the first pending project or set of pending
- * projects that have been activated. If no projects have been activated the workspace is said to be
- * deactivated and all bundles are in state UNINSTALLED
- * <p>
- * The following principles and conditions determine the states bundles are moved to when their
- * projects are activated:
- * <ol>
- * <li>When the first project or set of projects in the workspace have been activated the workspace
- * is said to be activated and bundles for not activated projects are installed (state INSTALLED)
- * and bundles for activated projects are installed, resolved and started (state ACTIVE or
- * STARTING).
- * <li>If the workspace is activated when this job is scheduled bundles of new pending activated
- * projects are resolved and started (state ACTIVE or STARTING).
- * <li>When reactivating the workspace at startup deactivated bundles are installed and activated
- * bundles are moved to the same state as at shut down. Possible states for activated bundles are
- * RESOLVED, ACTIVE and STARTING.
- * <li>If bundles to activate are dependent on other providing bundles, the independent providing
- * bundles are added to the job. The dependency is transitive.
- * </ol>
- * <p>
- * It is both a prerequisite and guaranteed by this package that all providing projects to the
- * pending projects of this job are activated (nature enabled) when this job is scheduled. Providing
- * projects are either activated when a requiring project is activated in
- * {@link no.javatime.inplace.bundlejobs.ActivateProjectJob ActivateProjectJob} or scheduled for
- * project activation in the {@link no.javatime.inplace.builder.PostBuildListener PostBuildListener}
- * when a new deactivated project is imported by an activated project. Lastly, if none if this holds
- * a deactivated project providing capabilities to an activated bundle is scheduled for activation
- * in the internal resolver hook and the requiring activated bundles are excluded from the resolve
- * list and then resolved when the deactivated project is activated.
- * <p>
- * This job is only run at startup of the IDE and when the workspace is activated (after project(s)
- * are activated).
- * 
- * @see ActivateProjectJob
- * @see DeactivateJob
- * 
- */
 public class ActivateBundleJob extends NatureJob implements ActivateBundle {
 
 	/** Reactivating or activating bundles at start up */
@@ -101,8 +60,11 @@ public class ActivateBundleJob extends NatureJob implements ActivateBundle {
 	final private static String duplicateMessage = ErrorMessage.getInstance().formatString(
 			"duplicate_ws_bundle_install");
 
+	/**
+	 * Default constructor wit a default job name
+	 */
 	public ActivateBundleJob() {
-		super("Registered as a service");
+		super(activateJobName);
 	}
 	/**
 	 * Construct an activate job with a given job name
@@ -165,7 +127,9 @@ public class ActivateBundleJob extends NatureJob implements ActivateBundle {
 			BundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg);
 			multiStatus.add(e.getStatusList());
 			addStatus(multiStatus);
-		} catch (InPlaceException | ExtenderException e) {
+		} catch (ExtenderException e) {			
+			addError(e, NLS.bind(Msg.SERVICE_EXECUTOR_EXP, getName()));
+		} catch (InPlaceException e) {
 			String msg = ExceptionMessage.getInstance().formatString("terminate_job_with_errors",
 					getName());
 			addError(e, msg);
@@ -212,7 +176,7 @@ public class ActivateBundleJob extends NatureJob implements ActivateBundle {
 		Collection<Bundle> activatedBundles = null;
 		ProjectSorter projectSorter = new ProjectSorter();
 		// At least one project must be activated (nature enabled) for workspace bundles to be activated
-		if (isWorkspaceNatureEnabled()) {
+		if (isProjectWorkspaceActivated()) {
 			// If this is the first set of workspace project(s) that have been activated no bundle(s) have
 			// been activated yet and all deactivated bundles should be installed in an activated workspace
 			if (!bundleRegion.isRegionActivated()) {
@@ -405,7 +369,7 @@ public class ActivateBundleJob extends NatureJob implements ActivateBundle {
 	 */
 	private void restoreSessionStates(Collection<Bundle> bundles) throws InPlaceException {
 		BundleSorter bundleSorter = new BundleSorter();
-		if (getUseStoredState() && bundles.size() > 0) {
+		if (getPersistState() && bundles.size() > 0) {
 			IEclipsePreferences store = InPlace.getEclipsePreferenceStore();
 			if (null == store) {
 				addStatus(new BundleStatus(StatusCode.WARNING, InPlace.PLUGIN_ID,
@@ -483,23 +447,13 @@ public class ActivateBundleJob extends NatureJob implements ActivateBundle {
 		}
 	}
 
-	/**
-	 * Set preference for activating bundles according to bundle state in preference store
-	 * 
-	 * @param useStoredState true if bundle state from preference store is to be used. Otherwise false
-	 * @see no.javatime.inplace.InPlace#savePluginSettings(Boolean, Boolean)
-	 */
-	public void setUseStoredState(Boolean useStoredState) {
-		this.useStoredState = useStoredState;
+	@Override
+	public void setPersistState(Boolean persist) {
+		this.useStoredState = persist;
 	}
 
-	/**
-	 * Check if to activate bundles according to bundle state in preference store
-	 * 
-	 * @return true if bundle state from preference store is to be used. Otherwise false
-	 * @see no.javatime.inplace.InPlace#savePluginSettings(Boolean, Boolean)
-	 */
-	public Boolean getUseStoredState() {
+	@Override
+	public Boolean getPersistState() {
 		return useStoredState;
 	}
 
@@ -510,10 +464,5 @@ public class ActivateBundleJob extends NatureJob implements ActivateBundle {
 	 */
 	public static int getTicks() {
 		return 3; // install (activate workspace), resolve, start
-	}
-	@Override
-	public void run() {
-		// TODO Auto-generated method stub
-		
-	}
+	}	
 }

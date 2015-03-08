@@ -12,6 +12,8 @@ Require-Bundle: org.eclipse.core.runtime,
  org.eclipse.core.resources
 Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Import-Package: no.javatime.inplace.bundlejobs,
+ no.javatime.inplace.bundlejobs.intface,
+ no.javatime.inplace.bundlemanager,
  no.javatime.inplace.dl.preferences.intface,
  no.javatime.inplace.extender.intface,
  no.javatime.inplace.region.intface,

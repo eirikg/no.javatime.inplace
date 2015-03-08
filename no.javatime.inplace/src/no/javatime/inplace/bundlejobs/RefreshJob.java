@@ -14,6 +14,7 @@ import java.util.Collection;
 import java.util.LinkedHashSet;
 
 import no.javatime.inplace.InPlace;
+import no.javatime.inplace.bundlejobs.intface.Refresh;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.msg.Msg;
@@ -44,13 +45,19 @@ import org.osgi.framework.Bundle;
  * refresh are added as pending bundle projects.
  * 
  */
-public class RefreshJob extends BundleJob {
+public class RefreshJob extends BundleJob implements Refresh {
 
 	/** Standard name of a refresh job */
 	final public static String refreshJobName = Message.getInstance().formatString("refresh_job_name");
 	/** Used to name the set of operations needed to refresh a bundle */
 	final protected static String refreshTaskName = Message.getInstance().formatString("refresh_task_name");
 
+	/**
+	 * Default constructor wit a default job name
+	 */
+	public RefreshJob() {
+		super(refreshJobName);
+	}
 	/**
 	 * Construct a refresh job with a given name
 	 * 
@@ -107,7 +114,9 @@ public class RefreshJob extends BundleJob {
 			BundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg);
 			multiStatus.add(e.getStatusList());
 			addStatus(multiStatus);
-		} catch (InPlaceException | ExtenderException e) {
+		} catch (ExtenderException e) {			
+			addError(e, NLS.bind(Msg.SERVICE_EXECUTOR_EXP, getName()));
+		} catch (InPlaceException e) {
 			String msg = ExceptionMessage.getInstance().formatString("terminate_job_with_errors", getName());
 			addError(e, msg);
 		} catch (NullPointerException e) {
@@ -129,7 +138,7 @@ public class RefreshJob extends BundleJob {
 	}
 
 	/**
-	 * Refresh bundles. Bundles in state ACYIVE and STARTING are stopped, refreshed and started. Calculates
+	 * Refresh bundles. BundleExecutor in state ACYIVE and STARTING are stopped, refreshed and started. Calculates
 	 * dependency closures according to dependency options and always adds requiring bundles.
 	 * 
 	 * @param monitor the progress monitor to use for reporting progress and job cancellation.

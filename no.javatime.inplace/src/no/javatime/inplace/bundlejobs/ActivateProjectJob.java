@@ -15,6 +15,7 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 
 import no.javatime.inplace.InPlace;
+import no.javatime.inplace.bundlejobs.intface.ActivateProject;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.msg.Msg;
@@ -41,36 +42,22 @@ import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.osgi.util.NLS;
 import org.osgi.framework.Bundle;
 
-/**
- * Activates a project or a set of projects by adding the JavaTime nature and builder to the
- * .project file of the project.
- * <p>
- * Project dependency closures are calculated and added as pending projects to this job according to
- * the current dependency option.
- * <P>
- * If the option for adding bin to class path on update is switched on the the Bundle-ClassPath
- * header is inserted or updated if the bin entry is missing. If the activation policy option is
- * different from the current setting the Bundle-ActivationPolicy header is updated when the option
- * is set to "lazy" and removed if set to "eager".
- * <p>
- * This job does not alter the state of bundles. When a project is nature enabled the project is per
- * definition activated even if the bundle is not yet.
- * <p>
- * After activation of a project one of the following jobs should be triggered by the
- * {@link no.javatime.inplace.builder.PostBuildListener PostBuildListener} (also when auto build is
- * off):
- * <li>If the activated bundle project is in state UNINSTALLED a bundle activate job is triggered.
- * <li>If the activated bundle project is in state INSTALLED a bundle update job is triggered.
- */
-public class ActivateProjectJob extends NatureJob {
+public class ActivateProjectJob extends NatureJob implements ActivateProject {
 
 	/** Standard name of an activate job */
-	final public static String activateProjectsJobName = Msg.ACTIVATE_PROJECTS_JOB;
+	final public static String activateProjectJobName = Msg.ACTIVATE_PROJECT_JOB;
 	final public static String activateWorkspaceJobName = Msg.ACTIVATE_WORKSPACE_JOB;
 
 	/** Used to name the set of operations needed to activate a project */
 	final private static String activateProjectTaskName = Message.getInstance().formatString(
 			"activate_project_task_name");
+
+	/**
+	 * Default constructor wit a default job name
+	 */
+	public ActivateProjectJob() {
+		super(activateProjectJobName);
+	}
 
 	/**
 	 * Construct an activate job with a given name
@@ -128,7 +115,9 @@ public class ActivateProjectJob extends NatureJob {
 			addStatus(multiStatus);
 			// Remove error on the duplicates that are deactivated
 			InPlace.getBundleTransitionService().removeTransitionError(TransitionError.CYCLE);
-		} catch (InPlaceException | ExtenderException e) {
+		} catch (ExtenderException e) {			
+			addError(e, NLS.bind(Msg.SERVICE_EXECUTOR_EXP, getName()));
+		} catch (InPlaceException e) {
 			String msg = ExceptionMessage.getInstance().formatString("terminate_job_with_errors",
 					getName());
 			addError(e, msg);
@@ -195,7 +184,7 @@ public class ActivateProjectJob extends NatureJob {
 			// should be updated as part of the activation process
 			if (!getOptionsService().isUpdateOnBuild() && bundleRegion.isRegionActivated()) {
 				for (IProject project : getPendingProjects()) {
-					if (isNatureEnabled(project)) {
+					if (isProjectActivated(project)) {
 						bundleTransition.addPending(project, Transition.UPDATE_ON_ACTIVATE);
 					}
 				}
@@ -272,7 +261,7 @@ public class ActivateProjectJob extends NatureJob {
 
 		 // Uninstalled projects missing build state or with build errors in manifest prevents activation
 		 // of any project
-		if (!isWorkspaceNatureEnabled()) {
+		if (!isProjectWorkspaceActivated()) {
 			Collection<IProject> errorProjects = BuildErrorClosure.getBuildErrors((bundleProjectCandidates.getBundleProjects()));
 			IBundleStatus multiStatus = new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID,
 					Msg.FATAL_ACTIVATE_ERROR);
@@ -326,7 +315,7 @@ public class ActivateProjectJob extends NatureJob {
 
 		// If the workspace is deactivated and there are registered bundles they are uninstalled but not
 		// unregistered
-		if (!isWorkspaceNatureEnabled() && installedBundles.size() > 0) {
+		if (!isProjectWorkspaceActivated() && installedBundles.size() > 0) {
 			Collection<IProject> projectsToActivate = bundleRegion.getProjects(installedBundles);
 			uninstallBundles(installedBundles, monitor);
 			// Subtract installed projects already pending

@@ -18,6 +18,7 @@ import no.javatime.inplace.builder.PreBuildListener;
 import no.javatime.inplace.builder.PreChangeListener;
 import no.javatime.inplace.builder.ProjectChangeListener;
 import no.javatime.inplace.bundlejobs.ActivateBundleJob;
+import no.javatime.inplace.bundlejobs.ActivateProjectJob;
 import no.javatime.inplace.bundlejobs.BundleJob;
 import no.javatime.inplace.bundlejobs.BundleJobListener;
 import no.javatime.inplace.bundlejobs.DeactivateJob;
@@ -25,12 +26,15 @@ import no.javatime.inplace.bundlejobs.UninstallJob;
 import no.javatime.inplace.bundlejobs.UpdateJob;
 import no.javatime.inplace.bundlejobs.events.BundleJobEvent;
 import no.javatime.inplace.bundlejobs.events.BundleJobEventListener;
+import no.javatime.inplace.bundlejobs.intface.ActivateProject;
+import no.javatime.inplace.bundlejobs.intface.BundlesServiceFactory;
 import no.javatime.inplace.bundlemanager.BundleJobManager;
 import no.javatime.inplace.dialogs.ExternalTransition;
 import no.javatime.inplace.dl.preferences.intface.CommandOptions;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.dl.preferences.intface.MessageOptions;
+import no.javatime.inplace.extender.intface.Extender;
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.extender.intface.Extenders;
 import no.javatime.inplace.extender.intface.Extension;
@@ -158,6 +162,8 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 	private Extension<BundleConsoleFactory> bundleConsoleFactory;
 	// Log for bundle commands
 	private Extension<BundleLog> bundleLog;
+	// Register services
+	private Extender<ActivateProject> activateProject;
 
 	public InPlace() {
 	}
@@ -167,6 +173,12 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 		super.start(context);
 		plugin = this;
 		InPlace.context = context;
+		Bundle bundle = context.getBundle(); 
+		
+		// Register hosted extenders 
+		activateProject = Extenders.register(bundle, ActivateProject.class.getName(), 
+				new BundlesServiceFactory(ActivateProjectJob.class.getName()),null);
+	
 		extenderBundleTracker = new ExtenderTracker(context, Bundle.ACTIVE, null);
 		extenderBundleTracker.open();
 		String refreshBSNResult = context.getProperty(REFRESH_DUPLICATE_BSN);

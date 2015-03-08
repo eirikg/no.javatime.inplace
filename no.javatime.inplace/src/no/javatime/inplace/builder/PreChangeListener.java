@@ -12,10 +12,12 @@ package no.javatime.inplace.builder;
 
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundlejobs.BundleJob;
-import no.javatime.inplace.bundlejobs.NatureJob;
 import no.javatime.inplace.bundlejobs.UninstallJob;
+import no.javatime.inplace.bundlejobs.intface.ActivateProject;
 import no.javatime.inplace.bundlemanager.BundleJobManager;
 import no.javatime.inplace.dialogs.SaveProjectHandler;
+import no.javatime.inplace.extender.intface.Extenders;
+import no.javatime.inplace.extender.intface.Extension;
 import no.javatime.inplace.region.intface.BundleRegion;
 import no.javatime.inplace.region.intface.BundleTransition;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
@@ -48,6 +50,9 @@ import org.osgi.framework.Bundle;
  */
 public class PreChangeListener implements IResourceChangeListener {
 
+	final private Extension<ActivateProject> activateExtension = Extenders.getExtension(
+			ActivateProject.class.getName());
+
 	/**
 	 * Handle pre-resource events for project delete, close and rename.
 	 */
@@ -55,9 +60,10 @@ public class PreChangeListener implements IResourceChangeListener {
 	public void resourceChanged(IResourceChangeEvent event) {
 
 		BundleRegion bundleRegion = InPlace.getBundleRegionService();
+		ActivateProject activate = activateExtension.getService();
 		// Do not return if waiting for additional projects to uninstall
 		// May occur if the workspace becomes deactivated while waiting for new projects to remove
-		if (!NatureJob.isWorkspaceNatureEnabled()
+		if (!activate.isProjectWorkspaceActivated()
 				&& !(SaveProjectHandler.getWaitingBundleJob() instanceof RemoveBundleProjectJob)) {
 			return;
 		}

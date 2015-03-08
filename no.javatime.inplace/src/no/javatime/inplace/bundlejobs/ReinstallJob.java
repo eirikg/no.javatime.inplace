@@ -13,6 +13,7 @@ package no.javatime.inplace.bundlejobs;
 import java.util.Collection;
 
 import no.javatime.inplace.InPlace;
+import no.javatime.inplace.bundlejobs.intface.Reinstall;
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.closure.CircularReferenceException;
@@ -37,13 +38,19 @@ import org.eclipse.osgi.util.NLS;
  * projects in state INSTALLED are reinstalled and no dependency closures are calculated
  * 
  */
-public class ReinstallJob extends NatureJob {
+public class ReinstallJob extends NatureJob implements Reinstall {
 
 	/** Standard name of a start job */
 	final public static String reinstallJobName = Message.getInstance().formatString("reinstall_job_name");
 	/** Used to name the set of operations needed to reinstall a bundle */
 	final public static String reinstallTaskName = Message.getInstance().formatString("reinstall_task_name");
 
+	/**
+	 * Default constructor wit a default job name
+	 */
+	public ReinstallJob() {
+		super(reinstallJobName);
+	}
 	/**
 	 * Construct a reinstall job with a given name
 	 * 
@@ -95,7 +102,9 @@ public class ReinstallJob extends NatureJob {
 			BundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg);
 			multiStatus.add(e.getStatusList());
 			addStatus(multiStatus);
-		} catch (InPlaceException | ExtenderException e) {
+		} catch (ExtenderException e) {			
+			addError(e, NLS.bind(Msg.SERVICE_EXECUTOR_EXP, getName()));
+		} catch (InPlaceException  e) {
 			String msg = ExceptionMessage.getInstance().formatString("terminate_job_with_errors", getName());
 			addError(e, msg);
 		} catch (NullPointerException e) {

@@ -162,7 +162,7 @@ public class BundleJobListener extends JobChangeAdapter {
 		Collection<IProject> projectsToActivate = bundleTransition.getPendingProjects(
 				deactivatedProjects, Transition.ACTIVATE_PROJECT);
 		if (projectsToActivate.size() > 0) {
-			bundleJob = new ActivateProjectJob(ActivateProjectJob.activateProjectsJobName,
+			bundleJob = new ActivateProjectJob(ActivateProjectJob.activateProjectJobName,
 					projectsToActivate);
 			bundleTransition.removePending(projectsToActivate, Transition.ACTIVATE_PROJECT);
 			if (InPlace.get().getMsgOpt().isBundleOperations()) {

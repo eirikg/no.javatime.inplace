@@ -60,7 +60,13 @@ public class UninstallJob extends NatureJob {
 	public void setIncludeRequiring(boolean includeRequiring) {
 		this.includeRequiring = includeRequiring;
 	}
-
+	
+	/**
+	 * Default constructor wit a default job name
+	 */
+	public UninstallJob() {
+		super(uninstallJobName);
+	}
 	/**
 	 * Construct an uninstall job with a given name
 	 * 
@@ -123,7 +129,9 @@ public class UninstallJob extends NatureJob {
 			BundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg);
 			multiStatus.add(e.getStatusList());
 			addStatus(multiStatus);
-		} catch (InPlaceException | ExtenderException e) {
+		} catch (ExtenderException e) {			
+			addError(e, NLS.bind(Msg.SERVICE_EXECUTOR_EXP, getName()));
+		} catch (InPlaceException e) {
 			String msg = ExceptionMessage.getInstance().formatString("terminate_job_with_errors", getName());
 			addError(e, msg);
 		} catch (NullPointerException e) {

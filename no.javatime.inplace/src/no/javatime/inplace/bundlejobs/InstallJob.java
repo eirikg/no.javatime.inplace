@@ -14,6 +14,7 @@ import java.util.Collection;
 import java.util.Collections;
 
 import no.javatime.inplace.InPlace;
+import no.javatime.inplace.bundlejobs.intface.Install;
 import no.javatime.inplace.bundlemanager.BundleJobManager;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.extender.intface.ExtenderException;
@@ -50,7 +51,7 @@ import org.osgi.framework.Bundle;
  * 
  * @see no.javatime.inplace.bundlejobs.UninstallJob
  */
-public class InstallJob extends NatureJob {
+public class InstallJob extends NatureJob implements Install {
 
 	/** Standard name of an install job */
 	final public static String installJobName = Message.getInstance()
@@ -60,7 +61,14 @@ public class InstallJob extends NatureJob {
 			"install_task_name");
 	final private static String duplicateMessage = ErrorMessage.getInstance().formatString(
 			"duplicate_ws_bundle_install");
-
+	
+	/**
+	 * Default constructor wit a default job name
+	 */
+	public InstallJob() {
+		super(installJobName);
+	}
+	
 	/**
 	 * Construct an install job with a given name
 	 * 
@@ -104,7 +112,7 @@ public class InstallJob extends NatureJob {
 		try {
 			monitor.beginTask(installTaskName, 1);
 			BundleTransitionListener.addBundleTransitionListener(this);
-			if (isWorkspaceNatureEnabled()) {
+			if (isProjectWorkspaceActivated()) {
 				if (!bundleRegion.isRegionActivated()) {
 					// First nature activated projects. Activate the workspace
 					addPendingProjects(bundleProjectCandidates.getBundleProjects());
@@ -136,7 +144,9 @@ public class InstallJob extends NatureJob {
 			BundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg);
 			multiStatus.add(e.getStatusList());
 			addStatus(multiStatus);
-		} catch (InPlaceException | ExtenderException e) {
+		} catch (ExtenderException e) {			
+			addError(e, NLS.bind(Msg.SERVICE_EXECUTOR_EXP, getName()));
+		} catch (InPlaceException e) {
 			String msg = ExceptionMessage.getInstance().formatString("terminate_job_with_errors",
 					getName());
 			addError(e, msg);

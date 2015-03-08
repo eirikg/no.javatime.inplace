@@ -16,8 +16,10 @@ import java.util.Collections;
 import java.util.Map;
 
 import no.javatime.inplace.InPlace;
-import no.javatime.inplace.bundlejobs.NatureJob;
+import no.javatime.inplace.bundlejobs.intface.ActivateProject;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
+import no.javatime.inplace.extender.intface.Extenders;
+import no.javatime.inplace.extender.intface.Extension;
 import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.closure.BuildErrorClosure;
 import no.javatime.inplace.region.closure.CircularReferenceException;
@@ -79,6 +81,8 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 
 	private static Collection<IBundleStatus> builds = new ArrayList<IBundleStatus>();
 	final private BundleProjectCandidates bundleProjectCandidates = InPlace.getBundleProjectCandidatesService();
+	final private Extension<ActivateProject> activateExtension = Extenders.getExtension(
+			ActivateProject.class.getName());
 
 	public JavaTimeBuilder() {
 	}
@@ -195,13 +199,14 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 			if (!InPlace.get().getCommandOptionsService().isAllowUIContributions()
 					&& bundleProjectCandidates.getUIPlugins().contains(project)) {
 				if (null == bundle) {
+					ActivateProject activate = activateExtension.getService();
 					if (!bundleRegion.isProjectRegistered(project)) {
-						boolean natureEnabled = NatureJob.isNatureEnabled(project);
+						boolean natureEnabled = activate.isProjectActivated(project);
 						bundleRegion.registerBundleProject(project, bundle, natureEnabled);
 					}
 					// When an activated project is imported or opened, install in an activated workspace
 					// before deactivating the bundle
-					if (NatureJob.getNatureEnabled().size() > 1) {
+					if (activate.getActivatedProjects().size() > 1) {
 						bundleTransition.addPending(project, Transition.INSTALL);
 					}
 				}

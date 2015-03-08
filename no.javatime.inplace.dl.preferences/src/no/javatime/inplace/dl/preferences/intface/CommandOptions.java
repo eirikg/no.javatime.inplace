@@ -5,7 +5,7 @@ package no.javatime.inplace.dl.preferences.intface;
  */
 public interface CommandOptions extends ManifestOptions {
 	
-	public final static String COMMAND_OPTIONS_IMPL = "Command-Options-Service";
+	public final static String COMMAND_OPTIONS_SERVICE = "Command-Options-Service";
 
 	public static final String IS_UPDATE_ON_BUILD = "isUpdateOnBuild";
 	public static final String IS_DEACTIVATE_ON_EXIT = "isDeactivateOnExit";

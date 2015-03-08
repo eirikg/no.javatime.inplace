@@ -14,6 +14,7 @@ import java.util.Collection;
 import java.util.Collections;
 
 import no.javatime.inplace.InPlace;
+import no.javatime.inplace.bundlejobs.intface.Stop;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Operation;
 import no.javatime.inplace.extender.intface.ExtenderException;
@@ -46,7 +47,7 @@ import org.osgi.framework.Bundle;
  * stopped according to the current dependency option. Requiring bundles to pending bundle projects are always
  * added as pending bundle projects before bundles are stopped.
  */
-public class StopJob extends BundleJob {
+public class StopJob extends BundleJob implements Stop {
 
 	/** Standard name of a stop job */
 	final public static String stopJobName = Message.getInstance().formatString("stop_job_name");
@@ -55,6 +56,12 @@ public class StopJob extends BundleJob {
 	/** The name of the operation to stop a bundle */
 	final protected static String stopSubTaskName = Message.getInstance().formatString("stop_subtask_name");
 
+	/**
+	 * Default constructor wit a default job name
+	 */
+	public StopJob() {
+		super(stopJobName);
+	}
 	/**
 	 * Construct a stop job with a given name
 	 * 
@@ -112,7 +119,9 @@ public class StopJob extends BundleJob {
 			BundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg);
 			multiStatus.add(e.getStatusList());
 			addStatus(multiStatus);
-		} catch (InPlaceException | ExtenderException e) {
+		} catch (ExtenderException e) {			
+			addError(e, NLS.bind(Msg.SERVICE_EXECUTOR_EXP, getName()));
+		} catch (InPlaceException e) {
 			String msg = ExceptionMessage.getInstance().formatString("terminate_job_with_errors", getName());
 			addError(e, msg);
 		} catch (NullPointerException e) {
@@ -137,7 +146,7 @@ public class StopJob extends BundleJob {
 	}
 
 	/**
-	 * Stops bundles. Bundles in state ACTIVE and STARTING are stopped. Calculates dependency closures according
+	 * Stops bundles. BundleExecutor in state ACTIVE and STARTING are stopped. Calculates dependency closures according
 	 * to dependency options and always adds requiring bundles.
 	 * 
 	 * @param monitor the progress monitor to use for reporting progress and job cancellation.

@@ -11,7 +11,7 @@ import org.osgi.framework.ServiceRegistration;
  * Use this service factory when registering an extender to obtain a new service object for each
  * call to {@link Extender#getService(Bundle)} (prototype service scope) using the registered extender
  * <p>
- * The class name must be the name of a class that resides in the bundle specified as the
+ * The service class name must be the name of a class that resides in the bundle specified as the
  * owner bundle when the extender was registered.  
  * 
  * @param <S> type of service
@@ -27,7 +27,7 @@ public class PrototypeServiceScopeFactory<S> extends BundleServiceScopeFactory<S
 	}
 
 	/**
-	 * The name of the service class to create a service object from
+	 * Creates a service based on the name of the service class to create a service object from
 	 * 
 	 * @param serviceClassName a fully qualified service class name
 	 * @throws ExstenderException if the specified service class name is null

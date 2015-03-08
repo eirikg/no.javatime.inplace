@@ -6,6 +6,9 @@ import java.util.Collections;
 import java.util.List;
 
 import no.javatime.inplace.InPlace;
+import no.javatime.inplace.bundlejobs.intface.ActivateProject;
+import no.javatime.inplace.extender.intface.Extenders;
+import no.javatime.inplace.extender.intface.Extension;
 import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.closure.ProjectSorter;
 import no.javatime.inplace.region.events.BundleTransitionEvent;
@@ -40,7 +43,7 @@ import org.osgi.framework.Bundle;
  * 
  * @see no.javatime.inplace.region.status.IBundleStatus
  */
-public abstract class JobStatus extends WorkspaceJob implements BundleTransitionEventListener {
+public class JobStatus extends WorkspaceJob implements BundleTransitionEventListener {
 
 	/**
 	 * Convenience references to bundle management
@@ -183,17 +186,20 @@ public abstract class JobStatus extends WorkspaceJob implements BundleTransition
 						bundleCommand.getStateName(bundle) }, bundle);
 				break;
 			case REMOVE_PROJECT:
-				// Do not use nature method. Project files are not accessible at this point
-//				String remActivated = NatureJob.isNatureEnabled(project) ? "activated" : "deactivated";
+				// Do not test for nature. Project files are not accessible at this point
 				String remActivated = bundleRegion.isBundleActivated(project) ? "activated" : "deactivated";
 				addLogStatus(Msg.REMOVE_PROJECT_OP_TRACE, new Object[] { remActivated,
 						project.getName() }, project);			
 				break;
-			case NEW_PROJECT:
-				String addActivated = NatureJob.isNatureEnabled(project) ? "activated" : "deactivated";
+			case NEW_PROJECT: {
+				final Extension<ActivateProject> activateExtension = Extenders.getExtension(
+						ActivateProject.class.getName());
+				ActivateProject activate = activateExtension.getService();
+				String addActivated = activate.isProjectActivated(project) ? "activated" : "deactivated";
 				addLogStatus(Msg.ADD_PROJECT_OP_TRACE, new Object[] { addActivated,
 						project.getName() }, project);
 				break;
+			}
 			default:
 				break;
 			}

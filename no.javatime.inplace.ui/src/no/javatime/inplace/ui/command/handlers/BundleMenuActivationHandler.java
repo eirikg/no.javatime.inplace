@@ -95,7 +95,7 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 			SaveProjectHandler.waitOnBuilder();
 			ActivateProjectJob activateJob = null;
 			if (Activator.getBundleRegionService().getActivatedProjects().size() > 0) {
-				activateJob = new ActivateProjectJob(ActivateProjectJob.activateProjectsJobName, projects);
+				activateJob = new ActivateProjectJob(ActivateProjectJob.activateProjectJobName, projects);
 			} else {
 				activateJob = new ActivateProjectJob(ActivateProjectJob.activateWorkspaceJobName, projects);
 			}
@@ -181,8 +181,8 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 		SaveProjectHandler so = new SaveProjectHandler();
 		if (so.saveModifiedFiles()) {
 			SaveProjectHandler.waitOnBuilder();
-			ResetJob resetJob = new ResetJob(projects);
-			resetJob.reset(ResetJob.resetJobName);
+			ResetJob resetJob = new ResetJob(ResetJob.resetJobName, projects);
+			jobHandler(resetJob);
 		}
 	}
 
@@ -444,7 +444,7 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 		IJavaProject javaProject = null;
 		if (selection instanceof IStructuredSelection) {
 			Object element = ((IStructuredSelection) selection).getFirstElement();
-			// Bundles view
+			// BundleExecutor view
 			if (element instanceof BundleProperties) {
 				BundleProperties bp = (BundleProperties) element;
 				javaProject = bp.getJavaProject();
@@ -523,7 +523,7 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 		IProject project = null;
 		if (selection instanceof IStructuredSelection) {
 			Object element = ((IStructuredSelection) selection).getFirstElement();
-			// Bundles view
+			// BundleExecutor view
 			if (element instanceof BundleProperties) {
 				BundleProperties bp = (BundleProperties) element;
 				project = bp.getProject();

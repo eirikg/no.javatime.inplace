@@ -16,7 +16,7 @@ public interface BundleConsoleFactory {
 	 * Manifest header for accessing the implementation class name of the bundle console
 	 * May be used when extending this bundle
 	 */
-	public final static String BUNDLE_CONSOLE_IMPL = "Bundle-Console-Service";
+	public final static String BUNDLE_CONSOLE_SERVICE = "Bundle-Console-Service";
 
 	/**
 	 * Get the default image for the bundle console view as an image descriptor

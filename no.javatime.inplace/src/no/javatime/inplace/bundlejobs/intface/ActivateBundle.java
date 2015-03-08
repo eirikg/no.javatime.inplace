@@ -1,43 +1,80 @@
 package no.javatime.inplace.bundlejobs.intface;
 
-
 /**
- * 		
- * // TODO Use this as a starting point when creating service for jobs Remove after testing
-		Extension<Extender<?>> e;
-		e = Extenders.getExtension(Extender.class.getName());
-		Extender<?> ex = e.getService(context.getBundle());
-		BundleServiceScopeFactory<ActivateBundle> bundleScopeFactory = 
-				new BundleServiceScopeFactory<>(ActivateBundleJob.class.getName());
-		Extender<ActivateBundle> activateExtender = 
-				Extenders.register(context.getBundle(), context.getBundle(), ActivateBundle.class.getName(), 
-						bundleScopeFactory);
-						// Specific factory for activate job
-//						new BundleJobServiceFactory());
-		ActivateBundle activate = activateExtender.getService();
-		activate.addPendingProjects(BundleProjectCandidatesImpl.INSTANCE.getCandidateProjects());
-		activateExtender.unregisterService();
-		activateExtender.registerService();
-		activate = activateExtender.getService();
-
- *
+ * Activates bundle(s) by installing, resolving and starting the bundle(s).
+ * <p>
+ * For a bundle to be activated its corresponding project must already have been activated. See
+ * {@link ActivateProject} for activating projects. If a project that is not activated is added to
+ * and executed by this service it is ignored.
+ * <p>
+ * The workspace is activated if one or more projects are activated. If no projects have been
+ * activated the workspace is said to be deactivated and all bundles are in state UNINSTALLED.
+ * Possible states for activated projects in an activated workspace are RESOLVED, ACTIVE and
+ * STARTING and INSTALLED for not activated projects.
+ * <p>
+ * The following principles and conditions determine the states bundles are moved to when activated:
+ * <ol>
+ * <li>The workspace must be activated before any bundles are activated.
+ * <li>Not activated projects are installed (state INSTALLED) and bundles for activated projects are
+ * by default installed, resolved and started (state ACTIVE or STARTING).
+ * <li>When reactivating the workspace (e.g. at startup or by executing the {@link Reset} service)
+ * deactivated projects are installed and activated projects are moved to the same state as at shut
+ * down if {@link #setPersistState(Boolean)} is set to {@code true} and started if not.
+ * <li>If bundles to activate are dependent on other providing bundles, the independent providing
+ * bundles are added to the this bundle operation. The dependency is transitive.
+ * </ol>
+ * <p>
+ * Bundle dependency closures are calculated and added as pending bundles to this service according
+ * to the current dependency option. E.g. deactivated projects providing capabilities to an
+ * activated project are added to this service for activation.
+ * 
+ * It is both a prerequisite and guaranteed by this package that all providing projects to the
+ * pending projects of this service are activated (nature enabled) when this operation is executed.
+ * Providing projects are either activated when a requiring project is activated in
+ * {@link ActivateProject} or scheduled for project activation when a new deactivated project is
+ * imported by an activated project. Lastly, if none if this holds a deactivated project providing
+ * capabilities to an activated bundle is scheduled for activation in the internal resolver hook and
+ * the requiring activated bundles are excluded from the resolve set and then resolved when the
+ * deactivated project is activated.
+ * <p>
+ * This service operation is executed implicit at startup of the IDE if the workspace is activated.
+ * 
+ * @see ActivateProject
+ * @see Deactivate
+ * 
  */
-public interface ActivateBundle extends Bundles {
+public interface ActivateBundle extends BundleExecutor {
 
 	/**
-	 * Set preference for activating bundles according to bundle state in preference store
-	 * 
-	 * @param useStoredState true if bundle state from preference store is to be used. Otherwise false
-	 * @see no.javatime.inplace.InPlace#savePluginSettings(Boolean, Boolean)
+	 * Manifest header for accessing the default service implementation class name of the activate
+	 * bundle operation
 	 */
-	public void setUseStoredState(Boolean useStoredState);
+	public final static String ACTIVATE_BUNDLE_SERVICE = "Activate-Bundle-Service";
 
 	/**
-	 * Check if to activate bundles according to bundle state in preference store
+	 * Store and use state of activated bundles in the preference store at start up.
+	 * <p>
+	 * When {@code true} persisted bundles will be activated according to their persisted state as of
+	 * at shut down of the IDE at next start up of the IDE.
+	 * <p>
+	 * If a bundle project is in an activated state at start up it will always be resolved if
+	 * possible. If the bundle project state was active at shutdown it will be started on start up.
+	 * <p>
+	 * Deactivated bundles are installed at start up in an activated workspace. Bundle projects stay
+	 * in an uninstalled state at start up in a deactivated workspace.
+	 * <p>
+	 * An exception to these rules is when the IDE terminates unexpectedly. Than activated bundle
+	 * projects are resolved if possible but not started even if the state was active at shutdown.
+	 * 
+	 * @param persist true if bundle state from preference store is to be used. Otherwise false
+	 */
+	public void setPersistState(Boolean persist);
+
+	/**
+	 * Check if to store and activate bundles according to bundle state in preference store
 	 * 
 	 * @return true if bundle state from preference store is to be used. Otherwise false
-	 * @see no.javatime.inplace.InPlace#savePluginSettings(Boolean, Boolean)
 	 */
-	public Boolean getUseStoredState();
+	public Boolean getPersistState();
 
 }
