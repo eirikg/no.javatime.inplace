@@ -1,8 +1,8 @@
-package no.javatime.inplace.region.project;
+package no.javatime.inplace.region.intface;
 
 import no.javatime.inplace.extender.intface.Extender;
 import no.javatime.inplace.extender.intface.Extenders;
-import no.javatime.inplace.region.intface.BundleProjectCandidates;
+import no.javatime.inplace.region.project.BundleProjectCandidatesImpl;
 
 import org.osgi.framework.Bundle;
 import org.osgi.framework.ServiceFactory;

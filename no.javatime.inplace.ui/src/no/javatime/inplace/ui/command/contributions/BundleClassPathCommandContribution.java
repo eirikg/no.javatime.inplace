@@ -4,13 +4,15 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 import no.javatime.inplace.dl.preferences.intface.MessageOptions;
-import no.javatime.inplace.extender.intface.Extenders;
+import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.extender.intface.Extension;
 import no.javatime.inplace.region.closure.BuildErrorClosure;
+import no.javatime.inplace.region.intface.BundleProjectCandidates;
 import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import no.javatime.inplace.ui.Activator;
+import no.javatime.inplace.ui.msg.Msg;
 import no.javatime.util.messages.Message;
 import no.javatime.util.messages.WarnMessage;
 
@@ -36,26 +38,37 @@ public class BundleClassPathCommandContribution extends BundleMainCommandsContri
 	@Override
 	protected IContributionItem[] getContributionItems() {
 
-		ArrayList<ContributionItem> contributions = new ArrayList<ContributionItem>();
+		BundleProjectCandidates bundleProjectCandidates = Activator.getBundleProjectCandidatesService();
 
-		ArrayList<ContributionItem> classPathContributions = addClassPath(Activator.getBundleProjectCandidatesService().getBundleProjects());
-		if (null != classPathContributions) {
-			contributions.addAll(classPathContributions);
+		ArrayList<ContributionItem> contributions = new ArrayList<ContributionItem>();
+		try {
+			ArrayList<ContributionItem> classPathContributions = addClassPath(bundleProjectCandidates
+					.getBundleProjects());
+			if (null != classPathContributions) {
+				contributions.addAll(classPathContributions);
+			}
+		} catch (ExtenderException e) {
+			StatusManager.getManager()
+					.handle(
+							new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID,
+									Msg.ADD_CONTRIBUTION_ERROR, e), StatusManager.LOG);
 		}
-		IContributionItem[] contributionArray = contributions.toArray(new ContributionItem[contributions.size()]);
+		IContributionItem[] contributionArray = contributions
+				.toArray(new ContributionItem[contributions.size()]);
 		return contributionArray;
 	}
 
 	/**
-	 * Creates one contribution for the number of bundles among the specified projects that are missing
-	 * the default output folder and one contribution for the number of bundles containing the default
-	 * output folder in their manifest
+	 * Creates one contribution for the number of bundles among the specified projects that are
+	 * missing the default output folder and one contribution for the number of bundles containing the
+	 * default output folder in their manifest
 	 * 
 	 * @param projects collection of projects to search for default output folder in manifest
 	 * @return one contribution for bundles with default output folder in manifest and one for those
 	 * missing the default output folder
 	 */
-	private ArrayList<ContributionItem> addClassPath(Collection<IProject> projects) {
+	private ArrayList<ContributionItem> addClassPath(Collection<IProject> projects)
+			throws ExtenderException {
 
 		ArrayList<ContributionItem> contributions = new ArrayList<ContributionItem>();
 
@@ -81,17 +94,18 @@ public class BundleClassPathCommandContribution extends BundleMainCommandsContri
 				}
 			}
 			if (null != errProjects) {
-				Extension<MessageOptions> msgOpt = Extenders.getExtension(MessageOptions.class.getName());
-				MessageOptions optServicet = msgOpt.getService();
-				if (null != optServicet
-						&& (optServicet.isInfoMessages() || optServicet.isBundleEvents() || optServicet
-								.isBundleOperations())) {
+				Extension<MessageOptions> messageOptionsExt = Activator.getExtension(MessageOptions.class
+						.getName());
+				MessageOptions messageOptions = messageOptionsExt.getTrackedService();
+				if (messageOptions.isInfoMessages() || messageOptions.isBundleEvents()
+						|| messageOptions.isBundleOperations()) {
 					String msg = WarnMessage.getInstance().formatString("error_not_update_classpath",
 							Activator.getBundleProjectCandidatesService().formatProjectList(errProjects));
 					StatusManager.getManager()
 							.handle(new BundleStatus(StatusCode.ERROR, Activator.PLUGIN_ID, msg, null),
 									StatusManager.LOG);
 				}
+				messageOptionsExt.closeTrackedService();
 			}
 			if (nAdd > 0) {
 				String updateLabel = formatLabel(addClassPathLabel, nAdd, Boolean.FALSE);

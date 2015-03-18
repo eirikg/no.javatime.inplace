@@ -3,6 +3,7 @@ package no.javatime.inplace.extender;
 import no.javatime.inplace.extender.intface.BundleServiceScopeFactory;
 import no.javatime.inplace.extender.intface.Extender;
 import no.javatime.inplace.extender.intface.Extenders;
+import no.javatime.inplace.extender.intface.PrototypeServiceScopeFactory;
 import no.javatime.inplace.extender.provider.ExtenderBundleTracker;
 import no.javatime.inplace.extender.provider.ExtenderImpl;
 import no.javatime.inplace.extender.provider.ExtenderServiceListener;
@@ -25,6 +26,7 @@ import org.osgi.util.tracker.BundleTrackerCustomizer;
  * @see Extenders
  * @see ExtenderBundleTracker
  * @see BundleServiceScopeFactory
+ * @see PrototypeServiceScopeFactory
  */
 public class Activator implements BundleActivator {
 

@@ -1,8 +1,8 @@
-package no.javatime.inplace.region.manager;
+package no.javatime.inplace.region.intface;
 
 import no.javatime.inplace.extender.intface.Extender;
 import no.javatime.inplace.extender.intface.Extenders;
-import no.javatime.inplace.region.intface.BundleTransition;
+import no.javatime.inplace.region.manager.BundleTransitionImpl;
 
 import org.osgi.framework.Bundle;
 import org.osgi.framework.ServiceFactory;

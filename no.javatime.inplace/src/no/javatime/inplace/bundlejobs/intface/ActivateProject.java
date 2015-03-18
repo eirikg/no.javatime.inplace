@@ -8,17 +8,17 @@ import no.javatime.inplace.region.intface.InPlaceException;
 import org.eclipse.core.resources.IProject;
 
 /**
- * Activates project(s)by adding an internal nature and builder to project(s). The nature is
+ * Activates project(s) by adding an internal nature and builder to the project(s). The nature is
  * removed when a bundle is {@link Deactivate Deactivated}
  * <p>
  * Project dependency closures are calculated and added as pending projects to this service
  * according to the current dependency option. E.g. not activated projects providing capabilities to
  * an activated project are added to this service for activation.
  * <P>
- * If the option for adding bin to class path on update is switched on than the Bundle-ClassPath
- * header is inserted or updated if the bin entry is missing. If the activation policy option is
- * different from the current setting the Bundle-ActivationPolicy header is updated when the option
- * is set to "lazy" and removed if set to "eager".
+ * If the option "Update Bundle-ClassPath on Activate/Deactivate" is switched on than the default
+ * output folder is updated on the bundle class path if it is missing. If the activation policy
+ * option is different from the current setting the Bundle-ActivationPolicy header is updated when
+ * the option is set to "lazy" and removed if set to "eager".
  * <p>
  * This service does not alter the state of bundles. When a project is nature enabled the project is
  * per definition activated even if the bundle is not yet.
@@ -43,8 +43,8 @@ public interface ActivateProject extends BundleExecutor {
 	 * Activated projects are assigned an internal nature.
 	 * 
 	 * @param project to check for the activation
-	 * @return true if the specified project is activated, and false if the specified project is null,
-	 * if project is closed, non-existing or not nature enabled
+	 * @return true if the specified project is activated, and false if the specified project is
+	 * closed, non-existing or not activated (nature enabled)
 	 * @throws InPlaceException if the specified project is null, open but does not exist or a core
 	 * exception is thrown internally (should not be the case for open and existing projects)
 	 * @throws ExtenderException if the extender service to access project candidates to activate

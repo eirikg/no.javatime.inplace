@@ -22,6 +22,7 @@ import java.text.MessageFormat;
 public class ExtenderException extends RuntimeException {
 
 	private static final long serialVersionUID = -6632902141188744336L;
+	private boolean isNullPointer;
 	
 	public ExtenderException () {
 		super();	
@@ -60,6 +61,15 @@ public class ExtenderException extends RuntimeException {
 	public ExtenderException(String pattern, Object ... substitutions) {
 		super(format(pattern, substitutions));
 	}
+
+	public boolean isNullPointer() {
+		return isNullPointer;
+	}
+
+	public void setNullPointer(boolean isNullPointer) {
+		this.isNullPointer = isNullPointer;
+	}
+
 
 	/**
 	 * Formats a message based on a pattern to format using a list of substitutions

@@ -41,13 +41,6 @@ import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.osgi.util.NLS;
 import org.osgi.framework.Bundle;
 
-/**
- * Starts pending bundle projects with an initial state of INSTALLED, RESOLVED and STOPPING.
- * <p>
- * Calculate closure of bundles and add them as pending bundle projects to this job before the bundles are
- * started according to the current dependency option. Providing bundles to pending bundle projects are always
- * added as pending bundle projects before bundles are started.
- */
 public class StartJob extends BundleJob implements Start {
 
 	/** Standard name of a start job */
@@ -171,7 +164,7 @@ public class StartJob extends BundleJob implements Start {
 				notResolvedBundles.add(bundle);
 				// These comes from install and there should be no need to refresh
 			} else if ((state & (Bundle.INSTALLED)) != 0) {
-				Collection<Bundle> errorBundles = removeTransitionErrorClosures(bundlesToStart, null, null);
+				Collection<Bundle> errorBundles = removeTransitionErrorClosures(bundlesToStart);
 				if (null != errorBundles) {
 					String msg = ErrorMessage.getInstance().formatString("bundle_errors_start", bundleRegion.formatBundleList(errorBundles, false));
 					addError(null, msg);

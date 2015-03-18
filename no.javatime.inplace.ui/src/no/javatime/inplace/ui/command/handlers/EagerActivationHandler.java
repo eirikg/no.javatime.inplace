@@ -11,7 +11,7 @@
 package no.javatime.inplace.ui.command.handlers;
 
 import no.javatime.inplace.dl.preferences.intface.CommandOptions;
-import no.javatime.inplace.region.intface.InPlaceException;
+import no.javatime.inplace.extender.intface.ExtenderException;
 
 /**
  * Checked menu item to set activation policy to eager on bundle activation
@@ -21,17 +21,18 @@ public class EagerActivationHandler extends AbstractOptionsHandler {
 	public static String commandId = "no.javatime.inplace.command.eageractivation";
 
 	@Override
-	protected void storeValue(Boolean value) throws InPlaceException {
+	protected void storeValue(Boolean value) throws ExtenderException {
 
 		CommandOptions cmdStore = getOptionsService();
 		cmdStore.setIsEagerOnActivate(value);
 	}
 
 	@Override
-	protected boolean getStoredValue() throws InPlaceException {
+	protected boolean getStoredValue() throws ExtenderException {
 
 		CommandOptions cmdStore = getOptionsService();
-		return cmdStore.isEagerOnActivate();
+		boolean isEager = cmdStore.isEagerOnActivate();
+		return isEager;
 	}
 
 	@Override

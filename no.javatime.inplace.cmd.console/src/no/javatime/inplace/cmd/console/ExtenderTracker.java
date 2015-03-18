@@ -1,4 +1,4 @@
-package no.javatime.inplace.ui;
+package no.javatime.inplace.cmd.console;
 
 import java.util.Collection;
 import java.util.Dictionary;
@@ -9,22 +9,14 @@ import no.javatime.inplace.bundlejobs.intface.ExecutorServiceFactory;
 import no.javatime.inplace.bundlejobs.intface.Install;
 import no.javatime.inplace.bundlejobs.intface.Refresh;
 import no.javatime.inplace.bundlejobs.intface.Reset;
-import no.javatime.inplace.bundlejobs.intface.ResourceState;
 import no.javatime.inplace.bundlejobs.intface.Start;
 import no.javatime.inplace.bundlejobs.intface.Stop;
-import no.javatime.inplace.bundlejobs.intface.TogglePolicy;
 import no.javatime.inplace.bundlejobs.intface.Update;
-import no.javatime.inplace.bundlejobs.intface.UpdateBundleClassPath;
 import no.javatime.inplace.dl.preferences.intface.CommandOptions;
-import no.javatime.inplace.dl.preferences.intface.MessageOptions;
-import no.javatime.inplace.extender.intface.BundleServiceScopeFactory;
 import no.javatime.inplace.extender.intface.Extender;
 import no.javatime.inplace.extender.intface.ExtenderBundleTracker;
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.extender.intface.Extenders;
-import no.javatime.inplace.log.intface.BundleLogView;
-import no.javatime.inplace.pl.console.intface.BundleConsoleFactory;
-import no.javatime.inplace.pl.dependencies.intface.DependencyDialog;
 import no.javatime.inplace.region.intface.BundleCommand;
 import no.javatime.inplace.region.intface.BundleCommandServiceFactory;
 import no.javatime.inplace.region.intface.BundleProjectCandidates;
@@ -35,11 +27,7 @@ import no.javatime.inplace.region.intface.BundleRegion;
 import no.javatime.inplace.region.intface.BundleRegionServiceFactory;
 import no.javatime.inplace.region.intface.BundleTransition;
 import no.javatime.inplace.region.intface.BundleTransitionServiceFactory;
-import no.javatime.inplace.region.status.BundleStatus;
-import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
-import no.javatime.inplace.ui.msg.Msg;
 
-import org.eclipse.ui.statushandlers.StatusManager;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleEvent;
@@ -79,9 +67,8 @@ public class ExtenderTracker extends ExtenderBundleTracker {
 				track(bundle, Refresh.class.getName(), new ExecutorServiceFactory(headers.get(Refresh.REFRESH_BUNDLE_SERVICE)));
 				track(bundle, Update.class.getName(), new ExecutorServiceFactory(headers.get(Update.UPDATE_BUNDLE_SERVICE)));
 				track(bundle, Reset.class.getName(), new ExecutorServiceFactory(headers.get(Reset.RESET_BUNDLE_SERVICE)));
-				track(bundle, TogglePolicy.class.getName(), new ExecutorServiceFactory(headers.get(TogglePolicy.TOGGLE_POLICY_SERVICE)));
-				track(bundle, UpdateBundleClassPath.class.getName(), new ExecutorServiceFactory(headers.get(UpdateBundleClassPath.UPDATE_BUNDLE_CLASS_PATH_SERVICE)));
-				track(bundle, ResourceState.class.getName(), new BundleServiceScopeFactory<ResourceState>(headers.get(ResourceState.RESOURCE_STATE_SERVICE)));
+				//track(bundle, TogglePolicy.class.getName(), new ExecutorServiceFactory(headers.get(TogglePolicy.TOGGLE_POLICY_SERVICE)));
+				//track(bundle, UpdateBundleClassPath.class.getName(), new ExecutorServiceFactory(headers.get(UpdateBundleClassPath.UPDATE_BUNDLE_CLASS_PATH_SERVICE)));
 			}
 			serviceName = headers.get(BundleCommand.BUNDLE_COMMAND_SERVICE);
 			if (null != serviceName) {
@@ -95,26 +82,8 @@ public class ExtenderTracker extends ExtenderBundleTracker {
 			if (null != serviceName) {
 				track(bundle, CommandOptions.class.getName(), serviceName);
 			}
-			serviceName = headers.get(MessageOptions.MESSAGE_OPTIONS_SERVICE);
-			if (null != serviceName) {
-				track(bundle, MessageOptions.class.getName(),serviceName);
-			}
-			serviceName = headers.get(DependencyDialog.DEPENDENCY_DIALOG_SERVICE);
-			if (null != serviceName) {
-				track(bundle, DependencyDialog.class.getName(), serviceName);
-			}
-			serviceName = headers.get(BundleLogView.BUNDLE_LOG_VIEW_SERVICE);
-			if (null != serviceName) {
-				track(bundle, BundleLogView.class.getName(), serviceName);
-			}
-			serviceName = headers.get(BundleConsoleFactory.BUNDLE_CONSOLE_SERVICE);
-			if (null != serviceName) {
-				track(bundle, BundleConsoleFactory.class.getName(), serviceName);
-			}
 		} catch (ExtenderException | IllegalStateException e) {
-			StatusManager.getManager().handle(
-					new BundleStatus(StatusCode.WARNING, Activator.PLUGIN_ID, Msg.EXTENDER_NOT_AVAILABLE, e),
-					StatusManager.LOG);
+			e.printStackTrace();
 		}
 		return super.addingBundle(bundle, event);
 	}

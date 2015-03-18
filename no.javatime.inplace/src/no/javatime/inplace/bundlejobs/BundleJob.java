@@ -19,6 +19,7 @@ import java.util.Map;
 import java.util.concurrent.TimeoutException;
 
 import no.javatime.inplace.InPlace;
+import no.javatime.inplace.bundlejobs.intface.BundleExecutor;
 import no.javatime.inplace.dl.preferences.intface.CommandOptions;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
@@ -88,8 +89,6 @@ public class BundleJob extends JobStatus {
 	/** Name of the resolve operation */
 	final protected static String resolveTaskName = Message.getInstance().formatString(
 			"resolve_task_name");
-	/** Common family job name for all bundle jobs */
-	public static final String FAMILY_BUNDLE_LIFECYCLE = "BundleFamily";
 	/** Use the same rules as the build system */
 	public static final ISchedulingRule buildRule = ResourcesPlugin.getWorkspace().getRuleFactory()
 			.buildRule();
@@ -156,7 +155,7 @@ public class BundleJob extends JobStatus {
 	 */
 	@Override
 	public boolean belongsTo(Object family) {
-		if (family == FAMILY_BUNDLE_LIFECYCLE || family instanceof BundleJob) {
+		if (family == BundleExecutor.FAMILY_BUNDLE_LIFECYCLE || family instanceof BundleJob) {
 			return true;
 		}
 		return false;
@@ -379,10 +378,7 @@ public class BundleJob extends JobStatus {
 						IBundleStatus errStat = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg,
 								e);
 						msg = WarnMessage.getInstance().formatString("timeout_termination", bundle);
-						createMultiStatus(
-								errStat,
-								addWarning(null, msg,
-										bundleRegion.getProject(bundle)));
+						createMultiStatus(errStat, addWarning(null, msg, bundleRegion.getProject(bundle)));
 						stopCurrentBundleOperation(monitor);
 					} else if (null != cause && cause instanceof BundleException) {
 						stopCurrentBundleOperation(monitor);
@@ -469,10 +465,7 @@ public class BundleJob extends JobStatus {
 						IBundleStatus errStat = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg,
 								e);
 						msg = WarnMessage.getInstance().formatString("timeout_termination", bundle);
-						createMultiStatus(
-								errStat,
-								addWarning(null, msg,
-										bundleRegion.getProject(bundle)));
+						createMultiStatus(errStat, addWarning(null, msg, bundleRegion.getProject(bundle)));
 						stopCurrentBundleOperation(monitor);
 					} else if (null != cause && cause instanceof BundleException) {
 						stopCurrentBundleOperation(monitor);
@@ -486,8 +479,9 @@ public class BundleJob extends JobStatus {
 		}
 		return result;
 	}
+
 	// TODO use bundle command method instead
-	public static boolean isStateChanging() {
+	public boolean isStateChanging() {
 		Bundle bundle = InPlace.getBundleCommandService().getCurrentBundle();
 		if (null != bundle) {
 			return true;
@@ -536,8 +530,7 @@ public class BundleJob extends JobStatus {
 					}
 				}
 			} else {
-				String transitioNname = bundleTransition.getTransitionName(bundleRegion
-						.getProject(bundle));
+				String transitioNname = bundleTransition.getTransitionName(bundleRegion.getProject(bundle));
 				String msg = NLS.bind(Msg.FAILED_TO_GET_THREAD_INFO, bundle, transitioNname);
 				IBundleStatus status = new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, bundle, msg,
 						null);
@@ -599,8 +592,7 @@ public class BundleJob extends JobStatus {
 					}
 				}
 			} else {
-				String transitioNname = bundleTransition.getTransitionName(bundleRegion
-						.getProject(bundle));
+				String transitioNname = bundleTransition.getTransitionName(bundleRegion.getProject(bundle));
 				if (getOptionsService().isTimeOut()) {
 					String msg = NLS.bind(Msg.AFTER_TIMEOUT_STOP_TASK_INFO, new Object[] { bundle,
 							threadName, transitioNname });
@@ -683,28 +675,32 @@ public class BundleJob extends JobStatus {
 	}
 
 	/**
-	 * Finds and returns the dependency closure to resolve and/or refresh giving an initial set of
-	 * bundles.
+	 * Calculates the requiring dependency closure to refresh giving an initial set of bundles and a
+	 * scope that limits the set of requiring bundles
+	 * <p>
+	 * If bundles in the specified scope of bundles have the same symbolic name as any from the
+	 * specified initial set of bundles they are added to the requiring closure
 	 * 
 	 * @param bundles the initial set of bundles to calculate the dependency closure from
-	 * @return set of bundles to resolve and/or refresh including the specified initial set of bundles
+	 * @param bundleScope set of possible requiring bundles
+	 * @return set of bundles to refresh including the specified initial set of bundles or an empty set
+	 * @throws CircularReferenceException If cycles are detected in the bundle graph
+	 * @throws InPlaceException If failing to get the dependency options service
 	 */
-	public Collection<Bundle> getBundlesToResolve(Collection<Bundle> bundles) {
-		// return bundleCommand.getDependencyClosure(bundles);
-		BundleSorter bs = new BundleSorter();
-		Collection<Bundle> activatedBundles = bundleRegion.getActivatedBundles();
-		Collection<Bundle> bundlesToResolve = bs
-				.sortDeclaredRequiringBundles(bundles, activatedBundles);
-		// The resolver always include bundles with the same symbolic name in the resolve process
-		// TODO Add these when duplicates are detected. See who uses this method. NB -> Now excluded for
-		// update job
+	public Collection<Bundle> getBundlesToRefresh(Collection<Bundle> bundles,
+			Collection<Bundle> bundleScope) throws InPlaceException, CircularReferenceException {
+
+		BundleClosures bc = new BundleClosures();
+		Collection<Bundle> bundleClosure = bc.bundleDeactivation(Closure.REQUIRING, bundles,
+				bundleScope);
+		// The resolver always include bundles with the same symbolic name in the refresh process
 		Map<IProject, Bundle> duplicates = bundleRegion.getSymbolicNameDuplicates(
-				bundleRegion.getProjects(bundlesToResolve), activatedBundles, true);
+				bundleRegion.getProjects(bundleClosure), bundleScope, true);
 		if (duplicates.size() > 0) {
-			bundlesToResolve
-					.addAll(bs.sortDeclaredRequiringBundles(duplicates.values(), activatedBundles));
+			bundleClosure.addAll(bc.bundleDeactivation(Closure.REQUIRING, duplicates.values(), bundleScope)); 
 		}
-		return bundlesToResolve;
+		return bundleClosure;
+
 	}
 
 	/**
@@ -803,8 +799,8 @@ public class BundleJob extends JobStatus {
 	}
 
 	/**
-	 * Verify that the specified bundles have a valid standard binary entry in class path. BundleExecutor
-	 * that are missing a bin entry are tagged with {@code Transition.RESOLVE}.
+	 * Verify that the specified bundles have a valid standard binary entry in class path.
+	 * BundleExecutor that are missing a bin entry are tagged with {@code Transition.RESOLVE}.
 	 * 
 	 * @param bundles to check for a valid bin entry in class path
 	 * @return status object describing the result of checking the class path with
@@ -824,8 +820,7 @@ public class BundleJob extends JobStatus {
 			try {
 				if ((bundle.getState() & (Bundle.RESOLVED | Bundle.STOPPING | Bundle.STARTING)) != 0) {
 					// Check for the output folder path in the cached version of the bundle
-					IPath path = bundleProjectMeta.getDefaultOutputFolder(bundleRegion
-							.getProject(bundle));
+					IPath path = bundleProjectMeta.getDefaultOutputFolder(bundleRegion.getProject(bundle));
 					if (!bundleProjectMeta.verifyPathInCachedClassPath(bundle, path)) {
 						if (null == errorBundles) {
 							bs = new BundleSorter();
@@ -902,21 +897,27 @@ public class BundleJob extends JobStatus {
 					bundleProjectMeta.setDevClasspath(project);
 				}
 			} catch (InPlaceException e) {
-				String msg = ExceptionMessage.getInstance().formatString("error_resolve_class_path", project.getName());
+				String msg = ExceptionMessage.getInstance().formatString("error_resolve_class_path",
+						project.getName());
 				result = addError(e, msg);
 			}
 			if (getOptionsService().isUpdateDefaultOutPutFolder()) {
 				bundleProjectMeta.addDefaultOutputFolder(project);
 			}
 		} catch (InPlaceException e) {
-			String msg = ExceptionMessage.getInstance().formatString("error_resolve_class_path", project.getName());
+			String msg = ExceptionMessage.getInstance().formatString("error_resolve_class_path",
+					project.getName());
 			result = addError(e, msg);
 		}
 		return result;
 	}
-
-	public Collection<Bundle> removeTransitionErrorClosures(Collection<Bundle> initialBundleSet,
-			Collection<Bundle> bDepClosures, Collection<IProject> pDepClosures) {
+	/**
+	 * Remove all bundles from the specified set of bundles tagged with a transition error and their providing bundles
+	 *  
+	 * @param initialBundleSet set of bundles to remove transition errors from
+	 * @return reduced set of the specified initial set without bundles with transition errors and their providing bundles 
+	 */
+	public Collection<Bundle> removeTransitionErrorClosures(Collection<Bundle> initialBundleSet) {
 
 		BundleSorter bs = new BundleSorter();
 		Collection<Bundle> workspaceBundles = bundleRegion.getActivatedBundles();
@@ -936,12 +937,6 @@ public class BundleJob extends JobStatus {
 			}
 		}
 		if (null != bundles) {
-			if (null != pDepClosures) {
-				pDepClosures.removeAll(bundleRegion.getProjects(bundles));
-			}
-			if (null != bDepClosures) {
-				bDepClosures.removeAll(bundles);
-			}
 			initialBundleSet.removeAll(bundles);
 		}
 		return bundles;
@@ -982,8 +977,7 @@ public class BundleJob extends JobStatus {
 					bundleTransition.setTransitionError(duplicateProject, TransitionError.DUPLICATE);
 					DuplicateBundleException duplicateBundleException = new DuplicateBundleException(
 							"duplicate_of_ws_bundle", duplicateProject.getName(),
-							bundleProjectMeta.getSymbolicName(duplicateProject1),
-							duplicateProject1.getLocation());
+							bundleProjectMeta.getSymbolicName(duplicateProject1), duplicateProject1.getLocation());
 					handleDuplicateException(duplicateProject, duplicateBundleException, message);
 					Collection<IProject> requiringProjects = ps.sortRequiringProjects(Collections
 							.<IProject> singletonList(duplicateProject));
@@ -1205,15 +1199,15 @@ public class BundleJob extends JobStatus {
 	public void execute() {
 		super.schedule(0L);
 	}
-	
-	public void joinBundleExecutor() throws InterruptedException{
-	 super.join();	
+
+	public void joinBundleExecutor() throws InterruptedException {
+		super.join();
 	}
-	
-	public WorkspaceJob getJob () {
+
+	public WorkspaceJob getJob() {
 		return this;
 	}
-	
+
 	/**
 	 * Debug for synchronizing the progress monitor. Default number of mills to sleep
 	 */

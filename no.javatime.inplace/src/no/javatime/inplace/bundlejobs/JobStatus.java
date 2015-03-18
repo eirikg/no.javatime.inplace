@@ -51,9 +51,9 @@ public class JobStatus extends WorkspaceJob implements BundleTransitionEventList
 	final protected BundleCommand bundleCommand = InPlace.getBundleCommandService();
 	final protected BundleTransition bundleTransition = InPlace.getBundleTransitionService();
 	final protected BundleRegion bundleRegion = InPlace.getBundleRegionService();
-	final protected BundleProjectCandidates bundleProjectCandidates = InPlace.getBundleProjectCandidatesService();
-	final protected BundleProjectMeta bundleProjectMeta = InPlace
-			.getbundlePrrojectMetaService();
+	final protected BundleProjectCandidates bundleProjectCandidates = InPlace
+			.getBundleProjectCandidatesService();
+	final protected BundleProjectMeta bundleProjectMeta = InPlace.getbundlePrrojectMetaService();
 
 	/**
 	 * Construct a job with the name of the job to run
@@ -107,48 +107,55 @@ public class JobStatus extends WorkspaceJob implements BundleTransitionEventList
 		try {
 			switch (transition) {
 			case RESOLVE:
-				addLogStatus(Msg.RESOLVE_BUNDLE_OP_TRACE, new Object[] { bundle.getSymbolicName() }, bundle);
+				addLogStatus(Msg.RESOLVE_BUNDLE_OP_TRACE, new Object[] { bundle }, bundle);
 				break;
 			case UNRESOLVE:
-				addLogStatus(Msg.UNRESOLVE_BUNDLE_OP_TRACE, new Object[] { bundle.getSymbolicName() },
-						bundle);
+				addLogStatus(Msg.UNRESOLVE_BUNDLE_OP_TRACE, new Object[] { bundle }, bundle);
 				break;
 			case UPDATE:
-				addLogStatus(Msg.UPDATE_BUNDLE_OP_TRACE, new Object[] { bundle.getSymbolicName() }, bundle);
+				addLogStatus(Msg.UPDATE_BUNDLE_OP_TRACE, new Object[] { bundle }, bundle);
 				break;
 			case REFRESH:
-				addLogStatus(Msg.REFRESH_BUNDLE_OP_TRACE, new Object[] { bundle.getSymbolicName() }, bundle);
+				addLogStatus(Msg.REFRESH_BUNDLE_OP_TRACE, new Object[] { bundle }, bundle);
 				break;
 			case START:
 				if (bundleProjectMeta.getCachedActivationPolicy(bundle)) {
 					addLogStatus(Msg.ON_DEMAND_BUNDLE_START_OP_TRACE,
-							new Object[] { bundle.getSymbolicName() }, bundle);
+							new Object[] { bundle }, bundle);
 				} else {
 					addLogStatus(
 							Msg.START_BUNDLE_OP_TRACE,
-							new Object[] { bundle.getSymbolicName(),
+							new Object[] { bundle,
 									Long.toString(bundleCommand.getExecutionTime()) }, bundle);
 				}
 				break;
 			case STOP:
 				addLogStatus(
 						Msg.STOP_BUNDLE_OP_TRACE,
-						new Object[] { bundle.getSymbolicName(),
+						new Object[] { bundle,
 								Long.toString(bundleCommand.getExecutionTime()) }, bundle);
 				break;
 			case UNINSTALL:
-				addLogStatus(Msg.UNINSTALL_BUNDLE_OP_TRACE,
-						new Object[] { bundle.getSymbolicName(), bundle.getLocation() }, bundle);
+				String locUninstMsg = NLS.bind(Msg.BUNDLE_LOCATION_TRACE, bundle.getLocation());
+				IBundleStatus uninstStatus = new BundleStatus(StatusCode.INFO, bundle, project, locUninstMsg, null);
+				String uninstMsg = NLS.bind(Msg.UNINSTALL_BUNDLE_OP_TRACE, new Object[] { bundle.getSymbolicName(), bundle.getBundleId() });
+				IBundleStatus multiUninstStatus = new BundleStatus(StatusCode.INFO, bundle, project, uninstMsg, null);					
+				multiUninstStatus.add(uninstStatus);
+				addLogStatus(multiUninstStatus);
 				break;
 			case INSTALL:
 				// If null, the bundle project probably failed to install
 				if (null != bundle) {
-					addLogStatus(Msg.INSTALL_BUNDLE_OP_TRACE,
-							new Object[] { bundle.getSymbolicName(), bundle.getLocation() }, bundle);
+					String locInstMsg = NLS.bind(Msg.BUNDLE_LOCATION_TRACE, bundle.getLocation());
+					IBundleStatus instStatus = new BundleStatus(StatusCode.INFO, bundle, project, locInstMsg, null);
+					String instMsg = NLS.bind(Msg.INSTALL_BUNDLE_OP_TRACE, new Object[] { bundle.getSymbolicName(), bundle.getBundleId() });
+					IBundleStatus multiInstStatus = new BundleStatus(StatusCode.INFO, bundle, project, instMsg, null);					
+					multiInstStatus.add(instStatus);
+					addLogStatus(multiInstStatus);
 				}
 				break;
 			case LAZY_ACTIVATE:
-				addLogStatus(Msg.LAZY_ACTIVATE_BUNDLE_OP_TRACE, new Object[] { bundle.getSymbolicName(),
+				addLogStatus(Msg.LAZY_ACTIVATE_BUNDLE_OP_TRACE, new Object[] { bundle,
 						bundleCommand.getStateName(bundle) }, bundle);
 				break;
 			case UPDATE_CLASSPATH:
@@ -188,22 +195,22 @@ public class JobStatus extends WorkspaceJob implements BundleTransitionEventList
 			case REMOVE_PROJECT:
 				// Do not test for nature. Project files are not accessible at this point
 				String remActivated = bundleRegion.isBundleActivated(project) ? "activated" : "deactivated";
-				addLogStatus(Msg.REMOVE_PROJECT_OP_TRACE, new Object[] { remActivated,
-						project.getName() }, project);			
+				addLogStatus(Msg.REMOVE_PROJECT_OP_TRACE, new Object[] { remActivated, project.getName() },
+						project);
 				break;
 			case NEW_PROJECT: {
-				final Extension<ActivateProject> activateExtension = Extenders.getExtension(
-						ActivateProject.class.getName());
+				final Extension<ActivateProject> activateExtension = Extenders
+						.getExtension(ActivateProject.class.getName());
 				ActivateProject activate = activateExtension.getService();
 				String addActivated = activate.isProjectActivated(project) ? "activated" : "deactivated";
-				addLogStatus(Msg.ADD_PROJECT_OP_TRACE, new Object[] { addActivated,
-						project.getName() }, project);
+				addLogStatus(Msg.ADD_PROJECT_OP_TRACE, new Object[] { addActivated, project.getName() },
+						project);
 				break;
 			}
 			default:
 				break;
 			}
-		} catch (InPlaceException e) {		
+		} catch (InPlaceException e) {
 			addLogStatus(new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, project,
 					Msg.LOG_TRACE_EXP, e));
 		} catch (NullPointerException e) {
@@ -292,7 +299,6 @@ public class JobStatus extends WorkspaceJob implements BundleTransitionEventList
 	public IBundleStatus addLogStatus(String key, Object[] substitutions, Object bundleProject) {
 		Bundle bundle = null;
 		IProject project = null;
-		;
 		if (null != bundleProject) {
 			if (bundleProject instanceof Bundle) {
 				bundle = (Bundle) bundleProject;
@@ -314,12 +320,10 @@ public class JobStatus extends WorkspaceJob implements BundleTransitionEventList
 	 * @return the newly created error status object with an exception, a message and a bundle object
 	 */
 	public IBundleStatus addError(Throwable e, String message, Bundle bundle) {
-		IBundleStatus status = new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID, bundle, message,
-				e);
+		IBundleStatus status = new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID, bundle, message, e);
 		this.errStatusList.add(status);
 		try {
-			bundleTransition
-					.setTransitionError(bundleRegion.getProject(bundle));
+			bundleTransition.setTransitionError(bundleRegion.getProject(bundle));
 		} catch (ProjectLocationException locEx) {
 			errorSettingTransition(bundleRegion.getProject(bundle), locEx);
 		}

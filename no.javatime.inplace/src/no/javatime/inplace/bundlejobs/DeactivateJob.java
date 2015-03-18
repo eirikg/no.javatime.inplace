@@ -42,19 +42,6 @@ import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.osgi.util.NLS;
 import org.osgi.framework.Bundle;
 
-/**
- * Projects are deactivated by removing the JavaTime nature from the projects and moving them to
- * state INSTALLED in an activated workspace and state UNINSTALLED in a deactivated workspace.
- * <p>
- * If the workspace is deactivated (that is when the last bundle in the workspace is deactivated)
- * all bundles are moved to state UNINSTALLED.
- * <p>
- * Calculate closure of projects and add them as pending projects to this job before the projects
- * are deactivated according to the current dependency option.
- * 
- * @see no.javatime.inplace.bundlejobs.ActivateProjectJob
- * @see no.javatime.inplace.bundlejobs.ActivateBundleJob
- */
 public class DeactivateJob extends NatureJob implements Deactivate {
 
 	/** Standard name of an deactivate job */
@@ -217,7 +204,7 @@ public class DeactivateJob extends NatureJob implements Deactivate {
 		// Collection<IProject> pendingProjects = closure.projectDeactivation(getPendingProjects(), true);
 
 		resetPendingProjects(bundleRegion.getProjects(pendingBundles));
-		if (InPlace.get().getMsgOpt().isBundleOperations() && isCheckBuildErrors()) {
+		if (isCheckBuildErrors()) {
 			deactivateBuildErrorClosure(getPendingProjects());
 		}
 		
@@ -227,7 +214,6 @@ public class DeactivateJob extends NatureJob implements Deactivate {
 			InPlace.get().savePluginSettings(true, true);
 		}
 		if (activatedBundles.size() <= pendingBundles.size()) {
-//		if (BundleProjectCandidatesImpl.INSTANCE.getNatureEnabledProjects().size() <= pendingProjects()) {
 			// This is the last project(s) to deactivate, move all bundles to state uninstalled
 			Collection<Bundle> allBundles = bundleRegion.getBundles();
 			allBundles = closure.bundleDeactivation(allBundles, allBundles);
@@ -252,7 +238,7 @@ public class DeactivateJob extends NatureJob implements Deactivate {
 				Map<IProject, Bundle> duplicates = bundleRegion.getSymbolicNameDuplicates(
 						getPendingProjects(), bundleRegion.getActivatedBundles(), true);
 				Collection<Bundle> bundlesToRestart = null;
-				Collection<Bundle> bundlesToResolve = null;
+				Collection<Bundle> bundlesToRefresh = null;
 				if (duplicates.size() > 0) {
 					for (Bundle bundle : duplicates.values()) {
 						if ((bundle.getState() & (Bundle.ACTIVE | Bundle.STARTING)) != 0) {
@@ -261,11 +247,11 @@ public class DeactivateJob extends NatureJob implements Deactivate {
 							}
 							bundlesToRestart.add(bundle);
 						} else if ((bundle.getState() & (Bundle.RESOLVED | Bundle.STOPPING)) != 0) {
-							if (null != bundlesToResolve) {
-								bundlesToResolve = new LinkedHashSet<Bundle>();
+							if (null != bundlesToRefresh) {
+								bundlesToRefresh = new LinkedHashSet<Bundle>();
 							}
-							bundlesToResolve.addAll(getBundlesToResolve(Collections
-									.<Bundle> singletonList(bundle)));
+							bundlesToRefresh.addAll(getBundlesToRefresh(Collections
+									.<Bundle> singletonList(bundle), activatedBundles));
 						}
 					}
 					stop(bundlesToRestart, Closure.REQUIRING, new SubProgressMonitor(monitor, 1));
@@ -277,8 +263,8 @@ public class DeactivateJob extends NatureJob implements Deactivate {
 				stop(pendingBundles, null, new SubProgressMonitor(monitor, 1));
 				deactivateNature(getPendingProjects(), new SubProgressMonitor(monitor, 1));
 				// Nature removed from projects, set all bundles to a deactivated status
-				if (null != bundlesToResolve) {
-					pendingBundles.addAll(bundlesToResolve);
+				if (null != bundlesToRefresh) {
+					pendingBundles.addAll(bundlesToRefresh);
 				}
 				// Deactivated bundles will not be resolved (rejected by the resolver hook) during refresh
 				// and thus enter state INSTALLED

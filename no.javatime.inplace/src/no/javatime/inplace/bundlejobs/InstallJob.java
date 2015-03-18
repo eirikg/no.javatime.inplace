@@ -14,8 +14,8 @@ import java.util.Collection;
 import java.util.Collections;
 
 import no.javatime.inplace.InPlace;
+import no.javatime.inplace.bundlejobs.events.BundleJobManager;
 import no.javatime.inplace.bundlejobs.intface.Install;
-import no.javatime.inplace.bundlemanager.BundleJobManager;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.msg.Msg;
@@ -42,15 +42,6 @@ import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.osgi.util.NLS;
 import org.osgi.framework.Bundle;
 
-/**
- * Installs pending projects in state UNINSTALLED. Installed bundle projects are moved to state
- * INSTALLED.
- * <p>
- * If this is the first set of pending projects to install, all candidate bundle projects in the
- * workspace are installed. Otherwise only the pending projects are installed.
- * 
- * @see no.javatime.inplace.bundlejobs.UninstallJob
- */
 public class InstallJob extends NatureJob implements Install {
 
 	/** Standard name of an install job */

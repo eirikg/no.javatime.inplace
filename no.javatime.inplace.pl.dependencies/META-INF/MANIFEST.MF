@@ -8,8 +8,7 @@ Dependency-Dialog-Service: no.javatime.inplace.pl.dependencies.impl.Depende
 Bundle-Name: Dependencies
 Bundle-Activator: no.javatime.inplace.pl.dependencies.Activator
 Bundle-ManifestVersion: 2
-Import-Package: no.javatime.inplace.bundlemanager,
- no.javatime.inplace.dl.preferences.intface,
+Import-Package: no.javatime.inplace.dl.preferences.intface,
  no.javatime.inplace.extender.intface,
  no.javatime.inplace.region.intface
 Bundle-SymbolicName: no.javatime.inplace.pl.dependencies;singleton:=true

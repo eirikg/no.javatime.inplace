@@ -11,32 +11,29 @@
 package no.javatime.inplace.ui.command.handlers;
 
 import java.util.Collection;
+import java.util.LinkedHashSet;
 
-import no.javatime.inplace.bundlejobs.ActivateProjectJob;
-import no.javatime.inplace.bundlejobs.BundleJob;
-import no.javatime.inplace.bundlejobs.DeactivateJob;
-import no.javatime.inplace.bundlejobs.InstallJob;
-import no.javatime.inplace.bundlejobs.RefreshJob;
-import no.javatime.inplace.bundlejobs.ResetJob;
-import no.javatime.inplace.bundlejobs.StartJob;
-import no.javatime.inplace.bundlejobs.StopJob;
-import no.javatime.inplace.bundlejobs.TogglePolicyJob;
-import no.javatime.inplace.bundlejobs.UpdateBundleClassPathJob;
-import no.javatime.inplace.bundlejobs.UpdateScheduler;
-import no.javatime.inplace.bundlemanager.BundleJobManager;
-import no.javatime.inplace.dialogs.SaveProjectHandler;
-import no.javatime.inplace.extender.intface.Extender;
+import no.javatime.inplace.bundlejobs.events.BundleJobManager;
+import no.javatime.inplace.bundlejobs.intface.ActivateProject;
+import no.javatime.inplace.bundlejobs.intface.Deactivate;
+import no.javatime.inplace.bundlejobs.intface.Install;
+import no.javatime.inplace.bundlejobs.intface.Refresh;
+import no.javatime.inplace.bundlejobs.intface.Reset;
+import no.javatime.inplace.bundlejobs.intface.ResourceState;
+import no.javatime.inplace.bundlejobs.intface.Start;
+import no.javatime.inplace.bundlejobs.intface.Stop;
+import no.javatime.inplace.bundlejobs.intface.TogglePolicy;
+import no.javatime.inplace.bundlejobs.intface.Update;
+import no.javatime.inplace.bundlejobs.intface.UpdateBundleClassPath;
 import no.javatime.inplace.extender.intface.ExtenderException;
-import no.javatime.inplace.extender.intface.Extenders;
 import no.javatime.inplace.extender.intface.Extension;
 import no.javatime.inplace.log.intface.BundleLogView;
 import no.javatime.inplace.pl.console.intface.BundleConsoleFactory;
 import no.javatime.inplace.pl.dependencies.intface.DependencyDialog;
 import no.javatime.inplace.region.intface.BundleProjectCandidates;
-import no.javatime.inplace.region.intface.BundleTransition.Transition;
-import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.ui.Activator;
 import no.javatime.inplace.ui.command.contributions.BundleCommandsContributionItems;
+import no.javatime.inplace.ui.msg.Msg;
 import no.javatime.inplace.ui.views.BundleProperties;
 import no.javatime.inplace.ui.views.BundleView;
 import no.javatime.util.messages.Category;
@@ -49,6 +46,7 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.WorkspaceJob;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.ui.IPackagesViewPart;
@@ -75,81 +73,107 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 	 * Schedules an installation job for the specified projects
 	 * 
 	 * @param projects to install
+	 * @throws ExtenderException if failing to get the extender or the service for this bundle
+	 * operation
 	 */
-	protected void installHandler(Collection<IProject> projects) {
+	protected void installHandler(Collection<IProject> projects) throws ExtenderException {
 
-		InstallJob installJob = new InstallJob(InstallJob.installJobName, projects);
-		jobHandler(installJob);
+		Extension<Install> installExt = Activator.getExtension(Install.class.getName());
+		Install install = installExt.getTrackedService();
+		install.addPendingProjects(projects);
+		jobHandler(install.getJob());
+		installExt.closeTrackedService();
 	}
 
 	/**
-	 * Schedule an activate project job for the specified projects. An activate project job enables
-	 * the JavaTime nature for the specified projects
+	 * Schedule an activate project job for the specified projects.
 	 * 
 	 * @param projects to activate
+	 * @throws ExtenderException if failing to get the extender or the service for this bundle
+	 * operation
 	 */
-	static public void activateProjectHandler(Collection<IProject> projects) {
+	static public void activateProjectHandler(Collection<IProject> projects) throws ExtenderException {
 
-		SaveProjectHandler so = new SaveProjectHandler();
-		if (so.saveModifiedFiles()) {
-			SaveProjectHandler.waitOnBuilder();
-			ActivateProjectJob activateJob = null;
-			if (Activator.getBundleRegionService().getActivatedProjects().size() > 0) {
-				activateJob = new ActivateProjectJob(ActivateProjectJob.activateProjectJobName, projects);
-			} else {
-				activateJob = new ActivateProjectJob(ActivateProjectJob.activateWorkspaceJobName, projects);
-			}
-			jobHandler(activateJob);
+		Extension<ActivateProject> activateProjectExt = Activator
+				.getExtension(ActivateProject.class.getName());
+		ActivateProject activateproject = activateProjectExt.getTrackedService();
+		if (Activator.getBundleRegionService().getActivatedProjects().size() == 0) {
+			activateproject.getJob().setName(Msg.ACTIVATE_WORKSPACE_JOB);
 		}
+		activateproject.addPendingProjects(projects);
+		jobHandler(activateproject.getJob());
+		activateProjectExt.closeTrackedService();
 	}
 
 	/**
 	 * Schedules a deactivate job for the specified bundle projects
 	 * 
 	 * @param projects to deactivate
+	 * @throws ExtenderException if failing to get the extender or the service for this bundle
+	 * operation
 	 */
-	static public void deactivateHandler(Collection<IProject> projects) {
+	static public void deactivateHandler(Collection<IProject> projects) throws ExtenderException {
 
-		DeactivateJob deactivateJob = null;
-		if (Activator.getBundleRegionService().getActivatedProjects().size() <= projects.size()) {
-			deactivateJob = new DeactivateJob(DeactivateJob.deactivateWorkspaceJobName, projects);
+		Extension<Deactivate> deactivateExtender = Activator.getExtension(Deactivate.class
+				.getName());
+		Deactivate deactivate = deactivateExtender.getTrackedService();
+		if (Activator.getBundleRegionService().getActivatedProjects().size() <= projects
+				.size()) {
+			deactivate.getJob().setName(Msg.DEACTIVATE_WORKSPACE_JOB);
 		} else {
-			deactivateJob = new DeactivateJob(DeactivateJob.deactivateJobName, projects);
+			deactivate.getJob().setName(Msg.DEACTIVATE_JOB);
 		}
-		jobHandler(deactivateJob);
+		deactivate.addPendingProjects(projects);
+		jobHandler(deactivate.getJob());
+		deactivateExtender.closeTrackedService();
 	}
 
 	/**
 	 * Schedules a start job for the specified bundle projects.
 	 * 
 	 * @param projects of bundle projects to start
+	 * @throws ExtenderException if failing to get the extender or the service for this bundle
+	 * operation
 	 */
-	static public void startHandler(Collection<IProject> projects) {
+	static public void startHandler(Collection<IProject> projects) throws ExtenderException {
 
-		StartJob startJob = new StartJob(StartJob.startJobName, projects);
-		jobHandler(startJob);
+		Extension<Start> startExt = Activator.getExtension(Start.class.getName());
+		Start start = startExt.getTrackedService();
+		start.addPendingProjects(projects);
+		jobHandler(start.getJob());
+		startExt.closeTrackedService();
 	}
 
 	/**
 	 * Schedules a stop job for the specified projects
 	 * 
 	 * @param projects of bundle projects to stop
+	 * @throws ExtenderException if failing to get the extender or the service for this bundle
+	 * operation
 	 */
-	static public void stopHandler(Collection<IProject> projects) {
+	static public void stopHandler(Collection<IProject> projects) throws ExtenderException {
 
-		StopJob stopJob = new StopJob(StopJob.stopJobName, projects);
-		jobHandler(stopJob);
+		Extension<Stop> stopExt = Activator.getExtension(Stop.class.getName());
+		Stop stop = stopExt.getTrackedService();
+		stop.addPendingProjects(projects);
+		jobHandler(stop.getJob());
+		stopExt.closeTrackedService();
 	}
 
 	/**
 	 * Schedules a refresh job for the specified projects
 	 * 
 	 * @param projects of bundle projects to refresh
+	 * @throws ExtenderException if failing to get the extender or the service for this bundle
+	 * operation
 	 */
-	static public void refreshHandler(Collection<IProject> projects) {
+	static public void refreshHandler(Collection<IProject> projects) throws ExtenderException {
 
-		RefreshJob refreshJob = new RefreshJob(RefreshJob.refreshJobName, projects);
-		jobHandler(refreshJob);
+		Extension<Refresh> refreshExt = Activator.getExtension(Refresh.class.getName());
+		Refresh refresh = refreshExt.getTrackedService();
+		refresh.addPendingProjects(projects);
+		jobHandler(refresh.getJob());
+		refreshExt.closeTrackedService();
 	}
 
 	/**
@@ -157,17 +181,38 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 	 * <p>
 	 * A pending update transition is added to each of the specified bundle projects.
 	 * <p>
-	 * If any of the specified bundle projects are members in any build error closure they will not
+	 * If any of the specified bundle projects are members in any build error closure they will not by
 	 * updated.
+	 * <p>
+	 * Changed but not saved (dirty) projects is saved before this update is scheduled, but they are
+	 * excluded from update if the "Update on Build" option is on. The saved projects will
+	 * automatically be triggered for update by the internal post build listener. As a consequence if
+	 * all projects are dirty and "Update on Build" is on no update job is scheduled.
 	 * 
 	 * @param projects bundle projects to update
+	 * @throws ExtenderException if failing to get the extender or the service for this bundle
+	 * operation
 	 */
-	static public void updateHandler(Collection<IProject> projects) {
+	static public void updateHandler(Collection<IProject> projects) throws ExtenderException {
 
-		for (IProject project : projects) {
-			Activator.getBundleTransitionService().addPending(project, Transition.UPDATE);
+		ResourceState resourceState = Activator.getResourceStateService();
+		Collection<IProject> copyProjects = new LinkedHashSet<>(projects);
+		Collection<IProject> dirtyProjects = resourceState.getDirtyProjects();
+		if (resourceState.saveModifiedFiles()) {
+			if (Activator.getCommandOptionsService().isUpdateOnBuild()
+					&& dirtyProjects.size() > 0) {
+				copyProjects.removeAll(dirtyProjects);
+			}
+			if (copyProjects.size() > 0) {
+				resourceState.waitOnBuilder();
+				Extension<Update> updateExt = Activator.getExtension(Update.class.getName());
+				Update update = updateExt.getTrackedService();
+				update.addUpdateTransition(copyProjects);
+				update.addPendingProjects(copyProjects);
+				BundleJobManager.addBundleJob(update.getJob(), 0);
+				updateExt.closeTrackedService();
+			}
 		}
-		UpdateScheduler.scheduleUpdateJob(projects, 0);
 	}
 
 	/**
@@ -175,15 +220,16 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 	 * bundle job in sequence.
 	 * 
 	 * @param projects to reset
+	 * @throws ExtenderException if failing to get the extender or the service for this bundle
+	 * operation
 	 */
-	static public void resetHandler(final Collection<IProject> projects) {
+	static public void resetHandler(final Collection<IProject> projects) throws ExtenderException {
 
-		SaveProjectHandler so = new SaveProjectHandler();
-		if (so.saveModifiedFiles()) {
-			SaveProjectHandler.waitOnBuilder();
-			ResetJob resetJob = new ResetJob(ResetJob.resetJobName, projects);
-			jobHandler(resetJob);
-		}
+		Extension<Reset> resetExt = Activator.getExtension(Reset.class.getName());
+		Reset reset = resetExt.getTrackedService();
+		reset.addPendingProjects(projects);
+		jobHandler(reset.getJob());
+		resetExt.closeTrackedService();
 	}
 
 	/**
@@ -191,9 +237,9 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 	 */
 	protected void interruptHandler() {
 
-		SaveProjectHandler so = new SaveProjectHandler();
-		if (so.saveModifiedFiles()) {
-			BundleJob job = SaveProjectHandler.getRunningBundleJob();
+		ResourceState resourceState = Activator.getResourceStateService();
+		if (resourceState.saveModifiedFiles()) {
+			Job job = resourceState.getRunningBundleJob();
 			if (null != job) {
 				Thread thread = job.getThread();
 				if (null != thread) {
@@ -211,21 +257,24 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 	 * If the option for terminating endless start and stop operations is set to time out, the
 	 * operation will be terminated automatically on time out
 	 * 
-	 * @throws InPlaceException if failing to get the command options service
+	 * @throws ExtenderException if failing to get the stop or command options service
 	 */
-	protected void stopOperationHandler() throws InPlaceException {
+	protected void stopOperationHandler() throws ExtenderException {
 
-		SaveProjectHandler so = new SaveProjectHandler();
-		if (so.saveModifiedFiles()) {
+		final ResourceState resourceState = Activator.getResourceStateService();
+		if (resourceState.saveModifiedFiles()) {
 			Activator.getDisplay().asyncExec(new Runnable() {
 				@Override
 				public void run() {
-					if (!Activator.getDefault().getCommandOptionsService().isTimeOut()) {
-						BundleJob job = SaveProjectHandler.getRunningBundleJob();
-						if (null != job && BundleJob.isStateChanging()) {
-							job.stopCurrentBundleOperation(new NullProgressMonitor());
+					Extension<Stop> stopExt = Activator.getExtension(Stop.class.getName());
+					Stop stop = stopExt.getTrackedService();
+					if (!Activator.getCommandOptionsService().isTimeOut()) {
+						Job job = resourceState.getRunningBundleJob();
+						if (null != job && stop.isStateChanging()) {
+							stop.stopCurrentBundleOperation(new NullProgressMonitor());
 						}
 					}
+					stopExt.closeTrackedService();
 				}
 			});
 		}
@@ -235,15 +284,16 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 	 * Toggles between lazy and eager activation
 	 * 
 	 * @param projects of bundles containing the activation policy
+	 * @throws ExtenderException if failing to get the extender or the service for this bundle
+	 * operation
 	 */
-	protected void policyHandler(final Collection<IProject> projects) {
+	protected void policyHandler(final Collection<IProject> projects) throws ExtenderException {
 
-		SaveProjectHandler so = new SaveProjectHandler();
-		if (so.saveModifiedFiles()) {
-			SaveProjectHandler.waitOnBuilder();
-			TogglePolicyJob pj = new TogglePolicyJob(TogglePolicyJob.policyJobName, projects);
-			BundleJobManager.addBundleJob(pj, 0);
-		}
+		Extension<TogglePolicy> policyExt = Activator.getExtension(TogglePolicy.class.getName());
+		TogglePolicy policy = policyExt.getTrackedService();
+		policy.addPendingProjects(projects);
+		jobHandler(policy.getJob());
+		policyExt.closeTrackedService();
 	}
 
 	/**
@@ -252,39 +302,19 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 	 * 
 	 * @param projects to update the default output folder of
 	 * @param addToPath add default output folder if true and remove default output folder if false
+	 * @throws ExtenderException if failing to get the extender or the service for this bundle
+	 * operation
 	 */
 	public static void updateClassPathHandler(final Collection<IProject> projects,
-			final boolean addToPath) {
+			final boolean addToPath) throws ExtenderException {
 
-		SaveProjectHandler so = new SaveProjectHandler();
-		if (so.saveModifiedFiles()) {
-			SaveProjectHandler.waitOnBuilder();
-			UpdateBundleClassPathJob updBundleClasspath = new UpdateBundleClassPathJob(
-					UpdateBundleClassPathJob.updateBundleClassJobName, projects);
-			updBundleClasspath.setAddToPath(addToPath);
-			BundleJobManager.addBundleJob(updBundleClasspath, 0);
-		}
-	}
-
-	/**
-	 * Displays the closure options dependency dialog
-	 * 
-	 * @throws ExtenderException if failing to get the extender for the bundle console view
-	 * @throws InPlaceException if failing to get the extension service for the bundle console view
-	 */
-	protected void dependencyDialogHandler() throws InPlaceException, ExtenderException {
-
-		// Exploring the extender service and introspection. May be replaced by the other code in this
-		// method.
-		// DependencyDialogExtension depService = new DependencyDialogExtension();
-		// depService.open();
-		Extender<DependencyDialog> depExt = Extenders.getExtender(DependencyDialog.class.getName());
-		DependencyDialog depService = depExt.getService();
-		if (null == depService) {
-			throw new InPlaceException("failed_to_get_service_for_interface",
-					DependencyDialog.class.getName());
-		}
-		depService.open();
+		Extension<UpdateBundleClassPath> classPathExt = Activator
+				.getExtension(UpdateBundleClassPath.class.getName());
+		UpdateBundleClassPath classPath = classPathExt.getTrackedService();
+		classPath.addPendingProjects(projects);
+		classPath.setAddToPath(addToPath);
+		jobHandler(classPath.getJob());
+		classPathExt.closeTrackedService();
 	}
 
 	/**
@@ -359,46 +389,53 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 	}
 
 	/**
+	 * Displays the closure options dependency dialog
+	 * 
+	 * @throws ExtenderException if failing to get the dependency dialog extender or service
+	 */
+	protected void dependencyDialogHandler() throws ExtenderException {
+
+		Extension<DependencyDialog> dependencyExt = Activator.getExtension(DependencyDialog.class
+				.getName());
+		DependencyDialog dependency = dependencyExt.getTrackedService();
+		dependency.open();
+		dependencyExt.closeTrackedService();
+	}
+
+	/**
 	 * Toggles between showing and hiding the bundle console view
 	 * 
-	 * @throws ExtenderException if failing to get the extender service for the bundle console view
-	 * @throws InPlaceException if the bundle console view service returns null
+	 * @throws ExtenderException if failing to get the bundle console view extender or service
 	 */
-	protected void bundleConsoleHandler() throws InPlaceException, ExtenderException {
+	protected void bundleConsoleHandler() throws ExtenderException {
 
-		Extension<BundleConsoleFactory> ext = Extenders.getExtension(BundleConsoleFactory.class
-				.getName());
-		BundleConsoleFactory bundleConsoleService = ext.getService();
-		if (null == bundleConsoleService) {
-			throw new InPlaceException("failed_to_get_service_for_interface",
-					BundleConsoleFactory.class.getName());
-		}
-		if (!bundleConsoleService.isConsoleViewVisible()) {
-			bundleConsoleService.showConsoleView();
+		Extension<BundleConsoleFactory> consoleExt = Activator
+				.getExtension(BundleConsoleFactory.class.getName());
+		BundleConsoleFactory service = consoleExt.getTrackedService();
+
+		if (!service.isConsoleViewVisible()) {
+			service.showConsoleView();
 		} else {
-			bundleConsoleService.closeConsoleView();
+			service.closeConsoleView();
 		}
+		consoleExt.closeTrackedService();
 	}
 
 	/**
 	 * Toggles between showing and hiding the bundle log view
 	 * 
-	 * @throws ExtenderException if failing to get the extender service for the bundle log view
-	 * @throws InPlaceException if the bundle log view service returns null
+	 * @throws ExtenderException if failing to get the log view extender or service
 	 */
-	protected void bundleLogViewViewHandler() throws InPlaceException, ExtenderException {
+	protected void bundleLogViewViewHandler() throws ExtenderException {
 
-		Extension<BundleLogView> ext = Extenders.getExtension(BundleLogView.class.getName());
-		BundleLogView viewService = ext.getService();
-		if (null == viewService) {
-			throw new InPlaceException("failed_to_get_service_for_interface",
-					BundleLogView.class.getName());
-		}
-		if (viewService.isVisible()) {
-			viewService.hide();
+		Extension<BundleLogView> logViewExt = Activator.getExtension(BundleLogView.class.getName());
+		BundleLogView logView = logViewExt.getTrackedService();
+		if (logView.isVisible()) {
+			logView.hide();
 		} else {
-			viewService.show();
+			logView.show();
 		}
+		logViewExt.closeTrackedService();
 	}
 
 	/**
@@ -547,9 +584,9 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 	 */
 	static public void jobHandler(WorkspaceJob job) {
 
-		SaveProjectHandler so = new SaveProjectHandler();
-		if (so.saveModifiedFiles()) {
-			SaveProjectHandler.waitOnBuilder();
+		ResourceState resourceState = Activator.getResourceStateService();
+		if (resourceState.saveModifiedFiles()) {
+			resourceState.waitOnBuilder();
 			BundleJobManager.addBundleJob(job, 0);
 		}
 	}

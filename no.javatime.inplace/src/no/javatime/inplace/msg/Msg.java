@@ -30,6 +30,7 @@ public class Msg extends NLS {
 	public static String UNRESOLVE_BUNDLE_OP_TRACE;
 	public static String UNINSTALL_BUNDLE_OP_TRACE;
 	public static String INSTALL_BUNDLE_OP_TRACE;
+	public static String BUNDLE_LOCATION_TRACE;
 	public static String UPDATE_BUNDLE_OP_TRACE;
 	public static String LAZY_ACTIVATE_BUNDLE_OP_TRACE;
 	public static String ON_DEMAND_BUNDLE_START_OP_TRACE;

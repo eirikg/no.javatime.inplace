@@ -13,9 +13,10 @@ package no.javatime.inplace.builder;
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundlejobs.BundleJob;
 import no.javatime.inplace.bundlejobs.UninstallJob;
+import no.javatime.inplace.bundlejobs.events.BundleJobManager;
 import no.javatime.inplace.bundlejobs.intface.ActivateProject;
-import no.javatime.inplace.bundlemanager.BundleJobManager;
-import no.javatime.inplace.dialogs.SaveProjectHandler;
+import no.javatime.inplace.bundlejobs.intface.BundleExecutor;
+import no.javatime.inplace.dialogs.ResourceStateHandler;
 import no.javatime.inplace.extender.intface.Extenders;
 import no.javatime.inplace.extender.intface.Extension;
 import no.javatime.inplace.region.intface.BundleRegion;
@@ -64,7 +65,7 @@ public class PreChangeListener implements IResourceChangeListener {
 		// Do not return if waiting for additional projects to uninstall
 		// May occur if the workspace becomes deactivated while waiting for new projects to remove
 		if (!activate.isProjectWorkspaceActivated()
-				&& !(SaveProjectHandler.getWaitingBundleJob() instanceof RemoveBundleProjectJob)) {
+				&& !(ResourceStateHandler.getWaitingBundleJob() instanceof RemoveBundleProjectJob)) {
 			return;
 		}
 		final IResource resource = event.getResource();
@@ -109,7 +110,7 @@ public class PreChangeListener implements IResourceChangeListener {
 	private BundleJob scheduleRemoveBundleProjects(IProject project) {
 
 		IJobManager jobMan = Job.getJobManager();
-		Job[] jobs = jobMan.find(BundleJob.FAMILY_BUNDLE_LIFECYCLE);
+		Job[] jobs = jobMan.find(BundleExecutor.FAMILY_BUNDLE_LIFECYCLE);
 		for (int i = 0; i < jobs.length; i++) {
 			Job job = jobs[i];
 

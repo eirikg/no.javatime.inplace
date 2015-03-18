@@ -38,10 +38,10 @@ import org.osgi.framework.Bundle;
  */
 public class BundleMainActivationHandler extends BundleMenuActivationHandler {
 
-	private BundleRegion region = Activator.getBundleRegionService();
 	private BundleCommand command = Activator.getBundleCommandService(); 
-	private BundleProjectCandidates bundleProjectCandidates = Activator.getBundleProjectCandidatesService(); 
-	private BundleRegion bundleRegion = Activator.getBundleRegionService();
+	private BundleProjectCandidates projectCandidates = Activator.getBundleProjectCandidatesService(); 
+	private BundleRegion region = Activator.getBundleRegionService();
+
 	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 
@@ -52,14 +52,14 @@ public class BundleMainActivationHandler extends BundleMenuActivationHandler {
 		try {
 			switch (parameterId) {
 			case BundleCommandsContributionItems.deactivateParamId:
-				deactivateHandler(bundleRegion.getActivatedProjects());
+				deactivateHandler(region.getActivatedProjects());
 				break;
 			case BundleCommandsContributionItems.activateProjectParamId:
-				activateProjectHandler(bundleProjectCandidates.getCandidates());
+				activateProjectHandler(projectCandidates.getCandidates());
 				break;
 			case BundleCommandsContributionItems.startParamId:
 				Collection<Bundle> startProjects = new LinkedHashSet<Bundle>(); 
-				Collection<IProject> startNatures = bundleRegion.getActivatedProjects();
+				Collection<IProject> startNatures = region.getActivatedProjects();
 				for (IProject project : startNatures) {
 					Bundle bundle = region.getBundle(project);
 					if (null == bundle) {
@@ -76,7 +76,7 @@ public class BundleMainActivationHandler extends BundleMenuActivationHandler {
 				break;
 			case BundleCommandsContributionItems.stopParamId:
 				Collection<Bundle> stopProjects = new LinkedHashSet<Bundle>(); 
-				Collection<IProject> stopNatures = bundleRegion.getActivatedProjects();
+				Collection<IProject> stopNatures = region.getActivatedProjects();
 				for (IProject project : stopNatures) {
 					Bundle bundle = region.getBundle(project);
 					int state = command.getState(bundle);
@@ -89,11 +89,11 @@ public class BundleMainActivationHandler extends BundleMenuActivationHandler {
 				}
 				break;
 			case BundleCommandsContributionItems.refreshParamId:
-				refreshHandler(bundleRegion.getActivatedProjects());
+				refreshHandler(region.getActivatedProjects());
 				break;
 			case BundleCommandsContributionItems.refreshPendingParamId:
 				Collection<Bundle> refreshProjects = new LinkedHashSet<Bundle>(); 
-				Collection<IProject> refreshNatures = bundleRegion.getActivatedProjects();
+				Collection<IProject> refreshNatures = region.getActivatedProjects();
 				for (IProject project : refreshNatures) {
 					Bundle bundle = region.getBundle(project);
 					if (command.getBundleRevisions(bundle).size() > 1) {
@@ -106,15 +106,15 @@ public class BundleMainActivationHandler extends BundleMenuActivationHandler {
 				break;
 			case BundleCommandsContributionItems.updateParamId:
 				Collection<IProject> projectsToUpdate = 
-						Activator.getBundleTransitionService().getPendingProjects(bundleRegion.getActivatedProjects(), 
+						Activator.getBundleTransitionService().getPendingProjects(region.getActivatedProjects(), 
 						BundleTransition.Transition.UPDATE);			
 				updateHandler(projectsToUpdate);
 				break;
 			case BundleCommandsContributionItems.resetParamId:
-				resetHandler(bundleProjectCandidates.getInstallable());
+				resetHandler(projectCandidates.getInstallable());
 				break;
 			case BundleCommandsContributionItems.bundleViewParamId:
-				bundleViewHandler(bundleProjectCandidates.getInstallable());
+				bundleViewHandler(projectCandidates.getInstallable());
 				break;
 			case BundleCommandsContributionItems.bundleConsolePageParamId:
 				bundleConsoleHandler();
@@ -123,10 +123,10 @@ public class BundleMainActivationHandler extends BundleMenuActivationHandler {
 				bundleLogViewViewHandler();
 				break;
 			case BundleCommandsContributionItems.addClassPathParamId:
-				updateClassPathHandler(bundleProjectCandidates.getBundleProjects(), true);
+				updateClassPathHandler(projectCandidates.getBundleProjects(), true);
 				break;
 			case BundleCommandsContributionItems.removeClassPathParamId:
-				updateClassPathHandler(bundleProjectCandidates.getBundleProjects(), false);
+				updateClassPathHandler(projectCandidates.getBundleProjects(), false);
 				break;
 			case BundleCommandsContributionItems.dependencyDialogParamId:
 				dependencyDialogHandler();

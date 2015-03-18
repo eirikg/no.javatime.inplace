@@ -65,7 +65,7 @@ public class ExtenderBundleTracker extends BundleTracker<Collection<Extender<?>>
 
 		Extender<S> extender = new ExtenderImpl<>(this, owner, context.getBundle(),
 				serviceInterfaceNames, service, properties);
-		addExtender(extender);
+		trackExtender(extender);
 		return extender;
 	}
 
@@ -100,7 +100,7 @@ public class ExtenderBundleTracker extends BundleTracker<Collection<Extender<?>>
 
 		Extender<S> extender = new ExtenderImpl<>(this, owner, context.getBundle(),
 				serviceInterfaceName, service, properties);
-		addExtender(extender);
+		trackExtender(extender);
 		return extender;
 	}
 
@@ -109,22 +109,76 @@ public class ExtenderBundleTracker extends BundleTracker<Collection<Extender<?>>
 	 * returned by the {@code #addingBundle(Bundle, BundleEvent)} method overriding this method in the
 	 * class sub typing this class. Eg: {@code return super.addingBundle(bundle, event);}
 	 */
-	@Override
 	public Collection<Extender<?>> addingBundle(Bundle bundle, BundleEvent event) {
 
 		return trackExtenders();
 	}
-	
-	public boolean hasTrackedExtenders(Bundle bundle) {
-		Collection<Extender<?>> extenders = getTrackedExtenders();
-		for (Extender<?> extender : extenders) {
-			if (extender.getOwner().equals(bundle)) {
-				return true;
+
+	/**
+	 * Get all extenders tracked by this extender tracker owned by the specified bundle
+	 * <p>
+	 * If the specified bundle owns any extenders tracked by this extender tracker they are returned.
+	 * 
+	 * @param owner the bundle owing or hosting any extenders tracked by this extender tracker
+	 * @return a collection of extenders owned by the specified bundle and tracked by this extender
+	 * tracker or an empty collection if no extenders are tracked.If the specified bundle is null an
+	 * empty collection is returned.
+	 */
+	public Collection<Extender<?>> getTrackedExtenders(Bundle owner) {
+
+		Collection<Extender<?>> trackedExtenders = new ArrayList<>();
+
+		Map<Bundle, Collection<Extender<?>>> tracked = getTracked();
+		Iterator<Entry<Bundle, Collection<Extender<?>>>> it = tracked.entrySet().iterator();
+		while (it.hasNext()) {
+			ConcurrentMap.Entry<Bundle, Collection<Extender<?>>> entry = it.next();
+			for (Extender<?> e : entry.getValue()) {
+				Bundle ownerBundle = e.getOwner();
+				if (null != owner && ownerBundle.equals(owner)) {
+					trackedExtenders.add(e);
+				}
 			}
 		}
-		return false;
+		return trackedExtenders;
+
 	}
-	
+
+	public Extender<?> getTrackedExtender(String serviceInterfaceName) {
+
+		Collection<Extender<?>> extenders = getTrackedExtenders(serviceInterfaceName);
+		Extender<?> rankedExtender = null;
+		for (Extender<?> extender : extenders) {
+			if (extender.getServiceInterfaceName().equals(serviceInterfaceName)) {
+				if (null == rankedExtender) {
+					rankedExtender = extender;
+					continue;
+				}
+				// The extender with highest ranking and if a tie the lowest service id
+				if (extender.getServiceReference().compareTo(rankedExtender) > 0) {
+					rankedExtender = extender;
+				}
+			}
+		}
+		return rankedExtender;
+	}
+
+	public final Collection<Extender<?>> getTrackedExtenders(String interfaceName) {
+
+		Collection<Extender<?>> trackedExtenders = new ArrayList<>();
+
+		Map<Bundle, Collection<Extender<?>>> tracked = getTracked();
+		Iterator<Entry<Bundle, Collection<Extender<?>>>> it = tracked.entrySet().iterator();
+		while (it.hasNext()) {
+			ConcurrentMap.Entry<Bundle, Collection<Extender<?>>> entry = it.next();
+			for (Extender<?> e : entry.getValue()) {
+				if (e.getServiceInterfaceName().equals(interfaceName)) {
+					trackedExtenders.add(e);
+				}
+			}
+		}
+		return trackedExtenders;
+	}
+
 	/**
 	 * Return all extenders being tracked by this bundle extender tracker
 	 * 
@@ -157,7 +211,7 @@ public class ExtenderBundleTracker extends BundleTracker<Collection<Extender<?>>
 		}
 	}
 
-	private void addExtender(Extender<?> extender) {
+	public void trackExtender(Extender<?> extender) {
 		if (null == extenders) {
 			extenders = new ArrayList<>();
 		}

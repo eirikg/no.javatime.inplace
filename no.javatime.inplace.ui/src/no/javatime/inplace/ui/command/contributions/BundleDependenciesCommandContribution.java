@@ -3,20 +3,13 @@ package no.javatime.inplace.ui.command.contributions;
 import java.util.ArrayList;
 
 import no.javatime.inplace.extender.intface.ExtenderException;
-import no.javatime.inplace.extender.intface.Extenders;
-import no.javatime.inplace.extender.intface.Extension;
 import no.javatime.inplace.pl.dependencies.intface.DependencyDialog;
-import no.javatime.inplace.region.intface.InPlaceException;
-import no.javatime.inplace.region.status.BundleStatus;
-import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import no.javatime.inplace.ui.Activator;
-import no.javatime.inplace.ui.msg.Msg;
 import no.javatime.util.messages.Message;
 
 import org.eclipse.jface.action.ContributionItem;
 import org.eclipse.jface.action.IContributionItem;
 import org.eclipse.ui.menus.CommandContributionItem;
-import org.eclipse.ui.statushandlers.StatusManager;
 
 /**
  * Creates a contribution for the bundle dependency dialog 
@@ -31,27 +24,14 @@ public class BundleDependenciesCommandContribution extends BundleMainCommandsCon
 	protected IContributionItem[] getContributionItems() {
 
 		ArrayList<ContributionItem> contributions = new ArrayList<ContributionItem>();
-		Extension<DependencyDialog> ext = null;
 		try {
-			ext = Extenders.getExtension(DependencyDialog.class.getName());
-			if (null != ext) {
-				DependencyDialog depDlgService = ext.getService();
-				if (null != depDlgService) {
-					contributions.add(createContibution(menuIdDependencies, dynamicMainCommandId, partialDependenciesLabel, dependencyDialogParamId,
-							CommandContributionItem.STYLE_PUSH, dependenciesImage));
-				} else {
-					InPlaceException e = new InPlaceException("failed_to_get_service_for_interface", DependencyDialog.class.getName());
-					StatusManager.getManager().handle(
-							new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, Msg.ADD_CONTRIBUTION_ERROR, e),
-							StatusManager.LOG);
-				}
-				ext.ungetService();
-			}
+			// Is extender for this extension registered
+			Activator.getExtension(DependencyDialog.class);
+			contributions.add(createContibution(menuIdDependencies, dynamicMainCommandId, partialDependenciesLabel, dependencyDialogParamId,
+					CommandContributionItem.STYLE_PUSH, dependenciesImage));
 		} catch (ExtenderException e) {
-			StatusManager.getManager().handle(
-					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, Msg.ADD_CONTRIBUTION_ERROR, e),
-					StatusManager.LOG);
-		}
+			// Silently don't display menu entry when extension is unavailable
+		}		
 		IContributionItem[] contributionArray = contributions.toArray(new ContributionItem[contributions.size()]);
 		return contributionArray;
 	}	

@@ -17,16 +17,16 @@ import java.util.Iterator;
 
 import org.eclipse.core.resources.WorkspaceJob;
 
-public class BundleJobNotifier {
+class BundleJobNotifier {
 
 	protected Collection<BundleJobEventListener> jobListeners = Collections
 			.synchronizedList(new ArrayList<BundleJobEventListener>());;
 
-	synchronized public int jobListeners() {
+	public synchronized int jobListeners() {
 		return jobListeners.size();
 	}
 
-	synchronized public void addBundleJobListener(BundleJobEventListener listener) {
+	public synchronized void addBundleJobListener(BundleJobEventListener listener) {
 		jobListeners.add(listener);
 	}
 
@@ -41,13 +41,14 @@ public class BundleJobNotifier {
 			iterator.next().bundleJobEvent(evt);
 		}
 	}
+	
 	public void addBundleJob(WorkspaceJob workspaceJob, long delay) {
-		BundleJobEvent event = new BundleJobEvent(this, workspaceJob, delay);
+		BundleJobEvent event = new BundleJobEventImpl(this, workspaceJob, delay);
 		fireJobEvent(event);
 	}
 
 	public void addBundleJob(WorkspaceJob workspaceJob) {
-		BundleJobEvent event = new BundleJobEvent(this, workspaceJob);
+		BundleJobEvent event = new BundleJobEventImpl(this, workspaceJob);
 		fireJobEvent(event);
 	}
 }

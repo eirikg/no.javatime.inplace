@@ -11,6 +11,7 @@
 package no.javatime.inplace.ui.command.handlers;
 
 import no.javatime.inplace.dl.preferences.intface.CommandOptions;
+import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.region.intface.InPlaceException;
 
 
@@ -22,7 +23,7 @@ public class UpdateClassPathOnActivateHandler extends AbstractOptionsHandler {
 	public static String commandId = "no.javatime.inplace.command.activateclasspath";
 
 	@Override
-	protected void storeValue(Boolean value) throws InPlaceException {
+	protected void storeValue(Boolean value) throws ExtenderException {
 
 		CommandOptions cmdStore = getOptionsService();
 		cmdStore.setIsUpdateDefaultOutPutFolder(value);
@@ -32,7 +33,8 @@ public class UpdateClassPathOnActivateHandler extends AbstractOptionsHandler {
 	protected boolean getStoredValue() throws InPlaceException {
 
 		CommandOptions cmdStore = getOptionsService();
-		return cmdStore.isUpdateDefaultOutPutFolder();
+		boolean isUpdate = cmdStore.isUpdateDefaultOutPutFolder();
+		return isUpdate;
 	}
 
 	@Override

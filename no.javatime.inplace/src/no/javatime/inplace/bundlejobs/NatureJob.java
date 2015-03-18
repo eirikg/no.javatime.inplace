@@ -96,15 +96,6 @@ public abstract class NatureJob extends BundleJob {
 		return false;
 	}
 
-	/**
-	 * Check if the workspace is JavaTime nature enabled using the
-	 * {@link JavaTimeNature#JAVATIME_NATURE_ID}
-	 * 
-	 * @return true if one open project in the workspace is nature enabled, and false if no projects
-	 * are
-	 * @throws InPlaceException open projects that does not exist or a core exception when accessing
-	 * projects is thrown internally (should not be the case for open and existing projects)
-	 */
 	public Boolean isProjectWorkspaceActivated() throws InPlaceException, ExtenderException {
 		BundleProjectCandidates bundleProjectCandidates = InPlace.getBundleProjectCandidatesService();
 		for (IProject project : bundleProjectCandidates.getBundleProjects()) {
@@ -115,16 +106,6 @@ public abstract class NatureJob extends BundleJob {
 		return false;
 	}
 
-	/**
-	 * Get all JavaTime nature enabled bundle projects using the
-	 * {@link JavaTimeNature#JAVATIME_NATURE_ID}
-	 * 
-	 * @return a list of JavaTime nature enabled projects or an empty set
-	 * @throws InPlaceException if the returned project candidate service id null, any open projects
-	 * that does not exist or a core exception when accessing projects is thrown internally (should
-	 * not be the case for open and existing projects)
-	 * @throws ExtenderException if the extender for the project candidates could not be obtained
-	 */
 	public Collection<IProject> getActivatedProjects() throws InPlaceException, ExtenderException {
 
 		BundleProjectCandidates bundleProjectCandidates = InPlace.getBundleProjectCandidatesService();

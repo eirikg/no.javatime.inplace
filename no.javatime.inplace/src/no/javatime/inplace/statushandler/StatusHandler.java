@@ -14,8 +14,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import no.javatime.inplace.InPlace;
-import no.javatime.inplace.bundlejobs.BundleJob;
-import no.javatime.inplace.dialogs.SaveProjectHandler;
+import no.javatime.inplace.dialogs.ResourceStateHandler;
 import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
@@ -24,6 +23,7 @@ import no.javatime.util.messages.ExceptionMessage;
 
 import org.eclipse.core.commands.common.NotDefinedException;
 import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.ui.statushandlers.StatusAdapter;
 import org.eclipse.ui.statushandlers.StatusManager;
 import org.eclipse.ui.statushandlers.StatusManager.INotificationTypes;
@@ -146,7 +146,8 @@ public class StatusHandler extends WorkbenchErrorHandler {
 	 */
 	private boolean interruptBundleJob() {
 
-		BundleJob job = SaveProjectHandler.getRunningBundleJob();
+		ResourceStateHandler so = new ResourceStateHandler();
+		Job job = so.getRunningBundleJob();
 		if (null != job) {
 			job.cancel();
 			Thread thread = job.getThread();

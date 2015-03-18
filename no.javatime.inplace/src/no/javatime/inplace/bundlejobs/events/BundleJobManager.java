@@ -1,7 +1,5 @@
-package no.javatime.inplace.bundlemanager;
+package no.javatime.inplace.bundlejobs.events;
 
-import no.javatime.inplace.bundlejobs.events.BundleJobEventListener;
-import no.javatime.inplace.bundlejobs.events.BundleJobNotifier;
 import no.javatime.util.messages.Category;
 import no.javatime.util.messages.TraceMessage;
 
@@ -21,7 +19,7 @@ public class BundleJobManager {
 	 * Adds a bundle job managed by job listeners
 	 * @param bundleJob bundle job to add for later scheduling by listeners
 	 * @param delay number of msec before starting job
-	 * @see no.javatime.inplace.bundlejobs.events.BundleJobEvent
+	 * @see no.javatime.inplace.bundlejobs.events.BundleJobEventImpl
 	 * @see no.javatime.inplace.bundlejobs.events.BundleJobEventListener
 	 * @see no.javatime.inplace.bundlejobs.events.BundleJobNotifier
 	 */
@@ -43,7 +41,7 @@ public class BundleJobManager {
 	 * Adds a listener for added bundle jobs
 	 * @param listener add this listener to listening for bundle jobs
 	 * @see #addBundleJob(WorkspaceJob, long)
-	 * @see no.javatime.inplace.bundlejobs.events.BundleJobEvent
+	 * @see no.javatime.inplace.bundlejobs.events.BundleJobEventImpl
 	 * @see no.javatime.inplace.bundlejobs.events.BundleJobEventListener
 	 * @see no.javatime.inplace.bundlejobs.events.BundleJobNotifier
 	 */
@@ -59,7 +57,7 @@ public class BundleJobManager {
 	 * Removes a listener for added bundle jobs
 	 * @param listener remove this listener from listen to bundle jobs 
 	 * @see #addBundleJob(WorkspaceJob, long)
-	 * @see no.javatime.inplace.bundlejobs.events.BundleJobEvent
+	 * @see no.javatime.inplace.bundlejobs.events.BundleJobEventImpl
 	 * @see no.javatime.inplace.bundlejobs.events.BundleJobEventListener
 	 * @see no.javatime.inplace.bundlejobs.events.BundleJobNotifier
 	 */

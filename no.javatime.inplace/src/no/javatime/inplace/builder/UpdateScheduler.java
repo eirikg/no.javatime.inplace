@@ -1,4 +1,4 @@
-package no.javatime.inplace.bundlejobs;
+package no.javatime.inplace.builder;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -6,8 +6,10 @@ import java.util.HashMap;
 import java.util.Map;
 
 import no.javatime.inplace.InPlace;
-import no.javatime.inplace.bundlemanager.BundleJobManager;
-import no.javatime.inplace.dialogs.SaveProjectHandler;
+import no.javatime.inplace.bundlejobs.ActivateBundleJob;
+import no.javatime.inplace.bundlejobs.UpdateJob;
+import no.javatime.inplace.bundlejobs.events.BundleJobManager;
+import no.javatime.inplace.dialogs.ResourceStateHandler;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.closure.BuildErrorClosure;
@@ -49,6 +51,7 @@ public class UpdateScheduler {
 	 * @param projects projects to schedule for update. Must not be null
 	 * @param delay number of milliseconds before starting the update job
 	 */
+
 	static public void scheduleUpdateJob(Collection<IProject> projects, long delay) {
 
 		UpdateJob updateJob = new UpdateJob(UpdateJob.updateJobName);
@@ -135,26 +138,30 @@ public class UpdateScheduler {
 					be.setBuildErrorHeaderMessage(msg);
 					IBundleStatus bundleStatus = be.getErrorClosureStatus();
 					if (null != bundleStatus) {
-						StatusManager.getManager().handle(bundleStatus, StatusManager.LOG);
+						InPlace.get().log(bundleStatus);
+						// StatusManager.getManager().handle(bundleStatus, StatusManager.LOG);
 					}
 				}
 				update = false;
 			}
 			// Deactivated providing closure. Deactivated projects with build errors providing
 			// capabilities to project to update
-			be = new BuildErrorClosure(Collections.<IProject> singletonList(project),
-					Transition.UPDATE, Closure.PROVIDING, Bundle.UNINSTALLED, ActivationScope.DEACTIVATED);
-			if (be.hasBuildErrors()) {
-				if (InPlace.get().getMsgOpt().isBundleOperations()) {
-					String msg = NLS.bind(Msg.UPDATE_BUILD_ERROR_INFO, new Object[] {
-							project.getName(), bundleProjectCandidates.formatProjectList(be.getBuildErrors()) });
-					be.setBuildErrorHeaderMessage(msg);
-					IBundleStatus bundleStatus = be.getErrorClosureStatus();
-					if (null != bundleStatus) {
-						StatusManager.getManager().handle(bundleStatus, StatusManager.LOG);
+			if (update) {
+				be = new BuildErrorClosure(Collections.<IProject> singletonList(project),
+						Transition.UPDATE, Closure.PROVIDING, Bundle.UNINSTALLED, ActivationScope.DEACTIVATED);
+				if (be.hasBuildErrors()) {
+					if (InPlace.get().getMsgOpt().isBundleOperations()) {
+						String msg = NLS.bind(Msg.UPDATE_BUILD_ERROR_INFO, new Object[] {
+								project.getName(), bundleProjectCandidates.formatProjectList(be.getBuildErrors()) });
+						be.setBuildErrorHeaderMessage(msg);
+						IBundleStatus bundleStatus = be.getErrorClosureStatus();
+						if (null != bundleStatus) {
+							InPlace.get().log(bundleStatus);
+							// StatusManager.getManager().handle(bundleStatus, StatusManager.LOG);
+						}
 					}
+					update = false;
 				}
-				update = false;
 			}
 			if (update) {
 				updateJob.addPendingProject(project);
@@ -217,7 +224,7 @@ public class UpdateScheduler {
 	 * The purpose is to automatically install and update bundles that are no longer duplicates due to
 	 * changes in projects to update.
 	 * <p>
-	 * BundleExecutor are added to the specified update job or added to the returned bundle activation job
+	 * Bundles are added to the specified update job or added to the returned bundle activation job
 	 * when the following conditions are satisfied:
 	 * <ol>
 	 * <li>There exist activated duplicate bundles in the workspace
@@ -319,9 +326,9 @@ public class UpdateScheduler {
 	 */
 	static public void jobHandler(WorkspaceJob job, long delay) {
 
-		SaveProjectHandler so = new SaveProjectHandler();
+		ResourceStateHandler so = new ResourceStateHandler();
 		if (so.saveModifiedFiles()) {
-			SaveProjectHandler.waitOnBuilder();
+			so.waitOnBuilder();
 			BundleJobManager.addBundleJob(job, delay);
 		}
 	}

@@ -10,7 +10,7 @@ import no.javatime.inplace.bundlejobs.BundleJob;
 import no.javatime.inplace.bundlejobs.DeactivateJob;
 import no.javatime.inplace.bundlejobs.InstallJob;
 import no.javatime.inplace.bundlejobs.UninstallJob;
-import no.javatime.inplace.bundlemanager.BundleJobManager;
+import no.javatime.inplace.bundlejobs.events.BundleJobManager;
 import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.closure.ProjectSorter;
 import no.javatime.inplace.region.events.BundleTransitionEvent;
@@ -72,7 +72,7 @@ public class ExternalTransition implements BundleTransitionEventListener {
 				final BundleProjectCandidates bundleProjectcandidates = InPlace.getBundleProjectCandidatesService();
 				IBundleStatus reqStatus = null;
 				int autoDependencyAction = 1; // Default auto dependency action
-				new SaveProjectHandler().saveModifiedFiles();
+				new ResourceStateHandler().saveModifiedFiles();
 				Boolean dependencies = false;
 				Collection<IProject> reqProjects = Collections.<IProject> emptySet();
 				if (bundleRegion.isBundleActivated(bundle)) {

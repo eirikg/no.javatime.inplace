@@ -19,6 +19,12 @@ import org.osgi.framework.wiring.FrameworkWiring;
 public interface BundleCommand {
 
 	/**
+	 * Manifest header for accessing the default service implementation class name of the bundle
+	 * command
+	 */
+	public final static String BUNDLE_COMMAND_SERVICE = "Bundle-Command-Service";
+
+	/**
 	 * Obtain the resolver hook factory for singletons.
 	 * 
 	 * @return the resolver hook factory object

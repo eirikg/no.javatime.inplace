@@ -13,6 +13,7 @@ package no.javatime.inplace.bundlejobs;
 import java.util.Collection;
 
 import no.javatime.inplace.InPlace;
+import no.javatime.inplace.bundlejobs.intface.Uninstall;
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.closure.BundleSorter;
@@ -34,13 +35,7 @@ import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.osgi.util.NLS;
 import org.osgi.framework.Bundle;
 
-/**
- * Uninstalls pending bundle projects and all requiring bundles of the pending bundle projects from any state
- * except UNINSTALLED.
- * 
- * @see no.javatime.inplace.bundlejobs.InstallJob
- */
-public class UninstallJob extends NatureJob {
+public class UninstallJob extends NatureJob implements Uninstall {
 
 	/** Standard name of an uninstall job */
 	final public static String uninstallJobName = Message.getInstance().formatString("uninstall_job_name");
@@ -53,14 +48,6 @@ public class UninstallJob extends NatureJob {
 	private boolean unregisterBundleProject = false;
 	private boolean includeRequiring = true;
 
-	public boolean isIncludeRequiring() {
-		return includeRequiring;
-	}
-
-	public void setIncludeRequiring(boolean includeRequiring) {
-		this.includeRequiring = includeRequiring;
-	}
-	
 	/**
 	 * Default constructor wit a default job name
 	 */
@@ -96,13 +83,39 @@ public class UninstallJob extends NatureJob {
 		super(name, project);
 	}
 
-	public boolean isBundleProjectUnregistered() {
+	/* (non-Javadoc)
+	 * @see no.javatime.inplace.bundlejobs.Uninstall#isBundleProjectUnregistered()
+	 */
+	@Override
+	public boolean isUnregister() {
 		return unregisterBundleProject;
 	}
 
-	public void unregisterBundleProject(boolean unregister) {
+	/* (non-Javadoc)
+	 * @see no.javatime.inplace.bundlejobs.Uninstall#unregisterBundleProject(boolean)
+	 */
+	@Override
+	public void setUnregister(boolean unregister) {
 		this.unregisterBundleProject = unregister;
 	}
+
+	/* (non-Javadoc)
+	 * @see no.javatime.inplace.bundlejobs.Uninstall#isIncludeRequiring()
+	 */
+	@Override
+	public boolean isAddRequiring() {
+		return includeRequiring;
+	}
+
+	/* (non-Javadoc)
+	 * @see no.javatime.inplace.bundlejobs.Uninstall#setIncludeRequiring(boolean)
+	 */
+	@Override
+	public void setAddRequiring(boolean includeRequiring) {
+		this.includeRequiring = includeRequiring;
+	}
+	
+
 
 	/**
 	 * Runs the bundle(s) uninstall operation.

@@ -23,7 +23,6 @@ import no.javatime.inplace.bundlejobs.intface.Update;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.msg.Msg;
-import no.javatime.inplace.region.closure.BundleClosures;
 import no.javatime.inplace.region.closure.BundleSorter;
 import no.javatime.inplace.region.closure.CircularReferenceException;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
@@ -119,7 +118,7 @@ public class UpdateJob extends BundleJob implements Update {
 			BundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg);
 			multiStatus.add(e.getStatusList());
 			addStatus(multiStatus);
-		} catch (ExtenderException e) {			
+		} catch (ExtenderException e) {
 			addError(e, NLS.bind(Msg.SERVICE_EXECUTOR_EXP, getName()));
 		} catch (InPlaceException e) {
 			String msg = ExceptionMessage.getInstance().formatString("terminate_job_with_errors",
@@ -194,14 +193,14 @@ public class UpdateJob extends BundleJob implements Update {
 		}
 
 		Collection<Bundle> bundleClosure = null;
-		// (2) Get any requiring closure of bundles to update and refresh 
+		// (2) Get any requiring closure of bundles to update and refresh
 		if (getOptionsService().isRefreshOnUpdate()) {
-			// Get the requiring closure of bundles to update. The bundles in this closure
-			// are stopped before update, bound to the current revision of the updated bundles during refresh
-			// and then started again
-			BundleClosures bc = new BundleClosures();
-			bundleClosure = bc.bundleDeactivation(Closure.REQUIRING, bundlesToUpdate,
-					activatedBundles);
+			// Get the requiring closure of bundles to update and add bundles to the requiring closure
+			// with same symbolic name as in the update closure.
+			// The bundles in this closure are stopped before update, bound to the current revision of the
+			// updated bundles during refresh and then started again if in state ACTIVE
+			bundleClosure = getBundlesToRefresh(bundlesToUpdate, activatedBundles);
+
 			// Necessary to get the latest updated version of a coherent set (closure) of running bundles
 			Collection<Bundle> pendingBundles = bundleTransition.getPendingBundles(bundleClosure,
 					Transition.UPDATE);
@@ -211,13 +210,13 @@ public class UpdateJob extends BundleJob implements Update {
 				addPendingProjects(bundleRegion.getProjects(pendingBundles));
 			}
 		} else {
-			// The requiring closure will be bound to the previous revision of the bundles to update and resolve
+			// The requiring closure will be bound to the previous revision of the bundles to update and
+			// resolve
 			bundleClosure = bundlesToUpdate;
 		}
 
-		// (3) Reduce the set of bundles to update and refresh due to duplicates
-		// Collection<Bundle> bundlesToRefresh = getBundlesToResolve(bundlesToUpdate);
-		// removeDuplicates(getPendingProjects(), bundlesToUpdate, bundlesToRefresh);
+		// (3) Adjust the set of bundles to update and refresh due to duplicates
+		// Remove workspace bundles that are duplicates of external bundles
 		Collection<IProject> duplicateProjects = removeExternalDuplicates(getPendingProjects(),
 				bundleClosure, currentExternalInstance);
 		if (null != duplicateProjects) {
@@ -252,7 +251,7 @@ public class UpdateJob extends BundleJob implements Update {
 		if (monitor.isCanceled()) {
 			throw new OperationCanceledException();
 		}
-		// (8) Refresh or resolve updated bundles and their closures
+		// (8) Refresh updated bundles and their closures or resolve updated bundles
 		if (bundleClosure.size() > 0) {
 			// Also resolve/refresh and start all activated bundles in state installed and their requiring
 			// bundles
@@ -335,7 +334,7 @@ public class UpdateJob extends BundleJob implements Update {
 
 		Collection<IBundleStatus> statusList = null;
 		SubMonitor localMonitor = SubMonitor.convert(monitor, bundles.size());
-		for (Bundle bundle : getUpdateOrder(bundles)) {
+		for (Bundle bundle : getUpdateOrder(bundles, true)) {
 			if (bundleTransition.containsPending(bundle, Transition.UPDATE, true)) {
 				try {
 					localMonitor.subTask(updateSubTaskName + bundle.getSymbolicName());
@@ -419,11 +418,19 @@ public class UpdateJob extends BundleJob implements Update {
 		}
 	}
 
+	public Collection<IProject> getUpdateOrder() {
+		Collection<Bundle> pendingBundles = bundleTransition.getPendingBundles(bundleRegion.getActivatedBundles(),
+				Transition.UPDATE);
+		Collection<Bundle> orderedBundles = getUpdateOrder(pendingBundles, false);
+		Collection<IProject> orderedProjects = bundleRegion.getProjects(orderedBundles);
+		return orderedProjects;
+	}
+
 	/**
 	 * Detect circular symbolic name collisions and order the specified collection of bundles based on
 	 * existing and new symbolic keys (symbolic name and version) before they are updated.
 	 * <p>
-	 * BundleExecutor must be ordered when a bundle changes its symbolic key to the same symbolic key as an
+	 * Bundles must be ordered when a bundle changes its symbolic key to the same symbolic key as an
 	 * other bundle to update, and this other bundle at the same time changes its symbolic key to a
 	 * new value. The other bundle must then be updated first to avoid that the first bundle becomes a
 	 * duplicate of the other bundle. A special case, called a circular name collision, occurs if the
@@ -432,9 +439,12 @@ public class UpdateJob extends BundleJob implements Update {
 	 * 
 	 * 
 	 * @param bundlesToUpdate collection of bundles to update
+	 * @param reportCollisions if true an error status is added to the update executor if the are any
+	 * name conflicts. if false collisions are detected but no error status object is added.
 	 * @return ordered collection of bundles to update
 	 */
-	protected Collection<Bundle> getUpdateOrder(Collection<Bundle> bundlesToUpdate) {
+	public Collection<Bundle> getUpdateOrder(Collection<Bundle> bundlesToUpdate,
+			boolean reportCollisions) {
 
 		ArrayList<Bundle> sortedBundlesToUpdate = new ArrayList<Bundle>();
 		Map<String, IProject> projectKeysMap = new HashMap<String, IProject>();
@@ -477,11 +487,23 @@ public class UpdateJob extends BundleJob implements Update {
 			}
 			projectKeysMap.put(newProjectKey, project);
 		}
-		if (null != status) {
+		if (null != status && reportCollisions) {
 			String rootMsg = ErrorMessage.getInstance().formatString("circular_name_conflict");
 			createMultiStatus(new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID, rootMsg), status);
 		}
 		return sortedBundlesToUpdate;
+	}
+
+	public void addUpdateTransition(Collection<IProject> projects) {
+
+		for (IProject project : projects) {
+			bundleTransition.addPending(project, Transition.UPDATE);
+		}
+	}
+
+	public boolean isPendingForUpdate(IProject project) {
+
+		return bundleTransition.containsPending(project, Transition.UPDATE, false);
 	}
 
 	/**

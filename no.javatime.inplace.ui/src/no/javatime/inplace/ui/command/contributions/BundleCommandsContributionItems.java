@@ -14,21 +14,22 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-import no.javatime.inplace.bundlejobs.BundleJob;
-import no.javatime.inplace.dialogs.SaveProjectHandler;
+import no.javatime.inplace.bundlejobs.intface.ResourceState;
+import no.javatime.inplace.bundlejobs.intface.Stop;
 import no.javatime.inplace.dl.preferences.intface.CommandOptions;
 import no.javatime.inplace.extender.intface.ExtenderException;
-import no.javatime.inplace.extender.intface.Extenders;
 import no.javatime.inplace.extender.intface.Extension;
 import no.javatime.inplace.log.intface.BundleLogView;
 import no.javatime.inplace.pl.console.intface.BundleConsoleFactory;
-import no.javatime.inplace.region.intface.InPlaceException;
+import no.javatime.inplace.region.status.BundleStatus;
+import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import no.javatime.inplace.ui.Activator;
 import no.javatime.inplace.ui.msg.Msg;
 import no.javatime.inplace.ui.views.BundleProperties;
 import no.javatime.inplace.ui.views.BundleView;
 import no.javatime.util.view.ViewUtil;
 
+import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jface.action.ContributionItem;
 import org.eclipse.jface.action.IContributionItem;
@@ -43,6 +44,7 @@ import org.eclipse.ui.menus.CommandContributionItem;
 import org.eclipse.ui.menus.CommandContributionItemParameter;
 import org.eclipse.ui.menus.IWorkbenchContribution;
 import org.eclipse.ui.services.IServiceLocator;
+import org.eclipse.ui.statushandlers.StatusManager;
 
 /**
  * Common parameters, images, labels and contribution elements to the main menu
@@ -125,19 +127,32 @@ public abstract class BundleCommandsContributionItems extends CompoundContributi
 	 * @return the command contribution item if a bundle job is running, the operation currently
 	 * executing is a start or stop operation and the manual terminate option for endless start/stop
 	 * operations is enabled. Null if one of these conditions are false
-	 * @throws InPlaceException fail to get the command options service
 	 */
-	protected CommandContributionItem addStopTaskOperation(String menuId, String commandId)
-			throws InPlaceException {
+	protected CommandContributionItem addStopTaskOperation(String menuId, String commandId) {
 
-		CommandOptions cmdOpt = Activator.getDefault().getCommandOptionsService();
-		boolean timeOut = cmdOpt.isTimeOut();
-		BundleJob job = SaveProjectHandler.getRunningBundleJob();
-		if (null != job && !timeOut && BundleJob.isStateChanging()) {
-			// A job currently executing a start or stop operation and the manual terminate of endless
-			// operations option is enabled
-			return createContibution(menuId, commandId, Msg.STOP_BUNDLE_OP_LABEL, stopOperationParamId,
-					CommandContributionItem.STYLE_PUSH, null);
+		Extension<Stop> stopExt = null;
+		try {
+			ResourceState resourceState = Activator.getResourceStateService();
+			stopExt = Activator.getExtension(Stop.class.getName());
+			Stop stop = stopExt.getTrackedService();
+			CommandOptions commandOption = Activator.getCommandOptionsService();
+			boolean timeOut = commandOption.isTimeOut();
+			Job job = resourceState.getRunningBundleJob();
+			if (null != job && !timeOut && stop.isStateChanging()) {
+				// A job currently executing a start or stop operation and the manual terminate of endless
+				// operations option is enabled
+				return createContibution(menuId, commandId, Msg.STOP_BUNDLE_OP_LABEL, stopOperationParamId,
+						CommandContributionItem.STYLE_PUSH, null);
+			}
+		} catch (ExtenderException e) {
+			StatusManager.getManager()
+			.handle(
+					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID,
+							Msg.ADD_CONTRIBUTION_ERROR, e), StatusManager.LOG);
+		} finally {
+			if (null != stopExt) {
+				stopExt.closeTrackedService();				
+			}
 		}
 		return null;
 	}
@@ -152,7 +167,9 @@ public abstract class BundleCommandsContributionItems extends CompoundContributi
 	 * or a message that the job is about to terminate if there is no job running
 	 */
 	protected CommandContributionItem addInterrupt(String menuId, String commandId) {
-		BundleJob job = SaveProjectHandler.getRunningBundleJob();
+
+		ResourceState resourceState = Activator.getResourceStateService();
+		Job job = resourceState.getRunningBundleJob();
 		String menuLabel;
 		if (null == job) {
 			menuLabel = Msg.ABOUT_TO_FINISH_JOB_LABEL;
@@ -168,28 +185,30 @@ public abstract class BundleCommandsContributionItems extends CompoundContributi
 	 * 
 	 * @param menuId a dynamic menu id. This is usually the bundle main or pop-up menu id
 	 * @param commandId The command id for a defined command associated with the specified menu id
-	 * @return contribution for hiding or showing the bundle console view
-	 * @throws ExtenderException if failing to get the extender service for the bundle console view
-	 * @throws InPlaceException if the bundle console view service returns null
+	 * @return contribution for hiding or showing the bundle console view or null if failed to get bundle console view
 	 */
-	protected CommandContributionItem addToggleBundleConsoleView(String menuId, String commandId)
-			throws ExtenderException, InPlaceException {
-	
-		Extension<BundleConsoleFactory> ext = Extenders.getExtension(BundleConsoleFactory.class.getName());
-		BundleConsoleFactory bundleConsoleService = ext.getService();
-		if (null == bundleConsoleService) {
-			throw new InPlaceException("failed_to_get_service_for_interface",
-					BundleConsoleFactory.class.getName());
+	protected CommandContributionItem addToggleBundleConsoleView(String menuId, String commandId) {
+		
+		Extension<BundleConsoleFactory> extension = null;
+		try {
+			extension = Activator.getExtension(BundleConsoleFactory.class);
+			BundleConsoleFactory console = extension.getTrackedService();
+			ImageDescriptor image = console.getConsoleViewImage();
+			if (!console.isConsoleViewVisible()) {
+				return createContibution(menuId, commandId, showConsolePage, bundleConsolePageParamId,
+						CommandContributionItem.STYLE_PUSH, image);
+			} else {
+				return createContibution(menuId, commandId, hideConsolePage, bundleConsolePageParamId,
+						CommandContributionItem.STYLE_PUSH, image);
+			}
+		} catch (ExtenderException e) {
+			// Don't display menu entry when extension is not available
+		} finally {
+			if (null != extension) {
+				extension.closeTrackedService();
+			}
 		}
-		if (!bundleConsoleService.isConsoleViewVisible()) {
-			// ext.ungetService();
-			return createContibution(menuId, commandId, showConsolePage, bundleConsolePageParamId,
-					CommandContributionItem.STYLE_PUSH, bundleConsoleService.getConsoleViewImage());
-		} else {
-			// ext.ungetService();
-			return createContibution(menuId, commandId, hideConsolePage, bundleConsolePageParamId,
-					CommandContributionItem.STYLE_PUSH, bundleConsoleService.getConsoleViewImage());
-		}
+		return null;
 	}
 
 	/**
@@ -197,28 +216,29 @@ public abstract class BundleCommandsContributionItems extends CompoundContributi
 	 * 
 	 * @param menuId a dynamic menu id. This is usually the bundle main or pop-up menu id
 	 * @param commandId The command id for a defined command associated with the specified menu id
-	 * @return contribution for hiding or showing the bundle log view
-	 * @throws ExtenderException if failing to get the extender service for the bundle log view
-	 * @throws InPlaceException if the bundle log view service returns null
+	 * @return contribution for hiding or showing the bundle log view or null if failed to get the log view
 	 */
-	protected CommandContributionItem addToggleBundleLogView(String menuId, String commandId) 
-			throws ExtenderException, InPlaceException {
-
-		Extension<BundleLogView> ext = Extenders.getExtension(BundleLogView.class.getName());
-		BundleLogView viewService = ext.getService();
-		if (null == viewService) {
-			throw new InPlaceException("failed_to_get_service_for_interface",
-					BundleLogView.class.getName());
+	protected CommandContributionItem addToggleBundleLogView(String menuId, String commandId) {
+		Extension<BundleLogView> extension = null;;
+		try {
+			extension = Activator.getExtension(BundleLogView.class);
+			BundleLogView logView = extension.getTrackedService();
+			ImageDescriptor image = logView.getLogViewImage();
+			if (!logView.isVisible()) {
+				return createContibution(menuId, commandId, showMessageView, bundleLogViewParamId,
+						CommandContributionItem.STYLE_PUSH, image);
+			} else {
+				return createContibution(menuId, commandId, hideMessageView, bundleLogViewParamId,
+						CommandContributionItem.STYLE_PUSH, image);
+			}
+		} catch (ExtenderException e) {
+			// Don't display menu entry when extension is not available
+		} finally {
+			if (null != extension) {
+				extension.closeTrackedService();
+			}
 		}
-		if (!viewService.isVisible()) {
-			ext.ungetService();
-			return createContibution(menuId, commandId, showMessageView, bundleLogViewParamId,
-					CommandContributionItem.STYLE_PUSH, viewService.getLogViewImage());
-		} else {
-			ext.ungetService();
-			return createContibution(menuId, commandId, hideMessageView, bundleLogViewParamId,
-					CommandContributionItem.STYLE_PUSH, viewService.getLogViewImage());
-		}
+		return null;
 	}
 
 	/**

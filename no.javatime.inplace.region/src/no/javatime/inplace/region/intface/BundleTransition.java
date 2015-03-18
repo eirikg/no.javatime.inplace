@@ -23,6 +23,12 @@ import org.osgi.framework.Bundle;
 public interface BundleTransition {
 
 	/**
+	 * Manifest header for accessing the default service implementation class name of the bundle
+	 * region
+	 */
+	public final static String BUNDLE_TRANSITION_SERVICE = "Bundle-Transition-Service";
+
+	/**
 	 * Semantic tagging of bundles specifying that a transition is active (or current) or is pending
 	 * (planned) on a bundle. A bundle is tagged right before a simple or composite OSGi command is
 	 * executed (active), when changing the characteristics of a bundle (e.g. toggling activation

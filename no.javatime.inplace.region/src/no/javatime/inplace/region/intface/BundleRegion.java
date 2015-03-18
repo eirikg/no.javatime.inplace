@@ -28,6 +28,13 @@ import org.osgi.framework.Bundle;
  * 
  */
 public interface BundleRegion {
+	
+	/**
+	 * Manifest header for accessing the default service implementation class name of the bundle
+	 * region
+	 */
+	public final static String BUNDLE_REGION_SERVICE = "Bundle-Region-Service";
+
 	/**
 	 * Reference location of bundle projects used when installing bundles.
 	 * 

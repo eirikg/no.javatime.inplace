@@ -13,8 +13,7 @@ package no.javatime.inplace.ui.command.contributions;
 import java.util.ArrayList;
 import java.util.Collection;
 
-import no.javatime.inplace.bundlejobs.ActivateProjectJob;
-import no.javatime.inplace.dialogs.SaveProjectHandler;
+import no.javatime.inplace.bundlejobs.intface.ResourceState;
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.region.intface.BundleCommand;
 import no.javatime.inplace.region.intface.BundleProjectCandidates;
@@ -61,9 +60,10 @@ public class BundleMainCommandsContributionItems extends BundleCommandsContribut
 		Collection<IProject> activatedProjects = bundleRegion.getActivatedProjects();
 
 		try {
+			ResourceState resourceState = Activator.getResourceStateService();
 			// Busy running bundle jobs.
 			// Do not add contributions for bundles that are dependent on their current state
-			if (SaveProjectHandler.getBundlesJobRunState()) {
+			if (resourceState.hasBundleJobState()) {
 				contribute(addStopTaskOperation(menuId, dynamicMainCommandId), contributions);
 				contribute(addInterrupt(menuId, dynamicMainCommandId), contributions);
 			} else {
@@ -106,7 +106,7 @@ public class BundleMainCommandsContributionItems extends BundleCommandsContribut
 		if (candidateProjects.size() > 0) {
 			String activateLabel = null;
 			if (activatedProjects.isEmpty()) {
-				activateLabel = formatLabel(ActivateProjectJob.activateWorkspaceJobName,
+				activateLabel = formatLabel(Msg.ACTIVATE_WORKSPACE_JOB,
 						candidateProjects.size(), Boolean.FALSE);
 			} else {
 				activateLabel = formatLabel(Msg.ACTIVATE_JOB, candidateProjects.size(), Boolean.TRUE);
@@ -188,7 +188,7 @@ public class BundleMainCommandsContributionItems extends BundleCommandsContribut
 	 */
 	private CommandContributionItem addStop(Collection<IProject> activatedProjects) {
 
-		BundleRegion bundleRegion = Activator.getBundleRegionService(); // BundleTransitionListener.getRegion();
+		BundleRegion bundleRegion = Activator.getBundleRegionService();
 		BundleCommand bundleCommand = Activator.getBundleCommandService(); 
 
 		// Calculate number of projects to stop

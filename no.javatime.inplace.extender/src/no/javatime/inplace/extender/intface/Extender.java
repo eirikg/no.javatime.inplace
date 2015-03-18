@@ -89,12 +89,12 @@ public interface Extender<S> {
 	 * Create a new extension from this extender. Use the extension to access this extender and the
 	 * service registered by this extender.
 	 * <p>
-	 * If this extender was registered with multiple interface service names, the first service
-	 * interface name is used.
+	 * If this extender was registered with multiple interface service names, the first registered
+	 * service interface name is used.
 	 * <p>
 	 * This method is otherwise identical to {@code getExtension(getServiceInterfaceName(), user)} and
-	 * is provided as a convenience when the service interface name is the only or the first service interface name
-	 * specified when this extender was registered
+	 * is provided as a convenience when the service interface name is the only or the first service
+	 * interface name specified when this extender was registered
 	 * <p>
 	 * 
 	 * @param <S> Type of Service
@@ -140,12 +140,11 @@ public interface Extender<S> {
 	 * @param <S> Type of Service
 	 * @param user the user bundle requesting the service
 	 * @return the service object for the interface specified at construction of this extender object
-	 * or null if no service is being tracked.
-	 * @throws ExtenderException if the bundle context of the owner bundle is not valid, the bundle is
-	 * in an illegal state (uninstalled, installed or resolved), the service was not created by the
-	 * same framework instance as the BundleContext of the specified bundle or if the caller does not
-	 * have the appropriate AdminPermission[this,CLASS], and the Java Runtime Environment supports
-	 * permissions.
+	 * @throws ExtenderException if the service is null, bundle context of the owner bundle is not
+	 * valid, the bundle is in an illegal state (uninstalled, installed or resolved), the service was
+	 * not created by the same framework instance as the BundleContext of the specified bundle or if
+	 * the caller does not have the appropriate AdminPermission[this,CLASS], and the Java Runtime
+	 * Environment supports permissions.
 	 */
 	public S getService(Bundle user) throws ExtenderException;
 
@@ -160,12 +159,12 @@ public interface Extender<S> {
 	 * 
 	 * @param <S> Type of Service
 	 * @return the service object for for the interface specified at construction of this extension
-	 * object or null if no service is being tracked.
-	 * @throws ExtenderException if the bundle context of the owner bundle is not valid, the bundle is
-	 * in an illegal state (uninstalled, installed or resolved), the service was not created by the
-	 * same framework instance as the BundleContext of the specified bundle or if the caller does not
-	 * have the appropriate AdminPermission[this,CLASS], and the Java Runtime Environment supports
-	 * permissions.
+	 * object
+	 * @throws ExtenderException if the service is null, bundle context of the owner bundle is not
+	 * valid, the bundle is in an illegal state (uninstalled, installed or resolved), the service was
+	 * not created by the same framework instance as the BundleContext of the specified bundle or if
+	 * the caller does not have the appropriate AdminPermission[this,CLASS], and the Java Runtime
+	 * Environment supports permissions.
 	 */
 	public S getService() throws ExtenderException;
 
@@ -255,6 +254,13 @@ public interface Extender<S> {
 	public Long getServiceId();
 
 	/**
+	 * Get the ranking of this extender. This is the same as the service ranking.
+	 * 
+	 * @return the ranking of this service
+	 */
+	public Integer getServiceRanking();
+
+	/**
 	 * Check if the extender is registered
 	 * <p>
 	 * If registered, the underlying service registered by this extender is also registered. If
@@ -301,7 +307,7 @@ public interface Extender<S> {
 	 * extender.
 	 * 
 	 * @return false if the context bundle's use count for the service is zero or if the service has
-	 * been unregistered; true otherwise; true otherwise
+	 * been unregistered; true otherwise
 	 * @throws ExtenderException if the context of the using bundle is no longer valid or the service
 	 * was created by another instance of the framework
 	 * @see org.osgi.framework.BundleContext#ungetService(ServiceReference) OSGi ungetService

@@ -107,12 +107,11 @@ public interface Extension<S> {
 	 * <p>
 	 * There can be at most one tracker object per extension, but it is possible to close the tracker
 	 * and then open a new one.
-	 * 
-	 * @param userBundle The bundle using this service
 	 * @param customizer A service tracker to track the life cycle of the service. Can be null.
+	 * 
 	 * @throws ExtenderException
 	 */
-	public void openServiceTracker(Bundle userBundle, ServiceTrackerCustomizer<S, S> customizer)
+	public void openServiceTracker(ServiceTrackerCustomizer<S, S> customizer)
 			throws ExtenderException;
 
 	/**
@@ -124,10 +123,10 @@ public interface Extension<S> {
 	 * <p>
 	 * If the the tracker is closed, it is opened before getting the tracked service.
 	 * 
-	 * @return the service of this extension type or null if no service is being tracked
+	 * @return the service of this extension type 
 	 * @throws ExtenderException if this call force opening the service tracker and the bundle context
-	 * used by the service tracker is no longer valid
-	 * @see #closeServiceTracker()
+	 * used by the service tracker is no longer valid or the returned service from the framework is null
+	 * @see #closeTrackedService()
 	 */
 	public S getTrackedService() throws ExtenderException;
 
@@ -135,7 +134,7 @@ public interface Extension<S> {
 	 * This method should be called when the tracking of the service should end
 	 * 
 	 * @see #getTrackedService()
-	 * @see #openServiceTracker(Bundle, ServiceTrackerCustomizer)
+	 * @see #openServiceTracker(ServiceTrackerCustomizer)
 	 */
-	public void closeServiceTracker();
+	public void closeTrackedService();
 }

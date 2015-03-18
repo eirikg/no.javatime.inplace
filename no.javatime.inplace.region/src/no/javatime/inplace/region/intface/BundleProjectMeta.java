@@ -29,6 +29,12 @@ import org.osgi.framework.Bundle;
 public interface BundleProjectMeta {
 
 	/**
+	 * Manifest header for accessing the default service implementation class name of the bundle
+	 * project meta
+	 */
+	public final static String BUNDLE_PROJECT_META_SERVICE = "Bundle-Project-Meta-Service";
+
+	/**
 	 * Path to manifest file relative to workspace root
 	 */
 	final public static String MANIFEST_RELATIVE_PATH = Msg.MANIFEST_FILE_RELATIVE_PATH_REF;

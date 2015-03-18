@@ -15,11 +15,11 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
-import no.javatime.inplace.bundlejobs.BundleJob;
 import no.javatime.inplace.bundlejobs.intface.ActivateProject;
+import no.javatime.inplace.bundlejobs.intface.BundleExecutor;
+import no.javatime.inplace.extender.intface.Extender;
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.extender.intface.Extenders;
-import no.javatime.inplace.extender.intface.Extension;
 import no.javatime.inplace.region.events.BundleTransitionEvent;
 import no.javatime.inplace.region.events.BundleTransitionEventListener;
 import no.javatime.inplace.region.intface.BundleProjectCandidates;
@@ -399,10 +399,9 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 		// Set input to list page and restore UI elements state
 		showProjects(javaProjects, true);
 		restoreState(memento);
-		Extension<ActivateProject> activateExtension = Extenders.getExtension(
-				ActivateProject.class.getName(), Activator.getContext().getBundle());
-		ActivateProject activate = activateExtension.getService();
-		if (!activate.isProjectWorkspaceActivated()) {
+		Extender<ActivateProject> activateProjectExtender = Extenders.getExtender(ActivateProject.class.getName());
+		ActivateProject activateProject = activateProjectExtender.getService(Activator.getContext().getBundle());
+		if (!activateProject.isProjectWorkspaceActivated()) {
 			pagebook.getDisplay().asyncExec(new Runnable() {
 				@Override
 				public void run() {
@@ -410,6 +409,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 				}
 			});
 		}
+		activateProjectExtender.ungetService(Activator.getContext().getBundle());
 	}
 
 	/**
@@ -671,17 +671,17 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 				return;
 			}
 			try {
-				if (!Activator.getDefault().getCommandOptionsService().isUpdateOnBuild()
+				if (!Activator.getCommandOptionsService().isUpdateOnBuild()
 						&& Activator.getBundleTransitionService().containsPending(Transition.UPDATE)) {
 					showProjectInfo();
 				}
-			} catch (InPlaceException e) {
+			} catch (ExtenderException e) {
 				StatusManager.getManager()
 						.handle(new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),
 								StatusManager.LOG);
 			}
 
-		} else if (job instanceof BundleJob) {
+		} else if (job.belongsTo(BundleExecutor.FAMILY_BUNDLE_LIFECYCLE)) {
 			// Don't update pages while Eclipse shuts down
 			IWorkbench workbench = Activator.getDefault().getWorkbench();
 			if (null != workbench && workbench.isClosing()) {
@@ -700,7 +700,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 	@Override
 	public void aboutToRun(IJobChangeEvent event) {
 		final Job job = event.getJob();
-		if (job instanceof BundleJob) {
+		if (job.belongsTo(BundleExecutor.FAMILY_BUNDLE_LIFECYCLE)) {
 			pagebook.getDisplay().asyncExec(new Runnable() {
 				@Override
 				public void run() {
@@ -718,7 +718,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 	@Override
 	public void running(IJobChangeEvent event) {
 		final Job job = event.getJob();
-		if (job instanceof BundleJob) {
+		if (job.belongsTo(BundleExecutor.FAMILY_BUNDLE_LIFECYCLE)) {
 			pagebook.getDisplay().asyncExec(new Runnable() {
 				@Override
 				public void run() {
@@ -731,7 +731,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 	@Override
 	public void awake(IJobChangeEvent event) {
 		final Job job = event.getJob();
-		if (job instanceof BundleJob) {
+		if (job.belongsTo(BundleExecutor.FAMILY_BUNDLE_LIFECYCLE)) {
 			pagebook.getDisplay().asyncExec(new Runnable() {
 				@Override
 				public void run() {
@@ -744,7 +744,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 	@Override
 	public void scheduled(IJobChangeEvent event) {
 		final Job job = event.getJob();
-		if (job instanceof BundleJob) {
+		if (job.belongsTo(BundleExecutor.FAMILY_BUNDLE_LIFECYCLE)) {
 			pagebook.getDisplay().asyncExec(new Runnable() {
 				@Override
 				public void run() {
@@ -757,7 +757,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 	@Override
 	public void sleeping(IJobChangeEvent event) {
 		final Job job = event.getJob();
-		if (job instanceof BundleJob) {
+		if (job.belongsTo(BundleExecutor.FAMILY_BUNDLE_LIFECYCLE)) {
 			pagebook.getDisplay().asyncExec(new Runnable() {
 				@Override
 				public void run() {
@@ -784,7 +784,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 			});
 		} else {
 			IJobManager jobMan = Job.getJobManager();
-			final Job[] bundleJob = jobMan.find(BundleJob.FAMILY_BUNDLE_LIFECYCLE);
+			final Job[] bundleJob = jobMan.find(BundleExecutor.FAMILY_BUNDLE_LIFECYCLE);
 			if (bundleJob.length == 0 && !getContentDescription().equals("idle")) { //$NON-NLS-1$
 				pagebook.getDisplay().asyncExec(new Runnable() {
 					@Override
@@ -1577,7 +1577,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 	private Boolean isBundleJobRunning() {
 
 		IJobManager jobMan = Job.getJobManager();
-		Job[] jobs = jobMan.find(BundleJob.FAMILY_BUNDLE_LIFECYCLE);
+		Job[] jobs = jobMan.find(BundleExecutor.FAMILY_BUNDLE_LIFECYCLE);
 		if (jobs.length > 0) {
 			return true;
 		} else {

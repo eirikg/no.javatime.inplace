@@ -26,15 +26,15 @@ import no.javatime.inplace.bundlejobs.UninstallJob;
 import no.javatime.inplace.bundlejobs.UpdateJob;
 import no.javatime.inplace.bundlejobs.events.BundleJobEvent;
 import no.javatime.inplace.bundlejobs.events.BundleJobEventListener;
+import no.javatime.inplace.bundlejobs.events.BundleJobManager;
 import no.javatime.inplace.bundlejobs.intface.ActivateProject;
-import no.javatime.inplace.bundlejobs.intface.BundlesServiceFactory;
-import no.javatime.inplace.bundlemanager.BundleJobManager;
+import no.javatime.inplace.bundlejobs.intface.BundleExecutor;
+import no.javatime.inplace.bundlejobs.intface.ExecutorServiceFactory;
 import no.javatime.inplace.dialogs.ExternalTransition;
 import no.javatime.inplace.dl.preferences.intface.CommandOptions;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.dl.preferences.intface.MessageOptions;
-import no.javatime.inplace.extender.intface.Extender;
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.extender.intface.Extenders;
 import no.javatime.inplace.extender.intface.Extension;
@@ -162,8 +162,6 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 	private Extension<BundleConsoleFactory> bundleConsoleFactory;
 	// Log for bundle commands
 	private Extension<BundleLog> bundleLog;
-	// Register services
-	private Extender<ActivateProject> activateProject;
 
 	public InPlace() {
 	}
@@ -176,8 +174,8 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 		Bundle bundle = context.getBundle(); 
 		
 		// Register hosted extenders 
-		activateProject = Extenders.register(bundle, ActivateProject.class.getName(), 
-				new BundlesServiceFactory(ActivateProjectJob.class.getName()),null);
+		Extenders.register(bundle, ActivateProject.class.getName(), 
+				new ExecutorServiceFactory(ActivateProjectJob.class.getName()),null);
 	
 		extenderBundleTracker = new ExtenderTracker(context, Bundle.ACTIVE, null);
 		extenderBundleTracker.open();
@@ -373,7 +371,7 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 						savePluginSettings(true, false);
 						activatedProjects = bundleProjectcandidates.getBundleProjects();
 						shutDownJob = new UninstallJob(UninstallJob.shutDownJobName);
-						((UninstallJob) shutDownJob).unregisterBundleProject(true);
+						((UninstallJob) shutDownJob).setUnregister(true);
 					}
 				}
 				if (activatedProjects.size() > 0) {
@@ -383,7 +381,7 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 				}
 				IJobManager jobManager = Job.getJobManager();
 				// Wait for build and bundle jobs
-				jobManager.join(BundleJob.FAMILY_BUNDLE_LIFECYCLE, null);
+				jobManager.join(BundleExecutor.FAMILY_BUNDLE_LIFECYCLE, null);
 				jobManager.join(ResourcesPlugin.FAMILY_AUTO_BUILD, null);
 				jobManager.join(ResourcesPlugin.FAMILY_MANUAL_BUILD, null);
 				if (shutDownJob.getErrorStatusList().size() > 0) {

@@ -33,11 +33,6 @@ import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.osgi.util.NLS;
 
-/**
- * Reinstalls pending projects. Projects are first uninstalled and then installed. Only pending bundle
- * projects in state INSTALLED are reinstalled and no dependency closures are calculated
- * 
- */
 public class ReinstallJob extends NatureJob implements Reinstall {
 
 	/** Standard name of a start job */

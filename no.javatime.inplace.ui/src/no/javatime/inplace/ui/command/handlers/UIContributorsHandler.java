@@ -12,13 +12,14 @@ package no.javatime.inplace.ui.command.handlers;
 
 import java.util.Collection;
 
-import no.javatime.inplace.bundlejobs.DeactivateJob;
-import no.javatime.inplace.bundlemanager.BundleJobManager;
+import no.javatime.inplace.bundlejobs.events.BundleJobManager;
+import no.javatime.inplace.bundlejobs.intface.Deactivate;
 import no.javatime.inplace.dl.preferences.intface.CommandOptions;
+import no.javatime.inplace.extender.intface.ExtenderException;
+import no.javatime.inplace.extender.intface.Extension;
 import no.javatime.inplace.region.intface.BundleProjectCandidates;
 import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.ui.Activator;
-import no.javatime.inplace.ui.msg.Msg;
 
 import org.eclipse.core.resources.IProject;
 
@@ -30,7 +31,7 @@ public class UIContributorsHandler extends AbstractOptionsHandler {
 	public static String commandId = "no.javatime.inplace.command.uicontributors";
 
 	@Override
-	protected void storeValue(Boolean value) throws InPlaceException {
+	protected void storeValue(Boolean value) throws ExtenderException {
 
 		CommandOptions cmdStore = getOptionsService();
 		final BundleProjectCandidates bundleProjectCandidates = Activator.getBundleProjectCandidatesService();
@@ -47,9 +48,12 @@ public class UIContributorsHandler extends AbstractOptionsHandler {
 				});
 				if (!value) {
 					// Deactivate projects allowing UI extensions
-					DeactivateJob daj = 
-							new DeactivateJob(Msg.DEACTIVATE_UI_CONTRIBOTRS_JOB, uIProjects);			
-					BundleJobManager.addBundleJob(daj, 0);
+					Extension<Deactivate> deactivateExtender = 
+							Activator.getExtension(Deactivate.class.getName());
+					Deactivate deactivate = deactivateExtender.getTrackedService();
+					deactivate.addPendingProjects(uIProjects);
+					BundleJobManager.addBundleJob(deactivate.getJob(), 0);
+					deactivateExtender.closeTrackedService();
 				}
 			}
 		}
@@ -59,7 +63,8 @@ public class UIContributorsHandler extends AbstractOptionsHandler {
 	protected boolean getStoredValue() throws InPlaceException {
 
 		CommandOptions cmdStore = getOptionsService();
-		return cmdStore.isAllowUIContributions();
+		boolean isAllowUI = cmdStore.isAllowUIContributions();
+		return isAllowUI;
 	}
 
 	@Override

@@ -378,6 +378,10 @@ public class BundleCommandImpl implements BundleCommand {
 		if (null == bundles || bundles.size() == 0) {
 			return; // Ok to return when no bundles to refresh
 		}
+			// Report on any additional bundles refreshed than those specified
+			//Collection<Bundle> dependencyClosure = getDependencyClosure(bundles);
+			// dependencyClosure.removeAll(bundles);
+
 		try { // wait block
 			for (Bundle bundle : bundles) {
 				if (WorkspaceRegionImpl.INSTANCE.exist(bundle)) {

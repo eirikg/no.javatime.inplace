@@ -203,8 +203,7 @@ public class Extenders {
 	public static final <S> Extension<S> getExtension(String interfaceName, Bundle user)
 			throws ExtenderException {
 
-		@SuppressWarnings("unchecked")
-		ExtenderServiceMap<S> extServiceMap = (ExtenderServiceMap<S>) Activator.getExtenderServiceMap();
+		ExtenderServiceMap<S> extServiceMap = Activator.getExtenderServiceMap();
 		Extender<S> extender = extServiceMap.get(interfaceName);
 		Activator.ungetServiceMap();
 		return null == extender ? null : extender.getExtension(user);
@@ -224,8 +223,7 @@ public class Extenders {
 	 */
 	public static final <S> Extension<S> getExtension(String interfaceName) throws ExtenderException {
 
-		@SuppressWarnings("unchecked")
-		ExtenderServiceMap<S> extServiceMap = (ExtenderServiceMap<S>) Activator.getExtenderServiceMap();
+		ExtenderServiceMap<S> extServiceMap = Activator.getExtenderServiceMap();
 		Extender<S> extender = extServiceMap.get(interfaceName);
 		Activator.ungetServiceMap();
 		return null == extender ? null : extender.getExtension();
@@ -278,6 +276,35 @@ public class Extenders {
 		Activator.ungetServiceMap();
 		return extenders;
 	}
+	
+	/**
+	 * Get an extender registered with the specified interface class
+	 * <p>
+	 * This extender access method has an additional check to verify if the interface class is loaded or
+	 * not. A failure first indicates that the extender is not registered or the bundle
+	 * hosting the class is not started yet and/or not loaded by or on behalf of the hosting bundle
+	 * 
+	 * @param interfaceClass service interface class
+	 * @return the extender service
+	 * @throws ExtenderException if fail to get the registered extender due to no
+	 * registered service with the specified interface name
+	 */
+	public static <E> Extender<E> getExtender(Class<E> interfaceClass) throws ExtenderException {
+
+		Extender<E> ext = null;
+		try {
+			Class<?> c = Class.forName(interfaceClass.getName());
+			ext = getExtender(c.getName());
+			if (null == ext) {
+				throw new ExtenderException("Null extender for the using bundle");
+			}
+		} catch (ClassNotFoundException e) {
+			// Bundle hosting the class is not started yet and/or not loaded by or on behalf of the hosting
+			// bundle
+			throw new ExtenderException(e, "Interface class for extender not found for the using bundle");
+		}
+		return ext;
+	}
 
 	/**
 	 * Get all extenders tracked by the specified bundle tracker
@@ -320,8 +347,8 @@ public class Extenders {
 
 		Collection<Extender<Object>> extenders = Extenders.getExtenders(null, null);
 		for (Extender<?> extender : extenders) {
-			Bundle ownerBundle = extender.getRegistrar();
-			if (null != registrar && ownerBundle.equals(registrar)) {
+			Bundle registrarBundle = extender.getRegistrar();
+			if (null != registrar && registrarBundle.equals(registrar)) {
 				Collection<Extender<?>> tracked = extender.getTrackedExtenders();
 				if (null != tracked) {
 					trackedExtenders.addAll(tracked);

@@ -82,14 +82,11 @@ public class Activator extends AbstractUIPlugin {
 		bundleCommandImpl.initFrameworkWiring();
 
 		extenderCommand = Extenders.register(context.getBundle(), BundleCommand.class.getName(),
-				bundleCommandImpl, null);
-//				new BundleCommandServiceFactory(), null);
+				bundleCommandImpl, null); //	new BundleCommandServiceFactory(), null);
 		extenderRegion = Extenders.register(context.getBundle(), BundleRegion.class.getName(),
-				WorkspaceRegionImpl.INSTANCE, null);
-//				new BundleRegionServiceFactory(), null);
+				WorkspaceRegionImpl.INSTANCE, null); // new BundleRegionServiceFactory(), null);
 		extenderTransition = Extenders.register(context.getBundle(), BundleTransition.class.getName(),
-				BundleTransitionImpl.INSTANCE, null);
-//			new BundleTransitionServiceFactory(), null);
+				BundleTransitionImpl.INSTANCE, null); // new BundleTransitionServiceFactory(), null);
 		extenderBundleProjectCandidates = Extenders.register(context.getBundle(), BundleProjectCandidates.class.getName(),
 				BundleProjectCandidatesImpl.INSTANCE, null);
 //				new BundleProjectCandidatesServiceFactory(), null);

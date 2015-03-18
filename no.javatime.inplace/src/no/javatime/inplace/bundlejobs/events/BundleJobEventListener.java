@@ -18,5 +18,6 @@ import java.util.EventListener;
  *
  */
 public interface BundleJobEventListener extends EventListener {
+
 	public void bundleJobEvent(BundleJobEvent event);
 }

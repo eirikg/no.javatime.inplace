@@ -2,7 +2,6 @@ package no.javatime.inplace.bundlejobs.intface;
 
 import java.util.Collection;
 
-import no.javatime.inplace.bundlejobs.BundleJob;
 import no.javatime.inplace.dl.preferences.intface.MessageOptions;
 import no.javatime.inplace.log.intface.BundleLog;
 import no.javatime.inplace.region.status.IBundleStatus;
@@ -22,19 +21,24 @@ import org.eclipse.core.runtime.jobs.Job;
  * <p>
  * There is a sub service interface for each bundle operation. Examples are {@link ActivateProject}
  * to activate a project and start the bundle associated with the activated project and
- * {@link ActivateBundle} to install, resolve and start an already activated bundle.
+ * {@link ActivateBundle} to install, resolve and start an already activated project.
  * <p>
  * Add bundle projects to process and use other member methods, including job related methods, to
  * alter and control the state of a bundle executor before executing an operation and interrogate
- * all status and error information after the executor terminates by joining the bundle job
+ * status and error information after the executor terminates by joining the bundle job
  * {@link #joinBundleExecutor()} or by using a job listener.
  * <p>
  * All bundle operation services (sub interfaces of this interface) must be registered with
- * prototype service scope. Use the provided default {@link BundlesServiceFactory prototype service
+ * prototype service scope. Use the provided default {@link ExecutorServiceFactory prototype service
  * factory} or create a customized factory for bundle service operations.
  * <p>
  */
 public interface BundleExecutor {
+
+	/** 
+	 * Common family job name for all bundle executor jobs 
+	*/
+	public static final String FAMILY_BUNDLE_LIFECYCLE = "BundleFamily";
 
 	/**
 	 * Schedules this bundle job to be run with a delay.
@@ -78,6 +82,7 @@ public interface BundleExecutor {
 	 * 
 	 * @return the name of this bundle operation
 	 * @see Job#getName()
+	 * @see Job#setName(String)
 	 */
 	public String getName();
 
@@ -87,7 +92,7 @@ public interface BundleExecutor {
 	 * Scheduling a job with {@code getJob().schedule()} from the returned {@link WorkspaceJob} is
 	 * otherwise identical to {@link #execute()}.
 	 * 
-	 * @return the job to be executed for this bundle operation service
+	 * @return the job to be scheduled for this bundle operation service
 	 */
 	public WorkspaceJob getJob();
 
@@ -104,7 +109,7 @@ public interface BundleExecutor {
 	 * To maintain the order of projects to add use {@link #resetPendingProjects(Collection)}
 	 * 
 	 * @param projects bundle projects to execute
-	 * @see BundleJob#resetPendingProjects(Collection)
+	 * @see #resetPendingProjects(Collection)
 	 */
 	public void addPendingProjects(Collection<IProject> projects);
 

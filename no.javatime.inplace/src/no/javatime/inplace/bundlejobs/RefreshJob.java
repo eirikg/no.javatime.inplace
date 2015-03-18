@@ -39,12 +39,6 @@ import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.osgi.util.NLS;
 import org.osgi.framework.Bundle;
 
-/**
- * Refreshes pending projects. Active (state ACTIVE and STARTING) bundles are first stopped, refreshed and
- * then started. Requiring dependency closure is calculated and requiring bundles to pending bundles to
- * refresh are added as pending bundle projects.
- * 
- */
 public class RefreshJob extends BundleJob implements Refresh {
 
 	/** Standard name of a refresh job */
@@ -153,14 +147,14 @@ public class RefreshJob extends BundleJob implements Refresh {
 
 		// Stopped bundles are started after refresh
 		Collection<Bundle> initialBundleSet = bundleRegion.getBundles(getPendingProjects());
-		// Include requiring bundles in refresh
-		Collection<Bundle> bundlesToRefresh = getBundlesToResolve(initialBundleSet);
-		Collection<Bundle> errorBundles = removeTransitionErrorClosures(bundlesToRefresh, null, null);
+		// Get the requiring closure of bundles to refresh and add bundles to the requiring closure
+		// with same symbolic name as in the refresh closure.
+		Collection<Bundle> bundlesToRefresh = getBundlesToRefresh(initialBundleSet, bundleRegion.getActivatedBundles());
+		Collection<Bundle> errorBundles = removeTransitionErrorClosures(bundlesToRefresh);
 		if (null != errorBundles) {
 			String msg = ErrorMessage.getInstance().formatString("bundle_errors_refresh", bundleRegion.formatBundleList(errorBundles, false));
 			addError(null, msg);
 		}
-
 		if (containsBuildErrorClosures(bundlesToRefresh)) {
 			throw new OperationCanceledException();
 		}

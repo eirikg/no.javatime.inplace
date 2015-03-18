@@ -15,6 +15,8 @@ import java.util.LinkedHashSet;
 
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundlejobs.BundleJob;
+import no.javatime.inplace.bundlejobs.intface.BundleExecutor;
+import no.javatime.inplace.bundlejobs.intface.ResourceState;
 import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
@@ -37,30 +39,61 @@ import org.eclipse.osgi.util.NLS;
  *
  */
 @SuppressWarnings("restriction")
-public class SaveProjectHandler extends SaveScopeResourcesHandler {
+public class ResourceStateHandler extends SaveScopeResourcesHandler implements ResourceState {
 	
 	private Collection<IProject> dirtyProjects = new LinkedHashSet<IProject>();
 
+	/* (non-Javadoc)
+	 * @see no.javatime.inplace.dialogs.ResourceState#getDirtyProjects()
+	 */
+	@Override
 	public Collection<IProject> getDirtyProjects() {
 		areResourcesDirty();
+		Collection<IProject> dirtyProjects = new LinkedHashSet<IProject>(this.dirtyProjects);
 		return dirtyProjects;
 	}
 
+	/* (non-Javadoc)
+	 * @see no.javatime.inplace.dialogs.ResourceState#getDirtyProjects(java.util.Collection)
+	 */
+	@Override
 	public Collection<IProject> getDirtyProjects(Collection<IProject> projects) {
 		Collection<IProject> dirtyProjects = new LinkedHashSet<IProject>(projects);
 		dirtyProjects.retainAll(this.dirtyProjects);
 		return dirtyProjects;
 	}
 
-	public Boolean hasDirtyProjects() {
-		return (dirtyProjects.size() > 0) ? Boolean.TRUE : Boolean.FALSE; 
+	/* (non-Javadoc)
+	 * @see no.javatime.inplace.dialogs.ResourceState#hasDirtyProjects()
+	 */
+
+	/* (non-Javadoc)
+	 * @see no.javatime.inplace.dialogs.ResourceState#areResourcesDirty()
+	 */
+	@Override
+	public Boolean areResourcesDirty () {
+		
+		Collection<IProject> projects = InPlace.getBundleProjectCandidatesService().getProjects();	
+		IResource[] resources = getScopedDirtyResources(projects.toArray(new IProject[projects.size()]));
+		if (resources.length > 0) {
+			this.dirtyProjects.clear();
+			for (int i = 0; i < resources.length; i++) {
+				IProject project = resources[i].getProject();
+				if (null != project) {
+					this.dirtyProjects.add(project);
+				}
+			}
+			return Boolean.TRUE;
+		} else {
+			return Boolean.FALSE;
+		}
 	}
 	
-	/**
-	 * Shows a file save dialog of all changed files in the workspace
-	 * @return true if files are saved or no files are modified. False if modified files are not saved 
-	 * 	 
-	 * */
+	
+	/* (non-Javadoc)
+	 * @see no.javatime.inplace.dialogs.ResourceState#saveModifiedFiles()
+	 */
+	@Override
 	public Boolean saveModifiedFiles() {
 		//PlatformUI.getWorkbench().saveAllEditors(true);
 		Boolean isDirty = areResourcesDirty();
@@ -81,7 +114,7 @@ public class SaveProjectHandler extends SaveScopeResourcesHandler {
 	/**
 	 * Wait for automatic build to finish before returning,
 	 */
-	static public void waitOnBuilder() {
+	public void waitOnBuilder() {
 
 		IJobManager jobMan = Job.getJobManager();
 		Job[] build = jobMan.find(ResourcesPlugin.FAMILY_AUTO_BUILD); 
@@ -98,36 +131,11 @@ public class SaveProjectHandler extends SaveScopeResourcesHandler {
 		}
 	}
 
-	/**
-	 * Wait for a bundle job to finish before returning,
-	 */
-	static public void waitOnBundleJob() {
+	@Override
+	public Boolean hasBundleJobState() {
 
 		IJobManager jobMan = Job.getJobManager();
-		Job[] bundleJobs = jobMan.find(BundleJob.FAMILY_BUNDLE_LIFECYCLE); 
-		if (bundleJobs.length >= 1) {
-			try {
-				if (InPlace.get().getMsgOpt().isBundleOperations()) {
-					InPlace.get().log(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, 
-							NLS.bind(Msg.WAITING_ON_JOB_INFO, bundleJobs[0].getName())));
-				}
-				bundleJobs[0].join();
-				waitOnBundleJob();
-			} catch (InterruptedException e) {
-			}
-		}
-	}
-
-	/**
-	 * Check if there is a job belonging to the {@code BundleJob.FAMILY_BUNDLE_LIFECYCLE} and
-	 * is either running, waiting or sleeping
-	 * 
-	 * @return true if a bundle job is running, waiting or sleeping, otherwise false.
-	 */
-	static public Boolean getBundlesJobRunState() {
-
-		IJobManager jobMan = Job.getJobManager();
-		Job[] jobs = jobMan.find(BundleJob.FAMILY_BUNDLE_LIFECYCLE); 
+		Job[] jobs = jobMan.find(BundleExecutor.FAMILY_BUNDLE_LIFECYCLE); 
 		if (jobs.length > 0) {
 			return true;
 		} else {
@@ -143,7 +151,7 @@ public class SaveProjectHandler extends SaveScopeResourcesHandler {
 	static public BundleJob getWaitingBundleJob() {
 
 		IJobManager jobMan = Job.getJobManager();
-		Job[] jobs = jobMan.find(BundleJob.FAMILY_BUNDLE_LIFECYCLE); 
+		Job[] jobs = jobMan.find(BundleExecutor.FAMILY_BUNDLE_LIFECYCLE); 
 		for (int i = 0; i < jobs.length; i++) {
 			Job job = jobs[i];
 			if (job.getState() == Job.WAITING && job instanceof BundleJob) {
@@ -158,10 +166,10 @@ public class SaveProjectHandler extends SaveScopeResourcesHandler {
 	 * 
 	 * @return bundle job running or null if no bundle is in state running
 	 */
-	static public BundleJob getRunningBundleJob() {
+	 public Job getRunningBundleJob() {
 
 		IJobManager jobMan = Job.getJobManager();
-		Job[] jobs = jobMan.find(BundleJob.FAMILY_BUNDLE_LIFECYCLE); 
+		Job[] jobs = jobMan.find(BundleExecutor.FAMILY_BUNDLE_LIFECYCLE); 
 		for (int i = 0; i < jobs.length; i++) {
 			Job job = jobs[i];
 			if (job.getState() == Job.RUNNING && job instanceof BundleJob) {
@@ -172,14 +180,36 @@ public class SaveProjectHandler extends SaveScopeResourcesHandler {
 	}
 
 	/**
+	 * Wait for a bundle job to finish before returning,
+	 */
+	@SuppressWarnings("unused")
+	static private void waitOnBundleJob() {
+
+		IJobManager jobMan = Job.getJobManager();
+		Job[] bundleJobs = jobMan.find(BundleExecutor.FAMILY_BUNDLE_LIFECYCLE); 
+		if (bundleJobs.length >= 1) {
+			try {
+				if (InPlace.get().getMsgOpt().isBundleOperations()) {
+					InPlace.get().log(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, 
+							NLS.bind(Msg.WAITING_ON_JOB_INFO, bundleJobs[0].getName())));
+				}
+				bundleJobs[0].join();
+				waitOnBundleJob();
+			} catch (InterruptedException e) {
+			}
+		}
+	}
+
+	/**
 	 * Check if a job with the specified job name is running.
 	 * @param jobName is the name returned by {@code Job#getName()}
 	 * @return true if the job with the specified job is running.
 	 */
-	static public Boolean getBundleJobRunState(String jobName) {
+	@SuppressWarnings("unused")
+	static private Boolean getBundleJobRunState(String jobName) {
 
 		IJobManager jobMan = Job.getJobManager();
-		Job[] jobs = jobMan.find(BundleJob.FAMILY_BUNDLE_LIFECYCLE); 
+		Job[] jobs = jobMan.find(BundleExecutor.FAMILY_BUNDLE_LIFECYCLE); 
 		for (int i = 0; i < jobs.length; i++) {
 			Job job = jobs[i];
 			String name = job.getName();
@@ -188,27 +218,5 @@ public class SaveProjectHandler extends SaveScopeResourcesHandler {
 			}
 		}
 		return Boolean.FALSE;
-	}
-
-	/**
-	 * Check if any files in workspace are modified and unsaved
-	 * @return true if there are unsaved modified files in workspace 
-	 */
-	public Boolean areResourcesDirty () {
-		
-		Collection<IProject> projects = InPlace.getBundleProjectCandidatesService().getProjects();	
-		IResource[] resources = getScopedDirtyResources(projects.toArray(new IProject[projects.size()]));
-		if (resources.length > 0) {
-			this.dirtyProjects.clear();
-			for (int i = 0; i < resources.length; i++) {
-				IProject project = resources[i].getProject();
-				if (null != project) {
-					this.dirtyProjects.add(project);
-				}
-			}
-			return Boolean.TRUE;
-		} else {
-			return Boolean.FALSE;
-		}
 	}
 }

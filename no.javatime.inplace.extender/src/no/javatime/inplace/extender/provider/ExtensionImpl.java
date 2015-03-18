@@ -24,6 +24,8 @@ public class ExtensionImpl<S> implements Extension<S> {
 	private final Bundle userBundle;
 
 	private ServiceTracker<S, S> tracker;
+	/* internal object to use for synchronization */
+	private final Object trackerLock = new Object();
 
 	public ExtensionImpl(Class<S> intFace, Bundle userBundle)  throws ExtenderException {
 
@@ -72,43 +74,48 @@ public class ExtensionImpl<S> implements Extension<S> {
 		return userBundle;
 	}
 
-	public void openServiceTracker(Bundle userBundle,  ServiceTrackerCustomizer<S, S> customizer) throws ExtenderException {
+	public void openServiceTracker(ServiceTrackerCustomizer<S, S> customizer) throws ExtenderException {
 
-		if (null == tracker) {
-			try {
-				tracker = new ServiceTracker<S, S>(userBundle.getBundleContext(), extender.getServiceReference(),
-						customizer);
-				tracker.open();
-			} catch (IllegalStateException e) {
-				tracker = null;
-				throw new ExtenderException("Failed to open the tracker for interface {0}", extender.getServiceInterfaceName());
+//		synchronized (trackerLock) {
+			if (null == tracker) {
+				try {
+					tracker = new ServiceTracker<S, S>(this.userBundle.getBundleContext(), extender.getServiceReference(),
+							customizer);
+					tracker.open();
+				} catch (IllegalStateException e) {
+					tracker = null;
+					throw new ExtenderException(e, "Failed to open the tracker for interface {0}", extender.getServiceInterfaceName());
+				}
 			}
-		}
+//		}
 	}
 
 	public S getTrackedService() throws ExtenderException {
 
 		try {
-			if (null == tracker) {
-				openServiceTracker(userBundle, null);
+//			synchronized (trackerLock) {
+				if (null == tracker) {
+					openServiceTracker(null);
+				} else if (tracker.getTrackingCount() == -1) {
+					tracker.open();
+				}
+				return tracker.getService();
+//			}
+		} catch (ExtenderException | NullPointerException e) {
+			ExtenderException ex = new ExtenderException(e, "Failed to get tracked service tracker for interface {0}", extender.getServiceInterfaceName());
+			if (e instanceof NullPointerException) {
+				ex.setNullPointer(true);
 			}
-			if (tracker.getTrackingCount() == -1) {
-				tracker.open();
-			}
-			return tracker.getService();
-		} catch (ExtenderException e) {
-			// Ignore
-			// throw new ExtenderException("Failed to open the tracker for interface {0}", getServiceInterfaceName());
+			throw ex;
 		}
-		return null;
 	}
 
-	public void closeServiceTracker() {
-		// synchronized (tracker) {
-		if (null != tracker && tracker.getTrackingCount() != -1) {
-			tracker.close();
-			tracker = null;
+	public void closeTrackedService() {
+//		synchronized (trackerLock) {
+			if (null != tracker && tracker.getTrackingCount() != -1) {
+				tracker.close();
+				tracker = null;
+			}
 		}
-		// }
-	}
+//	}
 }

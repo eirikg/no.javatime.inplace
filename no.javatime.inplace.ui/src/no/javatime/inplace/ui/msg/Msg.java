@@ -7,11 +7,18 @@ public class Msg extends NLS {
 		
 	// Exceptions
 	public static String PREFERENCE_FLUSH_EXCEPTION;
-
+	public static String GET_SERVICE_EXP;
+	public static String GET_EXTENDER_EXP;
+	public static String NULL_EXTENDER_EXP;
+	public static String NULL_EXTENSION_EXP;
+	
 	// Errors
 	public static String ADD_CONTRIBUTION_ERROR;
 	public static String ADD_MENU_EXEC_ERROR;
 	public static String MANIFEST_ERROR;
+	
+	// Warnings
+	public static String EXTENDER_NOT_AVAILABLE;
 	
 	// Field and menu labels
 	public static String IS_TIMEOUT_LABEL;
@@ -26,10 +33,15 @@ public class Msg extends NLS {
 	public static String STOP_BUNDLE_OP_LABEL;
 	public static String ABOUT_TO_FINISH_JOB_LABEL;
 	public static String INTERRUPT_JOB_LABEL;
-	
+
+	// Job names
+	public static String ACTIVATE_WORKSPACE_JOB;
 	public static String ACTIVATE_JOB;
 	public static String DEACTIVATE_UI_CONTRIBOTRS_JOB;
+	public static String DEACTIVATE_WORKSPACE_JOB;
+	public static String DEACTIVATE_JOB;
 
+	// Info messages
 	public static String REFRESH_HINT_INFO;
 
   private static final String BUNDLE_NAME = "no.javatime.inplace.ui.msg.UIMessages"; //$NON-NLS-1$

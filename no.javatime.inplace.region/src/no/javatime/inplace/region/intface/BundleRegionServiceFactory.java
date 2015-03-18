@@ -1,8 +1,8 @@
-package no.javatime.inplace.region.manager;
+package no.javatime.inplace.region.intface;
 
 import no.javatime.inplace.extender.intface.Extender;
 import no.javatime.inplace.extender.intface.Extenders;
-import no.javatime.inplace.region.intface.BundleRegion;
+import no.javatime.inplace.region.manager.WorkspaceRegionImpl;
 
 import org.osgi.framework.Bundle;
 import org.osgi.framework.ServiceFactory;
@@ -13,7 +13,7 @@ import org.osgi.framework.ServiceRegistration;
  * Factory creating service object for the bundle region. The service scope for this factory is restricted
  * to singleton
  *
- * @param <BundleRegion> service interface for a region of bundles
+ * @param <BundleRegion> service interface for a bundle region 
  */
 public class BundleRegionServiceFactory implements ServiceFactory<BundleRegion> {
 

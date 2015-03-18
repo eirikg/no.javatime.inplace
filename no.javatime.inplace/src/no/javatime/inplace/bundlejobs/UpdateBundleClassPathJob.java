@@ -13,8 +13,8 @@ package no.javatime.inplace.bundlejobs;
 import java.util.Collection;
 
 import no.javatime.inplace.InPlace;
+import no.javatime.inplace.bundlejobs.events.BundleJobManager;
 import no.javatime.inplace.bundlejobs.intface.UpdateBundleClassPath;
-import no.javatime.inplace.bundlemanager.BundleJobManager;
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.closure.BuildErrorClosure;
@@ -32,10 +32,6 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.osgi.util.NLS;
 
-/**
- * Removes or inserts the default output folder in the Bundle-ClassPath and schedules a reset job
- * for bundle projects that have been updated when auto build is off.
- */
 public class UpdateBundleClassPathJob extends BundleJob implements UpdateBundleClassPath {
 
 	private boolean addToPath = true;

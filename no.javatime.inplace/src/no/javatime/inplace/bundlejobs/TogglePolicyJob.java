@@ -36,9 +36,6 @@ import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.osgi.util.NLS;
 import org.osgi.framework.Bundle;
 
-/**
- * Toggles between lazy and eager activation
- */
 public class TogglePolicyJob extends NatureJob implements TogglePolicy {
 
 	/** Standard name of a toggle policy job job */
@@ -163,5 +160,11 @@ public class TogglePolicyJob extends NatureJob implements TogglePolicy {
 			monitor.done();
 			BundleTransitionListener.removeBundleTransitionListener(this);
 		}
+	}
+	
+	@Override
+	public boolean getActivationPolicy(IProject project) {
+		
+		return bundleProjectMeta.getActivationPolicy(project);
 	}
 }

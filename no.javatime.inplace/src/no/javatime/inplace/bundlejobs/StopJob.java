@@ -40,13 +40,6 @@ import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.osgi.util.NLS;
 import org.osgi.framework.Bundle;
 
-/**
- * Stops pending bundle projects with an initial state of ACTIVE and STARTING.
- * <p>
- * Calculate closure of bundles and add them as pending bundle projects to this job before the bundles are
- * stopped according to the current dependency option. Requiring bundles to pending bundle projects are always
- * added as pending bundle projects before bundles are stopped.
- */
 public class StopJob extends BundleJob implements Stop {
 
 	/** Standard name of a stop job */

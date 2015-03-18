@@ -12,7 +12,7 @@ package no.javatime.inplace.ui.command.contributions;
 
 import java.util.ArrayList;
 
-import no.javatime.inplace.dialogs.SaveProjectHandler;
+import no.javatime.inplace.bundlejobs.intface.ResourceState;
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.region.closure.BuildErrorClosure;
 import no.javatime.inplace.region.intface.BundleCommand;
@@ -76,8 +76,9 @@ public class BundlePopUpCommandsContributionItems extends BundleCommandsContribu
 			IProject project = javaProject.getProject();
 			Boolean activated = Activator.getBundleRegionService().isBundleActivated(project);
 			Bundle bundle = bundleRegion.getBundle(project);
+			ResourceState resourceState = Activator.getResourceStateService();
 			// Busy running bundle jobs.
-			if (SaveProjectHandler.getBundlesJobRunState()) {
+			if (resourceState.hasBundleJobState()) {
 				// Do not add contributions for bundles that are dependent on their current state
 				contribute(addStopTaskOperation(menuId, dynamicPopUpCommandId), contributions);
 				contribute(addInterrupt(menuId, dynamicPopUpCommandId), contributions);

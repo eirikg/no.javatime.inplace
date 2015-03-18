@@ -13,8 +13,8 @@ package no.javatime.inplace.bundlejobs;
 import java.util.Collection;
 
 import no.javatime.inplace.InPlace;
+import no.javatime.inplace.bundlejobs.events.BundleJobManager;
 import no.javatime.inplace.bundlejobs.intface.Reset;
-import no.javatime.inplace.bundlemanager.BundleJobManager;
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.closure.CircularReferenceException;
@@ -35,14 +35,6 @@ import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.osgi.util.NLS;
 
-/**
- * Reset first uninstalls and then activates bundles to the same state as they had before the reset job.
- * <p>
- * Resetting a pending bundle creates a set containing the bundle to reset, and all bundles that have
- * requirements on the bundle to reset and its providing bundles. The set is the closure of bundles containing
- * the pending bundle to reset and all bundles with a direct or indirect declared dependency (requiring and
- * providing) on the pending bundle.
- */
 public class ResetJob extends BundleJob implements Reset {
 
 	/** Standard name of a reset job */

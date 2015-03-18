@@ -29,7 +29,6 @@ public class BundleServiceScopeFactory<S> implements ServiceFactory<S> {
 	/* internal object to use for synchronization */
 	private final Object serviceClassLock = new Object();
 
-	@SuppressWarnings("unused")
 	protected BundleServiceScopeFactory() {
 		serviceClassName = null;
 	}

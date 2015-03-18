@@ -39,6 +39,12 @@ import org.eclipse.jdt.core.IJavaProject;
  */
 public interface BundleProjectCandidates {
 
+	/**
+	 * Manifest header for accessing the default service implementation class name of the bundle
+	 * project candidates
+	 */
+	public final static String BUNDLE_PROJECT_CANDIDATES_SERVICE = "Bundle-Project-Candidates-Service";
+
 	final public static String PLUGIN_NATURE_ID = Msg.PLUGIN_ID_NATURE_ID;
 
 	/**

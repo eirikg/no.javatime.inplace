@@ -66,7 +66,7 @@ public class DependencyDialogExtension implements Extension<DependencyDialog> {
 	}
 
 	@Override
-	public void closeServiceTracker() {
+	public void closeTrackedService() {
 		// TODO Auto-generated method stub
 		
 	}
@@ -84,8 +84,7 @@ public class DependencyDialogExtension implements Extension<DependencyDialog> {
 	}
 
 	@Override
-	public void openServiceTracker(Bundle userBundle,
-			ServiceTrackerCustomizer<DependencyDialog, DependencyDialog> customizer)
+	public void openServiceTracker(ServiceTrackerCustomizer<DependencyDialog, DependencyDialog> customizer)
 			throws ExtenderException {
 		// TODO Auto-generated method stub
 		

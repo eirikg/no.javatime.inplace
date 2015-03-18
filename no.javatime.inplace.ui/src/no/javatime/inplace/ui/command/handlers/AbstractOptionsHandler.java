@@ -13,6 +13,7 @@ package no.javatime.inplace.ui.command.handlers;
 import java.util.Map;
 
 import no.javatime.inplace.dl.preferences.intface.CommandOptions;
+import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
@@ -40,7 +41,6 @@ public abstract class AbstractOptionsHandler extends AbstractHandler implements 
 
 	private static String commandStateId = "org.eclipse.ui.commands.toggleState";
 
-	
 	/**
 	 * Store the specified value in options store
 	 * 
@@ -74,17 +74,18 @@ public abstract class AbstractOptionsHandler extends AbstractHandler implements 
 
 		return commandStateId;
 	}
-		
+	
 	/**
-	 * The options command service
+	 * The command options service
 	 * 
 	 * @return the options command service
-	 * @throws InPlaceException if the options store service could not be obtained
+	 * @throws ExtenderException if the command options service could not be obtained
 	 */
-	protected CommandOptions getOptionsService() throws InPlaceException{
-		return Activator.getDefault().getCommandOptionsService();
+	protected CommandOptions getOptionsService() throws ExtenderException {
+
+		return Activator.getCommandOptionsService();
 	}
-	
+
 	/**
 	 * Sync state with store and update the state
 	 */

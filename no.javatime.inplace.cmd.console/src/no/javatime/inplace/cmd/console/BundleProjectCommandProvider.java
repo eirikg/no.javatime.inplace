@@ -7,16 +7,14 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 
-import no.javatime.inplace.bundlejobs.ActivateProjectJob;
-import no.javatime.inplace.bundlejobs.BundleJob;
-import no.javatime.inplace.bundlejobs.DeactivateJob;
-import no.javatime.inplace.bundlejobs.RefreshJob;
-import no.javatime.inplace.bundlejobs.ResetJob;
-import no.javatime.inplace.bundlejobs.StartJob;
-import no.javatime.inplace.bundlejobs.StopJob;
-import no.javatime.inplace.bundlejobs.UpdateJob;
 import no.javatime.inplace.bundlejobs.intface.ActivateProject;
-import no.javatime.inplace.bundlemanager.BundleJobManager;
+import no.javatime.inplace.bundlejobs.intface.BundleExecutor;
+import no.javatime.inplace.bundlejobs.intface.Deactivate;
+import no.javatime.inplace.bundlejobs.intface.Refresh;
+import no.javatime.inplace.bundlejobs.intface.Reset;
+import no.javatime.inplace.bundlejobs.intface.Start;
+import no.javatime.inplace.bundlejobs.intface.Stop;
+import no.javatime.inplace.bundlejobs.intface.Update;
 import no.javatime.inplace.dl.preferences.intface.CommandOptions;
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.extender.intface.Extenders;
@@ -33,8 +31,6 @@ import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.ResourcesPlugin;
-import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.jobs.IJobManager;
 import org.eclipse.core.runtime.jobs.Job;
@@ -42,17 +38,36 @@ import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.osgi.framework.console.CommandInterpreter;
 import org.eclipse.osgi.framework.console.CommandProvider;
+import org.eclipse.osgi.util.NLS;
 import org.eclipse.pde.core.project.IBundleProjectDescription;
 import org.osgi.framework.Bundle;
 
-// Referenced in component.xml
 public class BundleProjectCommandProvider implements CommandProvider {
 
 	private Collection<String> cmds = new HashSet<String>(Arrays.asList("activate", "a",
 			"deactivate", "d", "update", "u", "start", "sta", "stop", "sto", "refresh", "ref", "reset",
 			"res", "?", "help", "h", "check", "c"));
 
+	/**
+	 * Get an extension returned based on ranking order
+	 * 
+	 * @param serviceInterfaceName the interface service name used to locate the extension
+	 * @return an extension located by the specified service interface name
+	 * @throws ExtenderException if failed to get the extender or the extension is null
+	 */
+	public static <S> Extension<S> getExtension(String serviceInterfaceName) throws ExtenderException {
+
+		Extension<S> extension = Extenders.getExtension(serviceInterfaceName, Activator.getContext().getBundle());
+		if (null == extension) {
+			throw new ExtenderException(NLS.bind("Null extender service in bundle {0}",  Activator.getContext().getBundle()));
+		}
+		return extension;
+	}
+
 	public void _ws(CommandInterpreter ci) {
+
+		Extension<?> extension = null;
+
 		try {
 			String cmd = ci.nextArgument();
 			if (cmd == null) {
@@ -66,31 +81,38 @@ public class BundleProjectCommandProvider implements CommandProvider {
 			switch (cmd) {
 			case "activate":
 			case "a":
-				cmd(cmd, ci, new ActivateProjectJob(ActivateProjectJob.activateProjectJobName), "activate");
+				extension = getExtension(ActivateProject.class.getName());
+				cmd(cmd, ci, (ActivateProject) extension.getTrackedService(), "activate");
 				break;
 			case "deactivate":
 			case "d":
-				cmd(cmd, ci, new DeactivateJob(DeactivateJob.deactivateJobName), "deactivate");
+				extension = getExtension(Deactivate.class.getName());
+				cmd(cmd, ci, (Deactivate) extension.getTrackedService(), "deactivate");
 				break;
 			case "update":
 			case "u":
-				cmd(cmd, ci, new UpdateJob(UpdateJob.updateJobName), "update");
+				extension = getExtension(Update.class.getName());
+				cmd(cmd, ci, (Update) extension.getTrackedService(), "update");
 				break;
 			case "refresh":
 			case "ref":
-				cmd(cmd, ci, new RefreshJob(RefreshJob.refreshJobName), "refresh");
+				extension = getExtension(Refresh.class.getName());
+				cmd(cmd, ci, (Refresh) extension.getTrackedService(), "refresh");
 				break;
 			case "reset":
 			case "res":
-				cmd(cmd, ci, getResetJob(cmd), "reset");
+				extension = getExtension(Reset.class.getName());
+				cmd(cmd, ci, (Reset) extension.getTrackedService(), "reset");
 				break;
 			case "start":
 			case "sta":
-				cmd(cmd, ci, new StartJob(StartJob.startJobName), "start");
+				extension = getExtension(Start.class.getName());
+				cmd(cmd, ci, (Start) extension.getTrackedService(), "start");
 				break;
 			case "stop":
 			case "sto":
-				cmd(cmd, ci, new StopJob(StopJob.stopJobName), "stop");
+				extension = getExtension(Stop.class.getName());
+				cmd(cmd, ci, (Stop) extension.getTrackedService(), "stop");
 				break;
 			case "check":
 			case "c":
@@ -102,12 +124,14 @@ public class BundleProjectCommandProvider implements CommandProvider {
 				ci.println(getHelp());
 				break;
 			}
-
 		} finally {
+			if (null != extension) {
+				extension.closeTrackedService();
+			}
 		}
 	}
 
-	public void cmd(String cmd, CommandInterpreter ci, BundleJob job, String fullCmdname) {
+	public void cmd(String cmd, CommandInterpreter ci, BundleExecutor executor, String fullCmdname) {
 
 		boolean activationMode = cmd.startsWith("a") ? true : false;
 		try {
@@ -131,9 +155,9 @@ public class BundleProjectCommandProvider implements CommandProvider {
 				if (null != discaredProjects) {
 					projects.removeAll(discaredProjects);
 				}
-				job.addPendingProjects(projects);
-				ci.println("Running " + job.getName());
-				job.schedule();
+				executor.addPendingProjects(projects);
+				ci.println("Running " + executor.getName());
+				executor.execute();
 				// A command may trigger multiple bundle jobs. Report from all jobs
 				// BundleJob waitingJob = job;
 				// do {
@@ -149,20 +173,24 @@ public class BundleProjectCommandProvider implements CommandProvider {
 		}
 	}
 
-	private BundleJob waitAndReportErrors(CommandInterpreter ci, BundleJob job)
+	@SuppressWarnings("unused")
+	private BundleExecutor waitAndReportErrors(CommandInterpreter ci, BundleExecutor job)
 			throws InPlaceException, IllegalStateException {
 
 		try {
 			IJobManager jobManager = Job.getJobManager();
 			// Wait for build and bundle jobs
-			jobManager.join(BundleJob.FAMILY_BUNDLE_LIFECYCLE, null);
+			jobManager.join(BundleExecutor.FAMILY_BUNDLE_LIFECYCLE, null);
 			jobManager.join(ResourcesPlugin.FAMILY_AUTO_BUILD, null);
 			jobManager.join(ResourcesPlugin.FAMILY_MANUAL_BUILD, null);
 			Collection<IBundleStatus> statusList = job.getErrorStatusList();
 			if (statusList.size() > 0) {
-				final IBundleStatus multiStatus = job.createMultiStatus(new BundleStatus(StatusCode.ERROR,
+				IBundleStatus multiStatus = new BundleStatus(StatusCode.ERROR,
 						Activator.getContext().getBundle().getSymbolicName(), job.getName()
-								+ " terminated with issues"));
+						+ " terminated with issues");
+				for (IBundleStatus status : job.getErrorStatusList()) {
+					multiStatus.add(status);
+				}
 				printStatus(ci, multiStatus);
 				ci.println("See the Bundle and/or the Error Log View for further details");
 			} else {
@@ -217,15 +245,14 @@ public class BundleProjectCommandProvider implements CommandProvider {
 		return tMsgs;
 	}
 
-	private BundleJob getBundleJob() {
+	private BundleExecutor getBundleJob() {
 
 		IJobManager jobMan = Job.getJobManager();
-		Job[] jobs = jobMan.find(BundleJob.FAMILY_BUNDLE_LIFECYCLE);
+		Job[] jobs = jobMan.find(BundleExecutor.FAMILY_BUNDLE_LIFECYCLE);
 		for (int i = 0; i < jobs.length; i++) {
 			Job job = jobs[i];
-			if (job instanceof BundleJob) {
-				BundleJob bj = (BundleJob) job;
-				return bj;
+			if (job.belongsTo(BundleExecutor.FAMILY_BUNDLE_LIFECYCLE)) {
+				return (BundleExecutor) job;
 			}
 		}
 		return null;
@@ -318,23 +345,6 @@ public class BundleProjectCommandProvider implements CommandProvider {
 			ci.printStackTrace(e);
 		}
 		return null;
-	}
-
-	private BundleJob getResetJob(String cmd) {
-
-		return new BundleJob(cmd) {
-			@Override
-			public IBundleStatus runInWorkspace(IProgressMonitor monitor) {
-				try {
-					ResetJob job = new ResetJob(ResetJob.resetJobName, getPendingProjects());
-					BundleJobManager.addBundleJob(job, 0);
-					return super.runInWorkspace(monitor);
-				} catch (CoreException e) {
-					e.printStackTrace();
-				}
-				return getLastErrorStatus();
-			}
-		};
 	}
 
 	public String getHelp() {

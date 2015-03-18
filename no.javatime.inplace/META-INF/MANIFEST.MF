@@ -6,12 +6,8 @@ Require-Bundle: org.eclipse.ui,
  org.eclipse.pde.core,
  org.eclipse.ltk.core.refactoring,
  org.eclipse.jdt.launching
-Export-Package: no.javatime.inplace.bundlejobs,
- no.javatime.inplace.bundlejobs.events;uses:="org.eclipse.core.resources",
- no.javatime.inplace.bundlejobs.intface,
- no.javatime.inplace.bundlemanager,
- no.javatime.inplace.dialogs,
- no.javatime.inplace.statushandler
+Export-Package: no.javatime.inplace.bundlejobs.events;uses:="org.eclipse.core.resources",
+ no.javatime.inplace.bundlejobs.intface
 Bundle-Vendor: JavaTime
 Bundle-Version: 0.2.1.qualifier
 Bundle-Name: InPlace Activator Bundle Manager
@@ -29,6 +25,7 @@ Stop-Bundle-Service: no.javatime.inplace.bundlejobs.StopJob
 Update-Bundle-Service: no.javatime.inplace.bundlejobs.UpdateJob
 Toggle-Policy-Service: no.javatime.inplace.bundlejobs.TogglePolicyJob
 Update-Bundle-Class-Path-Service: no.javatime.inplace.bundlejobs.UpdateBundleClassPathJob
+Resource-State-Service: no.javatime.inplace.dialogs.ResourceStateHandler
 Import-Package: no.javatime.inplace.dl.preferences.intface,
  no.javatime.inplace.extender.intface,
  no.javatime.inplace.log.intface,
