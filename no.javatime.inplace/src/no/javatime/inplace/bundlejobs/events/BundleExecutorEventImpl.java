@@ -12,36 +12,46 @@ package no.javatime.inplace.bundlejobs.events;
 
 import java.util.EventObject;
 
+import no.javatime.inplace.bundlejobs.events.intface.BundleExecutorEvent;
+import no.javatime.inplace.bundlejobs.intface.BundleExecutor;
+
 import org.eclipse.core.resources.WorkspaceJob;
 
-public class BundleJobEventImpl extends EventObject implements BundleJobEvent {
-	
+public class BundleExecutorEventImpl extends EventObject implements BundleExecutorEvent {
+
 	private static final long serialVersionUID = 1593783115734613639L;
-	private transient WorkspaceJob bundleJob;
+	private transient BundleExecutor bundleExecutor;
 	private long delay = 0;
-	
-	public BundleJobEventImpl(Object source, WorkspaceJob bundleJob, long delay) {
-    super(source);
-    this.bundleJob = bundleJob;	
-    this.delay = delay;
-	}
-		public BundleJobEventImpl(Object source, WorkspaceJob bundleJob) {
-    super(source);
-    this.bundleJob = bundleJob;
-	}
-		
-  /* (non-Javadoc)
-	 * @see no.javatime.inplace.bundlejobs.events.BundleJobEvent#getBundleJob()
-	 */
-  @Override
-	public WorkspaceJob getBundleJob() {
-		return bundleJob;
+
+	public BundleExecutorEventImpl(Object source, BundleExecutor bundleJobExecutor, long delay) {
+		super(source);
+		this.bundleExecutor = bundleJobExecutor;
+		this.delay = delay;		
 	}
 
-  /* (non-Javadoc)
+	@Override
+	public WorkspaceJob getJob() {
+		return bundleExecutor.getJob();
+	}
+	
+	@Override
+	public int getJobState() {
+		
+		return bundleExecutor.getJob().getState();
+	}
+	
+	@Override
+	public BundleExecutor getBundlExecutor() {
+
+		return bundleExecutor;
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see no.javatime.inplace.bundlejobs.events.BundleJobEvent#getDelay()
 	 */
-  @Override
+	@Override
 	public long getDelay() {
 		return delay;
 	}

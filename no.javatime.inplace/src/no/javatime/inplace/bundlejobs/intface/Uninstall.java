@@ -7,7 +7,12 @@ package no.javatime.inplace.bundlejobs.intface;
  * @see Install
  * @see Deactivate
  */
-public interface Uninstall {
+public interface Uninstall extends BundleExecutor {
+
+	/**
+	 * Manifest header for accessing the default service implementation class name of the bundle operation.
+	 */
+	public final static String UNINSTALL_BUNDLE_SERVICE = "Uninstall-Bundle-Service";
 
 	/**
 	 * Determines if to include requiring bundles projects to pending projects added to this bundle

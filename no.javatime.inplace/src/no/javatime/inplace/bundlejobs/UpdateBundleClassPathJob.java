@@ -13,7 +13,6 @@ package no.javatime.inplace.bundlejobs;
 import java.util.Collection;
 
 import no.javatime.inplace.InPlace;
-import no.javatime.inplace.bundlejobs.events.BundleJobManager;
 import no.javatime.inplace.bundlejobs.intface.UpdateBundleClassPath;
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.msg.Msg;
@@ -110,10 +109,10 @@ public class UpdateBundleClassPathJob extends BundleJob implements UpdateBundleC
 				}
 			}
 			if (pendingProjects() > 0 && !bundleProjectCandidates.isAutoBuilding()) {
-				if (InPlace.get().getMsgOpt().isBundleOperations()) {
+				if (InPlace.getMessageOptionsService().isBundleOperations()) {
 					addInfoMessage(Msg.ATOBUILD_OFF_RESET_INFO);
 				}
-				BundleJobManager.addBundleJob(resetJob, 0);
+				InPlace.getBundleJobEventService().add(resetJob, 0);
 			}
 		} catch (OperationCanceledException e) {
 			addCancelMessage(e, NLS.bind(Msg.CANCEL_JOB_INFO, getName()));

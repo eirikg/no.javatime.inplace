@@ -9,7 +9,7 @@ import org.eclipse.core.resources.IProject;
 
 /**
  * Activates project(s) by adding an internal nature and builder to the project(s). The nature is
- * removed when a bundle is {@link Deactivate Deactivated}
+ * removed when a bundle is {@link Deactivate deactivated}
  * <p>
  * Project dependency closures are calculated and added as pending projects to this service
  * according to the current dependency option. E.g. not activated projects providing capabilities to
@@ -17,17 +17,17 @@ import org.eclipse.core.resources.IProject;
  * <P>
  * If the option "Update Bundle-ClassPath on Activate/Deactivate" is switched on than the default
  * output folder is updated on the bundle class path if it is missing. If the activation policy
- * option is different from the current setting the Bundle-ActivationPolicy header is updated when
- * the option is set to "lazy" and removed if set to "eager".
+ * option is different from the current setting in the manifest file the Bundle-ActivationPolicy
+ * header is updated when the option is set to "lazy" and removed when set to "eager".
  * <p>
  * This service does not alter the state of bundles. When a project is nature enabled the project is
  * per definition activated even if the bundle is not yet.
  * <p>
- * After activation of a project one of the following services are triggered on the the nature
- * enabled project (this is also true when auto build option is off):
- * <li>If the activated bundle project is in state UNINSTALLED an {@link ActivateBundle} service is
- * scheduled.
- * <li>If the activated bundle project is in state INSTALLED an {@link Update} service is scheduled.
+ * After activation of a project one of the following service operations are triggered on the nature enabled
+ * project (this is also true when auto build option is off):
+ * <li>If the activated bundle project is in state UNINSTALLED an {@link ActivateBundle} service operation is
+ * added for execution.
+ * <li>If the activated bundle project is in state INSTALLED an {@link Update} service operation is added for execution.
  */
 public interface ActivateProject extends BundleExecutor {
 
@@ -68,7 +68,21 @@ public interface ActivateProject extends BundleExecutor {
 	public Boolean isProjectWorkspaceActivated() throws InPlaceException;
 
 	/**
-	 * Get all activated projects
+	 * Get all deactivated projects in the workspace region
+	 * <p>
+	 * This is a convenience method otherwise identical to {@code BundleProjectCandidates.getCandidates()} 
+	 * 
+	 * @return a list of deactivated projects or an empty set
+	 * @throws InPlaceException if the returned project candidate service id null, any open projects
+	 * that does not exist or a core exception when accessing projects is thrown internally (should
+	 * not be the case for open and existing projects)
+	 * @throws ExtenderException if the extender service to access project candidates to activate
+	 * could not be obtained
+	 */
+	public Collection<IProject> getDeactivatedProjects() throws InPlaceException, ExtenderException;
+
+	/**
+	 * Get all activated projects in the workspace region
 	 * <p>
 	 * Activated projects are assigned an internal nature.
 	 * 

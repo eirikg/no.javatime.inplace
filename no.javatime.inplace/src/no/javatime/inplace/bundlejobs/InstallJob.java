@@ -14,7 +14,6 @@ import java.util.Collection;
 import java.util.Collections;
 
 import no.javatime.inplace.InPlace;
-import no.javatime.inplace.bundlejobs.events.BundleJobManager;
 import no.javatime.inplace.bundlejobs.intface.Install;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.extender.intface.ExtenderException;
@@ -222,7 +221,7 @@ public class InstallJob extends NatureJob implements Install {
 			}
 		}
 		if (activateJob.pendingProjects() > 0) {
-			BundleJobManager.addBundleJob(activateJob, 0);
+			InPlace.getBundleJobEventService().add(activateJob, 0);
 		}
 	}
 
@@ -248,7 +247,7 @@ public class InstallJob extends NatureJob implements Install {
 			if (be.hasBuildErrors()) {
 				projectErrorClosures = be.getBuildErrorClosures();
 				removePendingProjects(projectErrorClosures);
-				if (InPlace.get().getMsgOpt().isBundleOperations()) {
+				if (InPlace.getMessageOptionsService().isBundleOperations()) {
 					IBundleStatus bundleStatus = be.getErrorClosureStatus();
 					if (null != bundleStatus) {
 						addLogStatus(bundleStatus);

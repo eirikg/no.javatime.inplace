@@ -13,6 +13,8 @@ package no.javatime.inplace.pl.console.view;
 import java.io.Console;
 import java.io.PrintStream;
 
+import no.javatime.inplace.dl.preferences.intface.MessageOptions;
+import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.pl.console.Activator;
 
 import org.eclipse.jface.resource.ImageDescriptor;
@@ -99,13 +101,19 @@ public class BundleConsole extends MessageConsole {
 	 * Must be called from the UI thread.
 	 */
 	public void initializeStreams() {
+
 		if (!initialized) {
 			systemOut = new PrintStream(newMessageStream(), true);
 			systemErr = new PrintStream(newMessageStream(), true);
 			initialized = true;
-			if (Activator.getDefault().getMsgOpt().isSystemOutBundleConsole()) {
-				setSystemOutToBundleConsole();
-			} else {
+			try {
+				MessageOptions messageOptions = Activator.getDefault().getMessageOptions(); 
+				if (messageOptions.isSystemOutBundleConsole()) {
+					setSystemOutToBundleConsole();
+				} else {
+					setSystemOutToIDEDefault();
+				}
+			} catch (ExtenderException e) {
 				setSystemOutToIDEDefault();
 			}
 		}

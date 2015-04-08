@@ -6,7 +6,8 @@ Require-Bundle: org.eclipse.ui,
  org.eclipse.pde.core,
  org.eclipse.ltk.core.refactoring,
  org.eclipse.jdt.launching
-Export-Package: no.javatime.inplace.bundlejobs.events;uses:="org.eclipse.core.resources",
+Export-Package: no.javatime.inplace.builder.intface,
+ no.javatime.inplace.bundlejobs.events.intface,
  no.javatime.inplace.bundlejobs.intface
 Bundle-Vendor: JavaTime
 Bundle-Version: 0.2.1.qualifier
@@ -15,8 +16,11 @@ Bundle-Activator: no.javatime.inplace.InPlace
 Bundle-ManifestVersion: 2
 Activate-Bundle-Service: no.javatime.inplace.bundlejobs.ActivateBundleJob
 Activate-Project-Service: no.javatime.inplace.bundlejobs.ActivateProjectJob
+Add-Bundle-Project-Service: no.javatime.inplace.builder.AddBundleProjectJob 
+Remove-Bundle-Project-Service: no.javatime.inplace.builder.RemoveBundleProjectJob
 Deactivate-Bundle-Service: no.javatime.inplace.bundlejobs.DeactivateJob
 Install-Bundle-Service: no.javatime.inplace.bundlejobs.InstallJob
+Uninstall-Bundle-Service: no.javatime.inplace.bundlejobs.UninstallJob
 Refresh-Bundle-Service: no.javatime.inplace.bundlejobs.RefreshJob
 Reinstall-Bundle-Service: no.javatime.inplace.bundlejobs.ReinstallJob
 Reset-Bundle-Service: no.javatime.inplace.bundlejobs.ResetJob
@@ -26,6 +30,7 @@ Update-Bundle-Service: no.javatime.inplace.bundlejobs.UpdateJob
 Toggle-Policy-Service: no.javatime.inplace.bundlejobs.TogglePolicyJob
 Update-Bundle-Class-Path-Service: no.javatime.inplace.bundlejobs.UpdateBundleClassPathJob
 Resource-State-Service: no.javatime.inplace.dialogs.ResourceStateHandler
+Bundle-Executor-Event-Manager-Service: no.javatime.inplace.bundlejobs.events.BundleExecutorEventManagerImpl
 Import-Package: no.javatime.inplace.dl.preferences.intface,
  no.javatime.inplace.extender.intface,
  no.javatime.inplace.log.intface,

@@ -5,11 +5,14 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 
 import no.javatime.inplace.InPlace;
+import no.javatime.inplace.builder.intface.AddBundleProject;
 import no.javatime.inplace.bundlejobs.ActivateBundleJob;
 import no.javatime.inplace.bundlejobs.ActivateProjectJob;
 import no.javatime.inplace.bundlejobs.InstallJob;
 import no.javatime.inplace.bundlejobs.NatureJob;
-import no.javatime.inplace.bundlejobs.events.BundleJobManager;
+import no.javatime.inplace.bundlejobs.intface.ActivateBundle;
+import no.javatime.inplace.bundlejobs.intface.ActivateProject;
+import no.javatime.inplace.bundlejobs.intface.Install;
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.closure.BundleClosures;
@@ -29,28 +32,16 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.osgi.util.NLS;
 
-/**
- * Add external bundle projects to the workspace region. An external or new bundle project is a
- * project that is opened, imported, created or renamed and needs to be installed or resolved.
- * <p>
- * A renamed project in an activated workspace is uninstalled in the pre change listener before it
- * is installed or resolved by this job, thus it can be viewed as an external project. This job does
- * nothing if the workspace is deactivated and there are no activated external projects to add.
- * 
- * <p>
- * Deactivated projects providing capabilities to nature enabled projects are scheduled for
- * activation. Other nature enabled projects are resolved and started while deactivated projects are
- * installed.
- * <p>
- * This job must make allowance for multiple new projects, internal dependencies among the set of
- * external bundle projects and intra dependencies between external an existing workspace projects
- * to install and resolve.
- * <p>
- * This is the only place projects are added (import, create, open and rename) to the workspace.
- */
-class AddBundleProjectJob extends NatureJob {
+class AddBundleProjectJob extends NatureJob implements AddBundleProject {
 
 	final public static String addBundleProjectName = Msg.ADD_BUNDLE_PROJECT_JOB;
+
+	/**
+	 * Default constructor wit a default job name
+	 */
+	public AddBundleProjectJob() {
+		super(addBundleProjectName);
+	}
 
 	public AddBundleProjectJob(String name) {
 		super(name);
@@ -91,8 +82,8 @@ class AddBundleProjectJob extends NatureJob {
 				return super.runInWorkspace(monitor);
 			}
 			// Install all new projects in an activated workspace
-			InstallJob installJob = new InstallJob(InstallJob.installJobName, newProjects);
-			BundleJobManager.addBundleJob(installJob, 0);
+			Install install = new InstallJob(InstallJob.installJobName, newProjects);
+			InPlace.getBundleJobEventService().add(install, 0);
 			// New and existing deactivated projects that provides capabilities to new and existing
 			// projects
 			Collection<IProject> deactivatedProviders = new LinkedHashSet<>();
@@ -108,7 +99,6 @@ class AddBundleProjectJob extends NatureJob {
 						Transition.NEW_PROJECT));
 				bundleTransition.removePending(newProject, Transition.NEW_PROJECT);
 				// Deactivated projects that are not providers are already scheduled for install
-				// Use the nature methods.
 				// Project is not registered (install job is in waiting state) with the workspace yet.
 				if (isProjectActivated(newProject)) {
 					// Get any deactivated providers to this new project
@@ -123,14 +113,14 @@ class AddBundleProjectJob extends NatureJob {
 			}
 			// Activate all deactivated provider projects
 			if (deactivatedProviders.size() > 0) {
-				ActivateProjectJob activateProjectJob = new ActivateProjectJob(
+				ActivateProject activateProject = new ActivateProjectJob(
 						ActivateProjectJob.activateProjectJobName, deactivatedProviders);
 				// Do not add requiring projects. They will be resolved as part of the requiring
 				// closure when providers are resolved
-				BundleJobManager.addBundleJob(activateProjectJob, 0);
+				InPlace.getBundleJobEventService().add(activateProject, 0);
 			}
 			// Provide information when auto build is turned off
-			if (InPlace.get().getMsgOpt().isBundleOperations()
+			if (InPlace.getMessageOptionsService().isBundleOperations()
 					&& !bundleProjectCandidates.isAutoBuilding()) {
 				IBundleStatus status = new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID,
 						Msg.BUILDER_OFF_INFO);
@@ -143,9 +133,9 @@ class AddBundleProjectJob extends NatureJob {
 			newActivatedBundleProjects.removeAll(deactivatedProviders);
 			// Activate bundles for all new projects that are activated
 			if (newActivatedBundleProjects.size() > 0) {
-				ActivateBundleJob activateBundleJob = new ActivateBundleJob(
+				ActivateBundle activateBundle = new ActivateBundleJob(
 						ActivateBundleJob.activateJobName, newActivatedBundleProjects);
-				BundleJobManager.addBundleJob(activateBundleJob, 0);
+				InPlace.getBundleJobEventService().add(activateBundle, 0);
 			}
 			return super.runInWorkspace(monitor);
 		} catch (CircularReferenceException e) {

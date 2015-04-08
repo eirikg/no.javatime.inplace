@@ -119,9 +119,9 @@ public interface Extension<S> {
 	 * is the same as using {@link #getService()} without creating any tracker
 	 * <p>
 	 * If a tracker has not been created yet the tracker will be created and opened using the default
-	 * customizer provide by the Framework.
+	 * customizer provided by the Framework.
 	 * <p>
-	 * If the the tracker is closed, it is opened before getting the tracked service.
+	 * If the tracker is closed, it is opened before getting the tracked service.
 	 * 
 	 * @return the service of this extension type 
 	 * @throws ExtenderException if this call force opening the service tracker and the bundle context

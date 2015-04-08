@@ -18,23 +18,20 @@ import no.javatime.inplace.builder.PreBuildListener;
 import no.javatime.inplace.builder.PreChangeListener;
 import no.javatime.inplace.builder.ProjectChangeListener;
 import no.javatime.inplace.bundlejobs.ActivateBundleJob;
-import no.javatime.inplace.bundlejobs.ActivateProjectJob;
 import no.javatime.inplace.bundlejobs.BundleJob;
 import no.javatime.inplace.bundlejobs.BundleJobListener;
 import no.javatime.inplace.bundlejobs.DeactivateJob;
 import no.javatime.inplace.bundlejobs.UninstallJob;
 import no.javatime.inplace.bundlejobs.UpdateJob;
-import no.javatime.inplace.bundlejobs.events.BundleJobEvent;
-import no.javatime.inplace.bundlejobs.events.BundleJobEventListener;
-import no.javatime.inplace.bundlejobs.events.BundleJobManager;
-import no.javatime.inplace.bundlejobs.intface.ActivateProject;
+import no.javatime.inplace.bundlejobs.events.intface.BundleExecutorEvent;
+import no.javatime.inplace.bundlejobs.events.intface.BundleExecutorEventListener;
+import no.javatime.inplace.bundlejobs.events.intface.BundleExecutorEventManager;
 import no.javatime.inplace.bundlejobs.intface.BundleExecutor;
-import no.javatime.inplace.bundlejobs.intface.ExecutorServiceFactory;
 import no.javatime.inplace.dialogs.ExternalTransition;
 import no.javatime.inplace.dl.preferences.intface.CommandOptions;
-import no.javatime.inplace.dl.preferences.intface.DependencyOptions;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.dl.preferences.intface.MessageOptions;
+import no.javatime.inplace.extender.intface.Extender;
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.extender.intface.Extenders;
 import no.javatime.inplace.extender.intface.Extension;
@@ -95,11 +92,11 @@ import org.osgi.service.prefs.BackingStoreException;
  * <ul>
  * <li>Activating and deactivating managed bundles at startup and shutdown.
  * <p>
- * <li>Management of dynamic bundles through the static declared {@code bundleCommand}.
- * <li>Bundle project service for managing of bundle meta information
+ * <li>Management of dynamic bundles through the static declared {@code commandExtension}.
+ * <li>Bundle project service for managing of bundle bundlePeojectMeta information
  * <ul/>
  */
-public class InPlace extends AbstractUIPlugin implements BundleJobEventListener, ICommandListener {
+public class InPlace extends AbstractUIPlugin implements BundleExecutorEventListener, ICommandListener {
 
 	public static final String PLUGIN_ID = "no.javatime.inplace"; //$NON-NLS-1$
 	private static InPlace plugin;
@@ -141,61 +138,95 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 	// Listen to toggling of auto build
 	private Command autoBuildCommand;
 	// Register (extend) services provided by other bundles
-	private ExtenderTracker extenderBundleTracker;
+	private static ExtenderTracker extenderBundleTracker;
+	
+	// Listen to added bundle jobs 
+	private Extension<BundleExecutorEventManager> bundleJobEventManagerExtension;
+	private static BundleExecutorEventManager bundleJobEventManager;
+	
 	// Workspace bundle region
-	private static Extension<BundleRegion> bundleRegion;
-	// Bundle life cycle commands
-	private static Extension<BundleCommand> bundleCommand;
-	// Bundle transitions and pending transitions
-	private static Extension<BundleTransition> bundleTransition;
-	// Bundle project and projects access
-	private static Extension<BundleProjectCandidates> bundleProjectCandidates;
-	// Bundle project meta information
-	private static Extension<BundleProjectMeta> bundlePrrojectMeta;
-	// Dependency closure options
-	private Extension<DependencyOptions> dependencyOptions;
-	// Bundle command options
-	private Extension<CommandOptions> commandOptions;
-	// Logging and user message options
-	private Extension<MessageOptions> messageOptions;
-	// The bundle console page for redirection of system out and err
-	private Extension<BundleConsoleFactory> bundleConsoleFactory;
-	// Log for bundle commands
-	private Extension<BundleLog> bundleLog;
+	private Extension<BundleRegion> regionExtension;
+	private static BundleRegion bundleRegion;
 
+	// Bundle life cycle commands
+	private Extension<BundleCommand> commandExtension;
+	private static BundleCommand bundleCommand;
+	
+	// Bundle transitions and pending transitions
+	private Extension<BundleTransition> transitionExtension;
+	private static BundleTransition bundleTransition;
+	
+	// Bundle project and projects access
+	private Extension<BundleProjectCandidates> projectCandidatesExtension;
+	private static BundleProjectCandidates bundleProjectCandidates;
+	
+	// Bundle project bundlePeojectMeta information
+	private Extension<BundleProjectMeta> projectMetaExtension;
+	private static BundleProjectMeta bundlePeojectMeta;
+	
+	// Bundle command options
+	private Extension<CommandOptions> commandOptionsExtension;
+	private static CommandOptions commandOptions;
+	
+	// Logging and user message options
+	private Extension<MessageOptions> messageOptionsExtension;
+	private static MessageOptions messageOptions;
+	
+	// The bundle console page for redirection of system out and err
+	private Extension<BundleConsoleFactory> bundleConsoleExtension;
+	private static BundleConsoleFactory console;
+	
+	// Log for bundle commands
+	private Extension<BundleLog> bundleLogExtension;
+	private static BundleLog bundleLog;
+	
 	public InPlace() {
 	}
 
 	@Override
 	public void start(BundleContext context) throws Exception {
+
 		super.start(context);
 		plugin = this;
 		InPlace.context = context;
-		Bundle bundle = context.getBundle(); 
-		
-		// Register hosted extenders 
-		Extenders.register(bundle, ActivateProject.class.getName(), 
-				new ExecutorServiceFactory(ActivateProjectJob.class.getName()),null);
-	
-		extenderBundleTracker = new ExtenderTracker(context, Bundle.ACTIVE, null);
-		extenderBundleTracker.open();
+		Bundle bundle = context.getBundle();
 		String refreshBSNResult = context.getProperty(REFRESH_DUPLICATE_BSN);
 		allowRefreshDuplicateBSN = Boolean.TRUE.toString().equals(
 				refreshBSNResult != null ? refreshBSNResult : Boolean.TRUE.toString());
-		bundleRegion = Extenders.getExtension(BundleRegion.class.getName());
-		bundleCommand = Extenders.getExtension(BundleCommand.class.getName());
-		bundleTransition = Extenders.getExtension(BundleTransition.class.getName());
-		bundleProjectCandidates = Extenders.getExtension(BundleProjectCandidates.class.getName());
-		bundlePrrojectMeta = Extenders.getExtension(BundleProjectMeta.class.getName());
-		commandOptions = Extenders.getExtension(CommandOptions.class.getName());
-		dependencyOptions = Extenders.getExtension(DependencyOptions.class.getName());
-		messageOptions = Extenders.getExtension(MessageOptions.class.getName());
-		bundleConsoleFactory = Extenders.getExtension(BundleConsoleFactory.class.getName());
-		bundleLog = Extenders.getExtension(BundleLog.class.getName());
-		// addDynamicExtensions();
+
+		extenderBundleTracker = new ExtenderTracker(context, Bundle.ACTIVE, null);
+		extenderBundleTracker.open();
+		extenderBundleTracker.trackOwn();
+//		Extender<BundleExecutorEventManager> evManagerExtender = Extenders.register(bundle, 
+//				BundleExecutorEventManager.class.getName(), 
+//				new BundleExecutorEventManagerImpl(), null);
+		bundleJobEventManagerExtension = getExtension(BundleExecutorEventManager.class.getName());
+		//extenderBundleTracker.addingBundle(bundle, new BundleEvent(BundleEvent.STARTED, bundle));
+		//bundleJobEventManagerExtension = getTrackedExtension(BundleExecutorEventManager.class.getName());		
+		bundleJobEventManager = bundleJobEventManagerExtension.getTrackedService();
+		bundleJobEventManager.addListener(plugin);
+		
+		regionExtension = getTrackedExtension(BundleRegion.class.getName());		
+		bundleRegion = regionExtension.getTrackedService();
+		commandExtension = getTrackedExtension(BundleCommand.class.getName());
+		bundleCommand = commandExtension.getTrackedService();
+		transitionExtension = getTrackedExtension(BundleTransition.class.getName());
+		bundleTransition = transitionExtension.getTrackedService();
+		projectCandidatesExtension = getTrackedExtension(BundleProjectCandidates.class.getName());
+		bundleProjectCandidates = projectCandidatesExtension.getTrackedService();		
+		projectMetaExtension = getTrackedExtension(BundleProjectMeta.class.getName());	
+		bundlePeojectMeta = projectMetaExtension.getTrackedService();
+		commandOptionsExtension = getTrackedExtension(CommandOptions.class.getName());
+		commandOptions = commandOptionsExtension.getTrackedService();	
+		messageOptionsExtension = getTrackedExtension(MessageOptions.class.getName());
+		messageOptions = messageOptionsExtension.getTrackedService();
+		bundleConsoleExtension = getTrackedExtension(BundleConsoleFactory.class.getName());		
+		console = bundleConsoleExtension.getTrackedService();
+		bundleLogExtension = getTrackedExtension(BundleLog.class.getName());
+		bundleLog = bundleLogExtension.getTrackedService();
+		
 		BundleTransitionListener.addBundleTransitionListener(externalTransitionListener);
 		Job.getJobManager().addJobChangeListener(jobChangeListener);
-		BundleJobManager.addBundleJobListener(get());
 	}
 
 	@Override
@@ -204,66 +235,60 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 			// Remove resource listeners as soon as possible to prevent scheduling of new bundle jobs
 			removeResourceListeners();
 			removeAutoBuildListener();
+			removeDynamicExtensions();
 			shutDownBundles();
 		} finally {
+			regionExtension.closeTrackedService();
+			commandExtension.closeTrackedService();
+			projectCandidatesExtension.closeTrackedService();
+			projectMetaExtension.closeTrackedService();
+			commandOptionsExtension.closeTrackedService();
+			messageOptionsExtension.closeTrackedService();
+			bundleConsoleExtension.closeTrackedService();
+			bundleLogExtension.closeTrackedService();
+			bundleJobEventManager.removeListener(get());
+			bundleJobEventManagerExtension.closeTrackedService();
+			BundleTransitionListener.removeBundleTransitionListener(externalTransitionListener);
+			transitionExtension.closeTrackedService();
+			Job.getJobManager().removeJobChangeListener(jobChangeListener);
 			extenderBundleTracker.close();
 			extenderBundleTracker = null;
-			BundleJobManager.removeBundleJobListener(get());
-			BundleTransitionListener.removeBundleTransitionListener(externalTransitionListener);
-			Job.getJobManager().removeJobChangeListener(jobChangeListener);
-			removeDynamicExtensions();
 			super.stop(context);
 			plugin = null;
 			InPlace.context = null;
 		}
 	}
 
-	public static BundleRegion getBundleRegionService() throws InPlaceException, ExtenderException {
-
-		BundleRegion br = bundleRegion.getService(context.getBundle());
-		if (null == br) {
-			throw new InPlaceException(NLS.bind(Msg.GET_SERVICE_EXP, BundleRegion.class.getName()));
-		}
-		return br;
+	public static BundleExecutorEventManager getBundleJobEventService() throws ExtenderException {
+		
+		return bundleJobEventManager;
 	}
 
-	public static BundleCommand getBundleCommandService() throws InPlaceException, ExtenderException {
+	public static BundleRegion getBundleRegionService() throws ExtenderException {
 
-		BundleCommand br = bundleCommand.getService(context.getBundle());
-		if (null == br) {
-			throw new InPlaceException(NLS.bind(Msg.GET_SERVICE_EXP, BundleCommand.class.getName()));
-		}
-		return br;
+		return bundleRegion;
 	}
 
-	public static BundleTransition getBundleTransitionService() throws InPlaceException,
-			ExtenderException {
+	public static BundleCommand getBundleCommandService() throws ExtenderException {
 
-		BundleTransition bt = bundleTransition.getService(context.getBundle());
-		if (null == bt) {
-			throw new InPlaceException(NLS.bind(Msg.GET_SERVICE_EXP, BundleTransition.class.getName()));
-		}
-		return bt;
+		return bundleCommand;
+	}
+
+	public static BundleTransition getBundleTransitionService() throws
+	ExtenderException {
+
+		return bundleTransition;
 	}
 
 	public static BundleProjectCandidates getBundleProjectCandidatesService()
-			throws InPlaceException, ExtenderException {
+			throws ExtenderException {
 
-		BundleProjectCandidates bp = bundleProjectCandidates.getService(context.getBundle());
-		if (null == bp) {
-			throw new InPlaceException(NLS.bind(Msg.GET_SERVICE_EXP, BundleProjectCandidates.class.getName()));
-		}
-		return bp;
+		return bundleProjectCandidates;
 	}
 
-	public static BundleProjectMeta getbundlePrrojectMetaService() throws InPlaceException,
-			ExtenderException {
+	public static BundleProjectMeta getbundlePrrojectMetaService() throws ExtenderException {
 
-		BundleProjectMeta bpd = bundlePrrojectMeta.getService(context.getBundle());
-		if (null == bpd) {
-			throw new InPlaceException(NLS.bind(Msg.GET_SERVICE_EXP, BundleProjectMeta.class.getName()));
-		}
-		return bpd;
+		return bundlePeojectMeta;
 	}
 
 	/**
@@ -273,9 +298,9 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 	 * @throws ExtenderException if failing to get the extender service for the command options
 	 * @throws InPlaceException if the command options service returns null
 	 */
-	public CommandOptions getCommandOptionsService() throws InPlaceException, ExtenderException {
+	public static CommandOptions getCommandOptionsService() throws ExtenderException {
 
-		return getService(commandOptions);
+		return commandOptions;
 	}
 
 	/**
@@ -285,20 +310,9 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 	 * @throws ExtenderException if failing to get the extender service for the message options
 	 * @throws InPlaceException if the message options service returns null
 	 */
-	public MessageOptions getMsgOpt() throws InPlaceException, ExtenderException {
+	public static MessageOptions getMessageOptionsService() throws InPlaceException, ExtenderException {
 
-		return getService(messageOptions);
-	}
-
-	/**
-	 * Return the dependency preferences service
-	 * 
-	 * @return the dependency options service
-	 * @throws ExtenderException if failing to get the extender service for the dependency options
-	 * @throws InPlaceException if the bundle log service returns null
-	 */
-	public DependencyOptions getDependencyOptionsService() throws InPlaceException, ExtenderException {
-		return getService(dependencyOptions);
+		return messageOptions;
 	}
 
 	/**
@@ -308,8 +322,48 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 	 * @throws ExtenderException if failing to get the extender service for the bundle console view
 	 * @throws InPlaceException if the bundle console view service returns null
 	 */
-	public BundleConsoleFactory getBundleConsoleService() throws InPlaceException, ExtenderException {
-		return getService(bundleConsoleFactory);
+	public static BundleConsoleFactory getBundleConsoleService() throws InPlaceException, ExtenderException {
+
+		return console;
+	}
+
+	/**
+	 * Get an extension returned based on ranking order
+	 * 
+	 * @param serviceInterfaceName the interface service name used to locate the extension
+	 * @return an extension located by the specified service interface name
+	 * @throws ExtenderException if failed to get the extender or the extension is null
+	 */
+	public static <S> Extension<S> getExtension(String serviceInterfaceName) throws ExtenderException {
+
+		Extension<S> extension = Extenders.getExtension(serviceInterfaceName, context.getBundle());
+		if (null == extension) {
+			throw new ExtenderException(NLS.bind(Msg.NULL_EXTENSION_EXP, context.getBundle()));
+		}
+		return extension;
+	}
+
+	/**
+	 * Get a tracked extension from an extender that is tracked by this bundle. 
+	 * <p>
+	 * If more than one service is registered under the same interface name, ranking order is applied
+	 * 
+	 * @param serviceInterfaceName the interface service name used to locate the extension
+	 * @return an extension located by the specified service interface name
+	 * @throws ExtenderException if the extender has not been tracked or the extender or extension is null
+	 */
+	public static <S> Extension<S> getTrackedExtension(String serviceInterfaceName) throws ExtenderException {
+
+		@SuppressWarnings("unchecked")
+		Extender<S> extender = (Extender<S>) extenderBundleTracker.getTrackedExtender(serviceInterfaceName);
+		if (null == extender) {
+			throw new ExtenderException(NLS.bind(Msg.NULL_EXTENDER_EXP, serviceInterfaceName));
+		}
+		Extension<S> extension = extender.getExtension(serviceInterfaceName, context.getBundle());
+		if (null == extension) {
+			throw new ExtenderException(NLS.bind(Msg.NULL_EXTENSION_EXP, context.getBundle()));
+		}
+		return extension;
 	}
 
 	/**
@@ -320,8 +374,8 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 	 * @throws InPlaceException if the bundle log service returns null
 	 */
 	public String log(IBundleStatus status) throws InPlaceException, ExtenderException {
-		BundleLog t = getService(bundleLog);
-		return t.log(status);
+
+		return bundleLog.log(status);
 	}
 
 	/**
@@ -566,24 +620,25 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 		if (null == plugin) {
 			return;
 		}
-		IWorkbench workbench = getWorkbench();
-		if (!getBundleRegionService().isRegionActivated()
-				|| (null != workbench && workbench.isClosing())) {
-			return;
-		}
-		Command autoBuildCmd = commandEvent.getCommand();
 		try {
+			BundleRegion region = getBundleRegionService();
+			IWorkbench workbench = getWorkbench();
+			if (!region.isRegionActivated()
+					|| (null != workbench && workbench.isClosing())) {
+				return;
+			}
+			Command autoBuildCmd = commandEvent.getCommand();
 			if (autoBuildCmd.isDefined() && !getBundleProjectCandidatesService().isAutoBuilding()) {
 				if (getCommandOptionsService().isUpdateOnBuild()) {
-					getBundleRegionService().setAutoBuildChanged(true);
-					// Wait for builder to star. The post build listener does not
+					region.setAutoBuildChanged(true);
+					// Wait for builder to start. The post build listener does not
 					// always receive all projects to update when auto build is switched on
-					BundleJobManager.addBundleJob(new UpdateJob(UpdateJob.updateJobName), 1000);
+					getBundleJobEventService().add(new UpdateJob(UpdateJob.updateJobName), 1000);
 				}
 			} else {
-				getBundleRegionService().setAutoBuildChanged(false);
+				region.setAutoBuildChanged(false);
 			}
-		} catch (InPlaceException e) {
+		} catch (ExtenderException e) {
 			StatusManager.getManager().handle(
 					new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, e.getMessage(), e),
 					StatusManager.LOG);
@@ -838,6 +893,6 @@ public class InPlace extends AbstractUIPlugin implements BundleJobEventListener,
 	}
 
 	@Override
-	public void bundleJobEvent(BundleJobEvent event) {
+	public void bundleJobEvent(BundleExecutorEvent event) {
 	}
 }

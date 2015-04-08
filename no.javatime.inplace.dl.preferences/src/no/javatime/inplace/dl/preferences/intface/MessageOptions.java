@@ -16,70 +16,70 @@ public interface MessageOptions {
 	 * 
 	 * @return true to trace bundle events and false if not
 	 */
-	public abstract boolean isBundleEvents();
+	public boolean isBundleEvents();
 
 	/**
 	 * Default for tracing of bundle events
 	 *  
 	 * @return true if default is to trace bundle events and false if not
 	 */
-	public abstract boolean getDefaultBundleEvents();
+	public boolean getDefaultBundleEvents();
 
 	/**
 	 * Set whether to enable tracing of bundle events or not
 	 * 
 	 * @param bundleEvents set to true to trace bundle events and false to not
 	 */
-	public abstract void setIsBundleEvents(boolean bundleEvents);
+	public void setIsBundleEvents(boolean bundleEvents);
 	
 	/**
 	 * Whether to enable tracing of bundle operations or not
 	 * 
 	 * @return true to trace bundle operations and false if not
 	 */
-	public abstract boolean isBundleOperations();
+	public boolean isBundleOperations();
 
 	/**
 	 * Default for tracing of bundle operations
 	 *  
 	 * @return true if default is to trace bundle operations and false if not
 	 */
-	public abstract boolean getDefaultBundleOperations();
+	public boolean getDefaultBundleOperations();
 
 	/**
 	 * Set whether to enable tracing of bundle operations or not
 	 * 
 	 * @param bundleOperations set to true to trace bundle operations and false to not
 	 */
-	public abstract void setIsBundleOperations(boolean bundleOperations);
+	public void setIsBundleOperations(boolean bundleOperations);
 
 	/**
 	 * Whether to enable informational messages or not
 	 * 
 	 * @return true to enable informational messages and false if not
 	 */
-	public abstract boolean isInfoMessages();
+	public boolean isInfoMessages();
 
 	/**
 	 * Default for enabling of informational messages
 	 *  
 	 * @return true if default is to enable informational messages and false if not
 	 */
-	public abstract boolean getDefaultInfoMessages();
+	public boolean getDefaultInfoMessages();
 
 	/**
 	 * Set whether to enable informational messages or not
 	 * 
 	 * @param infoMessages set to true to enable informational messages and false to not
 	 */
-	public abstract void setIsInfoMessages(boolean infoMessages);
+	public void setIsInfoMessages(boolean infoMessages);
 
 	/**
 	 * Whether to redirect system out and system err to IDE default or the bundle console
 	 * 
 	 * @return true directs output to bundle console and false to IDE default  
 	 */
-	public abstract boolean isSystemOutBundleConsole();
+	public boolean isSystemOutBundleConsole();
 	
 	/**
 	 * Default for redirecting system out and system err to IDE default or the bundle console
@@ -94,13 +94,13 @@ public interface MessageOptions {
 	 * @param systemOut true if system out and system err should be directed to the bundle console and
 	 * false to direct the output to IDE default
 	 */
-	public abstract void setIsSystemOutBundleConsole(boolean systemOut);
+	public void setIsSystemOutBundleConsole(boolean systemOut);
 	
 
 	/**
 	 * Flush all changes to OSGi preference store
 	 * @throws BackingStoreException thrown when the flush operation could not complete
 	 */
-	public abstract void flush() throws BackingStoreException;
+	public void flush() throws BackingStoreException;
 
 }

@@ -16,7 +16,8 @@ import java.util.Collections;
 import no.javatime.inplace.bundlejobs.ActivateBundleJob;
 import no.javatime.inplace.bundlejobs.DeactivateJob;
 import no.javatime.inplace.bundlejobs.NatureJob;
-import no.javatime.inplace.bundlejobs.events.BundleJobManager;
+import no.javatime.inplace.bundlejobs.intface.ActivateBundle;
+import no.javatime.inplace.bundlejobs.intface.BundleExecutor;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.msg.Msg;
@@ -48,7 +49,7 @@ import org.osgi.framework.Bundle;
  * transition will be {@code Transition#NOTRANSITION}
  * 
  */
-public class StartUpJob extends NatureJob {
+public class StartUpJob extends NatureJob implements BundleExecutor {
 
 	final public static String startupName = Msg.INIT_WORKSPACE_JOB;
 
@@ -91,15 +92,14 @@ public class StartUpJob extends NatureJob {
 	@Override
 	public IBundleStatus runInWorkspace(IProgressMonitor monitor) {
 		try {
-				if (InPlace.get().getMsgOpt().isBundleOperations()) {
+				if (InPlace.getMessageOptionsService().isBundleOperations()) {
 					String osgiDev = InPlace.getbundlePrrojectMetaService().inDevelopmentMode();
 					if (null != osgiDev) {
 						String msg = NLS.bind(Msg.CLASS_PATH_DEV_PARAM_INFO, osgiDev);
-						//InPlace.get().log(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, msg));
 						addLogStatus(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, msg));
 					}
 				}
-				ActivateBundleJob activateJob = new ActivateBundleJob(ActivateBundleJob.activateStartupJobName);
+				ActivateBundle activateBundle = new ActivateBundleJob(ActivateBundleJob.activateStartupJobName);
 				Collection<IProject> activatedProjects = getActivatedProjects();
 				if (activatedProjects.size() > 0) {
 					Collection<IProject> deactivatedProjects = deactivateBuildErrorClosures(activatedProjects);
@@ -107,9 +107,9 @@ public class StartUpJob extends NatureJob {
 						initDeactivatedWorkspace();
 					} else {
 						// Install all projects and set activated projects to the same state as they had at shutdown
-						activateJob.addPendingProjects(activatedProjects);
-						activateJob.setPersistState(true);
-						BundleJobManager.addBundleJob(activateJob, 0);
+						activateBundle.addPendingProjects(activatedProjects);
+						activateBundle.setPersistState(true);
+						InPlace.getBundleJobEventService().add(activateBundle, 0);
 					}
 				} else {
 					// Register all projects as bundle projects and set their initial transition

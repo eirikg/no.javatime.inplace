@@ -154,7 +154,7 @@ public class ExtenderBundleTracker extends BundleTracker<Collection<Extender<?>>
 					continue;
 				}
 				// The extender with highest ranking and if a tie the lowest service id
-				if (extender.getServiceReference().compareTo(rankedExtender) > 0) {
+				if (extender.getServiceReference().compareTo(rankedExtender.getServiceReference()) > 0) {
 					rankedExtender = extender;
 				}
 			}

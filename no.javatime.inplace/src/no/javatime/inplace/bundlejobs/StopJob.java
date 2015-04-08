@@ -15,9 +15,11 @@ import java.util.Collections;
 
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundlejobs.intface.Stop;
+import no.javatime.inplace.dl.preferences.intface.DependencyOptions;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Operation;
 import no.javatime.inplace.extender.intface.ExtenderException;
+import no.javatime.inplace.extender.intface.Extension;
 import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.closure.BundleClosures;
 import no.javatime.inplace.region.closure.BundleSorter;
@@ -159,8 +161,11 @@ public class StopJob extends BundleJob implements Stop {
 		bundlesToStop = pd.bundleDeactivation(bundlesToStop, activatedBundles);
 		stop(bundlesToStop, null, new SubProgressMonitor(monitor, 1));
 		// Warn about requiring bundles in state ACTIVE
-		if (getDepOpt().get(Operation.DEACTIVATE_BUNDLE, Closure.PROVIDING) 
-				|| getDepOpt().get(Operation.DEACTIVATE_BUNDLE, Closure.SINGLE)) {
+		Extension<DependencyOptions> dependencyOptionsExtension = 
+				InPlace.getTrackedExtension(DependencyOptions.class.getName());
+		DependencyOptions dependencyOptions = dependencyOptionsExtension.getTrackedService();
+		if (dependencyOptions.get(Operation.DEACTIVATE_BUNDLE, Closure.PROVIDING) 
+				|| dependencyOptions.get(Operation.DEACTIVATE_BUNDLE, Closure.SINGLE)) {
 			BundleSorter bs = new BundleSorter();
 			for (Bundle bundle : bundlesToStop) {
 				Collection<Bundle> requiringBundles = bs.sortRequiringBundles(Collections.<Bundle>singletonList(bundle),
@@ -175,6 +180,7 @@ public class StopJob extends BundleJob implements Stop {
 				}
 			}
 		}
+		dependencyOptionsExtension.closeTrackedService();
 		return getLastErrorStatus();
 	}
 

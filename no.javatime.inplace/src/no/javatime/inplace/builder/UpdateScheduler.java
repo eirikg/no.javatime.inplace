@@ -8,7 +8,9 @@ import java.util.Map;
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundlejobs.ActivateBundleJob;
 import no.javatime.inplace.bundlejobs.UpdateJob;
-import no.javatime.inplace.bundlejobs.events.BundleJobManager;
+import no.javatime.inplace.bundlejobs.intface.ActivateBundle;
+import no.javatime.inplace.bundlejobs.intface.BundleExecutor;
+import no.javatime.inplace.bundlejobs.intface.Update;
 import no.javatime.inplace.dialogs.ResourceStateHandler;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.msg.Msg;
@@ -27,7 +29,6 @@ import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import no.javatime.util.messages.ExceptionMessage;
 
 import org.eclipse.core.resources.IProject;
-import org.eclipse.core.resources.WorkspaceJob;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.ui.statushandlers.StatusManager;
 import org.osgi.framework.Bundle;
@@ -61,7 +62,7 @@ public class UpdateScheduler {
 				addProjectToUpdateJob(project, updateJob);
 			}
 		}
-		ActivateBundleJob postActivateBundleJob = null;
+		ActivateBundle postActivateBundleJob = null;
 		if (updateJob.pendingProjects() > 0) {
 			postActivateBundleJob = resolveduplicates(null, updateJob);
 			jobHandler(updateJob, delay);
@@ -73,7 +74,7 @@ public class UpdateScheduler {
 
 	/**
 	 * Adds the specified bundle project to the specified update job if the bundle project has no
-	 * illegal build error closures.
+	 * build error closures.
 	 * <p>
 	 * It is only activated bundle projects that are being updated. Bundle projects updated the first
 	 * time after being activated are in state installed. The bundle project may than be in any state
@@ -116,12 +117,12 @@ public class UpdateScheduler {
 	 * </ol>
 	 * 
 	 * @param project to add to the specified update job or to be ignored
-	 * @param updateJob the job to add the specified project to
+	 * @param update the job to add the specified project to
 	 * @return true if the specified project is added to the specified update job and false if not
 	 */
-	static public boolean addProjectToUpdateJob(IProject project, UpdateJob updateJob) {
+	static public boolean addProjectToUpdateJob(IProject project, Update update) {
 
-		boolean update = true;
+		boolean isUpdate = true;
 		// Do not update when there are activated requiring projects or deactivated proving projects
 		// with build errors
 
@@ -132,7 +133,7 @@ public class UpdateScheduler {
 					Collections.<IProject> singletonList(project), Transition.UPDATE, Closure.REQUIRING);
 			BundleProjectCandidates bundleProjectCandidates = InPlace.getBundleProjectCandidatesService();
 			if (be.hasBuildErrors()) {
-				if (InPlace.get().getMsgOpt().isBundleOperations()) {
+				if (InPlace.getMessageOptionsService().isBundleOperations()) {
 					String msg = NLS.bind(Msg.UPDATE_BUILD_ERROR_INFO, new Object[] {
 							project.getName(), bundleProjectCandidates.formatProjectList(be.getBuildErrors()) });
 					be.setBuildErrorHeaderMessage(msg);
@@ -142,15 +143,15 @@ public class UpdateScheduler {
 						// StatusManager.getManager().handle(bundleStatus, StatusManager.LOG);
 					}
 				}
-				update = false;
+				isUpdate = false;
 			}
 			// Deactivated providing closure. Deactivated projects with build errors providing
 			// capabilities to project to update
-			if (update) {
+			if (isUpdate) {
 				be = new BuildErrorClosure(Collections.<IProject> singletonList(project),
 						Transition.UPDATE, Closure.PROVIDING, Bundle.UNINSTALLED, ActivationScope.DEACTIVATED);
 				if (be.hasBuildErrors()) {
-					if (InPlace.get().getMsgOpt().isBundleOperations()) {
+					if (InPlace.getMessageOptionsService().isBundleOperations()) {
 						String msg = NLS.bind(Msg.UPDATE_BUILD_ERROR_INFO, new Object[] {
 								project.getName(), bundleProjectCandidates.formatProjectList(be.getBuildErrors()) });
 						be.setBuildErrorHeaderMessage(msg);
@@ -160,11 +161,11 @@ public class UpdateScheduler {
 							// StatusManager.getManager().handle(bundleStatus, StatusManager.LOG);
 						}
 					}
-					update = false;
+					isUpdate = false;
 				}
 			}
-			if (update) {
-				updateJob.addPendingProject(project);
+			if (isUpdate) {
+				update.addPendingProject(project);
 			}
 		} catch (CircularReferenceException e) {
 			String msg = ExceptionMessage.getInstance().formatString("circular_reference_termination");
@@ -172,9 +173,9 @@ public class UpdateScheduler {
 					project, msg, null);
 			multiStatus.add(e.getStatusList());
 			StatusManager.getManager().handle(multiStatus, StatusManager.LOG);
-			update = false;
+			isUpdate = false;
 		}
-		return update;
+		return isUpdate;
 	}
 
 	/**
@@ -185,7 +186,8 @@ public class UpdateScheduler {
 	 * @return ordered providing dependency closure or an empty set if there are no deactivated
 	 * providers
 	 */
-	public static Collection<IProject> getDeactivatedProviders(IProject project) {
+	@SuppressWarnings("unused")
+	private Collection<IProject> getDeactivatedProviders(IProject project) {
 		Collection<IProject> providingProjects = null;
 		try {
 			ProjectSorter projectSorter = new ProjectSorter();
@@ -199,8 +201,9 @@ public class UpdateScheduler {
 	}
 
 	@SuppressWarnings("unused")
-	private ActivateBundleJob getInstalledRequirers(UpdateJob updateJob) {
-		ActivateBundleJob postActivateBundleJob = null;
+	private ActivateBundle getInstalledRequiringProjects(UpdateJob updateJob) {
+
+		ActivateBundle postActivateBundleJob = null;
 		BundleRegion bundleRegion = InPlace.getBundleRegionService();
 		ProjectSorter ps = new ProjectSorter();
 		Collection<IProject> installedRequirers = ps.sortRequiringProjects(
@@ -233,15 +236,15 @@ public class UpdateScheduler {
 	 * <li>There are unmodified projects with the same symbolic key as in the bundles to update
 	 * </ol>
 	 * 
-	 * @param activateBundleJob job activating bundles
-	 * @param updateJob job updating bundles
+	 * @param activateBundle job activating bundles
+	 * @param update job updating bundles
 	 * 
 	 * @return An activate bundle job with uninstalled duplicate bundles added or null if no
 	 * uninstalled duplicates exist with the same symbolic key as any of the bundles with changed
 	 * symbolic keys to update
 	 */
-	public static ActivateBundleJob resolveduplicates(ActivateBundleJob activateBundleJob,
-			UpdateJob updateJob) {
+	public static ActivateBundleJob resolveduplicates(ActivateBundle activateBundle,
+			Update update) {
 
 		ActivateBundleJob postActivateBundleJob = null;
 		BundleRegion bundleRegion = InPlace.getBundleRegionService();
@@ -252,7 +255,7 @@ public class UpdateScheduler {
 		}
 
 		// Get projects that have changed their symbolic key (symbolic name and/or the version)
-		Map<IProject, String> symbolicKeymap = getModifiedSymbolicKey(updateJob.getPendingProjects());
+		Map<IProject, String> symbolicKeymap = getModifiedSymbolicKey(update.getPendingProjects());
 		if (symbolicKeymap.size() > 0) {
 			// Install/update and update all projects that are duplicates to the current symbolic key
 			// (before this update) of changed bundles
@@ -271,13 +274,13 @@ public class UpdateScheduler {
 								postActivateBundleJob = new ActivateBundleJob(ActivateBundleJob.activateJobName);
 							}
 							postActivateBundleJob.addPendingProject(project);
-							if (null != activateBundleJob) {
-								activateBundleJob.removePendingProject(project);
+							if (null != activateBundle) {
+								activateBundle.removePendingProject(project);
 							}
 						}
 					} else {
 						bundleTransition.addPending(project, Transition.UPDATE);
-						UpdateScheduler.addProjectToUpdateJob(project, updateJob);
+						UpdateScheduler.addProjectToUpdateJob(project, update);
 					}
 				}
 			}
@@ -324,12 +327,12 @@ public class UpdateScheduler {
 	 * @param job to schedule
 	 * @param delay number of msecs to wait before starting the job
 	 */
-	static public void jobHandler(WorkspaceJob job, long delay) {
+	static public void jobHandler(BundleExecutor job, long delay) {
 
 		ResourceStateHandler so = new ResourceStateHandler();
-		if (so.saveModifiedFiles()) {
-			so.waitOnBuilder();
-			BundleJobManager.addBundleJob(job, delay);
+		if (so.saveModifiedResources()) {
+			so.waitOnBuilder(true);
+			InPlace.getBundleJobEventService().add(job, delay);
 		}
 	}
 

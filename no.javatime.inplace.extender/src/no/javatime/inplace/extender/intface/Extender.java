@@ -77,7 +77,7 @@ public interface Extender<S> {
 	 * @param serviceInterfaceName a service interface name that is equal to one of the service
 	 * interface names specified when this extender was registered
 	 * @param user this is the bundle using the new extension
-	 * @return a new extension object or null if there is no registered service for this extender.
+	 * @return a new extension object
 	 * @throws ExtenderException if the specified service interface name is not equal to one of the
 	 * service interface names specified when this extender was registered
 	 * @see #getExtension()
@@ -99,7 +99,7 @@ public interface Extender<S> {
 	 * 
 	 * @param <S> Type of Service
 	 * @param user this is the bundle using the new extension
-	 * @return a new extension object or null if there is no registered service for this extender.
+	 * @return a new extension object
 	 * @see #getExtension(String, Bundle)
 	 */
 	public Extension<S> getExtension(Bundle user);
@@ -115,7 +115,7 @@ public interface Extender<S> {
 	 * that registered this extender.
 	 * 
 	 * @param <S> Type of Service
-	 * @return a new extension object or null if there is no registered service for this extender.
+	 * @return a new extension object
 	 * @see #getExtension(String, Bundle)
 	 */
 	public Extension<S> getExtension();

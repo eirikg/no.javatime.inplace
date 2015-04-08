@@ -13,7 +13,7 @@ package no.javatime.inplace.bundlejobs;
 import java.util.Collection;
 
 import no.javatime.inplace.InPlace;
-import no.javatime.inplace.bundlejobs.events.BundleJobManager;
+import no.javatime.inplace.bundlejobs.intface.ActivateBundle;
 import no.javatime.inplace.bundlejobs.intface.Reset;
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.msg.Msg;
@@ -124,11 +124,11 @@ public class ResetJob extends BundleJob implements Reset {
 			InPlace.get().savePluginSettings(true, false);
 			UninstallJob uninstallJob = new UninstallJob(uninstallResetJobName, projectsToReset);
 			uninstallJob.setProgressGroup(groupMonitor, 1);
-			BundleJobManager.addBundleJob(uninstallJob, 0);
-			ActivateBundleJob activateBundleJob = new ActivateBundleJob(ResetJob.activateResetJobName, projectsToReset);
+			InPlace.getBundleJobEventService().add(uninstallJob, 0);
+			ActivateBundle activateBundleJob = new ActivateBundleJob(ResetJob.activateResetJobName, projectsToReset);
 			activateBundleJob.setPersistState(true);
-			activateBundleJob.setProgressGroup(groupMonitor, 1);
-			BundleJobManager.addBundleJob(activateBundleJob, 0);
+			activateBundleJob.getJob().setProgressGroup(groupMonitor, 1);
+			InPlace.getBundleJobEventService().add(activateBundleJob, 0);
 		} catch (OperationCanceledException e) {			
 			addCancelMessage(e, NLS.bind(Msg.CANCEL_JOB_INFO, getName()));
 		} catch (CircularReferenceException e) {

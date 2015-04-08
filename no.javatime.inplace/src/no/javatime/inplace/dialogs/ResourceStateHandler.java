@@ -33,6 +33,7 @@ import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.MessageDialogWithToggle;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.osgi.util.NLS;
+import org.eclipse.ui.PlatformUI;
 
 /**
  * Adaption of the save dialog before launching in Eclipse.
@@ -41,16 +42,22 @@ import org.eclipse.osgi.util.NLS;
 @SuppressWarnings("restriction")
 public class ResourceStateHandler extends SaveScopeResourcesHandler implements ResourceState {
 	
-	private Collection<IProject> dirtyProjects = new LinkedHashSet<IProject>();
+	private Collection<IProject> dirtyProjects; //= new LinkedHashSet<IProject>();
 
+	public ResourceStateHandler() {
+		dirtyProjects = new LinkedHashSet<IProject>();	
+	}
+	
 	/* (non-Javadoc)
 	 * @see no.javatime.inplace.dialogs.ResourceState#getDirtyProjects()
 	 */
 	@Override
 	public Collection<IProject> getDirtyProjects() {
-		areResourcesDirty();
-		Collection<IProject> dirtyProjects = new LinkedHashSet<IProject>(this.dirtyProjects);
-		return dirtyProjects;
+		synchronized (dirtyProjects) {
+			areResourcesDirty();
+			Collection<IProject> dirtyProjects = new LinkedHashSet<IProject>(this.dirtyProjects);
+			return dirtyProjects;
+		}
 	}
 
 	/* (non-Javadoc)
@@ -58,9 +65,12 @@ public class ResourceStateHandler extends SaveScopeResourcesHandler implements R
 	 */
 	@Override
 	public Collection<IProject> getDirtyProjects(Collection<IProject> projects) {
-		Collection<IProject> dirtyProjects = new LinkedHashSet<IProject>(projects);
-		dirtyProjects.retainAll(this.dirtyProjects);
-		return dirtyProjects;
+
+		synchronized (dirtyProjects) {
+			Collection<IProject> dirtyProjects = new LinkedHashSet<IProject>(projects);
+			dirtyProjects.retainAll(this.dirtyProjects);
+			return dirtyProjects;
+		}
 	}
 
 	/* (non-Javadoc)
@@ -76,11 +86,13 @@ public class ResourceStateHandler extends SaveScopeResourcesHandler implements R
 		Collection<IProject> projects = InPlace.getBundleProjectCandidatesService().getProjects();	
 		IResource[] resources = getScopedDirtyResources(projects.toArray(new IProject[projects.size()]));
 		if (resources.length > 0) {
-			this.dirtyProjects.clear();
-			for (int i = 0; i < resources.length; i++) {
-				IProject project = resources[i].getProject();
-				if (null != project) {
-					this.dirtyProjects.add(project);
+			synchronized (dirtyProjects) {
+				this.dirtyProjects.clear();
+				for (int i = 0; i < resources.length; i++) {
+					IProject project = resources[i].getProject();
+					if (null != project) {
+						this.dirtyProjects.add(project);
+					}
 				}
 			}
 			return Boolean.TRUE;
@@ -89,13 +101,18 @@ public class ResourceStateHandler extends SaveScopeResourcesHandler implements R
 		}
 	}
 	
+	@Override
+	public Boolean saveModifiedResources() {
+		
+		if (!PlatformUI.getWorkbench().saveAllEditors(true)) {
+			return false;
+		}
+		return true;
+	}
 	
-	/* (non-Javadoc)
-	 * @see no.javatime.inplace.dialogs.ResourceState#saveModifiedFiles()
-	 */
 	@Override
 	public Boolean saveModifiedFiles() {
-		//PlatformUI.getWorkbench().saveAllEditors(true);
+
 		Boolean isDirty = areResourcesDirty();
 		if (!isDirty) {
 			return Boolean.TRUE;
@@ -103,7 +120,8 @@ public class ResourceStateHandler extends SaveScopeResourcesHandler implements R
 		Collection<IProject> projects = InPlace.getBundleProjectCandidatesService().getProjects();
     IPreferenceStore store = DebugUIPlugin.getDefault().getPreferenceStore();
     String save = store.getString(IInternalDebugUIConstants.PREF_SAVE_DIRTY_EDITORS_BEFORE_LAUNCH);
-    int ret = showSaveDialog(projects.toArray(new IProject[projects.size()]), !save.equals(MessageDialogWithToggle.NEVER), save.equals(MessageDialogWithToggle.PROMPT));
+    int ret = showSaveDialog(projects.toArray(new IProject[projects.size()]), 
+    		!save.equals(MessageDialogWithToggle.NEVER), save.equals(MessageDialogWithToggle.PROMPT));
     if(ret == IDialogConstants.OK_ID) {
     	doSave();
     	return Boolean.TRUE;
@@ -111,22 +129,40 @@ public class ResourceStateHandler extends SaveScopeResourcesHandler implements R
     return Boolean.FALSE;
 	}
 	
-	/**
-	 * Wait for automatic build to finish before returning,
-	 */
-	public void waitOnBuilder() {
+	@Override
+	public void waitOnBuilder(boolean log) {
 
 		IJobManager jobMan = Job.getJobManager();
 		Job[] build = jobMan.find(ResourcesPlugin.FAMILY_AUTO_BUILD); 
 		if (build.length >= 1) {
 			try {
-				if (InPlace.get().getMsgOpt().isBundleOperations()) {
+				Job job = build[0];
+				if (log && InPlace.getMessageOptionsService().isBundleOperations()) {
+					String state;
+					switch (job.getState()) {
+					case Job.RUNNING:
+						state = "Running";
+						break;
+					case Job.SLEEPING:
+						state = "Sleeping";
+						break;
+					case Job.WAITING:
+						state = "Waiting";
+						break;
+					case Job.NONE:
+					default:
+						state = "Unknown";
+						break;
+					}
 					InPlace.get().log(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, 
-							NLS.bind(Msg.WAITING_ON_JOB_INFO, build[0].getName())));
+							NLS.bind(Msg.WAITING_ON_JOB_INFO, job.getName(), state)));
 				}
-				build[0].join();
-				waitOnBuilder();
+				job.join();
+				// Only log once
+				waitOnBuilder(false);
 			} catch (InterruptedException e) {
+				InPlace.get().log(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, 
+						Msg.BUILDER_INTERRUPT_INFO, e));				
 			}
 		}
 	}
@@ -146,7 +182,7 @@ public class ResourceStateHandler extends SaveScopeResourcesHandler implements R
 	/** 
 	 * Find the first waiting bundle job
 	 * 
-	 * @return bundle job running or null if no bundle is in state running
+	 * @return bundle job waiting or null if no bundle is in state waiting
 	 */
 	static public BundleJob getWaitingBundleJob() {
 
@@ -166,14 +202,15 @@ public class ResourceStateHandler extends SaveScopeResourcesHandler implements R
 	 * 
 	 * @return bundle job running or null if no bundle is in state running
 	 */
-	 public Job getRunningBundleJob() {
+	 @Override
+	public Job getRunningBundleJob() {
 
 		IJobManager jobMan = Job.getJobManager();
 		Job[] jobs = jobMan.find(BundleExecutor.FAMILY_BUNDLE_LIFECYCLE); 
 		for (int i = 0; i < jobs.length; i++) {
 			Job job = jobs[i];
 			if (job.getState() == Job.RUNNING && job instanceof BundleJob) {
-				return (BundleJob) job;
+				return job;
 			}
 		}
 		return null;
@@ -189,7 +226,7 @@ public class ResourceStateHandler extends SaveScopeResourcesHandler implements R
 		Job[] bundleJobs = jobMan.find(BundleExecutor.FAMILY_BUNDLE_LIFECYCLE); 
 		if (bundleJobs.length >= 1) {
 			try {
-				if (InPlace.get().getMsgOpt().isBundleOperations()) {
+				if (InPlace.getMessageOptionsService().isBundleOperations()) {
 					InPlace.get().log(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, 
 							NLS.bind(Msg.WAITING_ON_JOB_INFO, bundleJobs[0].getName())));
 				}

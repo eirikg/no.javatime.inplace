@@ -134,13 +134,14 @@ public class BundleProjectCommandProvider implements CommandProvider {
 	public void cmd(String cmd, CommandInterpreter ci, BundleExecutor executor, String fullCmdname) {
 
 		boolean activationMode = cmd.startsWith("a") ? true : false;
+		Extension<ActivateProject> activateExtension = null;
 		try {
 			Collection<IProject> projects = getProjects(cmd, ci);
 			Collection<IProject> discaredProjects = null;
 			if (projects.size() > 0) {
-				Extension<ActivateProject> activateExtension = Extenders.getExtension(
+				activateExtension = Extenders.getExtension(
 						ActivateProject.class.getName(), Activator.getContext().getBundle());
-				ActivateProject activate = activateExtension.getService();
+				ActivateProject activate = activateExtension.getTrackedService();
 				for (IProject project : projects) {
 					boolean activated = activate.isProjectActivated(project);
 					if (!activationMode && !activated || activationMode && activated) {
@@ -157,7 +158,7 @@ public class BundleProjectCommandProvider implements CommandProvider {
 				}
 				executor.addPendingProjects(projects);
 				ci.println("Running " + executor.getName());
-				executor.execute();
+				executor.run();
 				// A command may trigger multiple bundle jobs. Report from all jobs
 				// BundleJob waitingJob = job;
 				// do {
@@ -170,6 +171,10 @@ public class BundleProjectCommandProvider implements CommandProvider {
 		} catch (InPlaceException | IllegalStateException e) {
 			ci.println(cmd + ": failed to " + fullCmdname);
 			ci.printStackTrace(e);
+		} finally {
+			if (null != activateExtension) {
+				activateExtension.closeTrackedService();
+			}
 		}
 	}
 

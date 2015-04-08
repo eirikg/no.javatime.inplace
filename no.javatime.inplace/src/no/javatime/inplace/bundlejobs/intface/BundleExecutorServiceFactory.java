@@ -19,7 +19,7 @@ import org.osgi.framework.ServiceRegistration;
  * The service class name must be the name of a class that resides in the bundle specified as the
  * owner bundle when the extender was registered.
  */
-public class ExecutorServiceFactory extends PrototypeServiceScopeFactory<BundleExecutor> {
+public class BundleExecutorServiceFactory extends PrototypeServiceScopeFactory<BundleExecutor> {
 
 	private String bundleExecutorName;
 
@@ -31,7 +31,7 @@ public class ExecutorServiceFactory extends PrototypeServiceScopeFactory<BundleE
 	 * @param serviceClassName a fully qualified service class name
 	 * @throws ExstenderException if the specified service class name is null
 	 */
-	public ExecutorServiceFactory(String serviceClassName) throws ExtenderException {
+	public BundleExecutorServiceFactory(String serviceClassName) throws ExtenderException {
 		super(serviceClassName);
 	}
 
@@ -43,7 +43,7 @@ public class ExecutorServiceFactory extends PrototypeServiceScopeFactory<BundleE
 	 * @param serviceClassName a fully qualified service class name
 	 * @throws ExstenderException if the specified service class name is null
 	 */
-	public ExecutorServiceFactory(String executorName, String serviceClassName)
+	public BundleExecutorServiceFactory(String executorName, String serviceClassName)
 			throws ExtenderException {
 		super(serviceClassName);
 		this.bundleExecutorName = executorName;

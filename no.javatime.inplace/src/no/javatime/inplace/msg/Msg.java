@@ -88,7 +88,9 @@ public class Msg extends NLS {
 	public static String GET_SERVICE_EXP;
 	public static String LOG_TRACE_EXP;
 	public static String SERVICE_EXECUTOR_EXP;
-	
+	public static String NULL_EXTENDER_EXP;
+	public static String NULL_EXTENSION_EXP;
+
 	// Info messages
 	public static String DEACTIVATE_BUILD_ERROR_INFO;
 	public static String UPDATE_BUILD_ERROR_INFO;
@@ -118,6 +120,7 @@ public class Msg extends NLS {
 	public static String MANUAL_STOP_TASK_INFO;
 	public static String CLASS_PATH_COMMON_INFO;
 	public static String WAITING_ON_JOB_INFO;
+	public static String BUILDER_INTERRUPT_INFO;
 	public static String CUSTOMIZED_STATUS_HANDLER_INFO;
 	public static String CUSTOMIZED_STATUS_HANDLER_CMD_LINE_INFO;
 	public static String STANDARD_STATUS_HANDLER_INFO;

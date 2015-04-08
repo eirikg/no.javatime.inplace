@@ -194,19 +194,25 @@ public class Extenders {
 	 * Create an extension of the extender registered with the specified interface name
 	 * <p>
 	 * 
-	 * @param interfaceName service interface name
+	 * @param serviceInterfaceName service interface name
 	 * @user The bundle using the extension
 	 * @return the extension interface or null if there is no registered service with the specified
 	 * interface name
-	 * @throws ExtenderException if fail to get the registered extension
+	 * @throws ExtenderException if fail to get the registered extension or no extender were
+	 * registered with the specified interface name
 	 */
-	public static final <S> Extension<S> getExtension(String interfaceName, Bundle user)
+	public static final <S> Extension<S> getExtension(String serviceInterfaceName, Bundle user)
 			throws ExtenderException {
 
 		ExtenderServiceMap<S> extServiceMap = Activator.getExtenderServiceMap();
-		Extender<S> extender = extServiceMap.get(interfaceName);
+		Extender<S> extender = extServiceMap.get(serviceInterfaceName);
 		Activator.ungetServiceMap();
-		return null == extender ? null : extender.getExtension(user);
+		if (null == extender) {
+			throw new ExtenderException(
+					"Found no extender registered with the specified interface name {0}",
+					serviceInterfaceName);
+		}
+		return extender.getExtension(user);
 	}
 
 	/**
@@ -216,17 +222,24 @@ public class Extenders {
 	 * a convenience when the {@code user} bundle is the same as the bundle that registered the
 	 * extender for the specified interface name.
 	 * 
-	 * @param interfaceName service interface name
+	 * @param serviceInterfaceName service interface name
 	 * @return the extension interface or null if there is no registered service with the specified
 	 * interface name
-	 * @throws ExtenderException if fail to get the registered extension
+	 * @throws ExtenderException if fail to get the registered extension or no extender were
+	 * registered with the specified interface name
 	 */
-	public static final <S> Extension<S> getExtension(String interfaceName) throws ExtenderException {
+	public static final <S> Extension<S> getExtension(String serviceInterfaceName)
+			throws ExtenderException {
 
 		ExtenderServiceMap<S> extServiceMap = Activator.getExtenderServiceMap();
-		Extender<S> extender = extServiceMap.get(interfaceName);
+		Extender<S> extender = extServiceMap.get(serviceInterfaceName);
 		Activator.ungetServiceMap();
-		return null == extender ? null : extender.getExtension();
+		if (null == extender) {
+			throw new ExtenderException(
+					"Found no extender registered with the specified interface name {0}",
+					serviceInterfaceName);
+		}
+		return extender.getExtension();
 	}
 
 	/**
@@ -235,8 +248,7 @@ public class Extenders {
 	 * @param serviceInterfaceName one of possible multiple interface names of the extension bundle.
 	 * @return the extender instance or null if the service is not tracked under the specified
 	 * interface name.
-	 * @throws ExtenderException if the bundle context of the extension is no longer valid or the
-	 * class object implementing the extension could not be created
+	 * @throws ExtenderException If no extender were registered with the specified interface name
 	 */
 	public static final <S> Extender<S> getExtender(String serviceInterfaceName)
 			throws ExtenderException {
@@ -265,8 +277,8 @@ public class Extenders {
 	 * @param filter The filter expression or {@code null} for all extenders.
 	 * @return a list of extenders matching the specified class service name and the specified filter
 	 * or {@code null} if no extenders are registered which satisfy the search.
-	 * @throws ExtenderException if this BundleContext of the extender bundle is no longer valid, a
-	 * missing security permission or the the filter contains syntax errors
+	 * @throws ExtenderException If no extender were registered with the specified interface names
+	 * or the the filter contains syntax errors
 	 */
 	public static final <S> Collection<Extender<S>> getExtenders(String serviceInterfaceName,
 			String filter) throws ExtenderException {
@@ -275,35 +287,6 @@ public class Extenders {
 		Collection<Extender<S>> extenders = extServiceMap.get(serviceInterfaceName, filter);
 		Activator.ungetServiceMap();
 		return extenders;
-	}
-	
-	/**
-	 * Get an extender registered with the specified interface class
-	 * <p>
-	 * This extender access method has an additional check to verify if the interface class is loaded or
-	 * not. A failure first indicates that the extender is not registered or the bundle
-	 * hosting the class is not started yet and/or not loaded by or on behalf of the hosting bundle
-	 * 
-	 * @param interfaceClass service interface class
-	 * @return the extender service
-	 * @throws ExtenderException if fail to get the registered extender due to no
-	 * registered service with the specified interface name
-	 */
-	public static <E> Extender<E> getExtender(Class<E> interfaceClass) throws ExtenderException {
-
-		Extender<E> ext = null;
-		try {
-			Class<?> c = Class.forName(interfaceClass.getName());
-			ext = getExtender(c.getName());
-			if (null == ext) {
-				throw new ExtenderException("Null extender for the using bundle");
-			}
-		} catch (ClassNotFoundException e) {
-			// Bundle hosting the class is not started yet and/or not loaded by or on behalf of the hosting
-			// bundle
-			throw new ExtenderException(e, "Interface class for extender not found for the using bundle");
-		}
-		return ext;
 	}
 
 	/**

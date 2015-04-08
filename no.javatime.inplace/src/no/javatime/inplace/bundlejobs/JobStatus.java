@@ -96,7 +96,7 @@ public class JobStatus extends WorkspaceJob implements BundleTransitionEventList
 	@Override
 	public void bundleTransitionChanged(BundleTransitionEvent event) {
 
-		if (!InPlace.get().getMsgOpt().isBundleOperations()) {
+		if (!InPlace.getMessageOptionsService().isBundleOperations()) {
 			return;
 		}
 		Bundle bundle = event.getBundle();
@@ -203,6 +203,7 @@ public class JobStatus extends WorkspaceJob implements BundleTransitionEventList
 						.getExtension(ActivateProject.class.getName());
 				ActivateProject activate = activateExtension.getService();
 				String addActivated = activate.isProjectActivated(project) ? "activated" : "deactivated";
+				activateExtension.ungetService();
 				addLogStatus(Msg.ADD_PROJECT_OP_TRACE, new Object[] { addActivated, project.getName() },
 						project);
 				break;
@@ -292,7 +293,7 @@ public class JobStatus extends WorkspaceJob implements BundleTransitionEventList
 	 * 
 	 * @param key a {@code NLS} identifier
 	 * @param substitutions parameters to the {@code NLS} string
-	 * @param bundleProjectCandidates a {@code Bundle} or an {@code IProject}. Must not be null
+	 * @param bundleProject a {@code Bundle} or an {@code IProject}. Must not be null
 	 * @see #addLogStatus(String, Bundle, IProject)
 	 * @see #getLogStatusList()
 	 */

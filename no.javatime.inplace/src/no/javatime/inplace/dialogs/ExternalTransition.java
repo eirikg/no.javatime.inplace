@@ -6,11 +6,10 @@ import java.util.Collections;
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundlejobs.ActivateBundleJob;
 import no.javatime.inplace.bundlejobs.ActivateProjectJob;
-import no.javatime.inplace.bundlejobs.BundleJob;
 import no.javatime.inplace.bundlejobs.DeactivateJob;
 import no.javatime.inplace.bundlejobs.InstallJob;
 import no.javatime.inplace.bundlejobs.UninstallJob;
-import no.javatime.inplace.bundlejobs.events.BundleJobManager;
+import no.javatime.inplace.bundlejobs.intface.BundleExecutor;
 import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.closure.ProjectSorter;
 import no.javatime.inplace.region.events.BundleTransitionEvent;
@@ -72,7 +71,7 @@ public class ExternalTransition implements BundleTransitionEventListener {
 				final BundleProjectCandidates bundleProjectcandidates = InPlace.getBundleProjectCandidatesService();
 				IBundleStatus reqStatus = null;
 				int autoDependencyAction = 1; // Default auto dependency action
-				new ResourceStateHandler().saveModifiedFiles();
+				new ResourceStateHandler().saveModifiedResources();
 				Boolean dependencies = false;
 				Collection<IProject> reqProjects = Collections.<IProject> emptySet();
 				if (bundleRegion.isBundleActivated(bundle)) {
@@ -90,7 +89,7 @@ public class ExternalTransition implements BundleTransitionEventListener {
 				}
 				// User choice to deactivate workspace or restore uninstalled bundle
 				try {
-					if (!InPlace.get().getCommandOptionsService().isAutoHandleExternalCommands()) {
+					if (!InPlace.getCommandOptionsService().isAutoHandleExternalCommands()) {
 						String question = null;
 						int index = 0;
 						if (dependencies) {
@@ -111,7 +110,7 @@ public class ExternalTransition implements BundleTransitionEventListener {
 							StatusManager.LOG);
 				}
 				// bundleRegion.unregisterBundle(bundle);
-				BundleJob bundleJob = null;
+				BundleExecutor bundleJob = null;
 				// Activate the external uninstalled bundle
 				if (autoDependencyAction == 0) {
 					if (bundleRegion.isBundleActivated(project)) {
@@ -120,7 +119,7 @@ public class ExternalTransition implements BundleTransitionEventListener {
 							// Bring workspace back to a consistent state before restoring
 							UninstallJob uninstallJob = new UninstallJob(UninstallJob.uninstallJobName,
 									reqProjects);
-							BundleJobManager.addBundleJob(uninstallJob, 0);
+							InPlace.getBundleJobEventService().add(uninstallJob, 0);
 							bundleJob.addPendingProjects(reqProjects);
 						}
 					} else {
@@ -153,7 +152,7 @@ public class ExternalTransition implements BundleTransitionEventListener {
 						mStatus.add(reqStatus);
 					}
 					StatusManager.getManager().handle(mStatus, StatusManager.LOG);
-					BundleJobManager.addBundleJob(bundleJob, 0);
+					InPlace.getBundleJobEventService().add(bundleJob, 0);
 				}
 			}
 		});

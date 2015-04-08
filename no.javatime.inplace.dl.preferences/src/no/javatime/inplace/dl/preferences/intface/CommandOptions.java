@@ -23,84 +23,84 @@ public interface CommandOptions extends ManifestOptions {
 	 * 
 	 * @return true if UI contributions is allowed, otherwise false.
 	 */
-	public abstract boolean isAllowUIContributions();
+	public boolean isAllowUIContributions();
 
 	/**
 	 * Get default option for allowing UI contributions using extensions
 	 * 
 	 * @return true if UI contributions using extensions should be allowed , otherwise false.
 	 */
-	public abstract boolean getDefaultIsAllowUIContributions();
+	public boolean getDefaultIsAllowUIContributions();
 
 	/**
 	 * Set if UI contributions using the Eclipse extension mechanism should be allowed
 	 * 
 	 * @param contributions true to allow UI contributions using UI extensions and false to not
 	 */
-	public abstract void setIsAllowUIContributions(boolean contributions);
+	public void setIsAllowUIContributions(boolean contributions);
 
 	/**
 	 * Get option for handling external bundle commands
 	 * 
 	 * @return true if external commands are handled automatically, otherwise false.
 	 */
-	public abstract boolean isAutoHandleExternalCommands();
+	public boolean isAutoHandleExternalCommands();
 
 	/**
 	 * Get default option for handling external bundle commands
 	 * 
 	 * @return true if activation policy should be set to eager on activation , otherwise false.
 	 */
-	public abstract boolean getDefaultIsAutoHandleExternalCommands();
+	public boolean getDefaultIsAutoHandleExternalCommands();
 
 	/**
 	 * Set if external bundle commands should be handled automatically
 	 * 
 	 * @param automatic true to handle external commands automatically and false to not
 	 */
-	public abstract void setIsAutoHandleExternalCommands(boolean automatic);
+	public void setIsAutoHandleExternalCommands(boolean automatic);
 
 	/**
 	 * Should bundles be refreshed right after they are updated
 	 * 
 	 * @return true if refresh after update, otherwise false.
 	 */
-	public abstract boolean isRefreshOnUpdate();
+	public boolean isRefreshOnUpdate();
 
 	/**
 	 * Get default option for refresh bundle after update
 	 * 
 	 * @return true if default is refresh after update, otherwise false.
 	 */
-	public abstract boolean getDefaultIsRefreshOnUpdate();
+	public boolean getDefaultIsRefreshOnUpdate();
 
 	/**
 	 * Set whether bundles should be refreshed after they are updated
 	 * 
 	 * @param refresh true to refresh after update and false to not
 	 */
-	public abstract void setIsRefreshOnUpdate(boolean refresh);
+	public void setIsRefreshOnUpdate(boolean refresh);
 
 	/**
 	 * Should bundles be updated right after they are built
 	 * 
 	 * @return true if update after build, otherwise false.
 	 */
-	public abstract boolean isUpdateOnBuild();
+	public boolean isUpdateOnBuild();
 
 	/**
 	 * Get default option for update bundle after build
 	 * 
 	 * @return true if default is update after build, otherwise false.
 	 */
-	public abstract boolean getDefaultIsUpdateOnBuild();
+	public boolean getDefaultIsUpdateOnBuild();
 
 	/**
 	 * Set whether bundles should be updated after they are built
 	 * 
 	 * @param update true to update after build and false to not
 	 */
-	public abstract void setIsUpdateOnBuild(boolean update);
+	public void setIsUpdateOnBuild(boolean update);
 
 	/**
 	 * Check for enabling/disabling the timeout functionality in Start and Stop methods
@@ -108,49 +108,49 @@ public interface CommandOptions extends ManifestOptions {
 	 * @return true if the timeout functionality is enabled in Start and Stop methods. False if this functionality is
 	 *         disabled.
 	 */
-	public abstract boolean isTimeOut();
+	public boolean isTimeOut();
 
 	/**
 	 * Get the default for enabling/disabling timeout in Start and Stop methods
 	 * 
 	 * @return true if the default timeout functionality is enabled in Start and Stop methods and false if not
 	 */
-	public abstract boolean getDefaultIsTimeOut();
+	public boolean getDefaultIsTimeOut();
 	
 	/**
 	 * Set value determining if Start and Stop should be manually stopped 
 	 * 
 	 * @param terminate true to force stopping running start and stop methods. Otherwise false
 	 */
-	public abstract void setIsManualTerminate(boolean terminate);
+	public void setIsManualTerminate(boolean terminate);
 
 	/**
 	 * Get value determining if Start and Stop should be manually stopped 
 	 * 
 	 * @return True if force termination of start and stop methods. Otherwise false
 	 */
-	public abstract boolean isManualTerminate();
+	public boolean isManualTerminate();
 
 	/**
 	 * Get default value determining if Start and Stop should be manually stopped
 	 *  
 	 * @return True if default is to force termination of start and stop methods. Otherwise false
 	 */
-	public abstract boolean getDefaultIsManualTerminate();
+	public boolean getDefaultIsManualTerminate();
 	
 	/**
 	 * Enable or disable the timeout functionality in Start and Stop methods
 	 * 
 	 * @param timeOut true to enable the timeout function i Start and Stop methods. False to disable this functionality.
 	 */
-	public abstract void setIsTimeOut(boolean timeOut);
+	public void setIsTimeOut(boolean timeOut);
 
 	/**
 	 * Get thread timeout value in seconds for Start and Stop methods in bundles.
 	 * 
 	 * @return the timeout for Start and Stop methods in bundles
 	 */
-	public abstract int getTimeout();
+	public int getTimeout();
 
 	/**
 	 * Default thread timeout value in seconds for Start and Stop methods in bundles. Default is 5000 ms if not set as a
@@ -158,7 +158,7 @@ public interface CommandOptions extends ManifestOptions {
 	 * 
 	 * @return the default timeout value for the "equinox.statechange.timeout" setting
 	 */
-	public abstract int getDeafultTimeout();
+	public int getDeafultTimeout();
 
 	/**
 	 * Thread timeout value for activating bundles at Framework startup. Default is 5000 ms. See the
@@ -166,14 +166,14 @@ public interface CommandOptions extends ManifestOptions {
 	 * 
 	 * @return the default timeout value for the "equinox.statechange.timeout" setting
 	 */
-	public abstract int getStateChangeWait();
+	public int getStateChangeWait();
 
 	/**
 	 * Set the time in seconds as the time to wait before returning from the Start and Stop methods in a bundle.
 	 * 
 	 * @param seconds time to wait in seconds before returning from the Start and Stop methods in a bundle
 	 */
-	public abstract void setTimeOut(int seconds);
+	public void setTimeOut(int seconds);
 
 	/**
 	 * Set the default timeout interval in seconds for this session only. At restart of the Framework the default equinox
@@ -183,47 +183,47 @@ public interface CommandOptions extends ManifestOptions {
 	 * 
 	 * @param seconds timeout in seconds for start and stop methods
 	 */
-	public abstract void setDefaultTimeout(int seconds);
+	public void setDefaultTimeout(int seconds);
 
 	/**
 	 * Check whether all bundles is going to be deactivated when the Framework shuts down
 	 * 
 	 * @return true if deactivate on exit and false if not
 	 */
-	public abstract boolean isDeactivateOnExit();
+	public boolean isDeactivateOnExit();
 
 	/**
 	 * Get default of whether all bundles is going to be deactivated when the Framework shuts down
 	 * 
 	 * @return true if default is deactivate on exit and false if not
 	 */
-	public abstract boolean getDefaultIsDeactivateOnExit();
+	public boolean getDefaultIsDeactivateOnExit();
 
 	/**
 	 * Set whether bundle should be deactivated when the Framework shuts down
 	 * 
 	 * @param deactivate true to deactivate and false to not deactivate
 	 */
-	public abstract void setIsDeactivateOnExit(boolean deactivate);
+	public void setIsDeactivateOnExit(boolean deactivate);
 
 	/**
 	 * Check whether a bundle is going to be deactivated when the bundle task is terminated
 	 * 
 	 * @return true if deactivate on terminate and false if not
 	 */
-	public abstract boolean isDeactivateOnTerminate();
+	public boolean isDeactivateOnTerminate();
 
 	/**
 	 * Get default of whether a bundle is going to be deactivated when the bundle task is terminated
 	 * 
 	 * @return true if default is deactivate on terminate and false if not
 	 */
-	public abstract boolean getDefaultIsDeactivateOnTerminate();
+	public boolean getDefaultIsDeactivateOnTerminate();
 
 	/**
 	 * Set whether all bundles should be deactivated when the bundle task is terminated
 	 * 
 	 * @param deactivate true to deactivate and false to not deactivate
 	 */
-	public abstract void setIsDeactivateOnTerminate(boolean deactivate);
+	public void setIsDeactivateOnTerminate(boolean deactivate);
 }

@@ -50,6 +50,12 @@ public class ExtensionImpl<S> implements Extension<S> {
 		userBundle = extender.getRegistrar();
 	}
 
+	public ExtensionImpl(Extender<S> extender, Bundle userBundle)  throws ExtenderException {
+
+		this.extender = extender;
+		this.userBundle = userBundle;
+	}
+
 	public S getService(Bundle bundle) throws ExtenderException {		
 		return extender.getService(bundle);
 	}		
@@ -76,31 +82,34 @@ public class ExtensionImpl<S> implements Extension<S> {
 
 	public void openServiceTracker(ServiceTrackerCustomizer<S, S> customizer) throws ExtenderException {
 
-//		synchronized (trackerLock) {
-			if (null == tracker) {
+		synchronized (trackerLock) {
 				try {
-					tracker = new ServiceTracker<S, S>(this.userBundle.getBundleContext(), extender.getServiceReference(),
-							customizer);
-					tracker.open();
+					if (null == tracker) {
+						if (null == customizer) {
+							customizer = new ExtensionServiceTrackerCustomizer<>(extender, userBundle);
+						}
+						tracker = new ServiceTracker<S, S>(userBundle.getBundleContext(), extender.getServiceReference(),
+								customizer);
+						tracker.open();
+					} else if (tracker.getTrackingCount() == -1) {
+						tracker.open();
+					} 
 				} catch (IllegalStateException e) {
 					tracker = null;
 					throw new ExtenderException(e, "Failed to open the tracker for interface {0}", extender.getServiceInterfaceName());
 				}
-			}
-//		}
+		}
 	}
 
 	public S getTrackedService() throws ExtenderException {
 
 		try {
-//			synchronized (trackerLock) {
+			synchronized (trackerLock) {
 				if (null == tracker) {
 					openServiceTracker(null);
-				} else if (tracker.getTrackingCount() == -1) {
-					tracker.open();
 				}
 				return tracker.getService();
-//			}
+			}
 		} catch (ExtenderException | NullPointerException e) {
 			ExtenderException ex = new ExtenderException(e, "Failed to get tracked service tracker for interface {0}", extender.getServiceInterfaceName());
 			if (e instanceof NullPointerException) {
@@ -111,11 +120,11 @@ public class ExtensionImpl<S> implements Extension<S> {
 	}
 
 	public void closeTrackedService() {
-//		synchronized (trackerLock) {
-			if (null != tracker && tracker.getTrackingCount() != -1) {
+		synchronized (trackerLock) {
+			if (null != tracker && tracker.getTrackingCount() != -1) { 
 				tracker.close();
 				tracker = null;
 			}
 		}
-//	}
+	}
 }

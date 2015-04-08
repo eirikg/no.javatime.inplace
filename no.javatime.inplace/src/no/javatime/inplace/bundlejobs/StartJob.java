@@ -16,9 +16,11 @@ import java.util.LinkedHashSet;
 
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundlejobs.intface.Start;
+import no.javatime.inplace.dl.preferences.intface.DependencyOptions;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Operation;
 import no.javatime.inplace.extender.intface.ExtenderException;
+import no.javatime.inplace.extender.intface.Extension;
 import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.closure.BundleClosures;
 import no.javatime.inplace.region.closure.BundleSorter;
@@ -56,6 +58,7 @@ public class StartJob extends BundleJob implements Start {
 	public StartJob() {
 		super(startJobName);
 	}
+	
 	/**
 	 * Constructs a start job with a given name
 	 * 
@@ -191,8 +194,11 @@ public class StartJob extends BundleJob implements Start {
 		start(bundlesToStart, null, new SubProgressMonitor(
 				monitor, 1));
 		// Warn about missing providing closures in state RESOLVED
-		if (getDepOpt().get(Operation.ACTIVATE_BUNDLE, Closure.REQUIRING)
-				|| getDepOpt().get(Operation.ACTIVATE_BUNDLE, Closure.SINGLE)) {
+		Extension<DependencyOptions> dependencyOptionsExtension = 
+				InPlace.getTrackedExtension(DependencyOptions.class.getName());
+		DependencyOptions dependencyOptions = dependencyOptionsExtension.getTrackedService();
+		if (dependencyOptions.get(Operation.ACTIVATE_BUNDLE, Closure.REQUIRING)
+				|| dependencyOptions.get(Operation.ACTIVATE_BUNDLE, Closure.SINGLE)) {
 			BundleSorter bs = new BundleSorter();
 			for (Bundle bundle : bundlesToStart) {
 				Collection<Bundle> providingBundles = bs.sortProvidingBundles(Collections.<Bundle>singletonList(bundle),
@@ -207,6 +213,7 @@ public class StartJob extends BundleJob implements Start {
 				}
 			}
 		}
+		dependencyOptionsExtension.closeTrackedService();
 		return getLastErrorStatus();
 	}
 

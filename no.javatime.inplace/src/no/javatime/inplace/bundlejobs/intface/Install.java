@@ -11,6 +11,7 @@ package no.javatime.inplace.bundlejobs.intface;
  * @see Deactivate
  */
 public interface Install extends BundleExecutor {
+
 	/**
 	 * Manifest header for accessing the default service implementation class name of the bundle operation.
 	 */

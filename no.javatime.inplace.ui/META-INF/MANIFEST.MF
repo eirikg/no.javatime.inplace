@@ -13,7 +13,7 @@ Bundle-Version: 0.2.0.qualifier
 Bundle-Name: InPlace Activator Bundle UI
 Bundle-Activator: no.javatime.inplace.ui.Activator
 Bundle-ManifestVersion: 2
-Import-Package: no.javatime.inplace.bundlejobs.events,
+Import-Package: no.javatime.inplace.bundlejobs.events.intface,
  no.javatime.inplace.bundlejobs.intface,
  no.javatime.inplace.dl.preferences.intface,
  no.javatime.inplace.extender.intface,

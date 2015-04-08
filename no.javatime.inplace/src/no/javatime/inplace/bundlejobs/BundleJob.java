@@ -21,7 +21,6 @@ import java.util.concurrent.TimeoutException;
 import no.javatime.inplace.InPlace;
 import no.javatime.inplace.bundlejobs.intface.BundleExecutor;
 import no.javatime.inplace.dl.preferences.intface.CommandOptions;
-import no.javatime.inplace.dl.preferences.intface.DependencyOptions;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.closure.BuildErrorClosure;
@@ -69,7 +68,7 @@ import org.osgi.framework.BundleException;
  * Pending bundle projects are added to a job before it is scheduled and the bundle projects are
  * executed according to the job type.
  */
-public class BundleJob extends JobStatus {
+public class BundleJob extends JobStatus implements BundleExecutor {
 
 	/** Standard activate bundle job name */
 	final public static String activateJobName = Message.getInstance().formatString(
@@ -97,8 +96,6 @@ public class BundleJob extends JobStatus {
 	 * Unsorted list of unique pending projects to process in a job
 	 */
 	private Collection<IProject> pendingProjects = new LinkedHashSet<IProject>();
-
-	private DependencyOptions dependencyOptions;
 
 	/**
 	 * Construct a bundle job with a bundle name. Sets job priority and scheduling rule.
@@ -251,13 +248,6 @@ public class BundleJob extends JobStatus {
 	 */
 	public int pendingProjects() {
 		return pendingProjects.size();
-	}
-
-	public DependencyOptions getDepOpt() {
-		if (null == dependencyOptions) {
-			dependencyOptions = InPlace.get().getDependencyOptionsService();
-		}
-		return dependencyOptions;
 	}
 
 	/**
@@ -728,7 +718,7 @@ public class BundleJob extends JobStatus {
 				if (be.hasBuildErrors()) {
 					Collection<IProject> buildErrClosure = be.getBuildErrorClosures();
 					projectsToResolve.removeAll(buildErrClosure);
-					if (InPlace.get().getMsgOpt().isBundleOperations()) {
+					if (InPlace.getMessageOptionsService().isBundleOperations()) {
 						IBundleStatus bundleStatus = be.getErrorClosureStatus();
 						if (null != bundleStatus) {
 							addLogStatus(bundleStatus);
@@ -864,7 +854,7 @@ public class BundleJob extends JobStatus {
 			}
 		}
 		if (!result.hasStatus(StatusCode.OK)) {
-			if (InPlace.get().getMsgOpt().isBundleOperations()) {
+			if (InPlace.getMessageOptionsService().isBundleOperations()) {
 				result.add(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID,
 						Msg.MISSING_DEV_CLASSPATH_BUNDLE_INFO));
 			}
@@ -1189,14 +1179,14 @@ public class BundleJob extends JobStatus {
 	}
 
 	protected CommandOptions getOptionsService() throws InPlaceException {
-		return InPlace.get().getCommandOptionsService();
+		return InPlace.getCommandOptionsService();
 	}
 
-	public void execute(long delay) {
+	public void run(long delay) {
 		super.schedule(delay);
 	}
 
-	public void execute() {
+	public void run() {
 		super.schedule(0L);
 	}
 

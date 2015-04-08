@@ -39,6 +39,7 @@ import java.util.List;
 import java.util.Map;
 
 import no.javatime.inplace.dl.preferences.intface.MessageOptions;
+import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.extender.intface.Extenders;
 import no.javatime.inplace.extender.intface.Extension;
 import no.javatime.inplace.log.Activator;
@@ -224,10 +225,6 @@ public class LogView extends ViewPart implements SynchronousLogListener, LogFilt
 	private Action fExportLogEntryAction;
 	private Action fToggleLoggingAction;
 
-	// Option for toggling logging
-	private Extension<MessageOptions> messageOptions;
-
-
 	/**
 	 * Action called when user selects "Group by -> ..." from menu.
 	 */
@@ -260,7 +257,6 @@ public class LogView extends ViewPart implements SynchronousLogListener, LogFilt
 		groups = new HashMap();
 		batchedEntries = new ArrayList();
 		fInputFile = Activator.getDefault().getLogFile();
-		messageOptions = Extenders.getExtension(MessageOptions.class.getName());
 	}
 
 	/* (non-Javadoc)
@@ -335,8 +331,9 @@ public class LogView extends ViewPart implements SynchronousLogListener, LogFilt
 		IToolBarManager toolBarManager = bars.getToolBarManager();
 
 		fToggleLoggingAction = createToggleLoggingAction();
-		toolBarManager.add(fToggleLoggingAction);
-
+		if (null != fToggleLoggingAction) {
+			toolBarManager.add(fToggleLoggingAction);
+		}
 		toolBarManager.add(new Separator(IWorkbenchActionConstants.MB_ADDITIONS));
 
 		fExportLogAction = createExportLogAction();
@@ -392,7 +389,9 @@ public class LogView extends ViewPart implements SynchronousLogListener, LogFilt
 				manager.add(new Separator());
 				manager.add(fExportLogEntryAction);
 				manager.add(new Separator());
-				manager.add(fToggleLoggingAction);
+				if (null != fToggleLoggingAction) {
+					manager.add(fToggleLoggingAction);
+				}
 				manager.add(new Separator());
 
 				((EventDetailsDialogAction) fPropertiesAction).setComparator(fComparator);
@@ -458,30 +457,34 @@ public class LogView extends ViewPart implements SynchronousLogListener, LogFilt
 	}
 
 	private Action createToggleLoggingAction() {
-		Action action = new Action(Messages.LogView_toggle) {
-			public void run() {
-				MessageOptions toggle = getToggleLogService();
-				if (null != toggle) {
-					if (toggle.isBundleOperations()) {
+		Action action = null;
+		try {			
+			// Logging and user message options
+			Extension<MessageOptions> messageOptionsExtension = 
+					Extenders.getExtension(MessageOptions.class.getName());
+			final MessageOptions messageOptions = messageOptionsExtension.getTrackedService();
+			action = new Action(Messages.LogView_toggle) {
+				public void run() {
+					if (messageOptions.isBundleOperations()) {
 						setImageDescriptor(SharedImages.getImageDescriptor(SharedImages.DESC_DISABLE_LOGGING));
-						toggle.setIsBundleOperations(false);
+						messageOptions.setIsBundleOperations(false);
 					} else {
 						setImageDescriptor(SharedImages.getImageDescriptor(SharedImages.DESC_ENABLE_LOGGING));			
-						toggle.setIsBundleOperations(true);
+						messageOptions.setIsBundleOperations(true);
 					}
 				}
-			}
-		};
-		action.setToolTipText(Messages.LogView_toggle_tooltip);
-		MessageOptions toggle = getToggleLogService();
-		if (null != toggle) {
-			if (toggle.isBundleOperations()) {
+			};
+			action.setToolTipText(Messages.LogView_toggle_tooltip);
+			if (messageOptions.isBundleOperations()) {
 				action.setImageDescriptor(SharedImages.getImageDescriptor(SharedImages.DESC_ENABLE_LOGGING));
 			} else {
 				action.setImageDescriptor(SharedImages.getImageDescriptor(SharedImages.DESC_DISABLE_LOGGING));			
 			}
+			messageOptionsExtension.closeTrackedService();
+			action.setEnabled(true);
+		} catch (ExtenderException e) {
+			// Ignore and return null
 		}
-		action.setEnabled(true);
 		return action;
 	}
 	
@@ -1823,10 +1826,6 @@ public class LogView extends ViewPart implements SynchronousLogListener, LogFilt
 				return Status.OK_STATUS;
 			}
 		};
-	}
-
-	public MessageOptions getToggleLogService() {
-		return messageOptions.getService();
 	}
 
 	protected File getLogFile() {

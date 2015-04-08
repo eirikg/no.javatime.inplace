@@ -11,9 +11,8 @@
 package no.javatime.inplace.builder;
 
 import no.javatime.inplace.InPlace;
+import no.javatime.inplace.bundlejobs.ActivateProjectJob;
 import no.javatime.inplace.bundlejobs.intface.ActivateProject;
-import no.javatime.inplace.extender.intface.Extenders;
-import no.javatime.inplace.extender.intface.Extension;
 import no.javatime.inplace.region.events.TransitionEvent;
 import no.javatime.inplace.region.intface.BundleProjectCandidates;
 import no.javatime.inplace.region.intface.BundleTransition;
@@ -39,8 +38,7 @@ import org.eclipse.ui.statushandlers.StatusManager;
  */
 public class PreBuildListener implements IResourceChangeListener {
 
-	final private Extension<ActivateProject> activateExtension = Extenders.getExtension(
-			ActivateProject.class.getName());
+	final private ActivateProject projectActivation = new ActivateProjectJob();
 
 	/**
 	 * Register bundle as pending for build when receiving the pre build change event and auto build
@@ -54,8 +52,7 @@ public class PreBuildListener implements IResourceChangeListener {
 		IResourceDelta rootDelta = event.getDelta();
 		IResourceDelta[] projectDeltas = rootDelta.getAffectedChildren(IResourceDelta.ADDED
 				| IResourceDelta.CHANGED, IResource.NONE);
-		ActivateProject activate = activateExtension.getService();
-		boolean isWSNatureEnabled = activate.isProjectWorkspaceActivated();
+		boolean isWSNatureEnabled = projectActivation.isProjectWorkspaceActivated();
 		for (IResourceDelta projectDelta : projectDeltas) {
 			IResource projectResource = projectDelta.getResource();
 			if (projectResource.isAccessible() && (projectResource.getType() & (IResource.PROJECT)) != 0) {
@@ -68,7 +65,7 @@ public class PreBuildListener implements IResourceChangeListener {
 						// is built
 						transition.clearTransitionError(project);
 					} else {
-						if (activate.isProjectActivated(project)) {
+						if (projectActivation.isProjectActivated(project)) {
 							BundleProjectCandidates bundleProjectCandidates = InPlace
 									.getBundleProjectCandidatesService();
 							if (!bundleProjectCandidates.isAutoBuilding()) {

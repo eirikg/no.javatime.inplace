@@ -198,7 +198,7 @@ public class RefreshJob extends BundleJob implements Refresh {
 			Collection<IProject> buildErrClosures = be.getBuildErrorClosures();
 			bundlesToRefresh.removeAll(bundleRegion.getBundles(buildErrClosures));
 			IBundleStatus bundleStatus = be.getErrorClosureStatus();
-			if (InPlace.get().getMsgOpt().isBundleOperations()) {
+			if (InPlace.getMessageOptionsService().isBundleOperations()) {
 				addStatus(bundleStatus);			
 			}
 			containsErrorClosures = true;
@@ -210,7 +210,7 @@ public class RefreshJob extends BundleJob implements Refresh {
 				Collection<IProject> buildErrClosures = be.getBuildErrorClosures();
 				bundlesToRefresh.removeAll(bundleRegion.getBundles(buildErrClosures));
 				IBundleStatus bundleStatus = be.getErrorClosureStatus();
-				if (InPlace.get().getMsgOpt().isBundleOperations()) {
+				if (InPlace.get().getMessageOptionsService().isBundleOperations()) {
 					addStatus(bundleStatus);			
 				}
 				containsErrorClosures = true;

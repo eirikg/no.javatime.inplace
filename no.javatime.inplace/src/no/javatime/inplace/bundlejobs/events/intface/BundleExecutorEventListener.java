@@ -8,16 +8,18 @@
  * Contributors:
  * 	JavaTime project, Eirik Gronsund - initial implementation
  *******************************************************************************/
-package no.javatime.inplace.bundlejobs.events;
+package no.javatime.inplace.bundlejobs.events.intface;
 
 import java.util.EventListener;
+
+
 
 /**
  * Callback interface for clients interested in being notified when a new bundle job is generated.
  * The bundle job contains pending projects and ready for scheduling by clients. 
  *
  */
-public interface BundleJobEventListener extends EventListener {
+public interface BundleExecutorEventListener extends EventListener {
 
-	public void bundleJobEvent(BundleJobEvent event);
+	public void bundleJobEvent(BundleExecutorEvent event);
 }

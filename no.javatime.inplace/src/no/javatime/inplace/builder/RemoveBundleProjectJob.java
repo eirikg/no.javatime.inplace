@@ -5,7 +5,9 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 
 import no.javatime.inplace.InPlace;
+import no.javatime.inplace.builder.intface.RemoveBundleProject;
 import no.javatime.inplace.bundlejobs.NatureJob;
+import no.javatime.inplace.bundlejobs.intface.BundleExecutor;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.msg.Msg;
@@ -27,22 +29,22 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.SubProgressMonitor;
 import org.osgi.framework.Bundle;
 
-/**
- * Uninstall all activated bundle projects that have been removed (closed or deleted) from the
- * workspace. Removed bundle projects are added as pending projects to this job before scheduling
- * the job.
- * <p>
- * If there are removed projects in the workspace that are not added to this job when it starts
- * running the projects are added automatically as pending projects by this job.
- * <p>
- * When removing bundle projects with requiring bundles the requiring closure set becomes
- * incomplete. This inconsistency is solved by deactivating the requiring bundles in the closure
- * before uninstalling the removed projects.
- */
-class RemoveBundleProjectJob extends NatureJob {
+public class RemoveBundleProjectJob extends NatureJob implements BundleExecutor, RemoveBundleProject {
 
 	final public static String removeBundleProjectName = Msg.REMOVE_BUNDLE_PROJECT_JOB;
 
+	/**
+	 * Constructs a removal job with a default job name
+	 */
+	public RemoveBundleProjectJob() {
+		super(removeBundleProjectName);
+	}
+
+	/**
+	 * Constructs a removal job with a given job name
+	 * 
+	 * @param name job name
+	 */
 	public RemoveBundleProjectJob(String name) {
 		super(name);
 	}
@@ -149,7 +151,7 @@ class RemoveBundleProjectJob extends NatureJob {
 	}
 
 	/**
-	 * Add removed projects that are not added to this job.
+	 * Add removed (closed or deleted) projects that are not added to this job.
 	 * <p>
 	 * If there are no removed projects to add, the existing pending projects are removed as pending.
 	 * This means that the removed projects have already been handled by an earlier run of this job.
@@ -162,6 +164,7 @@ class RemoveBundleProjectJob extends NatureJob {
 
 		Collection<IProject> notScheduledProjects = new LinkedHashSet<>();
 		for (IProject removedProject : bundleRegion.getProjects()) {
+			// If the project is not accessible it is closed or deleted
 			if (!removedProject.isAccessible()) {
 				Bundle bundle = bundleRegion.getBundle(removedProject);
 				// Uninstalled projects means that they have already been handled

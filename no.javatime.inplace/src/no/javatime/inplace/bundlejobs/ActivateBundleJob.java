@@ -15,11 +15,12 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 
 import no.javatime.inplace.InPlace;
-import no.javatime.inplace.bundlejobs.events.BundleJobManager;
 import no.javatime.inplace.bundlejobs.intface.ActivateBundle;
+import no.javatime.inplace.dl.preferences.intface.DependencyOptions;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Operation;
 import no.javatime.inplace.extender.intface.ExtenderException;
+import no.javatime.inplace.extender.intface.Extension;
 import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.closure.BuildErrorClosure;
 import no.javatime.inplace.region.closure.BuildErrorClosure.ActivationScope;
@@ -66,6 +67,7 @@ public class ActivateBundleJob extends NatureJob implements ActivateBundle {
 	public ActivateBundleJob() {
 		super(activateJobName);
 	}
+
 	/**
 	 * Construct an activate job with a given job name
 	 * 
@@ -120,14 +122,14 @@ public class ActivateBundleJob extends NatureJob implements ActivateBundle {
 		} catch (InterruptedException e) {
 			String msg = ExceptionMessage.getInstance().formatString("interrupt_job", getName());
 			addError(e, msg);
-		} catch (OperationCanceledException e) {			
+		} catch (OperationCanceledException e) {
 			addCancelMessage(e, NLS.bind(Msg.CANCEL_JOB_INFO, getName()));
 		} catch (CircularReferenceException e) {
 			String msg = ExceptionMessage.getInstance().formatString("circular_reference", getName());
 			BundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg);
 			multiStatus.add(e.getStatusList());
 			addStatus(multiStatus);
-		} catch (ExtenderException e) {			
+		} catch (ExtenderException e) {
 			addError(e, NLS.bind(Msg.SERVICE_EXECUTOR_EXP, getName()));
 		} catch (InPlaceException e) {
 			String msg = ExceptionMessage.getInstance().formatString("terminate_job_with_errors",
@@ -178,7 +180,8 @@ public class ActivateBundleJob extends NatureJob implements ActivateBundle {
 		// At least one project must be activated (nature enabled) for workspace bundles to be activated
 		if (isProjectWorkspaceActivated()) {
 			// If this is the first set of workspace project(s) that have been activated no bundle(s) have
-			// been activated yet and all deactivated bundles should be installed in an activated workspace
+			// been activated yet and all deactivated bundles should be installed in an activated
+			// workspace
 			if (!bundleRegion.isRegionActivated()) {
 				addPendingProjects(bundleProjectCandidates.getBundleProjects());
 			} else {
@@ -208,9 +211,9 @@ public class ActivateBundleJob extends NatureJob implements ActivateBundle {
 			activatedBundles = install(getPendingProjects(), monitor);
 			if (!getLastErrorStatus().isOK()) {
 				DeactivateJob daj = new DeactivateJob(DeactivateJob.deactivateJobName, getPendingProjects());
-				BundleJobManager.addBundleJob(daj, 0);
+				InPlace.getBundleJobEventService().add(daj, 0);
 				return addStatus(new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID, Msg.INSTALL_ERROR));
-			}			
+			}
 			// All circular references, closed and non-existing projects should have been discarded by now
 			handleDuplicates(projectSorter, activatedBundles);
 
@@ -237,7 +240,7 @@ public class ActivateBundleJob extends NatureJob implements ActivateBundle {
 			}
 		}
 		if (bundlesToResolve.size() == 0) {
-			if (InPlace.get().getMsgOpt().isBundleOperations())
+			if (InPlace.getMessageOptionsService().isBundleOperations())
 				addLogStatus(Msg.ACTIVATED_BUNDLES_INFO, new Object[] { bundleRegion.formatBundleList(
 						activatedBundles, true) }, InPlace.getContext().getBundle());
 			return getLastErrorStatus();
@@ -281,7 +284,7 @@ public class ActivateBundleJob extends NatureJob implements ActivateBundle {
 			if (be.hasBuildErrors()) {
 				projectErrorClosures = be.getBuildErrorClosures();
 				activatedProjects.removeAll(projectErrorClosures);
-				if (InPlace.get().getMsgOpt().isBundleOperations()) {
+				if (InPlace.getMessageOptionsService().isBundleOperations()) {
 					addLogStatus(be.getErrorClosureStatus());
 				}
 			}
@@ -293,14 +296,14 @@ public class ActivateBundleJob extends NatureJob implements ActivateBundle {
 				} else {
 					projectErrorClosures = be.getBuildErrorClosures();
 				}
-				if (InPlace.get().getMsgOpt().isBundleOperations()) {
+				if (InPlace.get().getMessageOptionsService().isBundleOperations()) {
 					addLogStatus(be.getErrorClosureStatus());
 				}
 			}
 			if (null != projectErrorClosures) {
 
 				DeactivateJob daj = new DeactivateJob(DeactivateJob.deactivateJobName, projectErrorClosures);
-				BundleJobManager.addBundleJob(daj, 0);
+				InPlace.getBundleJobEventService().add(daj, 0);
 				removePendingProjects(projectErrorClosures);
 				if (null != activatedBundles) {
 					Collection<Bundle> bundleErrorClosure = bundleRegion.getBundles(projectErrorClosures);
@@ -392,7 +395,7 @@ public class ActivateBundleJob extends NatureJob implements ActivateBundle {
 					}
 					if ((state & (Bundle.RESOLVED)) != 0) {
 						// If active bundles to start have requirements on this bundle,
-						// start the bundle if the dependency option allow it
+						// start the bundle if the dependency option allows it
 						Collection<Bundle> reqBundles = bundleSorter.sortRequiringBundles(
 								Collections.<Bundle> singletonList(bundle), activatedBundles);
 						reqBundles.remove(bundle);
@@ -415,10 +418,10 @@ public class ActivateBundleJob extends NatureJob implements ActivateBundle {
 								}
 								// The activated and requiring bundle will be started
 								if ((reqState & (Bundle.UNINSTALLED)) != 0) {
-									if (InPlace.get().getMsgOpt().isBundleOperations()) {
-										String msg = NLS.bind(Msg.UNINSTALLED_REQUIRING_BUNDLES_INFO, 
-												new Object[] {bundleRegion.formatBundleList(reqBundles, true), 
-												bundleRegion.getSymbolicKey(bundle, null)});
+									if (InPlace.getMessageOptionsService().isBundleOperations()) {
+										String msg = NLS.bind(Msg.UNINSTALLED_REQUIRING_BUNDLES_INFO,
+												new Object[] { bundleRegion.formatBundleList(reqBundles, true),
+														bundleRegion.getSymbolicKey(bundle, null) });
 										addLogStatus(msg, bundle, null);
 									}
 									startBundle = true;
@@ -429,14 +432,18 @@ public class ActivateBundleJob extends NatureJob implements ActivateBundle {
 						if (startBundle) {
 							// To start the bundle, the dependency option for start should include providing
 							// closure
-							if (getDepOpt().get(Operation.ACTIVATE_BUNDLE, Closure.REQUIRING)
-									|| getDepOpt().get(Operation.ACTIVATE_BUNDLE, Closure.SINGLE)) {
+							Extension<DependencyOptions> dependencyOptionsExtension = InPlace
+									.getTrackedExtension(DependencyOptions.class.getName());
+							DependencyOptions dependencyOptions = dependencyOptionsExtension.getTrackedService();
+							if (dependencyOptions.get(Operation.ACTIVATE_BUNDLE, Closure.REQUIRING)
+									|| dependencyOptions.get(Operation.ACTIVATE_BUNDLE, Closure.SINGLE)) {
 								bundles.remove(bundle); // Do not start this bundle
 							} else {
-								if (InPlace.get().getMsgOpt().isBundleOperations()) {
+								if (InPlace.get().getMessageOptionsService().isBundleOperations()) {
 									addLogStatus(NLS.bind(Msg.CONDITIONAL_START_BUNDLE_INFO, bundle), bundle, null);
 								}
 							}
+							dependencyOptionsExtension.closeTrackedService();
 						} else {
 							bundles.remove(bundle); // Do not start this bundle
 						}
@@ -464,5 +471,5 @@ public class ActivateBundleJob extends NatureJob implements ActivateBundle {
 	 */
 	public static int getTicks() {
 		return 3; // install (activate workspace), resolve, start
-	}	
+	}
 }

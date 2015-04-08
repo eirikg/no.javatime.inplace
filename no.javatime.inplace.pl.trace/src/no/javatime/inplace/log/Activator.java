@@ -77,7 +77,11 @@ public class Activator extends AbstractUIPlugin {
 		bundleProjectTracker = new ServiceTracker<IBundleProjectService, IBundleProjectService>
 				(context, IBundleProjectService.class.getName(), null);
 		bundleProjectTracker.open();
-	
+
+		environmentInfoServiceTracker = new 
+				ServiceTracker<EnvironmentInfo, EnvironmentInfo>(context, EnvironmentInfo.class, null);
+		environmentInfoServiceTracker.open();
+
 		logWriter = new LogWriter(getLogFile(), BUNDLE_LOGGER_NAME);
 		ExtendedLogReaderService readerService = getLogReaderService(); 
 		readerService.addLogListener(logWriter, logWriter);
@@ -90,6 +94,8 @@ public class Activator extends AbstractUIPlugin {
 	public void stop(BundleContext context) throws Exception {
 		bundleProjectTracker.close();
 		bundleProjectTracker = null;		
+		environmentInfoServiceTracker.close();
+		environmentInfoServiceTracker = null;	
 		if (null != extendedLogReaderServiceTracker
 				&& null != extendedLogServiceTracker) {
 			extendedLogServiceTracker.close();
@@ -122,14 +128,6 @@ public class Activator extends AbstractUIPlugin {
 
 	public EnvironmentInfo getEnvironmentService() {
 
-		if (null == environmentInfoServiceTracker) {
-			if (null == context) {
-				return null;
-			}
-			environmentInfoServiceTracker = new 
-					ServiceTracker<EnvironmentInfo, EnvironmentInfo>(context, EnvironmentInfo.class, null);
-			environmentInfoServiceTracker.open();
-		}
 		return environmentInfoServiceTracker.getService();
 	}
 

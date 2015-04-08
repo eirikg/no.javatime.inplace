@@ -193,7 +193,8 @@ public final class ExtenderImpl<S> implements Extender<S> {
 						serviceInterfaceName);
 			}
 		} catch (NullPointerException e) {
-			ExtenderException ex = new ExtenderException(e, "Failed to get extension for for the specified service interface name");
+			ExtenderException ex = new ExtenderException(e,
+					"Failed to get extension for for the specified service interface name");
 			ex.setNullPointer(true);
 			throw ex;
 		}
@@ -203,13 +204,13 @@ public final class ExtenderImpl<S> implements Extender<S> {
 	@Override
 	public Extension<S> getExtension(Bundle user) {
 
-		return new ExtensionImpl<S>(getServiceInterfaceName(), user);
+		return new ExtensionImpl<S>(this, user);
 	}
 
 	@Override
 	public Extension<S> getExtension() {
 
-		return new ExtensionImpl<S>(getServiceInterfaceName(), getRegistrar());
+		return new ExtensionImpl<S>(this, getRegistrar());
 	}
 
 	@SuppressWarnings("unchecked")
@@ -225,7 +226,8 @@ public final class ExtenderImpl<S> implements Extender<S> {
 			}
 		} catch (IllegalStateException | IllegalArgumentException | SecurityException
 				| NullPointerException e) {
-			ExtenderException ex = new ExtenderException(e, "Failed to get the service for {0}", getServiceInterfaceName());
+			ExtenderException ex = new ExtenderException(e, "Failed to get the service for {0}",
+					getServiceInterfaceName());
 			if (e instanceof NullPointerException) {
 				ex.setNullPointer(true);
 			}
@@ -239,17 +241,15 @@ public final class ExtenderImpl<S> implements Extender<S> {
 
 		try {
 			if (isPrototypeServiceScope(user)) {
-				synchronized (serviceRegistration) {
-					
-					return ((PrototypeServiceScopeFactory<S>) service).getService(user,
-							(ServiceRegistration<S>) serviceRegistration);					
-				}
+				return ((PrototypeServiceScopeFactory<S>) service).getService(user,
+						(ServiceRegistration<S>) serviceRegistration);
 			} else {
 				return (S) user.getBundleContext().getService(sr);
 			}
 		} catch (IllegalStateException | IllegalArgumentException | SecurityException
 				| NullPointerException e) {
-			ExtenderException ex = new ExtenderException(e, "Failed to get the service for {0}", getServiceInterfaceName());
+			ExtenderException ex = new ExtenderException(e, "Failed to get the service for {0}",
+					getServiceInterfaceName());
 			if (e instanceof NullPointerException) {
 				ex.setNullPointer(true);
 			}
@@ -271,8 +271,8 @@ public final class ExtenderImpl<S> implements Extender<S> {
 				return true;
 			}
 		}
-		// The first time the using bundle calls the getService bundle scope is used
-		// and the framework will return a new service object
+		// The first time or after unget service the using bundle calls the getService bundle scope is
+		// used and the framework will return a new service object
 		return false;
 
 	}
@@ -369,7 +369,8 @@ public final class ExtenderImpl<S> implements Extender<S> {
 		try {
 			return regContext.getBundle();
 		} catch (IllegalStateException e) {
-			throw new ExtenderException(e, "The context of the registrar bundle is invalid for service {0}",
+			throw new ExtenderException(e,
+					"The context of the registrar bundle is invalid for service {0}",
 					serviceInterfaceNames[0]);
 		}
 	}
@@ -379,13 +380,13 @@ public final class ExtenderImpl<S> implements Extender<S> {
 
 		return (Long) sr.getProperty(Constants.SERVICE_ID);
 	}
-	
+
 	@Override
 	public Integer getServiceRanking() {
-		
-		return (Integer) sr.getProperty(Constants.SERVICE_RANKING);	
+
+		return (Integer) sr.getProperty(Constants.SERVICE_RANKING);
 	}
-	
+
 	@Override
 	@SuppressWarnings("unchecked")
 	public ServiceReference<S> getServiceReference() throws ExtenderException {
@@ -497,7 +498,8 @@ public final class ExtenderImpl<S> implements Extender<S> {
 		try {
 			serviceRegistration.setProperties(dict);
 		} catch (IllegalArgumentException | IllegalStateException | NullPointerException e) {
-			ExtenderException ex = new ExtenderException(e, "Failed to update prop for {0}", getServiceInterfaceName());
+			ExtenderException ex = new ExtenderException(e, "Failed to update prop for {0}",
+					getServiceInterfaceName());
 			if (e instanceof NullPointerException) {
 				ex.setNullPointer(true);
 			}
@@ -510,7 +512,8 @@ public final class ExtenderImpl<S> implements Extender<S> {
 		try {
 			serviceRegistration.setProperties(dictionary);
 		} catch (IllegalArgumentException | IllegalStateException | NullPointerException e) {
-			ExtenderException ex = new ExtenderException(e, "Failed to update prop for {0}", getServiceInterfaceName());
+			ExtenderException ex = new ExtenderException(e, "Failed to update prop for {0}",
+					getServiceInterfaceName());
 			if (e instanceof NullPointerException) {
 				ex.setNullPointer(true);
 			}

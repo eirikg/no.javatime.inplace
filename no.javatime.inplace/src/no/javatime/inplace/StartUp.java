@@ -1,6 +1,5 @@
 package no.javatime.inplace;
 
-import no.javatime.inplace.bundlejobs.events.BundleJobManager;
 import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
@@ -37,7 +36,7 @@ public class StartUp implements IStartup {
 		final InPlace activator = InPlace.get();
 		activator.addResourceListeners();
 		activator.processLastSavedState(true);
-		BundleJobManager.addBundleJob(new StartUpJob(StartUpJob.startupName), 0);
+		InPlace.getBundleJobEventService().add(new StartUpJob(StartUpJob.startupName));
 		final IWorkbench workbench = PlatformUI.getWorkbench();
 		if (null != workbench && !workbench.isStarting()) {
 			// Not strictly necessary to run an UI thread

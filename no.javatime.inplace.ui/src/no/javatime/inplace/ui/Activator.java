@@ -10,9 +10,9 @@
  *******************************************************************************/
 package no.javatime.inplace.ui;
 
-import no.javatime.inplace.bundlejobs.events.BundleJobEvent;
-import no.javatime.inplace.bundlejobs.events.BundleJobEventListener;
-import no.javatime.inplace.bundlejobs.events.BundleJobManager;
+import no.javatime.inplace.bundlejobs.events.intface.BundleExecutorEvent;
+import no.javatime.inplace.bundlejobs.events.intface.BundleExecutorEventListener;
+import no.javatime.inplace.bundlejobs.events.intface.BundleExecutorEventManager;
 import no.javatime.inplace.bundlejobs.intface.BundleExecutor;
 import no.javatime.inplace.bundlejobs.intface.ResourceState;
 import no.javatime.inplace.dl.preferences.intface.CommandOptions;
@@ -60,85 +60,89 @@ import org.eclipse.ui.statushandlers.StatusManager;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 
-
 /**
  * The activator class controls the plug-in life cycle
  */
-public class Activator extends AbstractUIPlugin implements BundleJobEventListener {
+public class Activator extends AbstractUIPlugin implements BundleExecutorEventListener {
 
 	// The plug-in ID
 	final public static String PLUGIN_ID = "no.javatime.inplace.ui"; //$NON-NLS-1$
 
 	private static Activator activator;
 	private static BundleContext context;
-	
+
 	// Get the workbench window from UI thread
 	private IWorkbenchWindow workBenchWindow = null;
-	
-	// Register (extend) services for use facilitated by other bundles  
+
+	// Register (extend) services for use facilitated by other bundles
 	private static ExtenderTracker extenderBundleTracker;
 
-	private static Extension<BundleRegion> regionExtension;
+	private Extension<BundleRegion> regionExtension;
 	private static BundleRegion region;
-	
-	private static Extension<BundleCommand> commandExtension;
+
+	private Extension<BundleCommand> commandExtension;
 	private static BundleCommand command;
-	
-	private static Extension<BundleTransition> transitionExtension;
+
+	private Extension<BundleTransition> transitionExtension;
 	private static BundleTransition transition;
-	
-	private static Extension<CommandOptions> commandOptionsExtension;
-	private static CommandOptions commandOptions; 
-	
-	private static Extension<ResourceState> resourceStateExtension; 
+
+	private Extension<CommandOptions> commandOptionsExtension;
+	private static CommandOptions commandOptions;
+
+	private Extension<ResourceState> resourceStateExtension;
 	private static ResourceState resourceState;
-	
+
 	// Bundle candidate projects
-	private static Extension<BundleProjectCandidates> candidatesExtension;
+	private Extension<BundleProjectCandidates> projectCandidatesExtension;
 	private static BundleProjectCandidates projectCandidates;
 
 	// Bundle project meta information
-	private static Extension<BundleProjectMeta> projectMetaExtension;
+	private Extension<BundleProjectMeta> projectMetaExtension;
 	private static BundleProjectMeta projectMeta;
-	
+
+	private Extension<BundleExecutorEventManager> eventExecManagerExtension;
+	private static BundleExecutorEventManager eventExcecManager;
+
 	public Activator() {
 	}
 
 	/*
 	 * (non-Javadoc)
+	 * 
 	 * @see org.eclipse.ui.plugin.AbstractUIPlugin#start(org.osgi.framework.BundleContext)
 	 */
 	@Override
 	public void start(BundleContext context) throws Exception {
-		
+
 		super.start(context);
 		activator = this;
 		Activator.context = context;
-		try {			
+		try {
 			extenderBundleTracker = new ExtenderTracker(context, Bundle.ACTIVE, null);
 			extenderBundleTracker.open();
-			
-			BundleJobManager.addBundleJobListener(Activator.getDefault());
-			
+
+			eventExecManagerExtension = getExtension(BundleExecutorEventManager.class.getName());
+			eventExcecManager = eventExecManagerExtension.getTrackedService();
+			eventExcecManager.addListener(this);
+
 			regionExtension = getTrackedExtension(BundleRegion.class.getName());
-			regionExtension.openServiceTracker(new ExtensionServiceTracker<BundleRegion>(context));
 			region = regionExtension.getTrackedService();
-			
+
 			commandExtension = getTrackedExtension(BundleCommand.class.getName());
 			command = commandExtension.getTrackedService();
-			
+
 			transitionExtension = getTrackedExtension(BundleTransition.class.getName());
 			transition = transitionExtension.getTrackedService();
-			
-			candidatesExtension = getTrackedExtension(BundleProjectCandidates.class.getName());
-			projectCandidates = candidatesExtension.getTrackedService();
-			
-			projectMetaExtension = getTrackedExtension(BundleProjectMeta.class.getName());	
+
+			projectCandidatesExtension = getTrackedExtension(BundleProjectCandidates.class.getName());
+			projectCandidates = projectCandidatesExtension.getTrackedService();
+
+			projectMetaExtension = getTrackedExtension(BundleProjectMeta.class.getName());
 			projectMeta = projectMetaExtension.getTrackedService();
-			
+
 			commandOptionsExtension = getTrackedExtension(CommandOptions.class.getName());
 			commandOptions = commandOptionsExtension.getTrackedService();
-			
+
 			resourceStateExtension = getTrackedExtension(ResourceState.class.getName());
 			resourceState = resourceStateExtension.getTrackedService();
 
@@ -146,34 +150,37 @@ public class Activator extends AbstractUIPlugin implements BundleJobEventListene
 		} catch (IllegalStateException | InPlaceException | ExtenderException e) {
 			StatusManager.getManager().handle(
 					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),
-					StatusManager.LOG);			
+					StatusManager.LOG);
 			throw e;
 		}
 	}
 
 	/*
 	 * (non-Javadoc)
+	 * 
 	 * @see org.eclipse.ui.plugin.AbstractUIPlugin#stop(org.osgi.framework.BundleContext)
 	 */
 	@Override
 	public void stop(BundleContext context) throws Exception {
+
 		regionExtension.closeTrackedService();
 		commandExtension.closeTrackedService();
 		transitionExtension.closeTrackedService();
-		candidatesExtension.closeTrackedService();
+		projectCandidatesExtension.closeTrackedService();
 		projectMetaExtension.closeTrackedService();
 		commandOptionsExtension.closeTrackedService();
 		resourceStateExtension.closeTrackedService();
-		BundleJobManager.removeBundleJobListener(this);
+		eventExcecManager.removeListener(this);
+		eventExecManagerExtension.closeTrackedService();
 		extenderBundleTracker.close();
 		super.stop(context);
 		activator = null;
 	}
 
 	@Override
-	public void bundleJobEvent(BundleJobEvent event) {
-		WorkspaceJob bundleJob = event.getBundleJob();
-		scheduleViaBundleView(bundleJob, event.getDelay(), false);
+	public void bundleJobEvent(BundleExecutorEvent event) {
+		System.out.println("Added bundle job: " + event.getJob() + " State: " + event.getJobState());
+		scheduleViaBundleView(event.getJob(), event.getDelay(), false);
 	}
 
 	/**
@@ -195,15 +202,16 @@ public class Activator extends AbstractUIPlugin implements BundleJobEventListene
 	/**
 	 * Create an extension of the extender registered with the specified interface class
 	 * <p>
-	 * This extension access method has an additional check to verify if the interface class is loaded or
-	 * not. A failure first indicates that the extender for the extension is not registered or the bundle
-	 * hosting the class is not started yet and/or not loaded by or on behalf of the hosting bundle
+	 * This extension access method has an additional check to verify if the interface class is loaded
+	 * or not. A failure first indicates that the extender for the extension is not registered or the
+	 * bundle hosting the class is not started yet and/or not loaded by or on behalf of the hosting
+	 * bundle
 	 * 
 	 * @param interfaceClass service interface class
 	 * @user The bundle using the extension
 	 * @return the extension interface
-	 * @throws ExtenderException if fail to get the registered extension due to no
-	 * registered service with the specified interface name
+	 * @throws ExtenderException if fail to get the registered extension due to no registered service
+	 * with the specified interface name
 	 */
 	public static <E> Extension<E> getExtension(Class<E> interfaceClass) throws ExtenderException {
 
@@ -215,26 +223,31 @@ public class Activator extends AbstractUIPlugin implements BundleJobEventListene
 				throw new ExtenderException("Null extender for the using {0} bundle", context.getBundle());
 			}
 		} catch (ClassNotFoundException e) {
-			// Bundle hosting the class is not started yet and/or not loaded by or on behalf of the hosting
+			// Bundle hosting the class is not started yet and/or not loaded by or on behalf of the
+			// hosting
 			// bundle
-			throw new ExtenderException(e, "Interface class for extension not found for user bundle {0}", context.getBundle());
+			throw new ExtenderException(e, "Interface class for extension not found for user bundle {0}",
+					context.getBundle());
 		}
 		return ext;
 	}
-	
+
 	/**
-	 * Get a tracked extension from an extender that is tracked by this bundle. 
+	 * Get a tracked extension from an extender that is tracked by this bundle.
 	 * <p>
 	 * If more than one service is registered under the same interface name, ranking order is applied
 	 * 
 	 * @param serviceInterfaceName the interface service name used to locate the extension
 	 * @return an extension located by the specified service interface name
-	 * @throws ExtenderException if the extender has not been tracked or the extender or extension is null
+	 * @throws ExtenderException if the extender has not been tracked or the extender or extension is
+	 * null
 	 */
-	public static <S> Extension<S> getTrackedExtension(String serviceInterfaceName) throws ExtenderException {
+	public static <S> Extension<S> getTrackedExtension(String serviceInterfaceName)
+			throws ExtenderException {
 
 		@SuppressWarnings("unchecked")
-		Extender<S> extender = (Extender<S>) extenderBundleTracker.getTrackedExtender(serviceInterfaceName);
+		Extender<S> extender = (Extender<S>) extenderBundleTracker
+				.getTrackedExtender(serviceInterfaceName);
 		if (null == extender) {
 			throw new ExtenderException(NLS.bind(Msg.NULL_EXTENDER_EXP, serviceInterfaceName));
 		}
@@ -245,24 +258,28 @@ public class Activator extends AbstractUIPlugin implements BundleJobEventListene
 		return extension;
 	}
 
-	
+	public static BundleExecutorEventManager getBundleJobEventService() {
+
+		return eventExcecManager;
+	}
+
 	public static BundleRegion getBundleRegionService() {
-		
+
 		return region;
 	}
 
 	public static BundleCommand getBundleCommandService() {
-		
+
 		return command;
 	}
-	
+
 	public static BundleTransition getBundleTransitionService() {
 
 		return transition;
 	}
 
 	public static BundleProjectCandidates getBundleProjectCandidatesService() {
-		
+
 		return projectCandidates;
 	}
 
@@ -272,26 +289,28 @@ public class Activator extends AbstractUIPlugin implements BundleJobEventListene
 	}
 
 	public static CommandOptions getCommandOptionsService() {
-		
+
 		return commandOptions;
 	}
 
 	public static ResourceState getResourceStateService() {
-		
+
 		return resourceState;
 	}
 
 	/**
 	 * Returning a service for a tracked extender but never null
+	 * 
 	 * @param Type of service
 	 * @return the service
 	 * @throws ExtenderException if failing to get the extender service
 	 * @throws InPlaceException if the service returns null
 	 */
-	public static  <S> S getTrackedService(String serviceInterfaceName) throws ExtenderException {
-		
+	public static <S> S getTrackedService(String serviceInterfaceName) throws ExtenderException {
+
 		@SuppressWarnings("unchecked")
-		Extender<S> extender = (Extender<S>) extenderBundleTracker.getTrackedExtender(serviceInterfaceName);
+		Extender<S> extender = (Extender<S>) extenderBundleTracker
+				.getTrackedExtender(serviceInterfaceName);
 		if (null == extender) {
 			throw new ExtenderException(NLS.bind(Msg.GET_EXTENDER_EXP, serviceInterfaceName));
 		}
@@ -302,8 +321,8 @@ public class Activator extends AbstractUIPlugin implements BundleJobEventListene
 		return s;
 	}
 
-	public static  <S> S getTrackedService(Extender<S> extender) throws ExtenderException {
-		
+	public static <S> S getTrackedService(Extender<S> extender) throws ExtenderException {
+
 		if (null == extender) {
 			throw new ExtenderException(NLS.bind(Msg.NULL_EXTENDER_EXP, context.getBundle()));
 		}
@@ -314,25 +333,29 @@ public class Activator extends AbstractUIPlugin implements BundleJobEventListene
 		return s;
 	}
 
-	public static  <S> Extender<S> getTrackedExtender(String serviceInterfaceName) throws ExtenderException {
-		
+	public static <S> Extender<S> getTrackedExtender(String serviceInterfaceName)
+			throws ExtenderException {
+
 		@SuppressWarnings("unchecked")
-		Extender<S> extender = (Extender<S>) extenderBundleTracker.getTrackedExtender(serviceInterfaceName);
+		Extender<S> extender = (Extender<S>) extenderBundleTracker
+				.getTrackedExtender(serviceInterfaceName);
 		if (null == extender) {
 			throw new ExtenderException(NLS.bind(Msg.GET_EXTENDER_EXP, serviceInterfaceName));
 		}
 		return extender;
 	}
-	
+
 	/**
-	 * Schedule job through the {@linkplain no.javatime.inplace.ui.views.BundleView BundleView} if it is visible.
-	 * Alters the presentation of the mouse cursor to half busy when a job is running.
+	 * Schedules the specified job through the {@linkplain no.javatime.inplace.ui.views.BundleView
+	 * BundleView} if it is visible. Alters the presentation of the mouse cursor to half busy and sets
+	 * the part to a transient state while the specified job is running.
 	 * 
-	 * @param bundleJob to schedule
-	 * @param delay schedule of job in milliseconds
-	 * @param setUser to true if job progress is to be shown
+	 * @param bundleJob The bundle job to schedule
+	 * @param delay The delay in milliseconds before the job is scheduled
+	 * @param setUser Set user to true if job progress is to be shown
 	 */
-	public static void scheduleViaBundleView(final WorkspaceJob bundleJob, final long delay, Boolean setUser) {
+	public static void scheduleViaBundleView(final WorkspaceJob bundleJob, final long delay,
+			Boolean setUser) {
 
 		bundleJob.setUser(setUser);
 		Activator.getDisplay().asyncExec(new Runnable() {
@@ -343,8 +366,8 @@ public class Activator extends AbstractUIPlugin implements BundleJobEventListene
 					IWorkbenchSiteProgressService siteService = null;
 					IWorkbenchPartSite partSite = bv.getSite();
 					if (null != partSite) {
-						siteService = (IWorkbenchSiteProgressService) partSite.getAdapter(
-								IWorkbenchSiteProgressService.class);						
+						siteService = (IWorkbenchSiteProgressService) partSite
+								.getAdapter(IWorkbenchSiteProgressService.class);
 					}
 					if (null != siteService) {
 						siteService.showBusyForFamily(BundleExecutor.FAMILY_BUNDLE_LIFECYCLE);
@@ -371,57 +394,58 @@ public class Activator extends AbstractUIPlugin implements BundleJobEventListene
 	static public IEclipsePreferences getEclipsePreferenceStore() {
 		return InstanceScope.INSTANCE.getNode(PLUGIN_ID);
 	}
-	
+
 	/**
 	 * Restore state of checked menu entries
 	 * <p>
 	 * Only necessary on startup
+	 * 
 	 * @throws InPlaceException - if the command service is unavailable
 	 * @throws ExtenderException - if the command options extender or service is unavailable
 	 */
 	public void loadCheckedMenus() throws InPlaceException, ExtenderException {
 
-		ICommandService commandService =
-				(ICommandService) PlatformUI.getWorkbench().getService(ICommandService.class);
+		ICommandService commandService = (ICommandService) PlatformUI.getWorkbench().getService(
+				ICommandService.class);
 		if (null == commandService) {
 			throw new InPlaceException("invalid_service", ICommandService.class.getName());
 		}
 		Extension<CommandOptions> commandOptionsExt = getExtension(CommandOptions.class.getName());
-		CommandOptions commandOption = commandOptionsExt.getTrackedService();
+		CommandOptions commandOptions = commandOptionsExt.getTrackedService();
 		Command command = commandService.getCommand(EagerActivationHandler.commandId);
 		State state = command.getState(EagerActivationHandler.getCommandStateId());
-		state.setValue(commandOption.isEagerOnActivate());
+		state.setValue(commandOptions.isEagerOnActivate());
 
 		command = commandService.getCommand(AutoExternalCommandHandler.commandId);
 		state = command.getState(AutoExternalCommandHandler.getCommandStateId());
-		state.setValue(commandOption.isAutoHandleExternalCommands());
+		state.setValue(commandOptions.isAutoHandleExternalCommands());
 
 		command = commandService.getCommand(AutoRefreshHandler.commandId);
 		state = command.getState(AutoRefreshHandler.getCommandStateId());
-		state.setValue(commandOption.isRefreshOnUpdate());
+		state.setValue(commandOptions.isRefreshOnUpdate());
 
 		command = commandService.getCommand(AutoUpdateHandler.commandId);
 		state = command.getState(AutoUpdateHandler.getCommandStateId());
-		state.setValue(commandOption.isUpdateOnBuild());
+		state.setValue(commandOptions.isUpdateOnBuild());
 
 		command = commandService.getCommand(DeactivateOnExitHandler.commandId);
 		state = command.getState(DeactivateOnExitHandler.getCommandStateId());
-		state.setValue(commandOption.isDeactivateOnExit());
+		state.setValue(commandOptions.isDeactivateOnExit());
 
 		command = commandService.getCommand(UpdateClassPathOnActivateHandler.commandId);
 		state = command.getState(UpdateClassPathOnActivateHandler.getCommandStateId());
-		state.setValue(commandOption.isUpdateDefaultOutPutFolder());
+		state.setValue(commandOptions.isUpdateDefaultOutPutFolder());
 
 		command = commandService.getCommand(UIContributorsHandler.commandId);
 		state = command.getState(UIContributorsHandler.getCommandStateId());
-		state.setValue(commandOption.isAllowUIContributions());
+		state.setValue(commandOptions.isAllowUIContributions());
 		commandService.refreshElements(command.getId(), null);
 		commandOptionsExt.closeTrackedService();
 	}
 
 	/**
 	 * Returns the shared instance
-	 *
+	 * 
 	 * @return the shared instance
 	 */
 	public static Activator getDefault() {
@@ -447,6 +471,7 @@ public class Activator extends AbstractUIPlugin implements BundleJobEventListene
 
 	/**
 	 * Returns the active workbench window
+	 * 
 	 * @return the active workbench window or null if not found
 	 */
 	public IWorkbenchWindow getActiveWorkbenchWindow() {

@@ -13,8 +13,8 @@ package no.javatime.inplace.ui.command.handlers;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 
-import no.javatime.inplace.bundlejobs.events.BundleJobManager;
 import no.javatime.inplace.bundlejobs.intface.ActivateProject;
+import no.javatime.inplace.bundlejobs.intface.BundleExecutor;
 import no.javatime.inplace.bundlejobs.intface.Deactivate;
 import no.javatime.inplace.bundlejobs.intface.Install;
 import no.javatime.inplace.bundlejobs.intface.Refresh;
@@ -43,7 +43,6 @@ import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.Command;
 import org.eclipse.core.commands.State;
 import org.eclipse.core.resources.IProject;
-import org.eclipse.core.resources.WorkspaceJob;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.jobs.Job;
@@ -81,7 +80,7 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 		Extension<Install> installExt = Activator.getExtension(Install.class.getName());
 		Install install = installExt.getTrackedService();
 		install.addPendingProjects(projects);
-		jobHandler(install.getJob());
+		jobHandler(install);
 		installExt.closeTrackedService();
 	}
 
@@ -101,7 +100,7 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 			activateproject.getJob().setName(Msg.ACTIVATE_WORKSPACE_JOB);
 		}
 		activateproject.addPendingProjects(projects);
-		jobHandler(activateproject.getJob());
+		jobHandler(activateproject);
 		activateProjectExt.closeTrackedService();
 	}
 
@@ -124,7 +123,7 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 			deactivate.getJob().setName(Msg.DEACTIVATE_JOB);
 		}
 		deactivate.addPendingProjects(projects);
-		jobHandler(deactivate.getJob());
+		jobHandler(deactivate);
 		deactivateExtender.closeTrackedService();
 	}
 
@@ -140,7 +139,7 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 		Extension<Start> startExt = Activator.getExtension(Start.class.getName());
 		Start start = startExt.getTrackedService();
 		start.addPendingProjects(projects);
-		jobHandler(start.getJob());
+		jobHandler(start);
 		startExt.closeTrackedService();
 	}
 
@@ -156,7 +155,7 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 		Extension<Stop> stopExt = Activator.getExtension(Stop.class.getName());
 		Stop stop = stopExt.getTrackedService();
 		stop.addPendingProjects(projects);
-		jobHandler(stop.getJob());
+		jobHandler(stop);
 		stopExt.closeTrackedService();
 	}
 
@@ -172,7 +171,7 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 		Extension<Refresh> refreshExt = Activator.getExtension(Refresh.class.getName());
 		Refresh refresh = refreshExt.getTrackedService();
 		refresh.addPendingProjects(projects);
-		jobHandler(refresh.getJob());
+		jobHandler(refresh);
 		refreshExt.closeTrackedService();
 	}
 
@@ -198,18 +197,18 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 		ResourceState resourceState = Activator.getResourceStateService();
 		Collection<IProject> copyProjects = new LinkedHashSet<>(projects);
 		Collection<IProject> dirtyProjects = resourceState.getDirtyProjects();
-		if (resourceState.saveModifiedFiles()) {
+		if (resourceState.saveModifiedResources()) {
 			if (Activator.getCommandOptionsService().isUpdateOnBuild()
 					&& dirtyProjects.size() > 0) {
 				copyProjects.removeAll(dirtyProjects);
 			}
 			if (copyProjects.size() > 0) {
-				resourceState.waitOnBuilder();
+				resourceState.waitOnBuilder(true);
 				Extension<Update> updateExt = Activator.getExtension(Update.class.getName());
 				Update update = updateExt.getTrackedService();
 				update.addUpdateTransition(copyProjects);
 				update.addPendingProjects(copyProjects);
-				BundleJobManager.addBundleJob(update.getJob(), 0);
+				Activator.getBundleJobEventService().add(update);
 				updateExt.closeTrackedService();
 			}
 		}
@@ -228,7 +227,7 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 		Extension<Reset> resetExt = Activator.getExtension(Reset.class.getName());
 		Reset reset = resetExt.getTrackedService();
 		reset.addPendingProjects(projects);
-		jobHandler(reset.getJob());
+		jobHandler(reset);
 		resetExt.closeTrackedService();
 	}
 
@@ -238,7 +237,7 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 	protected void interruptHandler() {
 
 		ResourceState resourceState = Activator.getResourceStateService();
-		if (resourceState.saveModifiedFiles()) {
+		if (resourceState.saveModifiedResources()) {
 			Job job = resourceState.getRunningBundleJob();
 			if (null != job) {
 				Thread thread = job.getThread();
@@ -262,7 +261,7 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 	protected void stopOperationHandler() throws ExtenderException {
 
 		final ResourceState resourceState = Activator.getResourceStateService();
-		if (resourceState.saveModifiedFiles()) {
+		if (resourceState.saveModifiedResources()) {
 			Activator.getDisplay().asyncExec(new Runnable() {
 				@Override
 				public void run() {
@@ -292,7 +291,7 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 		Extension<TogglePolicy> policyExt = Activator.getExtension(TogglePolicy.class.getName());
 		TogglePolicy policy = policyExt.getTrackedService();
 		policy.addPendingProjects(projects);
-		jobHandler(policy.getJob());
+		jobHandler(policy);
 		policyExt.closeTrackedService();
 	}
 
@@ -313,7 +312,7 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 		UpdateBundleClassPath classPath = classPathExt.getTrackedService();
 		classPath.addPendingProjects(projects);
 		classPath.setAddToPath(addToPath);
-		jobHandler(classPath.getJob());
+		jobHandler(classPath);
 		classPathExt.closeTrackedService();
 	}
 
@@ -411,12 +410,11 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 
 		Extension<BundleConsoleFactory> consoleExt = Activator
 				.getExtension(BundleConsoleFactory.class.getName());
-		BundleConsoleFactory service = consoleExt.getTrackedService();
-
-		if (!service.isConsoleViewVisible()) {
-			service.showConsoleView();
+		BundleConsoleFactory console = consoleExt.getTrackedService();
+		if (!console.isConsoleViewVisible()) {
+			console.showConsoleView();
 		} else {
-			service.closeConsoleView();
+			console.closeConsoleView();
 		}
 		consoleExt.closeTrackedService();
 	}
@@ -576,18 +574,17 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 	}
 
 	/**
-	 * Default way to schedule jobs, with no delay, saving files before schedule, waiting on builder
-	 * to finish, no progress dialog, run the job via the bundle view if visible showing a half busy
-	 * cursor and also displaying the job name in the content bar of the bundle view
+	 * Default way to schedule jobs, with no delay, saving files before schedule and waiting on builder
+	 * to finish.
 	 * 
-	 * @param job to schedule
+	 * @param bundleExecutor bundle executor operation to schedule
 	 */
-	static public void jobHandler(WorkspaceJob job) {
+	static public void jobHandler(BundleExecutor bundleExecutor) {
 
 		ResourceState resourceState = Activator.getResourceStateService();
-		if (resourceState.saveModifiedFiles()) {
-			resourceState.waitOnBuilder();
-			BundleJobManager.addBundleJob(job, 0);
+		if (resourceState.saveModifiedResources()) {
+			resourceState.waitOnBuilder(true);
+			Activator.getBundleJobEventService().add(bundleExecutor);
 		}
 	}
 

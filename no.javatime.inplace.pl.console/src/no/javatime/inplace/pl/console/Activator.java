@@ -1,12 +1,12 @@
 package no.javatime.inplace.pl.console;
 
 import no.javatime.inplace.dl.preferences.intface.MessageOptions;
+import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.extender.intface.Extenders;
 import no.javatime.inplace.extender.intface.Extension;
 import no.javatime.inplace.pl.console.impl.BundleConsoleFactoryImpl;
 import no.javatime.inplace.pl.console.msg.Msg;
 import no.javatime.inplace.pl.console.view.BundleConsole;
-import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
@@ -48,7 +48,7 @@ public class Activator extends AbstractUIPlugin implements ServiceListener {
 	private BundleConsole bundleConsole = null;
 	// Get the workbench window from UI thread
 	private IWorkbenchWindow workBenchWindow = null;
-	private Extension<MessageOptions> messageOptions;
+	private Extension<MessageOptions> messageOptionsExtension;
 
 	/**
 	 * The constructor
@@ -65,7 +65,7 @@ public class Activator extends AbstractUIPlugin implements ServiceListener {
 		super.start(context);
 		plugin = this;
 		Activator.context = context;
-		messageOptions = Extenders.getExtension(MessageOptions.class.getName());
+		messageOptionsExtension = Extenders.getExtension(MessageOptions.class.getName());
 		Filter filter=context.createFilter("(" + Constants.OBJECTCLASS + "=" + ConsoleSession.class.getName()+ ")");
 		context.addServiceListener(this, filter.toString());
 
@@ -78,6 +78,7 @@ public class Activator extends AbstractUIPlugin implements ServiceListener {
 	 */
 	public void stop(BundleContext context) throws Exception {
 		context.removeServiceListener(this);
+		messageOptionsExtension.closeTrackedService();
 		plugin = null;
 		super.stop(context);
 	}
@@ -89,13 +90,9 @@ public class Activator extends AbstractUIPlugin implements ServiceListener {
 		return bundleConsole;
 	}
 
-	public MessageOptions getMsgOpt() throws InPlaceException {
+	public MessageOptions getMessageOptions() throws ExtenderException {
 
-		MessageOptions msgOpt = messageOptions.getService();
-		if (null == msgOpt) {
-			throw new InPlaceException("invalid_service", MessageOptions.class.getName());
-		}
-		return msgOpt;
+		return messageOptionsExtension.getTrackedService();
 	}
 
 	/**

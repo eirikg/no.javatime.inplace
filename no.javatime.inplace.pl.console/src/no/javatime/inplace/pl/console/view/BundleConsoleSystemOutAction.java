@@ -10,6 +10,8 @@
  *******************************************************************************/
 package no.javatime.inplace.pl.console.view;
 
+import no.javatime.inplace.dl.preferences.intface.MessageOptions;
+import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.pl.console.Activator;
 import no.javatime.inplace.pl.console.msg.Msg;
 
@@ -29,9 +31,16 @@ public class BundleConsoleSystemOutAction extends Action implements IPropertyCha
 	public BundleConsoleSystemOutAction(IConsole console) {
 
 		super(Msg.SYSTEM_OUT_BUTTON_TXT, Activator.getImageDescriptor("icons/system_in_out.gif")); //$NON-NLS-1$
+		boolean systemOut = false;
 		setToolTipText(Msg.SYSTEM_OUT_ACTION_TOOLTIP);
-		// Redirects system out and err to this console
-		boolean systemOut = Activator.getDefault().getMsgOpt().isSystemOutBundleConsole();
+		try {
+
+			// Redirects system out and err to this console
+			MessageOptions messageOptions = Activator.getDefault().getMessageOptions();
+			systemOut = messageOptions.isSystemOutBundleConsole();
+		} catch (ExtenderException e) {
+			// Set to IDE default
+		}
 		setChecked(systemOut);
 		addPropertyChangeListener(this);
 	}
@@ -43,11 +52,16 @@ public class BundleConsoleSystemOutAction extends Action implements IPropertyCha
 	public void propertyChange(PropertyChangeEvent event) {
 		Boolean state = (Boolean) event.getNewValue();
 		if (null != state) {
-			Activator.getDefault().getMsgOpt().setIsSystemOutBundleConsole(state);
-			if (state) {
-				Activator.getDefault().getBundleConsole().setSystemOutToBundleConsole();
-			} else {
-				Activator.getDefault().getBundleConsole().setSystemOutToIDEDefault();
+			try {
+				MessageOptions messageOptions = Activator.getDefault().getMessageOptions();
+				messageOptions.setIsSystemOutBundleConsole(state);
+				if (state) {
+					Activator.getDefault().getBundleConsole().setSystemOutToBundleConsole();
+				} else {
+					Activator.getDefault().getBundleConsole().setSystemOutToIDEDefault();
+				}
+			} catch (ExtenderException e) {
+				// Ignore property change
 			}
 		}
 	}

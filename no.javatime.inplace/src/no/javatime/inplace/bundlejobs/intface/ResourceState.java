@@ -10,13 +10,13 @@ import org.eclipse.core.runtime.jobs.Job;
  * <p>
  * Get modification state of and save modified workspace resources
  * <p>
- * Get job state information about scheduled {@link BundleExecutor bundle executors} 
+ * Get job state information about scheduled {@link BundleExecutor bundle executors}
  */
 public interface ResourceState {
 
 	/**
-	 * Manifest header for accessing the default implementation class name of the resource
-	 * state service
+	 * Manifest header for accessing the default implementation class name of the resource state
+	 * service
 	 */
 	public final static String RESOURCE_STATE_SERVICE = "Resource-State-Service";
 
@@ -44,8 +44,18 @@ public interface ResourceState {
 	public Boolean areResourcesDirty();
 
 	/**
-	 * Displays a save file dialog of all changed files in the workspace. If no files are dirty the
-	 * save file dialog is not displayed and {@code true} is returned.
+	 * Displays a save file dialog with a list of all dirty editors in the workspace that needs to be
+	 * saved. If no files are dirty the save file dialog is not displayed and {@code true} is
+	 * returned.
+	 * 
+	 * @return true if files are saved or no files are modified. False if modified files are not saved
+	 */
+	public Boolean saveModifiedResources();
+
+	/**
+	 * Displays a save file dialog with a list of editors that apply to the next build that need to be
+	 * saved. If no files are dirty the save file dialog is not displayed and {@code true} is
+	 * returned.
 	 * 
 	 * @return true if files are saved or no files are modified. False if modified files are not saved
 	 */
@@ -60,15 +70,20 @@ public interface ResourceState {
 
 	/**
 	 * Blocks execution while the java builder is running
+	 * <p>
+	 * Wait for all build jobs. If multiple build jobs only log once when the specified log parameter
+	 * is true and logging is enabled
+	 * 
+	 * @param log If waiting for the builder to finish, the log parameter is true and logging is
+	 * enabled log a message indicating a builder wait state, otherwise no logging is performed
 	 */
-	public void waitOnBuilder();
+	public void waitOnBuilder(boolean log);
 
 	/**
-	 * Check if there is a job belonging to the {@code BundleExecutor.FAMILY_BUNDLE_LIFECYCLE} and
-	 * is either running, waiting or sleeping
+	 * Check if there is a job belonging to the {@code BundleExecutor.FAMILY_BUNDLE_LIFECYCLE} and is
+	 * either running, waiting or sleeping
 	 * 
 	 * @return true if a bundle job is running, waiting or sleeping, otherwise false.
-	*/
+	 */
 	public Boolean hasBundleJobState();
-
 }

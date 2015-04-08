@@ -119,6 +119,12 @@ public abstract class NatureJob extends BundleJob {
 		return projects;
 	}
 
+	public Collection<IProject> getDeactivatedProjects() throws InPlaceException, ExtenderException {
+
+		BundleProjectCandidates bundleProjectCandidates = InPlace.getBundleProjectCandidatesService();
+		return  bundleProjectCandidates.getCandidates();
+	}
+
 	/**
 	 * Does nothing
 	 */
@@ -205,7 +211,7 @@ public abstract class NatureJob extends BundleJob {
 			for (Bundle bundle : bundles) {
 				if (Category.getState(Category.progressBar))
 					sleep(sleepTime);
-				localMonitor.subTask(UninstallJob.uninstallSubtaskName + bundle.getSymbolicName());
+				localMonitor.subTask(BundleJob.uninstallSubtaskName + bundle.getSymbolicName());
 				try {
 					// Unregister after refresh
 					bundleCommand.uninstall(bundle, false);
@@ -408,7 +414,7 @@ public abstract class NatureJob extends BundleJob {
 						System.arraycopy(natures, i + 1, newNatures, i, natures.length - i - 1);
 						description.setNatureIds(newNatures);
 						project.setDescription(description, null);
-						if (InPlace.get().getMsgOpt().isBundleOperations()) {
+						if (InPlace.getMessageOptionsService().isBundleOperations()) {
 							Bundle bundle = bundleRegion.getBundle(project);
 							if (null == bundle) {
 								addLogStatus(Msg.DISABLE_NATURE_TRACE, new Object[] { project.getName() }, project);
@@ -427,7 +433,7 @@ public abstract class NatureJob extends BundleJob {
 				newNatures[natures.length] = JavaTimeNature.JAVATIME_NATURE_ID;
 				description.setNatureIds(newNatures);
 				project.setDescription(description, null);
-				if (InPlace.get().getMsgOpt().isBundleOperations()) {
+				if (InPlace.get().getMessageOptionsService().isBundleOperations()) {
 					Bundle bundle = bundleRegion.getBundle(project);
 					if (null == bundle) {
 						addLogStatus(Msg.ENABLE_NATURE_TRACE, new Object[] { project.getName() }, project);

@@ -101,18 +101,18 @@ public class TogglePolicyJob extends NatureJob implements TogglePolicy {
 							String msg = WarnMessage.getInstance().formatString("policy_updated_auto_build_off",
 									project.getName());							
 							//  Force this to be displayed in the bundle log view
-							if (!InPlace.get().getMsgOpt().isBundleOperations()) {
+							if (!InPlace.getMessageOptionsService().isBundleOperations()) {
 								InPlace.get().log(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, project, msg, null));								
 							}
 							addLogStatus(msg, bundle, project);
 						}
 					}
 					try {
-						if (!InPlace.get().getCommandOptionsService().isUpdateOnBuild()) {
+						if (!InPlace.getCommandOptionsService().isUpdateOnBuild()) {
 							if (bundleRegion.isBundleActivated(project)) {
 								String msg = NLS.bind(Msg.AUTOUPDATE_OFF_INFO, project.getName());
 								//  Force this to be displayed in the bundle log view
-								if (!InPlace.get().getMsgOpt().isBundleOperations()) {
+								if (!InPlace.getMessageOptionsService().isBundleOperations()) {
 									InPlace.get().log(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID,project, msg, null));								
 								}
 								addLogStatus(msg, bundle, project);

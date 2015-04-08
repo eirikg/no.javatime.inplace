@@ -12,11 +12,11 @@ import org.eclipse.core.runtime.jobs.IJobManager;
 import org.eclipse.core.runtime.jobs.Job;
 
 /**
- * Common service interface to schedule bundle operations to run. A bundle operation is scheduled by
- * invoking {@link #execute()} or {@link #execute(long)}.
+ * Common sub service interface running bundle operations. A bundle operation is scheduled for execution by
+ * invoking {@link #run()} or {@link #run(long)}.
  * <p>
  * All bundle service operations are scheduled as jobs and compatible with the {@link Job Jobs} API.
- * To manage the job of a bundle service operation to execute, use the jobs API and access the
+ * To manage the job of a bundle service operation to run, use the jobs API and access the
  * underlying workspace job of a bundle service operation with the {@link #getJob()} method.
  * <p>
  * There is a sub service interface for each bundle operation. Examples are {@link ActivateProject}
@@ -29,36 +29,36 @@ import org.eclipse.core.runtime.jobs.Job;
  * {@link #joinBundleExecutor()} or by using a job listener.
  * <p>
  * All bundle operation services (sub interfaces of this interface) must be registered with
- * prototype service scope. Use the provided default {@link ExecutorServiceFactory prototype service
+ * prototype service scope. Use the provided default {@link BundleExecutorServiceFactory prototype service
  * factory} or create a customized factory for bundle service operations.
  * <p>
  */
 public interface BundleExecutor {
 
 	/** 
-	 * Common family job name for all bundle executor jobs 
+	 * Common family job name for all bundle executor operations 
 	*/
 	public static final String FAMILY_BUNDLE_LIFECYCLE = "BundleFamily";
 
 	/**
-	 * Schedules this bundle job to be run with a delay.
+	 * Schedules a bundle executor to run with a delay.
 	 * <p>
 	 * This method is otherwise equal to {@code getJob().schedule(long)}
 	 * 
 	 * @param delay Delay in milliseconds before to run the bundle operation
 	 * @see Job#schedule(long)
 	 */
-	public void execute(long delay);
+	public void run(long delay);
 
 	/**
-	 * Schedules this bundle job to be run.
+	 * Schedules a bundle executor to run.
 	 * <p>
 	 * This is a convenience method to execute a bundle operation otherwise equal to
-	 * {@link #execute(long)} and {@code getJob().schedule()}
+	 * {@link #run(long)} and {@code getJob().schedule()}
 	 * 
 	 * @see Job#schedule()
 	 */
-	public void execute();
+	public void run();
 
 	/**
 	 * Wait for the scheduled bundle operation to finish by joining it.
@@ -87,10 +87,10 @@ public interface BundleExecutor {
 	public String getName();
 
 	/**
-	 * Access the underlying workspace job of this bundle operation service.
+	 * Access the underlying workspace job of this bundle executor service.
 	 * <p>
 	 * Scheduling a job with {@code getJob().schedule()} from the returned {@link WorkspaceJob} is
-	 * otherwise identical to {@link #execute()}.
+	 * otherwise identical to {@link #run()}.
 	 * 
 	 * @return the job to be scheduled for this bundle operation service
 	 */
@@ -194,5 +194,4 @@ public interface BundleExecutor {
 	 * @return true if bundle error status objects exists in the status list, otherwise false
 	 */
 	public boolean hasErrorStatus();
-
 }

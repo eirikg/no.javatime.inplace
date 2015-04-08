@@ -151,8 +151,8 @@ public interface BundleProjectCandidates {
 	 * A project is installable if it is open, has the Java and plug-in nature enabled, activated or
 	 * deactivated, not contributes to the UI if UI contributors are not allowed or contributes to the
 	 * UI if UI contributions are allowed.
-	 * 
-	 * @return true if this is a Java plug-in or JavaTime project or false
+	 * @param project The project to check for permission to install 
+	 * @return true if this is a Java plug-in or JavaTime project. Otherwise false
 	 * @throws InPlaceException if the specified project is null, open but does not exist or a core
 	 * exception is thrown internally (should not be the case for open and existing projects)
 	 */

@@ -38,7 +38,8 @@ public class BundleLogEntryImpl extends AbstractEntry implements BundleLogEntry 
 
 	public static final String SPACE = " "; //$NON-NLS-1$
 	public static final String F_DATE_FORMAT = "yyyy-MM-dd HH:mm:ss.SSS"; //$NON-NLS-1$
-	private static final DateFormat GREGORIAN_SDF = new SimpleDateFormat(F_DATE_FORMAT, Locale.ENGLISH);
+	private static final DateFormat GREGORIAN_SDF = new SimpleDateFormat(F_DATE_FORMAT,
+			Locale.ENGLISH);
 	private static final DateFormat LOCAL_SDF = new SimpleDateFormat(F_DATE_FORMAT);
 
 	private String pluginId;
@@ -57,11 +58,12 @@ public class BundleLogEntryImpl extends AbstractEntry implements BundleLogEntry 
 	 * Constructor
 	 */
 	public BundleLogEntryImpl() {
-		//do nothing
+		// do nothing
 	}
 
 	/**
 	 * Constructor - creates a new entry from the given status
+	 * 
 	 * @param status an existing status to create a new entry from
 	 */
 	public BundleLogEntryImpl(IBundleStatus status) {
@@ -70,19 +72,20 @@ public class BundleLogEntryImpl extends AbstractEntry implements BundleLogEntry 
 
 	/**
 	 * Constructor - creates a new entry from the given status
+	 * 
 	 * @param status an existing status to create a new entry from
 	 */
-	 public BundleLogEntryImpl(IBundleStatus status, LogSession session) {
-		 processStatus(status, session);
+	public BundleLogEntryImpl(IBundleStatus status, LogSession session) {
+		processStatus(status, session);
 	}
 
-	 /**
-	 * Returns the {@link LogSession} for this entry or the parent {@link LogSession}
-	 * iff:
+	/**
+	 * Returns the {@link LogSession} for this entry or the parent {@link LogSession} iff:
 	 * <ul>
 	 * <li>The session is <code>null</code> for this entry</li>
 	 * <li>The parent of this entry is not <code>null</code> and is a {@link BundleLogEntryImpl}</li>
 	 * </ul>
+	 * 
 	 * @return the {@link LogSession} for this entry
 	 */
 	public LogSession getSession() {
@@ -94,6 +97,7 @@ public class BundleLogEntryImpl extends AbstractEntry implements BundleLogEntry 
 
 	/**
 	 * Sets the {@link LogSession} for this entry. No validation is done on the new session.
+	 * 
 	 * @param session the session to set.
 	 */
 	public void setSession(LogSession session) {
@@ -102,6 +106,7 @@ public class BundleLogEntryImpl extends AbstractEntry implements BundleLogEntry 
 
 	/**
 	 * Returns the severity of this entry.
+	 * 
 	 * @return the severity
 	 * @see IStatus#OK
 	 * @see IStatus#WARNING
@@ -114,6 +119,7 @@ public class BundleLogEntryImpl extends AbstractEntry implements BundleLogEntry 
 
 	/**
 	 * Returns if the severity of this entry is {@link IStatus#OK}
+	 * 
 	 * @return if the entry is OK or not
 	 */
 	public boolean isOK() {
@@ -122,6 +128,7 @@ public class BundleLogEntryImpl extends AbstractEntry implements BundleLogEntry 
 
 	/**
 	 * Returns the code for this entry
+	 * 
 	 * @return the code for this entry
 	 */
 	public int getCode() {
@@ -130,6 +137,7 @@ public class BundleLogEntryImpl extends AbstractEntry implements BundleLogEntry 
 
 	/**
 	 * Returns the id of the plugin that generated this entry
+	 * 
 	 * @return the plugin id of this entry
 	 */
 	public String getPluginId() {
@@ -138,6 +146,7 @@ public class BundleLogEntryImpl extends AbstractEntry implements BundleLogEntry 
 
 	/**
 	 * Returns the message for this entry or <code>null</code> if there is no message
+	 * 
 	 * @return the message or <code>null</code>
 	 */
 	public String getMessage() {
@@ -148,9 +157,9 @@ public class BundleLogEntryImpl extends AbstractEntry implements BundleLogEntry 
 		return throwable;
 	}
 
-
 	/**
 	 * Returns the stack trace for this entry or <code>null</code> if there is no stack trace
+	 * 
 	 * @return the stack trace or <code>null</code>
 	 */
 	public String getStack() {
@@ -159,6 +168,7 @@ public class BundleLogEntryImpl extends AbstractEntry implements BundleLogEntry 
 
 	/**
 	 * Returns a pretty-print formatting for the date for this entry
+	 * 
 	 * @return the formatted date for this entry
 	 */
 	public String getFormattedDate() {
@@ -170,6 +180,7 @@ public class BundleLogEntryImpl extends AbstractEntry implements BundleLogEntry 
 
 	/**
 	 * Returns the date for this entry or the epoch if the current date value is <code>null</code>
+	 * 
 	 * @return the entry date or the epoch if there is no date entry
 	 */
 	public Date getDate() {
@@ -180,36 +191,41 @@ public class BundleLogEntryImpl extends AbstractEntry implements BundleLogEntry 
 	}
 
 	/**
-	 * Returns the human-readable text representation of the integer
-	 * severity value or '<code>?</code>' if the severity is unknown.
+	 * Returns the human-readable text representation of the integer severity value or '<code>?</code>
+	 * ' if the severity is unknown.
+	 * 
 	 * @return the text representation of the severity
 	 */
 	public String getSeverityText() {
 		switch (severity) {
-			case IStatus.ERROR : {
-				return Messages.LogView_severity_error;
-			}
-			case IStatus.WARNING : {
-				return Messages.LogView_severity_warning;
-			}
-			case IStatus.INFO : {
-				return Messages.LogView_severity_info;
-			}
-			case IStatus.OK : {
-				return Messages.LogView_severity_ok;
-			}
+		case IStatus.ERROR: {
+			return Messages.LogView_severity_error;
+		}
+		case IStatus.WARNING: {
+			return Messages.LogView_severity_warning;
+		}
+		case IStatus.INFO: {
+			return Messages.LogView_severity_info;
+		}
+		case IStatus.OK: {
+			return Messages.LogView_severity_ok;
+		}
 		}
 		return "?"; //$NON-NLS-1$
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see java.lang.Object#toString()
 	 */
 	public String toString() {
 		return getSeverityText();
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see org.eclipse.ui.internal.views.log.AbstractEntry#getLabel(java.lang.Object)
 	 */
 	public String getLabel(Object obj) {
@@ -218,12 +234,13 @@ public class BundleLogEntryImpl extends AbstractEntry implements BundleLogEntry 
 
 	/**
 	 * Processes a given line from the log file
+	 * 
 	 * @param line
 	 * @throws ParseException
 	 */
 	public void processEntry(String line) throws ParseException {
-		//!ENTRY <pluginID> <severity> <code> <bundleState> <date>
-		//!ENTRY <pluginID> <date> if logged by the framework!!!
+		// !ENTRY <pluginID> <severity> <code> <bundleState> <date>
+		// !ENTRY <pluginID> <date> if logged by the framework!!!
 		StringTokenizer stok = new StringTokenizer(line, SPACE);
 		severity = 0;
 		code = 0;
@@ -233,40 +250,40 @@ public class BundleLogEntryImpl extends AbstractEntry implements BundleLogEntry 
 		for (int i = 0; i < tokens; i++) {
 			token = stok.nextToken();
 			switch (i) {
-				case 0 : {
-					break;
-				}
-				case 1 : {
-					pluginId = token;
-					break;
-				}
-				case 2 : {
-					try {
-						severity = Integer.parseInt(token);
-					} catch (NumberFormatException nfe) {
-						appendToken(dateBuffer, token);
-					}
-					break;
-				}
-				case 3 : {
-					try {
-						code = Integer.parseInt(token);
-					} catch (NumberFormatException nfe) {
-						appendToken(dateBuffer, token);
-					}
-					break;
-				}
-				case 4 : {
-					try {
-						bundleState = Integer.parseInt(token);
-					} catch (NumberFormatException nfe) {
-						appendToken(dateBuffer, token);
-					}
-					break;
-				}
-				default : {
+			case 0: {
+				break;
+			}
+			case 1: {
+				pluginId = token;
+				break;
+			}
+			case 2: {
+				try {
+					severity = Integer.parseInt(token);
+				} catch (NumberFormatException nfe) {
 					appendToken(dateBuffer, token);
 				}
+				break;
+			}
+			case 3: {
+				try {
+					code = Integer.parseInt(token);
+				} catch (NumberFormatException nfe) {
+					appendToken(dateBuffer, token);
+				}
+				break;
+			}
+			case 4: {
+				try {
+					bundleState = Integer.parseInt(token);
+				} catch (NumberFormatException nfe) {
+					appendToken(dateBuffer, token);
+				}
+				break;
+			}
+			default: {
+				appendToken(dateBuffer, token);
+			}
 			}
 		}
 		Date date = GREGORIAN_SDF.parse(dateBuffer.toString());
@@ -278,13 +295,14 @@ public class BundleLogEntryImpl extends AbstractEntry implements BundleLogEntry 
 
 	/**
 	 * Processes the given sub-entry from the log
+	 * 
 	 * @param line
 	 * @return the depth of the sub-entry
 	 * @throws ParseException
 	 */
 	public int processSubEntry(String line) throws ParseException {
-		//!SUBENTRY <depth> <pluginID> <severity> <code> <bundleState> <date>
-		//!SUBENTRY  <depth> <pluginID> <date>if logged by the framework!!!
+		// !SUBENTRY <depth> <pluginID> <severity> <code> <bundleState> <date>
+		// !SUBENTRY <depth> <pluginID> <date>if logged by the framework!!!
 		StringTokenizer stok = new StringTokenizer(line, SPACE);
 		StringBuffer dateBuffer = new StringBuffer();
 		int depth = 0;
@@ -293,44 +311,44 @@ public class BundleLogEntryImpl extends AbstractEntry implements BundleLogEntry 
 		for (int i = 0; i < tokens; i++) {
 			token = stok.nextToken();
 			switch (i) {
-				case 0 : {
-					break;
-				}
-				case 1 : {
-					depth = Integer.parseInt(token);
-					break;
-				}
-				case 2 : {
-					pluginId = token;
-					break;
-				}
-				case 3 : {
-					try {
-						severity = Integer.parseInt(token);
-					} catch (NumberFormatException nfe) {
-						appendToken(dateBuffer, token);
-					}
-					break;
-				}
-				case 4 : {
-					try {
-						code = Integer.parseInt(token);
-					} catch (NumberFormatException nfe) {
-						appendToken(dateBuffer, token);
-					}
-					break;
-				}
-				case 5 : {
-					try {
-						bundleState = Integer.parseInt(token);
-					} catch (NumberFormatException nfe) {
-						appendToken(dateBuffer, token);
-					}
-					break;
-				}
-				default : {
+			case 0: {
+				break;
+			}
+			case 1: {
+				depth = Integer.parseInt(token);
+				break;
+			}
+			case 2: {
+				pluginId = token;
+				break;
+			}
+			case 3: {
+				try {
+					severity = Integer.parseInt(token);
+				} catch (NumberFormatException nfe) {
 					appendToken(dateBuffer, token);
 				}
+				break;
+			}
+			case 4: {
+				try {
+					code = Integer.parseInt(token);
+				} catch (NumberFormatException nfe) {
+					appendToken(dateBuffer, token);
+				}
+				break;
+			}
+			case 5: {
+				try {
+					bundleState = Integer.parseInt(token);
+				} catch (NumberFormatException nfe) {
+					appendToken(dateBuffer, token);
+				}
+				break;
+			}
+			default: {
+				appendToken(dateBuffer, token);
+			}
 			}
 		}
 		Date date = GREGORIAN_SDF.parse(dateBuffer.toString());
@@ -343,6 +361,7 @@ public class BundleLogEntryImpl extends AbstractEntry implements BundleLogEntry 
 
 	/**
 	 * Adds the given token to the given buffer, adding a space as needed
+	 * 
 	 * @param buffer
 	 * @param token
 	 * 
@@ -356,8 +375,8 @@ public class BundleLogEntryImpl extends AbstractEntry implements BundleLogEntry 
 	}
 
 	/**
-	 * Sets the stack to the given stack value. 
-	 * No validation is performed on the new value.
+	 * Sets the stack to the given stack value. No validation is performed on the new value.
+	 * 
 	 * @param stack
 	 */
 	public void setStack(String stack) {
@@ -365,8 +384,8 @@ public class BundleLogEntryImpl extends AbstractEntry implements BundleLogEntry 
 	}
 
 	/**
-	 * Sets the message to the given message value.
-	 * No validation is performed on the new value
+	 * Sets the message to the given message value. No validation is performed on the new value
+	 * 
 	 * @param message
 	 */
 	public void setMessage(String message) {
@@ -391,7 +410,7 @@ public class BundleLogEntryImpl extends AbstractEntry implements BundleLogEntry 
 			stateId = Bundle.INSTALLED;
 			break;
 		case "STARTING":
-			stateId =Bundle.STARTING;
+			stateId = Bundle.STARTING;
 			break;
 		case "STOPPING":
 			stateId = Bundle.STOPPING;
@@ -406,7 +425,7 @@ public class BundleLogEntryImpl extends AbstractEntry implements BundleLogEntry 
 			stateId = Bundle.ACTIVE;
 			break;
 		default:
-			stateId = 0;;
+			stateId = 0;
 			break;
 		}
 		return stateId;
@@ -444,15 +463,14 @@ public class BundleLogEntryImpl extends AbstractEntry implements BundleLogEntry 
 
 	/**
 	 * Process the given status and sub-statuses to fill this entry
+	 * 
 	 * @param status
 	 */
 	private void processStatus(IBundleStatus status, LogSession session) {
 		pluginId = status.getPlugin();
 		if (status instanceof BundleStatus) {
-			if (status.getChildren().length == 0) {
-				bundleState = status.getBundleState();
-				bundleTransition = status.getBundleTransition();
-			}
+			bundleState = status.getBundleState();
+			bundleTransition = status.getBundleTransition();
 		}
 		severity = status.getSeverity();
 		code = status.getCode();
@@ -479,7 +497,9 @@ public class BundleLogEntryImpl extends AbstractEntry implements BundleLogEntry 
 		}
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see org.eclipse.ui.internal.views.log.AbstractEntry#write(java.io.PrintWriter)
 	 */
 	public void write(PrintWriter writer) {

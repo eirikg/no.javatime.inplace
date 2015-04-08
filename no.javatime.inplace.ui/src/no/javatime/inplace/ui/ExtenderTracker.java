@@ -3,9 +3,10 @@ package no.javatime.inplace.ui;
 import java.util.Collection;
 import java.util.Dictionary;
 
+import no.javatime.inplace.bundlejobs.events.intface.BundleExecutorEventManager;
 import no.javatime.inplace.bundlejobs.intface.ActivateProject;
 import no.javatime.inplace.bundlejobs.intface.Deactivate;
-import no.javatime.inplace.bundlejobs.intface.ExecutorServiceFactory;
+import no.javatime.inplace.bundlejobs.intface.BundleExecutorServiceFactory;
 import no.javatime.inplace.bundlejobs.intface.Install;
 import no.javatime.inplace.bundlejobs.intface.Refresh;
 import no.javatime.inplace.bundlejobs.intface.Reset;
@@ -71,17 +72,18 @@ public class ExtenderTracker extends ExtenderBundleTracker {
 			Dictionary<String, String> headers =  bundle.getHeaders();
 			String serviceName = headers.get(ActivateProject.ACTIVATE_PROJECT_SERVICE);
 			if (null != serviceName) {
-				track(bundle, ActivateProject.class.getName(), new ExecutorServiceFactory(serviceName));
-				track(bundle, Install.class.getName(), new ExecutorServiceFactory(headers.get(Install.INSTALL_BUNDLE_SERVICE)));
-				track(bundle, Deactivate.class.getName(), new ExecutorServiceFactory(headers.get(Deactivate.DEACTIVATE_BUNDLE_SERVICE)));
-				track(bundle, Start.class.getName(), new ExecutorServiceFactory(headers.get(Start.START_BUNDLE_SERVICE)));
-				track(bundle, Stop.class.getName(), new ExecutorServiceFactory(headers.get(Stop.STOP_BUNDLE_SERVICE)));
-				track(bundle, Refresh.class.getName(), new ExecutorServiceFactory(headers.get(Refresh.REFRESH_BUNDLE_SERVICE)));
-				track(bundle, Update.class.getName(), new ExecutorServiceFactory(headers.get(Update.UPDATE_BUNDLE_SERVICE)));
-				track(bundle, Reset.class.getName(), new ExecutorServiceFactory(headers.get(Reset.RESET_BUNDLE_SERVICE)));
-				track(bundle, TogglePolicy.class.getName(), new ExecutorServiceFactory(headers.get(TogglePolicy.TOGGLE_POLICY_SERVICE)));
-				track(bundle, UpdateBundleClassPath.class.getName(), new ExecutorServiceFactory(headers.get(UpdateBundleClassPath.UPDATE_BUNDLE_CLASS_PATH_SERVICE)));
+				track(bundle, ActivateProject.class.getName(), new BundleExecutorServiceFactory(serviceName));
+				track(bundle, Install.class.getName(), new BundleExecutorServiceFactory(headers.get(Install.INSTALL_BUNDLE_SERVICE)));
+				track(bundle, Deactivate.class.getName(), new BundleExecutorServiceFactory(headers.get(Deactivate.DEACTIVATE_BUNDLE_SERVICE)));
+				track(bundle, Start.class.getName(), new BundleExecutorServiceFactory(headers.get(Start.START_BUNDLE_SERVICE)));
+				track(bundle, Stop.class.getName(), new BundleExecutorServiceFactory(headers.get(Stop.STOP_BUNDLE_SERVICE)));
+				track(bundle, Refresh.class.getName(), new BundleExecutorServiceFactory(headers.get(Refresh.REFRESH_BUNDLE_SERVICE)));
+				track(bundle, Update.class.getName(), new BundleExecutorServiceFactory(headers.get(Update.UPDATE_BUNDLE_SERVICE)));
+				track(bundle, Reset.class.getName(), new BundleExecutorServiceFactory(headers.get(Reset.RESET_BUNDLE_SERVICE)));
+				track(bundle, TogglePolicy.class.getName(), new BundleExecutorServiceFactory(headers.get(TogglePolicy.TOGGLE_POLICY_SERVICE)));
+				track(bundle, UpdateBundleClassPath.class.getName(), new BundleExecutorServiceFactory(headers.get(UpdateBundleClassPath.UPDATE_BUNDLE_CLASS_PATH_SERVICE)));
 				track(bundle, ResourceState.class.getName(), new BundleServiceScopeFactory<ResourceState>(headers.get(ResourceState.RESOURCE_STATE_SERVICE)));
+				track(bundle, BundleExecutorEventManager.class.getName(), new BundleServiceScopeFactory<ResourceState>(headers.get(BundleExecutorEventManager.BUNDLE_EXECUTOR_EVENT_MANAGER_SERVICE)));
 			}
 			serviceName = headers.get(BundleCommand.BUNDLE_COMMAND_SERVICE);
 			if (null != serviceName) {

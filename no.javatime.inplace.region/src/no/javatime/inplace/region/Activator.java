@@ -97,9 +97,9 @@ public class Activator extends AbstractUIPlugin {
 				BundleProjectMeta.class.getName(), BundleProjectMetaImpl.INSTANCE, null);
 //				new BundleProjectMetaServiceFactory(), null);
 
-		commandOptions = Extenders.getExtension(CommandOptions.class.getName());
-		messageOptions = Extenders.getExtension(MessageOptions.class.getName());
-		dependencyOptions = Extenders.getExtension(DependencyOptions.class.getName());
+		commandOptions = Extenders.getExtension(CommandOptions.class.getName(), context.getBundle());
+		messageOptions = Extenders.getExtension(MessageOptions.class.getName(), context.getBundle());
+		dependencyOptions = Extenders.getExtension(DependencyOptions.class.getName(), context.getBundle());
 	}
 
 	/*

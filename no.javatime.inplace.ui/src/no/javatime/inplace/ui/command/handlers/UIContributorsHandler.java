@@ -12,7 +12,6 @@ package no.javatime.inplace.ui.command.handlers;
 
 import java.util.Collection;
 
-import no.javatime.inplace.bundlejobs.events.BundleJobManager;
 import no.javatime.inplace.bundlejobs.intface.Deactivate;
 import no.javatime.inplace.dl.preferences.intface.CommandOptions;
 import no.javatime.inplace.extender.intface.ExtenderException;
@@ -52,7 +51,7 @@ public class UIContributorsHandler extends AbstractOptionsHandler {
 							Activator.getExtension(Deactivate.class.getName());
 					Deactivate deactivate = deactivateExtender.getTrackedService();
 					deactivate.addPendingProjects(uIProjects);
-					BundleJobManager.addBundleJob(deactivate.getJob(), 0);
+					Activator.getBundleJobEventService().add(deactivate);
 					deactivateExtender.closeTrackedService();
 				}
 			}

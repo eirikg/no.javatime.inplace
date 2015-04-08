@@ -44,7 +44,7 @@ public class Activator extends AbstractUIPlugin {
 	public void start(BundleContext context) throws Exception {
 		super.start(context);
 		plugin = this;
-		dependencyOptions = Extenders.getExtension(DependencyOptions.class.getName());
+		dependencyOptions = Extenders.getExtension(DependencyOptions.class.getName(), context.getBundle());
 
 		// The service (extender) should be registered by the bundle using this extension
 		/*

@@ -37,11 +37,12 @@ public class CommandOptionsImpl extends ManifestOptionsImpl implements CommandOp
 		try {
 			// In ms
 			String prop = bundleContext.getProperty("equinox.statechange.timeout");			
-			if (prop != null)
+			if (prop != null) {
 				stateChangeWait = Integer.parseInt(prop);
-				if (stateChangeWait < 1000 || stateChangeWait > 60000) {
-					stateChangeWait = defTimeOut*1000;
-				}
+			}
+			if (stateChangeWait < 1000 || stateChangeWait > 60000) {
+				stateChangeWait = defTimeOut*1000;
+			}
 		} catch (Throwable t) {
 			// use default 5000 ms
 			stateChangeWait = defTimeOut*1000;
