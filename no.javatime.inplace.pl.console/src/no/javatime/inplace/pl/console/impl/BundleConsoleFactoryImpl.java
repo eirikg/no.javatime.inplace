@@ -54,10 +54,9 @@ public class BundleConsoleFactoryImpl implements IConsoleFactory, BundleConsoleF
 	public Boolean isConsoleViewVisible() {
 		Boolean visible = ViewUtil.isVisible(IConsoleConstants.ID_CONSOLE_VIEW);
 		if (visible) {
-			if (!isConsoleVisible()) {
-				return false;
+			if (isConsoleVisible()) {
+				return true;
 			}
-			return true;
 		}
 		return false;
 	}
@@ -161,17 +160,6 @@ public class BundleConsoleFactoryImpl implements IConsoleFactory, BundleConsoleF
 	private Boolean isConsoleVisible() {
 		BundleConsole console = getConsole();
 		if (console != null) {
-			IConsoleManager manager = ConsolePlugin.getDefault().getConsoleManager();
-			IConsole[] consoles = manager.getConsoles();
-			boolean isOpen = false;
-			for (int i = 0; i < consoles.length; i++) {
-				if (console == consoles[i]) {
-					isOpen = true;
-				}
-			}
-			if (!isOpen) {
-				return false;
-			}
 			// Console is open. Check if it is the current visible console
 			IWorkbenchPage page = Activator.getDefault().getActivePage();
 			if (null != page) {
@@ -180,7 +168,7 @@ public class BundleConsoleFactoryImpl implements IConsoleFactory, BundleConsoleF
 				if (null != view) {
 					IConsole currConsole = view.getConsole();
 					// Open and visible
-					if (console == currConsole) {
+					if (null != currConsole && console.equals(currConsole)) {
 						return true;
 					}
 				}
