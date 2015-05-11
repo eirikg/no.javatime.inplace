@@ -25,13 +25,17 @@ import org.eclipse.jdt.core.IJavaProject;
  * deactivate bundle projects use the {@link BundleCommand} interface.
  * <p>
  * There is also a service interface to access and modify bundle project {@link BundleProjectMeta
- * meta information}. 
+ * meta information}.
  * <p>
- * Use the OSGi service layer or the {@link Extenders} to access this service
- * interface.
+ * Use the OSGi service layer or the {@link Extenders} to access this service interface.
  * <p>
+ * 
  * <pre>
- * {@code Extension<BundleProjectCandidates> candidates = Extenders.getExtension(BundleProjectCandidates.class.getName());}
+ * {
+ * 	&#064;code
+ * 	Extension&lt;BundleProjectCandidates&gt; candidates = Extenders
+ * 			.getExtension(BundleProjectCandidates.class.getName());
+ * }
  * </pre>
  * 
  * @see CommandOptions#isAllowUIContributions()
@@ -70,8 +74,9 @@ public interface BundleProjectCandidates {
 	 * returned collection
 	 * 
 	 * @return all projects that may be activated or an empty collection
-	 * @throws InPlaceException open projects that does not exist or a core exception when accessing
-	 * projects is thrown internally (should not be the case for open and existing projects)
+	 * @throws InPlaceException Failing to get the command options service, open projects that does
+	 * not exist or a core exception when accessing projects is thrown internally (should not be the
+	 * case for open and existing projects)
 	 * @see #isCandidate(IProject)
 	 */
 	public Collection<IProject> getCandidates() throws InPlaceException;
@@ -82,8 +87,9 @@ public interface BundleProjectCandidates {
 	 * 
 	 * @return all bundle projects which not contributes to the UI, when UI contributions are not
 	 * allowed If UI contributions are allowed, return all bundle projects or an empty collection
-	 * @throws InPlaceException open projects that does not exist or a core exception when accessing
-	 * projects is thrown internally (should not be the case for open and existing projects)
+	 * @throws InPlaceException Failing to get the command options service, open projects that does
+	 * not exist or a core exception when accessing projects is thrown internally (should not be the
+	 * case for open and existing projects)
 	 * @see #isUIPlugin(IProject)
 	 * @see #getUIPlugins()
 	 */
@@ -151,7 +157,8 @@ public interface BundleProjectCandidates {
 	 * A project is installable if it is open, has the Java and plug-in nature enabled, activated or
 	 * deactivated, not contributes to the UI if UI contributors are not allowed or contributes to the
 	 * UI if UI contributions are allowed.
-	 * @param project The project to check for permission to install 
+	 * 
+	 * @param project The project to check for permission to install
 	 * @return true if this is a Java plug-in or JavaTime project. Otherwise false
 	 * @throws InPlaceException if the specified project is null, open but does not exist or a core
 	 * exception is thrown internally (should not be the case for open and existing projects)
@@ -166,8 +173,9 @@ public interface BundleProjectCandidates {
 	 * @param project to check for candidate nature attributes
 	 * @return true if project is not activated, a plug-in project with Java, plug-in nature and not
 	 * contributing to the UI, when not allowed. Otherwise false.
-	 * @throws InPlaceException if the specified project is null, open but does not exist or a core
-	 * exception is thrown internally (should not be the case for open and existing projects)
+	 * @throws InPlaceException Failing to get the command options service. If the specified project
+	 * is null, open but does not exist or a core exception is thrown internally (should not be the
+	 * case for open and existing projects)
 	 */
 	public Boolean isCandidate(IProject project) throws InPlaceException;
 

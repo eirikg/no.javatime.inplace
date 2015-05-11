@@ -14,6 +14,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 
+import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.region.closure.BuildErrorClosure;
 import no.javatime.inplace.region.closure.BundleSorter;
 import no.javatime.inplace.region.closure.CircularReferenceException;
@@ -93,15 +94,17 @@ public class BundleProperties {
 	private Bundle bundle = null;
 	static private final BundleSorter bundleSorter = new BundleSorter();
 	static private final ProjectSorter projectSorter = new ProjectSorter();
-	private final BundleProjectCandidates bundleProjectCandidates = Activator.getBundleProjectCandidatesService();
-	private final BundleCommand bundleCommand = Activator.getBundleCommandService(); 
-	private static final BundleTransition bundleTransition = Activator.getBundleTransitionService();
-	private final BundleRegion bundleRegion = Activator.getBundleRegionService();
-	private final BundleProjectMeta bundlePrrojectMeta = Activator.getBundleProjectMetaService();
+
+	private BundleProjectCandidates bundleProjectCandidates;
+	private BundleCommand bundleCommand; 
+	private BundleTransition bundleTransition;
+	private BundleRegion bundleRegion;
+	private BundleProjectMeta bundlePrrojectMeta;
 	
-	public BundleProperties(IProject project) {
+	public BundleProperties(IProject project) throws ExtenderException {
 		this.project = project;
 		try {
+			initServices();
 			if (project.isNatureEnabled(JavaCore.NATURE_ID)) {
 				javaProject = JavaCore.create(project);
 			}
@@ -110,13 +113,14 @@ public class BundleProperties {
 		bundle = bundleRegion.getBundle(project);
 	}
 
-	public BundleProperties(IJavaProject javaProject) {
+	public BundleProperties(IJavaProject javaProject) throws ExtenderException {
 		this.project = javaProject.getProject();
 		this.javaProject = javaProject;
+		initServices();
 		bundle = bundleRegion.getBundle(project);
 	}
 
-	public BundleProperties(IProject project, String name, String value) {
+	public BundleProperties(IProject project, String name, String value) throws ExtenderException {
 		this.project = project;
 		try {
 			if (project.isNatureEnabled(JavaCore.NATURE_ID)) {
@@ -124,21 +128,32 @@ public class BundleProperties {
 			}
 		} catch (CoreException e) {
 		}
+		initServices();
 		bundle = bundleRegion.getBundle(project);
 		this.name = name;
 		this.value = value;
 
 	}
 
-	public BundleProperties(IJavaProject javaProject, String name, String value) {
+	public BundleProperties(IJavaProject javaProject, String name, String value) throws ExtenderException {
 		this.project = javaProject.getProject();
 		this.javaProject = javaProject;
+		initServices();
 		bundle = bundleRegion.getBundle(project);
 		this.name = name;
 		this.value = value;
 
 	}
-
+	
+	private void initServices() throws ExtenderException {
+		
+		bundleProjectCandidates = Activator.getBundleProjectCandidatesService();
+		bundleCommand = Activator.getBundleCommandService(); 
+		bundleTransition = Activator.getBundleTransitionService();
+		bundleRegion = Activator.getBundleRegionService();
+		bundlePrrojectMeta = Activator.getBundleProjectMetaService();
+	}
+	
 	public String getBundleLabelName() {
 		String bundleProjectLabelName = bundleLabelName;
 		String symbolicName = null;

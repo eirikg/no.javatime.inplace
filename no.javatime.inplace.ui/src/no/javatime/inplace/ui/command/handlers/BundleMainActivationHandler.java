@@ -38,9 +38,6 @@ import org.osgi.framework.Bundle;
  */
 public class BundleMainActivationHandler extends BundleMenuActivationHandler {
 
-	private BundleCommand command = Activator.getBundleCommandService(); 
-	private BundleProjectCandidates projectCandidates = Activator.getBundleProjectCandidatesService(); 
-	private BundleRegion region = Activator.getBundleRegionService();
 
 	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
@@ -50,6 +47,9 @@ public class BundleMainActivationHandler extends BundleMenuActivationHandler {
 			return null;
 		}
 		try {
+			BundleCommand command = Activator.getBundleCommandService(); 
+			BundleProjectCandidates projectCandidates = Activator.getBundleProjectCandidatesService(); 
+			BundleRegion region = Activator.getBundleRegionService();
 			switch (parameterId) {
 			case BundleCommandsContributionItems.deactivateParamId:
 				deactivateHandler(region.getActivatedProjects());

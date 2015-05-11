@@ -10,9 +10,10 @@
  *******************************************************************************/
 package no.javatime.inplace.builder;
 
-import no.javatime.inplace.InPlace;
+import no.javatime.inplace.Activator;
 import no.javatime.inplace.bundlejobs.ActivateProjectJob;
 import no.javatime.inplace.bundlejobs.intface.ActivateProject;
+import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.region.events.TransitionEvent;
 import no.javatime.inplace.region.intface.BundleProjectCandidates;
 import no.javatime.inplace.region.intface.BundleTransition;
@@ -49,38 +50,45 @@ public class PreBuildListener implements IResourceChangeListener {
 	 */
 	public void resourceChanged(IResourceChangeEvent event) {
 
+		JavaTimeBuilder.preBuild();
 		IResourceDelta rootDelta = event.getDelta();
-		IResourceDelta[] projectDeltas = rootDelta.getAffectedChildren(IResourceDelta.ADDED
-				| IResourceDelta.CHANGED, IResource.NONE);
+		IResourceDelta[] projectDeltas	=	(null != rootDelta ? rootDelta.getAffectedChildren(IResourceDelta.ADDED
+					| IResourceDelta.CHANGED, IResource.NONE) : null);
 		boolean isWSNatureEnabled = projectActivation.isProjectWorkspaceActivated();
-		for (IResourceDelta projectDelta : projectDeltas) {
-			IResource projectResource = projectDelta.getResource();
-			if (projectResource.isAccessible() && (projectResource.getType() & (IResource.PROJECT)) != 0) {
-				IProject project = projectResource.getProject();
-				try {
-					BundleTransition transition = InPlace.getBundleTransitionService();
-					if (!isWSNatureEnabled) {
-						// Clear any errors detected from last activation that caused the workspace to be
-						// deactivated. The error should be visible in a deactivated workspace until the project
-						// is built
-						transition.clearTransitionError(project);
-					} else {
-						if (projectActivation.isProjectActivated(project)) {
-							BundleProjectCandidates bundleProjectCandidates = InPlace
-									.getBundleProjectCandidatesService();
-							if (!bundleProjectCandidates.isAutoBuilding()) {
-								transition.addPending(project, Transition.BUILD);
-							} else {
-								BundleTransitionListener.addBundleTransition(new TransitionEvent(project,
-										Transition.BUILD));
+		if (null != projectDeltas) {
+			for (IResourceDelta projectDelta : projectDeltas) {
+				IResource projectResource = projectDelta.getResource();
+				if (projectResource.isAccessible() && (projectResource.getType() & (IResource.PROJECT)) != 0) {
+					IProject project = projectResource.getProject();
+					try {
+						BundleTransition transition = Activator.getBundleTransitionService();
+						if (!isWSNatureEnabled) {
+							// Clear any errors detected from last activation that caused the workspace to be
+							// deactivated. The error should be visible in a deactivated workspace until the project
+							// is built
+							transition.clearTransitionError(project);
+						} else {
+							if (projectActivation.isProjectActivated(project)) {
+								BundleProjectCandidates bundleProjectCandidates = Activator
+										.getBundleProjectCandidatesService();
+								if (!bundleProjectCandidates.isAutoBuilding()) {
+									transition.addPending(project, Transition.BUILD);
+								} else {
+									BundleTransitionListener.addBundleTransition(new TransitionEvent(project,
+											Transition.BUILD));
+								}
 							}
 						}
+					} catch (InPlaceException e) {
+						String msg = ExceptionMessage.getInstance().formatString("preparing_osgi_command",
+								project.getName());
+						StatusManager.getManager().handle(
+								new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, msg, e), StatusManager.LOG);
+					} catch (ExtenderException e) {
+						StatusManager.getManager().handle(
+								new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),
+								StatusManager.LOG);
 					}
-				} catch (InPlaceException e) {
-					String msg = ExceptionMessage.getInstance().formatString("preparing_osgi_command",
-							project.getName());
-					StatusManager.getManager().handle(
-							new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg, e), StatusManager.LOG);
 				}
 			}
 		}

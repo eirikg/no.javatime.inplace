@@ -18,6 +18,7 @@ import no.javatime.inplace.bundlejobs.DeactivateJob;
 import no.javatime.inplace.bundlejobs.NatureJob;
 import no.javatime.inplace.bundlejobs.intface.ActivateBundle;
 import no.javatime.inplace.bundlejobs.intface.BundleExecutor;
+import no.javatime.inplace.bundlejobs.intface.Deactivate;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.msg.Msg;
@@ -25,6 +26,7 @@ import no.javatime.inplace.region.closure.BuildErrorClosure;
 import no.javatime.inplace.region.closure.BuildErrorClosure.ActivationScope;
 import no.javatime.inplace.region.closure.CircularReferenceException;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
+import no.javatime.inplace.region.intface.BundleTransitionListener;
 import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.intface.ProjectLocationException;
 import no.javatime.inplace.region.status.BundleStatus;
@@ -84,6 +86,7 @@ public class StartUpJob extends NatureJob implements BundleExecutor {
 
 	/**
 	 * Runs the bundle project(s) startup operation
+	 * 
 	 * @return a {@code BundleStatus} object with {@code BundleStatusCode.OK} if job terminated
 	 * normally and no status objects have been added to this job status list and
 	 * {@code BundleStatusCode.ERROR} if the job fails or {@code BundleStatusCode.JOBINFO} if any
@@ -92,29 +95,30 @@ public class StartUpJob extends NatureJob implements BundleExecutor {
 	@Override
 	public IBundleStatus runInWorkspace(IProgressMonitor monitor) {
 		try {
-				if (InPlace.getMessageOptionsService().isBundleOperations()) {
-					String osgiDev = InPlace.getbundlePrrojectMetaService().inDevelopmentMode();
-					if (null != osgiDev) {
-						String msg = NLS.bind(Msg.CLASS_PATH_DEV_PARAM_INFO, osgiDev);
-						addLogStatus(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, msg));
-					}
+			super.runInWorkspace(monitor);
+			if (messageOptions.isBundleOperations()) {
+				String osgiDev = Activator.getbundlePrrojectMetaService().inDevelopmentMode();
+				if (null != osgiDev) {
+					String msg = NLS.bind(Msg.CLASS_PATH_DEV_PARAM_INFO, osgiDev);
+					addLogStatus(new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, msg));
 				}
-				ActivateBundle activateBundle = new ActivateBundleJob(ActivateBundleJob.activateStartupJobName);
-				Collection<IProject> activatedProjects = getActivatedProjects();
-				if (activatedProjects.size() > 0) {
-					Collection<IProject> deactivatedProjects = deactivateBuildErrorClosures(activatedProjects);
-					if (deactivatedProjects.size() > 0) {
-						initDeactivatedWorkspace();
-					} else {
-						// Install all projects and set activated projects to the same state as they had at shutdown
-						activateBundle.addPendingProjects(activatedProjects);
-						activateBundle.setPersistState(true);
-						InPlace.getBundleJobEventService().add(activateBundle, 0);
-					}
-				} else {
-					// Register all projects as bundle projects and set their initial transition
+			}
+			ActivateBundle activateBundle = new ActivateBundleJob(ActivateBundleJob.activateStartupJobName);
+			Collection<IProject> activatedProjects = getActivatedProjects();
+			if (activatedProjects.size() > 0) {
+				Collection<IProject> deactivatedProjects = deactivateBuildErrorClosures(activatedProjects);
+				if (deactivatedProjects.size() > 0) {
 					initDeactivatedWorkspace();
+				} else {
+					// Install all projects and set activated projects to the same state as they had at shutdown
+					activateBundle.addPendingProjects(activatedProjects);
+					activateBundle.setPersistState(true);
+					Activator.getBundleExecutorEventService().add(activateBundle, 0);
 				}
+			} else {
+				// Register all projects as bundle projects and set their initial transition
+				initDeactivatedWorkspace();
+			}
 		} catch (OperationCanceledException e) {
 			addCancelMessage(e, NLS.bind(Msg.CANCEL_JOB_INFO, getName()));
 		} catch (InPlaceException | ExtenderException e) {
@@ -125,18 +129,17 @@ public class StartUpJob extends NatureJob implements BundleExecutor {
 		} catch (NullPointerException e) {
 			String msg = ExceptionMessage.getInstance().formatString("npe_job", getName());
 			addError(e, msg);
+		} catch (CoreException e) {
+			String msg = ErrorMessage.getInstance().formatString("error_end_job", getName());
+			return new BundleStatus(StatusCode.ERROR, Activator.PLUGIN_ID, msg, e);
 		} catch (Exception e) {
 			String msg = ExceptionMessage.getInstance().formatString("exception_job", getName());
 			addError(e, msg);
-		}
-		try {
-			return super.runInWorkspace(monitor);
-		} catch (CoreException e) {
-			String msg = ErrorMessage.getInstance().formatString("error_end_job", getName());
-			return new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID, msg);
 		} finally {
 			monitor.done();
+			BundleTransitionListener.removeBundleTransitionListener(this);
 		}
+		return getJobSatus();
 	}
 
 	/**
@@ -149,9 +152,9 @@ public class StartUpJob extends NatureJob implements BundleExecutor {
 		IBundleStatus status = null;
 
 		try {
-			final IEclipsePreferences store = InPlace.getEclipsePreferenceStore();
+			final IEclipsePreferences store = Activator.getEclipsePreferenceStore();
 			if (null == store) {
-				addStatus(new BundleStatus(StatusCode.WARNING, InPlace.PLUGIN_ID,
+				addStatus(new BundleStatus(StatusCode.WARNING, Activator.PLUGIN_ID,
 						Msg.INIT_WORKSPACE_STORE_WARN, null));
 				return;
 			}
@@ -174,16 +177,16 @@ public class StartUpJob extends NatureJob implements BundleExecutor {
 				} catch (ProjectLocationException e) {
 					if (null == status) {
 						String msg = ExceptionMessage.getInstance().formatString("project_init_location");
-						status = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg, null);
+						status = new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, msg, null);
 					}
-					status.add(new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, project,
+					status.add(new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, project,
 							project.getName(), e));
 					addStatus(status);
 				}
 			}
 		} catch (CircularReferenceException e) {
 			String msg = ExceptionMessage.getInstance().formatString("circular_reference", getName());
-			BundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg);
+			BundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, msg);
 			multiStatus.add(e.getStatusList());
 			addStatus(multiStatus);
 		}
@@ -216,7 +219,7 @@ public class StartUpJob extends NatureJob implements BundleExecutor {
 	 */
 	private Collection<IProject> deactivateBuildErrorClosures(Collection<IProject> activatedProjects) {
 
-		DeactivateJob deactivateErrorClosureJob = new DeactivateJob("Deactivate on startup");
+		Deactivate deactivateErrorClosureJob = new DeactivateJob("Deactivate on startup");
 		try {
 			// Deactivated and activated providing closure. Deactivated and activated projects with build
 			// errors providing capabilities to project to resolve (and start) at startup
@@ -224,13 +227,13 @@ public class StartUpJob extends NatureJob implements BundleExecutor {
 					Closure.PROVIDING, Bundle.UNINSTALLED, ActivationScope.ALL);
 			if (be.hasBuildErrors()) {
 				deactivateErrorClosureJob.addPendingProjects(activatedProjects);
-				deactivateErrorClosureJob.setUser(false);
-				deactivateErrorClosureJob.schedule();
+				deactivateErrorClosureJob.getJob().setUser(false);
+				deactivateErrorClosureJob.getJob().schedule();
 				return activatedProjects;
 			}
 		} catch (CircularReferenceException e) {
 			String msg = ExceptionMessage.getInstance().formatString("circular_reference_termination");
-			IBundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg,
+			IBundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, msg,
 					null);
 			multiStatus.add(e.getStatusList());
 			StatusManager.getManager().handle(multiStatus, StatusManager.LOG);

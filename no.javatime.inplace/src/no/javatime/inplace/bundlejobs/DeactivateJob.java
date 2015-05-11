@@ -15,7 +15,7 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Map;
 
-import no.javatime.inplace.InPlace;
+import no.javatime.inplace.Activator;
 import no.javatime.inplace.bundlejobs.intface.Deactivate;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.extender.intface.ExtenderException;
@@ -123,6 +123,7 @@ public class DeactivateJob extends NatureJob implements Deactivate {
 	public IBundleStatus runInWorkspace(IProgressMonitor monitor) {
 
 		try {
+			super.runInWorkspace(monitor);
 			monitor.beginTask(deactivateTask, getTicks());
 			BundleTransitionListener.addBundleTransitionListener(this);
 			deactivate(monitor);
@@ -131,7 +132,7 @@ public class DeactivateJob extends NatureJob implements Deactivate {
 			addError(e, msg);
 		} catch (CircularReferenceException e) {
 			String msg = ExceptionMessage.getInstance().formatString("circular_reference", getName());
-			BundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg);
+			BundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, msg);
 			multiStatus.add(e.getStatusList());
 			addStatus(multiStatus);
 		} catch (OperationCanceledException e) {
@@ -145,19 +146,17 @@ public class DeactivateJob extends NatureJob implements Deactivate {
 		} catch (NullPointerException e) {
 			String msg = ExceptionMessage.getInstance().formatString("npe_job", getName());
 			addError(e, msg);
+		} catch (CoreException e) {
+			String msg = ErrorMessage.getInstance().formatString("error_end_job", getName());
+			return new BundleStatus(StatusCode.ERROR, Activator.PLUGIN_ID, msg, e);
 		} catch (Exception e) {
 			String msg = ExceptionMessage.getInstance().formatString("exception_job", getName());
 			addError(e, msg);
-		}
-		try {
-			return super.runInWorkspace(monitor);
-		} catch (CoreException e) {
-			String msg = ErrorMessage.getInstance().formatString("error_end_job", getName());
-			return new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID, msg, e);
 		} finally {
 			monitor.done();
 			BundleTransitionListener.removeBundleTransitionListener(this);
 		}
+		return getJobSatus();		
 	}
 
 	/**
@@ -209,9 +208,9 @@ public class DeactivateJob extends NatureJob implements Deactivate {
 		}
 		
 		if (deactivateOnshutDownJobName.equals(getName())) {
-			InPlace.get().savePluginSettings(true, false);
+			Activator.getInstance().savePluginSettings(true, false);
 		} else {
-			InPlace.get().savePluginSettings(true, true);
+			Activator.getInstance().savePluginSettings(true, true);
 		}
 		if (activatedBundles.size() <= pendingBundles.size()) {
 			// This is the last project(s) to deactivate, move all bundles to state uninstalled

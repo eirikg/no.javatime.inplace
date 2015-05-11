@@ -18,7 +18,7 @@ import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 
-import no.javatime.inplace.InPlace;
+import no.javatime.inplace.Activator;
 import no.javatime.inplace.bundlejobs.intface.Update;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.extender.intface.ExtenderException;
@@ -105,6 +105,7 @@ public class UpdateJob extends BundleJob implements Update {
 	public IBundleStatus runInWorkspace(IProgressMonitor monitor) {
 
 		try {
+			super.runInWorkspace(monitor);
 			monitor.beginTask(updateTaskName, getTicks());
 			BundleTransitionListener.addBundleTransitionListener(this);
 			update(monitor);
@@ -115,7 +116,7 @@ public class UpdateJob extends BundleJob implements Update {
 			addCancelMessage(e, NLS.bind(Msg.CANCEL_JOB_INFO, getName()));
 		} catch (CircularReferenceException e) {
 			String msg = ExceptionMessage.getInstance().formatString("circular_reference", getName());
-			BundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg);
+			BundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, msg);
 			multiStatus.add(e.getStatusList());
 			addStatus(multiStatus);
 		} catch (ExtenderException e) {
@@ -133,16 +134,11 @@ public class UpdateJob extends BundleJob implements Update {
 		} catch (Exception e) {
 			String msg = ExceptionMessage.getInstance().formatString("exception_job", getName());
 			addError(e, msg);
-		}
-		try {
-			return super.runInWorkspace(monitor);
-		} catch (CoreException e) {
-			String msg = ErrorMessage.getInstance().formatString("error_end_job", getName());
-			return new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID, msg);
 		} finally {
 			monitor.done();
 			BundleTransitionListener.removeBundleTransitionListener(this);
 		}
+		return getJobSatus();		
 	}
 
 	/**
@@ -194,7 +190,7 @@ public class UpdateJob extends BundleJob implements Update {
 
 		Collection<Bundle> bundleClosure = null;
 		// (2) Get any requiring closure of bundles to update and refresh
-		if (getOptionsService().isRefreshOnUpdate()) {
+		if (commandOptions.isRefreshOnUpdate()) {
 			// Get the requiring closure of bundles to update and add bundles to the requiring closure
 			// with same symbolic name as in the update closure.
 			// The bundles in this closure are stopped before update, bound to the current revision of the
@@ -266,7 +262,7 @@ public class UpdateJob extends BundleJob implements Update {
 				bundlesToRestart.addAll(installedBundlesToRefresh);
 			}
 
-			if (getOptionsService().isRefreshOnUpdate()) {
+			if (commandOptions.isRefreshOnUpdate()) {
 				refresh(bundleClosure, new SubProgressMonitor(monitor, 1));
 			} else {
 				Collection<Bundle> notResolvedBundles = resolve(bundleClosure, new SubProgressMonitor(
@@ -303,11 +299,11 @@ public class UpdateJob extends BundleJob implements Update {
 						if (null == status) {
 							String msg = ExceptionMessage.getInstance()
 									.formatString("error_setting_bundle_error");
-							status = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg, null);
+							status = new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, msg, null);
 						}
 						IProject project = bundleRegion.getProject(bundle);
 						if (null != project) {
-							status.add(new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, project, project
+							status.add(new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, project, project
 									.getName(), e));
 						}
 					}
@@ -345,7 +341,7 @@ public class UpdateJob extends BundleJob implements Update {
 					handleDuplicateException(bundleRegion.getProject(bundle), e, null);
 					String msg = ErrorMessage.getInstance().formatString("duplicate_error",
 							bundle.getSymbolicName(), bundle.getVersion().toString());
-					IBundleStatus result = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID,
+					IBundleStatus result = new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID,
 							bundle.getBundleId(), msg, e);
 					if (null == statusList) {
 						statusList = new LinkedHashSet<IBundleStatus>();
@@ -418,7 +414,7 @@ public class UpdateJob extends BundleJob implements Update {
 		}
 	}
 
-	public Collection<IProject> getUpdateOrder() {
+	public Collection<IProject> getUpdateOrder() throws ExtenderException {
 		Collection<Bundle> pendingBundles = bundleTransition.getPendingBundles(bundleRegion.getActivatedBundles(),
 				Transition.UPDATE);
 		Collection<Bundle> orderedBundles = getUpdateOrder(pendingBundles, false);
@@ -442,10 +438,14 @@ public class UpdateJob extends BundleJob implements Update {
 	 * @param reportCollisions if true an error status is added to the update executor if the are any
 	 * name conflicts. if false collisions are detected but no error status object is added.
 	 * @return ordered collection of bundles to update
+	 * throws ExtenderException If failing to get the bundle region service
 	 */
 	public Collection<Bundle> getUpdateOrder(Collection<Bundle> bundlesToUpdate,
-			boolean reportCollisions) {
+			boolean reportCollisions) throws ExtenderException {
 
+		if (null == bundleRegion) {
+			bundleRegion = Activator.getBundleRegionService();
+		}
 		ArrayList<Bundle> sortedBundlesToUpdate = new ArrayList<Bundle>();
 		Map<String, IProject> projectKeysMap = new HashMap<String, IProject>();
 		IBundleStatus status = null;
@@ -489,20 +489,26 @@ public class UpdateJob extends BundleJob implements Update {
 		}
 		if (null != status && reportCollisions) {
 			String rootMsg = ErrorMessage.getInstance().formatString("circular_name_conflict");
-			createMultiStatus(new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID, rootMsg), status);
+			createMultiStatus(new BundleStatus(StatusCode.ERROR, Activator.PLUGIN_ID, rootMsg), status);
 		}
 		return sortedBundlesToUpdate;
 	}
 
-	public void addUpdateTransition(Collection<IProject> projects) {
+	public void addUpdateTransition(Collection<IProject> projects) throws ExtenderException {
 
+		if (null == bundleTransition) {
+			bundleTransition = Activator.getBundleTransitionService();
+		}
 		for (IProject project : projects) {
 			bundleTransition.addPending(project, Transition.UPDATE);
 		}
 	}
 
-	public boolean isPendingForUpdate(IProject project) {
+	public boolean isPendingForUpdate(IProject project) throws ExtenderException {
 
+		if (null == bundleTransition) {
+			bundleTransition = Activator.getBundleTransitionService();
+		}
 		return bundleTransition.containsPending(project, Transition.UPDATE, false);
 	}
 

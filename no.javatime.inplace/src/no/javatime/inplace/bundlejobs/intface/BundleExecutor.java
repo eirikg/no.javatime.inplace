@@ -3,17 +3,22 @@ package no.javatime.inplace.bundlejobs.intface;
 import java.util.Collection;
 
 import no.javatime.inplace.dl.preferences.intface.MessageOptions;
+import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.log.intface.BundleLog;
 import no.javatime.inplace.region.status.IBundleStatus;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.WorkspaceJob;
+import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.jobs.IJobManager;
 import org.eclipse.core.runtime.jobs.Job;
+import org.osgi.framework.Bundle;
 
 /**
- * Common sub service interface running bundle operations. A bundle operation is scheduled for execution by
- * invoking {@link #run()} or {@link #run(long)}.
+ * Common sub service interface to initiate and control execution of bundle life cycle operations. A
+ * bundle operation may be scheduled for execution by invoking {@link #run()}, {@link #run(long)} or
+ * scheduling the job directly by accessing the underlying job ({@code #getJob()}) of the bundle
+ * executor service.
  * <p>
  * All bundle service operations are scheduled as jobs and compatible with the {@link Job Jobs} API.
  * To manage the job of a bundle service operation to run, use the jobs API and access the
@@ -25,19 +30,19 @@ import org.eclipse.core.runtime.jobs.Job;
  * <p>
  * Add bundle projects to process and use other member methods, including job related methods, to
  * alter and control the state of a bundle executor before executing an operation and interrogate
- * status and error information after the executor terminates by joining the bundle job
- * {@link #joinBundleExecutor()} or by using a job listener.
+ * status and error information during execution and after the executor terminates by joining the
+ * bundle job {@link #joinBundleExecutor()} or by using a job listener.
  * <p>
  * All bundle operation services (sub interfaces of this interface) must be registered with
- * prototype service scope. Use the provided default {@link BundleExecutorServiceFactory prototype service
- * factory} or create a customized factory for bundle service operations.
+ * prototype service scope. Use the provided default {@link BundleExecutorServiceFactory prototype
+ * service factory} or create a customized factory for bundle service operations.
  * <p>
  */
 public interface BundleExecutor {
 
-	/** 
-	 * Common family job name for all bundle executor operations 
-	*/
+	/**
+	 * Common family job name for all bundle executor operations
+	 */
 	public static final String FAMILY_BUNDLE_LIFECYCLE = "BundleFamily";
 
 	/**
@@ -97,9 +102,31 @@ public interface BundleExecutor {
 	public WorkspaceJob getJob();
 
 	/**
+	 * Determine if a bundle that is member of the workspace region is currently executing a bundle
+	 * operation (state changing).
+	 * 
+	 * @return the bundle currently executing a bundle operation or null if no operation is running
+	 */
+	public Bundle isStateChanging();
+
+	/**
+	 * Stop the current bundle operation
+	 * <p>
+	 * Stops a life cycle operation currently execution while moving from one state to the next. If
+	 * the operation is aborted the state and transition (operation) is rolled back to the state it
+	 * had before the transition was issued.
+	 * 
+	 * @param monitor This is a short operation. A null progress monitor object may be used
+	 * @return If the operation was stopped return true, otherwise false
+	 * @throws ExtenderException if failing to get the required bundle service(s)
+	 * @see #isStateChanging()
+	 */
+	public boolean stopBundleOperation(IProgressMonitor monitor) throws ExtenderException;
+
+	/**
 	 * Add a pending bundle project to execute by this bundle service
 	 * 
-	 * @param bundle project to execute
+	 * @param project bundle project to execute
 	 */
 	public void addPendingProject(IProject project);
 
@@ -194,4 +221,25 @@ public interface BundleExecutor {
 	 * @return true if bundle error status objects exists in the status list, otherwise false
 	 */
 	public boolean hasErrorStatus();
+
+	/**
+	 * Add a bundle status. The bundle status is logged if the logging option is on, and also sent to
+	 * the error log if status is set to {@code StatusCode.ERROR} or {@code StatusCode.EXCEPTION}
+	 * <p>
+	 * 
+	 * @param status the status object added to the log status list should contain at least the bundle
+	 * and/or the project related to the status message
+	 * @see getLogStatusList()
+	 */
+	public IBundleStatus addLogStatus(IBundleStatus status);
+
+	/**
+	 * Creates a multi status object containing the specified status object as the parent and all
+	 * status objects in the status list as children. The status list is then cleared and the new
+	 * multi status object is added to the list.
+	 * 
+	 * @param multiStatus a status object where all existing status objects are added to as children
+	 */
+	public IBundleStatus createMultiStatus(IBundleStatus multiStatus);
+
 }

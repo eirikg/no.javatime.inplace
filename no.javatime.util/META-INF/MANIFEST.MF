@@ -9,7 +9,7 @@ Export-Package: no.javatime.util.messages;
  no.javatime.util.view
 Bundle-Vendor: JavaTime
 Bundle-ActivationPolicy: lazy
-Bundle-Version: 0.2.0.qualifier
+Bundle-Version: 0.2.1.qualifier
 Bundle-Name: JavaTime General Purpose Utilities
 Bundle-Activator: no.javatime.util.Activator
 Bundle-ManifestVersion: 2

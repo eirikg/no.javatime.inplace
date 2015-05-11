@@ -1,5 +1,6 @@
 package no.javatime.inplace.region.state;
 
+import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.region.Activator;
 import no.javatime.inplace.region.events.TransitionEvent;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
@@ -83,27 +84,34 @@ public abstract class BundleState {
 	 */
 	public void external(BundleNode bundleNode, BundleEvent event, BundleState state, Transition transition) {
 		
-		Bundle bundle = event.getBundle();
-		final String location = bundle.getLocation();
-		BundleCommandImpl bundleCommand = BundleCommandImpl.INSTANCE;
-		BundleTransitionImpl bundleTransition = BundleTransitionImpl.INSTANCE;
-		final String symbolicName = WorkspaceRegionImpl.INSTANCE.getSymbolicKey(bundle, null);
-		final String stateName = bundleCommand.getStateName(event);
-		if (bundleTransition.getError(bundle) == TransitionError.INCOMPLETE) {
-			if (Activator.getDefault().getMsgOptService().isBundleOperations()) {
-				String msg = NLS.bind(Msg.INCOMPLETE_BUNDLE_OP_INFO, new Object[] {symbolicName, stateName,
-						location});
-				StatusManager.getManager().handle(new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, msg), StatusManager.LOG);				
+		try {
+			Bundle bundle = event.getBundle();
+			final String location = bundle.getLocation();
+			BundleCommandImpl bundleCommand = BundleCommandImpl.INSTANCE;
+			BundleTransitionImpl bundleTransition = BundleTransitionImpl.INSTANCE;
+			final String symbolicName = WorkspaceRegionImpl.INSTANCE.getSymbolicKey(bundle, null);
+			final String stateName = bundleCommand.getStateName(event);
+			if (bundleTransition.getError(bundle) == TransitionError.INCOMPLETE) {
+				if (Activator.getMessageOptionsService().isBundleOperations()) {
+					String msg = NLS.bind(Msg.INCOMPLETE_BUNDLE_OP_INFO, new Object[] {symbolicName, stateName,
+							location});
+					StatusManager.getManager().handle(new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, msg), StatusManager.LOG);				
+				}
+			} else {
+				bundleNode.commit(transition, state);
+				if (Activator.getMessageOptionsService().isBundleOperations()) {
+					BundleTransitionListener.addBundleTransition(new TransitionEvent(bundle, bundleNode.getTransition()));
+					String msg = NLS.bind(Msg.EXT_BUNDLE_OP_INFO, new Object[] {symbolicName, stateName,
+							location});
+					StatusManager.getManager().handle(new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, bundle, msg, null), StatusManager.LOG);
+				}
 			}
-		} else {
-			bundleNode.commit(transition, state);
-			if (Activator.getDefault().getMsgOptService().isBundleOperations()) {
-				BundleTransitionListener.addBundleTransition(new TransitionEvent(bundle, bundleNode.getTransition()));
-				String msg = NLS.bind(Msg.EXT_BUNDLE_OP_INFO, new Object[] {symbolicName, stateName,
-						location});
-				StatusManager.getManager().handle(new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, bundle, msg, null), StatusManager.LOG);
-			}
+		} catch (ExtenderException e) {
+			StatusManager.getManager().handle(
+					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),
+					StatusManager.LOG);						
 		}
+
 	}
 
 	/**

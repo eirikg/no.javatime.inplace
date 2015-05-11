@@ -10,9 +10,11 @@
  *******************************************************************************/
 package no.javatime.inplace.builder;
 
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
 
-import no.javatime.inplace.InPlace;
+import no.javatime.inplace.Activator;
 import no.javatime.inplace.builder.intface.RemoveBundleProject;
 import no.javatime.inplace.bundlejobs.ActivateProjectJob;
 import no.javatime.inplace.bundlejobs.UninstallJob;
@@ -20,9 +22,12 @@ import no.javatime.inplace.bundlejobs.intface.ActivateProject;
 import no.javatime.inplace.bundlejobs.intface.BundleExecutor;
 import no.javatime.inplace.bundlejobs.intface.Uninstall;
 import no.javatime.inplace.dialogs.ResourceStateHandler;
+import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.region.intface.BundleRegion;
 import no.javatime.inplace.region.intface.BundleTransition;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
+import no.javatime.inplace.region.status.BundleStatus;
+import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
@@ -30,6 +35,7 @@ import org.eclipse.core.resources.IResourceChangeEvent;
 import org.eclipse.core.resources.IResourceChangeListener;
 import org.eclipse.core.runtime.jobs.IJobManager;
 import org.eclipse.core.runtime.jobs.Job;
+import org.eclipse.ui.statushandlers.StatusManager;
 import org.osgi.framework.Bundle;
 
 /**
@@ -53,41 +59,48 @@ import org.osgi.framework.Bundle;
 public class PreChangeListener implements IResourceChangeListener {
 
 	final private ActivateProject projectActivation = new ActivateProjectJob();
-	final private BundleRegion bundleRegion = InPlace.getBundleRegionService();
 
 	/**
 	 * Handle pre-resource events for project delete, close and rename.
 	 */
 	@Override
 	public void resourceChanged(IResourceChangeEvent event) {
-
+		
+		
 		// Do not return if waiting for additional projects to uninstall
 		// May occur if the workspace becomes deactivated while waiting for new projects to remove
 		if (!projectActivation.isProjectWorkspaceActivated()
-				&& !(ResourceStateHandler.getWaitingBundleJob() instanceof RemoveBundleProjectJob)) {
+				&& !(ResourceStateHandler.getWaitingBundleJob() instanceof RemoveBundleProject)) {
 			return;
 		}
 		final IResource resource = event.getResource();
 		if (null != resource && resource.isAccessible()
 				&& (resource.getType() & (IResource.PROJECT)) != 0) {
 			final IProject project = resource.getProject();
-			Bundle bundle = bundleRegion.getBundle(project);
-			if (null == bundle) {
-				return;
-			}
-			BundleTransition transition = InPlace.getBundleTransitionService();
-			if (transition.containsPending(bundle, Transition.RENAME_PROJECT, true)) {
-				// The renamed bundle and requiring bundles are scheduled for install again by the post
-				// build listener with the new name after the bundle projects have been built
-				Uninstall uninstall = new UninstallJob(UninstallJob.uninstallJobName, project);
-				// A new project entry with a new name is created by the rename operation
-				// Unregister the project with the original name
-				uninstall.setUnregister(true);
-				InPlace.getBundleJobEventService().add(uninstall);
-			} else {
-				// Schedule the removed project for uninstall
-				transition.addPending(project, Transition.REMOVE_PROJECT);
-				scheduleRemoveBundleProject(project);
+			try {
+				BundleRegion bundleRegion = Activator.getBundleRegionService();
+				Bundle bundle = bundleRegion.getBundle(project);
+				if (null == bundle) {
+					return;
+				}
+				BundleTransition transition = Activator.getBundleTransitionService();
+				if (transition.containsPending(bundle, Transition.RENAME_PROJECT, true)) {
+					// The renamed bundle and requiring bundles are scheduled for install again by the post
+					// build listener with the new name after the bundle projects have been built
+					Uninstall uninstall = new UninstallJob(UninstallJob.uninstallJobName, project);
+					// A new project entry with a new name is created by the rename operation
+					// Unregister the project with the original name
+					uninstall.setUnregister(true);
+					Activator.getBundleExecutorEventService().add(uninstall);
+				} else {
+					// Schedule the removed project for uninstall
+					transition.addPending(project, Transition.REMOVE_PROJECT);
+					scheduleRemoveBundleProject(project);
+				}
+			} catch (ExtenderException e) {
+				StatusManager.getManager().handle(
+						new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),
+						StatusManager.LOG);
 			}
 		}
 	}
@@ -111,6 +124,7 @@ public class PreChangeListener implements IResourceChangeListener {
 	 */
 	private BundleExecutor scheduleRemoveBundleProject(IProject project) {
 
+		// If any, add this project to an existing and waiting remove bundle job
 		IJobManager jobMan = Job.getJobManager();
 		Job[] jobs = jobMan.find(BundleExecutor.FAMILY_BUNDLE_LIFECYCLE);
 		for (int i = 0; i < jobs.length; i++) {
@@ -127,14 +141,25 @@ public class PreChangeListener implements IResourceChangeListener {
 		// remove project(s) to finish so it should suffice with only one remove bundle project job
 		final RemoveBundleProject removeBundleProject = new RemoveBundleProjectJob(
 				RemoveBundleProjectJob.removeBundleProjectName, project);
-		Executors.newSingleThreadExecutor().execute(new Runnable() {
-			@Override
-			public void run() {
-				new ResourceStateHandler().waitOnBuilder(true);
-				// Put in waiting queue until delete or close project (eclipse) job finish
-				InPlace.getBundleJobEventService().add(removeBundleProject);
-			}
-		});
+
+		ExecutorService executor = Executors.newSingleThreadExecutor();
+		try {
+			executor.execute(new Runnable() {
+				@Override
+				public void run() {
+					new ResourceStateHandler().waitOnBuilder(true);
+					// Put in waiting queue until delete or close project (eclipse) job finish
+					Activator.getBundleExecutorEventService().add(removeBundleProject);
+				}
+			});
+		} catch (RejectedExecutionException e) {
+			StatusManager.getManager().handle(
+					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),
+					StatusManager.LOG);
+		} finally {
+			// Don't wait for for the executed/submitted task
+			executor.shutdown();
+		}
 		return removeBundleProject;
 	}
 }

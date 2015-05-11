@@ -3,6 +3,7 @@ package no.javatime.inplace.bundlejobs.intface;
 import java.util.Collection;
 
 import no.javatime.inplace.dl.preferences.intface.CommandOptions;
+import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.region.intface.BundleTransition;
 
 import org.eclipse.core.resources.IProject;
@@ -70,10 +71,11 @@ public interface Update extends BundleExecutor {
 	 * project to update.
 	 * 
 	 * @param projects Add a pending update transition to the specified projects
+	 * throws ExtenderException If failing to get the bundle transition service
 	 * @see #isPendingForUpdate(IProject)
 	 * @see BundleTransition#addPending(IProject, BundleTransition.Transition)
 	 */
-	public void addUpdateTransition(Collection<IProject> projects);
+	public void addUpdateTransition(Collection<IProject> projects) throws ExtenderException;
 
 	/**
 	 * Checks if the specified project is pending for update.
@@ -83,9 +85,10 @@ public interface Update extends BundleExecutor {
 	 * 
 	 * @param project Check this project for a pending update operation
 	 * @return true if the project is pending for update and false if not
+	 * throws ExtenderException If failing to get the bundle transition service
 	 * @see #addUpdateTransition(Collection)
 	 */
-	public boolean isPendingForUpdate(IProject project);
+	public boolean isPendingForUpdate(IProject project) throws ExtenderException;
 
 	/**
 	 * Detect circular symbolic name collisions and order the pending collection of bundle projects
@@ -104,6 +107,7 @@ public interface Update extends BundleExecutor {
 	 * 
 	 * @return ordered collection of projects to update. If collisions are detected the involved
 	 * projects are not added to the returned collection.
+	 * throws ExtenderException If failing to get the bundle region service
 	 */
-	public Collection<IProject> getUpdateOrder();
+	public Collection<IProject> getUpdateOrder() throws ExtenderException;
 }

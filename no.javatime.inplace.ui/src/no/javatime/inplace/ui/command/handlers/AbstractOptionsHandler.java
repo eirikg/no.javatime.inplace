@@ -45,18 +45,18 @@ public abstract class AbstractOptionsHandler extends AbstractHandler implements 
 	 * Store the specified value in options store
 	 * 
 	 * @param value saved in options store  
-	 * @throws InPlaceException if the options store service could not be obtained
+	 * @throws ExtenderException if the options store service could not be obtained
 	 */
-	abstract protected void storeValue(Boolean value) throws InPlaceException;
+	abstract protected void storeValue(Boolean value) throws ExtenderException;
 
 	/**
 	 * Retrieves the stored value from the options store
 	 * 
 	 * @return the stored value
-	 * @throws InPlaceException if the options store service could not be obtained
+	 * @throws ExtenderException if the options store service could not be obtained
 	 */
 	
-	abstract protected boolean getStoredValue() throws InPlaceException;
+	abstract protected boolean getStoredValue() throws ExtenderException;
 
 	
 	/**
@@ -104,7 +104,7 @@ public abstract class AbstractOptionsHandler extends AbstractHandler implements 
 			StatusManager.getManager().handle(
 					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, Msg.PREFERENCE_FLUSH_EXCEPTION, e),
 					StatusManager.LOG);
-		} catch (InPlaceException e) {
+		} catch (InPlaceException | ExtenderException e) {
 			StatusManager.getManager().handle(
 					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),
 					StatusManager.LOG);			
@@ -124,7 +124,7 @@ public abstract class AbstractOptionsHandler extends AbstractHandler implements 
 		try {
 			boolean storedValue = getStoredValue();
 			element.setChecked(storedValue);
-		} catch (InPlaceException e) {
+		} catch (ExtenderException e) {
 			StatusManager.getManager().handle(
 					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),
 					StatusManager.LOG);			
@@ -142,6 +142,7 @@ public abstract class AbstractOptionsHandler extends AbstractHandler implements 
 	public boolean isEnabled() {
 
 		ICommandService service = (ICommandService) Activator.getDefault().getWorkbench().getService(ICommandService.class);
+		try {
 			if (null != service) {
 				// Get stored value and synch with state. 
 				Command command = service.getCommand(getCommandId());
@@ -149,12 +150,17 @@ public abstract class AbstractOptionsHandler extends AbstractHandler implements 
 				Boolean stateVal = (Boolean) state.getValue();
 				Boolean storeVal = getStoredValue();
 				// Values may be different if stored  value has been changed elsewhere (e.g. preference page)
-				// If different update checked menu element before the menu becomes visible and broadcasting the change 
+				// If different update checked menu element before the menu becomes visible and broadcast the change 
 				if (!stateVal.equals(storeVal)) {
 					state.setValue(storeVal);
 					service.refreshElements(command.getId(), null);
 				}
 			}
+		} catch (ExtenderException e) {
+			StatusManager.getManager().handle(
+					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),
+					StatusManager.LOG);			
+		}
 		return true;
 	}
 	

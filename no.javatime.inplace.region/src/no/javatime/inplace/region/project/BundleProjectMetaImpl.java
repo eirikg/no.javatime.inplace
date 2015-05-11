@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Properties;
 
+import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.region.Activator;
 import no.javatime.inplace.region.closure.BuildErrorClosure;
 import no.javatime.inplace.region.events.TransitionEvent;
@@ -31,6 +32,7 @@ import no.javatime.inplace.region.msg.Msg;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import no.javatime.util.messages.Category;
+import no.javatime.util.messages.ExceptionMessage;
 import no.javatime.util.messages.TraceMessage;
 import no.javatime.util.messages.WarnMessage;
 
@@ -334,11 +336,11 @@ public class BundleProjectMetaImpl extends CachedManifestOperationsImpl implemen
 	public Boolean getActivationPolicy(IProject project)
 			throws InPlaceException {
 		if (null == project) {
-			throw new InPlaceException("project_null");
+			throw new InPlaceException(ExceptionMessage.getInstance().getString("project_null"));
 		}
 		IBundleProjectDescription bundleProjDesc = Activator.getBundleDescription(project);
 		if (null == bundleProjDesc) {
-			throw new InPlaceException("project_description_null");
+			throw new InPlaceException(ExceptionMessage.getInstance().getString("project_description_null"));
 		}
 		String policy = bundleProjDesc.getActivationPolicy();
 		if (null != policy && policy.equals(Constants.ACTIVATION_LAZY)) {
@@ -437,8 +439,14 @@ public class BundleProjectMetaImpl extends CachedManifestOperationsImpl implemen
 			url = new URL(osgiDev);
 		} catch (MalformedURLException e) {
 			// Using common comma-separated class path entries (dev=<class path entries>) for all bundles
-			if (Activator.getDefault().getMsgOptService().isBundleOperations()) {				
-				BundleTransitionListener.addBundleTransition(new TransitionEvent(project, Transition.UPDATE_DEV_CLASSPATH));
+			try {
+				if (Activator.getMessageOptionsService().isBundleOperations()) {				
+					BundleTransitionListener.addBundleTransition(new TransitionEvent(project, Transition.UPDATE_DEV_CLASSPATH));
+				}
+			} catch (ExtenderException e1) {
+				StatusManager.getManager().handle(
+						new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e1.getMessage(), e1),
+						StatusManager.LOG);						
 			}
 			String[] devDefaultClasspath = DevClassPathHelper.getDevClassPath(symbolicName);
 			boolean found = false;

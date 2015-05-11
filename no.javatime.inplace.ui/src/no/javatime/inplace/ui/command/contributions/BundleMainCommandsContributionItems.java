@@ -13,7 +13,6 @@ package no.javatime.inplace.ui.command.contributions;
 import java.util.ArrayList;
 import java.util.Collection;
 
-import no.javatime.inplace.bundlejobs.intface.ResourceState;
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.region.intface.BundleCommand;
 import no.javatime.inplace.region.intface.BundleProjectCandidates;
@@ -53,39 +52,40 @@ public class BundleMainCommandsContributionItems extends BundleCommandsContribut
 	@Override
 	protected IContributionItem[] getContributionItems() {
 
-		ArrayList<ContributionItem> contributions = new ArrayList<ContributionItem>();
-		BundleProjectCandidates bundleProjectCandidates = Activator.getBundleProjectCandidatesService(); 
-		BundleRegion bundleRegion = Activator.getBundleRegionService();
-		Collection<IProject> candidateProjects = bundleProjectCandidates.getCandidates();
-		Collection<IProject> activatedProjects = bundleRegion.getActivatedProjects();
-
+		ArrayList<ContributionItem> contributions = new ArrayList<>();
 		try {
-			ResourceState resourceState = Activator.getResourceStateService();
 			// Busy running bundle jobs.
 			// Do not add contributions for bundles that are dependent on their current state
-			if (resourceState.hasBundleJobState()) {
+			if (Activator.getResourceStateService().hasBundleJobState()) {
 				contribute(addStopTaskOperation(menuId, dynamicMainCommandId), contributions);
 				contribute(addInterrupt(menuId, dynamicMainCommandId), contributions);
 			} else {
+				BundleProjectCandidates bundleProjectCandidates = Activator.getBundleProjectCandidatesService(); 
+				BundleCommand bundleCommand = Activator.getBundleCommandService(); 
+				BundleRegion bundleRegion = Activator.getBundleRegionService();
+				
+				Collection<IProject> candidateProjects = bundleProjectCandidates.getCandidates();
+				Collection<IProject> activatedProjects = bundleRegion.getActivatedProjects();
+
 				contribute(addActivate(candidateProjects, activatedProjects), contributions);
 				contribute(addDeactivate(activatedProjects), contributions);
-				contribute(addStart(activatedProjects), contributions);
-				contribute(addStop(activatedProjects), contributions);
-				contribute(addUpdate(activatedProjects), contributions);
-				contribute(addRefreshPending(activatedProjects), contributions);
+				contribute(addStart(activatedProjects, bundleRegion, bundleCommand), contributions);
+				contribute(addStop(activatedProjects, bundleRegion, bundleCommand), contributions);
+				contribute(addUpdate(activatedProjects, bundleRegion), contributions);
+				contribute(addRefreshPending(activatedProjects, bundleRegion, bundleCommand), contributions);
 				contribute(addRefresh(activatedProjects), contributions);
 				contribute(addReset(activatedProjects), contributions);
 			}
-			contributions.add(new Separator(IWorkbenchActionConstants.MB_ADDITIONS));
-			contribute(addToggleBundleView(), contributions);
-			contribute(addToggleBundleConsoleView(menuId, dynamicMainCommandId), contributions);
-			contribute(addToggleBundleLogView(menuId, dynamicMainCommandId), contributions);
 		} catch (InPlaceException | ExtenderException e) {
 			StatusManager.getManager()
 					.handle(
 							new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID,
 									Msg.ADD_CONTRIBUTION_ERROR, e), StatusManager.LOG);
 		}
+		contributions.add(new Separator(IWorkbenchActionConstants.MB_ADDITIONS));
+		contribute(addToggleBundleView(), contributions);
+		contribute(addToggleBundleConsoleView(menuId, dynamicMainCommandId), contributions);
+		contribute(addToggleBundleLogView(menuId, dynamicMainCommandId), contributions);
 		IContributionItem[] contributionArray = contributions
 				.toArray(new ContributionItem[contributions.size()]);
 		return contributionArray;
@@ -103,6 +103,7 @@ public class BundleMainCommandsContributionItems extends BundleCommandsContribut
 	 */
 	private CommandContributionItem addActivate(Collection<IProject> candidateProjects,
 			Collection<IProject> activatedProjects) {
+
 		if (candidateProjects.size() > 0) {
 			String activateLabel = null;
 			if (activatedProjects.isEmpty()) {
@@ -127,6 +128,7 @@ public class BundleMainCommandsContributionItems extends BundleCommandsContribut
 	 * projects specified
 	 */
 	private CommandContributionItem addDeactivate(Collection<IProject> activatedProjects) {
+
 		if (activatedProjects.size() > 0) {
 			String deactivateLabel = formatLabel("Deactivate Workspace", activatedProjects.size(),
 					Boolean.FALSE);
@@ -142,13 +144,13 @@ public class BundleMainCommandsContributionItems extends BundleCommandsContribut
 	 * Already started bundle projects are ignored.
 	 * 
 	 * @param activatedProjects Activated projects to start. Must not be null
+	 * @param bundleRegion access to bundles of specified projects
+	 * @param bundleCommand access to bundle state
 	 * @return a contribution to start the specified activated projects or null if no activated
-	 * projects specified
+	 * projects are specified
 	 */
-	private CommandContributionItem addStart(Collection<IProject> activatedProjects) {
-
-		BundleRegion bundleRegion = Activator.getBundleRegionService();
-		BundleCommand bundleCommand = Activator.getBundleCommandService(); 
+	private CommandContributionItem addStart(Collection<IProject> activatedProjects, 
+			BundleRegion bundleRegion, BundleCommand bundleCommand) {
 
 		// Calculate number of projects to start
 		if (activatedProjects.size() > 0) {
@@ -183,13 +185,13 @@ public class BundleMainCommandsContributionItems extends BundleCommandsContribut
 	 * Already stopped bundle projects are ignored.
 	 * 
 	 * @param activatedProjects Activated projects to stop. Must not be null
+	 * @param bundleRegion access to bundles of specified projects
+	 * @param bundleCommand access to bundle state
 	 * @return a contribution to stop the specified activated projects or null if no activated
 	 * projects specified
 	 */
-	private CommandContributionItem addStop(Collection<IProject> activatedProjects) {
-
-		BundleRegion bundleRegion = Activator.getBundleRegionService();
-		BundleCommand bundleCommand = Activator.getBundleCommandService(); 
+	private CommandContributionItem addStop(Collection<IProject> activatedProjects, BundleRegion bundleRegion, 
+			BundleCommand bundleCommand) {
 
 		// Calculate number of projects to stop
 		if (activatedProjects.size() > 0) {
@@ -220,12 +222,12 @@ public class BundleMainCommandsContributionItems extends BundleCommandsContribut
 	 * transition
 	 * 
 	 * @param activatedProjects Activated projects to update. Must not be null
+	 * @param bundleRegion access to bundles of specified projects
 	 * @return a contribution to update the specified activated projects with update as a pending
 	 * transition or null if no activated projects specified or no projects have update pending
+	 * @throws ExtenderException if failing to get the bundle transition service
 	 */
-	private CommandContributionItem addUpdate(Collection<IProject> activatedProjects) {
-
-		BundleRegion bundleRegion = Activator.getBundleRegionService(); // BundleTransitionListener.getRegion();
+	private CommandContributionItem addUpdate(Collection<IProject> activatedProjects, BundleRegion bundleRegion) throws ExtenderException {
 
 		// Calculate number of projects to update
 		if (activatedProjects.size() > 0) {
@@ -256,16 +258,16 @@ public class BundleMainCommandsContributionItems extends BundleCommandsContribut
 	 * Refresh is pending if a bundle has more than one revision
 	 * 
 	 * @param activatedProjects Activated projects to refresh. Must not be null
+	 * @param bundleRegion access to bundles of specified projects
+	 * @param bundleCommand access to bundle state
 	 * @return a contribution to refresh the specified activated projects having a refresh pending
 	 * status or null if no activated projects with refresh pending exists among the projects to
 	 * refresh
 	 * @throws InPlaceException  if the bundle adapt permission is missing
 	 */
-	private CommandContributionItem addRefreshPending(Collection<IProject> activatedProjects) throws InPlaceException{
+	private CommandContributionItem addRefreshPending(Collection<IProject> activatedProjects, 
+			BundleRegion bundleRegion, BundleCommand bundleCommand) throws InPlaceException {
 
-		BundleRegion bundleRegion = Activator.getBundleRegionService();
-		BundleCommand bundleCommand = Activator.getBundleCommandService(); 
-		
 		// Calculate number of projects to refresh
 		if (activatedProjects.size() > 0) {
 			int nRefresh = 0;
@@ -303,6 +305,7 @@ public class BundleMainCommandsContributionItems extends BundleCommandsContribut
 	 * projects specified
 	 */
 	private CommandContributionItem addRefresh(Collection<IProject> activatedProjects) {
+
 		if (activatedProjects.size() > 0) {
 			String refreshLabel = "Refresh Workspace";
 			return createContibution(menuId, dynamicMainCommandId, refreshLabel, refreshParamId,
@@ -320,6 +323,7 @@ public class BundleMainCommandsContributionItems extends BundleCommandsContribut
 	 * projects specified
 	 */
 	private CommandContributionItem addReset(Collection<IProject> activatedProjects) {
+
 		if (activatedProjects.size() > 0) {
 			String resetLabel = "Reset Workspace";
 			return createContibution(menuId, dynamicMainCommandId, resetLabel, resetParamId,
@@ -340,6 +344,7 @@ public class BundleMainCommandsContributionItems extends BundleCommandsContribut
 	 * details page in an open view with a selected project.
 	 */
 	private CommandContributionItem addToggleBundleView() {
+
 		if (!ViewUtil.isVisible(BundleView.ID)) {
 			return createContibution(menuId, dynamicMainCommandId, showBundleView, bundleViewParamId,
 					CommandContributionItem.STYLE_PUSH, bundleListImage);

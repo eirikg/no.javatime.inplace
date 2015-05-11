@@ -3,7 +3,6 @@ package no.javatime.inplace.bundlejobs.intface;
 import java.util.Collection;
 
 import org.eclipse.core.resources.IProject;
-import org.eclipse.core.runtime.jobs.Job;
 
 /**
  * Service to check state of workspace resources and bundle executors.
@@ -66,18 +65,22 @@ public interface ResourceState {
 	 * 
 	 * @return the bundle executor job currently or null if no bundle executor job is running.
 	 */
-	public Job getRunningBundleJob();
+	public BundleExecutor getRunningBundleJob();
 
 	/**
 	 * Blocks execution while the java builder is running
 	 * <p>
 	 * Wait for all build jobs. If multiple build jobs only log once when the specified log parameter
-	 * is true and logging is enabled
+	 * is true and logging is enabled.
+	 * <p>
+	 * Any interrupt or service failures exceptions are sent to the error log view
 	 * 
 	 * @param log If waiting for the builder to finish, the log parameter is true and logging is
 	 * enabled log a message indicating a builder wait state, otherwise no logging is performed
 	 */
 	public void waitOnBuilder(boolean log);
+
+	public void waitOnBundleJob();
 
 	/**
 	 * Check if there is a job belonging to the {@code BundleExecutor.FAMILY_BUNDLE_LIFECYCLE} and is

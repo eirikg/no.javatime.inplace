@@ -13,7 +13,7 @@ package no.javatime.inplace.bundlejobs;
 import java.util.Collection;
 import java.util.Collections;
 
-import no.javatime.inplace.InPlace;
+import no.javatime.inplace.Activator;
 import no.javatime.inplace.bundlejobs.intface.TogglePolicy;
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.msg.Msg;
@@ -48,6 +48,7 @@ public class TogglePolicyJob extends NatureJob implements TogglePolicy {
 	public TogglePolicyJob() {
 		super(policyJobName);
 	}
+
 	/**
 	 * Construct a toggle policy job with a given name
 	 * 
@@ -89,6 +90,7 @@ public class TogglePolicyJob extends NatureJob implements TogglePolicy {
 	public IBundleStatus runInWorkspace(IProgressMonitor monitor) {
 
 		try {
+			super.runInWorkspace(monitor);
 			BundleTransitionListener.addBundleTransitionListener(this);
 			for (IProject project : getPendingProjects()) {
 				try {
@@ -98,24 +100,21 @@ public class TogglePolicyJob extends NatureJob implements TogglePolicy {
 					Bundle bundle = bundleRegion.getBundle(project);
 					if (!bundleProjectCandidates.isAutoBuilding()) {
 						if (bundleRegion.isBundleActivated(project)) {
-							String msg = WarnMessage.getInstance().formatString("policy_updated_auto_build_off",
-									project.getName());							
-							//  Force this to be displayed in the bundle log view
-							if (!InPlace.getMessageOptionsService().isBundleOperations()) {
-								InPlace.get().log(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, project, msg, null));								
+							if (!messageOptions.isBundleOperations()) {
+								String msg = WarnMessage.getInstance().formatString("policy_updated_auto_build_off",
+										project.getName());
+								addLogStatus(msg, bundle, project);
 							}
-							addLogStatus(msg, bundle, project);
 						}
 					}
 					try {
-						if (!InPlace.getCommandOptionsService().isUpdateOnBuild()) {
+						if (!commandOptions.isUpdateOnBuild()) {
 							if (bundleRegion.isBundleActivated(project)) {
-								String msg = NLS.bind(Msg.AUTOUPDATE_OFF_INFO, project.getName());
-								//  Force this to be displayed in the bundle log view
-								if (!InPlace.getMessageOptionsService().isBundleOperations()) {
-									InPlace.get().log(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID,project, msg, null));								
+								// Force this to be displayed in the bundle log view
+								if (!messageOptions.isBundleOperations()) {
+									String msg = NLS.bind(Msg.AUTOUPDATE_OFF_INFO, project.getName());
+									addLogStatus(msg, bundle, project);
 								}
-								addLogStatus(msg, bundle, project);
 							}
 						}
 					} catch (InPlaceException e) {
@@ -138,7 +137,7 @@ public class TogglePolicyJob extends NatureJob implements TogglePolicy {
 			}
 		} catch (OperationCanceledException e) {
 			addCancelMessage(e, NLS.bind(Msg.CANCEL_JOB_INFO, getName()));
-		} catch (ExtenderException e) {			
+		} catch (ExtenderException e) {
 			addError(e, NLS.bind(Msg.SERVICE_EXECUTOR_EXP, getName()));
 		} catch (InPlaceException e) {
 			String msg = ExceptionMessage.getInstance().formatString("terminate_job_with_errors",
@@ -147,24 +146,25 @@ public class TogglePolicyJob extends NatureJob implements TogglePolicy {
 		} catch (NullPointerException e) {
 			String msg = ExceptionMessage.getInstance().formatString("npe_job", getName());
 			addError(e, msg);
+		} catch (CoreException e) {
+			String msg = ErrorMessage.getInstance().formatString("error_end_job", getName());
+			return new BundleStatus(StatusCode.ERROR, Activator.PLUGIN_ID, msg, e);
 		} catch (Exception e) {
 			String msg = ExceptionMessage.getInstance().formatString("exception_job", getName());
 			addError(e, msg);
-		}
-		try {
-			return super.runInWorkspace(monitor);
-		} catch (CoreException e) {
-			String msg = ErrorMessage.getInstance().formatString("error_end_job", getName());
-			return new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID, msg);
 		} finally {
 			monitor.done();
 			BundleTransitionListener.removeBundleTransitionListener(this);
 		}
+		return getJobSatus();
 	}
-	
+
 	@Override
-	public boolean getActivationPolicy(IProject project) {
-		
+	public boolean getActivationPolicy(IProject project) throws ExtenderException {
+
+		if (null == bundleProjectMeta) {
+			bundleProjectMeta = Activator.getbundlePrrojectMetaService();
+		}
 		return bundleProjectMeta.getActivationPolicy(project);
 	}
 }

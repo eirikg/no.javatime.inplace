@@ -3,6 +3,7 @@ package no.javatime.inplace.region.intface;
 import java.util.Collection;
 import java.util.Map;
 
+import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.region.msg.Msg;
 
 import org.eclipse.core.resources.IProject;
@@ -28,7 +29,7 @@ import org.osgi.framework.Bundle;
  * 
  */
 public interface BundleRegion {
-	
+
 	/**
 	 * Manifest header for accessing the default service implementation class name of the bundle
 	 * region
@@ -53,37 +54,52 @@ public interface BundleRegion {
 	 * Get the bundle command service
 	 * <p>
 	 * Any extender exceptions are sent to the error log view and null is returned
-	 * 
+	 * @param user TODO
+	 * @user The bundle using this service
 	 * @return the bundle command service interface or null if not available
+	 * @throws ExtenderException If the bundle context of the service is no longer valid or the
+	 * returned service from the framework is null
 	 */
-	public BundleCommand getCommandService();
+	public BundleCommand getCommandService(Bundle user) throws ExtenderException;
 
 	/**
 	 * Get the bundle transition service
 	 * <p>
 	 * Any extender exceptions are sent to the error log view and null is returned
+	 * @param user TODO
 	 * 
+	 * @user The bundle using this service
 	 * @return the bundle transition service interface or null if not available
+	 * @throws ExtenderException If the bundle context of the service is no longer valid or the
+	 * returned service from the framework is null
 	 */
-	public BundleTransition getTransitionService();
-
+	public BundleTransition getTransitionService(Bundle user) throws ExtenderException;
+	
 	/**
 	 * Get the bundle project candidates service
 	 * <p>
 	 * Any extender exceptions are sent to the error log view and null is returned
+	 * @param user TODO
 	 * 
+	 * @user The bundle using this service
 	 * @return the bundle project candidates service interface or null if not available
+	 * @throws ExtenderException If the bundle context of the service is no longer valid or the
+	 * returned service from the framework is null
 	 */
-	public BundleProjectCandidates getCanidatesService();
+	public BundleProjectCandidates getCanidatesService(Bundle user) throws ExtenderException;
 
 	/**
 	 * Get the bundle project meta service
 	 * <p>
 	 * Any extender exceptions are sent to the error log view and null is returned
+	 * @param user TODO
 	 * 
+	 * @user The bundle using this service
 	 * @return the project meta service interface or null if not available
+	 * @throws ExtenderException If the bundle context of the service is no longer valid or the
+	 * returned service from the framework is null
 	 */
-	public BundleProjectMeta getMetaService();
+	public BundleProjectMeta getMetaService(Bundle user) throws ExtenderException;
 
 	/**
 	 * Retrieves the project location identifier as an absolute file system path of the specified
@@ -236,6 +252,14 @@ public interface BundleRegion {
 	public Boolean isRegionActivated();
 
 	/**
+	 * Determine if a bundle that is member of the workspace region is currently executing a bundle
+	 * operation
+	 * 
+	 * @return the bundle currently executing a bundle operation
+	 */
+	public Bundle isRegionStateChanging();
+
+	/**
 	 * Check if the bundle associated with the specified project is activated. The condition is
 	 * satisfied if the project and the associated bundle is registered with the region.
 	 * 
@@ -333,7 +357,7 @@ public interface BundleRegion {
 	 * 
 	 * @param project bundle project with an associated bundle
 	 * @return the associated bundle of the specified project or null if the bundle is not registered
-	 * with the project in the region or null is returned by the framework 
+	 * with the project in the region or null is returned by the framework
 	 */
 	public Bundle getBundle(IProject project);
 
@@ -342,7 +366,7 @@ public interface BundleRegion {
 	 * 
 	 * @param bundleId the id used to retrieve the bundle object
 	 * @return the associated bundle of the specified project or null if the bundle is not registered
-	 * with the project in the region or null is returned by the framework 
+	 * with the project in the region or null is returned by the framework
 	 */
 	public Bundle getBundle(Long bundleId);
 
@@ -391,7 +415,7 @@ public interface BundleRegion {
 	 * @param bundle the bundle to check for existence
 	 * @return true if the bundle exist in the bundle region. Otherwise false
 	 */
-	public Boolean exist(Bundle bundle);
+	public boolean exist(Bundle bundle);
 
 	/**
 	 * A bundle exist in the bundle region if it at least is installed. In an activated workspace all

@@ -13,7 +13,7 @@ package no.javatime.inplace.statushandler;
 import java.util.HashMap;
 import java.util.Map;
 
-import no.javatime.inplace.InPlace;
+import no.javatime.inplace.Activator;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import no.javatime.util.messages.Category;
@@ -142,7 +142,7 @@ public class ActionSetContexts implements IContextManagerListener, IExtensionCha
 							TraceMessage.getInstance().getString("define_context", contextId);
 					} else {
 						String msg = WarnMessage.getInstance().formatString("no_action_set", contextId);
-						StatusManager.getManager().handle(new BundleStatus(StatusCode.WARNING, InPlace.PLUGIN_ID, msg),
+						StatusManager.getManager().handle(new BundleStatus(StatusCode.WARNING, Activator.PLUGIN_ID, msg),
 								StatusManager.LOG);
 						return false;
 					}
@@ -199,7 +199,7 @@ public class ActionSetContexts implements IContextManagerListener, IExtensionCha
 						// Add action set for a resolved bundle
 						if (null != actionSets.put(extensionId, actionSetDescriptor)) {
 							String msg = WarnMessage.getInstance().formatString("duplicate_action_set", extensionId);
-							StatusManager.getManager().handle(new BundleStatus(StatusCode.WARNING, InPlace.PLUGIN_ID, msg),
+							StatusManager.getManager().handle(new BundleStatus(StatusCode.WARNING, Activator.PLUGIN_ID, msg),
 									StatusManager.LOG);
 						}
 						if (Category.DEBUG && Category.getState(Category.contexts)) {
@@ -210,7 +210,7 @@ public class ActionSetContexts implements IContextManagerListener, IExtensionCha
 					} catch (CoreException e) {
 						String msg = ExceptionMessage.getInstance().formatString("create_action_set_descriptor",
 								extension.getLabel());
-						StatusManager.getManager().handle(new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg, e),
+						StatusManager.getManager().handle(new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, msg, e),
 								StatusManager.LOG);
 					}
 				}
@@ -218,7 +218,7 @@ public class ActionSetContexts implements IContextManagerListener, IExtensionCha
 		} catch (InvalidRegistryObjectException e) {
 			String msg = ExceptionMessage.getInstance().formatString("get_action_set_descriptor",
 					extension.getLabel());
-			StatusManager.getManager().handle(new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg),
+			StatusManager.getManager().handle(new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, msg),
 					StatusManager.LOG);
 		}
 		return actionSetDescriptor;
@@ -244,7 +244,7 @@ public class ActionSetContexts implements IContextManagerListener, IExtensionCha
 					actionSetDescriptor = actionSets.remove(extensionId);
 					if (null == actionSetDescriptor) {
 						String msg = WarnMessage.getInstance().formatString("delete_action_set", extensionId);
-						StatusManager.getManager().handle(new BundleStatus(StatusCode.WARNING, InPlace.PLUGIN_ID, msg),
+						StatusManager.getManager().handle(new BundleStatus(StatusCode.WARNING, Activator.PLUGIN_ID, msg),
 								StatusManager.LOG);
 					}
 				}
@@ -252,7 +252,7 @@ public class ActionSetContexts implements IContextManagerListener, IExtensionCha
 		} catch (InvalidRegistryObjectException e) {
 			String msg = ExceptionMessage.getInstance().formatString("remove_action_set_descriptor",
 					extension.getLabel());
-			StatusManager.getManager().handle(new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg, e),
+			StatusManager.getManager().handle(new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, msg, e),
 					StatusManager.LOG);
 
 		}

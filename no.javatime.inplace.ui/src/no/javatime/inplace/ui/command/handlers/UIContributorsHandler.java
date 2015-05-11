@@ -48,10 +48,10 @@ public class UIContributorsHandler extends AbstractOptionsHandler {
 				if (!value) {
 					// Deactivate projects allowing UI extensions
 					Extension<Deactivate> deactivateExtender = 
-							Activator.getExtension(Deactivate.class.getName());
+							Activator.getTracker().getExtension(Deactivate.class.getName());
 					Deactivate deactivate = deactivateExtender.getTrackedService();
 					deactivate.addPendingProjects(uIProjects);
-					Activator.getBundleJobEventService().add(deactivate);
+					Activator.getBundleExecEventService().add(deactivate);
 					deactivateExtender.closeTrackedService();
 				}
 			}

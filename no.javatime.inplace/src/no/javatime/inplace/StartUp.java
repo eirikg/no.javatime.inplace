@@ -1,5 +1,7 @@
 package no.javatime.inplace;
 
+import no.javatime.inplace.extender.intface.ExtenderException;
+import no.javatime.inplace.log.intface.BundleLogException;
 import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
@@ -9,6 +11,7 @@ import org.eclipse.ui.IStartup;
 import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.ICommandService;
+import org.eclipse.ui.statushandlers.StatusManager;
 
 /**
  * In an activated workspace install all projects and set activated projects to the same state as
@@ -18,7 +21,7 @@ import org.eclipse.ui.commands.ICommandService;
  * <p>
  * The {@code earlyStartup()} method is called after initializing the plug-in in the
  * {@code start(BundleContext)} method. Initializations that depends on the workbench should be done
- * her and not when the plug-in is initialized
+ * here and not when the plug-in is initialized
  * 
  */
 public class StartUp implements IStartup {
@@ -33,35 +36,39 @@ public class StartUp implements IStartup {
 	@Override
 	public void earlyStartup() {
 
-		final InPlace activator = InPlace.get();
+		final Activator activator = Activator.getInstance();
 		activator.addResourceListeners();
 		activator.processLastSavedState(true);
-		InPlace.getBundleJobEventService().add(new StartUpJob(StartUpJob.startupName));
+		try {
+			Activator.getBundleExecutorEventService().add(new StartUpJob(StartUpJob.startupName));
 		final IWorkbench workbench = PlatformUI.getWorkbench();
 		if (null != workbench && !workbench.isStarting()) {
 			// Not strictly necessary to run an UI thread
-			InPlace.getDisplay().asyncExec(new Runnable() {
+			Activator.getDisplay().asyncExec(new Runnable() {
 				public void run() {
 					// Adding at this point should ensure that all static contexts are loaded
 					activator.addDynamicExtensions();
-					Command autoBuildCommand = null;
 					ICommandService service = (ICommandService) workbench.getService(ICommandService.class);
-					autoBuildCommand = service.getCommand("org.eclipse.ui.project.buildAutomatically");
+					Command autoBuildCommand = service
+							.getCommand("org.eclipse.ui.project.buildAutomatically");
 					if (null != autoBuildCommand && autoBuildCommand.isDefined()) {
 						activator.addAutobuildListener(autoBuildCommand);
 					} else {
-						InPlace.get().log(
-								new BundleStatus(StatusCode.WARNING, InPlace.PLUGIN_ID,
-										Msg.AUTO_BUILD_LISTENER_NOT_ADDED_WARN));
+						Activator.log(new BundleStatus(StatusCode.WARNING, Activator.PLUGIN_ID,
+								Msg.AUTO_BUILD_LISTENER_NOT_ADDED_WARN));
 					}
 				}
-			});			
+			});
 		} else {
-			if (null == InPlace.get().getAutoBuildCommand()) {
-				InPlace.get().log(
-						new BundleStatus(StatusCode.WARNING, InPlace.PLUGIN_ID,
-								Msg.DYNAMIC_MONITORING_WARN));
+			if (null == Activator.getInstance().getAutoBuildCommand()) {
+				Activator.log(new BundleStatus(StatusCode.WARNING, Activator.PLUGIN_ID,
+						Msg.DYNAMIC_MONITORING_WARN));
 			}
+		}
+		} catch (BundleLogException | ExtenderException e) {
+			StatusManager.getManager().handle(
+					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),
+					StatusManager.LOG);
 		}
 	}
 }

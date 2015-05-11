@@ -22,6 +22,7 @@ import no.javatime.inplace.region.manager.WorkspaceRegionImpl;
 import no.javatime.inplace.region.msg.Msg;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
+import no.javatime.util.messages.ExceptionMessage;
 
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.osgi.util.NLS;
@@ -379,7 +380,8 @@ public class BundleDependencies {
 	public static Boolean contributesToTheUI(Bundle requirer) throws InPlaceException {
 
 		if (null == requirer) {
-			throw new InPlaceException("bundle_null_location");
+			String msg = ExceptionMessage.getInstance().getString("bundle_null_location");
+			throw new InPlaceException(msg);
 		}
 		Bundle provider = Platform.getBundle("org.eclipse.ui");
 		if (null == provider) {

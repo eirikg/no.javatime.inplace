@@ -17,6 +17,7 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
+import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.region.Activator;
 import no.javatime.inplace.region.closure.BundleDependencies;
 import no.javatime.inplace.region.intface.BundleTransition;
@@ -24,9 +25,12 @@ import no.javatime.inplace.region.intface.BundleTransition.Transition;
 import no.javatime.inplace.region.manager.BundleTransitionImpl;
 import no.javatime.inplace.region.manager.WorkspaceRegionImpl;
 import no.javatime.inplace.region.state.BundleNode;
+import no.javatime.inplace.region.status.BundleStatus;
+import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import no.javatime.util.messages.Category;
 import no.javatime.util.messages.TraceMessage;
 
+import org.eclipse.ui.statushandlers.StatusManager;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.hooks.resolver.ResolverHook;
 import org.osgi.framework.wiring.BundleCapability;
@@ -205,35 +209,42 @@ class BundleResolveHandler implements ResolverHook {
 	@Override
 	public void filterSingletonCollisions(BundleCapability singleton,
 			Collection<BundleCapability> collisionCandidates) {
-		if (Category.DEBUG && Activator.getDefault().getMsgOptService().isBundleOperations())
-			TraceMessage.getInstance().getString("singleton_collisions",
-					singleton.getRevision().getBundle().getSymbolicName(),
-					formatBundleCapabilityList(collisionCandidates));
-		if (null != groups) {
-			Set<Bundle> group = groups.get(singleton.getRevision().getBundle());
-			if (Category.DEBUG && Activator.getDefault().getMsgOptService().isBundleOperations())
-				TraceMessage.getInstance().getString("singleton_collisions_group",
+
+		try {
+			if (Category.DEBUG && Activator.getMessageOptionsService().isBundleOperations())
+				TraceMessage.getInstance().getString("singleton_collisions",
 						singleton.getRevision().getBundle().getSymbolicName(),
-						WorkspaceRegionImpl.INSTANCE.formatBundleList(group, true));
-			for (Iterator<BundleCapability> i = collisionCandidates.iterator(); i.hasNext();) {
-				BundleCapability candidate = i.next();
-				Bundle candidateBundle = candidate.getRevision().getBundle();
-				Set<Bundle> otherGroup = groups.get(candidateBundle);
-				if (Category.DEBUG && Activator.getDefault().getMsgOptService().isBundleOperations())
-					TraceMessage.getInstance().getString("singleton_collisions_other_group",
-							candidateBundle.getSymbolicName(),
-							WorkspaceRegionImpl.INSTANCE.formatBundleList(otherGroup, true));
-				// If this singleton is in the group and at the same time is a candidate (other group)
-				// Remove it so the same but new updated instance of the bundle can be resolved
-				// Note this is opposite to the sample in the OSGI 4.3 specification
-				if (group == otherGroup || otherGroup == null) // Same group
-					i.remove(); // the duplicate
-				if (Category.getState(Category.bundleEvents)) {
-					TraceMessage.getInstance().getString("singleton_collision_remove_duplicate",
-							candidateBundle.getSymbolicName(),
-							WorkspaceRegionImpl.INSTANCE.formatBundleList(otherGroup, true));
+						formatBundleCapabilityList(collisionCandidates));
+			if (null != groups) {
+				Set<Bundle> group = groups.get(singleton.getRevision().getBundle());
+				if (Category.DEBUG && Activator.getMessageOptionsService().isBundleOperations())
+					TraceMessage.getInstance().getString("singleton_collisions_group",
+							singleton.getRevision().getBundle().getSymbolicName(),
+							WorkspaceRegionImpl.INSTANCE.formatBundleList(group, true));
+				for (Iterator<BundleCapability> i = collisionCandidates.iterator(); i.hasNext();) {
+					BundleCapability candidate = i.next();
+					Bundle candidateBundle = candidate.getRevision().getBundle();
+					Set<Bundle> otherGroup = groups.get(candidateBundle);
+					if (Category.DEBUG && Activator.getMessageOptionsService().isBundleOperations())
+						TraceMessage.getInstance().getString("singleton_collisions_other_group",
+								candidateBundle.getSymbolicName(),
+								WorkspaceRegionImpl.INSTANCE.formatBundleList(otherGroup, true));
+					// If this singleton is in the group and at the same time is a candidate (other group)
+					// Remove it so the same but new updated instance of the bundle can be resolved
+					// Note this is opposite to the sample in the OSGI 4.3 specification
+					if (group == otherGroup || otherGroup == null) // Same group
+						i.remove(); // the duplicate
+					if (Category.getState(Category.bundleEvents)) {
+						TraceMessage.getInstance().getString("singleton_collision_remove_duplicate",
+								candidateBundle.getSymbolicName(),
+								WorkspaceRegionImpl.INSTANCE.formatBundleList(otherGroup, true));
+					}
 				}
 			}
+		} catch (ExtenderException e) {
+			StatusManager.getManager().handle(
+					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),
+					StatusManager.LOG);						
 		}
 	}
 

@@ -12,13 +12,15 @@ package no.javatime.inplace.bundlejobs;
 
 import java.util.Collection;
 
-import no.javatime.inplace.InPlace;
+import no.javatime.inplace.Activator;
 import no.javatime.inplace.bundlejobs.intface.ActivateBundle;
 import no.javatime.inplace.bundlejobs.intface.Reset;
+import no.javatime.inplace.bundlejobs.intface.Uninstall;
+import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.msg.Msg;
+import no.javatime.inplace.region.closure.BundleClosures;
 import no.javatime.inplace.region.closure.CircularReferenceException;
-import no.javatime.inplace.region.closure.ProjectSorter;
 import no.javatime.inplace.region.intface.BundleTransitionListener;
 import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.status.BundleStatus;
@@ -81,62 +83,52 @@ public class ResetJob extends BundleJob implements Reset {
 	public ResetJob(String name, IProject project) {
 		super(name, project);
 	}
-	
+
 	// Set the progress group to this monitor on both jobs
 	final IProgressMonitor groupMonitor = Job.getJobManager().createProgressGroup();
 
 	@Override
 	public IBundleStatus runInWorkspace(IProgressMonitor monitor) {
 		try {
+			super.runInWorkspace(monitor);
 			BundleTransitionListener.addBundleTransitionListener(this);
 			groupMonitor.beginTask(resetJobName, 3);
-			// Use the preference store to reset to same as current state after activate
-			InPlace.get().savePluginSettings(true, false);
-			ProjectSorter ps = new ProjectSorter();
-			// Reset require that all bundles that the project(s) to reset have requirements on are reset to
-			int count = 0;
-			// TODO Consider if it is necessary to include a partial graph
-			do {
-				count = pendingProjects();
-				resetPendingProjects(ps.sortRequiringProjects(getPendingProjects()));
-				resetPendingProjects(ps.sortProvidingProjects(getPendingProjects()));
-			} while (pendingProjects() > count);
-
+			BundleClosures closures = new BundleClosures();
+			resetPendingProjects(closures.projectDeactivation(Closure.PROVIDING_AND_REQURING,
+					getPendingProjects(), true));
 			Collection<IProject> projectsToReset = getPendingProjects();
 			Collection<IProject> errorProjects = null;
 			if (projectsToReset.size() > 0) {
 				errorProjects = removeExternalDuplicates(projectsToReset, null, null);
 				if (null != errorProjects) {
 					projectsToReset.removeAll(errorProjects);
-					String msg = ErrorMessage.getInstance().formatString("bundle_errors_reset", bundleProjectCandidates.formatProjectList((errorProjects)));
+					String msg = ErrorMessage.getInstance().formatString("bundle_errors_reset",
+							bundleProjectCandidates.formatProjectList((errorProjects)));
 					addError(null, msg);
 				}
 			}
 			if (projectsToReset.size() == 0 || null != errorProjects) {
-				try {
-					return super.runInWorkspace(monitor);
-				} catch (CoreException e) {
-					String msg = ErrorMessage.getInstance().formatString("error_end_job", getName());
-					return new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID, msg, e);
-				}
+				return getJobSatus();
 			}
-			// Save current state of bundles to be used by the activate j0b to restore the current state
-			InPlace.get().savePluginSettings(true, false);
-			UninstallJob uninstallJob = new UninstallJob(uninstallResetJobName, projectsToReset);
-			uninstallJob.setProgressGroup(groupMonitor, 1);
-			InPlace.getBundleJobEventService().add(uninstallJob, 0);
-			ActivateBundle activateBundleJob = new ActivateBundleJob(ResetJob.activateResetJobName, projectsToReset);
+			// Save current state of bundles to be used by the activate job to restore the saved current state
+			Activator.getInstance().savePluginSettings(true, false);
+			Uninstall uninstallJob = new UninstallJob(uninstallResetJobName, projectsToReset);
+			uninstallJob.getJob().setProgressGroup(groupMonitor, 1);
+			uninstallJob.setAddRequiring(false);
+			Activator.getBundleExecutorEventService().add(uninstallJob, 0);
+			ActivateBundle activateBundleJob = new ActivateBundleJob(ResetJob.activateResetJobName,
+					projectsToReset);
 			activateBundleJob.setPersistState(true);
 			activateBundleJob.getJob().setProgressGroup(groupMonitor, 1);
-			InPlace.getBundleJobEventService().add(activateBundleJob, 0);
-		} catch (OperationCanceledException e) {			
+			Activator.getBundleExecutorEventService().add(activateBundleJob, 0);
+		} catch (OperationCanceledException e) {
 			addCancelMessage(e, NLS.bind(Msg.CANCEL_JOB_INFO, getName()));
 		} catch (CircularReferenceException e) {
 			String msg = ExceptionMessage.getInstance().formatString("circular_reference", getName());
-			BundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg);
+			BundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, msg);
 			multiStatus.add(e.getStatusList());
 			addStatus(multiStatus);
-		} catch (ExtenderException e) {			
+		} catch (ExtenderException e) {
 			addError(e, NLS.bind(Msg.SERVICE_EXECUTOR_EXP, getName()));
 		} catch (InPlaceException e) {
 			String msg = ExceptionMessage.getInstance().formatString("terminate_job_with_errors",
@@ -145,18 +137,16 @@ public class ResetJob extends BundleJob implements Reset {
 		} catch (NullPointerException e) {
 			String msg = ExceptionMessage.getInstance().formatString("npe_job", getName());
 			addError(e, msg);
+		} catch (CoreException e) {
+			String msg = ErrorMessage.getInstance().formatString("error_end_job", getName());
+			return new BundleStatus(StatusCode.ERROR, Activator.PLUGIN_ID, msg, e);
 		} catch (Exception e) {
 			String msg = ExceptionMessage.getInstance().formatString("exception_job", getName());
 			addError(e, msg);
-		}
-		try {
-			return super.runInWorkspace(monitor);
-		} catch (CoreException e) {
-			String msg = ErrorMessage.getInstance().formatString("error_end_job", getName());
-			return new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID, msg, e);
 		} finally {
 			monitor.done();
 			BundleTransitionListener.removeBundleTransitionListener(this);
 		}
+		return getJobSatus();
 	}
 }

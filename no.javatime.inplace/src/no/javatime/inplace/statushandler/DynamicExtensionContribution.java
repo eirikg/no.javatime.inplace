@@ -15,7 +15,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 
-import no.javatime.inplace.InPlace;
+import no.javatime.inplace.Activator;
+import no.javatime.inplace.extender.intface.ExtenderException;
+import no.javatime.inplace.log.intface.BundleLogException;
 import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
@@ -109,10 +111,10 @@ public class DynamicExtensionContribution {
 		sb.append("</plugin>");
 		Boolean extAdded = addExtension(sb.toString());
 		if (!extAdded) {
-			Bundle bundle = InPlace.get().getBundle();
+			Bundle bundle = Activator.getInstance().getBundle();
 			String msg = ErrorMessage.getInstance().formatString("failed_to_add_status_debug_line_breakpoint_command",
 					(null == bundle) ? null : bundle.getSymbolicName());
-			StatusManager.getManager().handle(new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID, msg),
+			StatusManager.getManager().handle(new BundleStatus(StatusCode.ERROR, Activator.PLUGIN_ID, msg),
 					StatusManager.LOG);
 		}
 		return extAdded;
@@ -165,28 +167,34 @@ public class DynamicExtensionContribution {
 			extAdded = addExtension(sb.toString());
 			if (!extAdded) {
 				// If adding this customized status handler fails, use the standard which will display a dialog
-				Bundle bundle = InPlace.get().getBundle();
+				Bundle bundle = Activator.getInstance().getBundle();
 				String msg = ErrorMessage.getInstance().formatString("failed_to_add_status_handler_contribution",
 						(null == bundle) ? null : bundle.getSymbolicName());
-				StatusManager.getManager().handle(new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID, msg),
+				StatusManager.getManager().handle(new BundleStatus(StatusCode.ERROR, Activator.PLUGIN_ID, msg),
 						StatusManager.LOG);
 			}
 		}
-		if (InPlace.getMessageOptionsService().isBundleOperations()) {
-			if (extAdded) {
-				String msg = null;
-				if (!productId.equals(defaultProductId)) {
-					msg = NLS.bind(Msg.CUSTOMIZED_STATUS_HANDLER_INFO, statusHandlerExtensionId, productId);
-					InPlace.get().log(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, msg));					
-				} else if (statusFromCommandline()) {
-					msg = NLS.bind(Msg.CUSTOMIZED_STATUS_HANDLER_CMD_LINE_INFO, statusHandlerExtensionId, productId);
-					InPlace.get().log(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, msg));
-				} else {
-					IBundleStatus status = new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, Msg.STANDARD_STATUS_HANDLER_INFO);
-					status.add(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, Msg.USE_CUSTOMIZED_STATUS_HANDLER_INFO));
-					InPlace.get().log(status);
+		try {
+			if (Activator.getMessageOptionsService().isBundleOperations()) {
+				if (extAdded) {
+					String msg = null;
+					if (!productId.equals(defaultProductId)) {
+						msg = NLS.bind(Msg.CUSTOMIZED_STATUS_HANDLER_INFO, statusHandlerExtensionId, productId);
+						Activator.log(new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, msg));					
+					} else if (statusFromCommandline()) {
+						msg = NLS.bind(Msg.CUSTOMIZED_STATUS_HANDLER_CMD_LINE_INFO, statusHandlerExtensionId, productId);
+						Activator.log(new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, msg));
+					} else {
+						IBundleStatus status = new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, Msg.STANDARD_STATUS_HANDLER_INFO);
+						status.add(new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, Msg.USE_CUSTOMIZED_STATUS_HANDLER_INFO));
+						Activator.log(status);
+					}
 				}
 			}
+		} catch (BundleLogException | ExtenderException e) {
+			StatusManager.getManager().handle(
+					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),
+					StatusManager.LOG);
 		}
 		return extAdded;
 	}
@@ -229,7 +237,7 @@ public class DynamicExtensionContribution {
 		IExtensionRegistry reg = RegistryFactory.getRegistry();
 	  // ExtensionRegistry is internal!!!!
 	  Object key = ((ExtensionRegistry) reg).getTemporaryUserToken();
-	  Bundle bundle = InPlace.get().getBundle();
+	  Bundle bundle = Activator.getInstance().getBundle();
 	  IContributor contributor = ContributorFactoryOSGi.createContributor(bundle);
 	  try {
 	   //  I have the content of my dynamic plugin in a file 
@@ -251,7 +259,7 @@ public class DynamicExtensionContribution {
 	public Boolean addExtension(String xmlsrc) {
 
 		Boolean extAdded = true;
-		Bundle bundle = InPlace.get().getBundle();
+		Bundle bundle = Activator.getInstance().getBundle();
 		try {
 			IExtensionRegistry reg = RegistryFactory.getRegistry();
 			Object key = ((ExtensionRegistry) reg).getTemporaryUserToken();
@@ -260,20 +268,20 @@ public class DynamicExtensionContribution {
 			if (!reg.addContribution(is, contributor, false, null, null, key)) {
 				String msg = ErrorMessage.getInstance().formatString("failed_to_add_extension", 
 						bundle.getSymbolicName(), xmlsrc);
-				StatusManager.getManager().handle(new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID, msg),
+				StatusManager.getManager().handle(new BundleStatus(StatusCode.ERROR, Activator.PLUGIN_ID, msg),
 						StatusManager.LOG);
 				extAdded = false;
 			}
 		} catch (IllegalArgumentException e) {
 			String msg = ErrorMessage.getInstance().formatString("failed_to_add_extension",
 					bundle.getSymbolicName(), xmlsrc);
-			StatusManager.getManager().handle(new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg, e),
+			StatusManager.getManager().handle(new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, msg, e),
 					StatusManager.LOG);
 			extAdded = false;
 		} catch (UnsupportedEncodingException e) {
 			String msg = ErrorMessage.getInstance().formatString("failed_to_add_extension",
 					bundle.getSymbolicName(), xmlsrc);
-			StatusManager.getManager().handle(new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg, e),
+			StatusManager.getManager().handle(new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, msg, e),
 					StatusManager.LOG);
 			extAdded = false;
 		}
@@ -290,7 +298,7 @@ public class DynamicExtensionContribution {
 	public Boolean addExtensionFromFile(String xmlsrc) {
 		// Use Eclipse Dynamic Extenders API
 		Boolean extAdded = true;
-		Bundle bundle = InPlace.get().getBundle();
+		Bundle bundle = Activator.getInstance().getBundle();
 		try {
 			IExtensionRegistry reg = RegistryFactory.getRegistry();
 			Object key = ((ExtensionRegistry) reg).getTemporaryUserToken();
@@ -299,26 +307,26 @@ public class DynamicExtensionContribution {
 			if (!reg.addContribution(is, contributor, false, null, null, key)) {
 				String msg = ErrorMessage.getInstance().formatString("failed_to_add_extension", 
 						bundle.getSymbolicName(), xmlsrc);
-				StatusManager.getManager().handle(new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID, msg),
+				StatusManager.getManager().handle(new BundleStatus(StatusCode.ERROR, Activator.PLUGIN_ID, msg),
 						StatusManager.LOG);
 				extAdded = false;
 			}
 		} catch (IllegalArgumentException e) {
 			String msg = ErrorMessage.getInstance().formatString("failed_to_add_extension",
 					bundle.getSymbolicName(), xmlsrc);
-			StatusManager.getManager().handle(new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg, e),
+			StatusManager.getManager().handle(new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, msg, e),
 					StatusManager.LOG);
 			extAdded = false;
 		} catch (UnsupportedEncodingException e) {
 			String msg = ErrorMessage.getInstance().formatString("failed_to_add_extension",
 					bundle.getSymbolicName(), xmlsrc);
-			StatusManager.getManager().handle(new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg, e),
+			StatusManager.getManager().handle(new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, msg, e),
 					StatusManager.LOG);
 			extAdded = false;
 		} catch (IOException e) {
 			String msg = ErrorMessage.getInstance().formatString("io_exception_status", xmlsrc,
 					bundle.getSymbolicName());
-			StatusManager.getManager().handle(new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg),
+			StatusManager.getManager().handle(new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, msg),
 					StatusManager.LOG);
 			extAdded = false;
 		}
@@ -347,12 +355,12 @@ public class DynamicExtensionContribution {
 			// It exists but was not removed
 			if (!removed) {
 				String msg = ErrorMessage.getInstance().formatString("failed_remove_extension", extensionId);
-				StatusManager.getManager().handle(new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID, msg),
+				StatusManager.getManager().handle(new BundleStatus(StatusCode.ERROR, Activator.PLUGIN_ID, msg),
 						StatusManager.LOG);
 			}
 		} catch (IllegalArgumentException e) {
 			String msg = ErrorMessage.getInstance().formatString("failed_remove_extension", extensionId);
-			StatusManager.getManager().handle(new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg, e),
+			StatusManager.getManager().handle(new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, msg, e),
 					StatusManager.LOG);
 			removed = false;
 		}

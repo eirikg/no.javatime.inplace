@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Preferences Store
 Bundle-SymbolicName: no.javatime.inplace.dl.preferences
-Bundle-Version: 0.1.2.qualifier
+Bundle-Version: 0.1.3.qualifier
 Bundle-Activator: no.javatime.inplace.dl.preferences.Activator
 Export-Package: no.javatime.inplace.dl.preferences.intface
 Require-Bundle: org.eclipse.osgi.services,

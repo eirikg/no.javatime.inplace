@@ -14,7 +14,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 
-import no.javatime.inplace.InPlace;
+import no.javatime.inplace.Activator;
 import no.javatime.inplace.bundlejobs.intface.ActivateProject;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.extender.intface.ExtenderException;
@@ -100,8 +100,9 @@ public class ActivateProjectJob extends NatureJob implements ActivateProject {
 	public IBundleStatus runInWorkspace(IProgressMonitor monitor) {
 
 		try {
+			super.runInWorkspace(monitor);
 			BundleTransitionListener.addBundleTransitionListener(this);
-			monitor.beginTask(ActivateProjectJob.activateProjectTaskName, getTicks());
+			monitor.beginTask(activateProjectTaskName, getTicks());
 			activate(monitor);
 		} catch (InterruptedException e) {
 			String msg = ExceptionMessage.getInstance().formatString("interrupt_job", getName());
@@ -110,12 +111,12 @@ public class ActivateProjectJob extends NatureJob implements ActivateProject {
 			addCancelMessage(e, NLS.bind(Msg.CANCEL_JOB_INFO, getName()));
 		} catch (CircularReferenceException e) {
 			String msg = ExceptionMessage.getInstance().formatString("circular_reference", getName());
-			BundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg);
+			BundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, msg);
 			multiStatus.add(e.getStatusList());
 			addStatus(multiStatus);
 			// Remove error on the duplicates that are deactivated
-			InPlace.getBundleTransitionService().removeTransitionError(TransitionError.CYCLE);
-		} catch (ExtenderException e) {			
+			Activator.getBundleTransitionService().removeTransitionError(TransitionError.CYCLE);
+		} catch (ExtenderException e) {
 			addError(e, NLS.bind(Msg.SERVICE_EXECUTOR_EXP, getName()));
 		} catch (InPlaceException e) {
 			String msg = ExceptionMessage.getInstance().formatString("terminate_job_with_errors",
@@ -124,19 +125,17 @@ public class ActivateProjectJob extends NatureJob implements ActivateProject {
 		} catch (NullPointerException e) {
 			String msg = ExceptionMessage.getInstance().formatString("npe_job", getName());
 			addError(e, msg);
+		} catch (CoreException e) {
+			String msg = ErrorMessage.getInstance().formatString("error_end_job", getName());
+			return new BundleStatus(StatusCode.ERROR, Activator.PLUGIN_ID, msg, e);
 		} catch (Exception e) {
 			String msg = ExceptionMessage.getInstance().formatString("exception_job", getName());
 			addError(e, msg);
-		}
-		try {
-			return super.runInWorkspace(monitor);
-		} catch (CoreException e) {
-			String msg = ErrorMessage.getInstance().formatString("error_end_job", getName());
-			return new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID, msg, e);
 		} finally {
 			monitor.done();
 			BundleTransitionListener.removeBundleTransitionListener(this);
 		}
+		return getJobSatus();
 	}
 
 	/**
@@ -182,27 +181,28 @@ public class ActivateProjectJob extends NatureJob implements ActivateProject {
 			// an activate bundle job when the workspace is deactivated
 			// If Update on Build is switched off and workspace is activated, mark that these projects
 			// should be updated as part of the activation process
-			if (!getOptionsService().isUpdateOnBuild() && bundleRegion.isRegionActivated()) {
+			if (!commandOptions.isUpdateOnBuild() && bundleRegion.isRegionActivated()) {
 				for (IProject project : getPendingProjects()) {
 					if (isProjectActivated(project)) {
 						bundleTransition.addPending(project, Transition.UPDATE_ON_ACTIVATE);
 					}
 				}
 			}
-			InPlace.get().savePluginSettings(true, true);
+			Activator.getInstance().savePluginSettings(true, true);
 		} else {
-			if (InPlace.getMessageOptionsService().isBundleOperations()) {
-				InPlace.get().log(
-						new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, Msg.NO_PROJECTS_TO_ACTIVATE_INFO));
+			if (messageOptions.isBundleOperations()) {
+				addLogStatus(new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID,
+						Msg.NO_PROJECTS_TO_ACTIVATE_INFO));
 			}
 			return getLastErrorStatus();
 		}
-		if (InPlace.getMessageOptionsService().isBundleOperations() && !bundleProjectCandidates.isAutoBuilding()) {
-			IBundleStatus status = new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID,
+		if (messageOptions.isBundleOperations() && !bundleProjectCandidates.isAutoBuilding()) {
+			IBundleStatus status = new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID,
 					Msg.BUILDER_OFF_INFO);
-			status.add(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, NLS.bind(
-					Msg.BUILDER_OFF_LIST_INFO, bundleProjectCandidates.formatProjectList(getPendingProjects()))));
-			InPlace.get().log(status);
+			status.add(new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, NLS.bind(
+					Msg.BUILDER_OFF_LIST_INFO,
+					bundleProjectCandidates.formatProjectList(getPendingProjects()))));
+			addLogStatus(status);
 		}
 		return getLastErrorStatus();
 	}
@@ -259,18 +259,19 @@ public class ActivateProjectJob extends NatureJob implements ActivateProject {
 	private Collection<IProject> buildErrorClosure(Collection<IProject> projects)
 			throws InPlaceException, CircularReferenceException {
 
-		 // Uninstalled projects missing build state or with build errors in manifest prevents activation
-		 // of any project
+		// Uninstalled projects missing build state or with build errors in manifest prevents activation
+		// of any project
 		if (!isProjectWorkspaceActivated()) {
-			Collection<IProject> errorProjects = BuildErrorClosure.getBuildErrors((bundleProjectCandidates.getBundleProjects()));
-			IBundleStatus multiStatus = new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID,
+			Collection<IProject> errorProjects = BuildErrorClosure
+					.getBuildErrors((bundleProjectCandidates.getBundleProjects()));
+			IBundleStatus multiStatus = new BundleStatus(StatusCode.ERROR, Activator.PLUGIN_ID,
 					Msg.FATAL_ACTIVATE_ERROR);
 			for (IProject project : errorProjects) {
 				if (!BuildErrorClosure.hasBuildState(project)) {
-					multiStatus.add(new BundleStatus(StatusCode.WARNING, InPlace.PLUGIN_ID, project, NLS
+					multiStatus.add(new BundleStatus(StatusCode.WARNING, Activator.PLUGIN_ID, project, NLS
 							.bind(Msg.BUILD_STATE_ERROR, project.getName()), null));
 				} else if (BuildErrorClosure.hasManifestBuildErrors(project)) {
-					multiStatus.add(new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID, project, NLS.bind(
+					multiStatus.add(new BundleStatus(StatusCode.ERROR, Activator.PLUGIN_ID, project, NLS.bind(
 							Msg.MANIFEST_BUILD_ERROR, project.getName()), null));
 				}
 			}
@@ -288,7 +289,7 @@ public class ActivateProjectJob extends NatureJob implements ActivateProject {
 				Closure.PROVIDING, Bundle.UNINSTALLED, ActivationScope.DEACTIVATED);
 		if (be.hasBuildErrors()) {
 			Collection<IProject> errorClosure = be.getBuildErrorClosures();
-			if (InPlace.getMessageOptionsService().isBundleOperations()) {
+			if (messageOptions.isBundleOperations()) {
 				addLogStatus(be.getErrorClosureStatus());
 			}
 			return errorClosure;
@@ -322,11 +323,10 @@ public class ActivateProjectJob extends NatureJob implements ActivateProject {
 			projectsToActivate.removeAll(getPendingProjects());
 			if (projectsToActivate.size() > 0) {
 				addPendingProjects(projectsToActivate);
-				if (InPlace.getMessageOptionsService().isBundleOperations()) {
-					InPlace.get().log(
-							new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, NLS.bind(
-									Msg.ADD_BUNDLES_TO_ACTIVATE_INFO,
-									bundleProjectCandidates.formatProjectList(projectsToActivate))));
+				if (messageOptions.isBundleOperations()) {
+					addLogStatus(new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, NLS.bind(
+							Msg.ADD_BUNDLES_TO_ACTIVATE_INFO,
+							bundleProjectCandidates.formatProjectList(projectsToActivate))));
 				}
 			}
 		}
@@ -358,14 +358,13 @@ public class ActivateProjectJob extends NatureJob implements ActivateProject {
 		status = uninstall(bundlesToUninstall, new SubProgressMonitor(monitor, 1), true, false);
 		if (!status.hasStatus(StatusCode.OK)) {
 			String msg = ErrorMessage.getInstance().formatString("failed_uninstall_before_activate");
-			IBundleStatus multiStatus = new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID, msg);
+			IBundleStatus multiStatus = new BundleStatus(StatusCode.ERROR, Activator.PLUGIN_ID, msg);
 			status = createMultiStatus(multiStatus);
 		} else {
-			if (InPlace.getMessageOptionsService().isBundleOperations()) {
-				InPlace.get().log(
-						new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, NLS.bind(
-								Msg.UNINSTALL_BEFORE_ACTIVATE_INFO,
-								bundleRegion.formatBundleList(bundlesToUninstall, true))));
+			if (messageOptions.isBundleOperations()) {
+				addLogStatus(new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, NLS.bind(
+						Msg.UNINSTALL_BEFORE_ACTIVATE_INFO,
+						bundleRegion.formatBundleList(bundlesToUninstall, true))));
 			}
 		}
 		return errorStatusList() > entrySize ? getLastErrorStatus() : status;
@@ -377,8 +376,7 @@ public class ActivateProjectJob extends NatureJob implements ActivateProject {
 	 * @return number of ticks used by progress monitors
 	 */
 	public int getTicks() {
-		if (!bundleRegion.isRegionActivated()
-				&& bundleTransition.containsPending(Transition.EXTERNAL)) {
+		if (!bundleRegion.isRegionActivated() && bundleTransition.containsPending(Transition.EXTERNAL)) {
 			return 2;
 		} else {
 			return 1;

@@ -12,7 +12,7 @@ package no.javatime.inplace.bundlejobs;
 
 import java.util.Collection;
 
-import no.javatime.inplace.InPlace;
+import no.javatime.inplace.Activator;
 import no.javatime.inplace.bundlejobs.intface.Uninstall;
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.msg.Msg;
@@ -129,6 +129,7 @@ public class UninstallJob extends NatureJob implements Uninstall {
 	public IBundleStatus runInWorkspace(IProgressMonitor monitor) {
 
 		try {
+			super.runInWorkspace(monitor);
 			monitor.beginTask(uninstallTaskName, getTicks());
 			BundleTransitionListener.addBundleTransitionListener(this);
 			uninstall(monitor);
@@ -139,7 +140,7 @@ public class UninstallJob extends NatureJob implements Uninstall {
 			addCancelMessage(e, NLS.bind(Msg.CANCEL_JOB_INFO, getName()));
 		} catch (CircularReferenceException e) {
 			String msg = ExceptionMessage.getInstance().formatString("circular_reference", getName());
-			BundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg);
+			BundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, msg);
 			multiStatus.add(e.getStatusList());
 			addStatus(multiStatus);
 		} catch (ExtenderException e) {			
@@ -150,19 +151,17 @@ public class UninstallJob extends NatureJob implements Uninstall {
 		} catch (NullPointerException e) {
 			String msg = ExceptionMessage.getInstance().formatString("npe_job", getName());
 			addError(e, msg);
+		} catch (CoreException e) {
+			String msg = ErrorMessage.getInstance().formatString("error_end_job", getName());
+			return new BundleStatus(StatusCode.ERROR, Activator.PLUGIN_ID, msg, e);
 		} catch (Exception e) {
 			String msg = ExceptionMessage.getInstance().formatString("exception_job", getName());
 			addError(e, msg);
-		}
-		try {
-			return super.runInWorkspace(monitor);
-		} catch (CoreException e) {
-			String msg = ErrorMessage.getInstance().formatString("error_end_job", getName());
-			return new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID, msg, e);
 		} finally {
 			monitor.done();
 			BundleTransitionListener.removeBundleTransitionListener(this);
 		}
+		return getJobSatus();		
 	}
 
 	/**

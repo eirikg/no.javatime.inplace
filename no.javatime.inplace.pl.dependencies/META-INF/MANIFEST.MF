@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Export-Package: no.javatime.inplace.pl.dependencies.intface
 Require-Bundle: org.eclipse.ui,org.eclipse.core.runtime
 Bundle-ActivationPolicy: lazy
-Bundle-Version: 0.1.2.qualifier
+Bundle-Version: 0.1.3.qualifier
 Dependency-Dialog-Service: no.javatime.inplace.pl.dependencies.impl.Depende
  ncyDialogImpl
 Bundle-Name: Dependencies

@@ -42,6 +42,7 @@ public class BundleThread {
 	 * @param bundle the bundle running the operation
 	 * @return null or the thread
 	 */
+	@SuppressWarnings("unchecked")
 	static public Thread getThread(Bundle bundle) {
 		
 		/* The thread running the bundle operation */

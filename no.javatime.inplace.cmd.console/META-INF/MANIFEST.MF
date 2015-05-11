@@ -3,7 +3,7 @@ Bundle-ManifestVersion: 2
 Bundle-Name: Bundle Project Command Provider
 Command-Provider: Bundle Project Command Provider
 Bundle-SymbolicName: no.javatime.inplace.cmd.console
-Bundle-Version: 0.1.0.qualifier
+Bundle-Version: 0.1.1.qualifier
 Bundle-Activator: no.javatime.inplace.cmd.console.Activator
 Export-Package: no.javatime.inplace.cmd.console
 Require-Bundle: org.eclipse.core.runtime,

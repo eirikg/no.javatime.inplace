@@ -7,14 +7,13 @@ public class Msg extends NLS {
 		
 	// Exceptions
 	public static String PREFERENCE_FLUSH_EXCEPTION;
-	public static String GET_SERVICE_EXP;
-	public static String GET_EXTENDER_EXP;
-	public static String NULL_EXTENDER_EXP;
-	public static String NULL_EXTENSION_EXP;
+	public static String SERVICE_UNAVAILABLE_EXCEPTION;
+	public static String PROPERTY_PAGE_NOT_UPDATED_EXCEPTION;
 	
 	// Errors
 	public static String ADD_CONTRIBUTION_ERROR;
 	public static String ADD_MENU_EXEC_ERROR;
+	public static String CREATE_BUNDLE_VIEW_ERROR;
 	public static String MANIFEST_ERROR;
 	
 	// Warnings
@@ -44,7 +43,7 @@ public class Msg extends NLS {
 	// Info messages
 	public static String REFRESH_HINT_INFO;
 
-  private static final String BUNDLE_NAME = "no.javatime.inplace.ui.msg.UIMessages"; //$NON-NLS-1$
+  private static final String BUNDLE_NAME = "no.javatime.inplace.ui.msg.Messages"; //$NON-NLS-1$
 
 	static {
 		// initialize resource bundles

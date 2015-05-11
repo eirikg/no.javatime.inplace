@@ -3,8 +3,8 @@ package no.javatime.inplace.pl.console;
 import no.javatime.inplace.dl.preferences.intface.MessageOptions;
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.extender.intface.Extenders;
-import no.javatime.inplace.extender.intface.Extension;
 import no.javatime.inplace.pl.console.impl.BundleConsoleFactoryImpl;
+import no.javatime.inplace.pl.console.intface.BundleConsoleFactory;
 import no.javatime.inplace.pl.console.msg.Msg;
 import no.javatime.inplace.pl.console.view.BundleConsole;
 import no.javatime.inplace.region.status.BundleStatus;
@@ -48,7 +48,8 @@ public class Activator extends AbstractUIPlugin implements ServiceListener {
 	private BundleConsole bundleConsole = null;
 	// Get the workbench window from UI thread
 	private IWorkbenchWindow workBenchWindow = null;
-	private Extension<MessageOptions> messageOptionsExtension;
+	// Register (extend) services for use facilitated by other bundles
+	private static ExtenderTracker extenderBundleTracker;
 
 	/**
 	 * The constructor
@@ -65,9 +66,12 @@ public class Activator extends AbstractUIPlugin implements ServiceListener {
 		super.start(context);
 		plugin = this;
 		Activator.context = context;
-		messageOptionsExtension = Extenders.getExtension(MessageOptions.class.getName());
+		extenderBundleTracker = new ExtenderTracker(context, Bundle.ACTIVE, null);
+		extenderBundleTracker.open();
 		Filter filter=context.createFilter("(" + Constants.OBJECTCLASS + "=" + ConsoleSession.class.getName()+ ")");
 		context.addServiceListener(this, filter.toString());
+		Extenders.register(context.getBundle(), BundleConsoleFactory.class.getName(), new BundleConsoleFactoryImpl(), null);
+
 
 	}
 
@@ -78,9 +82,10 @@ public class Activator extends AbstractUIPlugin implements ServiceListener {
 	 */
 	public void stop(BundleContext context) throws Exception {
 		context.removeServiceListener(this);
-		messageOptionsExtension.closeTrackedService();
-		plugin = null;
+		extenderBundleTracker.close();
 		super.stop(context);
+		Activator.context = null;
+		plugin = null;
 	}
 
 	public BundleConsole getBundleConsole() {
@@ -92,7 +97,7 @@ public class Activator extends AbstractUIPlugin implements ServiceListener {
 
 	public MessageOptions getMessageOptions() throws ExtenderException {
 
-		return messageOptionsExtension.getTrackedService();
+		return extenderBundleTracker.messageOptionsExtender.getService(context.getBundle());
 	}
 
 	/**
@@ -200,18 +205,6 @@ public class Activator extends AbstractUIPlugin implements ServiceListener {
 						}
 					}
 				}
-				// Direct lookup of bundle
-//				Bundle bundle = Platform.getBundle("no.javatime.inplace.cmd.console");
-//				// String symbolicName = bundle.getHeaders().get(Constants.BUNDLE_SYMBOLICNAME);
-//				if (null != bundle && (bundle.getState() & (Bundle.RESOLVED)) != 0) {
-//					try {
-//						bundle.start(Bundle.START_TRANSIENT);
-//					} catch (BundleException | IllegalStateException | SecurityException e) {
-//						String msg = NLS.bind(Msg.CMD_PROVIDER_NOT_STARTED_WARN, bundle.getSymbolicName());
-//						IBundleStatus status = new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, msg, e);
-//					StatusManager.getManager().handle(status, StatusManager.LOG);
-//					}
-//				}
 			}
 			break;
 		}

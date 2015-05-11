@@ -3,6 +3,7 @@ package no.javatime.inplace.extender.provider;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -10,6 +11,7 @@ import no.javatime.inplace.extender.Activator;
 import no.javatime.inplace.extender.intface.Extender;
 import no.javatime.inplace.extender.intface.ExtenderException;
 
+import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.Constants;
 import org.osgi.framework.InvalidSyntaxException;
@@ -37,6 +39,21 @@ public class ExtenderServiceMapImpl<S> extends ConcurrentHashMap<Long, Extender<
 		}
 		return status;
 	}
+
+//	public Extender<S> put(Long sid, Extender<S> extender) throws ExtenderException {
+//
+//		Extender<S> status = null;
+//		try {
+//			status = super.put(sid, extender);			
+//		} catch (NullPointerException e) {
+//			if (null == extender) {
+//				throw new ExtenderException("Null extender when storing to the service map" );												
+//			} else {
+//				throw new ExtenderException("Invalid service (service id or reference is null) for {0}" , extender.getServiceInterfaceName());								
+//			}
+//		}
+//		return status;
+//	}
 
 	public Extender<S> put(Extender<S> extender) throws ExtenderException {
 
@@ -129,7 +146,26 @@ public class ExtenderServiceMapImpl<S> extends ConcurrentHashMap<Long, Extender<
 		}
 		return false;
 	}
+	
+	public Collection<Extender<S>> getExtenders(Bundle owner) {
 
+		List<Extender<S>> extenders = new ArrayList<>();
+		
+		if (size() > 0) {
+			Iterator<Entry<Long, Extender<S>>> it = entrySet().iterator();
+			while (it.hasNext()) {
+				ConcurrentMap.Entry<Long, Extender<S>> entry = it.next();
+				Extender<S> extender = entry.getValue();
+				Bundle ownerBundle = extender.getOwner();
+				if (ownerBundle.equals(owner)) {
+					extenders.add(extender);
+					
+				}
+			}
+		}
+		return extenders;
+	}
+	
 	public void validateUnregister() {
 
 		if (size() > 0) {

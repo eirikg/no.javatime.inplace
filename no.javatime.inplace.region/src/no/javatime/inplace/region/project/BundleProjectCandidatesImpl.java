@@ -17,6 +17,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 
+import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.region.Activator;
 import no.javatime.inplace.region.closure.CircularReferenceException;
 import no.javatime.inplace.region.closure.ProjectSorter;
@@ -25,9 +26,8 @@ import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.intface.ProjectLocationException;
 import no.javatime.inplace.region.manager.WorkspaceRegionImpl;
 import no.javatime.inplace.region.msg.Msg;
-import no.javatime.inplace.region.status.BundleStatus;
-import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import no.javatime.util.messages.Category;
+import no.javatime.util.messages.ExceptionMessage;
 import no.javatime.util.messages.TraceMessage;
 
 import org.eclipse.core.resources.IProject;
@@ -42,7 +42,6 @@ import org.eclipse.osgi.util.NLS;
 import org.eclipse.pde.core.project.IBundleProjectDescription;
 import org.eclipse.pde.core.project.IHostDescription;
 import org.eclipse.pde.core.project.IRequiredBundleDescription;
-import org.eclipse.ui.statushandlers.StatusManager;
 
 /**
  * Utility to:
@@ -100,16 +99,13 @@ public class BundleProjectCandidatesImpl implements BundleProjectCandidates {
 				projects.add(project);
 			}
 			try {
-				if (!Activator.getDefault().getCommandOptionsService().isAllowUIContributions()) {
+				if (!Activator.getCommandOptionsService().isAllowUIContributions()) {
 					projects.removeAll(getUIPlugins());
 				}
 			} catch (CircularReferenceException e) {
 				// Ignore. Cycles are detected in any bundle job
-			}	catch (InPlaceException e) {
-				StatusManager.getManager().handle(
-						new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),
-						StatusManager.LOG);
-				// assume allow ui contributers
+			}	catch (ExtenderException e) {
+				throw new InPlaceException(e);
 			}
 		}
 		return projects;
@@ -125,16 +121,13 @@ public class BundleProjectCandidatesImpl implements BundleProjectCandidates {
 				projects.add(project);
 			}
 			try {
-				if (!Activator.getDefault().getCommandOptionsService().isAllowUIContributions()) {
+				if (!Activator.getCommandOptionsService().isAllowUIContributions()) {
 					projects.removeAll(getUIPlugins());
 				}
 			} catch (CircularReferenceException e) {
 				// Ignore. Cycles are detected in any bundle job
-			}	catch (InPlaceException e) {
-				StatusManager.getManager().handle(
-						new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),
-						StatusManager.LOG);
-				// assume allow ui contributers
+			}	catch (ExtenderException e) {
+				throw new InPlaceException(e);
 			}
 		}
 		return projects;
@@ -162,7 +155,7 @@ public class BundleProjectCandidatesImpl implements BundleProjectCandidates {
 
 	public IProject getProject(String name) {
 		if (null == name) {
-			throw new InPlaceException("project_null");
+			throw new InPlaceException(ExceptionMessage.getInstance().getString("project_null"));
 		}
 		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
 		IProject p = root.getProject(name);
@@ -234,7 +227,7 @@ public class BundleProjectCandidatesImpl implements BundleProjectCandidates {
 		try {
 			if (isBundleProject(project)
 					&& !WorkspaceRegionImpl.INSTANCE.isBundleActivated(project)) {
-				if (Activator.getDefault().getCommandOptionsService().isAllowUIContributions()) {
+				if (Activator.getCommandOptionsService().isAllowUIContributions()) {
 					return true;
 				} else {
 					Collection<IProject> uiContributors = getUIPlugins();
@@ -247,7 +240,9 @@ public class BundleProjectCandidatesImpl implements BundleProjectCandidates {
 			}
 		} catch (CircularReferenceException e) {
 			// Ignore. Cycles are detected in any bundle job
-		}	
+		}	catch (ExtenderException e) {
+			throw new InPlaceException(e);
+		}
 		return false;
 	}
 
@@ -257,7 +252,7 @@ public class BundleProjectCandidatesImpl implements BundleProjectCandidates {
 	public Boolean isUIPlugin(IProject project) throws InPlaceException {
 
 		if (null == project) {
-			throw new InPlaceException("project_null_location");
+			throw new InPlaceException(ExceptionMessage.getInstance().getString("project_null_location"));
 		}
 		IBundleProjectDescription bundleProjDesc = Activator.getBundleDescription(project);
 		if (null == bundleProjDesc) {

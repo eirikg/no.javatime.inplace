@@ -6,6 +6,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.region.intface.BundleProjectMeta;
 import no.javatime.inplace.region.intface.InPlaceException;
 
@@ -30,7 +31,7 @@ public class BundleClasspathResolver implements IBundleClasspathResolver {
 	@Override
 	public Map getAdditionalClasspathEntries(IJavaProject javaProject) {
 		Map<IPath, Collection<IPath>> additionalEntries = new HashMap<IPath, Collection<IPath>>(); 		
-		BundleProjectMeta bundleProjectMeta = InPlace.getbundlePrrojectMetaService();
+		BundleProjectMeta bundleProjectMeta = Activator.getbundlePrrojectMetaService();
 		IPath defaultOutputlocation = bundleProjectMeta.getDefaultOutputFolder(javaProject.getProject());
 		Collection<IPath> srcPath = null;
 		try {
@@ -38,8 +39,7 @@ public class BundleClasspathResolver implements IBundleClasspathResolver {
 			for (IPath path : srcPath) {
 				additionalEntries.put(path, Collections.<IPath>singletonList(defaultOutputlocation)); 
 			}
-		} catch (JavaModelException e) {
-		} catch (InPlaceException e) {
+		} catch (InPlaceException | JavaModelException | ExtenderException e) {
 		}
 		return (Map) additionalEntries;
 	}

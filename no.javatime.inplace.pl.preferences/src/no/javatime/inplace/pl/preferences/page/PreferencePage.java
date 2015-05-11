@@ -1,7 +1,7 @@
 package no.javatime.inplace.pl.preferences.page;
 
 import no.javatime.inplace.dl.preferences.intface.CommandOptions;
-import no.javatime.inplace.pl.preferences.PreferencePlActivator;
+import no.javatime.inplace.pl.preferences.Activator;
 import no.javatime.inplace.pl.preferences.msg.Msg;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
@@ -45,7 +45,7 @@ public class PreferencePage extends FieldEditorPreferencePage implements IWorkbe
 	 */
 	public PreferencePage() {
 		super(GRID);
-		setPreferenceStore(PreferencePlActivator.getDefault().getPreferenceStore());
+		setPreferenceStore(Activator.getDefault().getPreferenceStore());
 		setDescription(Msg.PAGE_DESCRIPTION_LABEL);
 	}
 
@@ -56,7 +56,7 @@ public class PreferencePage extends FieldEditorPreferencePage implements IWorkbe
 	 * @throws IllegalStateException when the options service is unavailable
 	 */
 	public CommandOptions getPrefService() throws IllegalStateException {
-		return PreferencePlActivator.getDefault().getOptionsService(); // tracker
+		return Activator.getDefault().getOptionsService(); // tracker
 		// return OptionsService.getCommandOptions(); // DS
 	}
 
@@ -209,7 +209,7 @@ public class PreferencePage extends FieldEditorPreferencePage implements IWorkbe
 			prefStore.setValue(CommandOptions.IS_ALLOW_UI_CONTRIBUTIONS, cmdStore.isAllowUIContributions());
 		} catch (IllegalStateException e) {
 			StatusManager.getManager().handle(
-					new BundleStatus(StatusCode.ERROR, PreferencePlActivator.PLUGIN_ID, Msg.INIT_PREF_PAGE_ERROR, e),
+					new BundleStatus(StatusCode.ERROR, Activator.PLUGIN_ID, Msg.INIT_PREF_PAGE_ERROR, e),
 					StatusManager.LOG);
 		}
 	}
@@ -226,7 +226,7 @@ public class PreferencePage extends FieldEditorPreferencePage implements IWorkbe
 			timoutSecEditor.setEnabled(isTimeout, groupTimeoutEditor.getMemberFieldEditorParent());
 		} catch (IllegalStateException e) {
 			StatusManager.getManager().handle(
-					new BundleStatus(StatusCode.ERROR, PreferencePlActivator.PLUGIN_ID, Msg.DEFAULT_PREF_PAGE_ERROR, e),
+					new BundleStatus(StatusCode.ERROR, Activator.PLUGIN_ID, Msg.DEFAULT_PREF_PAGE_ERROR, e),
 					StatusManager.LOG);
 		}
 	}
@@ -271,11 +271,11 @@ public class PreferencePage extends FieldEditorPreferencePage implements IWorkbe
 			cmdStore.flush();
 		} catch (IllegalStateException e) {
 			StatusManager.getManager().handle(
-					new BundleStatus(StatusCode.ERROR, PreferencePlActivator.PLUGIN_ID, Msg.SAVE_PREF_PAGE_ERROR, e),
+					new BundleStatus(StatusCode.ERROR, Activator.PLUGIN_ID, Msg.SAVE_PREF_PAGE_ERROR, e),
 					StatusManager.LOG);
 		} catch (BackingStoreException bse) {
 			StatusManager.getManager().handle(
-					new BundleStatus(StatusCode.ERROR, PreferencePlActivator.PLUGIN_ID, Msg.PREFERENCE_FLUSH_EXCEPTION, bse),
+					new BundleStatus(StatusCode.ERROR, Activator.PLUGIN_ID, Msg.PREFERENCE_FLUSH_EXCEPTION, bse),
 					StatusManager.LOG);
 		}
 	}
@@ -293,7 +293,7 @@ public class PreferencePage extends FieldEditorPreferencePage implements IWorkbe
 						groupTimeoutEditor.getMemberFieldEditorParent());
 			} catch (Exception ex) {
 				StatusManager.getManager().handle(
-						new BundleStatus(StatusCode.ERROR, PreferencePlActivator.PLUGIN_ID, ex.getMessage(), ex),
+						new BundleStatus(StatusCode.ERROR, Activator.PLUGIN_ID, ex.getMessage(), ex),
 						StatusManager.LOG);
 			}
 		}

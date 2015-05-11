@@ -12,6 +12,7 @@ package no.javatime.inplace.ui.views;
 
 import java.util.Collection;
 
+import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.region.intface.BundleProjectCandidates;
 import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.intface.ProjectLocationException;
@@ -21,7 +22,6 @@ import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import no.javatime.inplace.ui.Activator;
 import no.javatime.inplace.ui.msg.Msg;
 import no.javatime.util.messages.ErrorMessage;
-import no.javatime.util.messages.ExceptionMessage;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
@@ -34,8 +34,8 @@ import org.eclipse.ui.statushandlers.StatusManager;
 
 /**
  * Input to the content provider is a single bundle project or a collection of bundle projects. The collection
- * only accept plug-ins and BundleExecutorEventManagerImpl bundle projects, while a single project may be any kind of project. When input is a plug-in
- * project or an BundleExecutorEventManagerImpl bundle project, bundle property values are available.
+ * only accept plug-ins and OSGi bundle projects, while a single project may be any kind of project. When input is a plug-in
+ * project or an OSGi bundle project, bundle property values are available.
  * <p>
  * Input is converted to one {@link BundleProperties} model object for each java project in the collection.
  * <p>
@@ -114,85 +114,96 @@ class BundleContentProvider implements IStructuredContentProvider {
 	
 	/**
 	 * Create a set of bundle properties. One for each java project in the specified collection
+	 * 
 	 * @param javaProjects a collection of java projects
 	 * @return a collection of bundle properties objects or an empty collection.
 	 */
 	private BundleProperties[] getBundleProperties(Collection<IJavaProject> javaProjects) {
-		BundleProperties[] bundleProperties = new BundleProperties[javaProjects.size()];
-		IJavaProject[] javaProject = javaProjects.toArray(new IJavaProject[javaProjects.size()]);
-		for (int i = 0; i < javaProject.length; i++) {
-			bundleProperties[i] = new BundleProperties(javaProject[i]);			
-		}
-		return bundleProperties;
+		try {
+			BundleProperties[] bundleProperties = new BundleProperties[javaProjects.size()];
+			IJavaProject[] javaProject = javaProjects.toArray(new IJavaProject[javaProjects.size()]);
+			for (int i = 0; i < javaProject.length; i++) {
+				bundleProperties[i] = new BundleProperties(javaProject[i]);			
+			}
+			return bundleProperties;
+		} catch (ExtenderException e) {
+			StatusManager.getManager().handle(
+					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, Msg.PROPERTY_PAGE_NOT_UPDATED_EXCEPTION,e), StatusManager.LOG);
+		}	
+		return new BundleProperties[0];
 	}
 	
 	/**
-	 * Create a set of properties from the specified java project. 
+	 * Create a set of properties from the specified java project.
+	 *  
 	 * @param javaProject a project with the java nature
 	 * @return a set of properties for the specified java project
 	 */
 	private BundleProperties[] getBundleProperties(IJavaProject javaProject) {
 
-		BundleProperties bp = new BundleProperties(javaProject);
-		BundleProjectCandidates bundleProjectCandidates = Activator.getBundleProjectCandidatesService();
-		IProject project = bp.getProject();
-		Boolean uiExtensions = false;
 		String locationIdentifier = null;
+		BundleProperties bundleProps = null;
+		BundleProjectCandidates bundleProjectCandidates = null;
+		Boolean uiExtensions = false;
 		try {
-			uiExtensions = bundleProjectCandidates.isUIPlugin(project);
-		} catch (InPlaceException e) {
-		}
-
-		try {
-			locationIdentifier = bp.getBundleLocationIdentifier();
-		} catch (ProjectLocationException e) {
-			String msg = ErrorMessage.getInstance().formatString("project_location", project.getName());			
-			IBundleStatus status = new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, msg,e);
-			msg  = NLS.bind(Msg.REFRESH_HINT_INFO, project.getName()); 
-			status.add(new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, msg));
-			StatusManager.getManager().handle(status, StatusManager.LOG);
-			locationIdentifier = e.getLocalizedMessage();
-		} catch (SecurityException e) {
-			String msg = ErrorMessage.getInstance().formatString("project_location", project.getName());			
-			StatusManager.getManager().handle(new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, msg, e),
-					StatusManager.LOG);
-			locationIdentifier = e.getLocalizedMessage();
-		}
-		try {
+			try {
+				bundleProps = new BundleProperties(javaProject);
+				bundleProjectCandidates = Activator.getBundleProjectCandidatesService();
+				IProject project = bundleProps.getProject();
+				try {
+					uiExtensions = bundleProjectCandidates.isUIPlugin(project);
+				} catch (InPlaceException e) {
+				}
+				locationIdentifier = bundleProps.getBundleLocationIdentifier();
+			} catch (ProjectLocationException e) {
+				String msg = ErrorMessage.getInstance().formatString("project_location", project.getName());			
+				IBundleStatus status = new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, msg,e);
+				msg  = NLS.bind(Msg.REFRESH_HINT_INFO, project.getName()); 
+				status.add(new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, msg));
+				StatusManager.getManager().handle(status, StatusManager.LOG);
+				locationIdentifier = e.getMessage();
+			} catch (SecurityException e) {
+				String msg = ErrorMessage.getInstance().formatString("project_location", project.getName());			
+				StatusManager.getManager().handle(new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, msg, e),
+						StatusManager.LOG);
+				locationIdentifier = e.getMessage();
+			}
 			Boolean installeable = bundleProjectCandidates.isInstallable(project);
 			if (!installeable && !uiExtensions) {  // Not a plug-in project
 				return new BundleProperties[] {
-						new BundleProperties(project, BundleProperties.projectLabelName, bp.getProjectName()),
-						new BundleProperties(project, BundleProperties.bundleStatusLabelName, bp.getBundleStatus()),
+						new BundleProperties(project, BundleProperties.projectLabelName, bundleProps.getProjectName()),
+						new BundleProperties(project, BundleProperties.bundleStatusLabelName, bundleProps.getBundleStatus()),
 						new BundleProperties(project, BundleProperties.locationLabelName, locationIdentifier),
-						new BundleProperties(project, BundleProperties.lastModifiedLabelName, bp.getModifiedDate())					
+						new BundleProperties(project, BundleProperties.lastModifiedLabelName, bundleProps.getModifiedDate())					
 				};				
 			}
 			return new BundleProperties[] {
 
-					new BundleProperties(project, BundleProperties.bundleIdLabelName, bp.getBundleId()),
-					new BundleProperties(project, BundleProperties.bundleSymbolicNameLabelName, bp.getSymbolicName()),
-					new BundleProperties(project, BundleProperties.bundleVersionLabelName, bp.getBundleVersion()),
-					new BundleProperties(project, BundleProperties.projectLabelName, bp.getProjectName()),
+					new BundleProperties(project, BundleProperties.bundleIdLabelName, bundleProps.getBundleId()),
+					new BundleProperties(project, BundleProperties.bundleSymbolicNameLabelName, bundleProps.getSymbolicName()),
+					new BundleProperties(project, BundleProperties.bundleVersionLabelName, bundleProps.getBundleVersion()),
+					new BundleProperties(project, BundleProperties.projectLabelName, bundleProps.getProjectName()),
 					new BundleProperties(project, BundleProperties.locationLabelName, locationIdentifier),
-					new BundleProperties(project, BundleProperties.activationStatusLabelName, bp.getActivationMode()),
-					new BundleProperties(project, BundleProperties.bundleStateLabelName, bp.getBundleState()),
-					new BundleProperties(project, BundleProperties.lastCmdLabelName, bp.getLastTransition()),
-					new BundleProperties(project, BundleProperties.bundleStatusLabelName, bp.getBundleStatus()),
-					new BundleProperties(project, bp.getAllRequiringLabelName(), bp.getDeclaredRequiringBundleProjects()),
-					new BundleProperties(project, bp.getAllProvidingLabelName(), bp.getAllProvidingBundleProjects()),
-					new BundleProperties(project, bp.getResolvedRequiringLabelName(), bp.getResolvedRequiringBundleProjects()),
-					new BundleProperties(project, bp.getResolvedProvidingLabelName(), bp.getResolvedProvidingBundleProjects()),
-					new BundleProperties(project, BundleProperties.servicesInUseLabelName, bp.getServicesInUse()),
-					new BundleProperties(project, BundleProperties.numberOfRevisionsLabelName, bp.getBundleRevisions()),
-					new BundleProperties(project, BundleProperties.activationPolicyLabelName, bp.getActivationPolicy()),					
-					new BundleProperties(project, BundleProperties.UIExtensionsLabelName, bp.getUIExtension()),
-					new BundleProperties(project, BundleProperties. lastInstalledOrUpdatedLabelName, bp.getLastInstalledOrUpdated()),					
+					new BundleProperties(project, BundleProperties.activationStatusLabelName, bundleProps.getActivationMode()),
+					new BundleProperties(project, BundleProperties.bundleStateLabelName, bundleProps.getBundleState()),
+					new BundleProperties(project, BundleProperties.lastCmdLabelName, bundleProps.getLastTransition()),
+					new BundleProperties(project, BundleProperties.bundleStatusLabelName, bundleProps.getBundleStatus()),
+					new BundleProperties(project, bundleProps.getAllRequiringLabelName(), bundleProps.getDeclaredRequiringBundleProjects()),
+					new BundleProperties(project, bundleProps.getAllProvidingLabelName(), bundleProps.getAllProvidingBundleProjects()),
+					new BundleProperties(project, bundleProps.getResolvedRequiringLabelName(), bundleProps.getResolvedRequiringBundleProjects()),
+					new BundleProperties(project, bundleProps.getResolvedProvidingLabelName(), bundleProps.getResolvedProvidingBundleProjects()),
+					new BundleProperties(project, BundleProperties.servicesInUseLabelName, bundleProps.getServicesInUse()),
+					new BundleProperties(project, BundleProperties.numberOfRevisionsLabelName, bundleProps.getBundleRevisions()),
+					new BundleProperties(project, BundleProperties.activationPolicyLabelName, bundleProps.getActivationPolicy()),					
+					new BundleProperties(project, BundleProperties.UIExtensionsLabelName, bundleProps.getUIExtension()),
+					new BundleProperties(project, BundleProperties. lastInstalledOrUpdatedLabelName, bundleProps.getLastInstalledOrUpdated()),					
 			};		
+		} catch (ExtenderException e) {
+			StatusManager.getManager().handle(
+					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, Msg.PROPERTY_PAGE_NOT_UPDATED_EXCEPTION,e), StatusManager.LOG);
 		} catch (InPlaceException e) {
 			StatusManager.getManager().handle(new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getLocalizedMessage(),e),
 					StatusManager.LOG);
-			ExceptionMessage.getInstance().handleMessage(e, null);
 		}
 		return new BundleProperties[0];
 	}

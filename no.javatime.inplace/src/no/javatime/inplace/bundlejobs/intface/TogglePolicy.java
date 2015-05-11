@@ -1,5 +1,6 @@
 package no.javatime.inplace.bundlejobs.intface;
 
+import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.region.intface.InPlaceException;
 
 import org.eclipse.core.resources.IProject;
@@ -14,7 +15,7 @@ import org.eclipse.core.resources.IProject;
  * Changing the policy of an activated project triggers a build which again triggers an update of
  * the bundle project causing the bundle to enter a state according to the new policy setting. If
  * the "Build Automatically" option is off the update will be delayed with a "Build Pending" status
- * and occur when the "Build Automatically" option is switched on or by a manually build.
+ * and occur when the "Build Automatically" option is switched on or by a manual build.
  */
 public interface TogglePolicy extends BundleExecutor {
 
@@ -33,7 +34,8 @@ public interface TogglePolicy extends BundleExecutor {
 	 * @param project containing the meta file information
 	 * @return true if lazy activation and false if eager activation.
 	 * @throws InPlaceException if project is null or failed to obtain the project description
+	 * @throws ExtenderException If failing to get the project meta service
 	 */
-	public boolean getActivationPolicy(IProject project);
+	public boolean getActivationPolicy(IProject project) throws ExtenderException, InPlaceException;
 
 }

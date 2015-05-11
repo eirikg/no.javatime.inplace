@@ -4,7 +4,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 
-import no.javatime.inplace.InPlace;
+import no.javatime.inplace.Activator;
 import no.javatime.inplace.builder.intface.AddBundleProject;
 import no.javatime.inplace.bundlejobs.ActivateBundleJob;
 import no.javatime.inplace.bundlejobs.ActivateProjectJob;
@@ -71,19 +71,20 @@ class AddBundleProjectJob extends NatureJob implements AddBundleProject {
 	public IBundleStatus runInWorkspace(IProgressMonitor monitor) throws CoreException {
 
 		try {
+			super.runInWorkspace(monitor);
 			BundleTransitionListener.addBundleTransitionListener(this);
 			Collection<IProject> newProjects = getPendingProjects();
 			if (newProjects.size() == 0) {
-				return super.runInWorkspace(monitor);
+				return getJobSatus();
 			}
 			// New (deactivated and activated) projects added to the workspace are already opened
 			// New projects should be in state uninstalled in a deactivated workspace
 			if (!isProjectWorkspaceActivated()) {
-				return super.runInWorkspace(monitor);
+				return getJobSatus();
 			}
 			// Install all new projects in an activated workspace
 			Install install = new InstallJob(InstallJob.installJobName, newProjects);
-			InPlace.getBundleJobEventService().add(install, 0);
+			Activator.getBundleExecutorEventService().add(install, 0);
 			// New and existing deactivated projects that provides capabilities to new and existing
 			// projects
 			Collection<IProject> deactivatedProviders = new LinkedHashSet<>();
@@ -117,17 +118,17 @@ class AddBundleProjectJob extends NatureJob implements AddBundleProject {
 						ActivateProjectJob.activateProjectJobName, deactivatedProviders);
 				// Do not add requiring projects. They will be resolved as part of the requiring
 				// closure when providers are resolved
-				InPlace.getBundleJobEventService().add(activateProject, 0);
+				Activator.getBundleExecutorEventService().add(activateProject, 0);
 			}
 			// Provide information when auto build is turned off
-			if (InPlace.getMessageOptionsService().isBundleOperations()
+			if (messageOptions.isBundleOperations()
 					&& !bundleProjectCandidates.isAutoBuilding()) {
-				IBundleStatus status = new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID,
+				IBundleStatus status = new BundleStatus(StatusCode.WARNING, Activator.PLUGIN_ID,
 						Msg.BUILDER_OFF_INFO);
-				status.add(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, NLS.bind(
+				status.add(new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, NLS.bind(
 						Msg.BUILDER_OFF_LIST_INFO,
 						bundleProjectCandidates.formatProjectList(getPendingProjects()))));
-				addStatus(status);
+				addLogStatus(status);
 			}
 			// Deactivated providers are handled by the activate project job
 			newActivatedBundleProjects.removeAll(deactivatedProviders);
@@ -135,12 +136,11 @@ class AddBundleProjectJob extends NatureJob implements AddBundleProject {
 			if (newActivatedBundleProjects.size() > 0) {
 				ActivateBundle activateBundle = new ActivateBundleJob(
 						ActivateBundleJob.activateJobName, newActivatedBundleProjects);
-				InPlace.getBundleJobEventService().add(activateBundle, 0);
+				Activator.getBundleExecutorEventService().add(activateBundle, 0);
 			}
-			return super.runInWorkspace(monitor);
 		} catch (CircularReferenceException e) {
 			String msg = ExceptionMessage.getInstance().formatString("circular_reference", getName());
-			BundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg);
+			BundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, msg);
 			multiStatus.add(e.getStatusList());
 			addStatus(multiStatus);
 		} catch (InPlaceException | ExtenderException e) {
@@ -149,18 +149,15 @@ class AddBundleProjectJob extends NatureJob implements AddBundleProject {
 			addError(e, msg);
 		} catch (CoreException e) {
 			String msg = ErrorMessage.getInstance().formatString("error_end_job", getName());
-			return new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID, msg, e);
+			return new BundleStatus(StatusCode.ERROR, Activator.PLUGIN_ID, msg, e);
+		} catch (Exception e) {
+			String msg = ExceptionMessage.getInstance().formatString("exception_job", getName());
+			addError(e, msg);
 		} finally {
+			monitor.done();
 			BundleTransitionListener.removeBundleTransitionListener(this);
 		}
-		try {
-			BundleTransitionListener.addBundleTransitionListener(this);
-			return super.runInWorkspace(monitor);
-		} catch (CoreException e) {
-			String msg = ErrorMessage.getInstance().formatString("error_end_job", getName());
-			return new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID, msg, e);
-		} finally {
-			BundleTransitionListener.removeBundleTransitionListener(this);
-		}
-	}
+		return getJobSatus();
+	}	
 }
+ 

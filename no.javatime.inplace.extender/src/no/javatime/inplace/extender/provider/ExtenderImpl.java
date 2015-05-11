@@ -16,6 +16,7 @@ import java.util.concurrent.ConcurrentMap;
 
 import no.javatime.inplace.extender.Activator;
 import no.javatime.inplace.extender.intface.Extender;
+import no.javatime.inplace.extender.intface.ExtenderBundleTracker;
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.extender.intface.Extension;
 import no.javatime.inplace.extender.intface.Introspector;
@@ -46,12 +47,10 @@ public final class ExtenderImpl<S> implements Extender<S> {
 	private static final BundleContext context = Activator.getContext();
 	// Extenders interface definition names
 	private final String[] serviceInterfaceNames;
-	// Context of bundle owing this service. Only used when loading the service class object with the
-	// class loader from the owing bundle
-	private final BundleContext ownerContext;
-	// Context of bundle registering this service. This is also the using bundle if not a using bundle
-	// is specified when getting this service
-	private final BundleContext regContext;
+	// Only used when loading the service class object with the class loader from the owing bundle
+	private final Bundle ownerBundle;
+	// This is also the using bundle if not a using bundle is specified when getting this service
+	private final Bundle regBundle;
 	// The bundle tracker tracking this extender object(and possibly others) when registered with
 	// a bundle tracker
 	private final BundleTracker<Collection<Extender<?>>> bundleTracker;
@@ -63,7 +62,7 @@ public final class ExtenderImpl<S> implements Extender<S> {
 	private final String serviceName;
 	// The service object or a service factory object
 	private final Object service;
-
+	
 	// Constructors
 	// Service interface name and service
 	public ExtenderImpl(Bundle ownerBundle, Bundle regBundle, String serviceInterfaceName,
@@ -97,12 +96,13 @@ public final class ExtenderImpl<S> implements Extender<S> {
 		try {
 
 			// Owner and registrar bundle
-			this.ownerContext = null != ownerBundle ? ownerBundle.getBundleContext() : null;
-			if (null == ownerContext) {
+			this.ownerBundle = ownerBundle;
+			if (null == ownerBundle) {
 				throw new ExtenderException("Missing owner bundle when registering extender");
 			}
-			this.regContext = null != regBundle ? regBundle.getBundleContext() : null;
-			if (null == regContext) {
+			
+			this.regBundle = regBundle;
+			if (null == regBundle) {
 				throw new ExtenderException("Missing registrar bundle when registering extender");
 			}
 
@@ -111,7 +111,7 @@ public final class ExtenderImpl<S> implements Extender<S> {
 			if (size == 0) {
 				throw new ExtenderException(
 						"Missing service interface name(s) when registering extender for bundle {0}",
-						ownerContext.getBundle());
+						ownerBundle);
 			}
 			List<String> copy = new ArrayList<String>(size);
 			for (int i = 0; i < size; i++) {
@@ -156,8 +156,11 @@ public final class ExtenderImpl<S> implements Extender<S> {
 			// props.put(SCOPE, service instanceof ServiceFactory<?> ? BUNDLE : SINGLETON);
 
 			// Register service
-			serviceRegistration = regContext.registerService(this.serviceInterfaceNames, this.service,
-					props);
+			BundleContext regContext = regBundle.getBundleContext();
+			if (null == regContext) {
+				throw new ExtenderException("Context of bundle {0} is invalid when registering service {1}", regBundle, getServiceInterfaceName());
+			}
+			serviceRegistration = regContext.registerService(this.serviceInterfaceNames, this.service, props);
 			sr = serviceRegistration.getReference();
 			if (!sr.isAssignableTo(getRegistrar(), getServiceClass().getName())) {
 				throw new ExtenderException(
@@ -181,7 +184,7 @@ public final class ExtenderImpl<S> implements Extender<S> {
 					getServiceInterfaceName());
 		}
 	}
-
+	
 	@Override
 	public Extension<S> getExtension(String serviceInterfaceName, Bundle user)
 			throws ExtenderException {
@@ -202,26 +205,37 @@ public final class ExtenderImpl<S> implements Extender<S> {
 	}
 
 	@Override
-	public Extension<S> getExtension(Bundle user) {
+	public Extension<S> getExtension() {
+		return new ExtensionImpl<S>(this, getRegistrar());
+	}
 
+	@Override
+	public Extension<S> getExtension(Bundle user) {
+			
 		return new ExtensionImpl<S>(this, user);
 	}
 
 	@Override
-	public Extension<S> getExtension() {
-
-		return new ExtensionImpl<S>(this, getRegistrar());
+	public Extension<S> getExtension(Bundle user, ExtenderBundleTracker bt) {
+			
+		return new ExtensionImpl<S>(this, user, bt);
 	}
 
+	
 	@SuppressWarnings("unchecked")
 	@Override
 	public S getService() throws ExtenderException {
 
 		try {
-			if (isPrototypeServiceScope(regContext.getBundle())) {
-				return ((PrototypeServiceScopeFactory<S>) service).getService(regContext.getBundle(),
+			BundleContext regContext = regBundle.getBundleContext();
+			if (null == regContext) {
+				throw new ExtenderException("Context of bundle {0} is invalid when getting service {1}", regBundle, getServiceInterfaceName());
+			}
+			if (isPrototypeServiceScope(regBundle)) {
+				return ((PrototypeServiceScopeFactory<S>) service).getService(regBundle,
 						(ServiceRegistration<S>) serviceRegistration);
 			} else {
+				
 				return (S) regContext.getService(sr);
 			}
 		} catch (IllegalStateException | IllegalArgumentException | SecurityException
@@ -244,7 +258,11 @@ public final class ExtenderImpl<S> implements Extender<S> {
 				return ((PrototypeServiceScopeFactory<S>) service).getService(user,
 						(ServiceRegistration<S>) serviceRegistration);
 			} else {
-				return (S) user.getBundleContext().getService(sr);
+				BundleContext userContext = user.getBundleContext();
+				if (null == userContext) {
+					throw new ExtenderException("Context of bundle {0} is invalid when getting service {1}", user, getServiceInterfaceName());
+				}
+				return (S) userContext.getService(sr);
 			}
 		} catch (IllegalStateException | IllegalArgumentException | SecurityException
 				| NullPointerException e) {
@@ -284,10 +302,14 @@ public final class ExtenderImpl<S> implements Extender<S> {
 	}
 
 	@Override
-	public Boolean ungetService(Bundle bundle) throws ExtenderException {
+	public Boolean ungetService(Bundle user) throws ExtenderException {
 
 		try {
-			return bundle.getBundleContext().ungetService(sr);
+			BundleContext userContext = user.getBundleContext();
+			if (null == userContext) {
+				throw new ExtenderException("Context of bundle {0} is invalid when ungetting service {1}", user, getServiceInterfaceName());
+			}
+			return userContext.ungetService(sr);
 		} catch (IllegalStateException | IllegalArgumentException e) {
 			throw new ExtenderException(e, "Failed to unget service for {0}", getServiceInterfaceName());
 		}
@@ -334,8 +356,7 @@ public final class ExtenderImpl<S> implements Extender<S> {
 		// must use class loader of bundle owing the class
 		Bundle bundle = getOwner();
 		if (null == bundle) {
-			throw new ExtenderException("Failed to get bundle with identifier {0}", getOwner()
-					.getBundleId());
+			throw new ExtenderException("Failed to get owner bundle for the {0} service interface name", getServiceInterfaceName());
 		}
 		return Introspector.loadClass(bundle, serviceName);
 	}
@@ -354,25 +375,14 @@ public final class ExtenderImpl<S> implements Extender<S> {
 	 */
 	@Override
 	public Bundle getOwner() throws ExtenderException {
-
-		try {
-			return ownerContext.getBundle();
-		} catch (IllegalStateException e) {
-			throw new ExtenderException(e, "The context of the owner bundle is invalid for service {0}",
-					serviceInterfaceNames[0]);
-		}
+		
+		return ownerBundle;
 	}
 
 	@Override
 	public Bundle getRegistrar() throws ExtenderException {
 
-		try {
-			return regContext.getBundle();
-		} catch (IllegalStateException e) {
-			throw new ExtenderException(e,
-					"The context of the registrar bundle is invalid for service {0}",
-					serviceInterfaceNames[0]);
-		}
+		return regBundle;
 	}
 
 	@Override
@@ -397,35 +407,23 @@ public final class ExtenderImpl<S> implements Extender<S> {
 	@Override
 	public Boolean isRegistered() {
 
-		try {
-			ExtenderServiceMap<S> map = Activator.getExtenderServiceMap();
-			Extender<S> e = map.get(getServiceId());
-			return e != null ? true : false;
-			// if (null != e) {
-			// Boolean eFilter = (Boolean) e.getProperty(Extender.class.getSimpleName().toLowerCase());
-			// if (null != eFilter && eFilter) {
-			// return true;
-			// }
-			// }
-		} catch (NullPointerException | ClassCastException e) {
-		}
-		return false;
+//		try {
+//			ExtenderServiceMap<S> map = Activator.getExtenderServiceMap();
+//			Extender<S> e = map.get(getServiceId());
+//			return e != null ? true : false;
+//		} catch (NullPointerException | ClassCastException e) {
+//		}
+		// TODO Does not seems to work as expected?
+			return null == sr.getBundle() ? false : true;
 	}
 
 	@Override
 	public void unregister() throws ExtenderException {
 
 		try {
-			Long SID = getServiceId();
+			// Unregister publish an unregistered event and  
+			// the extender is removed from the extender map in the extender service listener
 			serviceRegistration.unregister();
-			ExtenderServiceMap<S> extenderMap = Activator.getExtenderServiceMap();
-			if (null != extenderMap) {
-				extenderMap.remove(SID);
-			} else {
-				throw new ExtenderException(
-						"Extender bundle context is invalid while trying to unregister {0}",
-						getServiceInterfaceName());
-			}
 		} catch (IllegalStateException | NullPointerException e) {
 			ExtenderException ex = new ExtenderException(e, "Extender for {0} is already unregistered",
 					getServiceInterfaceName());

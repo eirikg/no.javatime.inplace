@@ -1,13 +1,5 @@
 package no.javatime.inplace.dl.preferences;
 
-import no.javatime.inplace.dl.preferences.impl.CommandOptionsImpl;
-import no.javatime.inplace.dl.preferences.impl.DependencyOptionsImpl;
-import no.javatime.inplace.dl.preferences.impl.MessageOptionsImpl;
-import no.javatime.inplace.dl.preferences.intface.CommandOptions;
-import no.javatime.inplace.dl.preferences.intface.DependencyOptions;
-import no.javatime.inplace.dl.preferences.intface.MessageOptions;
-import no.javatime.inplace.extender.intface.Extenders;
-
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
@@ -31,8 +23,10 @@ import org.osgi.framework.BundleContext;
  */
 public class Activator implements BundleActivator {
 
-	private static Activator plugin = null;
+	private static Activator activator = null;
 	private static BundleContext context;
+	// Register and track extenders and get and unget services provided by this and other bundles
+	private static ExtenderTracker extenderTracker;
 
 	/*
 	 * (non-Javadoc)
@@ -42,12 +36,11 @@ public class Activator implements BundleActivator {
 	 */
 	@Override
 	public void start(BundleContext context) throws Exception {
-		plugin = this;
+
+		activator = this;
 		Activator.context = context;
-		Bundle bundle = context.getBundle();
-		Extenders.register(bundle, DependencyOptions.class.getName(), new DependencyOptionsImpl(), null); 
-		Extenders.register(bundle, CommandOptions.class.getName(), new CommandOptionsImpl(), null);
-		Extenders.register(bundle, MessageOptions.class.getName(), new MessageOptionsImpl(), null);
+		extenderTracker = new ExtenderTracker(context, Bundle.ACTIVE, null);
+		extenderTracker.open();
 	}
 
 	/*
@@ -58,8 +51,11 @@ public class Activator implements BundleActivator {
 	 */
 	@Override
 	public void stop(BundleContext context) throws Exception {
+
+		extenderTracker.close();
+		extenderTracker = null;
 		Activator.context = null;
-		plugin = null;
+		activator = null;
 	}
 
 	/**
@@ -76,7 +72,7 @@ public class Activator implements BundleActivator {
 	 * 
 	 * @return the shared bundle object
 	 */
-	public static Activator getPlugin() {
-		return plugin;
+	public static Activator getInstance() {
+		return activator;
 	}
 }

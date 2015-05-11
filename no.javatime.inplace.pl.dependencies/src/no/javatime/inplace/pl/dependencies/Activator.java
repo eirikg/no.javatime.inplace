@@ -1,18 +1,15 @@
 package no.javatime.inplace.pl.dependencies;
 
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions;
-import no.javatime.inplace.extender.intface.Extenders;
-import no.javatime.inplace.extender.intface.Extension;
-import no.javatime.inplace.pl.dependencies.msg.Msg;
 import no.javatime.inplace.region.intface.InPlaceException;
 
 import org.eclipse.jface.resource.ImageDescriptor;
-import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
+import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 
 /**
@@ -23,12 +20,12 @@ public class Activator extends AbstractUIPlugin {
 	// The plug-in ID
 	public static final String PLUGIN_ID = "no.javatime.inplace.pl.dependencies"; //$NON-NLS-1$
 
-	// The shared instance
 	private static Activator plugin;
+	private static Bundle bundle;
 	// Get the workbench window from UI thread
 	private IWorkbenchWindow workBenchWindow = null;
-	
-	private Extension<DependencyOptions> dependencyOptions;
+	// Register (extend) services for use facilitated by other bundles
+	private static ExtenderTracker extenderBundleTracker;
 
 	/**
 	 * The constructor
@@ -44,7 +41,9 @@ public class Activator extends AbstractUIPlugin {
 	public void start(BundleContext context) throws Exception {
 		super.start(context);
 		plugin = this;
-		dependencyOptions = Extenders.getExtension(DependencyOptions.class.getName(), context.getBundle());
+		bundle = context.getBundle();
+		extenderBundleTracker = new ExtenderTracker(context, Bundle.ACTIVE, null);
+		extenderBundleTracker.open();
 
 		// The service (extender) should be registered by the bundle using this extension
 		/*
@@ -61,17 +60,15 @@ public class Activator extends AbstractUIPlugin {
 	 */
 	@Override
 	public void stop(BundleContext context) throws Exception {
+
+		extenderBundleTracker.close();
 		plugin = null;
 		super.stop(context);
 	}
 
 	public DependencyOptions getDependencyOptionsService() throws InPlaceException {
-		
-		DependencyOptions dpOpt = dependencyOptions.getService();
-		if (null == dpOpt) {
-			throw new InPlaceException(NLS.bind(Msg.INVALID_OPTIONS_SERVICE_EXCEPTION, DependencyOptions.class.getName()));			
-		}
-		return dpOpt;
+
+		return extenderBundleTracker.dependencyOptionsExtender.getService(bundle);
 	}
 
 

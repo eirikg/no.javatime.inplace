@@ -1,14 +1,15 @@
 package no.javatime.inplace.bundlejobs;
 
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
-import no.javatime.inplace.InPlace;
+import no.javatime.inplace.Activator;
 import no.javatime.inplace.bundlejobs.intface.ActivateProject;
-import no.javatime.inplace.extender.intface.Extenders;
-import no.javatime.inplace.extender.intface.Extension;
+import no.javatime.inplace.dl.preferences.intface.MessageOptions;
+import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.closure.ProjectSorter;
 import no.javatime.inplace.region.events.BundleTransitionEvent;
@@ -48,12 +49,20 @@ public class JobStatus extends WorkspaceJob implements BundleTransitionEventList
 	/**
 	 * Convenience references to bundle management
 	 */
-	final protected BundleCommand bundleCommand = InPlace.getBundleCommandService();
-	final protected BundleTransition bundleTransition = InPlace.getBundleTransitionService();
-	final protected BundleRegion bundleRegion = InPlace.getBundleRegionService();
-	final protected BundleProjectCandidates bundleProjectCandidates = InPlace
-			.getBundleProjectCandidatesService();
-	final protected BundleProjectMeta bundleProjectMeta = InPlace.getbundlePrrojectMetaService();
+	protected BundleCommand bundleCommand; 
+	protected BundleTransition bundleTransition;
+	protected BundleRegion bundleRegion; 
+
+	protected BundleProjectCandidates bundleProjectCandidates; 
+	protected BundleProjectMeta bundleProjectMeta;
+	protected MessageOptions messageOptions; 
+	long startTime;
+
+	// List of error status objects
+	private List<IBundleStatus> errStatusList = new ArrayList<>();
+
+	// List of historic status objects
+	private List<IBundleStatus> logStatusList = new ArrayList<>();
 
 	/**
 	 * Construct a job with the name of the job to run
@@ -63,12 +72,6 @@ public class JobStatus extends WorkspaceJob implements BundleTransitionEventList
 	public JobStatus(String name) {
 		super(name);
 	}
-
-	// List of error status objects
-	private List<IBundleStatus> errStatusList = new ArrayList<IBundleStatus>();
-
-	// List of historic status objects
-	private List<IBundleStatus> logStatusList = new ArrayList<IBundleStatus>();
 
 	/**
 	 * Runs the bundle(s) status operation.
@@ -81,13 +84,40 @@ public class JobStatus extends WorkspaceJob implements BundleTransitionEventList
 	 * normally and no status objects have been added to this job status list, or
 	 * {@code BundleStatusCode.JOBINFO} if any status objects have been added to the job status list.
 	 * The status list may be obtained from this job by accessing {@linkplain #getErrorStatusList()}.
+	 * @throws ExtenderException If failing to obtain any of the bundle command, transition region, candidates services or
+	 * the project meta and message options service
 	 */
 	@Override
-	public IBundleStatus runInWorkspace(IProgressMonitor monitor) throws CoreException {
-		if (getErrorStatusList().size() > 0) {
-			return new BundleStatus(StatusCode.JOBINFO, InPlace.PLUGIN_ID, null);
-		}
-		return new BundleStatus(StatusCode.OK, InPlace.PLUGIN_ID, null);
+	public IBundleStatus runInWorkspace(IProgressMonitor monitor) throws CoreException, ExtenderException {
+
+		bundleCommand = Activator.getBundleCommandService();
+		bundleTransition = Activator.getBundleTransitionService();
+		bundleRegion = Activator.getBundleRegionService();
+		bundleProjectCandidates = Activator.getBundleProjectCandidatesService();
+		bundleProjectMeta = Activator.getbundlePrrojectMetaService();
+		messageOptions = Activator.getMessageOptionsService();
+		startTime = System.currentTimeMillis();
+		return new BundleStatus(StatusCode.OK, Activator.PLUGIN_ID, null);
+	}
+
+	public long getStartedTime() {
+		return startTime;
+	}
+
+
+	/**
+	 * Get the status of a bundle job so far. If the job has generated any errors or warnings a bundle
+	 * status with {@code StatucCode.JOBINFO} is created otherwise a a status with
+	 * {@code StatusCode.OK} is created. The message in the status object contains the name of the job.
+	 * <p>
+	 * Generated errors and warnings so far may be obtained from {@link #getErrorStatusList()}
+	 * 
+	 * @return A bundle status object describing the status of the a bundle job so far
+	 */
+	protected IBundleStatus getJobSatus() {
+		
+		StatusCode statusCode = hasErrorStatus() ? StatusCode.JOBINFO : StatusCode.OK;
+		return new BundleStatus(statusCode, Activator.PLUGIN_ID, getName());
 	}
 
 	/**
@@ -96,7 +126,7 @@ public class JobStatus extends WorkspaceJob implements BundleTransitionEventList
 	@Override
 	public void bundleTransitionChanged(BundleTransitionEvent event) {
 
-		if (!InPlace.getMessageOptionsService().isBundleOperations()) {
+		if (!messageOptions.isBundleOperations()) {
 			return;
 		}
 		Bundle bundle = event.getBundle();
@@ -120,26 +150,24 @@ public class JobStatus extends WorkspaceJob implements BundleTransitionEventList
 				break;
 			case START:
 				if (bundleProjectMeta.getCachedActivationPolicy(bundle)) {
-					addLogStatus(Msg.ON_DEMAND_BUNDLE_START_OP_TRACE,
-							new Object[] { bundle }, bundle);
+					addLogStatus(Msg.ON_DEMAND_BUNDLE_START_OP_TRACE, new Object[] { bundle }, bundle);
 				} else {
-					addLogStatus(
-							Msg.START_BUNDLE_OP_TRACE,
-							new Object[] { bundle,
-									Long.toString(bundleCommand.getExecutionTime()) }, bundle);
+					addLogStatus(Msg.START_BUNDLE_OP_TRACE,
+							new Object[] { bundle, new DecimalFormat().format(bundleCommand.getExecutionTime()) }, bundle);
 				}
 				break;
 			case STOP:
-				addLogStatus(
-						Msg.STOP_BUNDLE_OP_TRACE,
-						new Object[] { bundle,
-								Long.toString(bundleCommand.getExecutionTime()) }, bundle);
+				addLogStatus(Msg.STOP_BUNDLE_OP_TRACE,
+						new Object[] { bundle, new DecimalFormat().format(bundleCommand.getExecutionTime()) }, bundle);
 				break;
 			case UNINSTALL:
 				String locUninstMsg = NLS.bind(Msg.BUNDLE_LOCATION_TRACE, bundle.getLocation());
-				IBundleStatus uninstStatus = new BundleStatus(StatusCode.INFO, bundle, project, locUninstMsg, null);
-				String uninstMsg = NLS.bind(Msg.UNINSTALL_BUNDLE_OP_TRACE, new Object[] { bundle.getSymbolicName(), bundle.getBundleId() });
-				IBundleStatus multiUninstStatus = new BundleStatus(StatusCode.INFO, bundle, project, uninstMsg, null);					
+				IBundleStatus uninstStatus = new BundleStatus(StatusCode.INFO, bundle, project,
+						locUninstMsg, null);
+				String uninstMsg = NLS.bind(Msg.UNINSTALL_BUNDLE_OP_TRACE,
+						new Object[] { bundle.getSymbolicName(), bundle.getBundleId() });
+				IBundleStatus multiUninstStatus = new BundleStatus(StatusCode.INFO, bundle, project,
+						uninstMsg, null);
 				multiUninstStatus.add(uninstStatus);
 				addLogStatus(multiUninstStatus);
 				break;
@@ -147,16 +175,19 @@ public class JobStatus extends WorkspaceJob implements BundleTransitionEventList
 				// If null, the bundle project probably failed to install
 				if (null != bundle) {
 					String locInstMsg = NLS.bind(Msg.BUNDLE_LOCATION_TRACE, bundle.getLocation());
-					IBundleStatus instStatus = new BundleStatus(StatusCode.INFO, bundle, project, locInstMsg, null);
-					String instMsg = NLS.bind(Msg.INSTALL_BUNDLE_OP_TRACE, new Object[] { bundle.getSymbolicName(), bundle.getBundleId() });
-					IBundleStatus multiInstStatus = new BundleStatus(StatusCode.INFO, bundle, project, instMsg, null);					
+					IBundleStatus instStatus = new BundleStatus(StatusCode.INFO, bundle, project, locInstMsg,
+							null);
+					String instMsg = NLS.bind(Msg.INSTALL_BUNDLE_OP_TRACE,
+							new Object[] { bundle.getSymbolicName(), bundle.getBundleId() });
+					IBundleStatus multiInstStatus = new BundleStatus(StatusCode.INFO, bundle, project,
+							instMsg, null);
 					multiInstStatus.add(instStatus);
 					addLogStatus(multiInstStatus);
 				}
 				break;
 			case LAZY_ACTIVATE:
-				addLogStatus(Msg.LAZY_ACTIVATE_BUNDLE_OP_TRACE, new Object[] { bundle,
-						bundleCommand.getStateName(bundle) }, bundle);
+				addLogStatus(Msg.LAZY_ACTIVATE_BUNDLE_OP_TRACE,
+						new Object[] { bundle, bundleCommand.getStateName(bundle) }, bundle);
 				break;
 			case UPDATE_CLASSPATH:
 				bundleClassPath = bundleProjectMeta.getBundleClassPath(project);
@@ -199,11 +230,8 @@ public class JobStatus extends WorkspaceJob implements BundleTransitionEventList
 						project);
 				break;
 			case NEW_PROJECT: {
-				final Extension<ActivateProject> activateExtension = Extenders
-						.getExtension(ActivateProject.class.getName());
-				ActivateProject activate = activateExtension.getService();
+				ActivateProject activate = new ActivateProjectJob();
 				String addActivated = activate.isProjectActivated(project) ? "activated" : "deactivated";
-				activateExtension.ungetService();
 				addLogStatus(Msg.ADD_PROJECT_OP_TRACE, new Object[] { addActivated, project.getName() },
 						project);
 				break;
@@ -212,10 +240,10 @@ public class JobStatus extends WorkspaceJob implements BundleTransitionEventList
 				break;
 			}
 		} catch (InPlaceException e) {
-			addLogStatus(new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, project,
+			addLogStatus(new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, project,
 					Msg.LOG_TRACE_EXP, e));
 		} catch (NullPointerException e) {
-			addLogStatus(new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, project,
+			addLogStatus(new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, project,
 					Msg.LOG_TRACE_EXP, e));
 		}
 		// TODO Check and add exceptions to catch
@@ -230,7 +258,7 @@ public class JobStatus extends WorkspaceJob implements BundleTransitionEventList
 	 * @return the newly created error status object with an exception, a message and a project
 	 */
 	public IBundleStatus addError(Throwable e, String message, IProject project) {
-		IBundleStatus status = new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID, project, message,
+		IBundleStatus status = new BundleStatus(StatusCode.ERROR, Activator.PLUGIN_ID, project, message,
 				e);
 		this.errStatusList.add(status);
 		try {
@@ -271,14 +299,6 @@ public class JobStatus extends WorkspaceJob implements BundleTransitionEventList
 		return status;
 	}
 
-	/**
-	 * Adds a bundle log status object to the bundle log status list
-	 * <p>
-	 * 
-	 * @param status the status object added to the log status list should contain at least the bundle
-	 * and/or the project related to the status message
-	 * @see #getLogStatusList()
-	 */
 	public IBundleStatus addLogStatus(IBundleStatus status) {
 		this.logStatusList.add(status);
 		return status;
@@ -321,7 +341,7 @@ public class JobStatus extends WorkspaceJob implements BundleTransitionEventList
 	 * @return the newly created error status object with an exception, a message and a bundle object
 	 */
 	public IBundleStatus addError(Throwable e, String message, Bundle bundle) {
-		IBundleStatus status = new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID, bundle, message, e);
+		IBundleStatus status = new BundleStatus(StatusCode.ERROR, Activator.PLUGIN_ID, bundle, message, e);
 		this.errStatusList.add(status);
 		try {
 			bundleTransition.setTransitionError(bundleRegion.getProject(bundle));
@@ -339,7 +359,7 @@ public class JobStatus extends WorkspaceJob implements BundleTransitionEventList
 	 * @return the newly created error status object with an exception and its project
 	 */
 	public IBundleStatus addError(Throwable e, IProject project) {
-		IBundleStatus status = new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID, project, null, e);
+		IBundleStatus status = new BundleStatus(StatusCode.ERROR, Activator.PLUGIN_ID, project, null, e);
 		this.errStatusList.add(status);
 		try {
 			bundleTransition.setTransitionError(project);
@@ -356,7 +376,7 @@ public class JobStatus extends WorkspaceJob implements BundleTransitionEventList
 		} else {
 			msg = ErrorMessage.getInstance().formatString("project_location", project.getName());
 		}
-		IBundleStatus status = new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID, project, msg, e);
+		IBundleStatus status = new BundleStatus(StatusCode.ERROR, Activator.PLUGIN_ID, project, msg, e);
 		this.errStatusList.add(status);
 		return status;
 	}
@@ -369,7 +389,7 @@ public class JobStatus extends WorkspaceJob implements BundleTransitionEventList
 	 * @return the newly created error status object with an exception and a message
 	 */
 	public IBundleStatus addError(Throwable e, String message) {
-		IBundleStatus status = new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID, message, e);
+		IBundleStatus status = new BundleStatus(StatusCode.ERROR, Activator.PLUGIN_ID, message, e);
 		this.errStatusList.add(status);
 		return status;
 	}
@@ -381,13 +401,13 @@ public class JobStatus extends WorkspaceJob implements BundleTransitionEventList
 	 * @return the newly created information status object with a message
 	 */
 	public IBundleStatus addInfoMessage(String message) {
-		IBundleStatus status = new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, message, null);
+		IBundleStatus status = new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, message, null);
 		this.errStatusList.add(status);
 		return status;
 	}
 
 	public IBundleStatus addInfoMessage(String message, IProject project) {
-		IBundleStatus status = new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, project, message,
+		IBundleStatus status = new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, project, message,
 				null);
 		this.errStatusList.add(status);
 		return status;
@@ -401,7 +421,7 @@ public class JobStatus extends WorkspaceJob implements BundleTransitionEventList
 	 * @return the newly created canceling status object with a message
 	 */
 	public IBundleStatus addCancelMessage(OperationCanceledException e, String message) {
-		IBundleStatus status = new BundleStatus(StatusCode.CANCEL, InPlace.PLUGIN_ID, message, e);
+		IBundleStatus status = new BundleStatus(StatusCode.CANCEL, Activator.PLUGIN_ID, message, e);
 		this.errStatusList.add(status);
 		return status;
 	}
@@ -415,7 +435,7 @@ public class JobStatus extends WorkspaceJob implements BundleTransitionEventList
 	 * build error belongs to.
 	 */
 	public IBundleStatus addBuildError(String msg, IProject project) {
-		IBundleStatus status = new BundleStatus(StatusCode.BUILDERROR, InPlace.PLUGIN_ID, project, msg,
+		IBundleStatus status = new BundleStatus(StatusCode.BUILDERROR, Activator.PLUGIN_ID, project, msg,
 				null);
 		this.errStatusList.add(status);
 		return status;
@@ -430,14 +450,14 @@ public class JobStatus extends WorkspaceJob implements BundleTransitionEventList
 	 * @return the newly created warning status object with an exception, a message and a project
 	 */
 	public IBundleStatus addWarning(Throwable e, String message, IProject project) {
-		IBundleStatus status = new BundleStatus(StatusCode.WARNING, InPlace.PLUGIN_ID, project,
+		IBundleStatus status = new BundleStatus(StatusCode.WARNING, Activator.PLUGIN_ID, project,
 				message, e);
 		this.errStatusList.add(status);
 		return status;
 	}
 
 	/**
-	 * Adds a status object to the status list
+	 * Adds a status object to the error status list
 	 * 
 	 * @param status the status object to add to the list
 	 * @return the added status object
@@ -456,13 +476,6 @@ public class JobStatus extends WorkspaceJob implements BundleTransitionEventList
 		this.errStatusList.addAll(statusList);
 	}
 
-	/**
-	 * Creates a multi status object containing the specified status object as the parent and all
-	 * status objects in the status list as children. The status list is then cleared and the new
-	 * multi status object is added to the list.
-	 * 
-	 * @param multiStatus a status object where all existing status objects are added to as children
-	 */
 	public IBundleStatus createMultiStatus(IBundleStatus multiStatus) {
 		for (IBundleStatus status : getErrorStatusList()) {
 			multiStatus.add(status);
@@ -509,7 +522,7 @@ public class JobStatus extends WorkspaceJob implements BundleTransitionEventList
 	 * @return the new status object
 	 */
 	public IBundleStatus createStatus() {
-		return new BundleStatus(StatusCode.OK, InPlace.PLUGIN_ID, "");
+		return new BundleStatus(StatusCode.OK, Activator.PLUGIN_ID, "");
 	}
 
 	/**
@@ -538,10 +551,8 @@ public class JobStatus extends WorkspaceJob implements BundleTransitionEventList
 	 * {@code StatusCode} = OK if the list is empty
 	 */
 	public IBundleStatus getLastErrorStatus() {
-		if (hasErrorStatus()) {
-			return errStatusList.get(errStatusList.size() - 1);
-		}
-		return createStatus();
+
+		return hasErrorStatus() ? errStatusList.get(errStatusList.size() - 1) : createStatus();
 	}
 
 	/**
@@ -563,7 +574,7 @@ public class JobStatus extends WorkspaceJob implements BundleTransitionEventList
 	public IBundleStatus formateBundleStatus(Collection<IBundleStatus> statusList, String rootMessage) {
 		ProjectSorter bs = new ProjectSorter();
 		Collection<IProject> duplicateClosureSet = null;
-		IBundleStatus rootStatus = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID,
+		IBundleStatus rootStatus = new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID,
 				rootMessage);
 		for (IBundleStatus bundleStatus : statusList) {
 			IProject project = bundleStatus.getProject();
@@ -575,7 +586,7 @@ public class JobStatus extends WorkspaceJob implements BundleTransitionEventList
 					if (duplicateClosureSet.size() > 0) {
 						String msg = ErrorMessage.getInstance().formatString("duplicate_affected_bundles",
 								project.getName(), bundleProjectCandidates.formatProjectList(duplicateClosureSet));
-						rootStatus.add(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, msg));
+						rootStatus.add(new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, msg));
 					}
 				}
 			}

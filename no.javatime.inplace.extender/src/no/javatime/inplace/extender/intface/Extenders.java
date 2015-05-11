@@ -1,12 +1,7 @@
 package no.javatime.inplace.extender.intface;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Dictionary;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.concurrent.ConcurrentMap;
 
 import no.javatime.inplace.extender.Activator;
 import no.javatime.inplace.extender.provider.ExtenderImpl;
@@ -15,7 +10,6 @@ import no.javatime.inplace.extender.provider.ExtenderServiceMap;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.Filter;
 import org.osgi.framework.ServiceReference;
-import org.osgi.util.tracker.BundleTracker;
 
 /**
  * Use factory methods to register, unregister and find extenders and create extensions
@@ -163,31 +157,17 @@ public class Extenders {
 	}
 
 	/**
-	 * Unregister this extender and the service held by this extender. After unregistering the
-	 * extender, the service is removed from the framework and any references to it is removed from
-	 * the extender.
+	 * Check if the extender is registered
 	 * <p>
-	 * After unregistering the service is not accessible. Thus it is possible to access all fields
-	 * associated with the service through the public access methods of the specified extender
+	 * If registered, the underlying service registered by this extender is also registered. If
+	 * unregistered the service is also unregistered
 	 * 
-	 * @param the extender to unregister
-	 * @see Extender#unregisterService()
+	 * @return true if the extender is registered; false if unregistered
 	 */
-	public static <S> void unregister(Extender<S> extender) {
-		extender.unregister();
-	}
+	public static <S> Boolean isRegistered(String serviceIntefaceName) {
 
-	/**
-	 * Release the service object held by this extender. The context bundle's use count for the
-	 * service is decremented by one.
-	 * 
-	 * @return false if the context bundle's use count for the service is zero or if the service has
-	 * been unregistered; true otherwise;
-	 * @see org.osgi.framework.BundleContext#ungetService(ServiceReference) OSGi ungetService
-	 * @see #ungetService(Bundle)
-	 */
-	public static <S> Boolean ungetService(Extender<S> extender) {
-		return extender.ungetService();
+		Extender<S> extender = getExtender(serviceIntefaceName);
+		return null != extender ? extender.isRegistered() : false; 
 	}
 
 	/**
@@ -196,8 +176,7 @@ public class Extenders {
 	 * 
 	 * @param serviceInterfaceName service interface name
 	 * @user The bundle using the extension
-	 * @return the extension interface or null if there is no registered service with the specified
-	 * interface name
+	 * @return An extension of the extender with highest priority with the given service interface name   
 	 * @throws ExtenderException if fail to get the registered extension or no extender were
 	 * registered with the specified interface name
 	 */
@@ -213,6 +192,30 @@ public class Extenders {
 					serviceInterfaceName);
 		}
 		return extender.getExtension(user);
+	}
+	/**
+	 * Create an extension of the extender registered with the specified interface name
+	 * <p>
+	 * 
+	 * @param serviceInterfaceName The service interface name
+	 * @param user The bundle using the extension
+	 * @param bt The bundle tracker unget service is called when the service tracker used by the extension is closed
+	 * @return The extension based on the extender with the highest priority
+	 * @throws ExtenderException if fail to get the registered extension or no extender were
+	 * registered with the specified interface name
+	 */
+	public static final <S> Extension<S> getExtension(String serviceInterfaceName, Bundle user, ExtenderBundleTracker bt)
+			throws ExtenderException {
+
+		ExtenderServiceMap<S> extServiceMap = Activator.getExtenderServiceMap();
+		Extender<S> extender = extServiceMap.get(serviceInterfaceName);
+		Activator.ungetServiceMap();
+		if (null == extender) {
+			throw new ExtenderException(
+					"Found no extender registered with the specified interface name {0}",
+					serviceInterfaceName);
+		}
+		return extender.getExtension(user, bt);
 	}
 
 	/**
@@ -277,8 +280,8 @@ public class Extenders {
 	 * @param filter The filter expression or {@code null} for all extenders.
 	 * @return a list of extenders matching the specified class service name and the specified filter
 	 * or {@code null} if no extenders are registered which satisfy the search.
-	 * @throws ExtenderException If no extender were registered with the specified interface names
-	 * or the the filter contains syntax errors
+	 * @throws ExtenderException If no extender were registered with the specified interface names or
+	 * the the filter contains syntax errors
 	 */
 	public static final <S> Collection<Extender<S>> getExtenders(String serviceInterfaceName,
 			String filter) throws ExtenderException {
@@ -290,55 +293,35 @@ public class Extenders {
 	}
 
 	/**
-	 * Get all extenders tracked by the specified bundle tracker
-	 * 
-	 * @param bundleTracker the bundle tracker tracking extenders
-	 * @return a collection of extenders tracked by the specified bundle tracker or an empty
-	 * collection if no extenders are tracked by the specified bundle tracker. If the specified bundle
-	 * tracker is null an empty collection is returned.
-	 */
-	public static final Collection<Extender<?>> getTrackedExtenders(
-			BundleTracker<Collection<Extender<?>>> bundleTracker) {
-
-		Collection<Extender<?>> trackedExtenders = new ArrayList<>();
-		if (null != bundleTracker) {
-			Map<Bundle, Collection<Extender<?>>> tracked = bundleTracker.getTracked();
-			Iterator<Entry<Bundle, Collection<Extender<?>>>> it = tracked.entrySet().iterator();
-			while (it.hasNext()) {
-				ConcurrentMap.Entry<Bundle, Collection<Extender<?>>> entry = it.next();
-				for (Extender<?> e : entry.getValue()) {
-					trackedExtenders.add(e);
-				}
-			}
-		}
-		return trackedExtenders;
-	}
-
-	/**
-	 * Get all extenders tracked by the specified bundle using a bundle tracker
+	 * Get an extender with the specified service interface name owned and registered by the specified
+	 * source bundle. If there are more than one extender owned and registered by the bundle hosting
+	 * the extender service the first one encountered is returned.
 	 * <p>
-	 * If the specified bundle has registered any extenders using a bundle tracker they are returned.
+	 * Using an extender registered by the bundle hosting or owning the extender service guarantees
+	 * that the using bundle is only dependent on the bundle owing the service registered with the
+	 * extender. If there are no such extenders, registering a new extender result in the same
+	 * dependency as using an extender where the owner and registrar bundle is the same.
+	 * @param serviceInterfaceName the service interface owned and registered by the specified bundle
+	 * @param sourceBundle An extender owned and registered by this source bundle. Extenders are
+	 * always owned by one bundle, but may be registered by multiple bundles
 	 * 
-	 * @param registrar the bundle registering any extenders by using a bundle tracker
-	 * @return a collection of extenders registered by the specified bundle using a bundle tracker or
-	 * an empty collection if no extenders have been registered with a bundle tracker by the specified
-	 * bundle. If the specified bundle is null an empty collection is returned.
+	 * @return An extender owned and registered by the specified bundle with the specified service
+	 * interface name or null if no extenders have been registered with a bundle with the specified
+	 * service interface name.
 	 */
-	public static final Collection<Extender<?>> getTrackedExtenders(Bundle registrar) {
+	public static <S> Extender<S> getExtender(String serviceInterfaceName, Bundle sourceBundle) {
 
-		Collection<Extender<?>> trackedExtenders = new ArrayList<>();
-
-		Collection<Extender<Object>> extenders = Extenders.getExtenders(null, null);
-		for (Extender<?> extender : extenders) {
-			Bundle registrarBundle = extender.getRegistrar();
-			if (null != registrar && registrarBundle.equals(registrar)) {
-				Collection<Extender<?>> tracked = extender.getTrackedExtenders();
-				if (null != tracked) {
-					trackedExtenders.addAll(tracked);
+		Collection<Extender<S>> extenders = Extenders.getExtenders(serviceInterfaceName, null);
+		if (null != extenders) {
+			for (Extender<S> extender : extenders) {
+				Bundle ownerBundle = extender.getOwner();
+				Bundle registrBundle = extender.getRegistrar();
+				if (ownerBundle.equals(sourceBundle) && registrBundle.equals(sourceBundle)) {
+					return extender;
 				}
 			}
 		}
-		return trackedExtenders;
+		return null;
 	}
 
 	/**

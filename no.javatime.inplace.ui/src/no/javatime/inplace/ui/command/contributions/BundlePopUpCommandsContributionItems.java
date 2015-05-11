@@ -12,7 +12,6 @@ package no.javatime.inplace.ui.command.contributions;
 
 import java.util.ArrayList;
 
-import no.javatime.inplace.bundlejobs.intface.ResourceState;
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.region.closure.BuildErrorClosure;
 import no.javatime.inplace.region.intface.BundleCommand;
@@ -53,10 +52,8 @@ public class BundlePopUpCommandsContributionItems extends BundleCommandsContribu
 
 	// Activation policy per bundle
 	public final static String policyParamId = "Policy";
-	private final static String eagerLabel = Message.getInstance().formatString("eager_activation_label");
-	
-	private final BundleCommand bundleCommand = Activator.getBundleCommandService(); 
-	private final BundleProjectMeta bundlePrrojectMeta = Activator.getBundleProjectMetaService();
+	private final static String eagerLabel = Message.getInstance().formatString(
+			"eager_activation_label");
 
 	public BundlePopUpCommandsContributionItems() {
 		super();
@@ -65,20 +62,19 @@ public class BundlePopUpCommandsContributionItems extends BundleCommandsContribu
 	@Override
 	protected IContributionItem[] getContributionItems() {
 
-		BundleRegion bundleRegion = Activator.getBundleRegionService(); 
-		ArrayList<ContributionItem> contributions = new ArrayList<ContributionItem>();
+		ArrayList<ContributionItem> contributions = new ArrayList<>();
 		IJavaProject javaProject = BundleMenuActivationHandler.getSelectedJavaProject();
 		if (null == javaProject) {
 			return new IContributionItem[0];
 		}
+		IProject project = javaProject.getProject();
 		try {
+			BundleRegion bundleRegion = Activator.getBundleRegionService();
 			// Get project, activation status and the bundle project
-			IProject project = javaProject.getProject();
-			Boolean activated = Activator.getBundleRegionService().isBundleActivated(project);
+			Boolean activated = bundleRegion.isBundleActivated(project);
 			Bundle bundle = bundleRegion.getBundle(project);
-			ResourceState resourceState = Activator.getResourceStateService();
 			// Busy running bundle jobs.
-			if (resourceState.hasBundleJobState()) {
+			if (Activator.getResourceStateService().hasBundleJobState()) {
 				// Do not add contributions for bundles that are dependent on their current state
 				contribute(addStopTaskOperation(menuId, dynamicPopUpCommandId), contributions);
 				contribute(addInterrupt(menuId, dynamicPopUpCommandId), contributions);
@@ -91,19 +87,22 @@ public class BundlePopUpCommandsContributionItems extends BundleCommandsContribu
 				contribute(addRefresh(activated, bundle), contributions);
 				contribute(addReset(activated, bundle), contributions);
 			}
-			contributions.add(new Separator(IWorkbenchActionConstants.MB_ADDITIONS));
-			contribute(addToggleBundleView(), contributions);
-			contribute(addToggleBundleConsoleView(menuId, dynamicPopUpCommandId), contributions);
-			contribute(addToggleBundleLogView(menuId, dynamicPopUpCommandId), contributions);
-			contributions.add(new Separator(IWorkbenchActionConstants.MB_ADDITIONS));
-			contribute(addClassPath(project), contributions);
-			contribute(addEagerActivation(), contributions);
+			if (activated && null == bundle) {
+				throw new ExtenderException("Bundle is null when contributing pop-up menu entries for activated project {0}", project.getName());
+			}
 		} catch (InPlaceException | ExtenderException e) {
 			StatusManager.getManager()
 					.handle(
 							new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID,
 									Msg.ADD_CONTRIBUTION_ERROR, e), StatusManager.LOG);
 		}
+		contributions.add(new Separator(IWorkbenchActionConstants.MB_ADDITIONS));
+		contribute(addToggleBundleView(), contributions);
+		contribute(addToggleBundleConsoleView(menuId, dynamicPopUpCommandId), contributions);
+		contribute(addToggleBundleLogView(menuId, dynamicPopUpCommandId), contributions);
+		contributions.add(new Separator(IWorkbenchActionConstants.MB_ADDITIONS));
+		contribute(addClassPath(project), contributions);
+		contribute(addEagerActivation(), contributions);
 		IContributionItem[] contributionArray = contributions
 				.toArray(new ContributionItem[contributions.size()]);
 		return contributionArray;
@@ -116,17 +115,26 @@ public class BundlePopUpCommandsContributionItems extends BundleCommandsContribu
 	 * @param project project to activate
 	 * @param bundle bundle corresponding to the project
 	 * @return a contribution to activate the bundle project or null if the specified activate
-	 * parameter is true
+	 * parameter is true or failing to get the state name of the bundle
 	 */
 	private CommandContributionItem addActivate(Boolean activated, IProject project, Bundle bundle) {
+
 		String label;
 		String stateName = " (";
-		if (!activated) {
-			stateName += bundleCommand.getStateName(bundle) + ")";
-			label = activateProjectParamId;
-			label += " " + stateName;
-			return createContibution(menuId, dynamicPopUpCommandId, label, activateProjectParamId,
-					CommandContributionItem.STYLE_PUSH, activateImage);
+		try {
+			if (!activated) {
+				BundleCommand bundleCommand = Activator.getBundleCommandService();
+				stateName += bundleCommand.getStateName(bundle) + ")";
+				label = activateProjectParamId;
+				label += " " + stateName;
+				return createContibution(menuId, dynamicPopUpCommandId, label, activateProjectParamId,
+						CommandContributionItem.STYLE_PUSH, activateImage);
+			}
+		} catch (InPlaceException | ExtenderException e) {
+			StatusManager.getManager()
+					.handle(
+							new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID,
+									Msg.ADD_CONTRIBUTION_ERROR, e), StatusManager.LOG);
 		}
 		return null;
 	}
@@ -138,17 +146,26 @@ public class BundlePopUpCommandsContributionItems extends BundleCommandsContribu
 	 * @param project project to deactivate
 	 * @param bundle bundle corresponding to the project
 	 * @return a contribution to deactivate the bundle project or null if the specified activate
-	 * parameter is false
+	 * parameter is false or failing to get the state name of the bundle
 	 */
 	private CommandContributionItem addDeactivate(Boolean activated, IProject project, Bundle bundle) {
+
 		String label;
 		String stateName = " (";
-		if (activated) {
-			stateName += bundleCommand.getStateName(bundle) + ")";
-			label = deactivateParamId;
-			label += " " + stateName;
-			return createContibution(menuId, dynamicPopUpCommandId, label, deactivateParamId,
-					CommandContributionItem.STYLE_PUSH, deactivateImage);
+		try {
+			if (activated) {
+				BundleCommand bundleCommand = Activator.getBundleCommandService();
+				stateName += bundleCommand.getStateName(bundle) + ")";
+				label = deactivateParamId;
+				label += " " + stateName;
+				return createContibution(menuId, dynamicPopUpCommandId, label, deactivateParamId,
+						CommandContributionItem.STYLE_PUSH, deactivateImage);
+			}
+		} catch (InPlaceException | ExtenderException e) {
+			StatusManager.getManager()
+					.handle(
+							new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID,
+									Msg.ADD_CONTRIBUTION_ERROR, e), StatusManager.LOG);
 		}
 		return null;
 	}
@@ -160,18 +177,25 @@ public class BundlePopUpCommandsContributionItems extends BundleCommandsContribu
 	 * @param activated the activation status of the bundle project
 	 * @param bundle the bundle to start
 	 * @return a contribution to start the bundle or null if it is not activated or already in state
-	 * active
-	 * @throws InPlaceException if the specified bundle is null or a security violation
+	 * active or failing to get the fragment status of the bundle
 	 */
-	private CommandContributionItem addStart(Boolean activated, Bundle bundle)
-			throws InPlaceException {
-		if (activated) {
-			if (!bundlePrrojectMeta.isFragment(bundle)) {
-				if ((bundle.getState() & (Bundle.INSTALLED | Bundle.RESOLVED | Bundle.STOPPING)) != 0) {
-					return createContibution(menuId, dynamicPopUpCommandId, startParamId, startParamId,
-							CommandContributionItem.STYLE_PUSH, startImage);
+	private CommandContributionItem addStart(Boolean activated, Bundle bundle) {
+
+		try {
+			if (null != bundle && activated) {
+				BundleProjectMeta bundlePrrojectMeta = Activator.getBundleProjectMetaService();
+				if (!bundlePrrojectMeta.isFragment(bundle)) {
+					if ((bundle.getState() & (Bundle.INSTALLED | Bundle.RESOLVED | Bundle.STOPPING)) != 0) {
+						return createContibution(menuId, dynamicPopUpCommandId, startParamId, startParamId,
+								CommandContributionItem.STYLE_PUSH, startImage);
+					}
 				}
 			}
+		} catch (InPlaceException | ExtenderException e) {
+			StatusManager.getManager()
+					.handle(
+							new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID,
+									Msg.ADD_CONTRIBUTION_ERROR, e), StatusManager.LOG);
 		}
 		return null;
 	}
@@ -186,6 +210,7 @@ public class BundlePopUpCommandsContributionItems extends BundleCommandsContribu
 	 * or the bundle is null
 	 */
 	private CommandContributionItem addStop(Boolean activated, Bundle bundle) {
+
 		if (null != bundle && activated) {
 			if ((bundle.getState() & (Bundle.ACTIVE | Bundle.STARTING)) != 0) {
 				return createContibution(menuId, dynamicPopUpCommandId, stopParamId, stopParamId,
@@ -198,6 +223,10 @@ public class BundlePopUpCommandsContributionItems extends BundleCommandsContribu
 	/**
 	 * Adds a contribution to refresh the specified bundle if the bundle is activated and has more
 	 * than one revision
+	 * <p>
+	 * In this case it is always permitted to refresh a bundle, even if it not has any pending
+	 * refresh. To conditionally add a refresh operation check if has a pending refresh by checking if
+	 * number of revisions of the bundle
 	 * 
 	 * @param activated the activation status of the bundle project
 	 * @param bundle the bundle to refresh
@@ -209,7 +238,7 @@ public class BundlePopUpCommandsContributionItems extends BundleCommandsContribu
 			throws InPlaceException {
 
 		// Conditional enabling of refresh
-		if (activated) {
+		if (null != bundle && activated) {
 			return createContibution(menuId, dynamicPopUpCommandId, refreshParamId, refreshParamId,
 					CommandContributionItem.STYLE_PUSH, refreshImage);
 		}
@@ -217,8 +246,11 @@ public class BundlePopUpCommandsContributionItems extends BundleCommandsContribu
 	}
 
 	/**
-	 * Adds a contribution to update the specified bundle if the bundle is activated and and has a
-	 * pending update transition attached to it
+	 * Adds a contribution to update the specified bundle if the bundle is activated
+	 * <p>
+	 * In this case it is always permitted to update a bundle, even if it has not been saved and
+	 * built.To conditionally add an update operation check if has a pending update transition
+	 * attached to it
 	 * 
 	 * @param activated the activation status of the bundle project
 	 * @param bundle the bundle to update
@@ -226,6 +258,7 @@ public class BundlePopUpCommandsContributionItems extends BundleCommandsContribu
 	 * transition
 	 */
 	private CommandContributionItem addUpdate(Boolean activated, IProject project, Bundle bundle) {
+
 		if (null != bundle && activated) {
 			return createContibution(menuId, dynamicPopUpCommandId, updateParamId, updateParamId,
 					CommandContributionItem.STYLE_PUSH, updateImage);
@@ -237,10 +270,11 @@ public class BundlePopUpCommandsContributionItems extends BundleCommandsContribu
 	 * Adds a contribution to reset the specified bundle if the bundle is activated
 	 * 
 	 * @param activated the activation status of the bundle project
-	 * @param bundle the bundle to reset
+	 * @param bundle TODO
 	 * @return a contribution to update the bundle or null if it is not activated
 	 */
 	private CommandContributionItem addReset(Boolean activated, Bundle bundle) {
+
 		if (null != bundle && activated) {
 			return createContibution(menuId, dynamicPopUpCommandId, resetParamId, resetParamId,
 					CommandContributionItem.STYLE_PUSH, resetImage);
@@ -253,20 +287,27 @@ public class BundlePopUpCommandsContributionItems extends BundleCommandsContribu
 	 * 
 	 * @param project The project that contains or is missing the default output folder
 	 * @return a contribution to add or remove the default output folder on the specified project or
-	 * null if there are any build errors in the manifest
-	 * @throws InPlaceException if a core exception occurs, manifest file is missing or the project
-	 * description could not be obtained
+	 * null if manifest file is missing or have any build errors or failing to get the state of the
+	 * default output folder
 	 */
-	private CommandContributionItem addClassPath(IProject project) throws InPlaceException {
+	private CommandContributionItem addClassPath(IProject project) {
 
-		if (!BuildErrorClosure.hasManifestBuildErrors(project)) {
-			if (!bundlePrrojectMeta.isDefaultOutputFolder(project)) {
-				return createContibution(menuId, dynamicPopUpCommandId, addClassPathLabel,
-						addClassPathParamId, CommandContributionItem.STYLE_PUSH, classPathImage);
-			} else {
-				return createContibution(menuId, dynamicPopUpCommandId, removeClassPathLabel,
-						removeClassPathParamId, CommandContributionItem.STYLE_PUSH, classPathImage);
+		try {
+			if (!BuildErrorClosure.hasManifestBuildErrors(project)) {
+				BundleProjectMeta bundlePrrojectMeta = Activator.getBundleProjectMetaService();
+				if (!bundlePrrojectMeta.isDefaultOutputFolder(project)) {
+					return createContibution(menuId, dynamicPopUpCommandId, addClassPathLabel,
+							addClassPathParamId, CommandContributionItem.STYLE_PUSH, classPathImage);
+				} else {
+					return createContibution(menuId, dynamicPopUpCommandId, removeClassPathLabel,
+							removeClassPathParamId, CommandContributionItem.STYLE_PUSH, classPathImage);
+				}
 			}
+		} catch (InPlaceException | ExtenderException e) {
+			StatusManager.getManager()
+					.handle(
+							new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID,
+									Msg.ADD_CONTRIBUTION_ERROR, e), StatusManager.LOG);
 		}
 		return null;
 	}
@@ -281,6 +322,7 @@ public class BundlePopUpCommandsContributionItems extends BundleCommandsContribu
 	 * details page in an open view with an active project.
 	 */
 	private CommandContributionItem addToggleBundleView() {
+
 		if (!ViewUtil.isVisible(BundleView.ID)) {
 			return createContibution(menuId, dynamicPopUpCommandId, showBundleView, bundleViewParamId,
 					CommandContributionItem.STYLE_PUSH, bundleListImage);
@@ -307,6 +349,7 @@ public class BundlePopUpCommandsContributionItems extends BundleCommandsContribu
 	 * @return a contribution to change activation policy
 	 */
 	private CommandContributionItem addEagerActivation() {
+
 		return createContibution(menuId, dynamicPopUpCommandId, eagerLabel, policyParamId,
 				CommandContributionItem.STYLE_CHECK, null);
 	}

@@ -1,33 +1,32 @@
 package no.javatime.inplace.pl.preferences;
 
 import no.javatime.inplace.dl.preferences.intface.CommandOptions;
-import no.javatime.inplace.extender.intface.Extenders;
-import no.javatime.inplace.extender.intface.Extension;
-import no.javatime.inplace.pl.preferences.msg.Msg;
 
 import org.eclipse.jface.resource.ImageDescriptor;
-import org.eclipse.osgi.util.NLS;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
+import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 
 /**
  * The activator class controls the plug-in life cycle
  */
-public class PreferencePlActivator extends AbstractUIPlugin {
+public class Activator extends AbstractUIPlugin {
 
 	// The plug-in ID
 	public static final String PLUGIN_ID = "no.javatime.inplace.pl.preferences"; //$NON-NLS-1$
 
 	// The shared instance
-	private static PreferencePlActivator plugin;
+	private static Activator plugin;
 	private static BundleContext context;
+	private static Bundle bundle;
 
-	private Extension<CommandOptions> commandOptions;
+	// Register (extend) services for use facilitated by other bundles
+	private static ExtenderTracker extenderBundleTracker;
 
 	/**
 	 * The constructor
 	 */
-	public PreferencePlActivator() {
+	public Activator() {
 	}
 
 	/*
@@ -37,8 +36,10 @@ public class PreferencePlActivator extends AbstractUIPlugin {
 	public void start(BundleContext context) throws Exception {
 		super.start(context);
 		plugin = this;
-		PreferencePlActivator.context = context;
-		commandOptions = Extenders.getExtension(CommandOptions.class.getName());
+		bundle = context.getBundle();
+		Activator.context = context;
+		extenderBundleTracker = new ExtenderTracker(context, Bundle.ACTIVE, null);
+		extenderBundleTracker.open();
 	}
 
 	/*
@@ -46,9 +47,10 @@ public class PreferencePlActivator extends AbstractUIPlugin {
 	 * @see org.eclipse.ui.plugin.AbstractUIPlugin#stop(org.osgi.framework.BundleContext)
 	 */
 	public void stop(BundleContext context) throws Exception {
+		extenderBundleTracker.close();
 		super.stop(context);
 		plugin = null;
-		PreferencePlActivator.context = null;
+		Activator.context = null;
 	}
 
 	/**
@@ -58,11 +60,7 @@ public class PreferencePlActivator extends AbstractUIPlugin {
 	 */
 	public CommandOptions getOptionsService() throws IllegalStateException {
 
-		CommandOptions cmdOpt = commandOptions.getService();
-		if (null == cmdOpt) {
-			throw new IllegalStateException(NLS.bind(Msg.STORE_SERVICE_EXCEPTION,  CommandOptions.class.getName()));
-		}
-		return cmdOpt;
+		return extenderBundleTracker.commandOptionsExtender.getService(bundle);
 	}
 
 	/**
@@ -79,7 +77,7 @@ public class PreferencePlActivator extends AbstractUIPlugin {
 	 *
 	 * @return the shared instance
 	 */
-	public static PreferencePlActivator getDefault() {
+	public static Activator getDefault() {
 		return plugin;
 	}
 

@@ -17,6 +17,7 @@ import java.util.LinkedHashSet;
 import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
+import no.javatime.util.messages.ExceptionMessage;
 
 import org.eclipse.core.resources.IProject;
 import org.osgi.framework.Bundle;
@@ -38,7 +39,7 @@ public class CircularReferenceException extends InPlaceException {
 	 * Creates a circular exception containing a default message indicating a termination due to a cycle.
 	 */
 	public CircularReferenceException() {
-		super("circular_reference_termination");
+		super(ExceptionMessage.getInstance().getString("circular_reference_termination"));
 	}
 
 	/**

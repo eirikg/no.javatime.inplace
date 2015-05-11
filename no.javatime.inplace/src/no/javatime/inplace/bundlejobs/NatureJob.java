@@ -15,7 +15,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 
-import no.javatime.inplace.InPlace;
+import no.javatime.inplace.Activator;
 import no.javatime.inplace.builder.JavaTimeNature;
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.msg.Msg;
@@ -88,8 +88,17 @@ public abstract class NatureJob extends BundleJob {
 		super(name, project);
 	}
 
+	/**
+	 * Does nothing
+	 */
+	@Override
+	public IBundleStatus runInWorkspace(IProgressMonitor monitor) throws CoreException, ExtenderException {
+		return super.runInWorkspace(monitor);
+	}
+
+
 	public Boolean isProjectActivated(IProject project) throws InPlaceException, ExtenderException {
-		BundleProjectCandidates bundleProjectCandidates = InPlace.getBundleProjectCandidatesService();
+		BundleProjectCandidates bundleProjectCandidates = Activator.getBundleProjectCandidatesService();
 		if (bundleProjectCandidates.isNatureEnabled(project, JavaTimeNature.JAVATIME_NATURE_ID)) {
 			return true;
 		}
@@ -97,7 +106,7 @@ public abstract class NatureJob extends BundleJob {
 	}
 
 	public Boolean isProjectWorkspaceActivated() throws InPlaceException, ExtenderException {
-		BundleProjectCandidates bundleProjectCandidates = InPlace.getBundleProjectCandidatesService();
+		BundleProjectCandidates bundleProjectCandidates = Activator.getBundleProjectCandidatesService();
 		for (IProject project : bundleProjectCandidates.getBundleProjects()) {
 			if (isProjectActivated(project)) {
 				return true;
@@ -108,7 +117,7 @@ public abstract class NatureJob extends BundleJob {
 
 	public Collection<IProject> getActivatedProjects() throws InPlaceException, ExtenderException {
 
-		BundleProjectCandidates bundleProjectCandidates = InPlace.getBundleProjectCandidatesService();
+		BundleProjectCandidates bundleProjectCandidates = Activator.getBundleProjectCandidatesService();
 		Collection<IProject> projects = new LinkedHashSet<IProject>();
 
 		for (IProject project : bundleProjectCandidates.getBundleProjects()) {
@@ -121,21 +130,13 @@ public abstract class NatureJob extends BundleJob {
 
 	public Collection<IProject> getDeactivatedProjects() throws InPlaceException, ExtenderException {
 
-		BundleProjectCandidates bundleProjectCandidates = InPlace.getBundleProjectCandidatesService();
+		BundleProjectCandidates bundleProjectCandidates = Activator.getBundleProjectCandidatesService();
 		return  bundleProjectCandidates.getCandidates();
 	}
 
 	/**
-	 * Does nothing
-	 */
-	@Override
-	public IBundleStatus runInWorkspace(IProgressMonitor monitor) throws CoreException {
-		return super.runInWorkspace(monitor);
-	}
-
-	/**
 	 * Installs pending bundles and set activation status on the bundles. All failures to install are
-	 * added to the job status list
+	 * added to the job error status list
 	 * 
 	 * @param projectsToInstall a collection of bundle projects to install
 	 * @param monitor monitor the progress monitor to use for reporting progress to the user.
@@ -145,7 +146,7 @@ public abstract class NatureJob extends BundleJob {
 			IProgressMonitor monitor) {
 
 		SubMonitor progress = SubMonitor.convert(monitor, projectsToInstall.size());
-		Collection<Bundle> activatedBundles = new LinkedHashSet<Bundle>();
+		Collection<Bundle> activatedBundles = new LinkedHashSet<>();
 
 		for (IProject project : projectsToInstall) {
 			Bundle bundle = null; // Assume not installed
@@ -171,9 +172,9 @@ public abstract class NatureJob extends BundleJob {
 			} catch (ProjectLocationException e) {
 				IBundleStatus status = addError(e, e.getLocalizedMessage());
 				String msg = ErrorMessage.getInstance().formatString("project_location", project.getName());
-				status.add(new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID, project, msg, null));
+				status.add(new BundleStatus(StatusCode.ERROR, Activator.PLUGIN_ID, project, msg, null));
 				msg = NLS.bind(Msg.REFRESH_HINT_INFO, project.getName());
-				status.add(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, project, msg, null));
+				status.add(new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, project, msg, null));
 			} catch (InPlaceException e) {
 				String msg = ErrorMessage.getInstance().formatString("install_error_project",
 						project.getName());
@@ -252,7 +253,7 @@ public abstract class NatureJob extends BundleJob {
 	protected IBundleStatus reInstall(Collection<IProject> projectsToReinstall,
 			IProgressMonitor monitor) {
 
-		IBundleStatus status = new BundleStatus(StatusCode.OK, InPlace.PLUGIN_ID, "");
+		IBundleStatus status = new BundleStatus(StatusCode.OK, Activator.PLUGIN_ID, "");
 		SubMonitor progress = SubMonitor.convert(monitor, projectsToReinstall.size());
 
 		for (IProject project : projectsToReinstall) {
@@ -306,7 +307,7 @@ public abstract class NatureJob extends BundleJob {
 				if (isProjectActivated(project)) {
 					toggleNatureActivation(project, new SubProgressMonitor(monitor, 1));
 				}
-				if (getOptionsService().isUpdateDefaultOutPutFolder()) {
+				if (commandOptions.isUpdateDefaultOutPutFolder()) {
 					bundleProjectMeta.removeDefaultOutputFolder(project);
 				}
 				bundleTransition.clearTransitionError(project);
@@ -336,7 +337,7 @@ public abstract class NatureJob extends BundleJob {
 	protected IBundleStatus activateNature(Collection<IProject> projectsToActivate,
 			SubProgressMonitor monitor) {
 
-		IBundleStatus result = new BundleStatus(StatusCode.OK, InPlace.PLUGIN_ID, "");
+		IBundleStatus result = new BundleStatus(StatusCode.OK, Activator.PLUGIN_ID, "");
 		SubMonitor localMonitor = SubMonitor.convert(monitor, projectsToActivate.size());
 
 		for (IProject project : projectsToActivate) {
@@ -350,7 +351,7 @@ public abstract class NatureJob extends BundleJob {
 					result = resolveBundleClasspath(project);
 					Bundle bundle = bundleRegion.getBundle(project);
 					try {
-						if (getOptionsService().isEagerOnActivate()) {
+						if (commandOptions.isEagerOnActivate()) {
 							Boolean isLazy = bundleProjectMeta.getActivationPolicy(project.getProject());
 							if (isLazy) {
 								bundleProjectMeta.toggleActivationPolicy(project);
@@ -414,7 +415,7 @@ public abstract class NatureJob extends BundleJob {
 						System.arraycopy(natures, i + 1, newNatures, i, natures.length - i - 1);
 						description.setNatureIds(newNatures);
 						project.setDescription(description, null);
-						if (InPlace.getMessageOptionsService().isBundleOperations()) {
+						if (messageOptions.isBundleOperations()) {
 							Bundle bundle = bundleRegion.getBundle(project);
 							if (null == bundle) {
 								addLogStatus(Msg.DISABLE_NATURE_TRACE, new Object[] { project.getName() }, project);
@@ -433,7 +434,7 @@ public abstract class NatureJob extends BundleJob {
 				newNatures[natures.length] = JavaTimeNature.JAVATIME_NATURE_ID;
 				description.setNatureIds(newNatures);
 				project.setDescription(description, null);
-				if (InPlace.get().getMessageOptionsService().isBundleOperations()) {
+				if (messageOptions.isBundleOperations()) {
 					Bundle bundle = bundleRegion.getBundle(project);
 					if (null == bundle) {
 						addLogStatus(Msg.ENABLE_NATURE_TRACE, new Object[] { project.getName() }, project);

@@ -23,14 +23,14 @@ public class BundleDependenciesCommandContribution extends BundleMainCommandsCon
 	@Override
 	protected IContributionItem[] getContributionItems() {
 
-		ArrayList<ContributionItem> contributions = new ArrayList<ContributionItem>();
+		ArrayList<ContributionItem> contributions = new ArrayList<>();
 		try {
-			// Is extender for this extension registered
-			Activator.getExtension(DependencyDialog.class);
-			contributions.add(createContibution(menuIdDependencies, dynamicMainCommandId, partialDependenciesLabel, dependencyDialogParamId,
-					CommandContributionItem.STYLE_PUSH, dependenciesImage));
+			if (null != Activator.getTracker().getTrackedExtender(DependencyDialog.class.getName())) {
+				contributions.add(createContibution(menuIdDependencies, dynamicMainCommandId, partialDependenciesLabel, dependencyDialogParamId,
+						CommandContributionItem.STYLE_PUSH, dependenciesImage));
+			}
 		} catch (ExtenderException e) {
-			// Silently don't display menu entry when extension is unavailable
+			// Don't display menu entry when unavailable
 		}		
 		IContributionItem[] contributionArray = contributions.toArray(new ContributionItem[contributions.size()]);
 		return contributionArray;

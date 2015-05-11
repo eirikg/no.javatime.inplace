@@ -25,12 +25,14 @@ import no.javatime.inplace.bundlejobs.intface.Stop;
 import no.javatime.inplace.bundlejobs.intface.TogglePolicy;
 import no.javatime.inplace.bundlejobs.intface.Update;
 import no.javatime.inplace.bundlejobs.intface.UpdateBundleClassPath;
+import no.javatime.inplace.dl.preferences.intface.CommandOptions;
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.extender.intface.Extension;
 import no.javatime.inplace.log.intface.BundleLogView;
 import no.javatime.inplace.pl.console.intface.BundleConsoleFactory;
 import no.javatime.inplace.pl.dependencies.intface.DependencyDialog;
 import no.javatime.inplace.region.intface.BundleProjectCandidates;
+import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.ui.Activator;
 import no.javatime.inplace.ui.command.contributions.BundleCommandsContributionItems;
 import no.javatime.inplace.ui.msg.Msg;
@@ -45,7 +47,6 @@ import org.eclipse.core.commands.State;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.NullProgressMonitor;
-import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.ui.IPackagesViewPart;
@@ -77,7 +78,7 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 	 */
 	protected void installHandler(Collection<IProject> projects) throws ExtenderException {
 
-		Extension<Install> installExt = Activator.getExtension(Install.class.getName());
+		Extension<Install> installExt = Activator.getTracker().getExtension(Install.class.getName());
 		Install install = installExt.getTrackedService();
 		install.addPendingProjects(projects);
 		jobHandler(install);
@@ -93,8 +94,8 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 	 */
 	static public void activateProjectHandler(Collection<IProject> projects) throws ExtenderException {
 
-		Extension<ActivateProject> activateProjectExt = Activator
-				.getExtension(ActivateProject.class.getName());
+		Extension<ActivateProject> activateProjectExt = Activator.getTracker().getExtension(
+				ActivateProject.class.getName());
 		ActivateProject activateproject = activateProjectExt.getTrackedService();
 		if (Activator.getBundleRegionService().getActivatedProjects().size() == 0) {
 			activateproject.getJob().setName(Msg.ACTIVATE_WORKSPACE_JOB);
@@ -113,11 +114,10 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 	 */
 	static public void deactivateHandler(Collection<IProject> projects) throws ExtenderException {
 
-		Extension<Deactivate> deactivateExtender = Activator.getExtension(Deactivate.class
-				.getName());
+		Extension<Deactivate> deactivateExtender = Activator.getTracker().getExtension(
+				Deactivate.class.getName());
 		Deactivate deactivate = deactivateExtender.getTrackedService();
-		if (Activator.getBundleRegionService().getActivatedProjects().size() <= projects
-				.size()) {
+		if (Activator.getBundleRegionService().getActivatedProjects().size() <= projects.size()) {
 			deactivate.getJob().setName(Msg.DEACTIVATE_WORKSPACE_JOB);
 		} else {
 			deactivate.getJob().setName(Msg.DEACTIVATE_JOB);
@@ -136,13 +136,20 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 	 */
 	static public void startHandler(Collection<IProject> projects) throws ExtenderException {
 
-		Extension<Start> startExt = Activator.getExtension(Start.class.getName());
+		ResourceState resourceState = Activator.getResourceStateService();
+		if (resourceState.areResourcesDirty()) {
+			updateHandler(resourceState.getDirtyProjects());
+			// Put update in the job queue before starting projects
+			resourceState.waitOnBuilder(false);
+			resourceState.waitOnBundleJob();
+		}
+		Extension<Start> startExt = Activator.getTracker().getExtension(Start.class.getName());
 		Start start = startExt.getTrackedService();
 		start.addPendingProjects(projects);
 		jobHandler(start);
 		startExt.closeTrackedService();
 	}
-
+	
 	/**
 	 * Schedules a stop job for the specified projects
 	 * 
@@ -152,7 +159,7 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 	 */
 	static public void stopHandler(Collection<IProject> projects) throws ExtenderException {
 
-		Extension<Stop> stopExt = Activator.getExtension(Stop.class.getName());
+		Extension<Stop> stopExt = Activator.getTracker().getExtension(Stop.class.getName());
 		Stop stop = stopExt.getTrackedService();
 		stop.addPendingProjects(projects);
 		jobHandler(stop);
@@ -168,11 +175,31 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 	 */
 	static public void refreshHandler(Collection<IProject> projects) throws ExtenderException {
 
-		Extension<Refresh> refreshExt = Activator.getExtension(Refresh.class.getName());
-		Refresh refresh = refreshExt.getTrackedService();
-		refresh.addPendingProjects(projects);
-		jobHandler(refresh);
-		refreshExt.closeTrackedService();
+		
+		Collection<IProject> copyProjects = new LinkedHashSet<>(projects);
+		ResourceState resourceState = Activator.getResourceStateService();
+		if (resourceState.areResourcesDirty()) {
+			Collection<IProject> dirtyProjects = resourceState.getDirtyProjects();
+			updateHandler(dirtyProjects);
+			// Put update in the job queue before starting projects
+			resourceState.waitOnBuilder(false);
+			resourceState.waitOnBundleJob();
+			CommandOptions commandOptions = Activator.getCommandOptionsService();
+			// If the refresh on update option is on, the update job will refresh the bundles
+			boolean refreshOnUpdate = false;
+			refreshOnUpdate = commandOptions.isRefreshOnUpdate();
+			if (refreshOnUpdate) {
+				// TODO Include update closure in projects to remove
+				copyProjects.removeAll(dirtyProjects);
+			}
+		}
+		if (copyProjects.size() > 0) {
+			Extension<Refresh> refreshExt = Activator.getTracker().getExtension(Refresh.class.getName());
+			Refresh refresh = refreshExt.getTrackedService();
+			refresh.addPendingProjects(copyProjects);
+			jobHandler(refresh);
+			refreshExt.closeTrackedService();
+		}
 	}
 
 	/**
@@ -198,17 +225,16 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 		Collection<IProject> copyProjects = new LinkedHashSet<>(projects);
 		Collection<IProject> dirtyProjects = resourceState.getDirtyProjects();
 		if (resourceState.saveModifiedResources()) {
-			if (Activator.getCommandOptionsService().isUpdateOnBuild()
-					&& dirtyProjects.size() > 0) {
+			if (Activator.getCommandOptionsService().isUpdateOnBuild() && dirtyProjects.size() > 0) {
 				copyProjects.removeAll(dirtyProjects);
 			}
 			if (copyProjects.size() > 0) {
 				resourceState.waitOnBuilder(true);
-				Extension<Update> updateExt = Activator.getExtension(Update.class.getName());
+				Extension<Update> updateExt = Activator.getTracker().getExtension(Update.class.getName());
 				Update update = updateExt.getTrackedService();
 				update.addUpdateTransition(copyProjects);
 				update.addPendingProjects(copyProjects);
-				Activator.getBundleJobEventService().add(update);
+				Activator.getBundleExecEventService().add(update);
 				updateExt.closeTrackedService();
 			}
 		}
@@ -224,7 +250,7 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 	 */
 	static public void resetHandler(final Collection<IProject> projects) throws ExtenderException {
 
-		Extension<Reset> resetExt = Activator.getExtension(Reset.class.getName());
+		Extension<Reset> resetExt = Activator.getTracker().getExtension(Reset.class.getName());
 		Reset reset = resetExt.getTrackedService();
 		reset.addPendingProjects(projects);
 		jobHandler(reset);
@@ -234,13 +260,13 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 	/**
 	 * Interrupts the current running bundle job
 	 */
-	protected void interruptHandler() {
+	protected void interruptHandler() throws ExtenderException {
 
 		ResourceState resourceState = Activator.getResourceStateService();
 		if (resourceState.saveModifiedResources()) {
-			Job job = resourceState.getRunningBundleJob();
-			if (null != job) {
-				Thread thread = job.getThread();
+			BundleExecutor executor = resourceState.getRunningBundleJob();
+			if (null != executor) {
+				Thread thread = executor.getJob().getThread();
 				if (null != thread) {
 					// Requires that the user code (e.g. in the start method) is aware of interrupts
 					thread.interrupt();
@@ -258,22 +284,17 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 	 * 
 	 * @throws ExtenderException if failing to get the stop or command options service
 	 */
-	protected void stopOperationHandler() throws ExtenderException {
+	protected void stopOperationHandler() throws ExtenderException, InPlaceException {
 
 		final ResourceState resourceState = Activator.getResourceStateService();
 		if (resourceState.saveModifiedResources()) {
 			Activator.getDisplay().asyncExec(new Runnable() {
 				@Override
 				public void run() {
-					Extension<Stop> stopExt = Activator.getExtension(Stop.class.getName());
-					Stop stop = stopExt.getTrackedService();
-					if (!Activator.getCommandOptionsService().isTimeOut()) {
-						Job job = resourceState.getRunningBundleJob();
-						if (null != job && stop.isStateChanging()) {
-							stop.stopCurrentBundleOperation(new NullProgressMonitor());
-						}
+					BundleExecutor executor = resourceState.getRunningBundleJob();
+					if (null != executor && null != executor.isStateChanging()) {
+						executor.stopBundleOperation(new NullProgressMonitor());
 					}
-					stopExt.closeTrackedService();
 				}
 			});
 		}
@@ -288,7 +309,8 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 	 */
 	protected void policyHandler(final Collection<IProject> projects) throws ExtenderException {
 
-		Extension<TogglePolicy> policyExt = Activator.getExtension(TogglePolicy.class.getName());
+		Extension<TogglePolicy> policyExt = Activator.getTracker().getExtension(
+				TogglePolicy.class.getName());
 		TogglePolicy policy = policyExt.getTrackedService();
 		policy.addPendingProjects(projects);
 		jobHandler(policy);
@@ -307,8 +329,8 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 	public static void updateClassPathHandler(final Collection<IProject> projects,
 			final boolean addToPath) throws ExtenderException {
 
-		Extension<UpdateBundleClassPath> classPathExt = Activator
-				.getExtension(UpdateBundleClassPath.class.getName());
+		Extension<UpdateBundleClassPath> classPathExt = Activator.getTracker().getExtension(
+				UpdateBundleClassPath.class.getName());
 		UpdateBundleClassPath classPath = classPathExt.getTrackedService();
 		classPath.addPendingProjects(projects);
 		classPath.setAddToPath(addToPath);
@@ -394,8 +416,8 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 	 */
 	protected void dependencyDialogHandler() throws ExtenderException {
 
-		Extension<DependencyDialog> dependencyExt = Activator.getExtension(DependencyDialog.class
-				.getName());
+		Extension<DependencyDialog> dependencyExt = Activator.getTracker().getExtension(
+				DependencyDialog.class.getName());
 		DependencyDialog dependency = dependencyExt.getTrackedService();
 		dependency.open();
 		dependencyExt.closeTrackedService();
@@ -408,8 +430,8 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 	 */
 	protected void bundleConsoleHandler() throws ExtenderException {
 
-		Extension<BundleConsoleFactory> consoleExt = Activator
-				.getExtension(BundleConsoleFactory.class.getName());
+		Extension<BundleConsoleFactory> consoleExt = Activator.getTracker().getExtension(
+				BundleConsoleFactory.class.getName());
 		BundleConsoleFactory console = consoleExt.getTrackedService();
 		if (!console.isConsoleViewVisible()) {
 			console.showConsoleView();
@@ -426,7 +448,8 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 	 */
 	protected void bundleLogViewViewHandler() throws ExtenderException {
 
-		Extension<BundleLogView> logViewExt = Activator.getExtension(BundleLogView.class.getName());
+		Extension<BundleLogView> logViewExt = Activator.getTracker().getExtension(
+				BundleLogView.class.getName());
 		BundleLogView logView = logViewExt.getTrackedService();
 		if (logView.isVisible()) {
 			logView.hide();
@@ -574,17 +597,19 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 	}
 
 	/**
-	 * Default way to schedule jobs, with no delay, saving files before schedule and waiting on builder
-	 * to finish.
+	 * Default way to schedule jobs, with no delay, saving files before schedule and waiting on
+	 * builder to finish.
 	 * 
 	 * @param bundleExecutor bundle executor operation to schedule
+	 * @throws ExtenderException If failing to get the resource state service or adding he specified
+	 * job to job queue
 	 */
-	static public void jobHandler(BundleExecutor bundleExecutor) {
+	static public void jobHandler(BundleExecutor bundleExecutor) throws ExtenderException {
 
 		ResourceState resourceState = Activator.getResourceStateService();
 		if (resourceState.saveModifiedResources()) {
 			resourceState.waitOnBuilder(true);
-			Activator.getBundleJobEventService().add(bundleExecutor);
+			Activator.getBundleExecEventService().add(bundleExecutor);
 		}
 	}
 

@@ -19,6 +19,13 @@ import org.osgi.util.tracker.ServiceTrackerCustomizer;
 public interface Extension<S> {
 
 	/**
+	 * The bundle registered with this extension.
+	 * 
+	 * @return the bundle using this extension
+	 */
+	public Bundle getUserBundle();
+
+	/**
 	 * Get the service object for this extension where the using bundle is the bundle specified when
 	 * this extension was created.
 	 * <p>
@@ -118,8 +125,8 @@ public interface Extension<S> {
 	 * Uses the {@link org.osgi.util.tracker.ServiceTracker ServiceTracker} to get the service. This
 	 * is the same as using {@link #getService()} without creating any tracker
 	 * <p>
-	 * If a tracker has not been created yet the tracker will be created and opened using the default
-	 * customizer provided by the Framework.
+	 * If a tracker has not been created yet the tracker will be created and opened using a default
+	 * customizer.
 	 * <p>
 	 * If the tracker is closed, it is opened before getting the tracked service.
 	 * 
@@ -129,6 +136,13 @@ public interface Extension<S> {
 	 * @see #closeTrackedService()
 	 */
 	public S getTrackedService() throws ExtenderException;
+
+	/**
+	 * 
+	 * @return The tracking count for the service tracker of this extension or -1 if the
+	 * service tracker is not open
+	 */
+	public int getTrackingCount();
 
 	/**
 	 * This method should be called when the tracking of the service should end

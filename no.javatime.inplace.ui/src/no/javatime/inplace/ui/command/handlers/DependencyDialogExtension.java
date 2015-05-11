@@ -89,4 +89,16 @@ public class DependencyDialogExtension implements Extension<DependencyDialog> {
 		// TODO Auto-generated method stub
 		
 	}
+
+	@Override
+	public Bundle getUserBundle() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public int getTrackingCount() {
+		// TODO Auto-generated method stub
+		return 0;
+	}
 }

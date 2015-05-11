@@ -11,9 +11,11 @@
 package no.javatime.inplace.builder;
 
 import java.util.Collection;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
 
-import no.javatime.inplace.InPlace;
+import no.javatime.inplace.Activator;
 import no.javatime.inplace.builder.intface.AddBundleProject;
 import no.javatime.inplace.bundlejobs.ActivateBundleJob;
 import no.javatime.inplace.bundlejobs.ActivateProjectJob;
@@ -30,6 +32,8 @@ import no.javatime.inplace.bundlejobs.intface.Install;
 import no.javatime.inplace.bundlejobs.intface.Uninstall;
 import no.javatime.inplace.bundlejobs.intface.Update;
 import no.javatime.inplace.dialogs.ResourceStateHandler;
+import no.javatime.inplace.dl.preferences.intface.CommandOptions;
+import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.intface.BundleCommand;
 import no.javatime.inplace.region.intface.BundleProjectCandidates;
@@ -106,151 +110,124 @@ import org.osgi.framework.Bundle;
  */
 public class PostBuildListener implements IResourceChangeListener {
 
-	final private BundleCommand bundleCommand = InPlace.getBundleCommandService();
-	final private BundleRegion bundleRegion = InPlace.getBundleRegionService();
-	final private BundleTransition bundleTransition = InPlace.getBundleTransitionService();
-	final private BundleProjectCandidates bundleProjectCandidates = InPlace
-			.getBundleProjectCandidatesService();
-	final private BundleExecutorEventManager bundleExecutorEventmanager = InPlace
-			.getBundleJobEventService();
-	final private ActivateProject projectActivation = new ActivateProjectJob();
+	private BundleRegion bundleRegion;
+	private BundleTransition bundleTransition;
+	private BundleProjectCandidates bundleProjectCandidates;
+	private BundleExecutorEventManager bundleExecutorEventmanager;
+	private CommandOptions commandOptions;
+	final private ActivateProject projectActivator;
+
+	public PostBuildListener() {
+
+		try {
+			bundleRegion = Activator.getBundleRegionService();
+			bundleTransition = Activator.getBundleTransitionService();
+			bundleProjectCandidates = Activator.getBundleProjectCandidatesService();
+			bundleExecutorEventmanager = Activator.getBundleExecutorEventService();
+			commandOptions = Activator.getCommandOptionsService();
+		} catch (ExtenderException e) {
+			StatusManager.getManager().handle(
+					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),
+					StatusManager.LOG);
+		}
+		projectActivator = new ActivateProjectJob();
+	}
 
 	/**
-	 * Schedules bundle jobs for changed projects. Removed and closed projects are handled in the
-	 * {@link PreChangeListener}
+	 * Schedules bundle jobs for new and modified projects. Removed and closed projects are handled in
+	 * the {@link PreChangeListener}
 	 */
 	@Override
 	public void resourceChanged(IResourceChangeEvent event) {
 
-		// Nothing to do in a deactivated workspace where all bundle projects are uninstalled
-		if (!projectActivation.isProjectWorkspaceActivated()) {
-			return;
-		}
-		// Updates a project if it is activated in an activated workspace
-		// and after a build where the project is pending for update and auto build is on
-		Update update = new UpdateJob();
-		// After projects are activated in a deactivated workspace and when moved in an active workspace
-		ActivateBundle activateBundle = new ActivateBundleJob();
-		// Project with new requirements on UI plug-in(s), when UI plug-ins are not allowed
-		Deactivate deactivate = new DeactivateJob();
-		// Project probably moved or needs a reactivation for some reason
-		Uninstall uninstall = new UninstallJob();
-		// When a project is activated and in state uninstalled or deactivated and in state
-		// uninstalled in an activated workspace
-		Install install = new InstallJob();
-		// Adds projects that are opened, imported, created or renamed to the workspace region and
-		// installs or resolve them
-		AddBundleProject addBundleProject = new AddBundleProjectJob();
-
-//		traceBuilds();
-		int buildType = event.getBuildKind();
-		IResourceDelta rootDelta = event.getDelta();
-		IResourceDelta[] resourceDeltas = null;
-		if (null != rootDelta) {
-			// Ignore removed (deleted or closed) projects which have been uninstalled in the pre-resource
-			// listener
-			resourceDeltas = rootDelta.getAffectedChildren(IResourceDelta.ADDED | IResourceDelta.CHANGED,
-					IResource.NONE);
-		}
-		// A null resource delta implies an unspecified change or a full build. An empty resource delta
-		// implies no change since last build, but resources may have pending transitions
-		if (null == resourceDeltas || resourceDeltas.length == 0) {
-			BundleProjectCandidates bundleProject = InPlace.getBundleProjectCandidatesService();
-			for (IProject project : bundleProject.getInstallable()) {
-				try {
-					removePendingBuildTransition(buildType, project);
-					if (null != bundleTransition.getPendingTransitions(project)) {
-						handlePendingTransition(project, activateBundle, update, deactivate, uninstall, install);
-					}
-				} catch (InPlaceException e) {
-					String msg = ExceptionMessage.getInstance().formatString("schedule_bundle_jobs",
-							project.getName());
-					StatusManager.getManager().handle(
-							new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg, e), StatusManager.LOG);
-				}
+		try {
+			// Nothing to do in a deactivated workspace where all bundle projects are uninstalled
+			if (!projectActivator.isProjectWorkspaceActivated()) {
+				return;
 			}
-		} else {
-			// Cycle all built projects with a delta and add them to the appropriate bundle jobs according
-			// to type of transition and project CRUD operation
-			for (IResourceDelta projectDelta : resourceDeltas) {
-				IResource projectResource = projectDelta.getResource();
-				if (projectResource.isAccessible()
-						&& (projectResource.getType() & (IResource.PROJECT)) != 0) {
-					IProject project = projectResource.getProject();
+			// Updates a project if it is activated in an activated workspace
+			// and after a build where the project is pending for update and auto build is on
+			final Update update = new UpdateJob();
+			// After projects are activated in a deactivated workspace and when moved in an active
+			// workspace
+			final ActivateBundle activateBundle = new ActivateBundleJob();
+			// Project with new requirements on UI plug-in(s), when UI plug-ins are not allowed
+			final Deactivate deactivate = new DeactivateJob();
+			// Project probably moved or needs a reactivation for some reason
+			final Uninstall uninstall = new UninstallJob();
+			// When a project is activated and in state uninstalled or deactivated and in state
+			// uninstalled
+			final Install install = new InstallJob();
+			// Add new (opened, imported, created) and renamed projects to the workspace region
+			// Deactivated bundle projects are installed and activated bundle projects are activated
+			final AddBundleProject addBundleProject = new AddBundleProjectJob();
+
+			final int buildType = event.getBuildKind();
+			final IResourceDelta rootDelta = event.getDelta();
+			// Ignore removed (deleted or closed) projects uninstalled in the pre-change listener
+			IResourceDelta[] resourceDeltas = (null != rootDelta ? rootDelta.getAffectedChildren(
+					IResourceDelta.ADDED | IResourceDelta.CHANGED, IResource.NONE) : null);
+			// A null resource delta implies an unspecified change or a full build. An empty resource
+			// delta implies no change since last build, but resources may have pending transitions
+			if (null == resourceDeltas || resourceDeltas.length == 0) {
+				for (IProject project : bundleProjectCandidates.getInstallable()) {
 					try {
-						if (Category.DEBUG && Category.getState(Category.listeners))
-							ProjectChangeListener.traceDeltaKind(event, projectDelta, project);
 						removePendingBuildTransition(buildType, project);
-						if (!handlePendingTransition(project, activateBundle, update, deactivate, uninstall,
-								install)) {
-							handleCRUDOperation(projectDelta, project, activateBundle, addBundleProject);
+						if (null != bundleTransition.getPendingTransitions(project)) {
+							handlePendingTransition(project, activateBundle, update, deactivate, uninstall,
+									install);
 						}
 					} catch (InPlaceException e) {
 						String msg = ExceptionMessage.getInstance().formatString("schedule_bundle_jobs",
 								project.getName());
 						StatusManager.getManager().handle(
-								new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg, e),
+								new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, msg, e),
 								StatusManager.LOG);
 					}
 				}
-			}
-		}
-		// Post build listener is not always called with all activated projects that have been built
-		if (InPlace.getCommandOptionsService().isUpdateOnBuild()) {
-			Collection<IProject> activatedProjects = bundleRegion.getActivatedProjects();
-			// Get all projects identified for update by the java time builder
-			Collection<IProject> projectsToUpdate = bundleTransition.getPendingProjects(
-					activatedProjects, Transition.UPDATE);
-			// This is the difference between projects recognized by the java time builder and those
-			// actually sent to the post build listener
-			projectsToUpdate.removeAll(update.getPendingProjects());
-			if (projectsToUpdate.size() > 0) {
-				for (IProject projectToUpdate : projectsToUpdate) {
-					UpdateScheduler.addProjectToUpdateJob(projectToUpdate, update);
+			} else {
+				// Cycle all built projects with a delta and add them to the appropriate bundle jobs
+				// according to type of transition and project CRUD operation
+				for (IResourceDelta projectDelta : resourceDeltas) {
+					IResource projectResource = projectDelta.getResource();
+					if (projectResource.isAccessible()
+							&& (projectResource.getType() & (IResource.PROJECT)) != 0) {
+						IProject project = projectResource.getProject();
+						try {
+							if (Category.DEBUG && Category.getState(Category.listeners))
+								ProjectChangeListener.traceDeltaKind(event, projectDelta, project);
+							removePendingBuildTransition(buildType, project);
+							if (!handlePendingTransition(project, activateBundle, update, deactivate, uninstall,
+									install)) {
+								handleCRUDOperation(projectDelta, project, activateBundle, addBundleProject);
+							}
+						} catch (InPlaceException e) {
+							String msg = ExceptionMessage.getInstance().formatString("schedule_bundle_jobs",
+									project.getName());
+							StatusManager.getManager().handle(
+									new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, msg, e),
+									StatusManager.LOG);
+						} catch (ProjectLocationException e) {
+							String msg = ErrorMessage.getInstance().formatString("project_location",
+									project.getName());
+							IBundleStatus status = new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, msg,
+									e);
+							msg = NLS.bind(Msg.REFRESH_HINT_INFO, project.getName());
+							status.add(new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, project, msg, null));
+							StatusManager.getManager().handle(status, StatusManager.LOG);
+						}
+					}
 				}
 			}
-		}
-		// Include bundles that are no longer duplicates
-		ActivateBundle postActivateBundle = null;
-		try {
-			if (InPlace.getCommandOptionsService().isUpdateOnBuild() && update.pendingProjects() > 0) {
-				postActivateBundle = UpdateScheduler.resolveduplicates(activateBundle, update);
-			}
-		} catch (InPlaceException e) {
+			// Post build listener is not always called with all activated projects that have been built
+			ActivateBundle postActivateBundle = addBuiltProjects(update, activateBundle);
+			execute(addBundleProject, uninstall, install, deactivate, activateBundle, update,
+					postActivateBundle);
+		} catch (ExtenderException e) {
 			StatusManager.getManager().handle(
-					new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, e.getMessage(), e),
+					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),
 					StatusManager.LOG);
 		}
-		execute(addBundleProject);
-		execute(uninstall);
-		execute(install);
-		execute(deactivate);
-		execute(activateBundle);
-		execute(update);
-		execute(postActivateBundle);
-	}
-
-	/**
-	 * Schedules a job with pending projects. The job is not scheduled if it has no pending projects.
-	 * 
-	 * @param bundleExecutor to schedule. Can be null
-	 * @return true if job is scheduled, otherwise false
-	 */
-	private boolean execute(final BundleExecutor bundleExecutor) {
-
-		if (null != bundleExecutor && bundleExecutor.hasPendingProjects()) {
-			// Wait on builder to process all projects to reduce number of bundle executor jobs
-			Executors.newSingleThreadExecutor().execute(new Runnable() {
-				@Override
-				public void run() {
-					new ResourceStateHandler().waitOnBuilder(true);
-					logBuilds();
-					bundleExecutorEventmanager.add(bundleExecutor);
-				}
-			});
-			return true;
-		}
-		return false;
 	}
 
 	/**
@@ -262,7 +239,7 @@ public class PostBuildListener implements IResourceChangeListener {
 	 * @return true if the pending build transition is cleared from the specified project. The
 	 * transition does not have to be present before the build transition is cleared, Otherwise false,
 	 */
-	private boolean removePendingBuildTransition(int buildType, IProject project) {
+	private boolean removePendingBuildTransition(final int buildType, final IProject project) {
 		if ((bundleProjectCandidates.isAutoBuilding()
 				|| buildType == IncrementalProjectBuilder.INCREMENTAL_BUILD
 				|| buildType == IncrementalProjectBuilder.FULL_BUILD || buildType == IncrementalProjectBuilder.CLEAN_BUILD)) {
@@ -292,28 +269,25 @@ public class PostBuildListener implements IResourceChangeListener {
 	 * @param install innstalls a bundle project
 	 * @return true if the specified project has been added as a pending project to one of the
 	 * specified bundle jobs.Otherwise false
+	 * @throws InPlaceException if the specified project is null or open but does not exist
+	 * @throws ExtenderException If failing to get the project candidates service
 	 */
-	private boolean handlePendingTransition(IProject project, ActivateBundle activateBundle,
-			Update update, Deactivate deactivate, Uninstall uninstall, Install install) {
+	private boolean handlePendingTransition(final IProject project,
+			final ActivateBundle activateBundle, final Update update, final Deactivate deactivate,
+			final Uninstall uninstall, final Install install) throws InPlaceException, ExtenderException {
+
 		boolean ishandled = false;
 
 		// Update activated modified projects. Deactivated projects are usually not updated but may be
 		if (bundleTransition.containsPending(project, Transition.UPDATE, Boolean.FALSE)) {
 			// If this project is part of an activate process and auto update is off, the project is
 			// tagged with an update on activate transition and should be updated
-			try {
-				if (InPlace.getCommandOptionsService().isUpdateOnBuild()
-						|| bundleTransition.containsPending(project, Transition.UPDATE_ON_ACTIVATE,
-								Boolean.TRUE)) {
-					// Deactivated providing bundle projects to this project are identified and marked as
-					// pending for activation in the resolver hook and scheduled in the bundle job listener
-					UpdateScheduler.addProjectToUpdateJob(project, update);
-					ishandled = true;
-				}
-			} catch (InPlaceException e) {
-				StatusManager.getManager().handle(
-						new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, e.getMessage(), e),
-						StatusManager.LOG);
+			if (commandOptions.isUpdateOnBuild()
+					|| bundleTransition.containsPending(project, Transition.UPDATE_ON_ACTIVATE, Boolean.TRUE)) {
+				// Deactivated providing bundle projects to this project are identified and marked as
+				// pending for activation in the resolver hook and scheduled in the bundle job listener
+				UpdateScheduler.addProjectToUpdateJob(project, update);
+				ishandled = true;
 			}
 		}
 		// Usually set when a project is activated and in state uninstalled or deactivated and in state
@@ -371,9 +345,14 @@ public class PostBuildListener implements IResourceChangeListener {
 	 * @param addBundleProject add imported, created, opened and renamed projects to this job
 	 * @return true if the specified project has been added as a pending project to the specified
 	 * activate bundle and/or new project job. Otherwise false.
+	 * @throws ExtenderException If failing to get the bundle command service
+	 * @throws ProjectLocationException If failing to get the location of the specified project
+	 * @throws InPlaceException if missing permission to get project or bundle location of the
+	 * specified project
 	 */
-	private boolean handleCRUDOperation(IResourceDelta projectDelta, IProject project,
-			ActivateBundle activateBundle, AddBundleProject addBundleProject) {
+	private boolean handleCRUDOperation(final IResourceDelta projectDelta, final IProject project,
+			final ActivateBundle activateBundle, final AddBundleProject addBundleProject)
+			throws ExtenderException, ProjectLocationException, InPlaceException {
 
 		if (!bundleProjectCandidates.isBundleProject(project)) {
 			return false;
@@ -388,6 +367,7 @@ public class PostBuildListener implements IResourceChangeListener {
 			// Move. Never in state uninstalled
 			if ((projectDelta.getFlags() & IResourceDelta.DESCRIPTION) != 0) {
 				Bundle bundle = bundleRegion.getBundle(project);
+				BundleCommand bundleCommand = Activator.getBundleCommandService();
 				boolean unInstalled = (bundleCommand.getState(bundle) & (Bundle.UNINSTALLED)) != 0;
 				if (!unInstalled && addMovedProject(project, activateBundle)) {
 					return true;
@@ -404,56 +384,141 @@ public class PostBuildListener implements IResourceChangeListener {
 	}
 
 	/**
+	 * If any, add bundle projects that are:
+	 * <ol>
+	 * <li>Built and marked for update by the java time builder but not received by this post build
+	 * listener
+	 * <li>Possible no longer duplicates due to changes in the symbolic key of bundles to update
+	 * </ol>
+	 * 
+	 * @param update Add new bundles to update or any installed bundle that is a duplicate of any of
+	 * the bundles to update
+	 * @param activateBundle Remove bundles from this job that are returned
+	 * @return Uninstalled duplicate bundles that are duplicates of the bundles to update or null if
+	 * no uninstalled duplicates exist compared to the bundles to update
+	 * @throws ExtenderException If failing to get region, transition and/or the candidate service
+	 */
+	private ActivateBundle addBuiltProjects(final Update update, final ActivateBundle activateBundle)
+			throws ExtenderException {
+
+		ActivateBundle postActivateBundle = null;
+
+		if (commandOptions.isUpdateOnBuild()) {
+			Collection<IProject> activatedProjects = bundleRegion.getActivatedProjects();
+			// Get all projects identified for update by the java time builder
+			Collection<IProject> projectsToUpdate = bundleTransition.getPendingProjects(
+					activatedProjects, Transition.UPDATE);
+			// This is the difference between projects recognized by the java time builder and those
+			// actually sent to the post build listener
+			projectsToUpdate.removeAll(update.getPendingProjects());
+			if (projectsToUpdate.size() > 0) {
+				for (IProject projectToUpdate : projectsToUpdate) {
+					UpdateScheduler.addProjectToUpdateJob(projectToUpdate, update);
+				}
+			}
+			// Activate bundles that are no longer duplicates
+			if (update.pendingProjects() > 0) {
+				postActivateBundle = UpdateScheduler.resolveduplicates(activateBundle, update,
+						bundleRegion, bundleTransition, bundleProjectCandidates);
+			}
+		}
+		return postActivateBundle;
+	}
+
+	/**
+	 * Wait on builder before scheduling jobs with pending projects.
+	 * 
+	 * @param addBundleProject New (import, open, create) and renamed projects
+	 * @param uninstall Moved projects and projects that needs to be ractivated
+	 * @param install Activated projects and in state uninstalled or deactivated and in state
+	 * uninstalled in an activated workspace
+	 * @param deactivate Deactivated projects
+	 * @param activateBundle Activated projects in a deactivated workspace and when moved in an active
+	 * workspace
+	 * @param update Modified activated projects
+	 * @param postActivateBundle Activate bundles that are no longer duplicates
+	 */
+	private void execute(final AddBundleProject addBundleProject, final Uninstall uninstall,
+			final Install install, final Deactivate deactivate, final ActivateBundle activateBundle,
+			final Update update, final ActivateBundle postActivateBundle) {
+
+		// Run in a separate thread to avoid builder deadlock
+		ExecutorService executor = Executors.newSingleThreadExecutor();
+		try {
+			executor.execute(new Runnable() {
+
+				private boolean hasBuild = false;
+
+				/**
+				 * Wait on builder to finish before adding jobs for execution
+				 */
+				@Override
+				public void run() {
+					new ResourceStateHandler().waitOnBuilder(false);
+					add(addBundleProject);
+					add(uninstall);
+					add(install);
+					add(deactivate);
+					add(activateBundle);
+					add(update);
+					add(postActivateBundle);
+					if (hasBuild) {
+						JavaTimeBuilder.postBuild();
+					}
+				}
+
+				/**
+				 * Schedules the specified job for execution
+				 * 
+				 * @param bundleExecutor job to schedule and execute
+				 */
+				private boolean add(BundleExecutor bundleExecutor) {
+
+					if (null != bundleExecutor && bundleExecutor.hasPendingProjects()) {
+						bundleExecutorEventmanager.add(bundleExecutor);
+						return hasBuild = true;
+					}
+					return false;
+				}
+			});
+		} catch (RejectedExecutionException e) {
+			StatusManager.getManager().handle(
+					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),
+					StatusManager.LOG);
+		} finally {
+			// This is part of the building process so don't wait on the executed/submitted task
+			// Waiting will always cause termination on timeout
+			executor.shutdown();
+		}
+	}
+
+	/**
 	 * Check if a project is moved. If moved an uninstall job is scheduled and the moved project is
 	 * added as a pending project to the specified activate bundle job
 	 * 
 	 * @param project to reactivate if moved
 	 * @param activateBundle if project is moved it is added as a pending project to this job
 	 * @return true if the project is moved. Otherwise false
+	 * @throws ProjectLocationException If failing to get the location of the specified project
+	 * @throws ProjectLocationException if failing to get the project or bundle location of the
+	 * specified project
+	 * @throws InPlaceException if permissions to get project or bundle location of the specified
+	 * project
 	 */
-	private boolean addMovedProject(IProject project, ActivateBundle activateBundle) {
+	private boolean addMovedProject(IProject project, ActivateBundle activateBundle)
+			throws ProjectLocationException, InPlaceException {
 
-		try {
-			String projectLoaction = bundleRegion.getProjectLocationIdentifier(
-					project, null);
-			String bundleLocation = bundleRegion.getBundleLocationIdentifier(project);
-			// If path is different its a move (the path of the project description is changed)
-			// The replaced flag is set on files being moved but not set on project level.
-			// For all other modifications of the project description, use update bundle
-			if (!projectLoaction.equals(bundleLocation) && bundleProjectCandidates.isInstallable(project)) {
-				Uninstall uninstall = new UninstallJob(UninstallJob.uninstallJobName, project);
-				bundleExecutorEventmanager.add(uninstall, 0);
-				activateBundle.addPendingProject(project);
-				return true;
-			}
-		} catch (ProjectLocationException e) {
-			String msg = ErrorMessage.getInstance().formatString("project_location", project.getName());
-			IBundleStatus status = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg, e);
-			msg = NLS.bind(Msg.REFRESH_HINT_INFO, project.getName());
-			status.add(new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID, project, msg, null));
-			StatusManager.getManager().handle(status, StatusManager.LOG);
+		String projectLoaction = bundleRegion.getProjectLocationIdentifier(project, null);
+		String bundleLocation = bundleRegion.getBundleLocationIdentifier(project);
+		// If path is different its a move (the path of the project description is changed)
+		// The replaced flag is set on files being moved but not set on project level.
+		// For all other modifications of the project description, use update bundle
+		if (!projectLoaction.equals(bundleLocation) && bundleProjectCandidates.isInstallable(project)) {
+			Uninstall uninstall = new UninstallJob(UninstallJob.uninstallJobName, project);
+			bundleExecutorEventmanager.add(uninstall, 0);
+			activateBundle.addPendingProject(project);
+			return true;
 		}
 		return false;
-	}
-
-	/**
-	 * Add activated projects that have been built to the bundle log
-	 * 
-	 * @see JavaTimeBuilder
-	 */
-	private void logBuilds() {
-
-		if (InPlace.getMessageOptionsService().isBundleOperations()) {
-			Collection<IBundleStatus> builds = JavaTimeBuilder.getBuilds();
-			if (!builds.isEmpty()) {
-				IBundleStatus mStatus = new BundleStatus(StatusCode.INFO, InPlace.PLUGIN_ID,
-						Msg.BUILD_HEADER_TRACE);
-				for (IBundleStatus status : builds) {
-					mStatus.add(status);
-				}
-				InPlace.get().log(mStatus);
-			}
-		}
-		JavaTimeBuilder.clearBuilds();
 	}
 }

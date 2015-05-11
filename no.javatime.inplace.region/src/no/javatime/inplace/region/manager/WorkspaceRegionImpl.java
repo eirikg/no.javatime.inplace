@@ -21,7 +21,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-import no.javatime.inplace.extender.intface.Extender;
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.region.Activator;
 import no.javatime.inplace.region.intface.BundleCommand;
@@ -32,12 +31,10 @@ import no.javatime.inplace.region.intface.BundleTransition;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
 import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.intface.ProjectLocationException;
-import no.javatime.inplace.region.msg.Msg;
 import no.javatime.inplace.region.state.BundleNode;
 import no.javatime.inplace.region.state.BundleState;
-import no.javatime.inplace.region.status.BundleStatus;
-import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import no.javatime.util.messages.Category;
+import no.javatime.util.messages.ExceptionMessage;
 import no.javatime.util.messages.TraceMessage;
 
 import org.eclipse.core.resources.IProject;
@@ -45,9 +42,7 @@ import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
-import org.eclipse.osgi.util.NLS;
 import org.eclipse.pde.core.project.IBundleProjectDescription;
-import org.eclipse.ui.statushandlers.StatusManager;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.Version;
 
@@ -88,63 +83,27 @@ public class WorkspaceRegionImpl implements BundleRegion {
 	}
 
 	@Override
-	public BundleCommand getCommandService() {
+	public BundleCommand getCommandService(Bundle user) throws ExtenderException {
 
-		try {
-			Extender<BundleCommand> extender = Activator.getExtenderCommand();
-			return extender.getService();
-		} catch (ExtenderException e) {
-			String msg = NLS.bind(Msg.GET_SERVICE_EXP, BundleCommand.class.getName());
-			StatusManager.getManager().handle(
-					new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID,
-							Activator.getContext().getBundle(), msg, e), StatusManager.LOG);
-		}
-		return null;
+		return Activator.getBundleCommandService(user);
 	}
 
 	@Override
-	public BundleTransition getTransitionService() {
+	public BundleTransition getTransitionService(Bundle user) throws ExtenderException {
 
-		try {
-			Extender<BundleTransition> extender = Activator.getExtenderTransition();
-			return extender.getService();
-		} catch (ExtenderException e) {
-			String msg = NLS.bind(Msg.GET_SERVICE_EXP, BundleCommand.class.getName());
-			StatusManager.getManager().handle(
-					new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID,
-							Activator.getContext().getBundle(), msg, e), StatusManager.LOG);
-		}
-		return null;
+		return Activator.getBundleTransitionService(user);
 	}
 
 	@Override
-	public BundleProjectCandidates getCanidatesService() {
+	public BundleProjectCandidates getCanidatesService(Bundle user) throws ExtenderException {
 
-		try {
-			Extender<BundleProjectCandidates> extender = Activator.getExtenderBundleCandidatesProject();
-			return extender.getService();
-		} catch (ExtenderException e) {
-			String msg = NLS.bind(Msg.GET_SERVICE_EXP, BundleProjectCandidates.class.getName());
-			StatusManager.getManager().handle(
-					new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID,
-							Activator.getContext().getBundle(), msg, e), StatusManager.LOG);
-		}
-		return null;
+		return Activator.getBundleProjectCandidatesService(user);
 	}
 
 	@Override
-	public BundleProjectMeta getMetaService() {
+	public BundleProjectMeta getMetaService(Bundle user) throws ExtenderException {
 
-		try {
-			Extender<BundleProjectMeta> extender = Activator.getExtenderBundleMeta();
-			return extender.getService();
-		} catch (ExtenderException e) {
-			String msg = NLS.bind(Msg.GET_SERVICE_EXP, BundleProjectMeta.class.getName());
-			StatusManager.getManager().handle(
-					new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID,
-							Activator.getContext().getBundle(), msg, e), StatusManager.LOG);
-		}
-		return null;
+		return Activator.getbundlePrrojectMetaService(user);
 	}
 
 	@Override
@@ -266,6 +225,24 @@ public class WorkspaceRegionImpl implements BundleRegion {
 			}
 		}
 		return false;
+	}
+
+	public Bundle isRegionStateChanging() {
+
+		for (BundleNode node : projectNodes.values()) {
+			if (null != node && node.isStateChanging()) {
+				Bundle bundle = node.getBundle();
+				// Verify by interrogating the thread
+//				if (!BundleThread.isStateChanging(bundle)) {
+//					String msg = NLS.bind(Msg.STATE_CHANGE_ERROR, bundle);
+//					StatusManager.getManager().handle(
+//							new BundleStatus(StatusCode.WARNING, Activator.PLUGIN_ID, bundle, msg, null),
+//							StatusManager.LOG);
+//				}
+				return bundle;
+			}
+		}
+		return null;
 	}
 
 	@Override
@@ -595,8 +572,9 @@ public class WorkspaceRegionImpl implements BundleRegion {
 	}
 
 	@Override
-	public Boolean exist(Bundle bundle) {
-		return (getNode(bundle) != null) ? true : false;
+	public boolean exist(Bundle bundle) {
+
+		return (null != bundleProjects.get(bundle.getBundleId())) ? true : false;
 	}
 
 	@Override
@@ -854,7 +832,7 @@ public class WorkspaceRegionImpl implements BundleRegion {
 		if (null == project) {
 			if (Category.DEBUG && Category.getState(Category.dag))
 				TraceMessage.getInstance().getString("npe_project_cache");
-			throw new InPlaceException("project_null_location");
+			throw new InPlaceException(ExceptionMessage.getInstance().getString("project_null_location"));
 		}
 		BundleNode node = getNode(project);
 		// Update node

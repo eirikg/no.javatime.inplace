@@ -16,6 +16,7 @@ import no.javatime.inplace.bundlejobs.intface.Start;
 import no.javatime.inplace.bundlejobs.intface.Stop;
 import no.javatime.inplace.bundlejobs.intface.Update;
 import no.javatime.inplace.dl.preferences.intface.CommandOptions;
+import no.javatime.inplace.extender.intface.Extender;
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.extender.intface.Extenders;
 import no.javatime.inplace.extender.intface.Extension;
@@ -38,7 +39,6 @@ import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.osgi.framework.console.CommandInterpreter;
 import org.eclipse.osgi.framework.console.CommandProvider;
-import org.eclipse.osgi.util.NLS;
 import org.eclipse.pde.core.project.IBundleProjectDescription;
 import org.osgi.framework.Bundle;
 
@@ -56,18 +56,17 @@ public class BundleProjectCommandProvider implements CommandProvider {
 	 * @throws ExtenderException if failed to get the extender or the extension is null
 	 */
 	public static <S> Extension<S> getExtension(String serviceInterfaceName) throws ExtenderException {
-
-		Extension<S> extension = Extenders.getExtension(serviceInterfaceName, Activator.getContext().getBundle());
-		if (null == extension) {
-			throw new ExtenderException(NLS.bind("Null extender service in bundle {0}",  Activator.getContext().getBundle()));
-		}
-		return extension;
+		
+		ExtenderTracker tracker = Activator.getExtenderBundleTracker();
+		Extender <S> extender = tracker.getTrackedExtender(serviceInterfaceName);
+		return extender.getExtension(Activator.getContext().getBundle());
+		// return Extenders.getExtension(serviceInterfaceName, Activator.getContext().getBundle());
 	}
 
 	public void _ws(CommandInterpreter ci) {
 
 		Extension<?> extension = null;
-
+		
 		try {
 			String cmd = ci.nextArgument();
 			if (cmd == null) {
@@ -82,6 +81,7 @@ public class BundleProjectCommandProvider implements CommandProvider {
 			case "activate":
 			case "a":
 				extension = getExtension(ActivateProject.class.getName());
+				// tracker.getTrackedExtender(ActivateProject.class.getName());
 				cmd(cmd, ci, (ActivateProject) extension.getTrackedService(), "activate");
 				break;
 			case "deactivate":
@@ -124,6 +124,10 @@ public class BundleProjectCommandProvider implements CommandProvider {
 				ci.println(getHelp());
 				break;
 			}
+		} catch (ExtenderException e) {
+			IBundleStatus status = new BundleStatus(StatusCode.EXCEPTION, Activator.getContext().getBundle().getSymbolicName(),
+					Activator.getContext().getBundle(), "Failed to execute command", e);
+				printStatus(ci, status);
 		} finally {
 			if (null != extension) {
 				extension.closeTrackedService();
@@ -305,7 +309,7 @@ public class BundleProjectCommandProvider implements CommandProvider {
 					continue;
 				}
 				if (!candidates.isInstallable(project)) {
-					CommandOptions cmdOpt = Activator.getCmdOptionsService();
+					CommandOptions cmdOpt = Activator.getCommandOptionsService();
 					// If the "Allow UI Contributions" option is on
 					if (!cmdOpt.isAllowUIContributions() && candidates.isUIPlugin(project)) {
 						ci.println(cmd
@@ -355,7 +359,7 @@ public class BundleProjectCommandProvider implements CommandProvider {
 	public String getHelp() {
 
 		StringBuffer buffer = new StringBuffer();
-		buffer.append("---InPlace Bundle Activator---\n");
+		buffer.append("---Activator Bundle Activator---\n");
 		buffer.append("----Activate and deactivate workspace plug-ins and bundle projects\n");
 		buffer
 				.append("----Output from activated and started bundles are directed to standard out if not overridden elsewhere\n");

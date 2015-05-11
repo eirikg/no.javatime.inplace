@@ -37,7 +37,6 @@ import no.javatime.inplace.region.events.TransitionEvent;
 import no.javatime.inplace.region.intface.BundleActivatorException;
 import no.javatime.inplace.region.intface.BundleCommand;
 import no.javatime.inplace.region.intface.BundleStateChangeException;
-import no.javatime.inplace.region.intface.BundleThread;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
 import no.javatime.inplace.region.intface.BundleTransition.TransitionError;
 import no.javatime.inplace.region.intface.BundleTransitionListener;
@@ -58,7 +57,6 @@ import no.javatime.util.messages.TraceMessage;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.Status;
-import org.eclipse.osgi.util.NLS;
 import org.eclipse.ui.statushandlers.StatusManager;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -90,12 +88,6 @@ public class BundleCommandImpl implements BundleCommand {
 	// Used in wait loop, waiting for the refresh thread to notify that it has finished refreshing
 	// bundles
 	private volatile boolean refreshed;
-
-	// The bundle currently in a transition (state changing)
-	private static Bundle currentBundle;
-
-	/* internal object to use for synchronization */
-	private final Object stateLock = new Object();
 
 	/**
 	 * Access to the wiring framework API and used internally to refresh and resolve bundles.
@@ -154,7 +146,7 @@ public class BundleCommandImpl implements BundleCommand {
 			bundle = install(project, true);
 			BundleProjectMetaImpl.INSTANCE.setDevClasspath(project);
 			if (resolve(Collections.singletonList(bundle))) {
-				CommandOptions cmdOpt = Activator.getDefault().getCommandOptionsService();
+				CommandOptions cmdOpt = Activator.getCommandOptionsService();
 				boolean timeout = true;
 				long timeoutVal = 5000;
 				timeout = cmdOpt.isTimeOut();
@@ -247,7 +239,6 @@ public class BundleCommandImpl implements BundleCommand {
 			URL bundleReference = new URL(locationIdentifier);
 			is = bundleReference.openStream();
 			bundle = Activator.getContext().installBundle(locationIdentifier, is);
-			state.commit(bundleNode);
 		} catch (MalformedURLException e) {
 			bundleTransition.setTransitionError(project);
 			throw new InPlaceException(e, "bundle_install_malformed_error", locationIdentifier);
@@ -288,6 +279,8 @@ public class BundleCommandImpl implements BundleCommand {
 				}
 				if (bundleNode.hasTransitionError()) {
 					bundleNode.rollBack();
+				} else {
+					bundleNode.getState().commit(bundleNode);
 				}
 			}
 		}
@@ -309,9 +302,7 @@ public class BundleCommandImpl implements BundleCommand {
 	public Boolean resolve(Collection<Bundle> bundles) throws InPlaceException {
 		boolean resolved = true;
 		if (null == frameworkWiring) {
-			if (Category.DEBUG && Activator.getDefault().getMsgOptService().isBundleOperations())
-				TraceMessage.getInstance().getString("null_admin_bundle");
-			throw new InPlaceException("null_framework");
+			throw new InPlaceException(ExceptionMessage.getInstance().getString("null_framework"));
 		}
 		try {
 			for (Bundle bundle : bundles) {
@@ -527,14 +518,11 @@ public class BundleCommandImpl implements BundleCommand {
 			BundleActivatorException, IllegalStateException, BundleStateChangeException {
 
 		if (null == bundle) {
-			throw new InPlaceException("null_bundle_start");
+			throw new InPlaceException(ExceptionMessage.getInstance().getString("null_bundle_start"));
 		}
 		BundleNode node = bundleRegion.getBundleNode(bundle);
 		long startTime = System.currentTimeMillis();
 		try {
-			synchronized (stateLock) {
-				currentBundle = bundle;
-			}
 			node.getState().start(node);
 			bundle.start(startOption);
 		} catch (IllegalStateException e) {
@@ -563,20 +551,11 @@ public class BundleCommandImpl implements BundleCommand {
 			msec = System.currentTimeMillis() - startTime;
 			BundleTransitionListener
 					.addBundleTransition(new TransitionEvent(bundle, node.getTransition()));
-			synchronized (stateLock) {
-				if (!(node.getTransitionError() == TransitionError.STATECHANGE)) {
-					currentBundle = null;
-				}
-			}
 			// The framework moves the bundle to state resolve for incomplete (exceptions) start commands
 			if (node.hasTransitionError()) {
 				node.getState().rollBack(node);
 			} else {
 				node.getState().commit(node);
-			}
-			try {
-			} catch (ProjectLocationException e) {
-				throw new InPlaceException(e, "bundle_start_error", bundle);
 			}
 		}
 	}
@@ -639,15 +618,12 @@ public class BundleCommandImpl implements BundleCommand {
 			BundleStateChangeException {
 
 		if (null == bundle) {
-			throw new InPlaceException("null_bundle_stop");
+			throw new InPlaceException(ExceptionMessage.getInstance().getString("null_bundle_stop"));
 		}
 
 		BundleNode node = bundleRegion.getBundleNode(bundle);
 		long startTime = System.currentTimeMillis();
 		try {
-			synchronized (stateLock) {
-				currentBundle = bundle;
-			}
 			node.getState().stop(node);
 			if (!stopTransient) {
 				bundle.stop();
@@ -674,43 +650,13 @@ public class BundleCommandImpl implements BundleCommand {
 				throw new InPlaceException(e, "bundle_stop_error", bundle);
 			}
 		} finally {
+			msec = System.currentTimeMillis() - startTime;
 			BundleTransitionListener
 					.addBundleTransition(new TransitionEvent(bundle, node.getTransition()));
 			// The framework moves the bundle to state resolve for both
 			// successful and incomplete (exceptions) stop commands
-			if (node.hasTransitionError()) {
-				node.getState().rollBack(node);
-			} else {
-				node.getState().commit(node);
-			}
-			msec = System.currentTimeMillis() - startTime;
-			synchronized (stateLock) {
-				if (!(bundleTransition.getError(bundle) == TransitionError.STATECHANGE)) {
-					currentBundle = null;
-				}
-			}
-		}
-	}
-
-	@Override
-	public Bundle getCurrentBundle() {
-
-		synchronized (stateLock) {
-			return currentBundle;
-		}
-	}
-
-	@Override
-	public void setCurrentBundle(Bundle bundle) {
-		synchronized (stateLock) {
-			currentBundle = bundle;
-			boolean stateChanging = BundleThread.isStateChanging(bundle);
-			if ((null == bundle && stateChanging) || (null != bundle && !stateChanging)) {
-				String msg = NLS.bind(Msg.STATE_CHANGE_ERROR, bundle);
-				StatusManager.getManager().handle(
-						new BundleStatus(StatusCode.WARNING, Activator.PLUGIN_ID, bundle, msg, null),
-						StatusManager.LOG);
-			}
+			// Rollback moves to state stopping
+			node.getState().commit(node);
 		}
 	}
 
@@ -732,7 +678,7 @@ public class BundleCommandImpl implements BundleCommand {
 
 		InputStream is = null;
 		if (bundle == null) {
-			throw new InPlaceException("null_bundle_update");
+			throw new InPlaceException(ExceptionMessage.getInstance().getString("null_bundle_update"));
 		}
 		// Contains duplicate candidate bundles to be removed in the resolver hook in case of singleton
 		// collisions
@@ -815,7 +761,7 @@ public class BundleCommandImpl implements BundleCommand {
 	public IProject uninstall(Bundle bundle) throws InPlaceException {
 
 		if (bundle == null) {
-			throw new InPlaceException("null_bundle_uninstall");
+			throw new InPlaceException(ExceptionMessage.getInstance().getString("null_bundle_uninstall"));
 		}
 		BundleNode node = bundleRegion.getBundleNode(bundle);
 		BundleState state = null;
@@ -830,9 +776,6 @@ public class BundleCommandImpl implements BundleCommand {
 			bundle.uninstall();
 		} catch (IllegalStateException e) {
 			node.setTransitionError(TransitionError.EXCEPTION);
-			if (Category.DEBUG && Activator.getDefault().getMsgOptService().isBundleOperations())
-				TraceMessage.getInstance().getString("state_error_uninstall_bundle", bundle,
-						e.getLocalizedMessage());
 			throw new InPlaceException(e, "bundle_state_error", bundle);
 		} catch (SecurityException e) {
 			node.setTransitionError(TransitionError.EXCEPTION);
@@ -864,7 +807,7 @@ public class BundleCommandImpl implements BundleCommand {
 	@Override
 	public Collection<Bundle> getDependencyClosure(Collection<Bundle> bundles) {
 		if (null == frameworkWiring) {
-			throw new InPlaceException("null_framework");
+			throw new InPlaceException(ExceptionMessage.getInstance().getString("null_framework"));
 		}
 		try {
 			return frameworkWiring.getDependencyClosure(bundles);
@@ -883,9 +826,7 @@ public class BundleCommandImpl implements BundleCommand {
 	@Override
 	public Collection<Bundle> getRemovalPending() throws InPlaceException {
 		if (null == frameworkWiring) {
-			if (Category.DEBUG && Activator.getDefault().getMsgOptService().isBundleOperations())
-				TraceMessage.getInstance().getString("null_admin_bundle");
-			throw new InPlaceException("null_framework");
+			throw new InPlaceException(ExceptionMessage.getInstance().getString("null_framework"));
 		}
 		return frameworkWiring.getRemovalPendingBundles();
 	}
@@ -1060,7 +1001,7 @@ public class BundleCommandImpl implements BundleCommand {
 	@Override
 	public BundleRevision getCurrentRevision(Bundle bundle) throws InPlaceException {
 		if (null == bundle) {
-			throw new InPlaceException("null_bundle_adapt");
+			throw new InPlaceException(ExceptionMessage.getInstance().getString("null_bundle_adapt"));
 		}
 		try {
 			return bundle.adapt(BundleRevision.class);
@@ -1081,7 +1022,7 @@ public class BundleCommandImpl implements BundleCommand {
 	@Override
 	public List<BundleRevision> getBundleRevisions(Bundle bundle) throws InPlaceException {
 		if (null == bundle) {
-			throw new InPlaceException("null_bundle_adapt");
+			throw new InPlaceException(ExceptionMessage.getInstance().getString("null_bundle_adapt"));
 		}
 		try {
 			BundleRevisions br = bundle.adapt(BundleRevisions.class);

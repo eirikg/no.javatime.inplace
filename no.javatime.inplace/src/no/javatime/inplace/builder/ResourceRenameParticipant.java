@@ -2,7 +2,8 @@ package no.javatime.inplace.builder;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import no.javatime.inplace.InPlace;
+import no.javatime.inplace.Activator;
+import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
 import no.javatime.inplace.region.status.BundleStatus;
@@ -22,6 +23,7 @@ import org.eclipse.ltk.core.refactoring.participants.CheckConditionsContext;
 import org.eclipse.ltk.core.refactoring.participants.RenameParticipant;
 import org.eclipse.ltk.core.refactoring.participants.ResourceChangeChecker;
 import org.eclipse.osgi.util.NLS;
+import org.eclipse.ui.statushandlers.StatusManager;
 
 /**
  * Add {@code Transition.RENAME_PROJECT} as a pending transition when a JavaTime nature enabled
@@ -69,8 +71,14 @@ public class ResourceRenameParticipant extends RenameParticipant {
 						Pattern pattern = Pattern.compile("^[a-zA-Z0-9_\\-][a-zA-Z0-9_\\-\\.]*$");
 						Matcher matcher = pattern.matcher(projectName);
 						if (!matcher.find()) {
-							InPlace.get().log(new BundleStatus(StatusCode.WARNING, projectName, 
-									NLS.bind(Msg.RENAME_PROJECT_WARN, toProject.getName())));
+							try {
+								Activator.log(new BundleStatus(StatusCode.WARNING, projectName, 
+										NLS.bind(Msg.RENAME_PROJECT_WARN, toProject.getName())));
+							} catch (ExtenderException e) {
+								StatusManager.getManager().handle(
+										new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),
+										StatusManager.LOG);
+							}
 						}
 					}
 				}
@@ -97,8 +105,14 @@ public class ResourceRenameParticipant extends RenameParticipant {
 	protected boolean initialize(Object arg0) {
 		if (arg0 instanceof IProject) {
 			fromProject = (IProject) arg0;
-			InPlace.getBundleTransitionService().addPending(fromProject, Transition.RENAME_PROJECT);
-			return true;
+			try {
+				Activator.getBundleTransitionService().addPending(fromProject, Transition.RENAME_PROJECT);
+				return true;
+			} catch (ExtenderException e) {
+				StatusManager.getManager().handle(
+						new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),
+						StatusManager.LOG);
+			}
 		}
 		return false;
 	}

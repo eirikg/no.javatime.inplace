@@ -11,18 +11,15 @@
 package no.javatime.inplace.bundlejobs;
 
 import java.util.Collection;
-import java.util.Collections;
 
-import no.javatime.inplace.InPlace;
+import no.javatime.inplace.Activator;
 import no.javatime.inplace.bundlejobs.intface.Install;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.closure.BuildErrorClosure;
-import no.javatime.inplace.region.closure.BundleClosures;
 import no.javatime.inplace.region.closure.CircularReferenceException;
 import no.javatime.inplace.region.closure.ProjectSorter;
-import no.javatime.inplace.region.events.TransitionEvent;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
 import no.javatime.inplace.region.intface.BundleTransition.TransitionError;
 import no.javatime.inplace.region.intface.BundleTransitionListener;
@@ -39,7 +36,6 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.osgi.util.NLS;
-import org.osgi.framework.Bundle;
 
 public class InstallJob extends NatureJob implements Install {
 
@@ -51,14 +47,14 @@ public class InstallJob extends NatureJob implements Install {
 			"install_task_name");
 	final private static String duplicateMessage = ErrorMessage.getInstance().formatString(
 			"duplicate_ws_bundle_install");
-	
+
 	/**
 	 * Default constructor wit a default job name
 	 */
 	public InstallJob() {
 		super(installJobName);
 	}
-	
+
 	/**
 	 * Construct an install job with a given name
 	 * 
@@ -100,6 +96,7 @@ public class InstallJob extends NatureJob implements Install {
 	public IBundleStatus runInWorkspace(IProgressMonitor monitor) {
 
 		try {
+			super.runInWorkspace(monitor);
 			monitor.beginTask(installTaskName, 1);
 			BundleTransitionListener.addBundleTransitionListener(this);
 			if (isProjectWorkspaceActivated()) {
@@ -108,22 +105,8 @@ public class InstallJob extends NatureJob implements Install {
 					addPendingProjects(bundleProjectCandidates.getBundleProjects());
 				}
 			}
-			ProjectSorter projectSorter = new ProjectSorter();
-			try {
-				// resetPendingProjects(projectSorter.sortProvidingProjects(getPendingProjects()));
-			} catch (CircularReferenceException e) {
-				String msg = ExceptionMessage.getInstance().formatString("circular_reference", getName());
-				BundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg);
-				multiStatus.add(e.getStatusList());
-				addStatus(multiStatus);
-				// Remove all pending projects that participate in the cycle(s)
-				if (null != e.getProjects()) {
-					removePendingProjects(e.getProjects());
-				}
-			}
-			removeErrorClosures(projectSorter, null);
+			removeErrorClosures(new ProjectSorter());
 			install(getPendingProjects(), monitor);
-			// handleNewProjects();
 			if (monitor.isCanceled()) {
 				throw new OperationCanceledException();
 			}
@@ -131,10 +114,10 @@ public class InstallJob extends NatureJob implements Install {
 			addCancelMessage(e, NLS.bind(Msg.CANCEL_JOB_INFO, getName()));
 		} catch (CircularReferenceException e) {
 			String msg = ExceptionMessage.getInstance().formatString("circular_reference", getName());
-			BundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg);
+			BundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, msg);
 			multiStatus.add(e.getStatusList());
 			addStatus(multiStatus);
-		} catch (ExtenderException e) {			
+		} catch (ExtenderException e) {
 			addError(e, NLS.bind(Msg.SERVICE_EXECUTOR_EXP, getName()));
 		} catch (InPlaceException e) {
 			String msg = ExceptionMessage.getInstance().formatString("terminate_job_with_errors",
@@ -143,111 +126,41 @@ public class InstallJob extends NatureJob implements Install {
 		} catch (NullPointerException e) {
 			String msg = ExceptionMessage.getInstance().formatString("npe_job", getName());
 			addError(e, msg);
+		} catch (CoreException e) {
+			String msg = ErrorMessage.getInstance().formatString("error_end_job", getName());
+			return new BundleStatus(StatusCode.ERROR, Activator.PLUGIN_ID, msg, e);
 		} catch (Exception e) {
 			String msg = ExceptionMessage.getInstance().formatString("exception_job", getName());
 			addError(e, msg);
-		}
-		try {
-			return super.runInWorkspace(monitor);
-		} catch (CoreException e) {
-			String msg = ErrorMessage.getInstance().formatString("error_end_job", getName());
-			return new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID, msg);
 		} finally {
 			monitor.done();
 			BundleTransitionListener.removeBundleTransitionListener(this);
 		}
+		return getJobSatus();
 	}
 
 	/**
-	 * New projects are projects that have been imported, opened, created or renamed. Schedules an
-	 * activate project job or an activate bundle job for all activated projects with the pending
-	 * {@link Transition#NEW_PROJECT} transition. The pending {@code Transition.NEW_PROJECT}
-	 * transition is then removed from any project. Deactivated projects are not added to any job.
-	 * <p>
-	 * If one ore more projects are activated and have deactivated providers the providers are added
-	 * to the activate project job and a pending {@link Transition#UPDATE} transition is added to all
-	 * projects.
+	 * Remove build and duplicate error closures from the set of pending projects. Error closures
+	 * status objects are also added to the log status list if logging is enabled.
 	 * 
-	 * If none of the projects have deactivated providers the activated projects are added to the
-	 * activate bundle job.
-	 */
-	private void handleNewProjects() {
-		if (!bundleRegion.isRegionActivated()) {
-			return;
-		}
-		Collection<IProject> newProjects = bundleTransition.getPendingProjects(getPendingProjects(),
-				Transition.NEW_PROJECT);
-		if (newProjects.size() == 0) {
-			return;
-		}
-		boolean hasProviders = false;
-		Collection<IProject> providers = null;
-		ProjectSorter ps = new ProjectSorter();
-		for (IProject newProject : newProjects) {
-			providers = ps.sortProvidingProjects(Collections.<IProject>singletonList(newProject), false);
-			providers.remove(newProject);
-			if (providers.size() > 0) {
-				hasProviders = true;
-				break;
-			}
-		}
-		BundleJob activateJob = null;
-		if (hasProviders) {
-			activateJob = new ActivateProjectJob(activateJobName);
-		} else {
-			activateJob = new ActivateBundleJob(activateJobName);
-		}
-		BundleClosures bd = new BundleClosures();
-		for (IProject newProject : newProjects) {
-			BundleTransitionListener.addBundleTransition(new TransitionEvent(newProject,
-					Transition.NEW_PROJECT));
-			bundleTransition.removePending(newProject, Transition.NEW_PROJECT);
-			if (bundleRegion.isBundleActivated(newProject)) {
-				if (hasProviders) {
-					providers = bd.projectActivation(Collections.<IProject> singletonList(newProject), false);
-					providers.remove(newProject);
-					if (providers.size() > 0) {
-						activateJob.addPendingProjects(providers);
-						// The new project is a requiring project to the providers and will be updated together
-						// with the providers
-					} else {
-						// Only add the pending update transition on projects with no providers as long as
-						// others have providers
-						bundleTransition.addPending(newProject, Transition.UPDATE);
-					} 
-				} else {
-					activateJob.addPendingProject(newProject);								
-				}
-			}
-		}
-		if (activateJob.pendingProjects() > 0) {
-			InPlace.getBundleJobEventService().add(activateJob, 0);
-		}
-	}
-
-	/**
-	 * Remove build error closure bundles from the set of activated projects. If there are no
-	 * activated projects left the error closures are added to the status list. Otherwise the error
-	 * closures are only removed from the set of pending projects.
-	 * 
-	 * @param projectSorter topological sort of error closure
-	 * @return {@code IBundleStatus} status with a {@code StatusCode.OK} if no errorsegionre are
-	 * projects with build errors and there are no pending projects left. If there are build errors
-	 * they are added to the job status list.
+	 * @param projectSorter Topological sort of projects
+	 * @return Status object with a {@code StatusCode.OK} if no duplicates and build errors and a
+	 * status object of {@code StatusCode.BUILDERROR} if duplicates and/or build errors.
 	 * @throws InPlaceException if one of the specified projects does not exist or is closed
 	 */
-	private IBundleStatus removeErrorClosures(ProjectSorter projectSorter,
-			Collection<Bundle> installedBundles) throws InPlaceException {
+	private IBundleStatus removeErrorClosures(ProjectSorter projectSorter) throws InPlaceException {
 
 		IBundleStatus status = createStatus();
+
 		Collection<IProject> projectErrorClosures = null;
 		try {
 			BuildErrorClosure be = new BuildErrorClosure(getPendingProjects(), Transition.INSTALL,
 					Closure.REQUIRING);
 			if (be.hasBuildErrors()) {
 				projectErrorClosures = be.getBuildErrorClosures();
+				status.setStatusCode(StatusCode.BUILDERROR);
 				removePendingProjects(projectErrorClosures);
-				if (InPlace.getMessageOptionsService().isBundleOperations()) {
+				if (messageOptions.isBundleOperations()) {
 					IBundleStatus bundleStatus = be.getErrorClosureStatus();
 					if (null != bundleStatus) {
 						addLogStatus(bundleStatus);
@@ -259,10 +172,11 @@ public class InstallJob extends NatureJob implements Install {
 			Collection<IProject> duplicates = removeWorkspaceDuplicates(getPendingProjects(), null, null,
 					bundleProjectCandidates.getInstallable(), duplicateMessage);
 			if (null != duplicates) {
-				Collection<IProject> installedRequirers = projectSorter.sortRequiringProjects(duplicates,
+				status.setStatusCode(StatusCode.BUILDERROR);
+				Collection<IProject> requiringBundles = projectSorter.sortRequiringProjects(duplicates,
 						true);
-				if (installedRequirers.size() > 0) {
-					removePendingProjects(installedRequirers);
+				if (requiringBundles.size() > 0) {
+					removePendingProjects(requiringBundles);
 				}
 			}
 
@@ -270,11 +184,8 @@ public class InstallJob extends NatureJob implements Install {
 			projectErrorClosures = BuildErrorClosure.getBuildErrors(getPendingProjects());
 			projectErrorClosures.addAll(BuildErrorClosure.hasBuildState(getPendingProjects()));
 			if (projectErrorClosures.size() > 0) {
+				status.setStatusCode(StatusCode.BUILDERROR);
 				removePendingProjects(projectErrorClosures);
-				if (null != installedBundles) {
-					Collection<Bundle> bundleErrorClosure = bundleRegion.getBundles(projectErrorClosures);
-					installedBundles.removeAll(bundleErrorClosure);
-				}
 			}
 		}
 		return status;

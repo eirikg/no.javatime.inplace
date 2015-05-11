@@ -2,21 +2,16 @@ package no.javatime.inplace.extender;
 
 import no.javatime.inplace.extender.intface.BundleServiceScopeFactory;
 import no.javatime.inplace.extender.intface.Extender;
+import no.javatime.inplace.extender.intface.ExtenderBundleTracker;
 import no.javatime.inplace.extender.intface.Extenders;
 import no.javatime.inplace.extender.intface.PrototypeServiceScopeFactory;
-import no.javatime.inplace.extender.provider.ExtenderBundleTracker;
-import no.javatime.inplace.extender.provider.ExtenderImpl;
+import no.javatime.inplace.extender.provider.ExtenderBundleListener;
 import no.javatime.inplace.extender.provider.ExtenderServiceListener;
 import no.javatime.inplace.extender.provider.ExtenderServiceMap;
 import no.javatime.inplace.extender.provider.ExtenderServiceMapImpl;
 
-import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
-import org.osgi.framework.ServiceEvent;
-import org.osgi.framework.ServiceReference;
-import org.osgi.util.tracker.BundleTracker;
-import org.osgi.util.tracker.BundleTrackerCustomizer;
 
 /**
  * Implements the extender pattern; - functionality to register services on behalf of bundles
@@ -34,51 +29,44 @@ public class Activator implements BundleActivator {
 
 	private static Activator plugin;
 	private static BundleContext context;
-	// Register (extend) services for use facilitated by other bundles
-	private BundleTracker<ExtenderImpl<?>> extenderBundleTracker;
-	private BundleTrackerCustomizer<ExtenderImpl<?>> extenderBundleTrackerCustomizer;
-
 	private ExtenderServiceListener<?> extenderListener;
 	private static ExtenderServiceMap<?> extenderMap;
-
+	private ExtenderBundleListener bundlelistener;
+	
 	public void start(BundleContext bundleContext) throws Exception {
 		Activator.context = bundleContext;
 		plugin = this;
+		bundlelistener = new ExtenderBundleListener();
+		context.addBundleListener(bundlelistener);
 		extenderMap = new ExtenderServiceMapImpl<>();
+		// Extenders.register(context.getBundle(), ExtenderServiceMap.class.getName(), extenderMap, null);
 		extenderListener = new ExtenderServiceListener<>();
 		context.addServiceListener(extenderListener, Extender.EXTENDER_FILTER);
-		extenderBundleTrackerCustomizer = new ExtenderBundleTracker();
-		extenderBundleTracker = new BundleTracker<ExtenderImpl<?>>(context, Bundle.ACTIVE,
-				extenderBundleTrackerCustomizer);
-		extenderBundleTracker.open();
 	}
 
 	public void stop(BundleContext bundleContext) throws Exception {
-
-		ServiceReference<?> sr = context.getServiceReference(Extender.class.getName());
-		if (null != sr) {
-			getExtenderListener().serviceChanged(new ServiceEvent(ServiceEvent.UNREGISTERING, sr));
-		}
-		sr = context.getServiceReference(ExtenderServiceMap.class.getName());
-		if (null != sr) {
-			getExtenderListener().serviceChanged(new ServiceEvent(ServiceEvent.UNREGISTERING, sr));
-		}
+			
+			// Use when registering extender and extender service map as services
+//		ServiceReference<?> sr = context.getServiceReference(Extender.class.getName());
+//		if (null != sr) {
+//			getExtenderListener().serviceChanged(new ServiceEvent(ServiceEvent.UNREGISTERING, sr));
+//		}
+//		sr = context.getServiceReference(ExtenderServiceMap.class.getName());
+//		if (null != sr) {
+//			getExtenderListener().serviceChanged(new ServiceEvent(ServiceEvent.UNREGISTERING, sr));
+//		}
 		// If missed any, print to system err
-		// ExtenderServiceMap<?> ems = getExtenderServiceMap();
-		// ems.validateUnregister();
-		extenderBundleTracker.close();
-		extenderBundleTracker = null;
+		ExtenderServiceMap<?> esm = getExtenderServiceMap();
+		
+		esm.validateUnregister();
 		context.removeServiceListener(extenderListener);
-		Activator.context = null;
+		context.removeBundleListener(bundlelistener);
+		context = null;
 		plugin = null;
 	}
 
 	public <S> ExtenderServiceListener<?> getExtenderListener() {
 		return extenderListener;
-	}
-
-	public BundleTracker<ExtenderImpl<?>> getExtenderBundleTracker() {
-		return extenderBundleTracker;
 	}
 
 	/**
@@ -90,10 +78,6 @@ public class Activator implements BundleActivator {
 	public static <S> ExtenderServiceMap<S> getExtenderServiceMap(){
 		return (ExtenderServiceMap<S>) extenderMap;
 	}
-
-	// public static Extender<ExtenderServiceMap<?>> getExtenderMap() throws ExtenderException {
-	// return extenderMap;
-	// }
 
 	public static <S> void ungetServiceMap() {
 		// extenderMap.ungetService();

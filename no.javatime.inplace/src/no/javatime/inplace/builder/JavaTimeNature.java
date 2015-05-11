@@ -12,6 +12,7 @@ package no.javatime.inplace.builder;
 
 import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.intface.InPlaceException;
+import no.javatime.util.messages.ExceptionMessage;
 
 import org.eclipse.core.resources.ICommand;
 import org.eclipse.core.resources.IProject;
@@ -38,7 +39,8 @@ public class JavaTimeNature implements IProjectNature {
 	 */
 	public void configure() throws CoreException {
 		if (null == project) {
-			throw new InPlaceException("project_null");
+			String msg = ExceptionMessage.getInstance().getString("project_null");
+			throw new InPlaceException(msg);
 		}
 		//Get the description of the project which basically is .project file information
 		IProjectDescription desc = project.getDescription();
@@ -74,7 +76,8 @@ public class JavaTimeNature implements IProjectNature {
 						commands.length - i - 1);
 				description.setBuildSpec(newCommands);
 				if (null == project) {
-					throw new InPlaceException("project_null");
+					String msg = ExceptionMessage.getInstance().getString("project_null");
+					throw new InPlaceException(msg);
 				}
 				project.setDescription(description, null);			
 				return;

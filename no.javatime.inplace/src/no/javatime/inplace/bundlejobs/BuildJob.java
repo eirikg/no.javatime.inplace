@@ -12,7 +12,7 @@ package no.javatime.inplace.bundlejobs;
 
 import java.util.Collection;
 
-import no.javatime.inplace.InPlace;
+import no.javatime.inplace.Activator;
 import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.intface.BundleTransitionListener;
 import no.javatime.inplace.region.status.BundleStatus;
@@ -111,6 +111,7 @@ public class BuildJob extends NatureJob {
 	public IBundleStatus runInWorkspace(IProgressMonitor monitor) {
 
 		try {
+			super.runInWorkspace(monitor);
 			monitor.beginTask(buildTaskName, getTicks());
 			BundleTransitionListener.addBundleTransitionListener(this);
 			if (buildType == IncrementalProjectBuilder.INCREMENTAL_BUILD) {
@@ -124,21 +125,16 @@ public class BuildJob extends NatureJob {
 			String msg = ExceptionMessage.getInstance().formatString("npe_job", getName());
 			addError(e, msg);
 		} catch (CoreException e) {
-			String msg = ExceptionMessage.getInstance().formatString("core_exception_job", getName());
-			addError(e, msg);
+			String msg = ErrorMessage.getInstance().formatString("error_end_job", getName());
+			return new BundleStatus(StatusCode.ERROR, Activator.PLUGIN_ID, msg, e);
 		} catch (Exception e) {
 			String msg = ExceptionMessage.getInstance().formatString("exception_job", getName());
 			addError(e, msg);
-		}
-		try {
-			return super.runInWorkspace(monitor);
-		} catch (CoreException e) {
-			String msg = ErrorMessage.getInstance().formatString("error_end_job", getName());
-			return new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID, msg);
 		} finally {
 			monitor.done();
 			BundleTransitionListener.removeBundleTransitionListener(this);
 		}
+		return getJobSatus();		
 	}
 
 	/**

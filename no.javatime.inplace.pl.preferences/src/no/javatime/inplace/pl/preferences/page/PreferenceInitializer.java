@@ -1,7 +1,7 @@
 package no.javatime.inplace.pl.preferences.page;
 
 import no.javatime.inplace.dl.preferences.intface.CommandOptions;
-import no.javatime.inplace.pl.preferences.PreferencePlActivator;
+import no.javatime.inplace.pl.preferences.Activator;
 import no.javatime.inplace.pl.preferences.msg.Msg;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
@@ -22,9 +22,9 @@ public class PreferenceInitializer extends AbstractPreferenceInitializer {
 	 */
 	public void initializeDefaultPreferences() {
 				
-		IPreferenceStore prefStore = PreferencePlActivator.getDefault().getPreferenceStore();
+		IPreferenceStore prefStore = Activator.getDefault().getPreferenceStore();
 		try {
-			CommandOptions cmdStore = PreferencePlActivator.getDefault().getOptionsService();
+			CommandOptions cmdStore = Activator.getDefault().getOptionsService();
 			/// prefStore.setDefault(Msg.TIMEOUT_RADIOGROUP_NAME, CommandOptions.IS_TIMEOUT);
 			// prefStore.setDefault(CommandOptions.IS_TIMEOUT, cmdStore.getDefaultIsTimeOut());
 			prefStore.setDefault(Msg.TIMEOUT_RADIOGROUP_NAME, CommandOptions.IS_MANUAL_TERMINATE);
@@ -41,7 +41,7 @@ public class PreferenceInitializer extends AbstractPreferenceInitializer {
 
 		} catch (IllegalStateException e) {
 			StatusManager.getManager().handle(
-					new BundleStatus(StatusCode.ERROR, PreferencePlActivator.PLUGIN_ID, Msg.INIT_DEFAULT_PREF_PAGE_ERROR, e),
+					new BundleStatus(StatusCode.ERROR, Activator.PLUGIN_ID, Msg.INIT_DEFAULT_PREF_PAGE_ERROR, e),
 					StatusManager.LOG);
 		}
 	}

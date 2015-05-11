@@ -13,7 +13,7 @@ package no.javatime.inplace.bundlejobs;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 
-import no.javatime.inplace.InPlace;
+import no.javatime.inplace.Activator;
 import no.javatime.inplace.bundlejobs.intface.Refresh;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.extender.intface.ExtenderException;
@@ -95,6 +95,7 @@ public class RefreshJob extends BundleJob implements Refresh {
 	public IBundleStatus runInWorkspace(IProgressMonitor monitor) {
 
 		try {
+			super.runInWorkspace(monitor);
 			BundleTransitionListener.addBundleTransitionListener(this);
 			monitor.beginTask(refreshTaskName, getTicks());
 			refreshBundles(monitor);
@@ -105,7 +106,7 @@ public class RefreshJob extends BundleJob implements Refresh {
 			addCancelMessage(e, NLS.bind(Msg.CANCEL_JOB_INFO, getName()));
 		} catch (CircularReferenceException e) {
 			String msg = ExceptionMessage.getInstance().formatString("circular_reference", getName());
-			BundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg);
+			BundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, msg);
 			multiStatus.add(e.getStatusList());
 			addStatus(multiStatus);
 		} catch (ExtenderException e) {			
@@ -116,19 +117,17 @@ public class RefreshJob extends BundleJob implements Refresh {
 		} catch (NullPointerException e) {
 			String msg = ExceptionMessage.getInstance().formatString("npe_job", getName());
 			addError(e, msg);
+		} catch (CoreException e) {
+			String msg = ErrorMessage.getInstance().formatString("error_end_job", getName());
+			return new BundleStatus(StatusCode.ERROR, Activator.PLUGIN_ID, msg, e);
 		} catch (Exception e) {
 			String msg = ExceptionMessage.getInstance().formatString("exception_job", getName());
 			addError(e, msg);
-		}
-		try {
-			return super.runInWorkspace(monitor);
-		} catch (CoreException e) {
-			String msg = ErrorMessage.getInstance().formatString("error_end_job", getName());
-			return new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID, msg);
 		} finally {
 			monitor.done();
 			BundleTransitionListener.removeBundleTransitionListener(this);
 		}
+		return getJobSatus();		
 	}
 
 	/**
@@ -198,7 +197,7 @@ public class RefreshJob extends BundleJob implements Refresh {
 			Collection<IProject> buildErrClosures = be.getBuildErrorClosures();
 			bundlesToRefresh.removeAll(bundleRegion.getBundles(buildErrClosures));
 			IBundleStatus bundleStatus = be.getErrorClosureStatus();
-			if (InPlace.getMessageOptionsService().isBundleOperations()) {
+			if (messageOptions.isBundleOperations()) {
 				addStatus(bundleStatus);			
 			}
 			containsErrorClosures = true;
@@ -210,7 +209,7 @@ public class RefreshJob extends BundleJob implements Refresh {
 				Collection<IProject> buildErrClosures = be.getBuildErrorClosures();
 				bundlesToRefresh.removeAll(bundleRegion.getBundles(buildErrClosures));
 				IBundleStatus bundleStatus = be.getErrorClosureStatus();
-				if (InPlace.get().getMessageOptionsService().isBundleOperations()) {
+				if (messageOptions.isBundleOperations()) {
 					addStatus(bundleStatus);			
 				}
 				containsErrorClosures = true;

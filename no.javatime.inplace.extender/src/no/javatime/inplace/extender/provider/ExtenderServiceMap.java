@@ -6,9 +6,12 @@ import java.util.concurrent.ConcurrentMap;
 import no.javatime.inplace.extender.intface.Extender;
 import no.javatime.inplace.extender.intface.ExtenderException;
 
+import org.osgi.framework.Bundle;
 import org.osgi.framework.ServiceReference;
 
 public interface ExtenderServiceMap<S> extends ConcurrentMap<Long, Extender<S>> {
+
+	// public Extender<S> put(Long sid, Extender<S> extender) throws ExtenderException;
 
 	public Extender<S> get(String serviceInterfaceName) throws ExtenderException;
 
@@ -48,6 +51,14 @@ public interface ExtenderServiceMap<S> extends ConcurrentMap<Long, Extender<S>> 
 	 * referencing a valid service)
 	 */
 	public void remove(Extender<S> extender);
+
+	/**
+	 *	Get all extenders hosted or owned by the specified owner bundle
+	 * 
+	 * @param owner The bundle hosting the extenders
+	 * @return all extenders hosted by the specified owner bundle or an empty collection
+	 */
+	public Collection<Extender<S>> getExtenders(Bundle owner);
 
 	/**
 	 * If there are any extenders in the extender map, print a warning to system err

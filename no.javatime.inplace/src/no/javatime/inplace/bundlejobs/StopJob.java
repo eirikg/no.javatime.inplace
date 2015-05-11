@@ -13,13 +13,12 @@ package no.javatime.inplace.bundlejobs;
 import java.util.Collection;
 import java.util.Collections;
 
-import no.javatime.inplace.InPlace;
+import no.javatime.inplace.Activator;
 import no.javatime.inplace.bundlejobs.intface.Stop;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Operation;
 import no.javatime.inplace.extender.intface.ExtenderException;
-import no.javatime.inplace.extender.intface.Extension;
 import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.closure.BundleClosures;
 import no.javatime.inplace.region.closure.BundleSorter;
@@ -29,7 +28,6 @@ import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
-import no.javatime.util.messages.ErrorMessage;
 import no.javatime.util.messages.ExceptionMessage;
 import no.javatime.util.messages.Message;
 import no.javatime.util.messages.WarnMessage;
@@ -101,6 +99,7 @@ public class StopJob extends BundleJob implements Stop {
 	public IBundleStatus runInWorkspace(IProgressMonitor monitor) {
 
 		try {
+			super.runInWorkspace(monitor);
 			monitor.beginTask(stopTaskName, getTicks());
 			BundleTransitionListener.addBundleTransitionListener(this);
 			stop(monitor);
@@ -111,7 +110,7 @@ public class StopJob extends BundleJob implements Stop {
 			addCancelMessage(e, NLS.bind(Msg.CANCEL_JOB_INFO, getName()));
 		} catch (CircularReferenceException e) {
 			String msg = ExceptionMessage.getInstance().formatString("circular_reference", getName());
-			BundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg);
+			BundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, msg);
 			multiStatus.add(e.getStatusList());
 			addStatus(multiStatus);
 		} catch (ExtenderException e) {			
@@ -128,16 +127,11 @@ public class StopJob extends BundleJob implements Stop {
 		} catch (Exception e) {
 			String msg = ExceptionMessage.getInstance().formatString("exception_job", getName());
 			addError(e, msg);
-		}
-		try {
-			return super.runInWorkspace(monitor);
-		} catch (CoreException e) {
-			String msg = ErrorMessage.getInstance().formatString("error_end_job", getName());
-			return new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID, msg);
 		} finally {
 			monitor.done();
 			BundleTransitionListener.removeBundleTransitionListener(this);
 		}
+		return getJobSatus();		
 	}
 
 	/**
@@ -161,26 +155,27 @@ public class StopJob extends BundleJob implements Stop {
 		bundlesToStop = pd.bundleDeactivation(bundlesToStop, activatedBundles);
 		stop(bundlesToStop, null, new SubProgressMonitor(monitor, 1));
 		// Warn about requiring bundles in state ACTIVE
-		Extension<DependencyOptions> dependencyOptionsExtension = 
-				InPlace.getTrackedExtension(DependencyOptions.class.getName());
-		DependencyOptions dependencyOptions = dependencyOptionsExtension.getTrackedService();
-		if (dependencyOptions.get(Operation.DEACTIVATE_BUNDLE, Closure.PROVIDING) 
-				|| dependencyOptions.get(Operation.DEACTIVATE_BUNDLE, Closure.SINGLE)) {
-			BundleSorter bs = new BundleSorter();
-			for (Bundle bundle : bundlesToStop) {
-				Collection<Bundle> requiringBundles = bs.sortRequiringBundles(Collections.<Bundle>singletonList(bundle),
-						bundleRegion.getBundles(Bundle.ACTIVE | Bundle.STARTING));
-				requiringBundles.remove(bundle);
-				if (requiringBundles.size() > 0) {
-					Collection<Bundle> providingBundles = bs.sortProvidingBundles(Collections.<Bundle>singletonList(bundle),
-							bundleRegion.getBundles(Bundle.RESOLVED | Bundle.STOPPING));
-					String msg =	WarnMessage.getInstance().formatString("has_stopped_requiring_bundles",
-							bundleRegion.formatBundleList(requiringBundles, true), bundleRegion.formatBundleList(providingBundles, true)); 
-					addLogStatus(new BundleStatus(StatusCode.WARNING, InPlace.PLUGIN_ID, msg));
+		try {
+			DependencyOptions dependencyOptions = Activator.getDependencyOptionsService();
+			if (dependencyOptions.get(Operation.DEACTIVATE_BUNDLE, Closure.PROVIDING) 
+					|| dependencyOptions.get(Operation.DEACTIVATE_BUNDLE, Closure.SINGLE)) {
+				BundleSorter bs = new BundleSorter();
+				for (Bundle bundle : bundlesToStop) {
+					Collection<Bundle> requiringBundles = bs.sortRequiringBundles(Collections.<Bundle>singletonList(bundle),
+							bundleRegion.getBundles(Bundle.ACTIVE | Bundle.STARTING));
+					requiringBundles.remove(bundle);
+					if (requiringBundles.size() > 0) {
+						Collection<Bundle> providingBundles = bs.sortProvidingBundles(Collections.<Bundle>singletonList(bundle),
+								bundleRegion.getBundles(Bundle.RESOLVED | Bundle.STOPPING));
+						String msg =	WarnMessage.getInstance().formatString("has_stopped_requiring_bundles",
+								bundleRegion.formatBundleList(requiringBundles, true), bundleRegion.formatBundleList(providingBundles, true)); 
+						addLogStatus(new BundleStatus(StatusCode.WARNING, Activator.PLUGIN_ID, msg));
+					}
 				}
 			}
+		} catch (ExtenderException e) {
+			addStatus(new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e));
 		}
-		dependencyOptionsExtension.closeTrackedService();
 		return getLastErrorStatus();
 	}
 

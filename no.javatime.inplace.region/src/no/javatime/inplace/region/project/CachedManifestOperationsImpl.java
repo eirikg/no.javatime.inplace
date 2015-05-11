@@ -25,6 +25,7 @@ import no.javatime.inplace.region.intface.BundleRegion;
 import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.intface.ProjectLocationException;
 import no.javatime.inplace.region.manager.WorkspaceRegionImpl;
+import no.javatime.util.messages.ExceptionMessage;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
@@ -109,7 +110,7 @@ public class CachedManifestOperationsImpl {
 	 */
 	public Boolean getCachedActivationPolicy(Bundle bundle) throws InPlaceException {
 		if (null == bundle) {
-			throw new InPlaceException("null_bundle_activation_policy");
+			throw new InPlaceException(ExceptionMessage.getInstance().getString("null_bundle_activation_policy"));
 		}
 		Dictionary<String, String> headers = bundle.getHeaders();
 		String policy = headers.get(Constants.BUNDLE_ACTIVATIONPOLICY);
@@ -124,7 +125,7 @@ public class CachedManifestOperationsImpl {
 	 */
 	public Boolean isFragment(Bundle bundle) throws InPlaceException {
 		if (null == bundle) {
-			throw new InPlaceException("null_bundle_check_fragment");
+			throw new InPlaceException(ExceptionMessage.getInstance().getString("null_bundle_check_fragment"));
 		}
 		try {			
 			Dictionary<String, String> headers = bundle.getHeaders();

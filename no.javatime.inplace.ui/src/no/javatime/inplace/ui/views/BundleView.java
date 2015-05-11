@@ -17,9 +17,8 @@ import java.util.List;
 
 import no.javatime.inplace.bundlejobs.intface.ActivateProject;
 import no.javatime.inplace.bundlejobs.intface.BundleExecutor;
-import no.javatime.inplace.extender.intface.Extender;
 import no.javatime.inplace.extender.intface.ExtenderException;
-import no.javatime.inplace.extender.intface.Extenders;
+import no.javatime.inplace.extender.intface.Extension;
 import no.javatime.inplace.region.events.BundleTransitionEvent;
 import no.javatime.inplace.region.events.BundleTransitionEventListener;
 import no.javatime.inplace.region.intface.BundleProjectCandidates;
@@ -36,7 +35,6 @@ import no.javatime.inplace.ui.Activator;
 import no.javatime.inplace.ui.command.contributions.BundleCommandsContributionItems;
 import no.javatime.inplace.ui.command.handlers.BundleMenuActivationHandler;
 import no.javatime.inplace.ui.msg.Msg;
-import no.javatime.util.messages.ExceptionMessage;
 import no.javatime.util.messages.Message;
 import no.javatime.util.view.ViewUtil;
 
@@ -107,15 +105,17 @@ import org.osgi.framework.BundleEvent;
 import org.osgi.framework.BundleListener;
 
 /**
- * Maintains a bundle details page view and a bundle list page view with bundle properties and status information.
+ * Maintains a bundle details page view and a bundle list page view with bundle properties and
+ * status information.
  * <p>
- * Local menus and a tool bar is provided for executing bundle operations, toggle activation policy on a bundle, open
- * manifest editor, flip between list and details page and and show/hide bundle console and message view.
+ * Local menus and a tool bar is provided for executing bundle operations, toggle activation policy
+ * on a bundle, open manifest editor, flip between list and details page and and show/hide bundle
+ * console and message view.
  * <p>
  * Pages are updated with bundle status information received from job, bundle and resource listeners
  */
-public class BundleView extends ViewPart implements ISelectionListener, BundleListener, BundleTransitionEventListener,
-		IResourceChangeListener, IJobChangeListener, IAdaptable {
+public class BundleView extends ViewPart implements ISelectionListener, BundleListener,
+		BundleTransitionEventListener, IResourceChangeListener, IJobChangeListener, IAdaptable {
 
 	public static String ID = BundleView.class.getName();
 
@@ -125,15 +125,13 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 	private TableViewer bundleListPage;
 	// Local pull down menu
 	private IMenuManager pullDownMenuManager;
-	// Maintains detailed status info. about a bundle
-	private BundleDetailsLabelProvider bundleDetailsLabelProvider;
-	// Maintains status info. for a list of bundles
-	private BundleListLabelProvider bundleListLabelProvider;
+
 	// Common for both pages
 	private BundleContentProvider bundleContentProvider;
 
 	// Local tool bar descriptors
-	final private static ImageDescriptor linkedWithImage = Activator.getImageDescriptor("icons/link_with.gif"); //$NON-NLS-1$
+	final private static ImageDescriptor linkedWithImage = Activator
+			.getImageDescriptor("icons/link_with.gif"); //$NON-NLS-1$
 	final private static ImageDescriptor mfEditorImage = Activator
 			.getImageDescriptor("icons/edit_manifest.gif"); //$NON-NLS-1$
 
@@ -156,10 +154,12 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 	private Action flipPageAction;
 	final private String flipDetailsGeneralText = Message.getInstance().formatString(
 			"flip_details_general_text"); //$NON-NLS-1$
-	final private String flipListGeneralText = Message.getInstance().formatString("flip_list_general_text"); //$NON-NLS-1$
+	final private String flipListGeneralText = Message.getInstance().formatString(
+			"flip_list_general_text"); //$NON-NLS-1$
 	// Deactivate or activate bundle project
 	private Action activateAction;
-	final private String activationGeneralText = Message.getInstance().formatString("activation_general_text"); //$NON-NLS-1$
+	final private String activationGeneralText = Message.getInstance().formatString(
+			"activation_general_text"); //$NON-NLS-1$
 	final private String activateText = Message.getInstance().formatString("activate_text"); //$NON-NLS-1$
 	final private String deactivateText = Message.getInstance().formatString("deactivate_text"); //$NON-NLS-1$
 
@@ -170,8 +170,8 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 
 	// Update bundle when activated
 	private Action updateAction;
-	final private String updateGeneralText = Message.getInstance().formatString(
-			"update_general_text"); //$NON-NLS-1$
+	final private String updateGeneralText = Message.getInstance()
+			.formatString("update_general_text"); //$NON-NLS-1$
 	final private String updateText = Message.getInstance().formatString("update_text"); //$NON-NLS-1$
 
 	// Refresh bundle when activated
@@ -182,7 +182,8 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 
 	// Stop bundle when bundle in state active/starting and start bundle when in state resolved
 	private Action startStopAction;
-	final private String startStopGeneralText = Message.getInstance().formatString("start_stop_general_text"); //$NON-NLS-1$
+	final private String startStopGeneralText = Message.getInstance().formatString(
+			"start_stop_general_text"); //$NON-NLS-1$
 	final private String stopText = Message.getInstance().formatString("stop_text"); //$NON-NLS-1$
 	final private String startText = Message.getInstance().formatString("start_text"); //$NON-NLS-1$
 
@@ -196,8 +197,10 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 	private Action updateClassPathAction;
 	final private String updateClassPathGeneralText = Message.getInstance().formatString(
 			"update_class_path_general_text"); //$NON-NLS-1$
-	final private String updateClassPathText = Message.getInstance().formatString("update_class_path_text"); //$NON-NLS-1$
-	protected static String addClassPathLabel = Message.getInstance().formatString("add_classpath_label_popup"); //$NON-NLS-1$
+	final private String updateClassPathText = Message.getInstance().formatString(
+			"update_class_path_text"); //$NON-NLS-1$
+	protected static String addClassPathLabel = Message.getInstance().formatString(
+			"add_classpath_label_popup"); //$NON-NLS-1$
 	protected static String removeClassPathLabel = Message.getInstance().formatString(
 			"remove_classpath_label_popup"); //$NON-NLS-1$
 
@@ -227,9 +230,6 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 	private IViewPart packageExplorer;
 	private IViewPart projectExplorer;
 
-	private final BundleProjectCandidates bundleProjectCandidates = Activator.getBundleProjectCandidatesService();
-	private final BundleRegion bundleRegion = Activator.getBundleRegionService();
-
 	@Override
 	public void init(IViewSite site, IMemento memento) throws PartInitException {
 		super.init(site, memento);
@@ -237,9 +237,10 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 	}
 
 	/**
-	 * Save selection in list page if any, store the link with explorers state and the flip page state
+	 * Save session state of selected project if any, the link with explorers state and the flip page
+	 * state
 	 * 
-	 * @param memento interface to persist state
+	 * @param memento interface to persistent state
 	 */
 	@Override
 	public void saveState(IMemento memento) {
@@ -257,12 +258,11 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 
 		IMemento detailsPageMemento = memento.createChild("DetailsPage"); //$NON-NLS-1$
 		detailsPageMemento.putBoolean("PageSelection", (isDetailsPageActive() ? true : false)); //$NON-NLS-1$
-
 	}
 
 	/**
-	 * Set selection to selected bundle project from previous session, retore the link with explorers and the flip page
-	 * state.
+	 * Set selection to selected bundle project from previous session, restore the link with explorers
+	 * state and the flip page state.
 	 * <p>
 	 * Input should have been set before restoring the selection.
 	 * 
@@ -273,36 +273,39 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 		if (null == memento) {
 			return; // Drop restore and continue silently
 		}
-		IMemento[] selMemento = memento.getChildren("Selection"); //$NON-NLS-1$
-		if (null != selMemento && selMemento.length == 1) {
-			projectName = selMemento[0].getString("SelectedProject"); //$NON-NLS-1$
-			try {
+		try {
+			// Set selection to selected project at shutdown if any
+			BundleProjectCandidates bundleProjectCandidates = Activator
+					.getBundleProjectCandidatesService();
+			IMemento[] selMemento = memento.getChildren("Selection"); //$NON-NLS-1$
+			if (null != selMemento && selMemento.length == 1) {
+				projectName = selMemento[0].getString("SelectedProject"); //$NON-NLS-1$
 				if (null != projectName) {
 					selectProject(bundleProjectCandidates.getProject(projectName), true);
 				}
-			} catch (InPlaceException e) {
-				// Project not accessible. Ignore set selection
 			}
-		}
-		IMemento[] linkWithMemento = memento.getChildren("LinkWith"); //$NON-NLS-1$
-		if (null != linkWithMemento && linkWithMemento.length == 1) {
-			linkWithState = linkWithMemento[0].getBoolean("Explorers"); //$NON-NLS-1$
-			linkWithAction.setChecked(linkWithState);
-		}
-
-		IMemento[] detailsPageMemento = memento.getChildren("DetailsPage"); //$NON-NLS-1$
-		if (null != detailsPageMemento && detailsPageMemento.length == 1) {
-			boolean detailsPageState = detailsPageMemento[0].getBoolean("PageSelection"); //$NON-NLS-1$
-			if (detailsPageState && null != projectName) {
-				showProject(bundleProjectCandidates.getProject(projectName));
+			// If link with explores was enabled at shut down enable it
+			IMemento[] linkWithMemento = memento.getChildren("LinkWith"); //$NON-NLS-1$
+			if (null != linkWithMemento && linkWithMemento.length == 1) {
+				linkWithState = linkWithMemento[0].getBoolean("Explorers"); //$NON-NLS-1$
+				linkWithAction.setChecked(linkWithState);
 			}
+			// If the details page was active at shutdown flip to details page on the restored project
+			IMemento[] detailsPageMemento = memento.getChildren("DetailsPage"); //$NON-NLS-1$
+			if (null != detailsPageMemento && detailsPageMemento.length == 1) {
+				boolean detailsPageState = detailsPageMemento[0].getBoolean("PageSelection"); //$NON-NLS-1$
+				if (detailsPageState && null != projectName) {
+					showProject(bundleProjectCandidates.getProject(projectName));
+				}
+			}
+		} catch (ExtenderException e) {
+			// Project not accessible. Ignore set selection
 		}
-
 	}
 
 	/**
-	 * Create page book with two pages, resource, job and bundle listeners, page selection providers, actions, command
-	 * contributors, context menu, tool-bar and pull-down menu
+	 * Create page book with two pages, resource, job and bundle listeners, page selection providers,
+	 * actions, command contributors, context menu, tool-bar and pull-down menu
 	 */
 	@Override
 	public void createPartControl(Composite parent) {
@@ -313,20 +316,20 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 		// Page book bundle details page
 		bundleDetailsPage = new TableViewer(pagebook, SWT.BORDER | SWT.FULL_SELECTION | SWT.V_SCROLL
 				| SWT.H_SCROLL);
-		bundleDetailsLabelProvider = new BundleDetailsLabelProvider();
+		BundleDetailsLabelProvider bundleDetailsLabelProvider = new BundleDetailsLabelProvider();
 		bundleDetailsPage.setLabelProvider(bundleDetailsLabelProvider);
 		bundleDetailsPage.setContentProvider(bundleContentProvider);
 		bundleDetailsLabelProvider.createColumns(bundleDetailsPage);
 		// Page book bundles list page
-		bundleListPage = new TableViewer(pagebook, SWT.BORDER | SWT.FULL_SELECTION | SWT.V_SCROLL | SWT.H_SCROLL);
-		bundleListLabelProvider = new BundleListLabelProvider();
+		bundleListPage = new TableViewer(pagebook, SWT.BORDER | SWT.FULL_SELECTION | SWT.V_SCROLL
+				| SWT.H_SCROLL);
+		BundleListLabelProvider bundleListLabelProvider = new BundleListLabelProvider();
 		bundleListPage.setLabelProvider(bundleListLabelProvider);
 		bundleListPage.setContentProvider(bundleContentProvider);
 		bundleListLabelProvider.createColumns(bundleListPage);
 
 		IWorkbenchPartSite site = getSite();
 		// Selection provider that delegates to page specific selection providers
-		// site.setSelectionProvider(bundleListPage);
 		site.setSelectionProvider(selectionProviderIntermediate);
 		// Do not use post change listener due to missing user selections while bundle jobs are running
 		bundleListPage.addSelectionChangedListener(bundleListListener);
@@ -339,14 +342,15 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 		// Open manifest editor on double click in both pages
 		bundleDetailsPage.addDoubleClickListener(bundleDoubleClickListener);
 		bundleListPage.addDoubleClickListener(bundleDoubleClickListener);
-		// BundleExecutor, bundle jobs and resource listeners to update bundle status in pages
+		// Bundle state and transition listeners, bundle jobs and resource listeners
+		// to update bundle status in pages
 		Activator.getContext().addBundleListener(this);
 		Job.getJobManager().addJobChangeListener(this);
 		BundleTransitionListener.addBundleTransitionListener(this);
 		ResourcesPlugin.getWorkspace().addResourceChangeListener(
 				this,
-				IResourceChangeEvent.PRE_CLOSE | IResourceChangeEvent.PRE_DELETE | IResourceChangeEvent.POST_BUILD
-						| IResourceChangeEvent.POST_CHANGE);
+				IResourceChangeEvent.PRE_CLOSE | IResourceChangeEvent.PRE_DELETE
+						| IResourceChangeEvent.POST_BUILD | IResourceChangeEvent.POST_CHANGE);
 		// Local bundle actions, tool bars and pull down menu
 		createLocalActions();
 		IActionBars actionBars = getViewSite().getActionBars();
@@ -366,7 +370,8 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 		pullDownMenuManager.setRemoveAllWhenShown(true);
 		pullDownMenuManager.addMenuListener(pullDownMenuListener);
 
-		// Context pop-up menus share command framework with main menu and package/project explorers context menu
+		// Context pop-up menus share command framework with main menu and package/project explorers
+		// context menu
 		MenuManager listContextMenuManager = new MenuManager() {
 
 			/**
@@ -389,27 +394,49 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 			}
 		};
 		// Install and register context menu contributions for both pages from menu extension definition
-		Menu detailsContextMenu = detailsContextMenuManager.createContextMenu(bundleDetailsPage.getTable());
+		Menu detailsContextMenu = detailsContextMenuManager.createContextMenu(bundleDetailsPage
+				.getTable());
 		Menu listContextMenu = listContextMenuManager.createContextMenu(bundleListPage.getTable());
 		bundleListPage.getTable().setMenu(listContextMenu);
 		bundleDetailsPage.getTable().setMenu(detailsContextMenu);
 		site.registerContextMenu(detailsContextMenuManager, bundleDetailsPage);
 		site.registerContextMenu(listContextMenuManager, bundleListPage);
-		Collection<IJavaProject> javaProjects = bundleProjectCandidates.toJavaProjects(bundleProjectCandidates.getInstallable());
-		// Set input to list page and restore UI elements state
-		showProjects(javaProjects, true);
-		restoreState(memento);
-		Extender<ActivateProject> activateProjectExtender = Extenders.getExtender(ActivateProject.class.getName());
-		ActivateProject activateProject = activateProjectExtender.getService(Activator.getContext().getBundle());
-		if (!activateProject.isProjectWorkspaceActivated()) {
-			pagebook.getDisplay().asyncExec(new Runnable() {
-				@Override
-				public void run() {
-					setContentDescription("Workspace Deactivated"); //$NON-NLS-1$
-				}
-			});
+		loadBundleProjects();
+	}
+
+	/**
+	 * Load and display bundle projects and restore to last saved display state
+	 */
+	private void loadBundleProjects() {
+
+		try {
+			// Load all bundle projects
+			BundleProjectCandidates bundleProjectCandidates = Activator
+					.getBundleProjectCandidatesService();
+			Collection<IJavaProject> javaProjects = bundleProjectCandidates
+					.toJavaProjects(bundleProjectCandidates.getInstallable());
+			// Initially set input to list page in view and display loaded bundle projects
+			showProjects(javaProjects, true);
+			// Restore view state (selection, details or list page and link status with explorers)
+			restoreState(memento);
+			// Update the content description display field if workspace is deactivated
+			Extension<ActivateProject> activateProjectExtension = Activator.getTracker().getExtension(
+					ActivateProject.class.getName());
+			ActivateProject activateProject = activateProjectExtension.getTrackedService();
+			if (!activateProject.isProjectWorkspaceActivated()) {
+				pagebook.getDisplay().asyncExec(new Runnable() {
+					@Override
+					public void run() {
+						setContentDescription("Workspace Deactivated"); //$NON-NLS-1$
+					}
+				});
+			}
+			activateProjectExtension.closeTrackedService();
+		} catch (ExtenderException e) {
+			StatusManager.getManager().handle(
+					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, Msg.CREATE_BUNDLE_VIEW_ERROR,
+							e), StatusManager.LOG);
 		}
-		activateProjectExtender.ungetService(Activator.getContext().getBundle());
 	}
 
 	/**
@@ -438,7 +465,8 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 	IMenuListener pullDownMenuListener = new IMenuListener() {
 
 		/**
-		 * Add all menu commands to the menu. Commands enable state is determined before invocation of this method.
+		 * Add all menu commands to the menu. Commands enable state is determined before invocation of
+		 * this method.
 		 * 
 		 * @param manager menu manager for pull down menu
 		 */
@@ -515,8 +543,8 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 	};
 
 	/**
-	 * Listen to selected java projects from other sources. If a project is selected in the package or project explorer,
-	 * the project in the current page view is selected
+	 * Listen to selected java projects from other sources. If a project is selected in the package or
+	 * project explorer, the project in the current page view is selected
 	 * 
 	 * @param sourcepart workbench part
 	 * @param selection current selection
@@ -528,12 +556,20 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 				if (selection instanceof IStructuredSelection) {
 					IStructuredSelection ss = (IStructuredSelection) selection;
 					Object object = ss.getFirstElement();
-					IProject project = (IProject) Platform.getAdapterManager().getAdapter(object, IProject.class);
+					IProject project = (IProject) Platform.getAdapterManager().getAdapter(object,
+							IProject.class);
 					if (null != project && project.isAccessible()) {
 						// Set selection in list page view to the same project as in part
-						if (bundleProjectCandidates.isInstallable(project)) {
-							selectProject(project, true);
-						} else {
+						try {
+							if (Activator.getBundleProjectCandidatesService().isInstallable(project)) {
+								selectProject(project, true);
+							} else {
+								selectProject(project, false);
+							}
+						} catch (ExtenderException e) {
+							StatusManager.getManager().handle(
+									new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),
+									StatusManager.LOG);
 							selectProject(project, false);
 						}
 						if (isDetailsPageActive()) {
@@ -548,11 +584,11 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 	}
 
 	/**
-	 * Update bundle state in bundle page view on external workspace bundles operations and when classes in bundles with a
-	 * lazy activation policy are loaded on demand.
+	 * Update bundle state in bundle page view on external workspace bundles operations and when
+	 * classes in bundles with a lazy activation policy are loaded on demand.
 	 * <p>
-	 * The job event handler updates the bundle view page for internal bundle operations and the resource change listener
-	 * for project CRUD operations.
+	 * The job event handler updates the bundle view page for internal bundle operations and the
+	 * resource change listener for project CRUD operations.
 	 * 
 	 * @see #done(IJobChangeEvent)
 	 * @see #resourceChanged(IResourceChangeEvent)
@@ -561,30 +597,31 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 	public void bundleChanged(BundleEvent event) {
 
 		final Bundle bundle = event.getBundle();
-		final BundleRegion bundleRegion = Activator.getBundleRegionService();
-		BundleTransition bundleTransition = Activator.getBundleTransitionService();
 		try {
+			BundleRegion bundleRegion = Activator.getBundleRegionService();
 			IProject project = bundleRegion.getProject(bundle);
 			if (null == project) {
 				return; // not a workspace project (jar bundle)
 			}
+			BundleTransition bundleTransition = Activator.getBundleTransitionService();
 			Transition transition = bundleTransition.getTransition(project);
 			// Only consider external commands and on demand loading of bundles
 			if (transition == Transition.EXTERNAL || (transition == Transition.LAZY_ACTIVATE)) {
 				showProjectInfo();
 			}
-		} catch (ProjectLocationException e) {
-			// Avoid spam. Delegate exception reporting to others
+		} catch (ProjectLocationException | ExtenderException e) {
+			StatusManager.getManager().handle(
+					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),
+					StatusManager.LOG);
 		}
-
 	}
 
 	/**
-	 * Update detail and list page view for project CRUD operations. Mark projects as removed in before state when
-	 * renamed, moved and deleted. This determines which page view to use in the after state of renamed, moved and deleted
-	 * projects.
+	 * Update detail and list page view for project CRUD operations. Mark projects as removed in
+	 * before state when renamed, moved and deleted. This determines which page view to use in the
+	 * after state of renamed, moved and deleted projects.
 	 * <p>
-	 * Foe all post events update project information in bundle detail and list page view.
+	 * For all post events update project information in bundle detail and list page view.
 	 * 
 	 * @see #bundleChanged(BundleEvent)
 	 * @see #done(IJobChangeEvent)
@@ -597,8 +634,14 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 			final IResource resource = event.getResource();
 			if (resource.getType() == IResource.PROJECT) {
 				IProject removedProject = resource.getProject();
-				if (bundleProjectCandidates.isInstallable(removedProject)) {
-					markProjectRemoved(removedProject);
+				try {
+					if (Activator.getBundleProjectCandidatesService().isInstallable(removedProject)) {
+						markProjectRemoved(removedProject);
+					}
+				} catch (ExtenderException e) {
+					StatusManager.getManager().handle(
+							new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),
+							StatusManager.LOG);
 				}
 			}
 		} else if ((eventType & (IResourceChangeEvent.POST_BUILD)) != 0) {
@@ -610,18 +653,19 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 			for (IResourceDelta projectDelta : projectDeltas) {
 				try {
 					projectResource = projectDelta.getResource();
-					if (projectResource.isAccessible() && (projectResource.getType() & (IResource.PROJECT)) != 0) {
+					if (projectResource.isAccessible()
+							&& (projectResource.getType() & (IResource.PROJECT)) != 0) {
 						IProject project = projectResource.getProject();
 						if (Activator.getBundleRegionService().isBundleActivated(project)
-								&& Activator.getBundleTransitionService().containsPending(project, Transition.BUILD, false)) {
+								&& Activator.getBundleTransitionService().containsPending(project,
+										Transition.BUILD, false)) {
 							isBuildingPending = true;
 						}
 					}
-				} catch (InPlaceException e) {
+				} catch (ExtenderException e) {
 					StatusManager.getManager().handle(
-							new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getLocalizedMessage(), e),
+							new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),
 							StatusManager.LOG);
-					ExceptionMessage.getInstance().handleMessage(e, null);
 				}
 			}
 			if (isBuildingPending) {
@@ -632,7 +676,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 			showProjectInfo();
 		}
 	}
-	
+
 	/**
 	 * Update content description when building projects
 	 */
@@ -646,13 +690,14 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 				public void run() {
 					setContentDescription("Building bundle project(s) ..."); //$NON-NLS-1$
 				}
-			});			
+			});
 		}
 	}
 
 	/**
-	 * Updates bundle view pages after a bundle job has finished and when bundle projects are built but not updated (the
-	 * update on build switch is off). Does not alter the existing selection or the current page view shown.
+	 * Updates bundle view pages after a bundle job has finished and when bundle projects are built
+	 * but not updated (the update on build switch is off). Does not alter the existing selection or
+	 * the current page view shown.
 	 * 
 	 * @see #bundleChanged(BundleEvent)
 	 * @see #resourceChanged(IResourceChangeEvent)
@@ -671,16 +716,16 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 				return;
 			}
 			try {
+				// Update page when building
 				if (!Activator.getCommandOptionsService().isUpdateOnBuild()
 						&& Activator.getBundleTransitionService().containsPending(Transition.UPDATE)) {
 					showProjectInfo();
 				}
 			} catch (ExtenderException e) {
-				StatusManager.getManager()
-						.handle(new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),
-								StatusManager.LOG);
+				StatusManager.getManager().handle(
+						new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),
+						StatusManager.LOG);
 			}
-
 		} else if (job.belongsTo(BundleExecutor.FAMILY_BUNDLE_LIFECYCLE)) {
 			// Don't update pages while Eclipse shuts down
 			IWorkbench workbench = Activator.getDefault().getWorkbench();
@@ -775,24 +820,28 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 	@Override
 	public void showBusy(boolean busy) {
 		super.showBusy(busy);
-		if (!bundleRegion.isRegionActivated()) {
-			pagebook.getDisplay().asyncExec(new Runnable() {
-				@Override
-				public void run() {
-					setContentDescription("Workspace Deactivated"); //$NON-NLS-1$
-				}
-			});
-		} else {
-			IJobManager jobMan = Job.getJobManager();
-			final Job[] bundleJob = jobMan.find(BundleExecutor.FAMILY_BUNDLE_LIFECYCLE);
-			if (bundleJob.length == 0 && !getContentDescription().equals("idle")) { //$NON-NLS-1$
+		try {
+			if (!Activator.getBundleRegionService().isRegionActivated()) {
 				pagebook.getDisplay().asyncExec(new Runnable() {
 					@Override
 					public void run() {
-						setContentDescription("idle"); //$NON-NLS-1$
+						setContentDescription("Workspace Deactivated"); //$NON-NLS-1$
 					}
 				});
+			} else {
+				IJobManager jobMan = Job.getJobManager();
+				final Job[] bundleJob = jobMan.find(BundleExecutor.FAMILY_BUNDLE_LIFECYCLE);
+				if (bundleJob.length == 0 && !getContentDescription().equals("idle")) { //$NON-NLS-1$
+					pagebook.getDisplay().asyncExec(new Runnable() {
+						@Override
+						public void run() {
+							setContentDescription("idle"); //$NON-NLS-1$
+						}
+					});
+				}
 			}
+		} catch (ExtenderException e) {
+			// Ignore update state when service is unavailable
 		}
 	}
 
@@ -826,15 +875,17 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 				if (null != project) {
 					try {
 						if (!Activator.getBundleProjectMetaService().isDefaultOutputFolder(project)) {
-							BundleMenuActivationHandler.updateClassPathHandler(Collections.<IProject>singletonList(project), true);
+							BundleMenuActivationHandler.updateClassPathHandler(
+									Collections.<IProject> singletonList(project), true);
 						} else {
-							BundleMenuActivationHandler.updateClassPathHandler(Collections.<IProject>singletonList(project), false);
+							BundleMenuActivationHandler.updateClassPathHandler(
+									Collections.<IProject> singletonList(project), false);
 						}
 					} catch (InPlaceException | ExtenderException e) {
-						String msg = NLS.bind(Msg.ADD_MENU_EXEC_ERROR, updateClassPathAction);
-						StatusManager.getManager()
-						.handle(new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID,
-								project, msg, e), StatusManager.LOG);
+						String msg = NLS.bind(Msg.ADD_MENU_EXEC_ERROR, updateClassPathText);
+						StatusManager.getManager().handle(
+								new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, project, msg, e),
+								StatusManager.LOG);
 					}
 				}
 			}
@@ -848,11 +899,18 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 			public void run() {
 				IProject project = getSelectedProject();
 				if (null != project) {
-					Collection<IProject> projects = Collections.<IProject>singletonList(project);
-					if (bundleRegion.isBundleActivated(project)) {
-						BundleMenuActivationHandler.deactivateHandler(projects);
-					} else {
-						BundleMenuActivationHandler.activateProjectHandler(projects);
+					try {
+						Collection<IProject> projects = Collections.<IProject> singletonList(project);
+						if (Activator.getBundleRegionService().isBundleActivated(project)) {
+							BundleMenuActivationHandler.deactivateHandler(projects);
+						} else {
+							BundleMenuActivationHandler.activateProjectHandler(projects);
+						}
+					} catch (ExtenderException e) {
+						String msg = NLS.bind(Msg.ADD_MENU_EXEC_ERROR, activationGeneralText);
+						StatusManager.getManager().handle(
+								new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, msg, e),
+								StatusManager.LOG);
 					}
 				}
 			}
@@ -866,8 +924,16 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 			public void run() {
 				IProject project = getSelectedProject();
 				if (null != project) {
-					if (bundleRegion.isBundleActivated(project)) {
-						BundleMenuActivationHandler.resetHandler(Collections.<IProject>singletonList(project));
+					try {
+						if (Activator.getBundleRegionService().isBundleActivated(project)) {
+							BundleMenuActivationHandler.resetHandler(Collections
+									.<IProject> singletonList(project));
+						}
+					} catch (ExtenderException e) {
+						String msg = NLS.bind(Msg.ADD_MENU_EXEC_ERROR, resetText);
+						StatusManager.getManager().handle(
+								new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, msg, e),
+								StatusManager.LOG);
 					}
 				}
 			}
@@ -880,10 +946,18 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 			@Override
 			public void run() {
 				IProject project = getSelectedProject();
-				if (null != project) {
-					if (bundleRegion.isBundleActivated(project)) {
-							BundleMenuActivationHandler.updateHandler(Collections.<IProject>singletonList(project));
+				try {
+					if (null != project) {
+						if (Activator.getBundleRegionService().isBundleActivated(project)) {
+							BundleMenuActivationHandler.updateHandler(Collections
+									.<IProject> singletonList(project));
+						}
 					}
+				} catch (ExtenderException e) {
+					String msg = NLS.bind(Msg.ADD_MENU_EXEC_ERROR, updateText);
+					StatusManager.getManager().handle(
+							new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, msg, e),
+							StatusManager.LOG);
 				}
 			}
 		};
@@ -896,18 +970,20 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 			public void run() {
 				IProject project = getSelectedProject();
 				if (null != project) {
-					if (bundleRegion.isBundleActivated(project)) {
-						Bundle bundle = Activator.getBundleRegionService().getBundle(project);
-						if (null != bundle) {
-							try {								
-								BundleMenuActivationHandler.refreshHandler(Collections.<IProject>singletonList(project));
-							} catch (InPlaceException | ExtenderException e) {
-								String msg = NLS.bind(Msg.ADD_MENU_EXEC_ERROR, refreshText);
-								StatusManager.getManager()
-								.handle(new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID,
-										bundle, msg, e), StatusManager.LOG);
+					try {
+						BundleRegion bundleRegion = Activator.getBundleRegionService();
+						Bundle bundle = bundleRegion.getBundle(project);
+						if (bundleRegion.isBundleActivated(project)) {
+							if (null != bundle) {
+								BundleMenuActivationHandler.refreshHandler(Collections
+										.<IProject> singletonList(project));
 							}
 						}
+					} catch (ExtenderException e) {
+						String msg = NLS.bind(Msg.ADD_MENU_EXEC_ERROR, refreshText);
+						StatusManager.getManager().handle(
+								new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, project, msg, e),
+								StatusManager.LOG);
 					}
 				}
 			}
@@ -921,23 +997,24 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 			public void run() {
 				IProject project = getSelectedProject();
 				if (null != project) {
-					if (bundleRegion.isBundleActivated(project)) {
-						Bundle bundle = Activator.getBundleRegionService().getBundle(project);
-						if (bundle != null) {
-							Collection<IProject> projects = Collections.<IProject>singletonList(project);
-							try {
+					try {
+						BundleRegion bundleRegion = Activator.getBundleRegionService();
+						if (bundleRegion.isBundleActivated(project)) {
+							Bundle bundle = bundleRegion.getBundle(project);
+							if (bundle != null) {
+								Collection<IProject> projects = Collections.<IProject> singletonList(project);
 								if ((bundle.getState() & (Bundle.ACTIVE | Bundle.STARTING)) != 0) {
 									BundleMenuActivationHandler.stopHandler(projects);
 								} else {
 									BundleMenuActivationHandler.startHandler(projects);
 								}
-							} catch (InPlaceException | ExtenderException e) {
-								String msg = NLS.bind(Msg.ADD_MENU_EXEC_ERROR, startStopGeneralText);
-								StatusManager.getManager()
-								.handle(new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID,
-										bundle, msg, e), StatusManager.LOG);
 							}
 						}
+					} catch (ExtenderException e) {
+						String msg = NLS.bind(Msg.ADD_MENU_EXEC_ERROR, startStopGeneralText);
+						StatusManager.getManager().handle(
+								new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, project, msg, e),
+								StatusManager.LOG);
 					}
 				}
 			}
@@ -957,13 +1034,17 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 							showProject(project);
 						}
 					} else {
-						showProjects(bundleProjectCandidates.toJavaProjects(bundleProjectCandidates.getInstallable()), true);
+						BundleProjectCandidates bundleProjectCandidates = Activator
+								.getBundleProjectCandidatesService();
+						showProjects(
+								bundleProjectCandidates.toJavaProjects(bundleProjectCandidates.getInstallable()),
+								true);
 					}
-				} catch (InPlaceException e) {
+				} catch (ExtenderException e) {
 					String msg = NLS.bind(Msg.ADD_MENU_EXEC_ERROR, flipListGeneralText);
-					StatusManager.getManager()
-					.handle(new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID,
-							project, msg, e), StatusManager.LOG);
+					StatusManager.getManager().handle(
+							new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, project, msg, e),
+							StatusManager.LOG);
 				}
 			}
 		};
@@ -974,7 +1055,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 			 */
 			@Override
 			public void run() {
-				
+
 				IProject project = getSelectedProject();
 				if (null != project && project.exists() && project.isOpen()) {
 					IFile manifestFile = project.getFile(BundleProjectMeta.MANIFEST_RELATIVE_PATH
@@ -994,16 +1075,16 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 							try {
 								page.openEditor(editorInput, editorDesc.getId());
 							} catch (PartInitException e) {
-								StatusManager.getManager()
-								.handle(new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID,
-										project, Msg.ADD_MENU_EXEC_ERROR, e), StatusManager.LOG);
+								StatusManager.getManager().handle(
+										new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, project,
+												Msg.ADD_MENU_EXEC_ERROR, e), StatusManager.LOG);
 							}
 						}
-					} else { 
+					} else {
 						String msg = NLS.bind(Msg.MANIFEST_ERROR, project.getName());
-						StatusManager.getManager()
-						.handle(new BundleStatus(StatusCode.ERROR, Activator.PLUGIN_ID,
-								project, msg, null), StatusManager.LOG);
+						StatusManager.getManager().handle(
+								new BundleStatus(StatusCode.ERROR, Activator.PLUGIN_ID, project, msg, null),
+								StatusManager.LOG);
 					}
 				}
 			}
@@ -1011,15 +1092,29 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 	}
 
 	/**
-	 * Enable/disable, set label text and tool tip text in local menus and tool-bar for a selected project. If there is a
-	 * current selection there is a project to operate on and the UI state is dependent the state of the selected bundle
-	 * project.
+	 * Enable/disable, set label text and tool tip text in local menus and tool-bar for a selected
+	 * project. If there is a current selection there is a project to operate on and the UI state is
+	 * dependent the state of the selected bundle project.
 	 */
 	private void setEnablement() {
 
+		Bundle bundle = null;
+		BundleProjectCandidates bundleProjectCandidates = null;
+		BundleRegion bundleRegion = null;
 		IProject project = getSelectedProject();
+		try {
+			bundleRegion = Activator.getBundleRegionService();
+			bundleProjectCandidates = Activator.getBundleProjectCandidatesService();
+		} catch (ExtenderException e) {
+			StatusManager.getManager().handle(
+					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),
+					StatusManager.LOG);
+			// Disable bundle commands
+			project = null;
+		}
 		// Disable all buttons and menu entries and return when no active project is selected,
-		// not a plug-in or not a bundle (should not exist in bundle list) and when a bundle job is running
+		// not a plug-in or not a bundle (should not exist in bundle list) and when a bundle job is
+		// running
 		if (null == project || isBundleJobRunning() || !bundleProjectCandidates.isInstallable(project)) {
 			setUIElement(resetAction, false, resetGeneralText, resetGeneralText,
 					BundleCommandsContributionItems.resetImage);
@@ -1029,17 +1124,16 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 					BundleCommandsContributionItems.activateImage);
 			setUpdateRefresh(false, null);
 			if (isBundleJobRunning()) {
-				setNonBundleCommandsAction(true, true, true, flipDetailsGeneralText, flipDetailsGeneralText,
-						BundleCommandsContributionItems.bundleListImage);
+				setNonBundleCommandsAction(true, true, true, flipDetailsGeneralText,
+						flipDetailsGeneralText, BundleCommandsContributionItems.bundleListImage);
 			} else {
-				setNonBundleCommandsAction(false, false, false, flipDetailsGeneralText, flipDetailsGeneralText,
-						BundleCommandsContributionItems.bundleListImage);
+				setNonBundleCommandsAction(false, false, false, flipDetailsGeneralText,
+						flipDetailsGeneralText, BundleCommandsContributionItems.bundleListImage);
 			}
 			setUIElement(updateClassPathAction, false, updateClassPathText, updateClassPathText,
 					BundleCommandsContributionItems.classPathImage);
 			return;
 		}
-
 		// Enable all non bundle commands. Flip page is dependent on the active page
 		if (isListPageActive()) {
 			setNonBundleCommandsAction(true, true, true, flipDetailsGeneralText, flipDetailsGeneralText,
@@ -1050,40 +1144,52 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 		}
 		// Always possible to activate or deactivate a project
 		activateAction.setEnabled(true);
-		// Allow to update the class path for deactivated and activated bundle projects
+		// Always allow to update the class path for deactivated and activated bundle projects
 		setUpdateClassPathAction(project);
 		if (bundleRegion.isBundleActivated(project)) {
 			// Bundle should be in state installed (if resolve errors), resolved or active/starting
-			Bundle bundle =Activator.getBundleRegionService().getBundle(project);
+			bundle = Activator.getBundleRegionService().getBundle(project);
 			if (null != bundle) {
 				// Start and Stop is dependent on the bundle state of the activated bundle
 				if ((bundle.getState() & (Bundle.ACTIVE | Bundle.STARTING)) != 0) {
-					setUIElement(startStopAction, true, stopText, stopText, BundleCommandsContributionItems.stopImage);
+					setUIElement(startStopAction, true, stopText, stopText,
+							BundleCommandsContributionItems.stopImage);
 				} else { // bundle in state installed or resolved
-					if (Activator.getBundleProjectMetaService().isFragment(bundle)) {
+					try {
+						if (Activator.getBundleProjectMetaService().isFragment(bundle)) {
+							setUIElement(startStopAction, false, startText, startText,
+									BundleCommandsContributionItems.startImage);
+						} else {
+							setUIElement(startStopAction, true, startText, startText,
+									BundleCommandsContributionItems.startImage);
+						}
+					} catch (ExtenderException e) {
+						StatusManager.getManager().handle(
+								new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),
+								StatusManager.LOG);
 						setUIElement(startStopAction, false, startText, startText,
-								BundleCommandsContributionItems.startImage);
-					} else {
-						setUIElement(startStopAction, true, startText, startText,
 								BundleCommandsContributionItems.startImage);
 					}
 				}
 				// Conditional enabling of update and refresh
 				setUpdateRefresh(true, bundle);
 			} else {
-				// Project is activated but bundle is not yet. Meaning that the bundle has not been installed and
-				// resolved/started yet. Start, Stop, Update and Refresh are all dependent on a bundle
-				setUIElement(startStopAction, false, startText, startText, BundleCommandsContributionItems.startImage);
+				// Project is activated but bundle is not yet. Meaning that the bundle has not been
+				// installed and resolved/started yet. 
+				setUIElement(startStopAction, false, startText, startText,
+						BundleCommandsContributionItems.startImage);
 				// Conditional enabling of update and refresh
 				setUpdateRefresh(false, null);
 			}
 			// Reset always possible on an activated project
-			setUIElement(resetAction, true, resetText, resetText, BundleCommandsContributionItems.resetImage);
+			setUIElement(resetAction, true, resetText, resetText,
+					BundleCommandsContributionItems.resetImage);
 			// Always possible to deactivate an activated project
 			setUIElement(activateAction, activateAction.isEnabled(), deactivateText, deactivateText,
 					BundleCommandsContributionItems.deactivateImage);
 		} else {
-			// Enable activate and disable start/stop, refresh, reset and update when project is deactivated
+			// Enable activate and disable start/stop, refresh, reset and update when project is
+			// deactivated
 			setUIElement(resetAction, false, resetGeneralText, resetGeneralText,
 					BundleCommandsContributionItems.resetImage);
 			setUIElement(startStopAction, false, startStopGeneralText, startStopGeneralText,
@@ -1097,11 +1203,11 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 	private void setUpdateRefresh(boolean enable, Bundle bundle) {
 
 		if (enable && null != bundle) {
-				setUIElement(updateAction, true, updateText, updateText,
-						BundleCommandsContributionItems.updateImage);
-			try {				
-					setUIElement(refreshAction, true, refreshText, refreshText,
-							BundleCommandsContributionItems.refreshImage);
+			setUIElement(updateAction, true, updateText, updateText,
+					BundleCommandsContributionItems.updateImage);
+			try {
+				setUIElement(refreshAction, true, refreshText, refreshText,
+						BundleCommandsContributionItems.refreshImage);
 			} catch (InPlaceException e) {
 				setUIElement(refreshAction, false, refreshGeneralText, refreshGeneralText,
 						BundleCommandsContributionItems.refreshImage);
@@ -1115,7 +1221,8 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 	}
 
 	private void setNonBundleCommandsAction(boolean editManifestState, boolean linkWithState,
-			boolean flipPageState, String flipPageToolTipText, String flipPageText, ImageDescriptor flipPageImage) {
+			boolean flipPageState, String flipPageToolTipText, String flipPageText,
+			ImageDescriptor flipPageImage) {
 
 		setUIElement(editManifestAction, editManifestState, openInEditorText, openInEditorGeneralText,
 				mfEditorImage);
@@ -1124,8 +1231,8 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 	}
 
 	/**
-	 * Enable the update class path action if default output folder is missing in Bundle-ClassPath. Otherwise disable the
-	 * action.
+	 * Enable the update class path action if default output folder is missing in Bundle-ClassPath.
+	 * Otherwise disable the action.
 	 * 
 	 * @param project with the default output location set or unset in Bundle-ClassPath
 	 */
@@ -1134,14 +1241,16 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 			updateClassPathAction.setEnabled(true);
 			if (!Activator.getBundleProjectMetaService().isDefaultOutputFolder(project)) {
 				setUIElement(updateClassPathAction, updateClassPathAction.isEnabled(),
-						addClassPathLabel /* updateClassPathText */, addClassPathLabel /* updateClassPathText */,
+						addClassPathLabel /* updateClassPathText */,
+						addClassPathLabel /* updateClassPathText */,
 						BundleCommandsContributionItems.classPathImage);
 			} else {
 				setUIElement(updateClassPathAction, updateClassPathAction.isEnabled(),
-						removeClassPathLabel /* updateClassPathText */, removeClassPathLabel /* updateClassPathText */,
+						removeClassPathLabel /* updateClassPathText */,
+						removeClassPathLabel /* updateClassPathText */,
 						BundleCommandsContributionItems.classPathImage);
 			}
-		} catch (InPlaceException e) {
+		} catch (InPlaceException | ExtenderException e) {
 			updateClassPathAction.setEnabled(false);
 		}
 	}
@@ -1165,8 +1274,9 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 	}
 
 	/**
-	 * Show project information in list and details page view. For renamed, deleted and moved projects switch to list page
-	 * view if the project as a resource has changed as a consequence of one of these operations.
+	 * Show project information in list and details page view. For renamed, deleted and moved projects
+	 * switch to list page view if the project as a resource has changed as a consequence of one of
+	 * these operations.
 	 * <p>
 	 * Otherwise update the project information in the current active page view.
 	 * <p>
@@ -1188,7 +1298,8 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 					if (null != removedProject) {
 						IProject activeProject = getSelectedProject();
 						// If the project is shown in the detail page, switch to list page view
-						// Moved projects are unequal (different path) and renamed and deleted projects are equal
+						// Moved projects are unequal (different path) and renamed and deleted projects are
+						// equal
 						if (null != activeProject && activeProject.equals(removedProject)) {
 							showListPage = true;
 							selection = false;
@@ -1201,8 +1312,18 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 						}
 						showProject(project);
 					} else { // Update list page
-						Collection<IJavaProject> projects = bundleProjectCandidates.toJavaProjects(bundleProjectCandidates.getInstallable());
-						showProjects(projects, selection);
+						try {
+							BundleProjectCandidates bundleProjectCandidates = Activator
+									.getBundleProjectCandidatesService();
+							Collection<IJavaProject> projects = bundleProjectCandidates
+									.toJavaProjects(bundleProjectCandidates.getInstallable());
+							showProjects(projects, selection);
+						} catch (ExtenderException e) {
+							StatusManager.getManager().handle(
+									new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),
+									StatusManager.LOG);
+							selection = false;
+						}
 						// Deselect
 						if (!selection) {
 							selectProject(getSelectedProject(), selection);
@@ -1217,7 +1338,8 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 	 * Show projects in the list page and set selection to current project in details page if any.
 	 * 
 	 * @param javaProjects projects to show
-	 * @param setSelection true if the current project selection should be retained, at a possible new row
+	 * @param setSelection true if the current project selection should be retained, at a possible new
+	 * row
 	 */
 	public void showProjects(Collection<IJavaProject> javaProjects, Boolean setSelection) {
 
@@ -1260,9 +1382,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 	 * @param project to show
 	 */
 	public void showProject(IProject project) {
-		// if (isBundleJobRunning()) {
-		// return;
-		// }
+
 		if (null != project) {
 			setPartName(detailsPageCaptionTitle);
 			setTitleImage(detailsTitleImage);
@@ -1283,8 +1403,8 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 	}
 
 	/**
-	 * Check if the bundle list page is active. A list page is active if the details page is not active and there is a
-	 * selection.
+	 * Check if the bundle list page is active. A list page is active if the details page is not
+	 * active and there is a selection.
 	 * 
 	 * @return true if active otherwise false
 	 */
@@ -1333,8 +1453,8 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 	 * Sets the specified project in the list page view as the active selection.
 	 * 
 	 * @param project to be set as the active selection
-	 * @param select if true set selection to the specified project if false deselect the project or if the project is not
-	 *          found, does not exist or is not accessible deselect all rows
+	 * @param select if true set selection to the specified project if false deselect the project or
+	 * if the project is not found, does not exist or is not accessible deselect all rows
 	 * @return true if the project existed in the list page view
 	 */
 	private Boolean selectProject(IProject project, Boolean select) {
@@ -1381,8 +1501,8 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 	/**
 	 * Get the project of the active selection.
 	 * <p>
-	 * Note that if the details page is the active page, the project displayed in the details page is at the same time the
-	 * selected project in the list page.
+	 * Note that if the details page is the active page, the project displayed in the details page is
+	 * at the same time the selected project in the list page.
 	 * 
 	 * @return project of the active selection or null if no selection
 	 * @see #getDetailsProject()
@@ -1399,8 +1519,9 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 	}
 
 	/**
-	 * Finds the project belonging to a selection in bundle view, package explorer or project explorer. The specified
-	 * selection is based on the project and bundle properties model objects and may be null
+	 * Finds the project belonging to a selection in bundle view, package explorer or project
+	 * explorer. The specified selection is based on the project and bundle properties model objects
+	 * and may be null
 	 * 
 	 * @param selection a selected row
 	 * @return selected project or null if no selection
@@ -1432,8 +1553,9 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 	}
 
 	/**
-	 * Mark a java project as removed. A project is typically marked as invalid in it's before state (pre_close,
-	 * pre_delete) when it is deleted, closed, renamed or moved and cleared in its after state (post_change, post_build).
+	 * Mark a java project as removed. A project is typically marked as invalid in it's before state
+	 * (pre_close, pre_delete) when it is deleted, closed, renamed or moved and cleared in its after
+	 * state (post_change, post_build).
 	 * 
 	 * @param removedProject java project to mark as invalid or null to clear any invalid project
 	 */
@@ -1454,6 +1576,8 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 			try {
 				packageExplorer = ViewUtil.get(BundleMenuActivationHandler.PACKAGE_EXPLORER_ID);
 				if (null != packageExplorer) {
+					BundleProjectCandidates bundleProjectCandidates = Activator
+							.getBundleProjectCandidatesService();
 					IJavaProject jp = bundleProjectCandidates.getJavaProject(project);
 					IStructuredSelection jpSelection = new StructuredSelection(jp);
 					workbenchPartSite = packageExplorer.getSite();
@@ -1474,23 +1598,30 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 						selProvider.setSelection(pSelection);
 					}
 				}
-			} catch (InPlaceException e) {
+			} catch (InPlaceException | ExtenderException e) {
 				// Explorer not updated
 			}
 		}
 	}
 
 	/**
-	 * If called from UI thread, refreshes property page from the {@link BundlePropertiesSource} model setting the
-	 * selection to the current selected project.
+	 * If called from UI thread, refreshes property page from the {@link BundlePropertiesSource} model
+	 * setting the selection to the current selected project.
 	 */
 	public void updatePropertyPage() {
 
 		IProject project = getSelectedProject();
 		if (null != project && null != bundlePropertySheetPage) {
-			BundlePropertiesSource bundlePropertiesSource = (BundlePropertiesSource) Platform.getAdapterManager()
-					.getAdapter(new BundleProperties(project), IPropertySource.class);
-			bundlePropertySheetPage.selectionChanged(this, new StructuredSelection(bundlePropertiesSource));
+			try {
+				BundlePropertiesSource bundlePropertiesSource = (BundlePropertiesSource) Platform
+						.getAdapterManager().getAdapter(new BundleProperties(project), IPropertySource.class);
+				bundlePropertySheetPage.selectionChanged(this, new StructuredSelection(
+						bundlePropertiesSource));
+			} catch (ExtenderException e) {
+				StatusManager.getManager().handle(
+						new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID,
+								Msg.PROPERTY_PAGE_NOT_UPDATED_EXCEPTION, e), StatusManager.LOG);
+			}
 		}
 	}
 
@@ -1556,7 +1687,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 	 * Filter out contributions from other plug-ins
 	 * 
 	 * @param items list of contributions to filter
-	 * @return list of contributions from InPlace plug-ins
+	 * @return list of contributions from Activator plug-ins
 	 */
 	private IContributionItem[] filterItems(IContributionItem[] items) {
 		List<IContributionItem> filteredItems = new ArrayList<IContributionItem>();

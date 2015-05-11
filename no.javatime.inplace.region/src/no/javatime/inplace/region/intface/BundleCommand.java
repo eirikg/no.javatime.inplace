@@ -324,10 +324,10 @@ public interface BundleCommand {
 	 */
 	public List<BundleRevision> getBundleRevisions(Bundle bundle) throws InPlaceException;
 
-	public Bundle getCurrentBundle();
-
-	public void setCurrentBundle(Bundle bundle);
-
+	/**
+	 * Execution time of start and stop operations
+	 * 
+	 * @return execution time in milliseconds of last start or stop operation
+	 */
 	public long getExecutionTime();
-
 }

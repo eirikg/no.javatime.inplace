@@ -50,7 +50,7 @@ public class BundleNode {
 
 	// The primary key of the project
 	private IProject project;
-	// The primary key of the bundle. Keeps the id instead of the bundle object
+	// The primary key of the bundle.
 	private Bundle bundle;
 	// Explicit set, indicating whether the bundle is activated or deactivated
 	private Boolean activated;
@@ -74,12 +74,12 @@ public class BundleNode {
 
 	/**
 	 * Creates a bundle node with a one-to-one relationship between a project and a bundle, called a
-	 * bundle project. The bundle id is stored instead of the bundle object in the node. Initially the
-	 * bundle node has no state and initialized to {@link no.javatime.inplace.region.state.StateLess}
+	 * bundle project.Initially the bundle node has no state and initialized to
+	 * {@link no.javatime.inplace.region.state.StateLess}
 	 * 
 	 * @param bundle may be null
 	 * @param project must not be null
-	 * @param activate should be true to activate (resolvable) the bundle
+	 * @param activate true if the bundle is to be activated, otherwise false
 	 */
 	public BundleNode(Bundle bundle, IProject project, Boolean activate) {
 		this.project = project;
@@ -182,9 +182,8 @@ public class BundleNode {
 	public void setCurrentState(BundleState currentState) {
 		if (Category.DEBUG && Category.getState(Category.fsm)) {
 			if (null != bundle) {
-				TraceMessage.getInstance().getString("state_change",
-						bundle, this.state.getClass().getSimpleName(),
-						currentState.getClass().getSimpleName());
+				TraceMessage.getInstance().getString("state_change", bundle,
+						this.state.getClass().getSimpleName(), currentState.getClass().getSimpleName());
 			} else {
 				TraceMessage.getInstance().getString("state_change", project.getName(),
 						this.state.getClass().getSimpleName(), currentState.getClass().getSimpleName());
@@ -256,7 +255,7 @@ public class BundleNode {
 	 * @return the bundle object or null
 	 */
 	public final Bundle getBundle(Long bundleId) {
-		if (null != bundle && bundleId.longValue() ==  bundle.getBundleId()) {
+		if (null != bundle && bundleId.longValue() == bundle.getBundleId()) {
 			return bundle;
 		}
 		return Activator.getContext().getBundle(bundleId);
@@ -415,6 +414,17 @@ public class BundleNode {
 		this.pendingTranitions.removeAll(operations);
 	}
 
+	/**
+	 * Called when a bundle is starting a transition. The specified transition and state becomes
+	 * current and the bundle is set to a state changing state (currently running a transition).
+	 * <p>
+	 * The specified state should be a valid terminal state and the current state of the bundle should
+	 * be a valid source state of the specified the transition. This is validated by the internal
+	 * state machine when the transition is executed.
+	 * 
+	 * @param transition the new current transition
+	 * @param state the new current state
+	 */
 	public void begin(Transition transition, BundleState state) {
 		this.transitionError = TransitionError.NOERROR;
 		this.prevTransition = this.transition;
@@ -424,10 +434,19 @@ public class BundleNode {
 		isStateChanging = true;
 	}
 
+	/**
+	 * Committing a transition initiated by {@code #begin(Transition, BundleState)}. The bundle is no
+	 * longer in a state changing state.
+	 */
 	public void commit() {
 		isStateChanging = false;
 	}
 
+	/**
+	 * Committing a transition with the specified bundle transition and state as the new state of the
+	 * bundle. Transition initiated with {@code #begin(Transition, BundleState)} causes its state and
+	 * transition parameters to be overwritten. The bundle is no longer in a state changing state.
+	 */
 	public void commit(Transition transition, BundleState state) {
 		this.prevTransitionError = this.transitionError;
 		prevTransition = this.transition;
@@ -437,6 +456,11 @@ public class BundleNode {
 		isStateChanging = false;
 	}
 
+	/**
+	 * Undo a transition by setting the transition and state to the values before the transition was
+	 * initiated with {@code #begin(Transition, BundleState)}. The bundle is no longer in a state
+	 * changing state.
+	 */
 	public void rollBack() {
 		this.transitionError = this.prevTransitionError;
 		this.transition = this.prevTransition;
@@ -444,42 +468,14 @@ public class BundleNode {
 		isStateChanging = false;
 	}
 
+	/**
+	 * Check if the bundle is currently running a transition
+	 * 
+	 * @return true if the bundle is currently executing a transition, otherwise false
+	 */
 	public boolean isStateChanging() {
 		return isStateChanging;
 	}
-
-	// public void begin(Transition transition, BundleState state) {
-	// this.prevTransition = this.transition;
-	// this.prevState = this.state;
-	// this.transition = transition;
-	// this.state = state;
-	// }
-	//
-	// public void commit() {
-	// prevTransition = Transition.NOTRANSITION;
-	// prevState = StateFactory.INSTANCE.stateLess;
-	// }
-	//
-	// public void commit(Transition transition, BundleState state) {
-	// this.transition = transition;
-	// this.state = state;
-	// prevTransition = Transition.NOTRANSITION;
-	// prevState = StateFactory.INSTANCE.stateLess;
-	// }
-	//
-	// public void rollBack() {
-	// this.transition = this.prevTransition;
-	// this.state = this.prevState;
-	// prevTransition = Transition.NOTRANSITION;
-	// prevState = StateFactory.INSTANCE.stateLess;
-	// }
-
-	// public boolean isStateChanging() {
-	// if (null != prevState && null != prevTransition) {
-	// return true;
-	// }
-	// return false;
-	// }
 
 	public BundleState getPrevState() {
 		return prevState;
@@ -493,8 +489,9 @@ public class BundleNode {
 	 * Textual representation of the transition for the bundle at the specified location. The location
 	 * is the same as used when the bundle was installed.
 	 * 
-	 * @param format TODO
-	 * @param caption TODO
+	 * @param transition the transition format
+	 * @param format if true format the transition name. Underscore is replaced by blank
+	 * @param caption First letter is upper case and the rest is lower case
 	 * @param location of the bundle
 	 * 
 	 * @return the name of the transition or an empty string if no transition is found at the

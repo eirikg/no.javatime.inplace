@@ -4,10 +4,9 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 
-import no.javatime.inplace.InPlace;
+import no.javatime.inplace.Activator;
 import no.javatime.inplace.builder.intface.RemoveBundleProject;
 import no.javatime.inplace.bundlejobs.NatureJob;
-import no.javatime.inplace.bundlejobs.intface.BundleExecutor;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.msg.Msg;
@@ -29,7 +28,7 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.SubProgressMonitor;
 import org.osgi.framework.Bundle;
 
-public class RemoveBundleProjectJob extends NatureJob implements BundleExecutor, RemoveBundleProject {
+public class RemoveBundleProjectJob extends NatureJob implements RemoveBundleProject {
 
 	final public static String removeBundleProjectName = Msg.REMOVE_BUNDLE_PROJECT_JOB;
 
@@ -73,11 +72,12 @@ public class RemoveBundleProjectJob extends NatureJob implements BundleExecutor,
 	public IBundleStatus runInWorkspace(IProgressMonitor monitor) throws CoreException {
 		Collection<Bundle> reqBundleClosure = null;
 		try {
+			super.runInWorkspace(monitor);
 			// Collect all removed projects in one run
 			addNotScheduledProjects();
 			Collection<Bundle> pendingBundles = bundleRegion.getBundles(getPendingProjects());
 			if (pendingBundles.size() == 0) {
-				return super.runInWorkspace(monitor);
+				return getJobSatus();
 			}
 			BundleTransitionListener.addBundleTransitionListener(this);
 			if (bundleRegion.isRegionActivated()) {
@@ -116,13 +116,12 @@ public class RemoveBundleProjectJob extends NatureJob implements BundleExecutor,
 			} else {
 				refresh(pendingBundles, new SubProgressMonitor(monitor, 1));
 			}
-			return super.runInWorkspace(monitor);
 		} catch (InterruptedException e) {
 			String msg = ExceptionMessage.getInstance().formatString("interrupt_job", getName());
 			addError(e, msg);
 		} catch (CircularReferenceException e) {
 			String msg = ExceptionMessage.getInstance().formatString("circular_reference", getName());
-			BundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg);
+			BundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, msg);
 			multiStatus.add(e.getStatusList());
 			addStatus(multiStatus);
 		} catch (InPlaceException | ExtenderException e) {
@@ -131,31 +130,28 @@ public class RemoveBundleProjectJob extends NatureJob implements BundleExecutor,
 			addError(e, msg);
 		} catch (CoreException e) {
 			String msg = ErrorMessage.getInstance().formatString("error_end_job", getName());
-			return new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID, msg, e);
+			return new BundleStatus(StatusCode.ERROR, Activator.PLUGIN_ID, msg, e);
+		} catch (Exception e) {
+			String msg = ExceptionMessage.getInstance().formatString("exception_job", getName());
+			addError(e, msg);
 		} finally {
-			// Unregister the removed projects from the workspace
+			monitor.done();
+			// Unregister removed projects from the workspace
 			for (IProject removedProject : getPendingProjects()) {
 				bundleRegion.unregisterBundleProject(removedProject);
 			}
 			BundleTransitionListener.removeBundleTransitionListener(this);
 		}
-		try {
-			BundleTransitionListener.addBundleTransitionListener(this);
-			return super.runInWorkspace(monitor);
-		} catch (CoreException e) {
-			String msg = ErrorMessage.getInstance().formatString("error_end_job", getName());
-			return new BundleStatus(StatusCode.ERROR, InPlace.PLUGIN_ID, msg, e);
-		} finally {
-			BundleTransitionListener.removeBundleTransitionListener(this);
-		}
+		return getJobSatus();
 	}
 
 	/**
 	 * Add removed (closed or deleted) projects that are not added to this job.
 	 * <p>
-	 * If there are no removed projects to add, the existing pending projects are removed as pending.
-	 * This means that the removed projects have already been handled by an earlier run of this job.
-	 * The rationale is that there is a need to handle all removed projects in one job.
+	 * If there are no removed projects in the region workspace, the existing pending projects are
+	 * removed as pending. This means that the removed projects have already been handled by an
+	 * earlier run of this job. The rationale is that there is a need to handle all removed projects
+	 * in one job.
 	 * 
 	 * @return removed projects that were not included in this job at startup, but added to the job by
 	 * this method. If an empty set is returned there were no removed projects in the workspace.
@@ -163,13 +159,15 @@ public class RemoveBundleProjectJob extends NatureJob implements BundleExecutor,
 	private Collection<IProject> addNotScheduledProjects() {
 
 		Collection<IProject> notScheduledProjects = new LinkedHashSet<>();
-		for (IProject removedProject : bundleRegion.getProjects()) {
+		// Pending projects included
+		Collection<IProject> removedCandidates = bundleRegion.getProjects();
+		for (IProject removedCandidate : removedCandidates) {
 			// If the project is not accessible it is closed or deleted
-			if (!removedProject.isAccessible()) {
-				Bundle bundle = bundleRegion.getBundle(removedProject);
+			if (!removedCandidate.isAccessible()) {
+				Bundle bundle = bundleRegion.getBundle(removedCandidate);
 				// Uninstalled projects means that they have already been handled
 				if (null != bundle && (bundle.getState() & (Bundle.UNINSTALLED)) == 0) {
-					notScheduledProjects.add(removedProject);
+					notScheduledProjects.add(removedCandidate);
 				}
 			}
 		}

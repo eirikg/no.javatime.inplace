@@ -5,7 +5,6 @@ import java.util.Collection;
 
 import no.javatime.inplace.dl.preferences.intface.MessageOptions;
 import no.javatime.inplace.extender.intface.ExtenderException;
-import no.javatime.inplace.extender.intface.Extension;
 import no.javatime.inplace.region.closure.BuildErrorClosure;
 import no.javatime.inplace.region.intface.BundleProjectCandidates;
 import no.javatime.inplace.region.intface.InPlaceException;
@@ -38,10 +37,9 @@ public class BundleClassPathCommandContribution extends BundleMainCommandsContri
 	@Override
 	protected IContributionItem[] getContributionItems() {
 
-		BundleProjectCandidates bundleProjectCandidates = Activator.getBundleProjectCandidatesService();
-
-		ArrayList<ContributionItem> contributions = new ArrayList<ContributionItem>();
+		ArrayList<ContributionItem> contributions = new ArrayList<>();
 		try {
+			BundleProjectCandidates bundleProjectCandidates = Activator.getBundleProjectCandidatesService();
 			ArrayList<ContributionItem> classPathContributions = addClassPath(bundleProjectCandidates
 					.getBundleProjects());
 			if (null != classPathContributions) {
@@ -49,9 +47,9 @@ public class BundleClassPathCommandContribution extends BundleMainCommandsContri
 			}
 		} catch (ExtenderException e) {
 			StatusManager.getManager()
-					.handle(
-							new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID,
-									Msg.ADD_CONTRIBUTION_ERROR, e), StatusManager.LOG);
+			.handle(
+					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID,
+							Msg.ADD_CONTRIBUTION_ERROR, e), StatusManager.LOG);
 		}
 		IContributionItem[] contributionArray = contributions
 				.toArray(new ContributionItem[contributions.size()]);
@@ -70,7 +68,7 @@ public class BundleClassPathCommandContribution extends BundleMainCommandsContri
 	private ArrayList<ContributionItem> addClassPath(Collection<IProject> projects)
 			throws ExtenderException {
 
-		ArrayList<ContributionItem> contributions = new ArrayList<ContributionItem>();
+		ArrayList<ContributionItem> contributions = new ArrayList<>();
 
 		if (projects.size() > 0) {
 			int nAdd = 0;
@@ -94,9 +92,7 @@ public class BundleClassPathCommandContribution extends BundleMainCommandsContri
 				}
 			}
 			if (null != errProjects) {
-				Extension<MessageOptions> messageOptionsExt = Activator.getExtension(MessageOptions.class
-						.getName());
-				MessageOptions messageOptions = messageOptionsExt.getTrackedService();
+				MessageOptions messageOptions = Activator.getMessageOptionsService();
 				if (messageOptions.isInfoMessages() || messageOptions.isBundleEvents()
 						|| messageOptions.isBundleOperations()) {
 					String msg = WarnMessage.getInstance().formatString("error_not_update_classpath",
@@ -105,7 +101,6 @@ public class BundleClassPathCommandContribution extends BundleMainCommandsContri
 							.handle(new BundleStatus(StatusCode.ERROR, Activator.PLUGIN_ID, msg, null),
 									StatusManager.LOG);
 				}
-				messageOptionsExt.closeTrackedService();
 			}
 			if (nAdd > 0) {
 				String updateLabel = formatLabel(addClassPathLabel, nAdd, Boolean.FALSE);

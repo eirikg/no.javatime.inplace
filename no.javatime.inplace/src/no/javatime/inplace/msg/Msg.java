@@ -72,6 +72,7 @@ public class Msg extends NLS {
 	public static String BUILD_STATE_ERROR;
 	public static String END_JOB_ROOT_ERROR;
 	public static String INIT_BUNDLE_STATE_ERROR;
+	public static String UNREG_SERVICE_ERROR;
 
 	// Warnings
 	public static String EXTERNAL_UNINSTALL_WARN;

@@ -18,7 +18,6 @@ import no.javatime.inplace.builder.PreBuildListener;
 import no.javatime.inplace.builder.PreChangeListener;
 import no.javatime.inplace.builder.ProjectChangeListener;
 import no.javatime.inplace.bundlejobs.ActivateBundleJob;
-import no.javatime.inplace.bundlejobs.BundleJob;
 import no.javatime.inplace.bundlejobs.BundleJobListener;
 import no.javatime.inplace.bundlejobs.DeactivateJob;
 import no.javatime.inplace.bundlejobs.UninstallJob;
@@ -27,15 +26,15 @@ import no.javatime.inplace.bundlejobs.events.intface.BundleExecutorEvent;
 import no.javatime.inplace.bundlejobs.events.intface.BundleExecutorEventListener;
 import no.javatime.inplace.bundlejobs.events.intface.BundleExecutorEventManager;
 import no.javatime.inplace.bundlejobs.intface.BundleExecutor;
+import no.javatime.inplace.bundlejobs.intface.Uninstall;
+import no.javatime.inplace.bundlejobs.intface.Update;
 import no.javatime.inplace.dialogs.ExternalTransition;
 import no.javatime.inplace.dl.preferences.intface.CommandOptions;
+import no.javatime.inplace.dl.preferences.intface.DependencyOptions;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.dl.preferences.intface.MessageOptions;
-import no.javatime.inplace.extender.intface.Extender;
 import no.javatime.inplace.extender.intface.ExtenderException;
-import no.javatime.inplace.extender.intface.Extenders;
-import no.javatime.inplace.extender.intface.Extension;
-import no.javatime.inplace.log.intface.BundleLog;
+import no.javatime.inplace.log.intface.BundleLogException;
 import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.pl.console.intface.BundleConsoleFactory;
 import no.javatime.inplace.region.closure.BuildErrorClosure;
@@ -76,7 +75,6 @@ import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.jface.resource.ImageDescriptor;
-import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkbenchPage;
@@ -96,11 +94,15 @@ import org.osgi.service.prefs.BackingStoreException;
  * <li>Bundle project service for managing of bundle bundlePeojectMeta information
  * <ul/>
  */
-public class InPlace extends AbstractUIPlugin implements BundleExecutorEventListener, ICommandListener {
+public class Activator extends AbstractUIPlugin implements BundleExecutorEventListener,
+		ICommandListener {
 
 	public static final String PLUGIN_ID = "no.javatime.inplace"; //$NON-NLS-1$
-	private static InPlace plugin;
+	
+	private static Activator plugin;
 	private static BundleContext context;
+	private static Bundle bundle;
+	
 	/**
 	 * Framework launching property specifying whether Equinox's FrameworkWiring implementation should
 	 * refresh bundles with equal symbolic names.
@@ -119,68 +121,28 @@ public class InPlace extends AbstractUIPlugin implements BundleExecutorEventList
 	 */
 	public static final String REFRESH_DUPLICATE_BSN = "equinox.refresh.duplicate.bsn";
 	private boolean allowRefreshDuplicateBSN;
-	// Dynamically load contexts for action sets
+	// Load contexts for action sets dynamically
 	private ActionSetContexts actionSetContexts = new ActionSetContexts();
 	// Get the workbench window from UI thread
 	private IWorkbenchWindow workBenchWindow;
 	// Receives notification before a project is renamed, deleted or closed
 	private IResourceChangeListener preChangeListener;
-	// Receives notification after a build.
+	// Receives notification after a build
 	private IResourceChangeListener postBuildListener;
-	// Receives notification after a resource change, before build and after post build.
+	// Receives notification after a resource change, before build and after post build
 	private IResourceChangeListener preBuildListener;
-	// Debug listener.
+	// Debug listener
 	private IResourceChangeListener projectChangeListener;
-	// Listen to scheduled bundles
+	// Listen to scheduled bundle jobs
 	private BundleJobListener jobChangeListener = new BundleJobListener();
 	// Listen to external bundle commands
 	private ExternalTransition externalTransitionListener = new ExternalTransition();
 	// Listen to toggling of auto build
 	private Command autoBuildCommand;
-	// Register (extend) services provided by other bundles
-	private static ExtenderTracker extenderBundleTracker;
-	
-	// Listen to added bundle jobs 
-	private Extension<BundleExecutorEventManager> bundleJobEventManagerExtension;
-	private static BundleExecutorEventManager bundleJobEventManager;
-	
-	// Workspace bundle region
-	private Extension<BundleRegion> regionExtension;
-	private static BundleRegion bundleRegion;
+	// Register and track extenders and get and unget services provided by this and other bundles
+	private static ExtenderTracker extenderTracker;
 
-	// Bundle life cycle commands
-	private Extension<BundleCommand> commandExtension;
-	private static BundleCommand bundleCommand;
-	
-	// Bundle transitions and pending transitions
-	private Extension<BundleTransition> transitionExtension;
-	private static BundleTransition bundleTransition;
-	
-	// Bundle project and projects access
-	private Extension<BundleProjectCandidates> projectCandidatesExtension;
-	private static BundleProjectCandidates bundleProjectCandidates;
-	
-	// Bundle project bundlePeojectMeta information
-	private Extension<BundleProjectMeta> projectMetaExtension;
-	private static BundleProjectMeta bundlePeojectMeta;
-	
-	// Bundle command options
-	private Extension<CommandOptions> commandOptionsExtension;
-	private static CommandOptions commandOptions;
-	
-	// Logging and user message options
-	private Extension<MessageOptions> messageOptionsExtension;
-	private static MessageOptions messageOptions;
-	
-	// The bundle console page for redirection of system out and err
-	private Extension<BundleConsoleFactory> bundleConsoleExtension;
-	private static BundleConsoleFactory console;
-	
-	// Log for bundle commands
-	private Extension<BundleLog> bundleLogExtension;
-	private static BundleLog bundleLog;
-	
-	public InPlace() {
+	public Activator() {
 	}
 
 	@Override
@@ -188,49 +150,22 @@ public class InPlace extends AbstractUIPlugin implements BundleExecutorEventList
 
 		super.start(context);
 		plugin = this;
-		InPlace.context = context;
-		Bundle bundle = context.getBundle();
+		Activator.context = context;
+		bundle = context.getBundle();
 		String refreshBSNResult = context.getProperty(REFRESH_DUPLICATE_BSN);
 		allowRefreshDuplicateBSN = Boolean.TRUE.toString().equals(
 				refreshBSNResult != null ? refreshBSNResult : Boolean.TRUE.toString());
-
-		extenderBundleTracker = new ExtenderTracker(context, Bundle.ACTIVE, null);
-		extenderBundleTracker.open();
-		extenderBundleTracker.trackOwn();
-//		Extender<BundleExecutorEventManager> evManagerExtender = Extenders.register(bundle, 
-//				BundleExecutorEventManager.class.getName(), 
-//				new BundleExecutorEventManagerImpl(), null);
-		bundleJobEventManagerExtension = getExtension(BundleExecutorEventManager.class.getName());
-		//extenderBundleTracker.addingBundle(bundle, new BundleEvent(BundleEvent.STARTED, bundle));
-		//bundleJobEventManagerExtension = getTrackedExtension(BundleExecutorEventManager.class.getName());		
-		bundleJobEventManager = bundleJobEventManagerExtension.getTrackedService();
-		bundleJobEventManager.addListener(plugin);
-		
-		regionExtension = getTrackedExtension(BundleRegion.class.getName());		
-		bundleRegion = regionExtension.getTrackedService();
-		commandExtension = getTrackedExtension(BundleCommand.class.getName());
-		bundleCommand = commandExtension.getTrackedService();
-		transitionExtension = getTrackedExtension(BundleTransition.class.getName());
-		bundleTransition = transitionExtension.getTrackedService();
-		projectCandidatesExtension = getTrackedExtension(BundleProjectCandidates.class.getName());
-		bundleProjectCandidates = projectCandidatesExtension.getTrackedService();		
-		projectMetaExtension = getTrackedExtension(BundleProjectMeta.class.getName());	
-		bundlePeojectMeta = projectMetaExtension.getTrackedService();
-		commandOptionsExtension = getTrackedExtension(CommandOptions.class.getName());
-		commandOptions = commandOptionsExtension.getTrackedService();	
-		messageOptionsExtension = getTrackedExtension(MessageOptions.class.getName());
-		messageOptions = messageOptionsExtension.getTrackedService();
-		bundleConsoleExtension = getTrackedExtension(BundleConsoleFactory.class.getName());		
-		console = bundleConsoleExtension.getTrackedService();
-		bundleLogExtension = getTrackedExtension(BundleLog.class.getName());
-		bundleLog = bundleLogExtension.getTrackedService();
-		
+		extenderTracker = new ExtenderTracker(context, Bundle.ACTIVE, null);
+		extenderTracker.open();
+		extenderTracker.trackOwn();
+		getBundleExecutorEventService().addListener(plugin);
 		BundleTransitionListener.addBundleTransitionListener(externalTransitionListener);
 		Job.getJobManager().addJobChangeListener(jobChangeListener);
 	}
 
 	@Override
 	public void stop(BundleContext context) throws Exception {
+
 		try {
 			// Remove resource listeners as soon as possible to prevent scheduling of new bundle jobs
 			removeResourceListeners();
@@ -238,57 +173,51 @@ public class InPlace extends AbstractUIPlugin implements BundleExecutorEventList
 			removeDynamicExtensions();
 			shutDownBundles();
 		} finally {
-			regionExtension.closeTrackedService();
-			commandExtension.closeTrackedService();
-			projectCandidatesExtension.closeTrackedService();
-			projectMetaExtension.closeTrackedService();
-			commandOptionsExtension.closeTrackedService();
-			messageOptionsExtension.closeTrackedService();
-			bundleConsoleExtension.closeTrackedService();
-			bundleLogExtension.closeTrackedService();
-			bundleJobEventManager.removeListener(get());
-			bundleJobEventManagerExtension.closeTrackedService();
+			getBundleExecutorEventService().removeListener(plugin);
 			BundleTransitionListener.removeBundleTransitionListener(externalTransitionListener);
-			transitionExtension.closeTrackedService();
 			Job.getJobManager().removeJobChangeListener(jobChangeListener);
-			extenderBundleTracker.close();
-			extenderBundleTracker = null;
+			extenderTracker.close();
+			extenderTracker = null;
 			super.stop(context);
 			plugin = null;
-			InPlace.context = null;
+			Activator.context = null;
 		}
 	}
 
-	public static BundleExecutorEventManager getBundleJobEventService() throws ExtenderException {
-		
-		return bundleJobEventManager;
+	public static BundleExecutorEventManager getBundleExecutorEventService() throws ExtenderException {
+
+		return extenderTracker.bundleExecutorEventManagerExtender.getService();
+	}
+
+	public static DependencyOptions getDependencyOptionsService() throws ExtenderException {
+
+		return extenderTracker.dependencyOptionsExtender.getService(bundle);
 	}
 
 	public static BundleRegion getBundleRegionService() throws ExtenderException {
 
-		return bundleRegion;
+		return extenderTracker.bundleRegionExtender.getService(bundle);
 	}
 
 	public static BundleCommand getBundleCommandService() throws ExtenderException {
 
-		return bundleCommand;
+		return extenderTracker.bundleCommandExtender.getService(bundle);
 	}
 
-	public static BundleTransition getBundleTransitionService() throws
-	ExtenderException {
+	public static BundleTransition getBundleTransitionService() throws ExtenderException {
 
-		return bundleTransition;
+		return extenderTracker.bundleTransitionExtender.getService(bundle);
 	}
 
 	public static BundleProjectCandidates getBundleProjectCandidatesService()
 			throws ExtenderException {
 
-		return bundleProjectCandidates;
+		return extenderTracker.bundleProjectCandidatesExtender.getService(bundle);
 	}
 
 	public static BundleProjectMeta getbundlePrrojectMetaService() throws ExtenderException {
 
-		return bundlePeojectMeta;
+		return extenderTracker.bundleProjectMetaExtender.getService(bundle);
 	}
 
 	/**
@@ -300,7 +229,7 @@ public class InPlace extends AbstractUIPlugin implements BundleExecutorEventList
 	 */
 	public static CommandOptions getCommandOptionsService() throws ExtenderException {
 
-		return commandOptions;
+		return extenderTracker.commandOptionsExtender.getService(bundle);
 	}
 
 	/**
@@ -308,11 +237,10 @@ public class InPlace extends AbstractUIPlugin implements BundleExecutorEventList
 	 * 
 	 * @return the message options service
 	 * @throws ExtenderException if failing to get the extender service for the message options
-	 * @throws InPlaceException if the message options service returns null
 	 */
-	public static MessageOptions getMessageOptionsService() throws InPlaceException, ExtenderException {
+	public static MessageOptions getMessageOptionsService() throws ExtenderException {
 
-		return messageOptions;
+		return extenderTracker.messageOptionsExtender.getService(bundle);
 	}
 
 	/**
@@ -322,48 +250,9 @@ public class InPlace extends AbstractUIPlugin implements BundleExecutorEventList
 	 * @throws ExtenderException if failing to get the extender service for the bundle console view
 	 * @throws InPlaceException if the bundle console view service returns null
 	 */
-	public static BundleConsoleFactory getBundleConsoleService() throws InPlaceException, ExtenderException {
+	public static BundleConsoleFactory getBundleConsoleService() throws ExtenderException {
 
-		return console;
-	}
-
-	/**
-	 * Get an extension returned based on ranking order
-	 * 
-	 * @param serviceInterfaceName the interface service name used to locate the extension
-	 * @return an extension located by the specified service interface name
-	 * @throws ExtenderException if failed to get the extender or the extension is null
-	 */
-	public static <S> Extension<S> getExtension(String serviceInterfaceName) throws ExtenderException {
-
-		Extension<S> extension = Extenders.getExtension(serviceInterfaceName, context.getBundle());
-		if (null == extension) {
-			throw new ExtenderException(NLS.bind(Msg.NULL_EXTENSION_EXP, context.getBundle()));
-		}
-		return extension;
-	}
-
-	/**
-	 * Get a tracked extension from an extender that is tracked by this bundle. 
-	 * <p>
-	 * If more than one service is registered under the same interface name, ranking order is applied
-	 * 
-	 * @param serviceInterfaceName the interface service name used to locate the extension
-	 * @return an extension located by the specified service interface name
-	 * @throws ExtenderException if the extender has not been tracked or the extender or extension is null
-	 */
-	public static <S> Extension<S> getTrackedExtension(String serviceInterfaceName) throws ExtenderException {
-
-		@SuppressWarnings("unchecked")
-		Extender<S> extender = (Extender<S>) extenderBundleTracker.getTrackedExtender(serviceInterfaceName);
-		if (null == extender) {
-			throw new ExtenderException(NLS.bind(Msg.NULL_EXTENDER_EXP, serviceInterfaceName));
-		}
-		Extension<S> extension = extender.getExtension(serviceInterfaceName, context.getBundle());
-		if (null == extension) {
-			throw new ExtenderException(NLS.bind(Msg.NULL_EXTENSION_EXP, context.getBundle()));
-		}
-		return extension;
+		return extenderTracker.bundleConsoleFactoryExtender.getService(bundle);
 	}
 
 	/**
@@ -371,28 +260,12 @@ public class InPlace extends AbstractUIPlugin implements BundleExecutorEventList
 	 * 
 	 * @return the bundle status message
 	 * @throws ExtenderException if failing to get the extender service for the bundle log
-	 * @throws InPlaceException if the bundle log service returns null
+	 * @throws BundleLogException If bundle in the specified status object is null and the
+	 * {@code BundleContext} of this bundle is no longer valid
 	 */
-	public String log(IBundleStatus status) throws InPlaceException, ExtenderException {
+	public static String log(IBundleStatus status) throws BundleLogException, ExtenderException {
 
-		return bundleLog.log(status);
-	}
-
-	/**
-	 * Utility returning a service for an extension but never null
-	 * 
-	 * @return the service
-	 * @throws ExtenderException if failing to get the extender service
-	 * @throws InPlaceException if the service returns null
-	 */
-	private <S> S getService(Extension<S> extension) throws InPlaceException, ExtenderException {
-
-		S s = extension.getService(context.getBundle());
-		if (null == s) {
-			throw new InPlaceException(NLS.bind(Msg.GET_SERVICE_EXP, extension.getExtender()
-					.getServiceInterfaceName()));
-		}
-		return s;
+		return extenderTracker.bundleLogExtender.getService(bundle).log(status);
 	}
 
 	/**
@@ -400,16 +273,17 @@ public class InPlace extends AbstractUIPlugin implements BundleExecutorEventList
 	 * are deactivated. Any runtime errors are sent to error console
 	 */
 	public void shutDownBundles() {
+
 		// Send output to standard console when shutting down
-		BundleConsoleFactory bundleConsoleService = getBundleConsoleService();
-		// Ignore and send to current setting if null
-		if (null != bundleConsoleService) {
-			bundleConsoleService.setSystemOutToIDEDefault();
+		try {
+			getBundleConsoleService().setSystemOutToIDEDefault();
+		} catch (ExtenderException e) {
+			// Ignore and send to current setting
 		}
-		BundleRegion bundleRegion = getBundleRegionService();
-		if (bundleRegion.isRegionActivated()) {
-			try {
-				BundleJob shutDownJob = null;
+		try {
+			BundleRegion bundleRegion = getBundleRegionService();
+			if (bundleRegion.isRegionActivated()) {
+				BundleExecutor shutDownJob = null;
 				Collection<IProject> activatedProjects = bundleRegion.getActivatedProjects();
 				if (getCommandOptionsService().isDeactivateOnExit()) {
 					shutDownJob = new DeactivateJob(DeactivateJob.deactivateOnshutDownJobName);
@@ -425,13 +299,13 @@ public class InPlace extends AbstractUIPlugin implements BundleExecutorEventList
 						savePluginSettings(true, false);
 						activatedProjects = bundleProjectcandidates.getBundleProjects();
 						shutDownJob = new UninstallJob(UninstallJob.shutDownJobName);
-						((UninstallJob) shutDownJob).setUnregister(true);
+						((Uninstall) shutDownJob).setUnregister(true);
 					}
 				}
 				if (activatedProjects.size() > 0) {
 					shutDownJob.addPendingProjects(activatedProjects);
-					shutDownJob.setUser(false);
-					shutDownJob.schedule();
+					shutDownJob.getJob().setUser(false);
+					shutDownJob.getJob().schedule();
 				}
 				IJobManager jobManager = Job.getJobManager();
 				// Wait for build and bundle jobs
@@ -440,30 +314,25 @@ public class InPlace extends AbstractUIPlugin implements BundleExecutorEventList
 				jobManager.join(ResourcesPlugin.FAMILY_MANUAL_BUILD, null);
 				if (shutDownJob.getErrorStatusList().size() > 0) {
 					final IBundleStatus multiStatus = shutDownJob.createMultiStatus(new BundleStatus(
-							StatusCode.ERROR, InPlace.PLUGIN_ID, shutDownJob.getName()));
+							StatusCode.ERROR, Activator.PLUGIN_ID, shutDownJob.getName()));
 					// The custom or standard status handler is not invoked at shutdown
-					Runnable trace = new Runnable() {
-						public void run() {
-							log(multiStatus);
-						}
-					};
-					trace.run();
+					log(multiStatus);
 
 					System.err.println(Msg.BEGIN_SHUTDOWN_ERROR);
 					printStatus(multiStatus);
 					System.err.println(Msg.END_SHUTDOWN_ERROR);
 				}
-			} catch (InPlaceException e) {
-				ExceptionMessage.getInstance().handleMessage(e, e.getMessage());
-			} catch (IllegalStateException e) {
-				String msg = ExceptionMessage.getInstance().formatString("job_state_exception",
-						e.getLocalizedMessage());
-				ExceptionMessage.getInstance().handleMessage(e, msg);
-			} catch (Exception e) {
-				ExceptionMessage.getInstance().handleMessage(e, e.getLocalizedMessage());
+			} else {
+				savePluginSettings(true, false);
 			}
-		} else {
-			savePluginSettings(true, false);
+		} catch (InPlaceException | BundleLogException | ExtenderException e) {
+			ExceptionMessage.getInstance().handleMessage(e, e.getMessage());
+		} catch (IllegalStateException e) {
+			String msg = ExceptionMessage.getInstance().formatString("job_state_exception",
+					e.getLocalizedMessage());
+			ExceptionMessage.getInstance().handleMessage(e, msg);
+		} catch (Exception e) {
+			ExceptionMessage.getInstance().handleMessage(e, e.getMessage());
 		}
 	}
 
@@ -523,7 +392,7 @@ public class InPlace extends AbstractUIPlugin implements BundleExecutorEventList
 			}
 		} catch (CircularReferenceException e) {
 			String msg = ExceptionMessage.getInstance().formatString("circular_reference_termination");
-			IBundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, msg,
+			IBundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, msg,
 					null);
 			multiStatus.add(e.getStatusList());
 			StatusManager.getManager().handle(multiStatus, StatusManager.LOG);
@@ -560,7 +429,7 @@ public class InPlace extends AbstractUIPlugin implements BundleExecutorEventList
 		Boolean isInstalled = actionSetContexts.init();
 		if (!isInstalled) {
 			StatusManager.getManager().handle(
-					new BundleStatus(StatusCode.WARNING, InPlace.PLUGIN_ID,
+					new BundleStatus(StatusCode.WARNING, Activator.PLUGIN_ID,
 							Msg.INSTALL_CONTEXT_FOR_ACTION_SET_WARN), StatusManager.LOG);
 		}
 	}
@@ -587,11 +456,11 @@ public class InPlace extends AbstractUIPlugin implements BundleExecutorEventList
 			autoBuildCommand.removeCommandListener(this);
 		}
 	}
-	
+
 	public Command getAutoBuildCommand() {
 		return autoBuildCommand;
 	}
-	
+
 	/**
 	 * Add the listener for the auto build command
 	 * <p>
@@ -623,8 +492,7 @@ public class InPlace extends AbstractUIPlugin implements BundleExecutorEventList
 		try {
 			BundleRegion region = getBundleRegionService();
 			IWorkbench workbench = getWorkbench();
-			if (!region.isRegionActivated()
-					|| (null != workbench && workbench.isClosing())) {
+			if (!region.isRegionActivated() || (null != workbench && workbench.isClosing())) {
 				return;
 			}
 			Command autoBuildCmd = commandEvent.getCommand();
@@ -633,14 +501,15 @@ public class InPlace extends AbstractUIPlugin implements BundleExecutorEventList
 					region.setAutoBuildChanged(true);
 					// Wait for builder to start. The post build listener does not
 					// always receive all projects to update when auto build is switched on
-					getBundleJobEventService().add(new UpdateJob(UpdateJob.updateJobName), 1000);
+					Update update = new UpdateJob(UpdateJob.updateJobName);
+					getBundleExecutorEventService().add(update, 1000);
 				}
 			} else {
 				region.setAutoBuildChanged(false);
 			}
 		} catch (ExtenderException e) {
 			StatusManager.getManager().handle(
-					new BundleStatus(StatusCode.EXCEPTION, InPlace.PLUGIN_ID, e.getMessage(), e),
+					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),
 					StatusManager.LOG);
 		}
 	}
@@ -650,7 +519,7 @@ public class InPlace extends AbstractUIPlugin implements BundleExecutorEventList
 	 * 
 	 * @return the shared instance
 	 */
-	public static InPlace get() {
+	public static Activator getInstance() {
 		return plugin;
 	}
 
@@ -776,91 +645,96 @@ public class InPlace extends AbstractUIPlugin implements BundleExecutorEventList
 	 * @param allResolve true to save state as resolve for all activated bundle projects
 	 */
 	public void savePluginSettings(Boolean flush, Boolean allResolve) {
-
-		IEclipsePreferences prefs = getEclipsePreferenceStore();
-		if (null == prefs) {
-			String msg = WarnMessage.getInstance().formatString("failed_getting_preference_store");
-			StatusManager.getManager().handle(
-					new BundleStatus(StatusCode.WARNING, InPlace.PLUGIN_ID, msg), StatusManager.LOG);
-			return;
-		}
 		try {
-			prefs.clear();
-		} catch (BackingStoreException e) {
-			String msg = WarnMessage.getInstance().formatString("failed_clearing_preference_store");
-			StatusManager.getManager().handle(
-					new BundleStatus(StatusCode.WARNING, InPlace.PLUGIN_ID, msg, e), StatusManager.LOG);
-			return; // Use existing values
-		}
-		if (allResolve) {
-			BundleRegion bundleRegion = getBundleRegionService();
-			if (bundleRegion.isRegionActivated()) {
-				Collection<IProject> natureEnabled = bundleRegion.getActivatedProjects();
-				for (IProject project : natureEnabled) {
-					try {
-						String symbolicKey = getBundleRegionService().getSymbolicKey(null, project);
-						if (symbolicKey.isEmpty()) {
-							continue;
-						}
-						prefs.putInt(symbolicKey, Bundle.RESOLVED);
-					} catch (IllegalStateException e) {
-						String msg = WarnMessage.getInstance().formatString("node_removed_preference_store");
-						StatusManager.getManager().handle(
-								new BundleStatus(StatusCode.WARNING, InPlace.PLUGIN_ID, project, msg, null),
-								StatusManager.LOG);
-					}
-				}
+			IEclipsePreferences prefs = getEclipsePreferenceStore();
+			if (null == prefs) {
+				String msg = WarnMessage.getInstance().formatString("failed_getting_preference_store");
+				StatusManager.getManager().handle(
+						new BundleStatus(StatusCode.WARNING, Activator.PLUGIN_ID, msg), StatusManager.LOG);
+				return;
 			}
-		} else {
-			BundleRegion region = getBundleRegionService();
-			if (region.isRegionActivated()) {
-				for (Bundle bundle : region.getBundles()) {
-					try {
-						String symbolicKey = region.getSymbolicKey(bundle, null);
-						if (symbolicKey.isEmpty()) {
-							continue;
-						}
-						if ((bundle.getState() & (Bundle.RESOLVED)) != 0) {
-							prefs.putInt(symbolicKey, bundle.getState());
-						}
-					} catch (IllegalStateException e) {
-						String msg = WarnMessage.getInstance().formatString("node_removed_preference_store");
-						StatusManager.getManager().handle(
-								new BundleStatus(StatusCode.WARNING, InPlace.PLUGIN_ID, msg), StatusManager.LOG);
-					}
-				}
-			} else {
-				BundleProjectCandidates bundleProject = getBundleProjectCandidatesService();
-				Collection<IProject> projects = bundleProject.getBundleProjects();
-				for (IProject project : projects) {
-					try {
-						Transition transition = InPlace.getBundleTransitionService().getTransition(project);
-						// if (!BundleProjectCandidatesImpl.INSTANCE.isNatureEnabled(project) &&
-						if (transition == Transition.REFRESH || transition == Transition.UNINSTALL) {
+			try {
+				prefs.clear();
+			} catch (BackingStoreException e) {
+				String msg = WarnMessage.getInstance().formatString("failed_clearing_preference_store");
+				StatusManager.getManager().handle(
+						new BundleStatus(StatusCode.WARNING, Activator.PLUGIN_ID, msg, e), StatusManager.LOG);
+				return; // Use existing values
+			}
+			if (allResolve) {
+				BundleRegion bundleRegion = getBundleRegionService();
+				if (bundleRegion.isRegionActivated()) {
+					Collection<IProject> natureEnabled = bundleRegion.getActivatedProjects();
+					for (IProject project : natureEnabled) {
+						try {
 							String symbolicKey = getBundleRegionService().getSymbolicKey(null, project);
 							if (symbolicKey.isEmpty()) {
 								continue;
 							}
-							prefs.putInt(symbolicKey, transition.ordinal());
+							prefs.putInt(symbolicKey, Bundle.RESOLVED);
+						} catch (IllegalStateException e) {
+							String msg = WarnMessage.getInstance().formatString("node_removed_preference_store");
+							StatusManager.getManager().handle(
+									new BundleStatus(StatusCode.WARNING, Activator.PLUGIN_ID, project, msg, null),
+									StatusManager.LOG);
 						}
-					} catch (ProjectLocationException e) {
-						// Ignore. Will be defined as no transition when loaded again
-					} catch (IllegalStateException e) {
-						String msg = WarnMessage.getInstance().formatString("node_removed_preference_store");
-						StatusManager.getManager().handle(
-								new BundleStatus(StatusCode.WARNING, InPlace.PLUGIN_ID, msg), StatusManager.LOG);
+					}
+				}
+			} else {
+				BundleRegion region = getBundleRegionService();
+				if (region.isRegionActivated()) {
+					for (Bundle bundle : region.getBundles()) {
+						try {
+							String symbolicKey = region.getSymbolicKey(bundle, null);
+							if (symbolicKey.isEmpty()) {
+								continue;
+							}
+							if ((bundle.getState() & (Bundle.RESOLVED)) != 0) {
+								prefs.putInt(symbolicKey, bundle.getState());
+							}
+						} catch (IllegalStateException e) {
+							String msg = WarnMessage.getInstance().formatString("node_removed_preference_store");
+							StatusManager.getManager().handle(
+									new BundleStatus(StatusCode.WARNING, Activator.PLUGIN_ID, msg), StatusManager.LOG);
+						}
+					}
+				} else {
+					BundleProjectCandidates bundleProject = getBundleProjectCandidatesService();
+					Collection<IProject> projects = bundleProject.getBundleProjects();
+					for (IProject project : projects) {
+						try {
+							Transition transition = Activator.getBundleTransitionService().getTransition(project);
+							// if (!BundleProjectCandidatesImpl.INSTANCE.isNatureEnabled(project) &&
+							if (transition == Transition.REFRESH || transition == Transition.UNINSTALL) {
+								String symbolicKey = getBundleRegionService().getSymbolicKey(null, project);
+								if (symbolicKey.isEmpty()) {
+									continue;
+								}
+								prefs.putInt(symbolicKey, transition.ordinal());
+							}
+						} catch (ProjectLocationException e) {
+							// Ignore. Will be defined as no transition when loaded again
+						} catch (IllegalStateException e) {
+							String msg = WarnMessage.getInstance().formatString("node_removed_preference_store");
+							StatusManager.getManager().handle(
+									new BundleStatus(StatusCode.WARNING, Activator.PLUGIN_ID, msg), StatusManager.LOG);
+						}
 					}
 				}
 			}
-		}
-		try {
-			if (flush) {
-				prefs.flush();
+			try {
+				if (flush) {
+					prefs.flush();
+				}
+			} catch (BackingStoreException e) {
+				String msg = WarnMessage.getInstance().formatString("failed_flushing_preference_store");
+				StatusManager.getManager().handle(
+						new BundleStatus(StatusCode.WARNING, Activator.PLUGIN_ID, msg), StatusManager.LOG);
 			}
-		} catch (BackingStoreException e) {
-			String msg = WarnMessage.getInstance().formatString("failed_flushing_preference_store");
+		} catch (ExtenderException e) {
 			StatusManager.getManager().handle(
-					new BundleStatus(StatusCode.WARNING, InPlace.PLUGIN_ID, msg), StatusManager.LOG);
+					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),
+					StatusManager.LOG);
 		}
 	}
 
@@ -879,7 +753,7 @@ public class InPlace extends AbstractUIPlugin implements BundleExecutorEventList
 		ISavedState lastState;
 		try {
 			lastState = ResourcesPlugin.getWorkspace().addSaveParticipant(
-					get().getBundle().getSymbolicName(), saveParticipant);
+					context.getBundle().getSymbolicName(), saveParticipant);
 			if (lastState != null) {
 				lastState.processResourceChangeEvents(postBuildListener);
 			}

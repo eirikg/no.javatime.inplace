@@ -10,6 +10,7 @@
  *******************************************************************************/
 package no.javatime.inplace.ui.views;
 
+import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.region.closure.BuildErrorClosure;
 import no.javatime.inplace.region.closure.BundleSorter;
 import no.javatime.inplace.region.intface.BundleCommand;
@@ -125,10 +126,10 @@ public class BundleListLabelProvider extends LabelProvider implements ITableLabe
 				}
 				Bundle bundle = ((BundleProperties) element).getBundle();
 				IProject project = ((BundleProperties) element).getProject();
-				boolean isProjectActivated = Activator.getBundleRegionService().isBundleActivated(project);
-				BundleCommand bundleCommand = Activator.getBundleCommandService(); 
-				BundleTransition bundleTransition = Activator.getBundleTransitionService();
 				try {
+					boolean isProjectActivated = Activator.getBundleRegionService().isBundleActivated(project);
+					BundleCommand bundleCommand = Activator.getBundleCommandService(); 
+					BundleTransition bundleTransition = Activator.getBundleTransitionService();
 					if (!BuildErrorClosure.hasBuildState(project)) {
 						return warningImage;
 					} else if (BuildErrorClosure.hasBuildErrors(project)) {
@@ -169,7 +170,7 @@ public class BundleListLabelProvider extends LabelProvider implements ITableLabe
 							return deactivatedImage;
 						}
 					}
-				} catch (ProjectLocationException e) {
+				} catch (ProjectLocationException | ExtenderException e) {
 					return errorImage;
 				}
 			}

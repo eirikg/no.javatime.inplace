@@ -264,21 +264,21 @@ public interface Extender<S> {
 	 * Check if the extender is registered
 	 * <p>
 	 * If registered, the underlying service registered by this extender is also registered. If
-	 * unregistered the service is also unregistered, but with one exception. That is when the
-	 * {@link Extender#EXTENDER_FILTER} property is removed or the value of the property is set to
-	 * {@code false}
+	 * unregistered the service is also unregistered.
 	 * 
 	 * @return true if the extender is registered; false if unregistered
-	 * @see #EXTENDER_FILTER
 	 */
 	public Boolean isRegistered();
 
 	/**
-	 * Unregister this extender along with the service registered by this extender. After
-	 * unregistering the extender, the service is unregistered from the framework.
+	 * Unregister this extender and the service held by this extender. After unregistering the
+	 * extender, the service is removed from the framework and any references to it is removed from
+	 * the extender. The use count is reset to zero.
+	 * <p>
+	 * After unregistering the service is not accessible. Thus it is possible to access all fields
+	 * associated with the service through the public access methods of the specified extender
 	 * 
-	 * @throws ExtenderException If the service registered with this extender already has been
-	 * unregistered
+	 * @param the extender to unregister
 	 * @see Extender#unregisterService()
 	 */
 	public void unregister() throws ExtenderException;
@@ -287,7 +287,7 @@ public interface Extender<S> {
 	 * Release the service object held by this extender. The specified context bundle's use count for
 	 * the service is decremented by one.
 	 * 
-	 * @param bundle the user bundle of the service
+	 * @param user the user bundle of the service
 	 * @return false if the context bundle's use count for the service is zero or if the service has
 	 * been unregistered; true otherwise.
 	 * @throws ExtenderException if the context of the using bundle is no longer valid or the service
@@ -295,7 +295,7 @@ public interface Extender<S> {
 	 * @see org.osgi.framework.BundleContext#ungetService(ServiceReference) OSGi ungetService
 	 * @see #ungetService()
 	 */
-	public Boolean ungetService(Bundle bundle) throws ExtenderException;
+	public Boolean ungetService(Bundle user) throws ExtenderException;
 
 	/**
 	 * Release the service object held by this extender. The context bundle's use count for the
@@ -426,4 +426,7 @@ public interface Extender<S> {
 	 * by this extender.
 	 */
 	public Collection<Bundle> getUsingBundles();
+
+
+	public Extension<S> getExtension(Bundle user, ExtenderBundleTracker bt);
 }

@@ -14,9 +14,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
+import no.javatime.inplace.bundlejobs.intface.BundleExecutor;
 import no.javatime.inplace.bundlejobs.intface.ResourceState;
-import no.javatime.inplace.bundlejobs.intface.Stop;
-import no.javatime.inplace.dl.preferences.intface.CommandOptions;
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.extender.intface.Extension;
 import no.javatime.inplace.log.intface.BundleLogView;
@@ -29,7 +28,6 @@ import no.javatime.inplace.ui.views.BundleProperties;
 import no.javatime.inplace.ui.views.BundleView;
 import no.javatime.util.view.ViewUtil;
 
-import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jface.action.ContributionItem;
 import org.eclipse.jface.action.IContributionItem;
@@ -130,29 +128,19 @@ public abstract class BundleCommandsContributionItems extends CompoundContributi
 	 */
 	protected CommandContributionItem addStopTaskOperation(String menuId, String commandId) {
 
-		Extension<Stop> stopExt = null;
 		try {
-			ResourceState resourceState = Activator.getResourceStateService();
-			stopExt = Activator.getExtension(Stop.class.getName());
-			Stop stop = stopExt.getTrackedService();
-			CommandOptions commandOption = Activator.getCommandOptionsService();
-			boolean timeOut = commandOption.isTimeOut();
-			Job job = resourceState.getRunningBundleJob();
-			if (null != job && !timeOut && stop.isStateChanging()) {
+			BundleExecutor executor = Activator.getResourceStateService().getRunningBundleJob();
+			if (null != executor && null != executor.isStateChanging()) {
 				// A job currently executing a start or stop operation and the manual terminate of endless
 				// operations option is enabled
 				return createContibution(menuId, commandId, Msg.STOP_BUNDLE_OP_LABEL, stopOperationParamId,
 						CommandContributionItem.STYLE_PUSH, null);
-			}
+			} 
 		} catch (ExtenderException e) {
 			StatusManager.getManager()
 			.handle(
 					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID,
 							Msg.ADD_CONTRIBUTION_ERROR, e), StatusManager.LOG);
-		} finally {
-			if (null != stopExt) {
-				stopExt.closeTrackedService();				
-			}
 		}
 		return null;
 	}
@@ -165,11 +153,12 @@ public abstract class BundleCommandsContributionItems extends CompoundContributi
 	 * @param commandId The command id for a defined command associated with the specified menu id
 	 * @return the command contribution item with an message to interrupt if a bundle job is running
 	 * or a message that the job is about to terminate if there is no job running
+	 * @throws ExtenderException If fail to get the resource state service checking if a bundle job is running
 	 */
-	protected CommandContributionItem addInterrupt(String menuId, String commandId) {
+	protected CommandContributionItem addInterrupt(String menuId, String commandId) throws ExtenderException {
 
 		ResourceState resourceState = Activator.getResourceStateService();
-		Job job = resourceState.getRunningBundleJob();
+		BundleExecutor job = resourceState.getRunningBundleJob();
 		String menuLabel;
 		if (null == job) {
 			menuLabel = Msg.ABOUT_TO_FINISH_JOB_LABEL;
@@ -191,7 +180,7 @@ public abstract class BundleCommandsContributionItems extends CompoundContributi
 		
 		Extension<BundleConsoleFactory> extension = null;
 		try {
-			extension = Activator.getExtension(BundleConsoleFactory.class);
+			extension = Activator.getTracker().getExtension(BundleConsoleFactory.class.getName());
 			BundleConsoleFactory console = extension.getTrackedService();
 			ImageDescriptor image = console.getConsoleViewImage();
 			if (!console.isConsoleViewVisible()) {
@@ -220,8 +209,8 @@ public abstract class BundleCommandsContributionItems extends CompoundContributi
 	 */
 	protected CommandContributionItem addToggleBundleLogView(String menuId, String commandId) {
 		Extension<BundleLogView> extension = null;;
-		try {
-			extension = Activator.getExtension(BundleLogView.class);
+		try {	
+			extension = Activator.getTracker().getExtension(BundleLogView.class.getName());
 			BundleLogView logView = extension.getTrackedService();
 			ImageDescriptor image = logView.getLogViewImage();
 			if (!logView.isVisible()) {
@@ -242,8 +231,10 @@ public abstract class BundleCommandsContributionItems extends CompoundContributi
 	}
 
 	/**
-	 * Utility to add a contribution to a list of contributions
-	 * 
+	 * Utility to add a contribution to a list of contributions.
+	 * <p>
+	 * The specified contributions array is modified if the specified contribution item is not null
+	 *  
 	 * @param contribution the contribution to add to the contribution list. May be null
 	 * @param contributions the contribution list to add contributions to. Must not be null
 	 */

@@ -10,9 +10,9 @@ Export-Package: no.javatime.inplace.builder.intface,
  no.javatime.inplace.bundlejobs.events.intface,
  no.javatime.inplace.bundlejobs.intface
 Bundle-Vendor: JavaTime
-Bundle-Version: 0.2.1.qualifier
+Bundle-Version: 0.2.2.qualifier
 Bundle-Name: InPlace Activator Bundle Manager
-Bundle-Activator: no.javatime.inplace.InPlace
+Bundle-Activator: no.javatime.inplace.Activator
 Bundle-ManifestVersion: 2
 Activate-Bundle-Service: no.javatime.inplace.bundlejobs.ActivateBundleJob
 Activate-Project-Service: no.javatime.inplace.bundlejobs.ActivateProjectJob

@@ -155,13 +155,15 @@ public class BundlePopUpActivationHandler extends BundleMenuActivationHandler im
 				boolean isLazy = Activator.getBundleProjectMetaService().getActivationPolicy(project);
 				element.setChecked(!isLazy);
 			} catch (InPlaceException e) {
-				// Don't spam this meassage.
 				if (!BuildErrorClosure.hasManifestBuildErrors(project) && BuildErrorClosure.hasBuildState(project)) {	
 					String msg = ExceptionMessage.getInstance().formatString("error_set_policy", javaProject.getProject().getName());
 					StatusManager.getManager().handle(new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, msg, e),
 							StatusManager.LOG);
 				}
 				element.setChecked(false);
+			}	catch (ExtenderException e) {
+				StatusManager.getManager().handle(new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID,
+								NLS.bind(Msg.ADD_MENU_EXEC_ERROR, parameterId), e), StatusManager.LOG);
 			}
 		}
 	}
