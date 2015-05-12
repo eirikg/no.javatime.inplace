@@ -271,6 +271,7 @@ public class BundleCommandImpl implements BundleCommand {
 					is.close();
 				}
 			} catch (IOException e) {
+				bundleTransition.setTransitionError(project);
 				throw new InPlaceException(e, "io_exception_install", locationIdentifier);
 			} finally {
 				if (null != bundle) {
@@ -725,6 +726,7 @@ public class BundleCommandImpl implements BundleCommand {
 					is.close();
 				}
 			} catch (IOException e) {
+				node.setTransitionError(TransitionError.EXCEPTION);
 				throw new InPlaceException(e, "io_exception_update", bundle, location);
 			} finally {
 				BundleTransitionListener.addBundleTransition(new TransitionEvent(bundle, node
