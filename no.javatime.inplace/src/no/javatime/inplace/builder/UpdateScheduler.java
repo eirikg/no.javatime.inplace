@@ -126,7 +126,7 @@ public class UpdateScheduler {
 	 * </ol>
 	 * 
 	 * @param project to add to the specified update job or to be ignored
-	 * @param update the job to add the specified project to
+	 * @param update the job to add the specified project to. Specify null to not add the project
 	 * @return true if the specified project is added to the specified update job and false if not
 	 * @throws ExtenderException If failing to get the candidate service
 	 */
@@ -176,13 +176,14 @@ public class UpdateScheduler {
 					isUpdate = false;
 				}
 			}
-			if (isUpdate) {
+			if (isUpdate && null != update) {
 				update.addPendingProject(project);
 			}
 		} catch (BundleLogException e) {
 			StatusManager.getManager().handle(
 					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),
 					StatusManager.LOG);			
+			isUpdate = false;
 		} catch (CircularReferenceException e) {
 			String msg = ExceptionMessage.getInstance().formatString("circular_reference_termination");
 			IBundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID,
@@ -351,7 +352,7 @@ public class UpdateScheduler {
 	 * @param delay number of msecs to wait before starting the job
 	 * @throws ExtenderException If failing to add he specified job to job queue
 	 */
-	static public void jobHandler(BundleExecutor job, long delay) throws ExtenderException {
+	static private void jobHandler(BundleExecutor job, long delay) throws ExtenderException {
 
 		ResourceStateHandler so = new ResourceStateHandler();
 		if (so.saveModifiedResources()) {

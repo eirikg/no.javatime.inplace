@@ -45,8 +45,8 @@ import org.eclipse.ui.statushandlers.StatusManager;
 @SuppressWarnings("restriction")
 public class ResourceStateHandler extends SaveScopeResourcesHandler implements ResourceState {
 	
-	private Collection<IProject> dirtyProjects; //= new LinkedHashSet<IProject>();
-
+	private Collection<IProject> dirtyProjects;
+	
 	public ResourceStateHandler() {
 		dirtyProjects = new LinkedHashSet<IProject>();	
 	}
@@ -58,7 +58,7 @@ public class ResourceStateHandler extends SaveScopeResourcesHandler implements R
 	public Collection<IProject> getDirtyProjects() {
 		synchronized (dirtyProjects) {
 			areResourcesDirty();
-			Collection<IProject> dirtyProjects = new LinkedHashSet<IProject>(this.dirtyProjects);
+			Collection<IProject> dirtyProjects = new LinkedHashSet<>(this.dirtyProjects);
 			return dirtyProjects;
 		}
 	}
@@ -70,66 +70,62 @@ public class ResourceStateHandler extends SaveScopeResourcesHandler implements R
 	public Collection<IProject> getDirtyProjects(Collection<IProject> projects) {
 
 		synchronized (dirtyProjects) {
-			Collection<IProject> dirtyProjects = new LinkedHashSet<IProject>(projects);
+			Collection<IProject> dirtyProjects = new LinkedHashSet<>(projects);
 			dirtyProjects.retainAll(this.dirtyProjects);
 			return dirtyProjects;
 		}
 	}
 
 	/* (non-Javadoc)
-	 * @see no.javatime.inplace.dialogs.ResourceState#hasDirtyProjects()
-	 */
-
-	/* (non-Javadoc)
 	 * @see no.javatime.inplace.dialogs.ResourceState#areResourcesDirty()
 	 */
 	@Override
 	public Boolean areResourcesDirty () {
-		
-		Collection<IProject> projects = Activator.getBundleProjectCandidatesService().getProjects();	
-		IResource[] resources = getScopedDirtyResources(projects.toArray(new IProject[projects.size()]));
-		if (resources.length > 0) {
-			synchronized (dirtyProjects) {
-				this.dirtyProjects.clear();
+
+		synchronized (dirtyProjects) {
+			Collection<IProject> projects = Activator.getBundleProjectCandidatesService().getProjects();	
+			this.dirtyProjects.clear();
+			IResource[] resources = getScopedDirtyResources(projects.toArray(new IProject[projects.size()]));
+			if (resources.length > 0) {
 				for (int i = 0; i < resources.length; i++) {
 					IProject project = resources[i].getProject();
 					if (null != project) {
 						this.dirtyProjects.add(project);
 					}
 				}
+				return Boolean.TRUE;
+			} else {
+				return Boolean.FALSE;
 			}
-			return Boolean.TRUE;
-		} else {
-			return Boolean.FALSE;
 		}
 	}
-	
+
 	@Override
 	public Boolean saveModifiedResources() {
-		
-		if (!PlatformUI.getWorkbench().saveAllEditors(true)) {
-			return false;
-		}
-		return true;
-	}
-	
-	@Override
-	public Boolean saveModifiedFiles() {
 
 		Boolean isDirty = areResourcesDirty();
 		if (!isDirty) {
 			return Boolean.TRUE;
 		}	
 		Collection<IProject> projects = Activator.getBundleProjectCandidatesService().getProjects();
-    IPreferenceStore store = DebugUIPlugin.getDefault().getPreferenceStore();
-    String save = store.getString(IInternalDebugUIConstants.PREF_SAVE_DIRTY_EDITORS_BEFORE_LAUNCH);
-    int ret = showSaveDialog(projects.toArray(new IProject[projects.size()]), 
-    		!save.equals(MessageDialogWithToggle.NEVER), save.equals(MessageDialogWithToggle.PROMPT));
-    if(ret == IDialogConstants.OK_ID) {
-    	doSave();
-    	return Boolean.TRUE;
-    }
-    return Boolean.FALSE;
+		IPreferenceStore store = DebugUIPlugin.getDefault().getPreferenceStore();
+		String save = store.getString(IInternalDebugUIConstants.PREF_SAVE_DIRTY_EDITORS_BEFORE_LAUNCH);
+		int ret = showSaveDialog(projects.toArray(new IProject[projects.size()]), 
+				!save.equals(MessageDialogWithToggle.NEVER), save.equals(MessageDialogWithToggle.PROMPT));
+		if(ret == IDialogConstants.OK_ID) {
+			doSave();
+			return Boolean.TRUE;
+		}
+		return Boolean.FALSE;
+	}
+	
+	@Override
+	public Boolean saveModifiedFiles() {
+
+		if (!PlatformUI.getWorkbench().saveAllEditors(true)) {
+			return false;
+		}
+		return true;
 	}
 	
 	@Override

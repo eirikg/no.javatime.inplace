@@ -20,7 +20,6 @@ import java.util.concurrent.TimeoutException;
 
 import no.javatime.inplace.Activator;
 import no.javatime.inplace.bundlejobs.intface.BundleExecutor;
-import no.javatime.inplace.dl.preferences.intface.CommandOptions;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.msg.Msg;
@@ -93,8 +92,6 @@ public class BundleJob extends JobStatus implements BundleExecutor {
 	public static final ISchedulingRule buildRule = ResourcesPlugin.getWorkspace().getRuleFactory()
 			.buildRule();
 
-	CommandOptions commandOptions;
-
 	/**
 	 * Unsorted list of unique pending projects to process in a job
 	 */
@@ -145,7 +142,6 @@ public class BundleJob extends JobStatus implements BundleExecutor {
 	@Override
 	public IBundleStatus runInWorkspace(IProgressMonitor monitor) throws CoreException, ExtenderException {
 
-		commandOptions = Activator.getCommandOptionsService();
 		return  super.runInWorkspace(monitor);
 	}
 
@@ -163,94 +159,52 @@ public class BundleJob extends JobStatus implements BundleExecutor {
 		return false;
 	}
 
-	/**
-	 * Add a pending bundle project to process in a job
-	 * 
-	 * @param project to process
-	 */
+	@Override
 	public void addPendingProject(IProject project) {
 		pendingProjects.add(project);
 	}
 
-	/**
-	 * Adds a collection of pending bundle projects to process in a job. To maintain the topological
-	 * sort order use {@link #resetPendingProjects(Collection)}
-	 * 
-	 * @param projects bundle projects to process
-	 * @see BundleJob#resetPendingProjects(Collection)
-	 */
+	@Override
 	public void addPendingProjects(Collection<IProject> projects) {
 		pendingProjects.addAll(projects);
 	}
 
-	/**
-	 * Replace existing pending projects with the specified collection The specified collection is
-	 * copied and the topological sort order of the projects is maintained
-	 * 
-	 * @param projects bundle projects to replace
-	 */
+	@Override
 	public void resetPendingProjects(Collection<IProject> projects) {
 		pendingProjects = new LinkedHashSet<IProject>(projects);
 	}
 
-	/**
-	 * Removes a pending bundle project from the project job list
-	 * 
-	 * @param project bundle project to remove
-	 */
+	@Override
 	public void removePendingProject(IProject project) {
 		pendingProjects.remove(project);
 	}
 
-	/**
-	 * Removes pending bundle projects from the project job list.
-	 * 
-	 * @param projects bundle projects to remove
-	 */
+	@Override
 	public void removePendingProjects(Collection<IProject> projects) {
 		pendingProjects.removeAll(projects);
 	}
 
-	/**
-	 * Clears all pending bundle projects from the project job list.
-	 */
+	@Override
 	public void clearPendingProjects() {
 		pendingProjects.clear();
 	}
 
-	/**
-	 * Determine if the specified bundle project is a pending bundle project
-	 * 
-	 * @param project bundle project to check for pending status
-	 * @return true if the specified bundle project is a pending bundle project, otherwise false.
-	 */
+	@Override
 	public Boolean isPendingProject(IProject project) {
 		return this.pendingProjects.contains(project);
 	}
 
-	/**
-	 * Checks if there are any pending bundle projects to process.
-	 * 
-	 * @return true if there are any bundle projects to process, otherwise false
-	 */
+	@Override
 	public Boolean hasPendingProjects() {
 		return !pendingProjects.isEmpty();
 	}
 
-	/**
-	 * Returns all pending bundle projects.
-	 * 
-	 * @return the set of pending bundle projects or an empty set
-	 */
+	@Override
 	public Collection<IProject> getPendingProjects() {
 		return pendingProjects;
 	}
 
-	/**
-	 * Number of pending bundle projects
-	 * 
-	 * @return number of pending bundle projects
-	 */
+	@Override
 	public int pendingProjects() {
 		return pendingProjects.size();
 	}
@@ -482,6 +436,7 @@ public class BundleJob extends JobStatus implements BundleExecutor {
 		return result;
 	}
 
+	@Override
 	public Bundle isStateChanging() throws ExtenderException {
 		
 		return Activator.getBundleRegionService().isRegionStateChanging();
@@ -492,6 +447,7 @@ public class BundleJob extends JobStatus implements BundleExecutor {
 	 * 
 	 * @throws ExtenderException if failing to get the bundle command, transition, region and/or the options service
 	 */
+	@Override
 	public boolean stopBundleOperation(IProgressMonitor monitor) throws ExtenderException {
 
 		boolean stopped = false;
@@ -677,7 +633,7 @@ public class BundleJob extends JobStatus implements BundleExecutor {
 	}
 
 	/**
-	 * Calculates the requiring dependency closure to refresh giving an initial set of bundles and a
+	 * Calculates the requiring dependency closure giving an initial set of bundles and a
 	 * scope that limits the set of requiring bundles
 	 * <p>
 	 * If bundles in the specified scope of bundles have the same symbolic name as any from the
@@ -689,7 +645,7 @@ public class BundleJob extends JobStatus implements BundleExecutor {
 	 * @throws CircularReferenceException If cycles are detected in the bundle graph
 	 * @throws InPlaceException If failing to get the dependency options service
 	 */
-	public Collection<Bundle> getBundlesToRefresh(Collection<Bundle> bundles,
+	public Collection<Bundle> getRequiringClosure(Collection<Bundle> bundles,
 			Collection<Bundle> bundleScope) throws InPlaceException, CircularReferenceException {
 
 		BundleClosures bc = new BundleClosures();
@@ -697,12 +653,11 @@ public class BundleJob extends JobStatus implements BundleExecutor {
 				bundleScope);
 		// The resolver always include bundles with the same symbolic name in the refresh process
 		Map<IProject, Bundle> duplicates = bundleRegion.getSymbolicNameDuplicates(
-				bundleRegion.getProjects(bundleClosure), bundleScope, true);
+				bundleRegion.getProjects(bundleClosure), bundleScope);
 		if (duplicates.size() > 0) {
 			bundleClosure.addAll(bc.bundleDeactivation(Closure.REQUIRING, duplicates.values(), bundleScope)); 
 		}
 		return bundleClosure;
-
 	}
 
 	/**
@@ -1018,21 +973,19 @@ public class BundleJob extends JobStatus implements BundleExecutor {
 	 * refreshPackages operation because of it. (bug 84169)
 	 * 
 	 * @param projects duplicate candidates to external bundles
-	 * @param bDepClosures existing dependency closure of bundles to the specified candidate projects.
-	 * May be null.
 	 * @param message information message added to the end of the error sent to the log view if
 	 * duplicates are detected. Null is allowed.
 	 * @return all duplicates and the requiring dependency closure for each duplicate or null if no
 	 * duplicates found.
 	 */
-	protected Collection<IProject> removeExternalDuplicates(Collection<IProject> projects,
-			Collection<Bundle> bDepClosures, String message) {
+	protected Collection<IProject> getExternalDuplicateClosures(Collection<IProject> projects,
+			String message) {
 
 		if (!Activator.getInstance().isRefreshDuplicateBSNAllowed()) {
 			return null;
 		}
 		Map<IProject, Bundle> externalDuplicates = bundleRegion.getSymbolicNameDuplicates(projects,
-				bundleRegion.getJarBundles(), true);
+				bundleRegion.getJarBundles());
 		Collection<IProject> duplicateClosures = null;
 		if (externalDuplicates.size() > 0) {
 			duplicateClosures = new ArrayList<IProject>();
@@ -1061,13 +1014,8 @@ public class BundleJob extends JobStatus implements BundleExecutor {
 							bundleTransition.removePending(reqProject, Transition.UPDATE);
 							bundleTransition.removePending(reqProject, Transition.UPDATE_ON_ACTIVATE);
 						}
-						projects.removeAll(requiringProjects);
 						duplicateClosures.addAll(requiringProjects);
-						if (null != bDepClosures) {
-							bDepClosures.removeAll(bundleRegion.getBundles(requiringProjects));
-						}
 					} else {
-						projects.remove(duplicate);
 						duplicateClosures.add(duplicate);
 					}
 					if (null != message) {
@@ -1190,18 +1138,22 @@ public class BundleJob extends JobStatus implements BundleExecutor {
 		return duplicates;
 	}
 
+	@Override
 	public void run(long delay) {
 		super.schedule(delay);
 	}
 
+	@Override
 	public void run() {
 		super.schedule(0L);
 	}
 
+	@Override
 	public void joinBundleExecutor() throws InterruptedException {
 		super.join();
 	}
 
+	@Override
 	public WorkspaceJob getJob() {
 		return this;
 	}

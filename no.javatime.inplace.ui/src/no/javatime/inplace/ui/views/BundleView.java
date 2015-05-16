@@ -1346,6 +1346,9 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 		if (/* isBundleJobRunning() || */null == javaProjects) {
 			return;
 		}
+		if (listTitleImage == null || listTitleImage.isDisposed()) {
+			return;
+		}
 		setPartName(listPageCaptionTitle);
 		setTitleImage(listTitleImage);
 		IProject removedProject = getRemovedProject();

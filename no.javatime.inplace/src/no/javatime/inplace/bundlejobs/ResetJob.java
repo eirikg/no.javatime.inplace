@@ -99,7 +99,7 @@ public class ResetJob extends BundleJob implements Reset {
 			Collection<IProject> projectsToReset = getPendingProjects();
 			Collection<IProject> errorProjects = null;
 			if (projectsToReset.size() > 0) {
-				errorProjects = removeExternalDuplicates(projectsToReset, null, null);
+				errorProjects = getExternalDuplicateClosures(projectsToReset, null);
 				if (null != errorProjects) {
 					projectsToReset.removeAll(errorProjects);
 					String msg = ErrorMessage.getInstance().formatString("bundle_errors_reset",

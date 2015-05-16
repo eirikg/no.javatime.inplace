@@ -346,7 +346,10 @@ public class ActivateBundleJob extends NatureJob implements ActivateBundle {
 
 		IBundleStatus status = createStatus();
 		bundleTransition.removeTransitionError(TransitionError.DUPLICATE);
-		removeExternalDuplicates(getPendingProjects(), null, null);
+		Collection<IProject> externalDuplicates = getExternalDuplicateClosures(getPendingProjects(), null);
+		if (null != externalDuplicates) {
+			removePendingProjects(externalDuplicates);
+		}
 		Collection<IProject> duplicates = removeWorkspaceDuplicates(getPendingProjects(), null, null,
 				bundleProjectCandidates.getInstallable(), duplicateMessage);
 		if (null != duplicates) {

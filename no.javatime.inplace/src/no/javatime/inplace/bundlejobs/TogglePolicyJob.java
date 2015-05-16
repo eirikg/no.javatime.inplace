@@ -162,9 +162,7 @@ public class TogglePolicyJob extends NatureJob implements TogglePolicy {
 	@Override
 	public boolean getActivationPolicy(IProject project) throws ExtenderException {
 
-		if (null == bundleProjectMeta) {
-			bundleProjectMeta = Activator.getbundlePrrojectMetaService();
-		}
+		bundleProjectMeta = Activator.getbundlePrrojectMetaService();
 		return bundleProjectMeta.getActivationPolicy(project);
 	}
 }

@@ -9,13 +9,11 @@ import no.javatime.inplace.region.intface.BundleTransition;
 import org.eclipse.core.resources.IProject;
 
 /**
- * Service to update modified bundles after activated projects are built. The service is
- * automatically scheduled after a build of activated bundle projects. The scheduled bundles are
- * updated and together with their requiring bundles, unresolved, resolved, optionally refreshed and
- * started as part of the update process.
+ * Service to update bundles. The service is automatically scheduled after a build of activated
+ * bundle projects. The scheduled bundles are updated and together with their requiring bundles,
+ * stopped, unresolved, resolved, optionally refreshed and started as part of the update process.
  * <p>
- * To manually control and schedule the update bundle executor, switch off the "Update on Build"
- * option.
+ * To manually control and schedule bundle updates, switch off the "Update on Build" option.
  * <p>
  * If the option "Refresh on Update" is off bundle projects are resolved after updated. If bundle
  * projects have more than one revision after resolve, refresh is pending and the status is set to
@@ -23,19 +21,23 @@ import org.eclipse.core.resources.IProject;
  * {@link no.javatime.inplace.region.intface.BundleCommand#getBundleRevisions(org.osgi.framework.Bundle)
  * BundleCommand.getBundleRevisions(Bundle)}
  * <p>
- * If bundles are to be refreshed after update bundle dependency closures are calculated and added
- * as pending projects to this service according to the current dependency option as part of the
- * update process:
+ * Requiring and providing bundles:
  * <ol>
- * <li>Requiring bundles to a bundle to update are resolved and optionally refreshed
- * <li>New deactivated imported projects of a project to update are activated. In the case where a
- * bundle to be updated is dependent on other not activated bundles, this is handled by the resolver
- * hook. The resolver hook is visited by the framework during resolve.
+ * <li>Requiring activated bundles to a bundle to update are resolved and optionally refreshed
+ * <li>Deactivated bundles imported (providing bundles) by bundles to update are activated. This is
+ * handled by the resolver hook. The resolver hook is visited by the framework during resolve.
  * </ol>
  * <p>
- * Bundle projects with name collisions (same symbolic name and version> are detected, excluded from
- * the update process and an error status object is generated and reported after update has
- * finished. To access the error objects see {@link #getErrorStatusList()}
+ * Duplicates
+ * <ol>
+ * <li>Workspace bundles that are duplicates (bundles with same symbolic name (version may be
+ * different)) of external or jar bundles are excluded from the update process and an error status
+ * object is generated and reported after update has finished. To access the error objects see
+ * {@link #getErrorStatusList()}
+ * <li>Workspace duplicates (bundles with same symbolic name as other workspace bundles) and their
+ * requiring bundles are in contrast added to the requiring bundles of bundles to update (they are
+ * in one way dependent of each other and have to be resolved. External bundles are not resolved)
+ * </ol>
  * <p>
  * After updated, bundles are moved to the same state as before update if possible.
  * <p>
@@ -56,7 +58,7 @@ public interface Update extends BundleExecutor {
 	public final static String UPDATE_BUNDLE_SERVICE = "Update-Bundle-Service";
 
 	/**
-	 * This is convenience method to add a pending update transition to a bundle project.
+	 * This is convenience method to add the pending update transition to a set of bundle projects.
 	 * <p>
 	 * A pending update transition is automatically added to an activated project that has been built
 	 * but not yet updated and is required to update the project. Projects that have been built are
@@ -70,12 +72,24 @@ public interface Update extends BundleExecutor {
 	 * been built and the update on build option is off) and depends (requiring projects) on the
 	 * project to update.
 	 * 
-	 * @param projects Add a pending update transition to the specified projects
-	 * throws ExtenderException If failing to get the bundle transition service
+	 * @param projects Add a pending update transition to the specified projects 
+	 * @throws ExtenderException If failing to get the bundle transition service
 	 * @see #isPendingForUpdate(IProject)
 	 * @see BundleTransition#addPending(IProject, BundleTransition.Transition)
 	 */
 	public void addUpdateTransition(Collection<IProject> projects) throws ExtenderException;
+
+	
+	/**
+	 * This is convenience method to add a pending update transition to a bundle project.
+	 * 
+	 * @param projects Add a pending update transition to the specified project 
+	 * @throws ExtenderException If failing to get the bundle transition service
+	 * @see #addPendingProjects(Collection)
+	 * @see #isPendingForUpdate(IProject)
+	 * @see BundleTransition#addPending(IProject, BundleTransition.Transition)
+	 */
+	public void addUpdateTransition(IProject project) throws ExtenderException;
 
 	/**
 	 * Checks if the specified project is pending for update.
@@ -84,11 +98,126 @@ public interface Update extends BundleExecutor {
 	 * option is switched off.
 	 * 
 	 * @param project Check this project for a pending update operation
-	 * @return true if the project is pending for update and false if not
-	 * throws ExtenderException If failing to get the bundle transition service
+	 * @return true if the project is pending for update and false if not throws ExtenderException If
+	 * failing to get the bundle transition service
 	 * @see #addUpdateTransition(Collection)
 	 */
 	public boolean isPendingForUpdate(IProject project) throws ExtenderException;
+
+	/**
+	 * Validate the specified project for update. Build error closures that allows and prevents an
+	 * update of an activated bundle project are:
+	 * <ol>
+	 * <li><b>Requiring update closures</b>
+	 * <p>
+	 * <br>
+	 * <b>Activated requiring closure.</b> An update is rejected when there exists activated bundles
+	 * with build errors requiring capabilities from the project to update. An update would imply a
+	 * resolve (and a stop/start if in state active) of the activated requiring bundles with build
+	 * errors. The preferred solution is to suspend the resolve and possibly a start to avoid the
+	 * framework to throw exceptions when an activated requiring bundle with build errors is started
+	 * as part of the update process (stop/resolve/start) or when started later on. From this follows
+	 * that there is nothing to gain by constructing a new revision (resolving or refreshing) of a
+	 * requiring bundle with build errors.
+	 * <p>
+	 * <br>
+	 * <b>Deactivated requiring closure.</b> Deactivated bundle projects with build errors requiring
+	 * capabilities from the project to update will not trigger an activation of the deactivated
+	 * bundles and as a consequence the bundles will not be resolved and are therefore allowed.
+	 * <p>
+	 * <br>
+	 * <li><b>Providing update closures</b>
+	 * <p>
+	 * <br>
+	 * <b>Deactivated providing closure.</b> Update is rejected when deactivated bundles with build
+	 * errors provides capabilities to a project to update. This would trigger an activation in the
+	 * resolver hook (update and resolve) of the providing bundle project(s) and result in errors of
+	 * the same type as in the <b>Activated requiring closure</b>.
+	 * <p>
+	 * <br>
+	 * <b>Activated providing closure.</b> It is legal to update the project when there are activated
+	 * bundles with build errors that provides capabilities to the project to update. The providing
+	 * bundles will not be affected (updated and resolved) when the project is updated. The project to
+	 * update will get wired to the current revision (that is from the last successful resolve) of the
+	 * activated bundles with build errors when resolved.
+	 * </ol>
+	 * 
+	 * @param project to validate for update
+	 * @return true if the specified project may be updated and false if not
+	 * @throws ExtenderException If failing to get the candidate and message options services
+	 */
+	public boolean canUpdate(IProject project) throws ExtenderException;
+
+	/**
+	 * Identify bundle projects to update based on the current set of pending bundle projects added to
+	 * this job and calculate and return the requiring (update) closure of those bundle projects. Use
+	 * {@link #addPendingProject(IProject)} or {@link #addPendingProjects(Collection)} to add bundle
+	 * projects to update before calculating the requiring closure.
+	 * <p>
+	 * The domain or region of the requiring closure is all activated bundle projects in the workspace
+	 * region.
+	 * 
+	 * The new set of bundle projects to update may be equal, a sub set or super set within the
+	 * specified domain of the current set of bundle projects to update. The resulting set of pending
+	 * bundle projects to update is a subset of the requiring (update) closure within the specified
+	 * domain of bundle projects.
+	 * <p>
+	 * Only pending bundle projects tagged with {@code Transition#UPDATE} are added.
+	 * <p>
+	 * The following steps are executed to collect bundle projects to update and the requiring closure
+	 * of those pending bundle projects:
+	 * <ol>
+	 * <li>Get all pending projects already added to this job.
+	 * <li>If auto build has been switched off and than switched on again between two update jobs; -
+	 * include all bundles that have been built.
+	 * <li>If the "Refresh on Update" option is on, all requiring bundles tagged for update to the
+	 * bundles to update are added to the list of bundles to update
+	 * <li>Duplicate workspace bundles and their requiring bundles to bundles to update are added to
+	 * requiring closure (see below) of the set of bundles to update (they are in one way dependent of
+	 * each other and have to be resolved)
+	 * <li>Any bundles to update and their requiring bundles that are duplicates of external bundles
+	 * are removed for the list of bundles to update
+	 * </ol>
+	 * After the set of bundle projects to update are collected, the requiring closure of those bundle
+	 * projects are calculated and returned. The requiring closures is the set of activated bundles
+	 * that require capabilities from the bundle projects to update.
+	 * 
+	 * @return The requiring (update) closure of the set of identified bundle projects to update
+	 */
+	public Collection<IProject> getRequiringUpdateClosure() throws ExtenderException;
+
+	/**
+	 * Identify bundle projects to update based on the current set of pending bundle projects added to
+	 * this job. Use {@link #addPendingProject(IProject)} or {@link #addPendingProjects(Collection)}
+	 * to add bundle projects to update before calculating the new set of bundle projects to update
+	 * <p>
+	 * The domain or region of bundle projects to update is all activated bundle projects in the
+	 * workspace region.
+	 * 
+	 * The new set of bundle projects to update may be equal, a sub set or super set within the
+	 * specified domain of the current set of bundle projects to update. The resulting set of pending
+	 * bundle projects to update is a subset of the requiring (update) closure within the specified
+	 * domain of bundle projects.
+	 * <p>
+	 * Only pending bundle projects tagged with {@code Transition#UPDATE} are added.
+	 * <p>
+	 * The following steps are executed to collect bundle projects to update:
+	 * <ol>
+	 * <li>Get all pending projects already added to this job.
+	 * <li>If auto build has been switched off and than switched on again between two update jobs; -
+	 * include all bundles that have been built.
+	 * <li>If the "Refresh on Update" option is on, all requiring bundles tagged for update to the
+	 * bundles to update are added to the list of bundles to update
+	 * <li>Duplicate workspace bundles and their requiring bundles to bundles to update are added to
+	 * requiring closure (see below) of the set of bundles to update (they are in one way dependent of
+	 * each other and have to be resolved)
+	 * <li>Any bundles to update and their requiring bundles that are duplicates of external bundles
+	 * are removed for the list of bundles to update
+	 * </ol>
+	 * 
+	 * @return The set of bundle projects to update or an empty set
+	 */
+	public Collection<IProject> getBundlesToUpdate() throws ExtenderException;
 
 	/**
 	 * Detect circular symbolic name collisions and order the pending collection of bundle projects
@@ -106,8 +235,8 @@ public interface Update extends BundleExecutor {
 	 * 
 	 * 
 	 * @return ordered collection of projects to update. If collisions are detected the involved
-	 * projects are not added to the returned collection.
-	 * throws ExtenderException If failing to get the bundle region service
+	 * projects are not added to the returned collection. throws ExtenderException If failing to get
+	 * the bundle region service
 	 */
 	public Collection<IProject> getUpdateOrder() throws ExtenderException;
 }

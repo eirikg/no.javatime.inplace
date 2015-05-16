@@ -54,6 +54,7 @@ public interface BundleRegion {
 	 * Get the bundle command service
 	 * <p>
 	 * Any extender exceptions are sent to the error log view and null is returned
+	 * 
 	 * @param user TODO
 	 * @user The bundle using this service
 	 * @return the bundle command service interface or null if not available
@@ -66,6 +67,7 @@ public interface BundleRegion {
 	 * Get the bundle transition service
 	 * <p>
 	 * Any extender exceptions are sent to the error log view and null is returned
+	 * 
 	 * @param user TODO
 	 * 
 	 * @user The bundle using this service
@@ -74,11 +76,12 @@ public interface BundleRegion {
 	 * returned service from the framework is null
 	 */
 	public BundleTransition getTransitionService(Bundle user) throws ExtenderException;
-	
+
 	/**
 	 * Get the bundle project candidates service
 	 * <p>
 	 * Any extender exceptions are sent to the error log view and null is returned
+	 * 
 	 * @param user TODO
 	 * 
 	 * @user The bundle using this service
@@ -92,6 +95,7 @@ public interface BundleRegion {
 	 * Get the bundle project meta service
 	 * <p>
 	 * Any extender exceptions are sent to the error log view and null is returned
+	 * 
 	 * @param user TODO
 	 * 
 	 * @user The bundle using this service
@@ -378,35 +382,35 @@ public interface BundleRegion {
 	public Collection<Bundle> getJarBundles();
 
 	/**
-	 * Finds duplicates among the specified duplicate project candidates. Only activated projects are
+	 * If the symbolic name and version of one of the specified projects equals one
+	 * of the specified candidate projects its a duplicate. Only activated projects are
 	 * considered. It is not the cached symbolic keys, but the symbolic keys from the manifest that
 	 * are compared
 	 * 
-	 * @param projects duplicate candidates
-	 * @param scope a set of projects to find duplicates among
+	 * @param projects to check for duplicates against the candidate bundles.
+	 * @param candidates a set of projects to find duplicates among
 	 * @return map containing the specified project and the bundle which the specified project is a
 	 * duplicate of
 	 */
 	public Map<IProject, IProject> getWorkspaceDuplicates(Collection<IProject> projects,
-			Collection<IProject> scope);
+			Collection<IProject> candidates);
 
 	/**
-	 * Finds duplicates to the specified workspace duplicate project candidates. If the symbolic name
-	 * (the version may be different) of one of the specified projects equals one of the specified
-	 * candidate bundle its a duplicate.
+	 * If the symbolic name (the version may be different) of one of the specified projects equals one
+	 * of the specified candidate bundles its a duplicate.
+	 * <p>
+	 * The specified candidate bundles and projects sets may contain common bundle projects.
 	 * <p>
 	 * The persisted symbolic name of the specified projects is compared for equality against the
 	 * cached symbolic name of the candidate bundles
 	 * 
 	 * @param projects to check for duplicates against the candidate bundles.
 	 * @param candidateBundles a set of candidate bundles to find duplicates among
-	 * @param disjoint set to true to check and remove bundles in candidate bundles that also exist in
-	 * the specified collection of projects. If false no check or removal is performed.
 	 * @return map containing the specified project and the candidate bundle which the specified
 	 * project is a duplicate of
 	 */
 	public Map<IProject, Bundle> getSymbolicNameDuplicates(Collection<IProject> projects,
-			Collection<Bundle> candidateBundles, boolean disjoint);
+			Collection<Bundle> candidateBundles);
 
 	/**
 	 * A bundle exist in the bundle region if it at least is installed. In an activated workspace all

@@ -46,6 +46,8 @@ public interface ResourceState {
 	 * Displays a save file dialog with a list of all dirty editors in the workspace that needs to be
 	 * saved. If no files are dirty the save file dialog is not displayed and {@code true} is
 	 * returned.
+	 * <p>
+	 * This is an adaption of the launch target dialog 
 	 * 
 	 * @return true if files are saved or no files are modified. False if modified files are not saved
 	 */
@@ -55,6 +57,8 @@ public interface ResourceState {
 	 * Displays a save file dialog with a list of editors that apply to the next build that need to be
 	 * saved. If no files are dirty the save file dialog is not displayed and {@code true} is
 	 * returned.
+	 * <p>
+	 * This is a more simple dialog than used in {@link #saveModifiedResources()}
 	 * 
 	 * @return true if files are saved or no files are modified. False if modified files are not saved
 	 */

@@ -402,7 +402,8 @@ public class WorkspaceRegionImpl implements BundleRegion {
 
 	@Override
 	public Collection<Bundle> getBundles(Collection<Bundle> bundles, int state) {
-		Collection<Bundle> bundleStates = new ArrayList<Bundle>();
+
+		Collection<Bundle> bundleStates = new LinkedHashSet<>();
 		for (Bundle bundle : bundles) {
 			if (null != bundle && (bundle.getState() & (state)) != 0) {
 				bundleStates.add(bundle);
@@ -413,6 +414,7 @@ public class WorkspaceRegionImpl implements BundleRegion {
 
 	@Override
 	public Collection<Bundle> getBundles() {
+
 		Collection<Bundle> bundles = new LinkedHashSet<Bundle>();
 		for (BundleNode node : projectNodes.values()) {
 			Long bundleId = node.getBundleId();
@@ -473,7 +475,7 @@ public class WorkspaceRegionImpl implements BundleRegion {
 
 	@Override
 	public Map<IProject, IProject> getWorkspaceDuplicates(Collection<IProject> candidateProjects,
-			Collection<IProject> scope) {
+			Collection<IProject> candidates) {
 
 		Map<IProject, IProject> duplicateMap = new HashMap<IProject, IProject>();
 		Map<String, IProject> candidateKeyMap = new HashMap<String, IProject>();
@@ -488,8 +490,8 @@ public class WorkspaceRegionImpl implements BundleRegion {
 			}
 		}
 		if (candidateKeyMap.size() > 0) {
-			scope.removeAll(candidateKeyMap.values());
-			for (IProject project : scope) {
+			candidates.removeAll(candidateKeyMap.values());
+			for (IProject project : candidates) {
 				String symbolicKey = getSymbolicKey(null, project);
 				if (symbolicKey.length() == 0) {
 					continue;
@@ -505,11 +507,11 @@ public class WorkspaceRegionImpl implements BundleRegion {
 
 	@Override
 	public Map<IProject, Bundle> getSymbolicNameDuplicates(Collection<IProject> projects,
-			Collection<Bundle> candidateBundles, boolean disjoint) {
+			Collection<Bundle> candidateBundles) {
 
 		Map<String, IProject> newSymbolicNameMap = new HashMap<String, IProject>();
 		Map<IProject, Bundle> duplicateMap = new HashMap<IProject, Bundle>();
-
+		
 		for (IProject project : projects) {
 			try {
 				String symbolicName = getSymbolicNameFromManifest(project);
@@ -517,17 +519,13 @@ public class WorkspaceRegionImpl implements BundleRegion {
 			} catch (InPlaceException e) {
 			}
 		}
-		if (disjoint) {
-			Collection<Bundle> bundleProjects = getBundles(projects);
-			bundleProjects.retainAll(candidateBundles);
-			if (bundleProjects.size() > 0) {
-				candidateBundles.removeAll(bundleProjects);
-			}
-		}
+		Collection<Bundle> bundleProjects = getBundles(projects);
 		for (Bundle bundle : candidateBundles) {
-			String symbolicName = bundle.getSymbolicName();
-			if (newSymbolicNameMap.containsKey(symbolicName)) {
-				duplicateMap.put(newSymbolicNameMap.get(symbolicName), bundle);
+			if (!bundleProjects.contains(bundle)) {
+				String symbolicName = bundle.getSymbolicName();
+				if (newSymbolicNameMap.containsKey(symbolicName)) {
+					duplicateMap.put(newSymbolicNameMap.get(symbolicName), bundle);
+				}
 			}
 		}
 		return duplicateMap;

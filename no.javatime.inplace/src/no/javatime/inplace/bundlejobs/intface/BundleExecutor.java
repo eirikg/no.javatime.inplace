@@ -184,6 +184,8 @@ public interface BundleExecutor {
 
 	/**
 	 * Returns all pending bundle projects to execute.
+	 * <p>
+	 * The set is unguarded (not returning a copy of the pending projects) 
 	 * 
 	 * @return the set of pending bundle projects or an empty set
 	 */

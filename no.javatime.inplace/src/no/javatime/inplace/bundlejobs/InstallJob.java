@@ -168,7 +168,10 @@ public class InstallJob extends NatureJob implements Install {
 				}
 			}
 			bundleTransition.removeTransitionError(TransitionError.DUPLICATE);
-			removeExternalDuplicates(getPendingProjects(), null, null);
+			Collection<IProject> externalDuplicates = getExternalDuplicateClosures(getPendingProjects(), null);
+			if (null != externalDuplicates) {
+				removePendingProjects(externalDuplicates);
+			}
 			Collection<IProject> duplicates = removeWorkspaceDuplicates(getPendingProjects(), null, null,
 					bundleProjectCandidates.getInstallable(), duplicateMessage);
 			if (null != duplicates) {

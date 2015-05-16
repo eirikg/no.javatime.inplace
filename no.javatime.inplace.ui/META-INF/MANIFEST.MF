@@ -9,7 +9,7 @@ Require-Bundle: org.eclipse.ui,
  org.eclipse.pde.ui
 Bundle-Vendor: JavaTime
 Bundle-ActivationPolicy: lazy
-Bundle-Version: 0.2.1.qualifier
+Bundle-Version: 0.2.2.qualifier
 Bundle-Name: InPlace Activator Bundle UI
 Bundle-Activator: no.javatime.inplace.ui.Activator
 Bundle-ManifestVersion: 2

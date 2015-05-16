@@ -19,7 +19,6 @@ import no.javatime.inplace.Activator;
 import no.javatime.inplace.builder.JavaTimeNature;
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.msg.Msg;
-import no.javatime.inplace.region.intface.BundleProjectCandidates;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
 import no.javatime.inplace.region.intface.DuplicateBundleException;
 import no.javatime.inplace.region.intface.InPlaceException;
@@ -98,7 +97,8 @@ public abstract class NatureJob extends BundleJob {
 
 
 	public Boolean isProjectActivated(IProject project) throws InPlaceException, ExtenderException {
-		BundleProjectCandidates bundleProjectCandidates = Activator.getBundleProjectCandidatesService();
+
+		bundleProjectCandidates = Activator.getBundleProjectCandidatesService();
 		if (bundleProjectCandidates.isNatureEnabled(project, JavaTimeNature.JAVATIME_NATURE_ID)) {
 			return true;
 		}
@@ -106,7 +106,8 @@ public abstract class NatureJob extends BundleJob {
 	}
 
 	public Boolean isProjectWorkspaceActivated() throws InPlaceException, ExtenderException {
-		BundleProjectCandidates bundleProjectCandidates = Activator.getBundleProjectCandidatesService();
+		
+		bundleProjectCandidates = Activator.getBundleProjectCandidatesService();
 		for (IProject project : bundleProjectCandidates.getBundleProjects()) {
 			if (isProjectActivated(project)) {
 				return true;
@@ -117,7 +118,7 @@ public abstract class NatureJob extends BundleJob {
 
 	public Collection<IProject> getActivatedProjects() throws InPlaceException, ExtenderException {
 
-		BundleProjectCandidates bundleProjectCandidates = Activator.getBundleProjectCandidatesService();
+		bundleProjectCandidates = Activator.getBundleProjectCandidatesService();
 		Collection<IProject> projects = new LinkedHashSet<IProject>();
 
 		for (IProject project : bundleProjectCandidates.getBundleProjects()) {
@@ -130,7 +131,7 @@ public abstract class NatureJob extends BundleJob {
 
 	public Collection<IProject> getDeactivatedProjects() throws InPlaceException, ExtenderException {
 
-		BundleProjectCandidates bundleProjectCandidates = Activator.getBundleProjectCandidatesService();
+		bundleProjectCandidates = Activator.getBundleProjectCandidatesService();
 		return  bundleProjectCandidates.getCandidates();
 	}
 

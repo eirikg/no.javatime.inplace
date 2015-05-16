@@ -8,6 +8,7 @@ import java.util.List;
 
 import no.javatime.inplace.Activator;
 import no.javatime.inplace.bundlejobs.intface.ActivateProject;
+import no.javatime.inplace.dl.preferences.intface.CommandOptions;
 import no.javatime.inplace.dl.preferences.intface.MessageOptions;
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.msg.Msg;
@@ -56,6 +57,8 @@ public class JobStatus extends WorkspaceJob implements BundleTransitionEventList
 	protected BundleProjectCandidates bundleProjectCandidates; 
 	protected BundleProjectMeta bundleProjectMeta;
 	protected MessageOptions messageOptions; 
+	protected CommandOptions commandOptions;
+
 	long startTime;
 
 	// List of error status objects
@@ -90,14 +93,43 @@ public class JobStatus extends WorkspaceJob implements BundleTransitionEventList
 	@Override
 	public IBundleStatus runInWorkspace(IProgressMonitor monitor) throws CoreException, ExtenderException {
 
-		bundleCommand = Activator.getBundleCommandService();
-		bundleTransition = Activator.getBundleTransitionService();
-		bundleRegion = Activator.getBundleRegionService();
-		bundleProjectCandidates = Activator.getBundleProjectCandidatesService();
-		bundleProjectMeta = Activator.getbundlePrrojectMetaService();
-		messageOptions = Activator.getMessageOptionsService();
+		initServices();
 		startTime = System.currentTimeMillis();
 		return new BundleStatus(StatusCode.OK, Activator.PLUGIN_ID, null);
+	}
+	
+	/**
+	 * The initialization of services are delayed until bundle jobs are scheduled. Exceptions are when
+	 * member methods in job interface services are accessed prior to scheduling of a bundle job
+	 * <p>
+	 * The initialization is conditional to reduce the number of get service calls for the different
+	 * services 
+	 *  
+	 * @throws ExtenderException failing to get any of the services used by bundle jobs
+	 */
+	protected void initServices() throws ExtenderException {
+
+		if (null == bundleCommand) {
+			bundleCommand = Activator.getBundleCommandService();
+		}
+		if (null == bundleTransition) {
+			bundleTransition = Activator.getBundleTransitionService();
+		}
+		if (null == bundleRegion) {
+			bundleRegion = Activator.getBundleRegionService();
+		}
+		if (null == bundleProjectCandidates) {
+			bundleProjectCandidates = Activator.getBundleProjectCandidatesService();
+		}
+		if (null == bundleProjectMeta) {
+			bundleProjectMeta = Activator.getbundlePrrojectMetaService();
+		}
+		if (null == messageOptions) {
+			messageOptions = Activator.getMessageOptionsService();
+		}
+		if (null == commandOptions) {
+			commandOptions = Activator.getCommandOptionsService();
+		}		
 	}
 
 	public long getStartedTime() {

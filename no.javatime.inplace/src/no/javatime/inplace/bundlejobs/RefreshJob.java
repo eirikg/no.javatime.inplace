@@ -148,7 +148,7 @@ public class RefreshJob extends BundleJob implements Refresh {
 		Collection<Bundle> initialBundleSet = bundleRegion.getBundles(getPendingProjects());
 		// Get the requiring closure of bundles to refresh and add bundles to the requiring closure
 		// with same symbolic name as in the refresh closure.
-		Collection<Bundle> bundlesToRefresh = getBundlesToRefresh(initialBundleSet, bundleRegion.getActivatedBundles());
+		Collection<Bundle> bundlesToRefresh = getRequiringClosure(initialBundleSet, bundleRegion.getActivatedBundles());
 		Collection<Bundle> errorBundles = removeTransitionErrorClosures(bundlesToRefresh);
 		if (null != errorBundles) {
 			String msg = ErrorMessage.getInstance().formatString("bundle_errors_refresh", bundleRegion.formatBundleList(errorBundles, false));

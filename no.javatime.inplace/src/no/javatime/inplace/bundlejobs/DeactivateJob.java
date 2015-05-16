@@ -235,7 +235,7 @@ public class DeactivateJob extends NatureJob implements Deactivate {
 				// The resolver always include bundles with the same symbolic name in the resolve process
 				// TODO let getSymbolicNameDuplicates throw an InPlaceException
 				Map<IProject, Bundle> duplicates = bundleRegion.getSymbolicNameDuplicates(
-						getPendingProjects(), bundleRegion.getActivatedBundles(), true);
+						getPendingProjects(), bundleRegion.getActivatedBundles());
 				Collection<Bundle> bundlesToRestart = null;
 				Collection<Bundle> bundlesToRefresh = null;
 				if (duplicates.size() > 0) {
@@ -249,7 +249,7 @@ public class DeactivateJob extends NatureJob implements Deactivate {
 							if (null != bundlesToRefresh) {
 								bundlesToRefresh = new LinkedHashSet<Bundle>();
 							}
-							bundlesToRefresh.addAll(getBundlesToRefresh(Collections
+							bundlesToRefresh.addAll(getRequiringClosure(Collections
 									.<Bundle> singletonList(bundle), activatedBundles));
 						}
 					}

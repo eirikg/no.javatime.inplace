@@ -19,6 +19,7 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 
 import no.javatime.inplace.Activator;
+import no.javatime.inplace.builder.UpdateScheduler;
 import no.javatime.inplace.bundlejobs.intface.Update;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.extender.intface.ExtenderException;
@@ -54,6 +55,13 @@ public class UpdateJob extends BundleJob implements Update {
 			"update_task_name");
 	final private static String updateSubTaskName = Message.getInstance().formatString(
 			"update_subtask_name");
+
+	private static String currentExternalInstance = ErrorMessage.getInstance().formatString(
+			"current_revision_of_jar_duplicate");
+
+	@SuppressWarnings("unused")
+	private static String currentWorkspaceInstance = ErrorMessage.getInstance().formatString(
+			"current_revision_of_ws_duplicate");
 
 	/**
 	 * Default constructor wit a default job name
@@ -138,7 +146,7 @@ public class UpdateJob extends BundleJob implements Update {
 			monitor.done();
 			BundleTransitionListener.removeBundleTransitionListener(this);
 		}
-		return getJobSatus();		
+		return getJobSatus();
 	}
 
 	/**
@@ -170,102 +178,43 @@ public class UpdateJob extends BundleJob implements Update {
 	private IBundleStatus update(IProgressMonitor monitor) throws InPlaceException,
 			InterruptedException, CoreException {
 
-		// (1) Collect any additional bundles to update and the requiring closure to stop,
-		// resolve/refresh and start
-
-		Collection<Bundle> bundlesToUpdate = bundleRegion.getBundles(getPendingProjects());
+		// (1) Collect bundle projects to update
 		Collection<Bundle> activatedBundles = bundleRegion.getActivatedBundles();
-
-		// If auto build has been switched off and than switched on,
-		// include all bundles that have been built
-		if (bundleRegion.isAutoBuildActivated(true)) {
-			Collection<Bundle> pendingBundles = bundleTransition.getPendingBundles(activatedBundles,
-					Transition.UPDATE);
-			pendingBundles.removeAll(bundlesToUpdate);
-			if (pendingBundles.size() > 0) {
-				bundlesToUpdate.addAll(pendingBundles);
-				addPendingProjects(bundleRegion.getProjects(pendingBundles));
-			}
-		}
-
-		Collection<Bundle> bundleClosure = null;
-		// (2) Get any requiring closure of bundles to update and refresh
-		if (commandOptions.isRefreshOnUpdate()) {
-			// Get the requiring closure of bundles to update and add bundles to the requiring closure
-			// with same symbolic name as in the update closure.
-			// The bundles in this closure are stopped before update, bound to the current revision of the
-			// updated bundles during refresh and then started again if in state ACTIVE
-			bundleClosure = getBundlesToRefresh(bundlesToUpdate, activatedBundles);
-
-			// Necessary to get the latest updated version of a coherent set (closure) of running bundles
-			Collection<Bundle> pendingBundles = bundleTransition.getPendingBundles(bundleClosure,
-					Transition.UPDATE);
-			pendingBundles.removeAll(bundlesToUpdate);
-			if (pendingBundles.size() > 0) {
-				bundlesToUpdate.addAll(pendingBundles);
-				addPendingProjects(bundleRegion.getProjects(pendingBundles));
-			}
-		} else {
-			// The requiring closure will be bound to the previous revision of the bundles to update and
-			// resolve
-			bundleClosure = bundlesToUpdate;
-		}
-
-		// (3) Adjust the set of bundles to update and refresh due to duplicates
-		// Remove workspace bundles that are duplicates of external bundles
-		Collection<IProject> duplicateProjects = removeExternalDuplicates(getPendingProjects(),
-				bundleClosure, currentExternalInstance);
-		if (null != duplicateProjects) {
-			bundlesToUpdate.removeAll(bundleRegion.getBundles(duplicateProjects));
-		}
-
+		Collection<Bundle> requiringClosure = getUpdateClosure(activatedBundles);
+		Collection<Bundle> bundlesToUpdate = bundleRegion.getBundles(getPendingProjects());
 		if (!bundleTransition.containsPending(bundlesToUpdate, Transition.UPDATE, false)) {
 			return getLastErrorStatus();
 		}
-
-		// (4) Collect all bundles to restart after update and refresh
-		Collection<Bundle> bundlesToRestart = new LinkedHashSet<Bundle>();
+		// (2) Collect all bundles to restart after update and resolve/refresh
 		// ACTIVE (and STARTING) bundles are restored to their current state or as directed by pending
 		// operations assigned to the bundle. Activated bundles in state INSTALLED (this indicates a
 		// corrected bundle error or an activation of the bundle) are started after update
-		for (Bundle bundle : bundleClosure) {
+		Collection<Bundle> bundlesToRestart = new LinkedHashSet<>();
+		for (Bundle bundle : requiringClosure) {
 			if (bundleTransition.containsPending(bundle, Transition.START, Boolean.TRUE)
 					|| (bundle.getState() & (Bundle.ACTIVE | Bundle.STARTING | Bundle.INSTALLED)) != 0) {
 				bundlesToRestart.add(bundle);
 			}
 		}
-		// (5) Stop bundles collected in (4)
+		// (3) Stop bundles collected in (2). Bundles in state installed are ignored
 		stop(bundlesToRestart, null, new SubProgressMonitor(monitor, 1));
 		if (monitor.isCanceled()) {
 			throw new OperationCanceledException();
 		}
-		// (6) Update bundles
+		// (4) Update bundles
 		Collection<IBundleStatus> errorStatusList = updateByReference(bundlesToUpdate,
 				new SubProgressMonitor(monitor, 1));
-		// (7) Report any update errors
-		handleUpdateExceptions(errorStatusList, bundleClosure);
+		// (5) Report any update errors
+		handleUpdateExceptions(errorStatusList, requiringClosure);
 		if (monitor.isCanceled()) {
 			throw new OperationCanceledException();
 		}
-		// (8) Refresh updated bundles and their closures or resolve updated bundles
-		if (bundleClosure.size() > 0) {
-			// Also resolve/refresh and start all activated bundles in state installed and their requiring
-			// bundles
-			Collection<Bundle> installedBundles = bundleRegion.getBundles(Bundle.INSTALLED);
-			installedBundles.removeAll(bundleClosure);
-			installedBundles.removeAll(bundleRegion.getDeactivatedBundles());
-			if (installedBundles.size() > 0) {
-				BundleSorter bs = new BundleSorter();
-				Collection<Bundle> installedBundlesToRefresh = bs.sortDeclaredRequiringBundles(
-						installedBundles, activatedBundles);
-				bundleClosure.addAll(installedBundlesToRefresh);
-				bundlesToRestart.addAll(installedBundlesToRefresh);
-			}
-
+		// (6) Refresh updated bundles and their closures or resolve updated bundles
+		if (requiringClosure.size() > 0) {
 			if (commandOptions.isRefreshOnUpdate()) {
-				refresh(bundleClosure, new SubProgressMonitor(monitor, 1));
+				refresh(requiringClosure, new SubProgressMonitor(monitor, 1));
 			} else {
-				Collection<Bundle> notResolvedBundles = resolve(bundleClosure, new SubProgressMonitor(
+				Collection<Bundle> notResolvedBundles = resolve(requiringClosure, new SubProgressMonitor(
 						monitor, 1));
 				if (notResolvedBundles.size() > 0) {
 					// This should include dependency closures, so no dependent bundles should be started
@@ -276,44 +225,105 @@ public class UpdateJob extends BundleJob implements Update {
 		if (monitor.isCanceled()) {
 			throw new OperationCanceledException();
 		}
-		// (9) Start all bundles stopped in (4)
+		// (7) Start bundles stopped in (3)
 		start(bundlesToRestart, Closure.PROVIDING, new SubProgressMonitor(monitor, 1));
+		// (8) Restore any transition errors detected by update (4)
+		restoreStatus(errorStatusList);
+		return getLastErrorStatus();
+	}
 
-		// (10) Restore any transition errors from before update
-		// Successful start operations removes the error transition added when updated.
-		// Add the error transition to bundles that failed to be updated.
-		if (errorStatusList.size() > 0) {
-			IBundleStatus status = null;
-			for (IBundleStatus bundleError : errorStatusList) {
-				Bundle bundle = bundleError.getBundle();
-				if (null != bundle) {
-					try {
-						IProject project = bundleRegion.getProject(bundle);
-						Throwable updExp = bundleError.getException();
-						if (null != updExp && updExp instanceof DuplicateBundleException) {
-							bundleTransition.setTransitionError(project, TransitionError.DUPLICATE);
-						} else {
-							bundleTransition.setTransitionError(project);
-						}
-					} catch (ProjectLocationException e) {
-						if (null == status) {
-							String msg = ExceptionMessage.getInstance()
-									.formatString("error_setting_bundle_error");
-							status = new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, msg, null);
-						}
-						IProject project = bundleRegion.getProject(bundle);
-						if (null != project) {
-							status.add(new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, project, project
-									.getName(), e));
-						}
-					}
-				}
-			}
-			if (null != status) {
-				addStatus(status);
+	/**
+	 * Identify bundle projects to update based on the current set of pending bundle projects added to
+	 * this job and calculate and return the requiring (update) closure of those bundle projects.
+	 * 
+	 * The new set of bundle projects to update may be equal, a sub set or super set within the
+	 * specified domain of the current set of bundle projects to update. Identified bundle projects to
+	 * update are synchronized with the current set of pending bundle projects already added to this
+	 * job. The resulting set of pending bundle projects to update is a subset of the requiring
+	 * (update) closure within the specified domain of bundle projects.
+	 * <p>
+	 * Only bundles tagged with {@code Transition#UPDATE} are added. The current set of pending
+	 * projects may be empty and it is assumed that any pending projects in the set are tagged with
+	 * {@code Transition#UPDATE}.
+	 * <p>
+	 * The following steps are executed to collect bundle projects to update:
+	 * <ol>
+	 * <li>Get all pending projects already added to this job.
+	 * <li>If auto build has been switched off and than switched on again between two update jobs; -
+	 * include all bundles that have been built.
+	 * <li>If the "Refresh on Update" option is on, all requiring bundles tagged for update to the
+	 * bundles to update are added to the list of bundles to update
+	 * <li>Duplicate workspace bundles and their requiring bundles to bundles to update are added to
+	 * requiring closure (see below) of the set of bundles to update (they are in one way dependent of
+	 * each other and have to be resolved)
+	 * <li>Any bundles to update and their requiring bundles that are duplicates of external bundles
+	 * are removed for the list of bundles to update
+	 * </ol>
+	 * After the set of bundle projects to update are collected, the requiring closure of those bundle
+	 * projects are calculated and returned. The requiring closures is the set of activated bundles
+	 * that require capabilities from the bundle projects to update.
+	 * 
+	 * @param domain The domain or scope of the the computed requiring closure. The domain of
+	 * activated bundle projects in the workspace region to consider when calculating the requiring
+	 * closure of the bundle projects to update
+	 * @return The requiring (update) closure of the set of identified bundle projects to update
+	 */
+	private Collection<Bundle> getUpdateClosure(final Collection<Bundle> domain) {
+
+		// The calculated requiring closure based on identified bundle projects to update
+		Collection<Bundle> requiringClosure = null;
+		// The initial set of bundle projects to update
+		Collection<Bundle> bundlesToUpdate = bundleRegion.getBundles(getPendingProjects());
+		// If auto build has been switched off and than switched on, include all bundle projects that
+		// have been built
+		if (bundleRegion.isAutoBuildActivated(true)) {
+			Collection<Bundle> pendingBundles = bundleTransition.getPendingBundles(domain,
+					Transition.UPDATE);
+			pendingBundles.removeAll(bundlesToUpdate);
+			if (pendingBundles.size() > 0) {
+				bundlesToUpdate.addAll(pendingBundles);
+				addPendingProjects(bundleRegion.getProjects(pendingBundles));
 			}
 		}
-		return getLastErrorStatus();
+		Collection<Bundle> installedBundles = bundleRegion.getBundles(domain, Bundle.INSTALLED);
+		if (commandOptions.isRefreshOnUpdate()) {
+			// Get the requiring closure of bundles to update. Any bundles in the domain
+			// with the same symbolic name as in the requiring closure are added to the
+			// requiring closure (required by the resolver). Duplicates are reported by update
+			requiringClosure = getRequiringClosure(bundlesToUpdate, domain);
+			// Get all activated bundles in state installed and their requiring bundles
+			installedBundles.removeAll(requiringClosure);
+			if (installedBundles.size() > 0) {
+				BundleSorter bs = new BundleSorter();
+				Collection<Bundle> installedClosure = bs.sortDeclaredRequiringBundles(installedBundles,
+						domain);
+				requiringClosure.addAll(installedClosure);
+			}
+		} else {
+			// The closure will be bound to the previous revision of the bundles to update and resolve
+			requiringClosure = new LinkedHashSet<>(bundlesToUpdate);
+			installedBundles.removeAll(requiringClosure);
+			// Add all activated bundles in state installed to the closure
+			requiringClosure.addAll(installedBundles);
+		}
+		
+		//Get the latest updated version of a coherent set (closure) of running bundles to update
+		Collection<Bundle> pendingBundles = bundleTransition.getPendingBundles(requiringClosure,
+				Transition.UPDATE);
+		pendingBundles.removeAll(bundlesToUpdate);
+		if (pendingBundles.size() > 0) {
+			addPendingProjects(bundleRegion.getProjects(pendingBundles));
+		}
+
+		// Remove workspace bundles and their requiring bundle projects that are duplicates of external bundles
+		Collection<IProject> duplicateProjects = getExternalDuplicateClosures(getPendingProjects(),
+				currentExternalInstance);
+		if (null != duplicateProjects) {
+			// There are no requiring closures on workspace bundles from external bundles
+			removePendingProjects(duplicateProjects);
+			requiringClosure.removeAll(bundleRegion.getBundles(duplicateProjects));
+		}
+		return requiringClosure;
 	}
 
 	/**
@@ -348,7 +358,7 @@ public class UpdateJob extends BundleJob implements Update {
 					}
 					statusList.add(result);
 				} catch (InPlaceException e) {
-					IBundleStatus result = addError(e, e.getLocalizedMessage(), bundle);
+					IBundleStatus result = addError(e, e.getMessage(), bundle);
 					if (null == statusList) {
 						statusList = new LinkedHashSet<IBundleStatus>();
 					}
@@ -363,63 +373,6 @@ public class UpdateJob extends BundleJob implements Update {
 		} else {
 			return statusList;
 		}
-	}
-
-	private static String currentExternalInstance = ErrorMessage.getInstance().formatString(
-			"current_revision_of_jar_duplicate");
-	private static String currentWorkspaceInstance = ErrorMessage.getInstance().formatString(
-			"current_revision_of_ws_duplicate");
-
-	private void removeDuplicates(Collection<IProject> projectsToUpdate,
-			Collection<Bundle> bundlesToUpdate, Collection<Bundle> bDepClosures)
-			throws OperationCanceledException {
-
-		Collection<IProject> duplicateProjects = removeExternalDuplicates(projectsToUpdate,
-				bDepClosures, currentExternalInstance);
-		if (null != duplicateProjects) {
-			bundlesToUpdate.removeAll(bundleRegion.getBundles(duplicateProjects));
-		}
-		// TODO detected by the update operation. do some more testing here
-		// duplicateProjects = removeWorkspaceDuplicates(projectsToUpdate, bDepClosures, null,
-		// BundleProjectCandidatesImpl.INSTANCE.getInstallableProjects(),
-		// currentWorkspaceInstance);
-		// if (null != duplicateProjects) {
-		// bundlesToUpdate.removeAll(bundleRegion.getBundles(duplicateProjects));
-		// }
-	}
-
-	/**
-	 * Formats and log exceptions specified in the status list. Removes all bundles and their
-	 * requiring bundles with an update exception from being refreshed by removing them from the
-	 * specified bundles to refresh
-	 * 
-	 * @param errorStatusList bundles with an status object to remove from bundles to refresh
-	 * @param bundlesTorRefresh is the bundles to refresh
-	 */
-	private void handleUpdateExceptions(Collection<IBundleStatus> errorStatusList,
-			Collection<Bundle> bundlesTorRefresh) {
-
-		Collection<Bundle> bundles = new LinkedHashSet<Bundle>();
-		if (errorStatusList.size() > 0) {
-			for (IBundleStatus bundleStatus : errorStatusList) {
-				Bundle bundle = bundleStatus.getBundle();
-				if (null != bundle) {
-					BundleSorter bs = new BundleSorter();
-					Collection<Bundle> affectedBundles = bs.sortDeclaredRequiringBundles(
-							Collections.singleton(bundle), bundlesTorRefresh);
-					bundles.addAll(affectedBundles);
-				}
-			}
-			bundlesTorRefresh.removeAll(bundles);
-		}
-	}
-
-	public Collection<IProject> getUpdateOrder() throws ExtenderException {
-		Collection<Bundle> pendingBundles = bundleTransition.getPendingBundles(bundleRegion.getActivatedBundles(),
-				Transition.UPDATE);
-		Collection<Bundle> orderedBundles = getUpdateOrder(pendingBundles, false);
-		Collection<IProject> orderedProjects = bundleRegion.getProjects(orderedBundles);
-		return orderedProjects;
 	}
 
 	/**
@@ -437,15 +390,11 @@ public class UpdateJob extends BundleJob implements Update {
 	 * @param bundlesToUpdate collection of bundles to update
 	 * @param reportCollisions if true an error status is added to the update executor if the are any
 	 * name conflicts. if false collisions are detected but no error status object is added.
-	 * @return ordered collection of bundles to update
-	 * throws ExtenderException If failing to get the bundle region service
+	 * @return An ordered collection of bundles to update
 	 */
-	public Collection<Bundle> getUpdateOrder(Collection<Bundle> bundlesToUpdate,
+	private Collection<Bundle> getUpdateOrder(Collection<Bundle> bundlesToUpdate,
 			boolean reportCollisions) throws ExtenderException {
 
-		if (null == bundleRegion) {
-			bundleRegion = Activator.getBundleRegionService();
-		}
 		ArrayList<Bundle> sortedBundlesToUpdate = new ArrayList<Bundle>();
 		Map<String, IProject> projectKeysMap = new HashMap<String, IProject>();
 		IBundleStatus status = null;
@@ -494,22 +443,147 @@ public class UpdateJob extends BundleJob implements Update {
 		return sortedBundlesToUpdate;
 	}
 
+	/**
+	 * Removes all bundles in the specified error status list and their requiring bundles from the
+	 * specified bundles to refresh out parameter
+	 * 
+	 * @param errorStatusList Status objects for error bundles to remove from bundles to refresh
+	 * @param bundlesTorRefresh A non-null out parameter where any error bundles and their requiring
+	 * bundles found in the error status list parameter are removed
+	 */
+	private void handleUpdateExceptions(Collection<IBundleStatus> errorStatusList,
+			Collection<Bundle> bundlesTorRefresh) {
+
+		if (errorStatusList.size() > 0) {
+			Collection<Bundle> bundles = new LinkedHashSet<Bundle>();
+			for (IBundleStatus bundleStatus : errorStatusList) {
+				Bundle bundle = bundleStatus.getBundle();
+				if (null != bundle) {
+					BundleSorter bs = new BundleSorter();
+					Collection<Bundle> affectedBundles = bs.sortDeclaredRequiringBundles(
+							Collections.singleton(bundle), bundlesTorRefresh);
+					bundles.addAll(affectedBundles);
+				}
+			}
+			bundlesTorRefresh.removeAll(bundles);
+		}
+	}
+
+	private Collection<Bundle> getActivatedInstalledClosure(Collection<Bundle> requiringClosure,
+			Collection<Bundle> activatedBundles) {
+
+		Collection<Bundle> installedClosure;
+		Collection<Bundle> installedBundles = bundleRegion.getBundles(activatedBundles,
+				Bundle.INSTALLED);
+		installedBundles.removeAll(requiringClosure);
+		if (installedBundles.size() > 0) {
+			BundleSorter bs = new BundleSorter();
+			installedClosure = bs.sortDeclaredRequiringBundles(installedBundles, activatedBundles);
+			return installedClosure;
+		}
+		return Collections.<Bundle> emptySet();
+	}
+
+	/**
+	 * Restore any transition errors on bundles detected by update.
+	 * <P>
+	 * Successful start operations removes the error transition added when bundles were updated.
+	 * 
+	 * @param errorStatusList List of error status objects of bundles that failed to be updated
+	 */
+	private void restoreStatus(Collection<IBundleStatus> errorStatusList) {
+
+		if (errorStatusList.size() > 0) {
+			IBundleStatus status = null;
+			for (IBundleStatus bundleError : errorStatusList) {
+				Bundle bundle = bundleError.getBundle();
+				if (null != bundle) {
+					try {
+						IProject project = bundleRegion.getProject(bundle);
+						Throwable updExp = bundleError.getException();
+						if (null != updExp && updExp instanceof DuplicateBundleException) {
+							bundleTransition.setTransitionError(project, TransitionError.DUPLICATE);
+						} else {
+							bundleTransition.setTransitionError(project);
+						}
+					} catch (ProjectLocationException e) {
+						if (null == status) {
+							String msg = ExceptionMessage.getInstance()
+									.formatString("error_setting_bundle_error");
+							status = new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, msg, null);
+						}
+						IProject project = bundleRegion.getProject(bundle);
+						if (null != project) {
+							status.add(new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, project,
+									project.getName(), e));
+						}
+					}
+				}
+			}
+			if (null != status) {
+				addStatus(status);
+			}
+		}
+	}
+
+	@Override
 	public void addUpdateTransition(Collection<IProject> projects) throws ExtenderException {
 
-		if (null == bundleTransition) {
-			bundleTransition = Activator.getBundleTransitionService();
-		}
+		bundleTransition = Activator.getBundleTransitionService();
 		for (IProject project : projects) {
 			bundleTransition.addPending(project, Transition.UPDATE);
 		}
 	}
 
+	@Override
+	public void addUpdateTransition(IProject project) throws ExtenderException {
+
+		bundleTransition = Activator.getBundleTransitionService();
+		bundleTransition.addPending(project, Transition.UPDATE);
+	}
+
+	@Override
 	public boolean isPendingForUpdate(IProject project) throws ExtenderException {
 
-		if (null == bundleTransition) {
-			bundleTransition = Activator.getBundleTransitionService();
-		}
+		bundleTransition = Activator.getBundleTransitionService();
 		return bundleTransition.containsPending(project, Transition.UPDATE, false);
+	}
+
+	@Override
+	public Collection<IProject> getRequiringUpdateClosure() {
+
+		initServices();
+		Collection<IProject> pendingProjectsCopy = new LinkedHashSet<>(getPendingProjects());
+		Collection<Bundle> bundles = getUpdateClosure(bundleRegion.getActivatedBundles());
+		resetPendingProjects(pendingProjectsCopy);
+		return bundleRegion.getProjects(bundles);
+	}
+
+	@Override
+	public Collection<IProject> getBundlesToUpdate() {
+
+		initServices();
+		Collection<IProject> pendingProjectsCopy = new LinkedHashSet<>(getPendingProjects());
+		getUpdateClosure(bundleRegion.getActivatedBundles());
+		Collection<IProject> resultSet = new LinkedHashSet<>(getPendingProjects());
+		resetPendingProjects(pendingProjectsCopy);
+		return resultSet;
+	}
+
+	public boolean canUpdate(IProject project) throws ExtenderException {
+
+		return UpdateScheduler.addProjectToUpdateJob(project, null);
+	}
+	
+	@Override
+	public Collection<IProject> getUpdateOrder() throws ExtenderException {
+
+		initServices();
+		Collection<Bundle> pendingBundles = bundleTransition.getPendingBundles(
+				bundleRegion.getActivatedBundles(), Transition.UPDATE);
+		Collection<Bundle> orderedBundles = getUpdateOrder(pendingBundles, false);
+		Collection<IProject> orderedProjects = bundleRegion.getProjects(orderedBundles);
+		return orderedProjects;
 	}
 
 	/**
