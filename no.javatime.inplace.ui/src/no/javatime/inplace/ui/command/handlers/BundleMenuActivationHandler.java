@@ -248,9 +248,11 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 			if (resourceState.saveModifiedResources()) {
 				updateExt = Activator.getTracker().getExtension(Update.class.getName());
 				Update update = updateExt.getTrackedService();
-				if (dirtyProjects.size() > 0 && Activator.getCommandOptionsService().isUpdateOnBuild()
+				if (dirtyProjects.size() > 0 
 						&& Activator.getBundleProjectCandidatesService().isAutoBuilding()) {
-					updateProjects.removeAll(dirtyProjects);
+					if (Activator.getCommandOptionsService().isUpdateOnBuild()) {
+						updateProjects.removeAll(dirtyProjects);
+					}
 					// Update built projects first
 					resourceState.waitOnBuilder(false);
 				}

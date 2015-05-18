@@ -63,6 +63,7 @@ public abstract class BundleCommandsContributionItems extends CompoundContributi
 	public final static String refreshParamId = "Refresh"; //$NON-NLS-1$
 	public final static String refreshPendingParamId = "Refresh Pending"; //$NON-NLS-1$
 	public final static String updateParamId = "Update"; //$NON-NLS-1$
+	public final static String updatePendingParamId = "Update Pending"; //$NON-NLS-1$
 	public final static String startParamId = "Start"; //$NON-NLS-1$
 	public final static String stopParamId = "Stop"; //$NON-NLS-1$
 	public final static String resetParamId = "Reset"; //$NON-NLS-1$

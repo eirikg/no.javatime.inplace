@@ -260,7 +260,7 @@ public class BundlePopUpCommandsContributionItems extends BundleCommandsContribu
 	private CommandContributionItem addUpdate(Boolean activated, IProject project, Bundle bundle) {
 
 		if (null != bundle && activated) {
-			return createContibution(menuId, dynamicPopUpCommandId, updateParamId, updateParamId,
+			return createContibution(menuId, dynamicPopUpCommandId, "Update", updatePendingParamId,
 					CommandContributionItem.STYLE_PUSH, updateImage);
 		}
 		return null;

@@ -75,6 +75,7 @@ public class BundleMainCommandsContributionItems extends BundleCommandsContribut
 				contribute(addRefreshPending(activatedProjects, bundleRegion, bundleCommand), contributions);
 				contribute(addRefresh(activatedProjects), contributions);
 				contribute(addReset(activatedProjects), contributions);
+				contribute(addUpdate(activatedProjects), contributions);
 			}
 		} catch (InPlaceException | ExtenderException e) {
 			StatusManager.getManager()
@@ -245,7 +246,7 @@ public class BundleMainCommandsContributionItems extends BundleCommandsContribut
 			}
 			if (nUpdate > 0) {
 				String updateLabel = formatLabel("Update", nUpdate, Boolean.TRUE);
-				return createContibution(menuId, dynamicMainCommandId, updateLabel, updateParamId,
+				return createContibution(menuId, dynamicMainCommandId, updateLabel, updatePendingParamId,
 						CommandContributionItem.STYLE_PUSH, updateImage);
 			}
 		}
@@ -328,6 +329,24 @@ public class BundleMainCommandsContributionItems extends BundleCommandsContribut
 			String resetLabel = "Reset Workspace";
 			return createContibution(menuId, dynamicMainCommandId, resetLabel, resetParamId,
 					CommandContributionItem.STYLE_PUSH, resetImage);
+		}
+		return null;
+	}
+
+	/**
+	 * Adds a contribution to reset all activated bundle projects.
+	 * 
+	 * @param activatedProjects Activated projects to reset. Must not be null
+	 * 
+	 * @return a contribution to reset the specified activated projects or null if no activated
+	 * projects specified
+	 */
+	private CommandContributionItem addUpdate(Collection<IProject> activatedProjects) {
+
+		if (activatedProjects.size() > 0) {
+			String updateLabel = "Update Workspace";
+			return createContibution(menuId, dynamicMainCommandId, updateLabel, updateParamId,
+					CommandContributionItem.STYLE_PUSH, updateImage);
 		}
 		return null;
 	}

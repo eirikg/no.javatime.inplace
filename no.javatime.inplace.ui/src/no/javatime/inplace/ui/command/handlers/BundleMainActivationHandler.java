@@ -104,11 +104,14 @@ public class BundleMainActivationHandler extends BundleMenuActivationHandler {
 					refreshHandler(region.getProjects(refreshProjects));
 				}
 				break;
-			case BundleCommandsContributionItems.updateParamId:
+			case BundleCommandsContributionItems.updatePendingParamId:
 				Collection<IProject> projectsToUpdate = 
 						Activator.getBundleTransitionService().getPendingProjects(region.getActivatedProjects(), 
 						BundleTransition.Transition.UPDATE);			
 				updateHandler(projectsToUpdate);
+				break;
+			case BundleCommandsContributionItems.updateParamId:
+				updateHandler(region.getActivatedProjects());
 				break;
 			case BundleCommandsContributionItems.resetParamId:
 				resetHandler(projectCandidates.getInstallable());

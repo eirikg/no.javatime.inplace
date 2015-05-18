@@ -89,7 +89,7 @@ public class BundlePopUpActivationHandler extends BundleMenuActivationHandler im
 			case BundleCommandsContributionItems.refreshParamId:
 				refreshHandler(Collections.<IProject>singletonList(project));
 				break;
-			case BundleCommandsContributionItems.updateParamId:
+			case BundleCommandsContributionItems.updatePendingParamId:
 				updateHandler(Collections.<IProject>singletonList(project));
 				break;
 			case BundleCommandsContributionItems.resetParamId:
