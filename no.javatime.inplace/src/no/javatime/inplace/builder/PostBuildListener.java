@@ -223,7 +223,7 @@ public class PostBuildListener implements IResourceChangeListener {
 			ActivateBundle postActivateBundle = addBuiltProjects(update, activateBundle);
 			execute(addBundleProject, uninstall, install, deactivate, activateBundle, update,
 					postActivateBundle);
-		} catch (ExtenderException e) {
+		} catch (ExtenderException | InPlaceException e) {
 			StatusManager.getManager().handle(
 					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),
 					StatusManager.LOG);
