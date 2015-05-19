@@ -122,12 +122,13 @@ public class WorkspaceRegionImpl implements BundleRegion {
 
 	@Override
 	public IProject getProject(Bundle bundle) {
-		if (null == bundle || projectNodes.size() == 0) {
-			return null;
-		}
+
 		BundleNode node = getNode(bundle);
 		if (null != node) {
 			return node.getProject();
+		}
+		if (null == bundle || projectNodes.size() == 0) {
+			return null;
 		}
 		IPath bundlePathLoc = new Path(bundle.getLocation());
 		for (IProject project : projectNodes.keySet()) {

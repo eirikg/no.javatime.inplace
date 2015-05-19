@@ -52,6 +52,7 @@ import org.eclipse.core.resources.WorkspaceJob;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.core.runtime.SubProgressMonitor;
@@ -441,27 +442,28 @@ public class BundleJob extends JobStatus implements BundleExecutor {
 		
 		return Activator.getBundleRegionService().isRegionStateChanging();
 	}
+	
+	@Override
+	public boolean stopCurrentOperation() throws ExtenderException {
+		initServices();
+		return stopBundleOperation(new NullProgressMonitor());
+	}
 
 	/**
 	 * Stop the current start or stop bundle operation
 	 * 
 	 * @throws ExtenderException if failing to get the bundle command, transition, region and/or the options service
 	 */
-	@Override
-	public boolean stopBundleOperation(IProgressMonitor monitor) throws ExtenderException {
+	protected boolean stopBundleOperation(IProgressMonitor monitor) throws ExtenderException {
 
 		boolean stopped = false;
-		DeactivateJob deactivateTask = null;
 		if (getState() != Job.RUNNING) {
 			return stopped;
 		}		
 		Bundle bundle = bundleRegion.isRegionStateChanging();
 		String threadName = null;
+		boolean isTimeOut = commandOptions.isTimeOut();
 		if (null != bundle) {
-			if (commandOptions.isDeactivateOnTerminate() && null == deactivateTask) {
-				deactivateTask = new DeactivateJob(DeactivateJob.deactivateJobName);
-				deactivateTask.addPendingProject(bundleRegion.getProject(bundle));
-			}
 			Thread thread = BundleThread.getThread(bundle);
 			if (null != thread) {
 				threadName = thread.getName();
@@ -471,7 +473,7 @@ public class BundleJob extends JobStatus implements BundleExecutor {
 					String msg = NLS.bind(Msg.THREAD_BLOCKED_INFO, threadName);
 					IBundleStatus status = new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, bundle, msg,
 							null);
-					if (commandOptions.isTimeOut()) {
+					if (isTimeOut) {
 						addStatus(status);
 					} else {
 						StatusManager.getManager().handle(status, StatusManager.LOG);
@@ -480,7 +482,7 @@ public class BundleJob extends JobStatus implements BundleExecutor {
 					String msg = NLS.bind(Msg.THREAD_WAITING_INFO, threadName);
 					IBundleStatus status = new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, bundle, msg,
 							null);
-					if (commandOptions.isTimeOut()) {
+					if (isTimeOut) {
 						addStatus(status);
 					} else {
 						StatusManager.getManager().handle(status, StatusManager.LOG);
@@ -491,66 +493,30 @@ public class BundleJob extends JobStatus implements BundleExecutor {
 				String msg = NLS.bind(Msg.FAILED_TO_GET_THREAD_INFO, bundle, transitioNname);
 				IBundleStatus status = new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, bundle, msg,
 						null);
-				if (commandOptions.isTimeOut()) {
+				if (isTimeOut) {
 					addStatus(status);
 				} else {
 					StatusManager.getManager().handle(status, StatusManager.LOG);
 				}
-			}
-		} else {
-			IBundleStatus status = new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, bundle,
-					Msg.NO_TASK_TO_STOP_INFO, null);
-			if (commandOptions.isTimeOut()) {
-				addStatus(status);
-			} else {
-				StatusManager.getManager().handle(status, StatusManager.LOG);
-			}
-		}
-
-		if (null != threadName) {
-			if (null != deactivateTask) {
-				try {
-					if (commandOptions.isDeactivateOnTerminate()) {
-						deactivateTask.deactivate(monitor);
-						if (commandOptions.isTimeOut()) {
-							String msg = NLS.bind(Msg.DEACTIVATING_AFTER_TIMEOUT_STOP_TASK_INFO, bundle,
-									threadName);
-							addStatus(new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, bundle, msg, null));
-						} else {
-							String msg = NLS.bind(Msg.DEACTIVATING_MANUAL_STOP_TASK_INFO, bundle, threadName);
-							StatusManager.getManager().handle(
-									new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, bundle, msg, null),
-									StatusManager.LOG);
-						}
-					}
-				} catch (InPlaceException e) {
-					IBundleStatus status = new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, bundle,
-							e.getMessage(), e);
-					if (commandOptions.isTimeOut()) {
-						addStatus(status);
-					} else {
-						StatusManager.getManager().handle(status, StatusManager.LOG);
-					}
-				} catch (InterruptedException e) {
-					IBundleStatus status = new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, bundle,
-							e.getMessage(), e);
-					if (commandOptions.isTimeOut()) {
-						addStatus(status);
-					} else {
-						StatusManager.getManager().handle(status, StatusManager.LOG);
-					}
-				} catch (OperationCanceledException e) {
-					IBundleStatus status = new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, bundle,
-							e.getMessage(), e);
-					if (commandOptions.isTimeOut()) {
-						addStatus(status);
-					} else {
-						StatusManager.getManager().handle(status, StatusManager.LOG);
-					}
+			}			
+			// Deactivate bundle after stopping the bundle operation
+			if (commandOptions.isDeactivateOnTerminate()) {
+				DeactivateJob deactivateTask = 
+						new DeactivateJob(Msg.DEACTIVATE_AFTER_STOP_OP_JOB, bundleRegion.getProject(bundle));
+				Activator.getBundleExecutorEventService().add(deactivateTask);
+				if (isTimeOut) {
+					String msg = NLS.bind(Msg.DEACTIVATING_AFTER_TIMEOUT_STOP_TASK_INFO, bundle,
+							threadName);
+					addStatus(new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, bundle, msg, null));
+				} else {
+					String msg = NLS.bind(Msg.DEACTIVATING_MANUAL_STOP_TASK_INFO, bundle, threadName);
+					StatusManager.getManager().handle(
+							new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, bundle, msg, null),
+							StatusManager.LOG);
 				}
 			} else {
 				String transitionName = bundleTransition.getTransitionName(bundleRegion.getProject(bundle));
-				if (commandOptions.isTimeOut()) {
+				if (isTimeOut) {
 					String msg = NLS.bind(Msg.AFTER_TIMEOUT_STOP_TASK_INFO, new Object[] { bundle,
 							threadName, transitionName });
 					addStatus(new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, bundle, msg, null));
@@ -561,6 +527,14 @@ public class BundleJob extends JobStatus implements BundleExecutor {
 							new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, bundle, msg, null),
 							StatusManager.LOG);
 				}
+			}
+		} else {
+			IBundleStatus status = new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, bundle,
+					Msg.NO_TASK_TO_STOP_INFO, null);
+			if (isTimeOut) {
+				addStatus(status);
+			} else {
+				StatusManager.getManager().handle(status, StatusManager.LOG);
 			}
 		}
 		return stopped;

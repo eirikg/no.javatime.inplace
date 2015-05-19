@@ -104,7 +104,9 @@ public class ActionSetContexts implements IContextManagerListener, IExtensionCha
 	}
 
 	public void dispose() {
-		contextService.removeContextManagerListener(this);
+		if (null != contextService) {
+			contextService.removeContextManagerListener(this);
+		}
 	}
 
 	/**

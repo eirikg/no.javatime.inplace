@@ -61,6 +61,7 @@ public class Msg extends NLS {
   public static String UPDATE_BUNDLE_CLASS_PATH_JOB; 
   public static String REMOVE_BUNDLE_PROJECT_JOB;
   public static String ADD_BUNDLE_PROJECT_JOB;
+  public static String DEACTIVATE_AFTER_STOP_OP_JOB;
   
 	// Errors
 	public static String BEGIN_SHUTDOWN_ERROR;

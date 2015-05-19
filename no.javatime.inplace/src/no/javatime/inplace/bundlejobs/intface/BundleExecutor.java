@@ -9,7 +9,6 @@ import no.javatime.inplace.region.status.IBundleStatus;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.WorkspaceJob;
-import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.jobs.IJobManager;
 import org.eclipse.core.runtime.jobs.Job;
 import org.osgi.framework.Bundle;
@@ -116,12 +115,11 @@ public interface BundleExecutor {
 	 * the operation is aborted the state and transition (operation) is rolled back to the state it
 	 * had before the transition was issued.
 	 * 
-	 * @param monitor This is a short operation. A null progress monitor object may be used
 	 * @return If the operation was stopped return true, otherwise false
 	 * @throws ExtenderException if failing to get the required bundle service(s)
 	 * @see #isStateChanging()
 	 */
-	public boolean stopBundleOperation(IProgressMonitor monitor) throws ExtenderException;
+	public boolean stopCurrentOperation() throws ExtenderException;
 
 	/**
 	 * Add a pending bundle project to execute by this bundle service

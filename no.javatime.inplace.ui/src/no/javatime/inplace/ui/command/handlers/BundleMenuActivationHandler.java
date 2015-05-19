@@ -46,7 +46,6 @@ import org.eclipse.core.commands.Command;
 import org.eclipse.core.commands.State;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.ui.IPackagesViewPart;
@@ -339,7 +338,8 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 	 * If the option for terminating endless start and stop operations is set to time out, the
 	 * operation will be terminated automatically on time out
 	 * 
-	 * @throws ExtenderException if failing to get the stop or command options service
+	 * @throws ExtenderException if failing to get the command options service
+	 * @throws InPlaceException if failing to get the stop operation
 	 */
 	protected void stopOperationHandler() throws ExtenderException, InPlaceException {
 
@@ -350,7 +350,7 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 				public void run() {
 					BundleExecutor executor = resourceState.getRunningBundleJob();
 					if (null != executor && null != executor.isStateChanging()) {
-						executor.stopBundleOperation(new NullProgressMonitor());
+						executor.stopCurrentOperation();
 					}
 				}
 			});
