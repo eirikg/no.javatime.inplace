@@ -1,6 +1,6 @@
 Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
-Bundle-Name: Region
+Bundle-Name: InPlace Bundle Project Region
 Bundle-SymbolicName: no.javatime.inplace.region
 Bundle-Version: 0.1.4.qualifier
 Bundle-Activator: no.javatime.inplace.region.Activator
@@ -38,3 +38,4 @@ Export-Package: no.javatime.inplace.region.closure;
    no.javatime.inplace.region.manager,
    org.eclipse.core.resources,
    org.osgi.framework"
+Bundle-Vendor: JavaTime Project

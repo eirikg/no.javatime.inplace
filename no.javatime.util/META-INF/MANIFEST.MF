@@ -7,10 +7,10 @@ Export-Package: no.javatime.util.messages;
    org.eclipse.swt.graphics,
    org.eclipse.swt.widgets",
  no.javatime.util.view
-Bundle-Vendor: JavaTime
+Bundle-Vendor: JavaTime Project
 Bundle-ActivationPolicy: lazy
 Bundle-Version: 0.2.1.qualifier
-Bundle-Name: JavaTime General Purpose Utilities
+Bundle-Name: JavaTime Utilities
 Bundle-Activator: no.javatime.util.Activator
 Bundle-ManifestVersion: 2
 Bundle-SymbolicName: no.javatime.util;singleton:=true

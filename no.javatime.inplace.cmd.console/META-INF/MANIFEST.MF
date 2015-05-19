@@ -1,6 +1,6 @@
 Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
-Bundle-Name: Bundle Project Command Provider
+Bundle-Name: InPlace Command Provider
 Command-Provider: Bundle Project Command Provider
 Bundle-SymbolicName: no.javatime.inplace.cmd.console
 Bundle-Version: 0.1.1.qualifier
@@ -18,4 +18,5 @@ Import-Package: no.javatime.inplace.bundlejobs.intface,
  no.javatime.inplace.region.status,
  org.eclipse.osgi.framework.console,
  org.osgi.framework
+Bundle-Vendor: JavaTime Project
 

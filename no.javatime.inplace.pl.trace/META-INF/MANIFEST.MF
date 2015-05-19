@@ -1,10 +1,10 @@
 Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
-Bundle-Name: Command Trace
+Bundle-Name: InPlace Log Viewer
 Bundle-SymbolicName: no.javatime.inplace.log;singleton:=true
 Bundle-Version: 0.1.2.qualifier
 Bundle-Activator: no.javatime.inplace.log.Activator
-Bundle-Vendor: JavaTime
+Bundle-Vendor: JavaTime Project
 BundleLog-Service: no.javatime.inplace.log.impl.BundleLogimpl
 BundleLog-View-Service: no.javatime.inplace.log.impl.BundleLogViewImpl
 Require-Bundle: org.eclipse.core.runtime,

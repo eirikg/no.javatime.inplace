@@ -1,6 +1,6 @@
 Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
-Bundle-Name: Preferences Store
+Bundle-Name: InPlace Preference Store
 Bundle-SymbolicName: no.javatime.inplace.dl.preferences
 Bundle-Version: 0.1.3.qualifier
 Bundle-Activator: no.javatime.inplace.dl.preferences.Activator
@@ -16,3 +16,4 @@ Command-Options-Service: no.javatime.inplace.dl.preferences.impl.CommandOptionsI
 Dependency-Options-Service: no.javatime.inplace.dl.preferences.impl.DependencyOptionsImpl
 Message-Options-Service: no.javatime.inplace.dl.preferences.impl.MessageOptionsImpl
 Service-Component: OSGI-INF/preferences.xml
+Bundle-Vendor: JavaTime Project

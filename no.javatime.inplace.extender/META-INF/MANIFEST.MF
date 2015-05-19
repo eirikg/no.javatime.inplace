@@ -1,10 +1,10 @@
 Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
-Bundle-Name: Extender
+Bundle-Name: InPlace Service Extender
 Bundle-SymbolicName: no.javatime.inplace.extender
 Bundle-Version: 0.1.2.qualifier
 Bundle-Activator: no.javatime.inplace.extender.Activator
-Bundle-Vendor: Lingo as
+Bundle-Vendor: JavaTime Project
 Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Import-Package: org.eclipse.osgi.framework.util,
  org.eclipse.osgi.util;version="1.1.0",
