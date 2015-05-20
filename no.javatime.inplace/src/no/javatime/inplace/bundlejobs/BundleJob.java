@@ -237,7 +237,7 @@ public class BundleJob extends JobStatus implements BundleExecutor {
 	 * manually)
 	 * @throws InPlaceException illegal closure for activate bundle operation
 	 */
-	public IBundleStatus start(Collection<Bundle> bundles, Closure closure, IProgressMonitor monitor)
+	protected IBundleStatus start(Collection<Bundle> bundles, Closure closure, IProgressMonitor monitor)
 			throws InterruptedException, InPlaceException {
 
 		IBundleStatus result = new BundleStatus(StatusCode.OK, Activator.PLUGIN_ID, "");
@@ -373,7 +373,7 @@ public class BundleJob extends JobStatus implements BundleExecutor {
 	 * is also interrupted if the task running the stop method is terminated abnormally (timeout or
 	 * manually)
 	 */
-	public IBundleStatus stop(Collection<Bundle> bundles, Closure closure, SubProgressMonitor monitor)
+	protected IBundleStatus stop(Collection<Bundle> bundles, Closure closure, SubProgressMonitor monitor)
 			throws CircularReferenceException, InterruptedException {
 
 		IBundleStatus result = createStatus();
@@ -848,7 +848,7 @@ public class BundleJob extends JobStatus implements BundleExecutor {
 	 * @param initialBundleSet set of bundles to remove transition errors from
 	 * @return reduced set of the specified initial set without bundles with transition errors and their providing bundles 
 	 */
-	public Collection<Bundle> removeTransitionErrorClosures(Collection<Bundle> initialBundleSet) {
+	protected Collection<Bundle> removeTransitionErrorClosures(Collection<Bundle> initialBundleSet) {
 
 		BundleSorter bs = new BundleSorter();
 		Collection<Bundle> workspaceBundles = bundleRegion.getActivatedBundles();
@@ -1023,12 +1023,12 @@ public class BundleJob extends JobStatus implements BundleExecutor {
 	 * @param duplicateProject duplicate project
 	 * @param duplicateException the duplicate exception object associated with the specified
 	 * duplicate project
-	 * @param message TODO
+	 * @param message Extra info status message. Can be null 
 	 * @return a list of duplicate tuples. Returns an empty list if no duplicates are found.
 	 * @throws CircularReferenceException if cycles are detected in the project graph
 	 * @see #getErrorStatusList()
 	 */
-	Collection<IProject> handleDuplicateException(IProject duplicateProject,
+	protected Collection<IProject> handleDuplicateException(IProject duplicateProject,
 			DuplicateBundleException duplicateException, String message)
 			throws CircularReferenceException {
 

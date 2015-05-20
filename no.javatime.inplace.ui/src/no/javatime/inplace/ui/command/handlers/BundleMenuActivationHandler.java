@@ -79,11 +79,11 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 
 		ResourceState resourceState = Activator.getResourceStateService();
 		if (resourceState.saveModifiedResources()) {
-			Extension<Install> installExt = Activator.getTracker().getExtension(Install.class.getName());
-			Install install = installExt.getTrackedService();
+			Extender<Install> installExt = Activator.getTracker().getTrackedExtender(Install.class.getName());
+			Install install = installExt.getService();
 			install.addPendingProjects(projects);
 			Activator.getBundleExecEventService().add(install);
-			installExt.closeTrackedService();
+			installExt.ungetService();
 		}
 	}
 
@@ -98,15 +98,15 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 
 		ResourceState resourceState = Activator.getResourceStateService();
 		if (resourceState.saveModifiedResources()) {
-			Extension<ActivateProject> activateProjectExt = Activator.getTracker().getExtension(
+			Extender<ActivateProject> activateProjectExt = Activator.getTracker().getTrackedExtender(
 					ActivateProject.class.getName());
-			ActivateProject activateproject = activateProjectExt.getTrackedService();
+			ActivateProject activateproject = activateProjectExt.getService();
 			if (Activator.getBundleRegionService().getActivatedProjects().size() == 0) {
 				activateproject.getJob().setName(Msg.ACTIVATE_WORKSPACE_JOB);
 			}
 			activateproject.addPendingProjects(projects);
 			Activator.getBundleExecEventService().add(activateproject);
-			activateProjectExt.closeTrackedService();
+			activateProjectExt.ungetService();
 		}
 	}
 
@@ -121,9 +121,9 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 
 		ResourceState resourceState = Activator.getResourceStateService();
 		if (resourceState.saveModifiedResources()) {
-			Extension<Deactivate> deactivateExtender = Activator.getTracker().getExtension(
+			Extender<Deactivate> deactivateExtender = Activator.getTracker().getTrackedExtender(
 					Deactivate.class.getName());
-			Deactivate deactivate = deactivateExtender.getTrackedService();
+			Deactivate deactivate = deactivateExtender.getService();
 			if (Activator.getBundleRegionService().getActivatedProjects().size() <= projects.size()) {
 				deactivate.getJob().setName(Msg.DEACTIVATE_WORKSPACE_JOB);
 			} else {
@@ -131,7 +131,7 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 			}
 			deactivate.addPendingProjects(projects);
 			Activator.getBundleExecEventService().add(deactivate);
-			deactivateExtender.closeTrackedService();
+			deactivateExtender.ungetService();
 		}
 	}
 
@@ -145,12 +145,12 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 	static public void startHandler(Collection<IProject> projects) throws ExtenderException {
 
 		if (updated()) {
-			Extension<Start> startExt = Activator.getTracker().getExtension(Start.class.getName());
-			Start start = startExt.getTrackedService();
+			Extender<Start> startExt = Activator.getTracker().getTrackedExtender(Start.class.getName());
+			Start start = startExt.getService();
 			start.addPendingProjects(projects);
 			// Put update in the job queue before starting projects
 			Activator.getBundleExecEventService().add(start);
-			startExt.closeTrackedService();
+			startExt.ungetService();
 		}
 	}
 
@@ -164,11 +164,11 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 	static public void stopHandler(Collection<IProject> projects) throws ExtenderException {
 
 		if (updated()) {
-			Extension<Stop> stopExt = Activator.getTracker().getExtension(Stop.class.getName());
-			Stop stop = stopExt.getTrackedService();
+			Extender<Stop> stopExt = Activator.getTracker().getTrackedExtender(Stop.class.getName());
+			Stop stop = stopExt.getService();
 			stop.addPendingProjects(projects);
 			Activator.getBundleExecEventService().add(stop);
-			stopExt.closeTrackedService();
+			stopExt.ungetService();
 		}
 	}
 
@@ -186,8 +186,8 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 		Collection<IProject> dirtyProjects = resourceState.getDirtyProjects();
 		// Updated dirty projects or no dirty projects to update
 		if (updated()) {
-			Extension<Refresh> refreshExt = Activator.getTracker().getExtension(Refresh.class.getName());
-			Refresh refresh = refreshExt.getTrackedService();
+			Extender<Refresh> refreshExt = Activator.getTracker().getTrackedExtender(Refresh.class.getName());
+			Refresh refresh = refreshExt.getService();
 			// Has update saved and updated dirty projects
 			if (dirtyProjects.size() > 0) {
 				// If the refresh on update option is on, the update job will refresh the bundles
@@ -215,7 +215,7 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 			if (refresh.hasPendingProjects()) {
 				Activator.getBundleExecEventService().add(refresh);
 			}
-			refreshExt.closeTrackedService();
+			refreshExt.ungetService();
 		}
 	}
 
@@ -236,17 +236,17 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 	 * @throws ExtenderException if failing to get the extender or the service for this bundle
 	 * operation
 	 */
-	static public Extension<Update> updateHandler(Collection<IProject> projects)
+	static public void updateHandler(Collection<IProject> projects)
 			throws ExtenderException {
 
-		Extension<Update> updateExt = null;
+		Extender<Update> updateExt = null;
 		if (projects.size() > 0) {
 			Collection<IProject> updateProjects = new LinkedHashSet<>(projects);
 			ResourceState resourceState = Activator.getResourceStateService();
 			Collection<IProject> dirtyProjects = resourceState.getDirtyProjects();
 			if (resourceState.saveModifiedResources()) {
-				updateExt = Activator.getTracker().getExtension(Update.class.getName());
-				Update update = updateExt.getTrackedService();
+				updateExt = Activator.getTracker().getTrackedExtender(Update.class.getName());
+				Update update = updateExt.getService();
 				if (dirtyProjects.size() > 0 
 						&& Activator.getBundleProjectCandidatesService().isAutoBuilding()) {
 					if (Activator.getCommandOptionsService().isUpdateOnBuild()) {
@@ -269,10 +269,9 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 				if (update.hasPendingProjects()) {
 					Activator.getBundleExecEventService().add(update);
 				}
-				updateExt.closeTrackedService();
+				updateExt.ungetService();
 			}
 		}
-		return updateExt;
 	}
 
 	/**
@@ -287,11 +286,11 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 
 		ResourceState resourceState = Activator.getResourceStateService();
 		if (resourceState.saveModifiedResources()) {
-			Extension<Reset> resetExt = Activator.getTracker().getExtension(Reset.class.getName());
-			Reset reset = resetExt.getTrackedService();
+			Extender<Reset> resetExt = Activator.getTracker().getTrackedExtender(Reset.class.getName());
+			Reset reset = resetExt.getService();
 			reset.addPendingProjects(projects);
 			Activator.getBundleExecEventService().add(reset);
-			resetExt.closeTrackedService();
+			resetExt.ungetService();
 		}
 	}
 
@@ -368,12 +367,12 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 
 		ResourceState resourceState = Activator.getResourceStateService();
 		if (resourceState.saveModifiedResources()) {
-			Extension<TogglePolicy> policyExt = Activator.getTracker().getExtension(
+			Extender<TogglePolicy> policyExt = Activator.getTracker().getTrackedExtender(
 					TogglePolicy.class.getName());
-			TogglePolicy policy = policyExt.getTrackedService();
+			TogglePolicy policy = policyExt.getService();
 			policy.addPendingProjects(projects);
 			Activator.getBundleExecEventService().add(policy);
-			policyExt.closeTrackedService();
+			policyExt.ungetService();
 		}
 	}
 
@@ -391,13 +390,13 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 
 		ResourceState resourceState = Activator.getResourceStateService();
 		if (resourceState.saveModifiedResources()) {
-			Extension<UpdateBundleClassPath> classPathExt = Activator.getTracker().getExtension(
+			Extender<UpdateBundleClassPath> classPathExt = Activator.getTracker().getTrackedExtender(
 					UpdateBundleClassPath.class.getName());
-			UpdateBundleClassPath classPath = classPathExt.getTrackedService();
+			UpdateBundleClassPath classPath = classPathExt.getService();
 			classPath.addPendingProjects(projects);
 			classPath.setAddToPath(addToPath);
 			Activator.getBundleExecEventService().add(classPath);
-			classPathExt.closeTrackedService();
+			classPathExt.ungetService();
 		}
 	}
 

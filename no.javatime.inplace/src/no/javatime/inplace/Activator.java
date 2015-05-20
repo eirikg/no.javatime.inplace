@@ -36,6 +36,7 @@ import no.javatime.inplace.dl.preferences.intface.MessageOptions;
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.log.intface.BundleLogException;
 import no.javatime.inplace.msg.Msg;
+import no.javatime.inplace.pl.console.intface.BundleConsoleFactory;
 import no.javatime.inplace.region.closure.BuildErrorClosure;
 import no.javatime.inplace.region.closure.BuildErrorClosure.ActivationScope;
 import no.javatime.inplace.region.closure.CircularReferenceException;
@@ -256,6 +257,18 @@ public class Activator extends AbstractUIPlugin implements BundleExecutorEventLi
 	}
 
 	/**
+	 * Return the bundle console service view
+	 * 
+	 * @return the bundle log view service
+	 * @throws ExtenderException if failing to get the extender service for the bundle console view
+	 * @throws InPlaceException if the bundle console view service returns null
+	 */
+	public static BundleConsoleFactory getBundleConsoleService() throws ExtenderException {
+
+		return extenderTracker.bundleConsoleFactoryExtender.getService(bundle);
+	}
+
+	/**
 	 * Uninstalls or deactivates (optional) all workspace bundles. Bundle closures with build errors
 	 * are deactivated. Any runtime errors are sent to error console
 	 */
@@ -263,12 +276,9 @@ public class Activator extends AbstractUIPlugin implements BundleExecutorEventLi
 
 		// Send output to standard console when shutting down
 		try {
-				// If not available, default is IDE default
-				if (null != extenderTracker.bundleConsoleFactoryExtender) {
-					extenderTracker.bundleConsoleFactoryExtender.getService(bundle).setSystemOutToIDEDefault();					
-				}
-		} catch (ExtenderException e) {
-			// Use IDE default
+			getBundleConsoleService().setSystemOutToIDEDefault();
+		} catch (ExtenderException | NullPointerException e) {
+			// Ignore and send to current setting
 		}
 		try {
 			BundleRegion bundleRegion = getBundleRegionService();

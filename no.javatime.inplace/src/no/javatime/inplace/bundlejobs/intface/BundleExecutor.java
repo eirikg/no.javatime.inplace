@@ -24,8 +24,8 @@ import org.osgi.framework.Bundle;
  * underlying workspace job of a bundle service operation with the {@link #getJob()} method.
  * <p>
  * There is a sub service interface for each bundle operation. Examples are {@link ActivateProject}
- * to activate a project and start the bundle associated with the activated project and
- * {@link ActivateBundle} to install, resolve and start an already activated project.
+ * to activate a project and {@link ActivateBundle} to install, resolve and start an activated
+ * project.
  * <p>
  * Add bundle projects to process and use other member methods, including job related methods, to
  * alter and control the state of a bundle executor before executing an operation and interrogate
@@ -183,7 +183,7 @@ public interface BundleExecutor {
 	/**
 	 * Returns all pending bundle projects to execute.
 	 * <p>
-	 * The set is unguarded (not returning a copy of the pending projects) 
+	 * The set is unguarded (not returning a copy of the pending projects)
 	 * 
 	 * @return the set of pending bundle projects or an empty set
 	 */

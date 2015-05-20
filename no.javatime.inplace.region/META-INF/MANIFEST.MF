@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: InPlace Bundle Project Region
 Bundle-SymbolicName: no.javatime.inplace.region
-Bundle-Version: 0.1.4.qualifier
+Bundle-Version: 0.1.5.qualifier
 Bundle-Activator: no.javatime.inplace.region.Activator
 Bundle-Command-Service: no.javatime.inplace.region.manager.BundleCommandImpl
 Bundle-Region-Service: no.javatime.inplace.region.manager.WorkspaceRegionImpl

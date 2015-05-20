@@ -72,10 +72,10 @@ public class BundleMainCommandsContributionItems extends BundleCommandsContribut
 				contribute(addStart(activatedProjects, bundleRegion, bundleCommand), contributions);
 				contribute(addStop(activatedProjects, bundleRegion, bundleCommand), contributions);
 				contribute(addUpdate(activatedProjects, bundleRegion), contributions);
+				contribute(addUpdate(activatedProjects), contributions);
 				contribute(addRefreshPending(activatedProjects, bundleRegion, bundleCommand), contributions);
 				contribute(addRefresh(activatedProjects), contributions);
 				contribute(addReset(activatedProjects), contributions);
-				contribute(addUpdate(activatedProjects), contributions);
 			}
 		} catch (InPlaceException | ExtenderException e) {
 			StatusManager.getManager()

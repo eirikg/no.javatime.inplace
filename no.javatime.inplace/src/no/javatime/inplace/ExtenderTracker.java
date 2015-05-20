@@ -95,7 +95,7 @@ class ExtenderTracker extends ExtenderBundleTracker {
 	@Override
 	public Collection<Extender<?>> addingBundle(Bundle bundle, BundleEvent event) throws ExtenderException {
 
-		if (!getFilter(bundle)) {
+		if (!getFilter(bundle) && !bundle.getSymbolicName().startsWith("org.eclipse.ui.console")) {
 			return null;
 		}		
 		try { 
