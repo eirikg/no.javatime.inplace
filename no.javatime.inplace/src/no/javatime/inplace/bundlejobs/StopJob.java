@@ -29,7 +29,6 @@ import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import no.javatime.util.messages.ExceptionMessage;
-import no.javatime.util.messages.Message;
 import no.javatime.util.messages.WarnMessage;
 
 import org.eclipse.core.resources.IProject;
@@ -42,24 +41,17 @@ import org.osgi.framework.Bundle;
 
 public class StopJob extends BundleJob implements Stop {
 
-	/** Standard name of a stop job */
-	final public static String stopJobName = Message.getInstance().formatString("stop_job_name");
-	/** Used to name the set of operations needed to stop a bundle */
-	final private static String stopTaskName = Message.getInstance().formatString("stop_task_name");
-	/** The name of the operation to stop a bundle */
-	final protected static String stopSubTaskName = Message.getInstance().formatString("stop_subtask_name");
-
 	/**
 	 * Default constructor wit a default job name
 	 */
 	public StopJob() {
-		super(stopJobName);
+		super(Msg.STOP_JOB);
 	}
 	/**
 	 * Construct a stop job with a given name
 	 * 
 	 * @param name job name
-	 * @see #stopJobName
+	 * @see Msg#STOP_JOB
 	 */
 	public StopJob(String name) {
 		super(name);
@@ -70,7 +62,7 @@ public class StopJob extends BundleJob implements Stop {
 	 * 
 	 * @param name job name
 	 * @param projects pending bundle projects to stop
-	 * @see #stopJobName
+	 * @see Msg#STOP_JOB
 	 */
 	public StopJob(String name, Collection<IProject> projects) {
 		super(name, projects);
@@ -81,26 +73,23 @@ public class StopJob extends BundleJob implements Stop {
 	 * 
 	 * @param name job name
 	 * @param project pending bundle project to stop
-	 * @see #stopJobName
+	 * @see Msg#STOP_JOB
 	 */
 	public StopJob(String name, IProject project) {
 		super(name, project);
 	}
 	
 	/**
-	 * Runs the bundle(s) start operation.
+	 * Runs the bundle(s) stop operation.
 	 * 
-	 * @return a {@code BundleStatus} object with {@code BundleStatusCode.OK} if job terminated normally and no
-	 *         status objects have been added to this job status list and {@code BundleStatusCode.ERROR} if the
-	 *         job fails or {@code BundleStatusCode.JOBINFO} if any status objects have been added to the job
-	 *         status list.
+	 * @return A bundle status object obtained from {@link #getJobSatus()} 
 	 */
 	@Override
 	public IBundleStatus runInWorkspace(IProgressMonitor monitor) {
 
 		try {
 			super.runInWorkspace(monitor);
-			monitor.beginTask(stopTaskName, getTicks());
+			monitor.beginTask(Msg.STOP_TASK_JOB, getTicks());
 			BundleTransitionListener.addBundleTransitionListener(this);
 			stop(monitor);
 		} catch(InterruptedException e) {

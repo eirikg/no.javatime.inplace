@@ -24,7 +24,6 @@ import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import no.javatime.util.messages.ErrorMessage;
 import no.javatime.util.messages.ExceptionMessage;
-import no.javatime.util.messages.Message;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
@@ -35,16 +34,11 @@ import org.eclipse.osgi.util.NLS;
 
 public class ReinstallJob extends NatureJob implements Reinstall {
 
-	/** Standard name of a start job */
-	final public static String reinstallJobName = Message.getInstance().formatString("reinstall_job_name");
-	/** Used to name the set of operations needed to reinstall a bundle */
-	final public static String reinstallTaskName = Message.getInstance().formatString("reinstall_task_name");
-
 	/**
 	 * Default constructor wit a default job name
 	 */
 	public ReinstallJob() {
-		super(reinstallJobName);
+		super(Msg.REINSTALL_JOB);
 	}
 	/**
 	 * Construct a reinstall job with a given name
@@ -78,17 +72,14 @@ public class ReinstallJob extends NatureJob implements Reinstall {
 	/**
 	 * Runs the bundle project(s) reinstall operation.
 	 * 
-	 * @return a {@code BundleStatus} object with {@code BundleStatusCode.OK} if job terminated normally and no
-	 *         status objects have been added to this job status list and {@code BundleStatusCode.ERROR} if the
-	 *         job fails or {@code BundleStatusCode.JOBINFO} if any status objects have been added to the job
-	 *         status list.
+	 * @return A bundle status object obtained from {@link #getJobSatus()} 
 	 */
 	@Override
 	public IBundleStatus runInWorkspace(IProgressMonitor monitor) {
 
 		try {
 			super.runInWorkspace(monitor);
-			monitor.beginTask(reinstallTaskName, getTicks());
+			monitor.beginTask(Msg.REINSTALL_TASK_JOB, getTicks());
 			BundleTransitionListener.addBundleTransitionListener(this);
 			reinstall(monitor);
 		} catch (OperationCanceledException e) {

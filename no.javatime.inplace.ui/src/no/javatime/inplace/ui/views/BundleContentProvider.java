@@ -186,7 +186,7 @@ class BundleContentProvider implements IStructuredContentProvider {
 					new BundleProperties(project, BundleProperties.locationLabelName, locationIdentifier),
 					new BundleProperties(project, BundleProperties.activationStatusLabelName, bundleProps.getActivationMode()),
 					new BundleProperties(project, BundleProperties.bundleStateLabelName, bundleProps.getBundleState()),
-					new BundleProperties(project, BundleProperties.lastCmdLabelName, bundleProps.getLastTransition()),
+					new BundleProperties(project, BundleProperties.lastTransitionLabelName, bundleProps.getLastTransition()),
 					new BundleProperties(project, BundleProperties.bundleStatusLabelName, bundleProps.getBundleStatus()),
 					new BundleProperties(project, bundleProps.getAllRequiringLabelName(), bundleProps.getDeclaredRequiringBundleProjects()),
 					new BundleProperties(project, bundleProps.getAllProvidingLabelName(), bundleProps.getAllProvidingBundleProjects()),

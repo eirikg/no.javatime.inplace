@@ -110,10 +110,10 @@ public class ExternalTransition implements BundleTransitionEventListener {
 						// Activate the external uninstalled bundle
 						if (autoDependencyAction == 0) {
 							if (bundleRegion.isBundleActivated(project)) {
-								bundleJob = new ActivateBundleJob(ActivateBundleJob.activateJobName, project);
+								bundleJob = new ActivateBundleJob(Msg.ACTIVATE_BUNDLE_JOB, project);
 								if (dependencies) {
 									// Bring workspace back to a consistent state before restoring
-									Uninstall uninstallJob = new UninstallJob(UninstallJob.uninstallJobName,
+									Uninstall uninstallJob = new UninstallJob(Msg.UNINSTALL_JOB,
 											reqProjects);
 									Activator.getBundleExecutorEventService().add(uninstallJob, 0);
 									bundleJob.addPendingProjects(reqProjects);
@@ -121,19 +121,18 @@ public class ExternalTransition implements BundleTransitionEventListener {
 							} else {
 								if (!bundleRegion.isRegionActivated()) {
 									// External uninstall may have been issued on multiple bundles (uninstall A B)
-									bundleJob = new ActivateProjectJob(ActivateProjectJob.activateProjectJobName,
-											project);
+									bundleJob = new ActivateProjectJob(Msg.ACTIVATE_PROJECT_JOB, project);
 								} else {
 									// Workspace is activated but bundle is not. Install the bundle and other uninstalled
 									// bundles
-									bundleJob = new InstallJob(InstallJob.installJobName, project); // BundleProjectCandidatesImpl.INSTANCE.getInstallableProjects());
+									bundleJob = new InstallJob(Msg.INSTALL_JOB, project); 
 								}
 							}
 							// Deactivate workspace
 						} else if (autoDependencyAction == 1) {
 							// Deactivate workspace to obtain a consistent state between all workspace bundles
 							if (bundleRegion.isRegionActivated()) {
-								bundleJob = new DeactivateJob(DeactivateJob.deactivateWorkspaceJobName);
+								bundleJob = new DeactivateJob(Msg.DEACTIVATE_WORKSPACE_JOB);
 								bundleJob.addPendingProjects(bundleRegion.getActivatedProjects());
 							}
 						}

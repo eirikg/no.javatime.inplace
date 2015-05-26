@@ -63,7 +63,7 @@ public class UpdateScheduler {
 			final BundleRegion bundleRegion, final BundleTransition bundleTransition,
 			final BundleProjectCandidates bundleProjectCandidates, long delay) throws ExtenderException {
 
-		Update updateJob = new UpdateJob(UpdateJob.updateJobName);
+		Update updateJob = new UpdateJob();
 		for (IProject project : projects) {
 			if (bundleRegion.isBundleActivated(project)
 					&& bundleTransition.containsPending(project, Transition.UPDATE, false)) {
@@ -231,7 +231,7 @@ public class UpdateScheduler {
 				if (null != bundle
 						&& (Activator.getBundleCommandService().getState(bundle) & (Bundle.INSTALLED | Bundle.UNINSTALLED)) != 0) {
 					if (null == postActivateBundleJob) {
-						postActivateBundleJob = new ActivateBundleJob(ActivateBundleJob.activateJobName);
+						postActivateBundleJob = new ActivateBundleJob();
 					}
 					postActivateBundleJob.addPendingProject(project);
 				}
@@ -294,7 +294,7 @@ public class UpdateScheduler {
 					if (null == bundle) {
 						if (bundleTransition.getError(project) == TransitionError.DUPLICATE) {
 							if (null == postActivateBundleJob) {
-								postActivateBundleJob = new ActivateBundleJob(ActivateBundleJob.activateJobName);
+								postActivateBundleJob = new ActivateBundleJob();
 							}
 							postActivateBundleJob.addPendingProject(project);
 							if (null != activateBundle) {

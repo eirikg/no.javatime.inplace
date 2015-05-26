@@ -23,6 +23,7 @@ import no.javatime.inplace.bundlejobs.intface.BundleExecutor;
 import no.javatime.inplace.bundlejobs.intface.Uninstall;
 import no.javatime.inplace.dialogs.ResourceStateHandler;
 import no.javatime.inplace.extender.intface.ExtenderException;
+import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.intface.BundleRegion;
 import no.javatime.inplace.region.intface.BundleTransition;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
@@ -87,7 +88,7 @@ public class PreChangeListener implements IResourceChangeListener {
 				if (transition.containsPending(bundle, Transition.RENAME_PROJECT, true)) {
 					// The renamed bundle and requiring bundles are scheduled for install again by the post
 					// build listener with the new name after the bundle projects have been built
-					Uninstall uninstall = new UninstallJob(UninstallJob.uninstallJobName, project);
+					Uninstall uninstall = new UninstallJob(Msg.UNINSTALL_JOB, project);
 					// A new project entry with a new name is created by the rename operation
 					// Unregister the project with the original name
 					uninstall.setUnregister(true);

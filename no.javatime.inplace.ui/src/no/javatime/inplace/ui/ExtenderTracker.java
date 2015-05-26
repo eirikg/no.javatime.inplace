@@ -121,7 +121,7 @@ public class ExtenderTracker extends ExtenderBundleTracker {
 			}
 		} catch (ExtenderException | IllegalStateException e) {
 			StatusManager.getManager().handle(
-					new BundleStatus(StatusCode.WARNING, Activator.PLUGIN_ID, Msg.EXTENDER_NOT_AVAILABLE, e),
+					new BundleStatus(StatusCode.WARNING, Activator.PLUGIN_ID, Msg.EXTENDER_NOT_AVAILABLE_WARN, e),
 					StatusManager.LOG);
 		}
 		return super.addingBundle(bundle, event);

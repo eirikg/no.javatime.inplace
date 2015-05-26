@@ -31,7 +31,6 @@ import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import no.javatime.util.messages.ErrorMessage;
 import no.javatime.util.messages.ExceptionMessage;
-import no.javatime.util.messages.Message;
 import no.javatime.util.messages.WarnMessage;
 
 import org.eclipse.core.resources.IProject;
@@ -44,25 +43,18 @@ import org.osgi.framework.Bundle;
 
 public class StartJob extends BundleJob implements Start {
 
-	/** Standard name of a start job */
-	final public static String startJobName = Message.getInstance().formatString("start_job_name");
-	/** Used to name the set of operations needed to start a bundle */
-	final private static String startTaskName = Message.getInstance().formatString("start_task_name");
-	/** The name of the operation to start a bundle */
-	final protected static String startSubTaskName = Message.getInstance().formatString("start_subtask_name");
-
 	/**
 	 * Default constructor wit a default job name
 	 */
 	public StartJob() {
-		super(startJobName);
+		super(Msg.START_JOB);
 	}
 	
 	/**
 	 * Constructs a start job with a given name
 	 * 
 	 * @param name job name
-	 * @see #startJobName
+	 * @see Msg#START_JOB
 	 */
 	public StartJob(String name) {
 		super(name);
@@ -73,7 +65,7 @@ public class StartJob extends BundleJob implements Start {
 	 * 
 	 * @param name job name
 	 * @param projects pending projects to start
-	 * @see #startJobName
+	 * @see Msg#START_JOB
 	 */
 	public StartJob(String name, Collection<IProject> projects) {
 		super(name, projects);
@@ -84,7 +76,7 @@ public class StartJob extends BundleJob implements Start {
 	 * 
 	 * @param name job name
 	 * @param project pending project to start
-	 * @see #startJobName
+	 * @see Msg#START_JOB
 	 */
 	public StartJob(String name, IProject project) {
 		super(name, project);
@@ -93,17 +85,14 @@ public class StartJob extends BundleJob implements Start {
 	/**
 	 * Runs the bundle(s) start operation.
 	 * 
-	 * @return a {@code BundleStatus} object with {@code BundleStatusCode.OK} if job terminated normally and no
-	 *         status objects have been added to this job status list and {@code BundleStatusCode.ERROR} if the
-	 *         job fails or {@code BundleStatusCode.JOBINFO} if any status objects have been added to the job
-	 *         status list.
+	 * @return A bundle status object obtained from {@link #getJobSatus()} 
 	 */
 	@Override
 	public IBundleStatus runInWorkspace(IProgressMonitor monitor) {
 
 		try {
 			super.runInWorkspace(monitor);
-			monitor.beginTask(startTaskName, getTicks());
+			monitor.beginTask(Msg.START_TASK_JOB, getTicks());
 			BundleTransitionListener.addBundleTransitionListener(this);
 			start(monitor);
 		} catch(InterruptedException e) {

@@ -108,10 +108,10 @@ public class BundleMainCommandsContributionItems extends BundleCommandsContribut
 		if (candidateProjects.size() > 0) {
 			String activateLabel = null;
 			if (activatedProjects.isEmpty()) {
-				activateLabel = formatLabel(Msg.ACTIVATE_WORKSPACE_JOB,
+				activateLabel = formatLabel(Msg.ACTIVATE_WORKSPACE_LABEL,
 						candidateProjects.size(), Boolean.FALSE);
 			} else {
-				activateLabel = formatLabel(Msg.ACTIVATE_JOB, candidateProjects.size(), Boolean.TRUE);
+				activateLabel = formatLabel(Msg.ACTIVATE_LABEL, candidateProjects.size(), Boolean.TRUE);
 			}
 			return createContibution(menuId, dynamicMainCommandId, activateLabel, activateProjectParamId,
 					CommandContributionItem.STYLE_PUSH, activateImage);
@@ -131,7 +131,7 @@ public class BundleMainCommandsContributionItems extends BundleCommandsContribut
 	private CommandContributionItem addDeactivate(Collection<IProject> activatedProjects) {
 
 		if (activatedProjects.size() > 0) {
-			String deactivateLabel = formatLabel("Deactivate Workspace", activatedProjects.size(),
+			String deactivateLabel = formatLabel(Msg.DEACTIVATE_MAIN_LABEL, activatedProjects.size(),
 					Boolean.FALSE);
 			return createContibution(menuId, dynamicMainCommandId, deactivateLabel, deactivateParamId,
 					CommandContributionItem.STYLE_PUSH, deactivateImage);
@@ -172,7 +172,7 @@ public class BundleMainCommandsContributionItems extends BundleCommandsContribut
 				}
 			}
 			if (nStart > 0) {
-				String startLabel = formatLabel("Start", nStart, Boolean.TRUE);
+				String startLabel = formatLabel(Msg.START_LABEL, nStart, Boolean.TRUE);
 				return createContibution(menuId, dynamicMainCommandId, startLabel, startParamId,
 						CommandContributionItem.STYLE_PUSH, startImage);
 			}
@@ -210,7 +210,7 @@ public class BundleMainCommandsContributionItems extends BundleCommandsContribut
 				}
 			}
 			if (nStop > 0) {
-				String stopLabel = formatLabel("Stop", nStop, Boolean.TRUE);
+				String stopLabel = formatLabel(Msg.STOP_LABEL, nStop, Boolean.TRUE);
 				return createContibution(menuId, dynamicMainCommandId, stopLabel, stopParamId,
 						CommandContributionItem.STYLE_PUSH, stopImage);
 			}
@@ -245,7 +245,7 @@ public class BundleMainCommandsContributionItems extends BundleCommandsContribut
 				}
 			}
 			if (nUpdate > 0) {
-				String updateLabel = formatLabel("Update", nUpdate, Boolean.TRUE);
+				String updateLabel = formatLabel(Msg.UPDATE_PENDING_LABEL, nUpdate, Boolean.TRUE);
 				return createContibution(menuId, dynamicMainCommandId, updateLabel, updatePendingParamId,
 						CommandContributionItem.STYLE_PUSH, updateImage);
 			}
@@ -290,7 +290,7 @@ public class BundleMainCommandsContributionItems extends BundleCommandsContribut
 					StatusManager.getManager().handle(
 							new BundleStatus(StatusCode.WARNING, Activator.PLUGIN_ID, msg), StatusManager.LOG);
 				}
-				String refreshLabel = formatLabel("Refresh", nRefresh, Boolean.TRUE);
+				String refreshLabel = formatLabel(Msg.REFRESH_PENDING_LABEL, nRefresh, Boolean.TRUE);
 				return createContibution(menuId, dynamicMainCommandId, refreshLabel, refreshPendingParamId,
 						CommandContributionItem.STYLE_PUSH, refreshImage);
 			}
@@ -308,7 +308,7 @@ public class BundleMainCommandsContributionItems extends BundleCommandsContribut
 	private CommandContributionItem addRefresh(Collection<IProject> activatedProjects) {
 
 		if (activatedProjects.size() > 0) {
-			String refreshLabel = "Refresh Workspace";
+			String refreshLabel = Msg.REFRESH_MAIN_LABEL;
 			return createContibution(menuId, dynamicMainCommandId, refreshLabel, refreshParamId,
 					CommandContributionItem.STYLE_PUSH, refreshImage);
 		}
@@ -326,8 +326,7 @@ public class BundleMainCommandsContributionItems extends BundleCommandsContribut
 	private CommandContributionItem addReset(Collection<IProject> activatedProjects) {
 
 		if (activatedProjects.size() > 0) {
-			String resetLabel = "Reset Workspace";
-			return createContibution(menuId, dynamicMainCommandId, resetLabel, resetParamId,
+			return createContibution(menuId, dynamicMainCommandId, Msg.RESET_MAIN_LABEL, resetParamId,
 					CommandContributionItem.STYLE_PUSH, resetImage);
 		}
 		return null;
@@ -344,8 +343,7 @@ public class BundleMainCommandsContributionItems extends BundleCommandsContribut
 	private CommandContributionItem addUpdate(Collection<IProject> activatedProjects) {
 
 		if (activatedProjects.size() > 0) {
-			String updateLabel = "Update Workspace";
-			return createContibution(menuId, dynamicMainCommandId, updateLabel, updateParamId,
+			return createContibution(menuId, dynamicMainCommandId, Msg.UPDATE_MAIN_LABEL, updateParamId,
 					CommandContributionItem.STYLE_PUSH, updateImage);
 		}
 		return null;

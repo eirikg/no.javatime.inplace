@@ -31,8 +31,8 @@ import no.javatime.inplace.region.intface.ProjectLocationException;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import no.javatime.inplace.ui.Activator;
+import no.javatime.inplace.ui.msg.Msg;
 import no.javatime.util.messages.ErrorMessage;
-import no.javatime.util.messages.Message;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
@@ -48,41 +48,29 @@ import org.osgi.framework.ServiceReference;
  */
 public class BundleProperties {
 
-	public static String bundleLabelName = Message.getInstance().formatString("bundle_label_name");
-	public static String bundleSymbolicNameLabelName = Message.getInstance().formatString(
-			"bundle_symbolic_label_name");
-	public static String bundleVersionLabelName = Message.getInstance().formatString(
-			"bundle_version_label_name");
-	public static String projectLabelName = Message.getInstance().formatString("project_label_name");
-	public static String bundleIdLabelName = Message.getInstance().formatString("bundle_id_label_name");
-	public static String activationStatusLabelName = Message.getInstance().formatString(
-			"activation_mode_label_name");
-	public static String bundleStateLabelName = Message.getInstance().formatString("bundle_state_label_name");
-	public static String servicesInUseLabelName = Message.getInstance().formatString(
-			"services_in_use_label_name");
-	public static String numberOfRevisionsLabelName = Message.getInstance().formatString(
-			"number_of_revisions_label_name");
-	public static String activationPolicyLabelName = Message.getInstance().formatString(
-			"activation_policy_label_name");
-	public static String bundleStatusLabelName = Message.getInstance().formatString("bundle_status_label_name");
-	public static String locationLabelName = Message.getInstance().formatString("location_label_name");
-	public static String lastInstalledOrUpdatedLabelName = Message.getInstance().formatString(
-			"last_installed_or_updated_label_name");
-	public static String lastModifiedLabelName = Message.getInstance().formatString("last_modified_label_name");
-	public static String referencedProjectsLabelName = Message.getInstance().formatString(
-			"referenced_all_project_label_name");
-	public static String referencingProjectsLabelName = Message.getInstance().formatString(
-			"referencing_all_project_label_name");
-	public static String requiringAllBundlesLabelName = Message.getInstance().formatString(
-			"requiring_all_bundle_label_name");
-	public static String providingAllBundlesLabelName = Message.getInstance().formatString(
-			"providing_all_bundle_label_name");
-	public static String requiringResolvedBundlesLabelName = Message.getInstance().formatString(
-			"requiring_resolved_bundle_label_name");
-	public static String providingResolvedBundlesLabelName = Message.getInstance().formatString(
-			"providing_resolved_bundle_label_name");
-	public static String UIExtensionsLabelName = Message.getInstance().formatString("ui_extensions_label_name");
-	public static String lastCmdLabelName = Message.getInstance().formatString("last_cmd_label_name");
+	// Label names 
+	public static String bundleLabelName = Msg.BUNDLE_NAME_PROP_LABEL;
+	public static String bundleSymbolicNameLabelName = Msg.BUNDLE_SYMBOLIC_NAME_PROP_LABEL;
+	public static String bundleVersionLabelName = Msg.BUNDLE_VERSION_PROP_LABEL;
+	public static String projectLabelName = Msg.PROJECT_NAME_PROP_LABEL;
+	public static String bundleIdLabelName = Msg.BUNDLE_ID_PROP_LABEL;
+	public static String activationStatusLabelName = Msg.ACTIVATION_MODE_PROP_LABEL;
+	public static String bundleStateLabelName = Msg.BUNDLE_STATE_PROP_LABEL;
+	public static String servicesInUseLabelName = Msg.SERVICES_IN_USE_PROP_LABEL;
+	public static String numberOfRevisionsLabelName = Msg.NUMBER_OF_REVISIONS_PROP_LABEL;
+	public static String activationPolicyLabelName = Msg.ACTIVATION_POLICY_PROP_LABEL;
+	public static String bundleStatusLabelName = Msg.BUNDLE_STATUS_PROP_LABEL;
+	public static String locationLabelName = Msg.LOCATION_PROP_LABEL;
+	public static String lastInstalledOrUpdatedLabelName = Msg.LAST_INSTALLED_OR_UPDATED_PROP_LABEL;
+	public static String lastModifiedLabelName = Msg.LAST_MODIFIED_PROP_LABEL;
+	public static String referencedProjectsLabelName = Msg.REFERENCED_PROJECTS_PROP_LABEL;
+	public static String referencingProjectsLabelName = Msg.REFERENCING_PROJECTS_PROP_LABEL;
+	public static String requiringDeclaredBundlesLabelName = Msg.REQUIRING_DECLARED_BUNDLES_PROP_LABEL;
+	public static String providingDeclaredBundlesLabelName = Msg.PROVIDING_DECLARED_BUNDLES_PROP_LABEL;
+	public static String requiringResolvedBundlesLabelName = Msg.REQUIRING_RESOLVED_BUNDLES_PROP_LABEL;
+	public static String providingResolvedBundlesLabelName = Msg.PROVIDING_RESOLVED_BUNDLES_PROP_LABEL;
+	public static String UIExtensionsLabelName = Msg.UI_EXTENSIONS_PROP_LABEL;
+	public static String lastTransitionLabelName = Msg.LAST_TRANSITION_PROP_LABEL;
 
 	private static String lazyyValueName = "Lazy";
 	private static String eagerValueName = "Eager";
@@ -155,6 +143,7 @@ public class BundleProperties {
 	}
 	
 	public String getBundleLabelName() {
+
 		String bundleProjectLabelName = bundleLabelName;
 		String symbolicName = null;
 		String version = null;
@@ -419,7 +408,7 @@ public class BundleProperties {
 		if (null == bundle) {
 			requiringLabel = BundleProperties.referencingProjectsLabelName;
 		} else {
-			requiringLabel = BundleProperties.requiringAllBundlesLabelName;
+			requiringLabel = BundleProperties.requiringDeclaredBundlesLabelName;
 		}
 		return requiringLabel;
 	}
@@ -480,7 +469,7 @@ public class BundleProperties {
 		if (null == bundle) {
 			providingLabel = BundleProperties.referencedProjectsLabelName;
 		} else {
-			providingLabel = BundleProperties.providingAllBundlesLabelName;
+			providingLabel = BundleProperties.providingDeclaredBundlesLabelName;
 		}
 		return providingLabel;
 	}

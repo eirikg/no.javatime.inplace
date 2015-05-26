@@ -28,7 +28,6 @@ import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import no.javatime.util.messages.Category;
 import no.javatime.util.messages.ErrorMessage;
-import no.javatime.util.messages.Message;
 import no.javatime.util.messages.WarnMessage;
 
 import org.eclipse.core.resources.IProject;
@@ -46,17 +45,6 @@ import org.osgi.framework.Bundle;
  * reports on duplicate bundles.
  */
 public abstract class NatureJob extends BundleJob {
-
-	/** Used to name the set of operations needed to enable the nature on a project */
-	private static String enableNatureSubTaskName = Message.getInstance().formatString(
-			"enable_nature_subtask_name");
-	/** Used to name the set of operations needed to disable the nature of a project */
-	private static String disableNatureSubTaskName = Message.getInstance().formatString(
-			"disable_nature_subtask_name");
-
-	/** Task name for the build operation */
-	final protected static String buildTaskName = Message.getInstance().formatString(
-			"build_task_name");
 
 	/**
 	 * Construct a nature based job with a given job name
@@ -154,7 +142,7 @@ public abstract class NatureJob extends BundleJob {
 			try {
 				if (Category.getState(Category.progressBar))
 					sleep(sleepTime);
-				progress.subTask(installSubtaskName + project.getName());
+				progress.subTask(NLS.bind(Msg.INSTALL_SUB_TASK_JOB, project.getName()));
 				// Get the activation status of the corresponding project
 				boolean activated = isProjectActivated(project);
 				bundle = bundleCommand.install(project, activated);
@@ -213,7 +201,7 @@ public abstract class NatureJob extends BundleJob {
 			for (Bundle bundle : bundles) {
 				if (Category.getState(Category.progressBar))
 					sleep(sleepTime);
-				localMonitor.subTask(BundleJob.uninstallSubtaskName + bundle.getSymbolicName());
+				localMonitor.subTask(NLS.bind(Msg.UNINSTALL_SUB_TASK_JOB, bundle.getSymbolicName()));
 				try {
 					// Unregister after refresh
 					bundleCommand.uninstall(bundle, false);
@@ -263,7 +251,7 @@ public abstract class NatureJob extends BundleJob {
 				try {
 					if (Category.getState(Category.progressBar))
 						sleep(sleepTime);
-					progress.subTask(reInstallSubtaskName + project.getName());
+					progress.subTask(NLS.bind(Msg.REINSTALL_SUB_TASK_JOB, project.getName()));
 					IBundleStatus result = uninstall(Collections.<Bundle> singletonList(bundle),
 							new SubProgressMonitor(monitor, 1), true, false);
 					if (result.hasStatus(StatusCode.OK)) {
@@ -304,7 +292,7 @@ public abstract class NatureJob extends BundleJob {
 			try {
 				if (Category.getState(Category.progressBar))
 					sleep(sleepTime);
-				localMonitor.subTask(NatureJob.disableNatureSubTaskName + project.getName());
+				localMonitor.subTask(NLS.bind(Msg.DISABLE_NATURE_SUB_TASK_JOB, project.getName()));
 				if (isProjectActivated(project)) {
 					toggleNatureActivation(project, new SubProgressMonitor(monitor, 1));
 				}
@@ -343,7 +331,7 @@ public abstract class NatureJob extends BundleJob {
 
 		for (IProject project : projectsToActivate) {
 			try {
-				localMonitor.subTask(NatureJob.enableNatureSubTaskName + project.getName());
+				localMonitor.subTask(NLS.bind(Msg.ENABLE_NATURE_SUB_TASK_JOB, project.getName()));
 				if (bundleProjectCandidates.isCandidate(project)) {
 					// Set the JavaTime nature
 					if (!isProjectActivated(project)) {
@@ -410,7 +398,7 @@ public abstract class NatureJob extends BundleJob {
 				for (int i = 0; i < natures.length; ++i) {
 					if (JavaTimeNature.JAVATIME_NATURE_ID.equals(natures[i])) {
 						// Remove the nature
-						localMonitor.subTask(NatureJob.disableNatureSubTaskName + project.getName());
+						localMonitor.subTask(NLS.bind(Msg.DISABLE_NATURE_SUB_TASK_JOB, project.getName()));
 						String[] newNatures = new String[natures.length - 1];
 						System.arraycopy(natures, 0, newNatures, 0, i);
 						System.arraycopy(natures, i + 1, newNatures, i, natures.length - i - 1);
@@ -429,7 +417,7 @@ public abstract class NatureJob extends BundleJob {
 					}
 				}
 				// Add the nature
-				localMonitor.subTask(NatureJob.enableNatureSubTaskName + project.getName());
+				localMonitor.subTask(NLS.bind(Msg.ENABLE_NATURE_SUB_TASK_JOB, project.getName()));
 				String[] newNatures = new String[natures.length + 1];
 				System.arraycopy(natures, 0, newNatures, 0, natures.length);
 				newNatures[natures.length] = JavaTimeNature.JAVATIME_NATURE_ID;
@@ -473,7 +461,7 @@ public abstract class NatureJob extends BundleJob {
 				if (localMonitor.isCanceled()) {
 					throw new OperationCanceledException();
 				}
-				localMonitor.subTask(buildTaskName + project.getName());
+				localMonitor.subTask(Msg.BUILD_TASK_JOB + " " + project.getName());
 				project.build(buildType, localMonitor.newChild(1));
 			} finally {
 				localMonitor.worked(1);

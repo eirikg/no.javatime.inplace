@@ -25,7 +25,6 @@ import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import no.javatime.util.messages.ErrorMessage;
 import no.javatime.util.messages.ExceptionMessage;
-import no.javatime.util.messages.Message;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
@@ -37,13 +36,6 @@ import org.osgi.framework.Bundle;
 
 public class UninstallJob extends NatureJob implements Uninstall {
 
-	/** Standard name of an uninstall job */
-	final public static String uninstallJobName = Message.getInstance().formatString("uninstall_job_name");
-	/** Can be used at IDE shut down */
-	final public static String shutDownJobName = Message.getInstance().formatString("shutDown_job_name");
-	/** Used to name the set of operations needed to uninstall a bundle */
-	final private static String uninstallTaskName = Message.getInstance().formatString("uninstall_task_name");
-
 	// Remove the bundle project from the workspace region 
 	private boolean unregisterBundleProject = false;
 	private boolean includeRequiring = true;
@@ -52,7 +44,7 @@ public class UninstallJob extends NatureJob implements Uninstall {
 	 * Default constructor wit a default job name
 	 */
 	public UninstallJob() {
-		super(uninstallJobName);
+		super(Msg.UNINSTALL_JOB);
 	}
 	/**
 	 * Construct an uninstall job with a given name
@@ -120,17 +112,14 @@ public class UninstallJob extends NatureJob implements Uninstall {
 	/**
 	 * Runs the bundle(s) uninstall operation.
 	 * 
-	 * @return a {@code BundleStatus} object with {@code BundleStatusCode.OK} if job terminated normally and no
-	 *         status objects have been added to this job status list and {@code BundleStatusCode.ERROR} if the
-	 *         job fails or {@code BundleStatusCode.JOBINFO} if any status objects have been added to the job
-	 *         status list.
+	 * @return A bundle status object obtained from {@link #getJobSatus()} 
 	 */
 	@Override
 	public IBundleStatus runInWorkspace(IProgressMonitor monitor) {
 
 		try {
 			super.runInWorkspace(monitor);
-			monitor.beginTask(uninstallTaskName, getTicks());
+			monitor.beginTask(Msg.UNINSTALL_TASK_JOB, getTicks());
 			BundleTransitionListener.addBundleTransitionListener(this);
 			uninstall(monitor);
 		} catch(InterruptedException e) {

@@ -127,7 +127,8 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 			if (Activator.getBundleRegionService().getActivatedProjects().size() <= projects.size()) {
 				deactivate.getJob().setName(Msg.DEACTIVATE_WORKSPACE_JOB);
 			} else {
-				deactivate.getJob().setName(Msg.DEACTIVATE_JOB);
+				// Same as default name for job
+				deactivate.getJob().setName(Msg.DEACTIVATE_BUNDLES_JOB);
 			}
 			deactivate.addPendingProjects(projects);
 			Activator.getBundleExecEventService().add(deactivate);

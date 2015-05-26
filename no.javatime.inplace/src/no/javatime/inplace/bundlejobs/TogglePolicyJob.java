@@ -25,7 +25,6 @@ import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import no.javatime.util.messages.ErrorMessage;
 import no.javatime.util.messages.ExceptionMessage;
-import no.javatime.util.messages.Message;
 import no.javatime.util.messages.WarnMessage;
 
 import org.eclipse.core.resources.IProject;
@@ -38,15 +37,11 @@ import org.osgi.framework.Bundle;
 
 public class TogglePolicyJob extends NatureJob implements TogglePolicy {
 
-	/** Standard name of a toggle policy job job */
-	final public static String policyJobName = Message.getInstance().formatString(
-			"toggle_policy_job_name");
-
 	/**
 	 * Default constructor wit a default job name
 	 */
 	public TogglePolicyJob() {
-		super(policyJobName);
+		super(Msg.POLICY_JOB);
 	}
 
 	/**
@@ -81,10 +76,7 @@ public class TogglePolicyJob extends NatureJob implements TogglePolicy {
 	/**
 	 * Runs the bundle project(s) toggle policy operation.
 	 * 
-	 * @return a {@code BundleStatus} object with {@code BundleStatusCode.OK} if job terminated
-	 * normally and no status objects have been added to this job status list and
-	 * {@code BundleStatusCode.ERROR} if the job fails or {@code BundleStatusCode.JOBINFO} if any
-	 * status objects have been added to the job status list.
+	 * @return A bundle status object obtained from {@link #getJobSatus()} 
 	 */
 	@Override
 	public IBundleStatus runInWorkspace(IProgressMonitor monitor) {

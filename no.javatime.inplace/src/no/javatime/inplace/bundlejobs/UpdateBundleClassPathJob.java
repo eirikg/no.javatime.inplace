@@ -36,14 +36,11 @@ public class UpdateBundleClassPathJob extends BundleJob implements UpdateBundleC
 
 	private boolean addToPath = true;
 
-	/** Standard name of an update bundle class path job */
-	final public static String updateBundleClassJobName = Msg.UPDATE_BUNDLE_CLASS_PATH_JOB;
-	
 	/**
 	 * Default constructor wit a default job name
 	 */
 	public UpdateBundleClassPathJob() {
-		super(updateBundleClassJobName);
+		super(Msg.UPDATE_BUNDLE_CLASS_PATH_JOB);
 	}
 	
 	/**
@@ -78,10 +75,7 @@ public class UpdateBundleClassPathJob extends BundleJob implements UpdateBundleC
 	/**
 	 * Runs the bundle project(s) update bundle class path operation.
 	 * 
-	 * @return a {@code BundleStatus} object with {@code BundleStatusCode.OK} if job terminated
-	 * normally and no status objects have been added to this job status list and
-	 * {@code BundleStatusCode.ERROR} if the job fails or {@code BundleStatusCode.JOBINFO} if any
-	 * status objects have been added to the job status list.
+	 * @return A bundle status object obtained from {@link #getJobSatus()} 
 	 */
 	@Override
 	public IBundleStatus runInWorkspace(IProgressMonitor monitor) {

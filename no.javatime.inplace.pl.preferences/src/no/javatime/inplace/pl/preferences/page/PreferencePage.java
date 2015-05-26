@@ -70,7 +70,7 @@ public class PreferencePage extends FieldEditorPreferencePage implements IWorkbe
 		addField(groupTimeoutEditor);
 
 		// Stop bundle operations manually from menu or automatic after timeout
-		RadioGroupFieldEditor timeoutRadioGroupEditor = new RadioGroupFieldEditor(Msg.TIMEOUT_RADIOGROUP_NAME,
+		RadioGroupFieldEditor timeoutRadioGroupEditor = new RadioGroupFieldEditor(Msg.TIMEOUT_RADIOGROUP_NAME_LABEL,
 				Msg.TERMINATE_ON_TIMEOUT_LABEL, 1, new String[][] {
 						{ Msg.IS_MANUAL_TERMINATE_LABEL, CommandOptions.IS_MANUAL_TERMINATE },
 						{ Msg.IS_TIMEOUT_LABEL, CommandOptions.IS_TIMEOUT } },
@@ -192,9 +192,9 @@ public class PreferencePage extends FieldEditorPreferencePage implements IWorkbe
 			Boolean isTimeout = cmdStore.isTimeOut();
 			prefStore.setValue(CommandOptions.IS_TIMEOUT, isTimeout);
 			if (isTimeout) {
-				prefStore.setValue(Msg.TIMEOUT_RADIOGROUP_NAME, CommandOptions.IS_TIMEOUT);
+				prefStore.setValue(Msg.TIMEOUT_RADIOGROUP_NAME_LABEL, CommandOptions.IS_TIMEOUT);
 			} else {
-				prefStore.setValue(Msg.TIMEOUT_RADIOGROUP_NAME, CommandOptions.IS_MANUAL_TERMINATE);
+				prefStore.setValue(Msg.TIMEOUT_RADIOGROUP_NAME_LABEL, CommandOptions.IS_MANUAL_TERMINATE);
 			}
 			timoutSecEditor.setEnabled(isTimeout, groupTimeoutEditor.getMemberFieldEditorParent());
 			prefStore.setValue(CommandOptions.IS_DEACTIVATE_ON_EXIT, cmdStore.isDeactivateOnExit());
@@ -250,7 +250,7 @@ public class PreferencePage extends FieldEditorPreferencePage implements IWorkbe
 			CommandOptions cmdStore = getPrefService();
 			IPreferenceStore prefStore = getPreferenceStore();
 			cmdStore.setTimeOut(prefStore.getInt(CommandOptions.TIMEOUT_SECONDS));
-			String rgv = prefStore.getString(Msg.TIMEOUT_RADIOGROUP_NAME);
+			String rgv = prefStore.getString(Msg.TIMEOUT_RADIOGROUP_NAME_LABEL);
 			if (rgv.equals(CommandOptions.IS_TIMEOUT)) {
 				cmdStore.setIsTimeOut(true);
 				cmdStore.setIsManualTerminate(false);
@@ -286,7 +286,7 @@ public class PreferencePage extends FieldEditorPreferencePage implements IWorkbe
 	@Override
 	public void propertyChange(PropertyChangeEvent event) {
 
-		if (((FieldEditor) event.getSource()).getPreferenceName().equals(Msg.TIMEOUT_RADIOGROUP_NAME)) {
+		if (((FieldEditor) event.getSource()).getPreferenceName().equals(Msg.TIMEOUT_RADIOGROUP_NAME_LABEL)) {
 			try {
 				RadioGroupFieldEditor rge = (RadioGroupFieldEditor) event.getSource();
 				timoutSecEditor.setEnabled(getStopOperationValue(rge, CommandOptions.IS_TIMEOUT),

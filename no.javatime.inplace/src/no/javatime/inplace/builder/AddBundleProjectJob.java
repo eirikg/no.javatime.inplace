@@ -34,13 +34,11 @@ import org.eclipse.osgi.util.NLS;
 
 class AddBundleProjectJob extends NatureJob implements AddBundleProject {
 
-	final public static String addBundleProjectName = Msg.ADD_BUNDLE_PROJECT_JOB;
-
 	/**
 	 * Default constructor wit a default job name
 	 */
 	public AddBundleProjectJob() {
-		super(addBundleProjectName);
+		super(Msg.ADD_BUNDLE_PROJECT_JOB);
 	}
 
 	public AddBundleProjectJob(String name) {
@@ -83,7 +81,7 @@ class AddBundleProjectJob extends NatureJob implements AddBundleProject {
 				return getJobSatus();
 			}
 			// Install all new projects in an activated workspace
-			Install install = new InstallJob(InstallJob.installJobName, newProjects);
+			Install install = new InstallJob(Msg.INSTALL_JOB, newProjects);
 			Activator.getBundleExecutorEventService().add(install, 0);
 			// New and existing deactivated projects that provides capabilities to new and existing
 			// projects
@@ -115,7 +113,7 @@ class AddBundleProjectJob extends NatureJob implements AddBundleProject {
 			// Activate all deactivated provider projects
 			if (deactivatedProviders.size() > 0) {
 				ActivateProject activateProject = new ActivateProjectJob(
-						ActivateProjectJob.activateProjectJobName, deactivatedProviders);
+						Msg.ACTIVATE_PROJECT_JOB, deactivatedProviders);
 				// Do not add requiring projects. They will be resolved as part of the requiring
 				// closure when providers are resolved
 				Activator.getBundleExecutorEventService().add(activateProject, 0);
@@ -135,7 +133,7 @@ class AddBundleProjectJob extends NatureJob implements AddBundleProject {
 			// Activate bundles for all new projects that are activated
 			if (newActivatedBundleProjects.size() > 0) {
 				ActivateBundle activateBundle = new ActivateBundleJob(
-						ActivateBundleJob.activateJobName, newActivatedBundleProjects);
+						Msg.ACTIVATE_BUNDLE_JOB, newActivatedBundleProjects);
 				Activator.getBundleExecutorEventService().add(activateBundle, 0);
 			}
 		} catch (CircularReferenceException e) {

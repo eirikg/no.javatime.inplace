@@ -53,17 +53,56 @@ public class Msg extends NLS {
 	public static String BUILD_ERROR_TRACE;
 	public static String USING_CURRENT_REVISION_TRACE;
 	
-	// Bundle job names
+	// Bundle job and task names
 	public static String INIT_WORKSPACE_JOB;
 	public static String ACTIVATE_PROJECT_JOB;
-	public static String ACTIVATE_WORKSPACE_JOB;
+	public static String ACTIVATE_PROJECT_TASK_JOB;
+	public static String ACTIVATE_BUNDLE_JOB;
+  public static String ACTIVATE_BUNDLE_TASK_JOB;
+  public static String STARTUP_ACTIVATE_BUNDLE_JOB;
 	public static String INIT_DEACTIVATED_WORKSPACE_JOB;
   public static String UPDATE_BUNDLE_CLASS_PATH_JOB; 
   public static String REMOVE_BUNDLE_PROJECT_JOB;
   public static String ADD_BUNDLE_PROJECT_JOB;
   public static String DEACTIVATE_AFTER_STOP_OP_JOB;
-  
-	// Errors
+  public static String UPDATE_JOB;
+  public static String UPDATE_TASK_JOB;
+  public static String UPDATE_SUB_TASK_JOB;
+  public static String UNINSTALL_JOB;
+  public static String UNINSTALL_TASK_JOB;
+  public static String UNINSTALL_SUB_TASK_JOB;
+  public static String REINSTALL_SUB_TASK_JOB;
+  public static String RESOLVE_TASK_JOB;
+  public static String INSTALL_JOB;
+  public static String INSTALL_TASK_JOB;
+  public static String INSTALL_SUB_TASK_JOB;
+  public static String DEACTIVATE_BUNDLES_JOB;
+  public static String DEACTIVATE_WORKSPACE_JOB;
+  public static String DEACTIVATE_TASK_JOB;
+  public static String ENABLE_NATURE_SUB_TASK_JOB;
+  public static String DISABLE_NATURE_SUB_TASK_JOB;
+  public static String FULL_BUILD_JOB;
+  public static String INCREMENTAL_BUILD_JOB;
+  public static String FULL_WORKSPACE_BUILD_JOB;
+  public static String BUILD_TASK_JOB;
+  public static String REFRESH_JOB;
+  public static String REFRESH_TASK_JOB;
+  public static String REINSTALL_JOB;
+  public static String REINSTALL_TASK_JOB;
+  public static String RESET_JOB;
+  public static String RESET_ACTIVATE_JOB;
+  public static String RESET_UNINSTALL_JOB;
+  public static String START_JOB;
+  public static String START_TASK_JOB;
+  public static String START_SUB_TASK_JOB;
+  public static String STOP_JOB;
+  public static String STOP_TASK_JOB;
+  public static String STOP_SUB_TASK_JOB;
+  public static String POLICY_JOB;
+  public static String SHUT_DOWN_JOB;
+  public static String DEACTIVATE_ON_SHUTDOWN_JOB;
+
+  // Errors
 	public static String BEGIN_SHUTDOWN_ERROR;
 	public static String END_SHUTDOWN_ERROR;
 	public static String INSTALL_ERROR;
@@ -74,6 +113,8 @@ public class Msg extends NLS {
 	public static String END_JOB_ROOT_ERROR;
 	public static String INIT_BUNDLE_STATE_ERROR;
 	public static String UNREG_SERVICE_ERROR;
+  public static String USE_CURR_REV_DUPLICATES_ERROR;
+  public static String DUPLICATE_WS_BUNDLE_INSTALL_ERROR;
 
 	// Warnings
 	public static String EXTERNAL_UNINSTALL_WARN;

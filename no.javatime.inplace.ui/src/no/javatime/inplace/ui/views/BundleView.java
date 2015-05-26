@@ -35,7 +35,6 @@ import no.javatime.inplace.ui.Activator;
 import no.javatime.inplace.ui.command.contributions.BundleCommandsContributionItems;
 import no.javatime.inplace.ui.command.handlers.BundleMenuActivationHandler;
 import no.javatime.inplace.ui.msg.Msg;
-import no.javatime.util.messages.Message;
 import no.javatime.util.view.ViewUtil;
 
 import org.eclipse.core.resources.IFile;
@@ -125,7 +124,6 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 	private TableViewer bundleListPage;
 	// Local pull down menu
 	private IMenuManager pullDownMenuManager;
-
 	// Common for both pages
 	private BundleContentProvider bundleContentProvider;
 
@@ -143,89 +141,35 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 	final private Image detailsTitleImage = detailsTitleImageDesc.createImage();
 	final private Image listTitleImage = listTitleImageDesc.createImage();
 
-	// Caption label in list page and detail page
-	final public static String listPageCaptionTitle = Message.getInstance().formatString(
-			"bundle_list_page_caption_title"); //$NON-NLS-1$
-	final public static String detailsPageCaptionTitle = Message.getInstance().formatString(
-			"bundle_details_page_caption_title"); //$NON-NLS-1$
-
-	// Actions and action text in bundle list and details page
 	// Toggle between bundle list and bundle details page
 	private Action flipPageAction;
-	final private String flipDetailsGeneralText = Message.getInstance().formatString(
-			"flip_details_general_text"); //$NON-NLS-1$
-	final private String flipListGeneralText = Message.getInstance().formatString(
-			"flip_list_general_text"); //$NON-NLS-1$
 	// Deactivate or activate bundle project
 	private Action activateAction;
-	final private String activationGeneralText = Message.getInstance().formatString(
-			"activation_general_text"); //$NON-NLS-1$
-	final private String activateText = Message.getInstance().formatString("activate_text"); //$NON-NLS-1$
-	final private String deactivateText = Message.getInstance().formatString("deactivate_text"); //$NON-NLS-1$
-
 	// Reset bundle when activated
 	private Action resetAction;
-	final private String resetGeneralText = Message.getInstance().formatString("reset_general_text"); //$NON-NLS-1$
-	final private String resetText = Message.getInstance().formatString("reset_text"); //$NON-NLS-1$
-
 	// Update bundle when activated
 	private Action updateAction;
-	final private String updateGeneralText = Message.getInstance()
-			.formatString("update_general_text"); //$NON-NLS-1$
-	final private String updateText = Message.getInstance().formatString("update_text"); //$NON-NLS-1$
-
 	// Refresh bundle when activated
 	private Action refreshAction;
-	final private String refreshGeneralText = Message.getInstance().formatString(
-			"refrsh_general_text"); //$NON-NLS-1$
-	final private String refreshText = Message.getInstance().formatString("refresh_text"); //$NON-NLS-1$
-
 	// Stop bundle when bundle in state active/starting and start bundle when in state resolved
 	private Action startStopAction;
-	final private String startStopGeneralText = Message.getInstance().formatString(
-			"start_stop_general_text"); //$NON-NLS-1$
-	final private String stopText = Message.getInstance().formatString("stop_text"); //$NON-NLS-1$
-	final private String startText = Message.getInstance().formatString("start_text"); //$NON-NLS-1$
-
 	// Opens bundle in Plug-in Manifest editor
 	private Action editManifestAction;
-	final private String openInEditorGeneralText = Message.getInstance().formatString(
-			"open_in_editor_general_text"); //$NON-NLS-1$
-	final private String openInEditorText = Message.getInstance().formatString("open_in_editor_text"); //$NON-NLS-1$
-
 	// Inserts and removes the Bundle-ClassPath header with default output folder entry in manifest
 	private Action updateClassPathAction;
-	final private String updateClassPathGeneralText = Message.getInstance().formatString(
-			"update_class_path_general_text"); //$NON-NLS-1$
-	final private String updateClassPathText = Message.getInstance().formatString(
-			"update_class_path_text"); //$NON-NLS-1$
-	protected static String addClassPathLabel = Message.getInstance().formatString(
-			"add_classpath_label_popup"); //$NON-NLS-1$
-	protected static String removeClassPathLabel = Message.getInstance().formatString(
-			"remove_classpath_label_popup"); //$NON-NLS-1$
-
 	// Link with explorers
 	private Action linkWithAction;
-	final private String linkWithText = Message.getInstance().formatString("link_with_explorers"); //$NON-NLS-1$
-	final private String linkWithGeneralText = Message.getInstance().formatString(
-			"link_with_explorers_general_text"); //$NON-NLS-1$
-	private Boolean linkWithState = false;
-
+	private boolean linkWithState;
 	// Select bundles with this index next time the list page is updated
 	private int selectIndex = 0;
-
 	// Renamed, deleted and closed projects are marked as removed to prohibit displaying them in pages
 	private IProject removedProject;
-
 	// Dynamically delegates the selection provider role to the currently active page.
 	final private SelectionProviderIntermediate selectionProviderIntermediate = new SelectionProviderIntermediate();
-
 	// Refreshes the bundle properties page
 	private BundlePropertySheetPage bundlePropertySheetPage;
-
 	// Save/restore session state
 	private IMemento memento;
-
 	// Track selections in explorers
 	private IViewPart packageExplorer;
 	private IViewPart projectExplorer;
@@ -852,7 +796,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 	 */
 	private void createLocalActions() {
 
-		linkWithAction = new Action(linkWithGeneralText, Action.AS_CHECK_BOX) {
+		linkWithAction = new Action(Msg.LINK_WITH_EXPLORERS_GENERAL_LABEL, Action.AS_CHECK_BOX) {
 			/**
 			 * Enable/Disable linking with package and project explorer
 			 */
@@ -865,7 +809,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 			}
 		};
 
-		updateClassPathAction = new Action(updateClassPathGeneralText) {
+		updateClassPathAction = new Action(Msg.UPDATE_CLASS_PATH_GENERAL_LABEL) {
 			/**
 			 * Update bin class path if missing
 			 */
@@ -882,7 +826,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 									Collections.<IProject> singletonList(project), false);
 						}
 					} catch (InPlaceException | ExtenderException e) {
-						String msg = NLS.bind(Msg.ADD_MENU_EXEC_ERROR, updateClassPathText);
+						String msg = NLS.bind(Msg.ADD_MENU_EXEC_ERROR, Msg.UPDATE_CLASS_PATH_LABEL);
 						StatusManager.getManager().handle(
 								new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, project, msg, e),
 								StatusManager.LOG);
@@ -891,7 +835,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 			}
 		};
 
-		activateAction = new Action(activationGeneralText) {
+		activateAction = new Action(Msg.ACTIVATE_GENERAL_LABEL) {
 			/**
 			 * Activate or deactivate bundle.
 			 */
@@ -907,7 +851,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 							BundleMenuActivationHandler.activateProjectHandler(projects);
 						}
 					} catch (ExtenderException e) {
-						String msg = NLS.bind(Msg.ADD_MENU_EXEC_ERROR, activationGeneralText);
+						String msg = NLS.bind(Msg.ADD_MENU_EXEC_ERROR, Msg.ACTIVATE_GENERAL_LABEL);
 						StatusManager.getManager().handle(
 								new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, msg, e),
 								StatusManager.LOG);
@@ -916,7 +860,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 			}
 		};
 
-		resetAction = new Action(resetGeneralText) {
+		resetAction = new Action(Msg.RESET_GENERAL_LABEL) {
 			/**
 			 * Reset activated bundle
 			 */
@@ -930,7 +874,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 									.<IProject> singletonList(project));
 						}
 					} catch (ExtenderException e) {
-						String msg = NLS.bind(Msg.ADD_MENU_EXEC_ERROR, resetText);
+						String msg = NLS.bind(Msg.ADD_MENU_EXEC_ERROR, Msg.RESET_POPUP_LABEL);
 						StatusManager.getManager().handle(
 								new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, msg, e),
 								StatusManager.LOG);
@@ -939,7 +883,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 			}
 		};
 
-		updateAction = new Action(updateGeneralText) {
+		updateAction = new Action(Msg.UPDATE_GENERAL_LABEL) {
 			/**
 			 * Update activated bundle if pending
 			 */
@@ -954,7 +898,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 						}
 					}
 				} catch (ExtenderException e) {
-					String msg = NLS.bind(Msg.ADD_MENU_EXEC_ERROR, updateText);
+					String msg = NLS.bind(Msg.ADD_MENU_EXEC_ERROR, Msg.UPDATE_POPUP_LABEL);
 					StatusManager.getManager().handle(
 							new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, msg, e),
 							StatusManager.LOG);
@@ -962,7 +906,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 			}
 		};
 
-		refreshAction = new Action(refreshGeneralText) {
+		refreshAction = new Action(Msg.REFRSH_GENERAL_LABEL) {
 			/**
 			 * Refresh an activated bundle when number of bundle revisions is greater than one.
 			 */
@@ -980,7 +924,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 							}
 						}
 					} catch (ExtenderException e) {
-						String msg = NLS.bind(Msg.ADD_MENU_EXEC_ERROR, refreshText);
+						String msg = NLS.bind(Msg.ADD_MENU_EXEC_ERROR, Msg.REFRESH_POPUP_LABEL);
 						StatusManager.getManager().handle(
 								new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, project, msg, e),
 								StatusManager.LOG);
@@ -989,7 +933,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 			}
 		};
 
-		startStopAction = new Action(startStopGeneralText) {
+		startStopAction = new Action(Msg.START_STOP_GENERAL_LABEL) {
 			/**
 			 * Start and stop activated bundle
 			 */
@@ -1011,7 +955,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 							}
 						}
 					} catch (ExtenderException e) {
-						String msg = NLS.bind(Msg.ADD_MENU_EXEC_ERROR, startStopGeneralText);
+						String msg = NLS.bind(Msg.ADD_MENU_EXEC_ERROR, Msg.START_STOP_GENERAL_LABEL);
 						StatusManager.getManager().handle(
 								new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, project, msg, e),
 								StatusManager.LOG);
@@ -1020,7 +964,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 			}
 		};
 
-		flipPageAction = new Action(flipDetailsGeneralText) {
+		flipPageAction = new Action(Msg.FLIP_DETAILS_LABEL) {
 			/**
 			 * Toggle details and list page
 			 */
@@ -1041,7 +985,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 								true);
 					}
 				} catch (ExtenderException e) {
-					String msg = NLS.bind(Msg.ADD_MENU_EXEC_ERROR, flipListGeneralText);
+					String msg = NLS.bind(Msg.ADD_MENU_EXEC_ERROR, Msg.FLIP_LIST_LABEL);
 					StatusManager.getManager().handle(
 							new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, project, msg, e),
 							StatusManager.LOG);
@@ -1049,7 +993,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 			}
 		};
 
-		editManifestAction = new Action(openInEditorText) {
+		editManifestAction = new Action(Msg.OPEN_IN_EDITOR_LABEL) {
 			/**
 			 * Opens the Plug-in Manifest editor on the selected bundle
 			 */
@@ -1116,30 +1060,30 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 		// not a plug-in or not a bundle (should not exist in bundle list) and when a bundle job is
 		// running
 		if (null == project || isBundleJobRunning() || !bundleProjectCandidates.isInstallable(project)) {
-			setUIElement(resetAction, false, resetGeneralText, resetGeneralText,
+			setUIElement(resetAction, false, Msg.RESET_GENERAL_LABEL, Msg.RESET_GENERAL_LABEL,
 					BundleCommandsContributionItems.resetImage);
-			setUIElement(startStopAction, false, startStopGeneralText, startStopGeneralText,
+			setUIElement(startStopAction, false, Msg.START_STOP_GENERAL_LABEL, Msg.START_STOP_GENERAL_LABEL,
 					BundleCommandsContributionItems.startImage);
-			setUIElement(activateAction, false, activationGeneralText, activationGeneralText,
+			setUIElement(activateAction, false, Msg.ACTIVATE_GENERAL_LABEL, Msg.ACTIVATE_GENERAL_LABEL,
 					BundleCommandsContributionItems.activateImage);
 			setUpdateRefresh(false, null);
 			if (isBundleJobRunning()) {
-				setNonBundleCommandsAction(true, true, true, flipDetailsGeneralText,
-						flipDetailsGeneralText, BundleCommandsContributionItems.bundleListImage);
+				setNonBundleCommandsAction(true, true, true, Msg.FLIP_DETAILS_LABEL,
+						Msg.FLIP_DETAILS_LABEL, BundleCommandsContributionItems.bundleListImage);
 			} else {
-				setNonBundleCommandsAction(false, false, false, flipDetailsGeneralText,
-						flipDetailsGeneralText, BundleCommandsContributionItems.bundleListImage);
+				setNonBundleCommandsAction(false, false, false, Msg.FLIP_DETAILS_LABEL,
+						Msg.FLIP_DETAILS_LABEL, BundleCommandsContributionItems.bundleListImage);
 			}
-			setUIElement(updateClassPathAction, false, updateClassPathText, updateClassPathText,
+			setUIElement(updateClassPathAction, false, Msg.UPDATE_CLASS_PATH_LABEL, Msg.UPDATE_CLASS_PATH_LABEL,
 					BundleCommandsContributionItems.classPathImage);
 			return;
 		}
 		// Enable all non bundle commands. Flip page is dependent on the active page
 		if (isListPageActive()) {
-			setNonBundleCommandsAction(true, true, true, flipDetailsGeneralText, flipDetailsGeneralText,
+			setNonBundleCommandsAction(true, true, true, Msg.FLIP_DETAILS_LABEL, Msg.FLIP_DETAILS_LABEL,
 					BundleCommandsContributionItems.bundleDetailsImage);
 		} else if (isDetailsPageActive()) {
-			setNonBundleCommandsAction(true, true, true, flipListGeneralText, flipListGeneralText,
+			setNonBundleCommandsAction(true, true, true, Msg.FLIP_LIST_LABEL, Msg.FLIP_LIST_LABEL,
 					BundleCommandsContributionItems.bundleListImage);
 		}
 		// Always possible to activate or deactivate a project
@@ -1152,22 +1096,22 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 			if (null != bundle) {
 				// Start and Stop is dependent on the bundle state of the activated bundle
 				if ((bundle.getState() & (Bundle.ACTIVE | Bundle.STARTING)) != 0) {
-					setUIElement(startStopAction, true, stopText, stopText,
+					setUIElement(startStopAction, true, Msg.STOP_LABEL, Msg.STOP_LABEL,
 							BundleCommandsContributionItems.stopImage);
 				} else { // bundle in state installed or resolved
 					try {
 						if (Activator.getBundleProjectMetaService().isFragment(bundle)) {
-							setUIElement(startStopAction, false, startText, startText,
+							setUIElement(startStopAction, false, Msg.START_LABEL, Msg.START_LABEL,
 									BundleCommandsContributionItems.startImage);
 						} else {
-							setUIElement(startStopAction, true, startText, startText,
+							setUIElement(startStopAction, true, Msg.START_LABEL, Msg.START_LABEL,
 									BundleCommandsContributionItems.startImage);
 						}
 					} catch (ExtenderException e) {
 						StatusManager.getManager().handle(
 								new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),
 								StatusManager.LOG);
-						setUIElement(startStopAction, false, startText, startText,
+						setUIElement(startStopAction, false, Msg.START_LABEL, Msg.START_LABEL,
 								BundleCommandsContributionItems.startImage);
 					}
 				}
@@ -1176,46 +1120,60 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 			} else {
 				// Project is activated but bundle is not yet. Meaning that the bundle has not been
 				// installed and resolved/started yet. 
-				setUIElement(startStopAction, false, startText, startText,
+				setUIElement(startStopAction, false, Msg.START_LABEL, Msg.START_LABEL,
 						BundleCommandsContributionItems.startImage);
 				// Conditional enabling of update and refresh
 				setUpdateRefresh(false, null);
 			}
 			// Reset always possible on an activated project
-			setUIElement(resetAction, true, resetText, resetText,
+			setUIElement(resetAction, true, Msg.RESET_POPUP_LABEL, Msg.RESET_POPUP_LABEL,
 					BundleCommandsContributionItems.resetImage);
 			// Always possible to deactivate an activated project
-			setUIElement(activateAction, activateAction.isEnabled(), deactivateText, deactivateText,
+			setUIElement(activateAction, activateAction.isEnabled(), Msg.DEACTIVATE_POPUP_LABEL, Msg.DEACTIVATE_POPUP_LABEL,
 					BundleCommandsContributionItems.deactivateImage);
 		} else {
 			// Enable activate and disable start/stop, refresh, reset and update when project is
 			// deactivated
-			setUIElement(resetAction, false, resetGeneralText, resetGeneralText,
+			setUIElement(resetAction, false, Msg.RESET_GENERAL_LABEL, Msg.RESET_GENERAL_LABEL,
 					BundleCommandsContributionItems.resetImage);
-			setUIElement(startStopAction, false, startStopGeneralText, startStopGeneralText,
+			setUIElement(startStopAction, false, Msg.START_STOP_GENERAL_LABEL, Msg.START_STOP_GENERAL_LABEL,
 					BundleCommandsContributionItems.startImage);
-			setUIElement(activateAction, activateAction.isEnabled(), activateText, activateText,
+			setUIElement(activateAction, activateAction.isEnabled(), Msg.ACTIVATE_LABEL, Msg.ACTIVATE_LABEL,
 					BundleCommandsContributionItems.activateImage);
 			setUpdateRefresh(false, null);
 		}
 	}
 
-	private void setUpdateRefresh(boolean enable, Bundle bundle) {
+	private void setUpdateRefresh(boolean enabled, Bundle bundle) {
 
-		if (enable && null != bundle) {
-			setUIElement(updateAction, true, updateText, updateText,
-					BundleCommandsContributionItems.updateImage);
+		if (enabled && null != bundle) {
 			try {
-				setUIElement(refreshAction, true, refreshText, refreshText,
+				String updateLabel = Msg.UPDATE_POPUP_LABEL;
+				if (Activator.getBundleTransitionService().containsPending(bundle, Transition.UPDATE,
+						Boolean.FALSE)) {
+					updateLabel = Msg.UPDATE_PENDING_LABEL;
+				}
+				setUIElement(updateAction, true, updateLabel, updateLabel,
+						BundleCommandsContributionItems.updateImage);
+			} catch (InPlaceException | ExtenderException e) {
+				setUIElement(updateAction, true, Msg.UPDATE_GENERAL_LABEL, Msg.UPDATE_GENERAL_LABEL,
+						BundleCommandsContributionItems.updateImage);
+			}
+			try {
+				String refreshLabel = Msg.REFRESH_POPUP_LABEL;
+				if (Activator.getBundleCommandService().getBundleRevisions(bundle).size() > 1) {
+					refreshLabel = Msg.REFRESH_PENDING_LABEL;
+				}
+				setUIElement(refreshAction, true, refreshLabel, refreshLabel,
 						BundleCommandsContributionItems.refreshImage);
-			} catch (InPlaceException e) {
-				setUIElement(refreshAction, false, refreshGeneralText, refreshGeneralText,
+			} catch (InPlaceException | ExtenderException e) {
+				setUIElement(refreshAction, false, Msg.REFRSH_GENERAL_LABEL, Msg.REFRSH_GENERAL_LABEL,
 						BundleCommandsContributionItems.refreshImage);
 			}
 		} else {
-			setUIElement(updateAction, false, updateGeneralText, updateGeneralText,
+			setUIElement(updateAction, false, Msg.UPDATE_GENERAL_LABEL, Msg.UPDATE_GENERAL_LABEL,
 					BundleCommandsContributionItems.updateImage);
-			setUIElement(refreshAction, false, refreshGeneralText, refreshGeneralText,
+			setUIElement(refreshAction, false, Msg.REFRSH_GENERAL_LABEL, Msg.REFRSH_GENERAL_LABEL,
 					BundleCommandsContributionItems.refreshImage);
 		}
 	}
@@ -1224,9 +1182,9 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 			boolean flipPageState, String flipPageToolTipText, String flipPageText,
 			ImageDescriptor flipPageImage) {
 
-		setUIElement(editManifestAction, editManifestState, openInEditorText, openInEditorGeneralText,
+		setUIElement(editManifestAction, editManifestState, Msg.OPEN_IN_EDITOR_LABEL, Msg.OPEN_IN_EDITOR_GENERAL_LABEL,
 				mfEditorImage);
-		setUIElement(linkWithAction, linkWithState, linkWithText, linkWithGeneralText, linkedWithImage);
+		setUIElement(linkWithAction, linkWithState, Msg.LINK_WITH_EXPLORERS_LABEL, Msg.LINK_WITH_EXPLORERS_GENERAL_LABEL, linkedWithImage);
 		setUIElement(flipPageAction, flipPageState, flipPageText, flipPageToolTipText, flipPageImage);
 	}
 
@@ -1241,13 +1199,11 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 			updateClassPathAction.setEnabled(true);
 			if (!Activator.getBundleProjectMetaService().isDefaultOutputFolder(project)) {
 				setUIElement(updateClassPathAction, updateClassPathAction.isEnabled(),
-						addClassPathLabel /* updateClassPathText */,
-						addClassPathLabel /* updateClassPathText */,
+						Msg.ADD_CLASSPATH_POPUP_LABEL, Msg.ADD_CLASSPATH_POPUP_LABEL,
 						BundleCommandsContributionItems.classPathImage);
 			} else {
 				setUIElement(updateClassPathAction, updateClassPathAction.isEnabled(),
-						removeClassPathLabel /* updateClassPathText */,
-						removeClassPathLabel /* updateClassPathText */,
+						Msg.REMOVE_CLASSPATH_POPUP_LABEL, Msg.REMOVE_CLASSPATH_POPUP_LABEL,
 						BundleCommandsContributionItems.classPathImage);
 			}
 		} catch (InPlaceException | ExtenderException e) {
@@ -1349,7 +1305,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 		if (listTitleImage == null || listTitleImage.isDisposed()) {
 			return;
 		}
-		setPartName(listPageCaptionTitle);
+		setPartName(Msg.BUNDLE_LIST_PAGE_CAPTION_TITLE_LABEL);
 		setTitleImage(listTitleImage);
 		IProject removedProject = getRemovedProject();
 		if (null != removedProject) {
@@ -1387,7 +1343,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 	public void showProject(IProject project) {
 
 		if (null != project) {
-			setPartName(detailsPageCaptionTitle);
+			setPartName(Msg.BUNDLE_DETAILS_PAGE_CAPTION_TITLE_LABEL);
 			setTitleImage(detailsTitleImage);
 			IProject removedProject = getRemovedProject();
 			if (null != removedProject && removedProject.equals(project)) {

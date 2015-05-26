@@ -32,7 +32,6 @@ import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import no.javatime.util.messages.ErrorMessage;
 import no.javatime.util.messages.ExceptionMessage;
-import no.javatime.util.messages.Message;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
@@ -44,19 +43,11 @@ import org.osgi.framework.Bundle;
 
 public class ActivateProjectJob extends NatureJob implements ActivateProject {
 
-	/** Standard name of an activate job */
-	final public static String activateProjectJobName = Msg.ACTIVATE_PROJECT_JOB;
-	final public static String activateWorkspaceJobName = Msg.ACTIVATE_WORKSPACE_JOB;
-
-	/** Used to name the set of operations needed to activate a project */
-	final private static String activateProjectTaskName = Message.getInstance().formatString(
-			"activate_project_task_name");
-
 	/**
-	 * Default constructor wit a default job name
+	 * Default constructor with a default job name
 	 */
 	public ActivateProjectJob() {
-		super(activateProjectJobName);
+		super(Msg.ACTIVATE_PROJECT_JOB);
 	}
 
 	/**
@@ -91,10 +82,7 @@ public class ActivateProjectJob extends NatureJob implements ActivateProject {
 	/**
 	 * Runs the project(s) activation operation.
 	 * 
-	 * @return a {@code BundleStatus} object with {@code BundleStatusCode.OK} if job terminated
-	 * normally and no status objects have been added to this job status list and
-	 * {@code BundleStatusCode.ERROR} if the job fails or {@code BundleStatusCode.JOBINFO} if any
-	 * status objects have been added to the job status list.
+	 * @return A bundle status object obtained from {@link #getJobSatus()} 
 	 */
 	@Override
 	public IBundleStatus runInWorkspace(IProgressMonitor monitor) {
@@ -102,7 +90,7 @@ public class ActivateProjectJob extends NatureJob implements ActivateProject {
 		try {
 			super.runInWorkspace(monitor);
 			BundleTransitionListener.addBundleTransitionListener(this);
-			monitor.beginTask(activateProjectTaskName, getTicks());
+			monitor.beginTask(Msg.ACTIVATE_PROJECT_TASK_JOB, getTicks());
 			activate(monitor);
 		} catch (InterruptedException e) {
 			String msg = ExceptionMessage.getInstance().formatString("interrupt_job", getName());

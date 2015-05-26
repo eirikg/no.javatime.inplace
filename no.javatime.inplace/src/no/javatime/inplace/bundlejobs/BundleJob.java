@@ -43,7 +43,6 @@ import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import no.javatime.util.messages.Category;
 import no.javatime.util.messages.ErrorMessage;
 import no.javatime.util.messages.ExceptionMessage;
-import no.javatime.util.messages.Message;
 import no.javatime.util.messages.WarnMessage;
 
 import org.eclipse.core.resources.IProject;
@@ -71,26 +70,8 @@ import org.osgi.framework.BundleException;
  */
 public class BundleJob extends JobStatus implements BundleExecutor {
 
-	/** Standard activate bundle job name */
-	final public static String activateJobName = Message.getInstance().formatString(
-			"activate_bundle_job_name");
-
-	/** Standard update bundle job name */
-	final public static String updateJobName = Message.getInstance().formatString("update_job_name");
-
-	/** Name of the uninstall operation */
-	final protected static String uninstallSubtaskName = Message.getInstance().formatString(
-			"uninstall_subtask_name");
-	/** Name of the install operation */
-	final protected static String installSubtaskName = Message.getInstance().formatString(
-			"install_subtask_name");
-	final protected static String reInstallSubtaskName = Message.getInstance().formatString(
-			"reinstall_subtask_name");
-	/** Name of the resolve operation */
-	final protected static String resolveTaskName = Message.getInstance().formatString(
-			"resolve_task_name");
 	/** Use the same rules as the build system */
-	public static final ISchedulingRule buildRule = ResourcesPlugin.getWorkspace().getRuleFactory()
+	private static final ISchedulingRule buildRule = ResourcesPlugin.getWorkspace().getRuleFactory()
 			.buildRule();
 
 	/**
@@ -263,7 +244,7 @@ public class BundleJob extends JobStatus implements BundleExecutor {
 				try {
 					if (Category.getState(Category.progressBar))
 						sleep(sleepTime);
-					localMonitor.subTask(StartJob.startSubTaskName + bundle.getSymbolicName());
+					localMonitor.subTask(NLS.bind(Msg.START_SUB_TASK_JOB, bundle.getSymbolicName()));
 					if (null != exceptionBundles) {
 						try {
 							// Do not start this bundle if it has requirements on bundles that are not started
@@ -398,7 +379,7 @@ public class BundleJob extends JobStatus implements BundleExecutor {
 				try {
 					if (Category.getState(Category.progressBar))
 						sleep(sleepTime);
-					localMonitor.subTask(StopJob.stopSubTaskName + bundle.getSymbolicName());
+					localMonitor.subTask(NLS.bind(Msg.STOP_SUB_TASK_JOB, bundle.getSymbolicName()));
 					if ((bundle.getState() & (Bundle.ACTIVE | Bundle.STARTING)) != 0) {
 						if (timeout) {
 							bundleCommand.stop(bundle, false, timeoutVal);
@@ -582,7 +563,7 @@ public class BundleJob extends JobStatus implements BundleExecutor {
 		SubMonitor localMonitor = SubMonitor.convert(subMonitor, bundlesToRefresh.size());
 		if (Category.getState(Category.progressBar))
 			sleep(sleepTime);
-		localMonitor.subTask(RefreshJob.refreshTaskName);
+		localMonitor.subTask(Msg.REFRESH_TASK_JOB);
 		if (Category.DEBUG && Category.getState(Category.listeners)) {
 			// Report on any additional bundles refreshed than those specified
 			Collection<Bundle> dependencyClosure = bundleCommand.getDependencyClosure(bundlesToRefresh);
@@ -651,7 +632,7 @@ public class BundleJob extends JobStatus implements BundleExecutor {
 		try {
 			if (Category.getState(Category.progressBar))
 				sleep(sleepTime);
-			localMonitor.subTask(resolveTaskName);
+			localMonitor.subTask(Msg.RESOLVE_TASK_JOB);
 			if (!bundleCommand.resolve(bundlesToResolve)) {
 				Collection<IProject> projectsToResolve = bundleRegion.getProjects(bundlesToResolve);
 				BuildErrorClosure be = new BuildErrorClosure(projectsToResolve, Transition.RESOLVE,
@@ -880,8 +861,8 @@ public class BundleJob extends JobStatus implements BundleExecutor {
 	 * @param projects duplicate candidates to workspace bundles
 	 * @param bDepClosures existing dependency closure of bundles to the specified candidate projects.
 	 * May be null.
-	 * @param pDepClosures TODO
-	 * @param scope TODO
+	 * @param pDepClosures Dependent closure to duplicates
+	 * @param scope Domain for duplicates
 	 * @param message information message added to the end of the error sent to the log view if
 	 * duplicates are detected. Null is allowed.
 	 * @return all duplicates and the requiring dependency closure for each duplicate or null if no

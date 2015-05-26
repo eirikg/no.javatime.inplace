@@ -162,8 +162,7 @@ public class BundleJobListener extends JobChangeAdapter {
 		Collection<IProject> projectsToActivate = bundleTransition.getPendingProjects(
 				deactivatedProjects, Transition.ACTIVATE_PROJECT);
 		if (projectsToActivate.size() > 0) {
-			bundleJob = new ActivateProjectJob(ActivateProjectJob.activateProjectJobName,
-					projectsToActivate);
+			bundleJob = new ActivateProjectJob(Msg.ACTIVATE_PROJECT_JOB, projectsToActivate);
 			bundleTransition.removePending(projectsToActivate, Transition.ACTIVATE_PROJECT);
 			if (Activator.getMessageOptionsService().isBundleOperations()) {
 				try {
@@ -194,14 +193,14 @@ public class BundleJobListener extends JobChangeAdapter {
 		Collection<IProject> projectsToRefresh = bundleTransition.getPendingProjects(activatedProjects,
 				Transition.REFRESH);
 		if (projectsToRefresh.size() > 0) {
-			bundleJob = new RefreshJob(RefreshJob.refreshJobName, projectsToRefresh);
+			bundleJob = new RefreshJob(Msg.REFRESH_JOB, projectsToRefresh);
 			bundleTransition.removePending(projectsToRefresh, Transition.REFRESH);
 			Activator.getBundleExecutorEventService().add(bundleJob);
 		}
 		Collection<IProject> projectsToDeactivate = bundleTransition.getPendingProjects(
 				activatedProjects, Transition.DEACTIVATE);
 		if (projectsToDeactivate.size() > 0) {
-			bundleJob = new DeactivateJob(DeactivateJob.deactivateJobName, projectsToDeactivate);
+			bundleJob = new DeactivateJob(Msg.DEACTIVATE_BUNDLES_JOB, projectsToDeactivate);
 			bundleTransition.removePending(projectsToDeactivate, Transition.DEACTIVATE);
 			Activator.getBundleExecutorEventService().add(bundleJob);
 		}

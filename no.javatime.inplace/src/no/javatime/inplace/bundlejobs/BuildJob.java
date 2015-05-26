@@ -20,7 +20,6 @@ import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import no.javatime.util.messages.ErrorMessage;
 import no.javatime.util.messages.ExceptionMessage;
-import no.javatime.util.messages.Message;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IncrementalProjectBuilder;
@@ -37,16 +36,6 @@ import org.eclipse.osgi.util.NLS;
  */
 public class BuildJob extends NatureJob {
 
-	/** Job name for a full build */
-	final public static String fullBuildProjectJobName = Message.getInstance().formatString(
-			"full_project_build_job_name");
-	/** Job name for an incremental build */
-	final public static String incrementalBuildProjectJobName = Message.getInstance().formatString(
-			"incremental_project_build_job_name");
-	/** Job name for full build of all projects in workspace */
-	final public static String fullBuildWorkspaceJobName = Message.getInstance().formatString(
-			"full_workspacet_build_job_name");
-
 	/** Either full or incremental. Default is full. */
 	private int buildType = IncrementalProjectBuilder.FULL_BUILD;
 
@@ -54,9 +43,9 @@ public class BuildJob extends NatureJob {
 	 * Construct a build job with a given job name
 	 * 
 	 * @param name job name
-	 * @see #fullBuildProjectJobName
-	 * @see #incrementalBuildProjectJobName
-	 * @see #fullBuildWorkspaceJobName
+	 * @see Msg#FULL_BUILD_JOB
+	 * @see Msg#INCREMENTAL_BUILD_JOB
+	 * @see Msg#FULL_WORKSPACE_BUILD_JOB
 	 */
 	public BuildJob(String name) {
 		super(name);
@@ -68,9 +57,9 @@ public class BuildJob extends NatureJob {
 	 * 
 	 * @param name job name
 	 * @param buildType
-	 * @see #fullBuildProjectJobName
-	 * @see #incrementalBuildProjectJobName
-	 * @see #fullBuildWorkspaceJobName
+	 * @see Msg#FULL_BUILD_JOB
+	 * @see Msg#INCREMENTAL_BUILD_JOB
+	 * @see Msg#FULL_WORKSPACE_BUILD_JOB
 	 * @see org.eclipse.core.resources.IncrementalProjectBuilder#FULL_BUILD
 	 * @see org.eclipse.core.resources.IncrementalProjectBuilder#INCREMENTAL_BUILD
 	 * @see org.eclipse.core.resources.IncrementalProjectBuilder#CLEAN_BUILD
@@ -87,9 +76,9 @@ public class BuildJob extends NatureJob {
 	 * @param name job name
 	 * @param buildType
 	 * @param projects to build according to the specified build type
-	 * @see #fullBuildProjectJobName
-	 * @see #incrementalBuildProjectJobName
-	 * @see #fullBuildWorkspaceJobName
+	 * @see Msg#FULL_BUILD_JOB
+	 * @see Msg#INCREMENTAL_BUILD_JOB
+	 * @see Msg#FULL_WORKSPACE_BUILD_JOB
 	 * @see org.eclipse.core.resources.IncrementalProjectBuilder#FULL_BUILD
 	 * @see org.eclipse.core.resources.IncrementalProjectBuilder#INCREMENTAL_BUILD
 	 * @see org.eclipse.core.resources.IncrementalProjectBuilder#CLEAN_BUILD
@@ -102,17 +91,14 @@ public class BuildJob extends NatureJob {
 	/**
 	 * Runs the project(s) build operation.
 	 * 
-	 * @return a {@code BundleStatus} object with {@code BundleStatusCode.OK} if job terminated normally and no
-	 *         status objects have been added to this job status list and {@code BundleStatusCode.ERROR} if the
-	 *         job fails or {@code BundleStatusCode.JOBINFO} if any status objects have been added to the job
-	 *         status list.
+	 * @return A bundle status object obtained from {@link #getJobSatus()} 
 	 */
 	@Override
 	public IBundleStatus runInWorkspace(IProgressMonitor monitor) {
 
 		try {
 			super.runInWorkspace(monitor);
-			monitor.beginTask(buildTaskName, getTicks());
+			monitor.beginTask(Msg.BUILD_TASK_JOB, getTicks());
 			BundleTransitionListener.addBundleTransitionListener(this);
 			if (buildType == IncrementalProjectBuilder.INCREMENTAL_BUILD) {
 				incrementalBuild(monitor);
@@ -151,7 +137,7 @@ public class BuildJob extends NatureJob {
 				|| IncrementalProjectBuilder.CLEAN_BUILD == buildType) {
 			ResourcesPlugin.getWorkspace().build(buildType, new SubProgressMonitor(monitor, 1));
 		} else {
-			buildProjects(getPendingProjects(), buildType, buildTaskName, new SubProgressMonitor(monitor, 1));
+			buildProjects(getPendingProjects(), buildType, Msg.BUILD_TASK_JOB, new SubProgressMonitor(monitor, 1));
 		}
 	}
 
@@ -163,7 +149,7 @@ public class BuildJob extends NatureJob {
 	 */
 	private void incrementalBuild(IProgressMonitor monitor) throws CoreException {
 
-		buildProjects(getPendingProjects(), buildType, buildTaskName, new SubProgressMonitor(monitor, 3));
+		buildProjects(getPendingProjects(), buildType, Msg.BUILD_TASK_JOB, new SubProgressMonitor(monitor, 3));
 	}
 
 	/**

@@ -248,7 +248,7 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 			if (!commandOptions.isAllowUIContributions()
 					&& bundleProjectCandidates.getUIPlugins().contains(project)) {
 				if (null == bundle) {
-					ActivateProject activate = new ActivateProjectJob(ActivateProjectJob.activateProjectJobName);
+					ActivateProject activate = new ActivateProjectJob();
 					if (!bundleRegion.isProjectRegistered(project)) {
 						boolean natureEnabled = activate.isProjectActivated(project);
 						bundleRegion.registerBundleProject(project, bundle, natureEnabled);

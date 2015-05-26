@@ -103,7 +103,7 @@ public class StartUpJob extends NatureJob implements BundleExecutor {
 					addLogStatus(new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, msg));
 				}
 			}
-			ActivateBundle activateBundle = new ActivateBundleJob(ActivateBundleJob.activateStartupJobName);
+			ActivateBundle activateBundle = new ActivateBundleJob(Msg.STARTUP_ACTIVATE_BUNDLE_JOB);
 			Collection<IProject> activatedProjects = getActivatedProjects();
 			if (activatedProjects.size() > 0) {
 				Collection<IProject> deactivatedProjects = deactivateBuildErrorClosures(activatedProjects);

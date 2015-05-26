@@ -29,7 +29,6 @@ import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import no.javatime.util.messages.ErrorMessage;
 import no.javatime.util.messages.ExceptionMessage;
-import no.javatime.util.messages.Message;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
@@ -39,20 +38,11 @@ import org.eclipse.osgi.util.NLS;
 
 public class InstallJob extends NatureJob implements Install {
 
-	/** Standard name of an install job */
-	final public static String installJobName = Message.getInstance()
-			.formatString("install_job_name");
-	/** Used to name the set of operations needed to install a bundle */
-	final private static String installTaskName = Message.getInstance().formatString(
-			"install_task_name");
-	final private static String duplicateMessage = ErrorMessage.getInstance().formatString(
-			"duplicate_ws_bundle_install");
-
 	/**
 	 * Default constructor wit a default job name
 	 */
 	public InstallJob() {
-		super(installJobName);
+		super(Msg.INSTALL_JOB);
 	}
 
 	/**
@@ -87,17 +77,14 @@ public class InstallJob extends NatureJob implements Install {
 	/**
 	 * Runs the bundle project(s) install operation.
 	 * 
-	 * @return a {@code BundleStatus} object with {@code BundleStatusCode.OK} if job terminated
-	 * normally and no status objects have been added to this job status list and
-	 * {@code BundleStatusCode.ERROR} if the job fails or {@code BundleStatusCode.JOBINFO} if any
-	 * status objects have been added to the job status list.
+	 * @return A bundle status object obtained from {@link #getJobSatus()} 
 	 */
 	@Override
 	public IBundleStatus runInWorkspace(IProgressMonitor monitor) {
 
 		try {
 			super.runInWorkspace(monitor);
-			monitor.beginTask(installTaskName, 1);
+			monitor.beginTask(Msg.INSTALL_TASK_JOB, 1);
 			BundleTransitionListener.addBundleTransitionListener(this);
 			if (isProjectWorkspaceActivated()) {
 				if (!bundleRegion.isRegionActivated()) {
@@ -173,7 +160,7 @@ public class InstallJob extends NatureJob implements Install {
 				removePendingProjects(externalDuplicates);
 			}
 			Collection<IProject> duplicates = removeWorkspaceDuplicates(getPendingProjects(), null, null,
-					bundleProjectCandidates.getInstallable(), duplicateMessage);
+					bundleProjectCandidates.getInstallable(), Msg.DUPLICATE_WS_BUNDLE_INSTALL_ERROR);
 			if (null != duplicates) {
 				status.setStatusCode(StatusCode.BUILDERROR);
 				Collection<IProject> requiringBundles = projectSorter.sortRequiringProjects(duplicates,

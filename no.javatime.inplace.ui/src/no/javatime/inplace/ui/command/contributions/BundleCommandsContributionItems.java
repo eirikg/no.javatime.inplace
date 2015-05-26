@@ -35,6 +35,7 @@ import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.osgi.util.NLS;
+import org.eclipse.ui.IViewPart;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.actions.CompoundContributionItem;
@@ -134,7 +135,7 @@ public abstract class BundleCommandsContributionItems extends CompoundContributi
 			if (null != executor && null != executor.isStateChanging()) {
 				// A job currently executing a start or stop operation and the manual terminate of endless
 				// operations option is enabled
-				return createContibution(menuId, commandId, Msg.STOP_BUNDLE_OP_LABEL, stopOperationParamId,
+				return createContibution(menuId, commandId, Msg.STOP_BUNDLE_OPERATION_LABEL, stopOperationParamId,
 						CommandContributionItem.STYLE_PUSH, null);
 			} 
 		} catch (ExtenderException e) {
@@ -303,10 +304,15 @@ public abstract class BundleCommandsContributionItems extends CompoundContributi
 	/**
 	 * Get the bundle view
 	 * 
-	 * @return the bundle view object or null if not present
+	 * @return the bundle view object or null if not present or in error
 	 */
 	public static BundleView getBundleView() {
-		return (BundleView) ViewUtil.get(BundleView.ID);
+
+		IViewPart vp = ViewUtil.get(BundleView.ID);
+		if (vp instanceof BundleView) {
+			return (BundleView) vp;
+		}
+		return null;
 	}
 
 	/**

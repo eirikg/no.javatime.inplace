@@ -12,7 +12,6 @@ import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import no.javatime.inplace.ui.Activator;
 import no.javatime.inplace.ui.msg.Msg;
-import no.javatime.util.messages.Message;
 import no.javatime.util.messages.WarnMessage;
 
 import org.eclipse.core.resources.IProject;
@@ -28,11 +27,6 @@ import org.eclipse.ui.statushandlers.StatusManager;
 public class BundleClassPathCommandContribution extends BundleMainCommandsContributionItems {
 
 	private String menuIdClasspath = "no.javatime.inplace.command.contributions.dynamicitems.main.classpath";
-
-	private static String addClassPathLabel = Message.getInstance().formatString(
-			"add_classpath_label_main"); //$NON-NLS-1$
-	private static String removeClassPathLabel = Message.getInstance().formatString(
-			"remove_classpath_label_main"); //$NON-NLS-1$
 
 	@Override
 	protected IContributionItem[] getContributionItems() {
@@ -103,12 +97,12 @@ public class BundleClassPathCommandContribution extends BundleMainCommandsContri
 				}
 			}
 			if (nAdd > 0) {
-				String updateLabel = formatLabel(addClassPathLabel, nAdd, Boolean.FALSE);
+				String updateLabel = formatLabel(Msg.ADD_CLASSPATH_MAIN_LABEL, nAdd, Boolean.FALSE);
 				contributions.add(createContibution(menuIdClasspath, dynamicMainCommandId, updateLabel,
 						addClassPathParamId, CommandContributionItem.STYLE_PUSH, classPathImage));
 			}
 			if (nRemove > 0) {
-				String updateLabel = formatLabel(removeClassPathLabel, nRemove, Boolean.FALSE);
+				String updateLabel = formatLabel(Msg.REMOVE_CLASSPATH_MAIN_LABEL, nRemove, Boolean.FALSE);
 				contributions.add(createContibution(menuIdClasspath, dynamicMainCommandId, updateLabel,
 						removeClassPathParamId, CommandContributionItem.STYLE_PUSH, classPathImage));
 			}

@@ -36,7 +36,6 @@ import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import no.javatime.util.messages.ErrorMessage;
 import no.javatime.util.messages.ExceptionMessage;
-import no.javatime.util.messages.Message;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
@@ -49,31 +48,22 @@ import org.osgi.framework.Bundle;
 
 public class ActivateBundleJob extends NatureJob implements ActivateBundle {
 
-	/** Reactivating or activating bundles at start up */
-	final public static String activateStartupJobName = Message.getInstance().formatString(
-			"startup_activate_bundle_job_name");
-	/** Name to the set of operations needed to activate a bundle */
-	final private static String activateTaskName = Message.getInstance().formatString(
-			"activate_bundle_task_name");
-
 	// Activate bundles according to their state in preference store
 	private Boolean useStoredState = false;
-	final private static String duplicateMessage = ErrorMessage.getInstance().formatString(
-			"duplicate_ws_bundle_install");
 
 	/**
-	 * Default constructor wit a default job name
+	 * Default constructor with a default job name
 	 */
 	public ActivateBundleJob() {
-		super(activateJobName);
+		super(Msg.ACTIVATE_BUNDLE_JOB);
 	}
 
 	/**
 	 * Construct an activate job with a given job name
 	 * 
 	 * @param name job name
-	 * @see #activateJobName
-	 * @see #activateStartupJobName
+	 * @see Msg#ACTIVATE_BUNDLE_JOB
+	 * @see Msg#STARTUP_ACTIVATE_BUNDLE_JOB
 	 */
 	public ActivateBundleJob(String name) {
 		super(name);
@@ -84,8 +74,8 @@ public class ActivateBundleJob extends NatureJob implements ActivateBundle {
 	 * 
 	 * @param name job name
 	 * @param projects pending projects to activate
-	 * @see #activateJobName
-	 * @see #activateStartupJobName
+	 * @see Msg#ACTIVATE_BUNDLE_JOB
+	 * @see Msg#STARTUP_ACTIVATE_BUNDLE_JOB
 	 */
 	public ActivateBundleJob(String name, Collection<IProject> projects) {
 		super(name, projects);
@@ -96,8 +86,8 @@ public class ActivateBundleJob extends NatureJob implements ActivateBundle {
 	 * 
 	 * @param name job name
 	 * @param project pending project to activate
-	 * @see #activateJobName
-	 * @see #activateStartupJobName
+	 * @see Msg#ACTIVATE_BUNDLE_JOB
+	 * @see Msg#STARTUP_ACTIVATE_BUNDLE_JOB
 	 */
 	public ActivateBundleJob(String name, IProject project) {
 		super(name, project);
@@ -106,10 +96,7 @@ public class ActivateBundleJob extends NatureJob implements ActivateBundle {
 	/**
 	 * Runs the bundle(s) activation operation.
 	 * 
-	 * @return a {@code BundleStatus} object with {@code BundleStatusCode.OK} if job terminated
-	 * normally and no status objects have been added to this job status list and
-	 * {@code BundleStatusCode.ERROR} if the job fails or {@code BundleStatusCode.JOBINFO} if any
-	 * status objects have been added to the job status list.
+	 * @return A bundle status object obtained from {@link #getJobSatus()} 
 	 */
 	@Override
 	public IBundleStatus runInWorkspace(IProgressMonitor monitor) {
@@ -117,7 +104,7 @@ public class ActivateBundleJob extends NatureJob implements ActivateBundle {
 		try {
 			super.runInWorkspace(monitor);
 			BundleTransitionListener.addBundleTransitionListener(this);
-			monitor.beginTask(activateTaskName, getTicks());
+			monitor.beginTask(Msg.ACTIVATE_BUNDLE_JOB, getTicks());
 			activate(monitor);
 		} catch (InterruptedException e) {
 			String msg = ExceptionMessage.getInstance().formatString("interrupt_job", getName());
@@ -209,7 +196,7 @@ public class ActivateBundleJob extends NatureJob implements ActivateBundle {
 			}
 			activatedBundles = install(getPendingProjects(), monitor);
 			if (!getLastErrorStatus().isOK()) {
-				Deactivate daj = new DeactivateJob(DeactivateJob.deactivateJobName, getPendingProjects());
+				Deactivate daj = new DeactivateJob(Msg.DEACTIVATE_BUNDLES_JOB, getPendingProjects());
 				Activator.getBundleExecutorEventService().add(daj, 0);
 				return addStatus(new BundleStatus(StatusCode.ERROR, Activator.PLUGIN_ID, Msg.INSTALL_ERROR));
 			}
@@ -217,7 +204,7 @@ public class ActivateBundleJob extends NatureJob implements ActivateBundle {
 			handleDuplicates(projectSorter, activatedBundles);
 
 			// Build errors are checked upon project activation
-			if (getName().equals(activateStartupJobName)) {
+			if (getName().equals(Msg.STARTUP_ACTIVATE_BUNDLE_JOB)) {
 				// removeBuildErrorClosures(activatedBundles);
 			}
 		}
@@ -255,7 +242,7 @@ public class ActivateBundleJob extends NatureJob implements ActivateBundle {
 		}
 		// Set the bundle class path on start up if settings (dev and/or update bundle class path) are
 		// changed
-		if (getName().equals(ActivateBundleJob.activateStartupJobName)
+		if (getName().equals(Msg.STARTUP_ACTIVATE_BUNDLE_JOB)
 				&& (null != bundleProjectMeta.inDevelopmentMode() || commandOptions
 						.isUpdateDefaultOutPutFolder())) {
 			for (Bundle bundle : activatedBundles) {
@@ -301,7 +288,7 @@ public class ActivateBundleJob extends NatureJob implements ActivateBundle {
 			}
 			if (null != projectErrorClosures) {
 
-				Deactivate daj = new DeactivateJob(DeactivateJob.deactivateJobName, projectErrorClosures);
+				Deactivate daj = new DeactivateJob(Msg.DEACTIVATE_BUNDLES_JOB, projectErrorClosures);
 				Activator.getBundleExecutorEventService().add(daj, 0);
 				removePendingProjects(projectErrorClosures);
 				if (null != activatedBundles) {
@@ -351,7 +338,7 @@ public class ActivateBundleJob extends NatureJob implements ActivateBundle {
 			removePendingProjects(externalDuplicates);
 		}
 		Collection<IProject> duplicates = removeWorkspaceDuplicates(getPendingProjects(), null, null,
-				bundleProjectCandidates.getInstallable(), duplicateMessage);
+				bundleProjectCandidates.getInstallable(), Msg.DUPLICATE_WS_BUNDLE_INSTALL_ERROR);
 		if (null != duplicates) {
 			Collection<IProject> installedRequirers = projectSorter.sortRequiringProjects(duplicates,
 					true);

@@ -18,7 +18,6 @@ import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import no.javatime.inplace.ui.Activator;
 import no.javatime.inplace.ui.msg.Msg;
 import no.javatime.util.messages.ErrorMessage;
-import no.javatime.util.messages.Message;
 
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.ui.statushandlers.StatusManager;
@@ -30,12 +29,6 @@ import org.eclipse.ui.views.properties.PropertyDescriptor;
  */
 public class BundlePropertiesSource implements IPropertySource {
 	
-	
-	private static String identifiersCategory = Message.getInstance().formatString("properties_identifiers_category");
-	private static String dependenciesAllCategory = Message.getInstance().formatString("properties_all_dependencies_category");
-	private static String dependenciesResolvedCategory = Message.getInstance().formatString("properties_resolved_dependencies_category");
-	private static String statusCategory = Message.getInstance().formatString("properties_status_category");
-	
 	private PropertyDescriptor bundleIdDescriptor = new PropertyDescriptor(BundleProperties.bundleIdLabelName, BundleProperties.bundleIdLabelName);
 	private PropertyDescriptor bundleSymbolicNameDescriptor = new PropertyDescriptor(BundleProperties.bundleSymbolicNameLabelName, BundleProperties.bundleSymbolicNameLabelName);
 	private PropertyDescriptor bundleVersionDescriptor = new PropertyDescriptor(BundleProperties.bundleVersionLabelName, BundleProperties.bundleVersionLabelName);
@@ -45,7 +38,7 @@ public class BundlePropertiesSource implements IPropertySource {
 	private PropertyDescriptor activationStatusDescriptor = new PropertyDescriptor(BundleProperties.activationStatusLabelName, BundleProperties.activationStatusLabelName);
 	
 	private PropertyDescriptor bundleStateDescriptor = new PropertyDescriptor(BundleProperties.bundleStateLabelName, BundleProperties.bundleStateLabelName);
-	private PropertyDescriptor bundleLastCmdDescriptor = new PropertyDescriptor(BundleProperties.lastCmdLabelName, BundleProperties.lastCmdLabelName);
+	private PropertyDescriptor bundleLastCmdDescriptor = new PropertyDescriptor(BundleProperties.lastTransitionLabelName, BundleProperties.lastTransitionLabelName);
 	
 	private PropertyDescriptor servicesInUseDescriptor = new PropertyDescriptor(BundleProperties.servicesInUseLabelName, BundleProperties.servicesInUseLabelName);
 
@@ -59,16 +52,16 @@ public class BundlePropertiesSource implements IPropertySource {
 	
 	public BundlePropertiesSource(BundleProperties adaptableObject) {
 		this.bundleproperties = adaptableObject;
-		bundleIdDescriptor.setCategory(identifiersCategory);
-		bundleSymbolicNameDescriptor.setCategory(identifiersCategory);
-		bundleVersionDescriptor.setCategory(identifiersCategory);
-		projectNameDescriptor.setCategory(identifiersCategory);
-		locationDescriptor.setCategory(identifiersCategory);
-		activationStatusDescriptor.setCategory(statusCategory);
-		bundleStateDescriptor.setCategory(statusCategory);;
-		bundleLastCmdDescriptor.setCategory(statusCategory);;
-		buildStatusDescriptor.setCategory(statusCategory);
-		servicesInUseDescriptor.setCategory(dependenciesResolvedCategory);		
+		bundleIdDescriptor.setCategory(Msg.IDENTIFIERS_PROP_CATEGORY_LABEL);
+		bundleSymbolicNameDescriptor.setCategory(Msg.IDENTIFIERS_PROP_CATEGORY_LABEL);
+		bundleVersionDescriptor.setCategory(Msg.IDENTIFIERS_PROP_CATEGORY_LABEL);
+		projectNameDescriptor.setCategory(Msg.IDENTIFIERS_PROP_CATEGORY_LABEL);
+		locationDescriptor.setCategory(Msg.IDENTIFIERS_PROP_CATEGORY_LABEL);
+		activationStatusDescriptor.setCategory(Msg.STATUS_PROP_CATEGORY_LABEL);
+		bundleStateDescriptor.setCategory(Msg.STATUS_PROP_CATEGORY_LABEL);
+		bundleLastCmdDescriptor.setCategory(Msg.STATUS_PROP_CATEGORY_LABEL);
+		buildStatusDescriptor.setCategory(Msg.STATUS_PROP_CATEGORY_LABEL);
+		servicesInUseDescriptor.setCategory(Msg.RESOLVED_DEPENDENCIES_PROP_CATEGORY_LABEL);		
 	}
 
 	@Override
@@ -80,15 +73,15 @@ public class BundlePropertiesSource implements IPropertySource {
 	public IPropertyDescriptor[] getPropertyDescriptors() {
 //		PropertyDescriptor bundleNameDescriptor = new PropertyDescriptor(BundleProperties.bundleLabelName, bundleproperties.getBundleLabelName());
 //		bundleNameDescriptor.setCategory(identifiersCategory);
-		PropertyDescriptor requiringAllBundlesDescriptor = new PropertyDescriptor(BundleProperties.requiringAllBundlesLabelName, bundleproperties.getAllRequiringLabelName());
-		requiringAllBundlesDescriptor.setCategory(dependenciesAllCategory);
-		PropertyDescriptor providingAllBundlesDescriptor = new PropertyDescriptor(BundleProperties.providingAllBundlesLabelName, bundleproperties.getAllProvidingLabelName());
-		providingAllBundlesDescriptor.setCategory(dependenciesAllCategory);
+		PropertyDescriptor requiringAllBundlesDescriptor = new PropertyDescriptor(BundleProperties.requiringDeclaredBundlesLabelName, bundleproperties.getAllRequiringLabelName());
+		requiringAllBundlesDescriptor.setCategory(Msg.ALL_DEPENDENCIES_PROP_CATEGORY_LABEL);
+		PropertyDescriptor providingAllBundlesDescriptor = new PropertyDescriptor(BundleProperties.providingDeclaredBundlesLabelName, bundleproperties.getAllProvidingLabelName());
+		providingAllBundlesDescriptor.setCategory(Msg.ALL_DEPENDENCIES_PROP_CATEGORY_LABEL);
 		
 		PropertyDescriptor requiringResolvedBundlesDescriptor = new PropertyDescriptor(BundleProperties.requiringResolvedBundlesLabelName, bundleproperties.getResolvedRequiringLabelName());
-		requiringResolvedBundlesDescriptor.setCategory(dependenciesResolvedCategory);
+		requiringResolvedBundlesDescriptor.setCategory(Msg.RESOLVED_DEPENDENCIES_PROP_CATEGORY_LABEL);
 		PropertyDescriptor providingResolvedBundlesDescriptor = new PropertyDescriptor(BundleProperties.providingResolvedBundlesLabelName, bundleproperties.getResolvedProvidingLabelName());
-		providingResolvedBundlesDescriptor.setCategory(dependenciesResolvedCategory);
+		providingResolvedBundlesDescriptor.setCategory(Msg.RESOLVED_DEPENDENCIES_PROP_CATEGORY_LABEL);
 
 		return new IPropertyDescriptor[] {
 				// Bundle Status Category
@@ -142,13 +135,13 @@ public class BundlePropertiesSource implements IPropertySource {
 			return bundleproperties.getBundleState();
 		}
 		try {
-			if (id.equals(BundleProperties.lastCmdLabelName)) {
+			if (id.equals(BundleProperties.lastTransitionLabelName)) {
 				return bundleproperties.getLastTransition();
 			}
-			if (id.equals(BundleProperties.requiringAllBundlesLabelName)) {
+			if (id.equals(BundleProperties.requiringDeclaredBundlesLabelName)) {
 				return bundleproperties.getDeclaredRequiringBundleProjects();
 			}
-			if (id.equals(BundleProperties.providingAllBundlesLabelName)) {
+			if (id.equals(BundleProperties.providingDeclaredBundlesLabelName)) {
 				return bundleproperties.getAllProvidingBundleProjects();
 			}
 			if (id.equals(BundleProperties.requiringResolvedBundlesLabelName)) {

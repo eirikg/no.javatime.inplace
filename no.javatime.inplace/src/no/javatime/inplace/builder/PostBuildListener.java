@@ -514,7 +514,7 @@ public class PostBuildListener implements IResourceChangeListener {
 		// The replaced flag is set on files being moved but not set on project level.
 		// For all other modifications of the project description, use update bundle
 		if (!projectLoaction.equals(bundleLocation) && bundleProjectCandidates.isInstallable(project)) {
-			Uninstall uninstall = new UninstallJob(UninstallJob.uninstallJobName, project);
+			Uninstall uninstall = new UninstallJob(Msg.UNINSTALL_JOB, project);
 			bundleExecutorEventmanager.add(uninstall, 0);
 			activateBundle.addPendingProject(project);
 			return true;

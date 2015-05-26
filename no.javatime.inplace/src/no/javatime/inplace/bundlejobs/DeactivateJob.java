@@ -32,7 +32,6 @@ import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import no.javatime.util.messages.ErrorMessage;
 import no.javatime.util.messages.ExceptionMessage;
-import no.javatime.util.messages.Message;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
@@ -44,33 +43,14 @@ import org.osgi.framework.Bundle;
 
 public class DeactivateJob extends NatureJob implements Deactivate {
 
-	/** Standard name of an deactivate job */
-	final public static String deactivateJobName = Message.getInstance().formatString(
-			"deactivate_job_name");
+	/** Ignore build errors when deactivating */
+	private boolean checkBuildErrors = false;
 
-	final public static String deactivateWorkspaceJobName = Message.getInstance().formatString(
-			"deactivate_workspace_job_name");
-
-	/** Can be used at IDE shut down */
-	final public static String deactivateOnshutDownJobName = Message.getInstance().formatString(
-			"deactivate_on_shutDown_job_name");
-	/** Used to name the set of operations needed to deactivate a bundle */
-	final private static String deactivateTask = Message.getInstance().formatString(
-			"deactivate_task_name");
-
-	boolean checkBuildErrors = false;
-
-	/* (non-Javadoc)
-	 * @see no.javatime.inplace.bundlejobs.Deactivate#isCheckBuildErrors()
-	 */
 	@Override
 	public boolean isCheckBuildErrors() {
 		return checkBuildErrors;
 	}
 
-	/* (non-Javadoc)
-	 * @see no.javatime.inplace.bundlejobs.Deactivate#setCheckBuildErrors(boolean)
-	 */
 	@Override
 	public void setCheckBuildErrors(boolean checkBuildErrors) {
 		this.checkBuildErrors = checkBuildErrors;
@@ -80,7 +60,7 @@ public class DeactivateJob extends NatureJob implements Deactivate {
 	 * Default constructor wit a default job name
 	 */
 	public DeactivateJob() {
-		super(deactivateJobName);
+		super(Msg.DEACTIVATE_BUNDLES_JOB);
 	}
 	/**
 	 * Construct a deactivate job with a given name
@@ -114,17 +94,14 @@ public class DeactivateJob extends NatureJob implements Deactivate {
 	/**
 	 * Runs the project(s) and bundle(s) deactivate operation.
 	 * 
-	 * @return a {@code BundleStatus} object with {@code BundleStatusCode.OK} if job terminated
-	 * normally and no status objects have been added to this job status list and
-	 * {@code BundleStatusCode.ERROR} if the job fails or {@code BundleStatusCode.JOBINFO} if any
-	 * status objects have been added to the job status list.
+	 * @return A bundle status object obtained from {@link #getJobSatus()} 
 	 */
 	@Override
 	public IBundleStatus runInWorkspace(IProgressMonitor monitor) {
 
 		try {
 			super.runInWorkspace(monitor);
-			monitor.beginTask(deactivateTask, getTicks());
+			monitor.beginTask(Msg.DEACTIVATE_TASK_JOB, getTicks());
 			BundleTransitionListener.addBundleTransitionListener(this);
 			deactivate(monitor);
 		} catch (InterruptedException e) {
@@ -207,7 +184,7 @@ public class DeactivateJob extends NatureJob implements Deactivate {
 			deactivateBuildErrorClosure(getPendingProjects());
 		}
 		
-		if (deactivateOnshutDownJobName.equals(getName())) {
+		if (Msg.DEACTIVATE_ON_SHUTDOWN_JOB.equals(getName())) {
 			Activator.getInstance().savePluginSettings(true, false);
 		} else {
 			Activator.getInstance().savePluginSettings(true, true);

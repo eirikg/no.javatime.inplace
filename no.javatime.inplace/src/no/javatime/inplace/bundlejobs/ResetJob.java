@@ -28,7 +28,6 @@ import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import no.javatime.util.messages.ErrorMessage;
 import no.javatime.util.messages.ExceptionMessage;
-import no.javatime.util.messages.Message;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
@@ -39,20 +38,11 @@ import org.eclipse.osgi.util.NLS;
 
 public class ResetJob extends BundleJob implements Reset {
 
-	/** Standard name of a reset job */
-	final public static String resetJobName = Message.getInstance().formatString("reset_job_name");
-	/* The name of the uninstall phase of the reset job */
-	final private static String uninstallResetJobName = Message.getInstance().formatString(
-			"uninstall_reset_job_name");
-	/* The name of the activate phase of the reset job */
-	final private static String activateResetJobName = Message.getInstance().formatString(
-			"activate_reset_job_name");
-
 	/**
-	 * Default constructor
+	 * Default constructor with a default job name
 	 */
 	public ResetJob() {
-		super(resetJobName);
+		super(Msg.RESET_JOB);
 	}
 
 	/**
@@ -87,12 +77,17 @@ public class ResetJob extends BundleJob implements Reset {
 	// Set the progress group to this monitor on both jobs
 	final IProgressMonitor groupMonitor = Job.getJobManager().createProgressGroup();
 
+	/**
+	 * Runs the reset bundle(s) operation
+	 * 
+	 * @return A bundle status object obtained from {@link #getJobSatus()} 
+	 */
 	@Override
 	public IBundleStatus runInWorkspace(IProgressMonitor monitor) {
 		try {
 			super.runInWorkspace(monitor);
 			BundleTransitionListener.addBundleTransitionListener(this);
-			groupMonitor.beginTask(resetJobName, 3);
+			groupMonitor.beginTask(Msg.RESET_JOB, 3);
 			BundleClosures closures = new BundleClosures();
 			resetPendingProjects(closures.projectDeactivation(Closure.PROVIDING_AND_REQURING,
 					getPendingProjects(), true));
@@ -112,11 +107,11 @@ public class ResetJob extends BundleJob implements Reset {
 			}
 			// Save current state of bundles to be used by the activate job to restore the saved current state
 			Activator.getInstance().savePluginSettings(true, false);
-			Uninstall uninstallJob = new UninstallJob(uninstallResetJobName, projectsToReset);
+			Uninstall uninstallJob = new UninstallJob(Msg.RESET_UNINSTALL_JOB, projectsToReset);
 			uninstallJob.getJob().setProgressGroup(groupMonitor, 1);
 			uninstallJob.setAddRequiring(false);
 			Activator.getBundleExecutorEventService().add(uninstallJob, 0);
-			ActivateBundle activateBundleJob = new ActivateBundleJob(ResetJob.activateResetJobName,
+			ActivateBundle activateBundleJob = new ActivateBundleJob(Msg.RESET_ACTIVATE_JOB,
 					projectsToReset);
 			activateBundleJob.setPersistState(true);
 			activateBundleJob.getJob().setProgressGroup(groupMonitor, 1);

@@ -286,7 +286,7 @@ public class Activator extends AbstractUIPlugin implements BundleExecutorEventLi
 				BundleExecutor shutDownJob = null;
 				Collection<IProject> activatedProjects = bundleRegion.getActivatedProjects();
 				if (getCommandOptionsService().isDeactivateOnExit()) {
-					shutDownJob = new DeactivateJob(DeactivateJob.deactivateOnshutDownJobName);
+					shutDownJob = new DeactivateJob(Msg.DEACTIVATE_ON_SHUTDOWN_JOB);
 				} else {
 					Collection<IProject> deactivatedProjects = deactivateBuildErrorClosures(activatedProjects);
 					if (deactivatedProjects.size() > 0) {
@@ -298,7 +298,7 @@ public class Activator extends AbstractUIPlugin implements BundleExecutorEventLi
 						BundleProjectCandidates bundleProjectcandidates = getBundleProjectCandidatesService();
 						savePluginSettings(true, false);
 						activatedProjects = bundleProjectcandidates.getBundleProjects();
-						shutDownJob = new UninstallJob(UninstallJob.shutDownJobName);
+						shutDownJob = new UninstallJob(Msg.SHUT_DOWN_JOB);
 						((Uninstall) shutDownJob).setUnregister(true);
 					}
 				}
@@ -376,8 +376,7 @@ public class Activator extends AbstractUIPlugin implements BundleExecutorEventLi
 	 */
 	private Collection<IProject> deactivateBuildErrorClosures(Collection<IProject> activatedProjects) {
 
-		DeactivateJob deactivateErrorClosureJob = new DeactivateJob(
-				DeactivateJob.deactivateOnshutDownJobName);
+		DeactivateJob deactivateErrorClosureJob = new DeactivateJob(Msg.DEACTIVATE_ON_SHUTDOWN_JOB);
 		try {
 			// Deactivated and activated providing closure. Deactivated and activated projects with build
 			// errors providing capabilities to project to resolve (and start) at startup
@@ -501,7 +500,7 @@ public class Activator extends AbstractUIPlugin implements BundleExecutorEventLi
 					region.setAutoBuildChanged(true);
 					// Wait for builder to start. The post build listener does not
 					// always receive all projects to update when auto build is switched on
-					Update update = new UpdateJob(UpdateJob.updateJobName);
+					Update update = new UpdateJob();
 					getBundleExecutorEventService().add(update, 1000);
 				}
 			} else {

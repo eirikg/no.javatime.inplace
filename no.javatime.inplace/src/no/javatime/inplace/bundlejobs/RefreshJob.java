@@ -29,7 +29,6 @@ import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import no.javatime.util.messages.ErrorMessage;
 import no.javatime.util.messages.ExceptionMessage;
-import no.javatime.util.messages.Message;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
@@ -41,16 +40,11 @@ import org.osgi.framework.Bundle;
 
 public class RefreshJob extends BundleJob implements Refresh {
 
-	/** Standard name of a refresh job */
-	final public static String refreshJobName = Message.getInstance().formatString("refresh_job_name");
-	/** Used to name the set of operations needed to refresh a bundle */
-	final protected static String refreshTaskName = Message.getInstance().formatString("refresh_task_name");
-
 	/**
 	 * Default constructor wit a default job name
 	 */
 	public RefreshJob() {
-		super(refreshJobName);
+		super(Msg.REFRESH_JOB);
 	}
 	/**
 	 * Construct a refresh job with a given name
@@ -66,7 +60,7 @@ public class RefreshJob extends BundleJob implements Refresh {
 	 * 
 	 * @param name job name
 	 * @param projects pending projects to refresh
-	 * @see #refreshJobName
+	 * @see Msg#REFRESH_JOB
 	 */
 	public RefreshJob(String name, Collection<IProject> projects) {
 		super(name, projects);
@@ -77,7 +71,7 @@ public class RefreshJob extends BundleJob implements Refresh {
 	 * 
 	 * @param name job name
 	 * @param project pending project to refresh
-	 * @see #refreshJobName
+	 * @see Msg#REFRESH_JOB
 	 */
 	public RefreshJob(String name, IProject project) {
 		super(name, project);
@@ -86,10 +80,7 @@ public class RefreshJob extends BundleJob implements Refresh {
 	/**
 	 * Runs the bundle(s) refresh operation.
 	 * 
-	 * @return a {@code BundleStatus} object with {@code BundleStatusCode.OK} if job terminated normally and no
-	 *         status objects have been added to this job status list and {@code BundleStatusCode.ERROR} if the
-	 *         job fails or {@code BundleStatusCode.JOBINFO} if any status objects have been added to the job
-	 *         status list.
+	 * @return A bundle status object obtained from {@link #getJobSatus()} 
 	 */
 	@Override
 	public IBundleStatus runInWorkspace(IProgressMonitor monitor) {
@@ -97,7 +88,7 @@ public class RefreshJob extends BundleJob implements Refresh {
 		try {
 			super.runInWorkspace(monitor);
 			BundleTransitionListener.addBundleTransitionListener(this);
-			monitor.beginTask(refreshTaskName, getTicks());
+			monitor.beginTask(Msg.REFRESH_TASK_JOB, getTicks());
 			refreshBundles(monitor);
 		} catch(InterruptedException e) {
 			String msg = ExceptionMessage.getInstance().formatString("interrupt_job", getName());

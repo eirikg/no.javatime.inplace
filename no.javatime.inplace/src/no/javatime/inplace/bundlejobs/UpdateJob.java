@@ -38,7 +38,6 @@ import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import no.javatime.util.messages.Category;
 import no.javatime.util.messages.ErrorMessage;
 import no.javatime.util.messages.ExceptionMessage;
-import no.javatime.util.messages.Message;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
@@ -51,23 +50,11 @@ import org.osgi.framework.Bundle;
 
 public class UpdateJob extends BundleJob implements Update {
 
-	final private static String updateTaskName = Message.getInstance().formatString(
-			"update_task_name");
-	final private static String updateSubTaskName = Message.getInstance().formatString(
-			"update_subtask_name");
-
-	private static String currentExternalInstance = ErrorMessage.getInstance().formatString(
-			"current_revision_of_jar_duplicate");
-
-	@SuppressWarnings("unused")
-	private static String currentWorkspaceInstance = ErrorMessage.getInstance().formatString(
-			"current_revision_of_ws_duplicate");
-
 	/**
 	 * Default constructor wit a default job name
 	 */
 	public UpdateJob() {
-		super(updateJobName);
+		super(Msg.UPDATE_JOB);
 	}
 
 	/**
@@ -102,19 +89,16 @@ public class UpdateJob extends BundleJob implements Update {
 	}
 
 	/**
-	 * Runs the bundle(s) update operation.
+	 * Runs the update bundle(s) operation.
 	 * 
-	 * @return a {@code BundleStatus} object with {@code BundleStatusCode.OK} if job terminated
-	 * normally and no status objects have been added to this job status list and
-	 * {@code BundleStatusCode.ERROR} if the job fails or {@code BundleStatusCode.JOBINFO} if any
-	 * status objects have been added to the job status list.
+	 * @return A bundle status object obtained from {@link #getJobSatus()} 
 	 */
 	@Override
 	public IBundleStatus runInWorkspace(IProgressMonitor monitor) {
 
 		try {
 			super.runInWorkspace(monitor);
-			monitor.beginTask(updateTaskName, getTicks());
+			monitor.beginTask(Msg.UPDATE_TASK_JOB, getTicks());
 			BundleTransitionListener.addBundleTransitionListener(this);
 			update(monitor);
 		} catch (InterruptedException e) {
@@ -317,7 +301,7 @@ public class UpdateJob extends BundleJob implements Update {
 
 		// Remove workspace bundles and their requiring bundle projects that are duplicates of external bundles
 		Collection<IProject> duplicateProjects = getExternalDuplicateClosures(getPendingProjects(),
-				currentExternalInstance);
+				Msg.USE_CURR_REV_DUPLICATES_ERROR);
 		if (null != duplicateProjects) {
 			// There are no requiring closures on workspace bundles from external bundles
 			removePendingProjects(duplicateProjects);
@@ -343,7 +327,7 @@ public class UpdateJob extends BundleJob implements Update {
 		for (Bundle bundle : getUpdateOrder(bundles, true)) {
 			if (bundleTransition.containsPending(bundle, Transition.UPDATE, true)) {
 				try {
-					localMonitor.subTask(updateSubTaskName + bundle.getSymbolicName());
+					localMonitor.subTask(Msg.UPDATE_SUB_TASK_JOB + bundle.getSymbolicName());
 					if (Category.getState(Category.progressBar))
 						sleep(sleepTime);
 					bundleCommand.update(bundle);

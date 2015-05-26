@@ -17,6 +17,7 @@ import no.javatime.inplace.region.closure.BuildErrorClosure;
 import no.javatime.inplace.region.intface.BundleCommand;
 import no.javatime.inplace.region.intface.BundleProjectMeta;
 import no.javatime.inplace.region.intface.BundleRegion;
+import no.javatime.inplace.region.intface.BundleTransition.Transition;
 import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
@@ -24,7 +25,6 @@ import no.javatime.inplace.ui.Activator;
 import no.javatime.inplace.ui.command.handlers.BundleMenuActivationHandler;
 import no.javatime.inplace.ui.msg.Msg;
 import no.javatime.inplace.ui.views.BundleView;
-import no.javatime.util.messages.Message;
 import no.javatime.util.view.ViewUtil;
 
 import org.eclipse.core.resources.IProject;
@@ -45,15 +45,8 @@ public class BundlePopUpCommandsContributionItems extends BundleCommandsContribu
 	public static String menuId = "no.javatime.inplace.command.contributions.dynamicitems.popup";
 	public static String dynamicPopUpCommandId = "no.javatime.inplace.command.dynamicitems.popup";
 
-	private static String addClassPathLabel = Message.getInstance().formatString(
-			"add_classpath_label_popup"); //$NON-NLS-1$
-	private static String removeClassPathLabel = Message.getInstance().formatString(
-			"remove_classpath_label_popup"); //$NON-NLS-1$
-
 	// Activation policy per bundle
 	public final static String policyParamId = "Policy";
-	private final static String eagerLabel = Message.getInstance().formatString(
-			"eager_activation_label");
 
 	public BundlePopUpCommandsContributionItems() {
 		super();
@@ -125,7 +118,7 @@ public class BundlePopUpCommandsContributionItems extends BundleCommandsContribu
 			if (!activated) {
 				BundleCommand bundleCommand = Activator.getBundleCommandService();
 				stateName += bundleCommand.getStateName(bundle) + ")";
-				label = activateProjectParamId;
+				label = Msg.ACTIVATE_LABEL;
 				label += " " + stateName;
 				return createContibution(menuId, dynamicPopUpCommandId, label, activateProjectParamId,
 						CommandContributionItem.STYLE_PUSH, activateImage);
@@ -156,7 +149,7 @@ public class BundlePopUpCommandsContributionItems extends BundleCommandsContribu
 			if (activated) {
 				BundleCommand bundleCommand = Activator.getBundleCommandService();
 				stateName += bundleCommand.getStateName(bundle) + ")";
-				label = deactivateParamId;
+				label = Msg.DEACTIVATE_POPUP_LABEL;
 				label += " " + stateName;
 				return createContibution(menuId, dynamicPopUpCommandId, label, deactivateParamId,
 						CommandContributionItem.STYLE_PUSH, deactivateImage);
@@ -186,7 +179,7 @@ public class BundlePopUpCommandsContributionItems extends BundleCommandsContribu
 				BundleProjectMeta bundlePrrojectMeta = Activator.getBundleProjectMetaService();
 				if (!bundlePrrojectMeta.isFragment(bundle)) {
 					if ((bundle.getState() & (Bundle.INSTALLED | Bundle.RESOLVED | Bundle.STOPPING)) != 0) {
-						return createContibution(menuId, dynamicPopUpCommandId, startParamId, startParamId,
+						return createContibution(menuId, dynamicPopUpCommandId, Msg.START_LABEL, startParamId,
 								CommandContributionItem.STYLE_PUSH, startImage);
 					}
 				}
@@ -213,7 +206,7 @@ public class BundlePopUpCommandsContributionItems extends BundleCommandsContribu
 
 		if (null != bundle && activated) {
 			if ((bundle.getState() & (Bundle.ACTIVE | Bundle.STARTING)) != 0) {
-				return createContibution(menuId, dynamicPopUpCommandId, stopParamId, stopParamId,
+				return createContibution(menuId, dynamicPopUpCommandId, Msg.STOP_LABEL, stopParamId,
 						CommandContributionItem.STYLE_PUSH, stopImage);
 			}
 		}
@@ -235,11 +228,14 @@ public class BundlePopUpCommandsContributionItems extends BundleCommandsContribu
 	 * @throws InPlaceException if the bundle is null or a proper adapt permission is missing
 	 */
 	private CommandContributionItem addRefresh(Boolean activated, Bundle bundle)
-			throws InPlaceException {
-
+			throws InPlaceException, ExtenderException {
+		String refreshLabel = Msg.REFRESH_POPUP_LABEL;
+		if (Activator.getBundleCommandService().getBundleRevisions(bundle).size() > 1) {
+			refreshLabel = Msg.REFRESH_PENDING_LABEL;
+		}
 		// Conditional enabling of refresh
 		if (null != bundle && activated) {
-			return createContibution(menuId, dynamicPopUpCommandId, refreshParamId, refreshParamId,
+			return createContibution(menuId, dynamicPopUpCommandId, refreshLabel, refreshParamId,
 					CommandContributionItem.STYLE_PUSH, refreshImage);
 		}
 		return null;
@@ -257,10 +253,15 @@ public class BundlePopUpCommandsContributionItems extends BundleCommandsContribu
 	 * @return a contribution to update the bundle or null if it is not activated or no pending update
 	 * transition
 	 */
-	private CommandContributionItem addUpdate(Boolean activated, IProject project, Bundle bundle) {
+	private CommandContributionItem addUpdate(Boolean activated, IProject project, Bundle bundle) throws ExtenderException{
 
 		if (null != bundle && activated) {
-			return createContibution(menuId, dynamicPopUpCommandId, "Update", updatePendingParamId,
+			String updateLabel = Msg.UPDATE_POPUP_LABEL;
+			if (Activator.getBundleTransitionService().containsPending(project, Transition.UPDATE,
+					Boolean.FALSE)) {
+				updateLabel = Msg.UPDATE_PENDING_LABEL;
+			}
+			return createContibution(menuId, dynamicPopUpCommandId, updateLabel, updatePendingParamId,
 					CommandContributionItem.STYLE_PUSH, updateImage);
 		}
 		return null;
@@ -270,13 +271,13 @@ public class BundlePopUpCommandsContributionItems extends BundleCommandsContribu
 	 * Adds a contribution to reset the specified bundle if the bundle is activated
 	 * 
 	 * @param activated the activation status of the bundle project
-	 * @param bundle TODO
+	 * @param bundle Bundle to update
 	 * @return a contribution to update the bundle or null if it is not activated
 	 */
 	private CommandContributionItem addReset(Boolean activated, Bundle bundle) {
 
 		if (null != bundle && activated) {
-			return createContibution(menuId, dynamicPopUpCommandId, resetParamId, resetParamId,
+			return createContibution(menuId, dynamicPopUpCommandId, Msg.RESET_POPUP_LABEL, resetParamId,
 					CommandContributionItem.STYLE_PUSH, resetImage);
 		}
 		return null;
@@ -296,10 +297,10 @@ public class BundlePopUpCommandsContributionItems extends BundleCommandsContribu
 			if (!BuildErrorClosure.hasManifestBuildErrors(project)) {
 				BundleProjectMeta bundlePrrojectMeta = Activator.getBundleProjectMetaService();
 				if (!bundlePrrojectMeta.isDefaultOutputFolder(project)) {
-					return createContibution(menuId, dynamicPopUpCommandId, addClassPathLabel,
+					return createContibution(menuId, dynamicPopUpCommandId, Msg.ADD_CLASSPATH_POPUP_LABEL,
 							addClassPathParamId, CommandContributionItem.STYLE_PUSH, classPathImage);
 				} else {
-					return createContibution(menuId, dynamicPopUpCommandId, removeClassPathLabel,
+					return createContibution(menuId, dynamicPopUpCommandId, Msg.REMOVE_CLASSPATH_POPUP_LABEL,
 							removeClassPathParamId, CommandContributionItem.STYLE_PUSH, classPathImage);
 				}
 			}
@@ -350,7 +351,7 @@ public class BundlePopUpCommandsContributionItems extends BundleCommandsContribu
 	 */
 	private CommandContributionItem addEagerActivation() {
 
-		return createContibution(menuId, dynamicPopUpCommandId, eagerLabel, policyParamId,
+		return createContibution(menuId, dynamicPopUpCommandId, Msg.EAGER_ACTIVATION_LABEL, policyParamId,
 				CommandContributionItem.STYLE_CHECK, null);
 	}
 }
