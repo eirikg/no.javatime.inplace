@@ -141,10 +141,14 @@ public class PostBuildListener implements IResourceChangeListener {
 	public void resourceChanged(IResourceChangeEvent event) {
 
 		try {
+			final int buildType = event.getBuildKind();
 			// Nothing to do in a deactivated workspace where all bundle projects are uninstalled
-			if (!projectActivator.isProjectWorkspaceActivated()) {
+			// Clean build calls post build listener after clean. That is before the following build
+			if (!projectActivator.isProjectWorkspaceActivated() 
+					|| buildType == IncrementalProjectBuilder.CLEAN_BUILD) {
 				return;
 			}
+			
 			// Updates a project if it is activated in an activated workspace
 			// and after a build where the project is pending for update and auto build is on
 			final Update update = new UpdateJob();
@@ -162,7 +166,6 @@ public class PostBuildListener implements IResourceChangeListener {
 			// Deactivated bundle projects are installed and activated bundle projects are activated
 			final AddBundleProject addBundleProject = new AddBundleProjectJob();
 
-			final int buildType = event.getBuildKind();
 			final IResourceDelta rootDelta = event.getDelta();
 			// Ignore removed (deleted or closed) projects uninstalled in the pre-change listener
 			IResourceDelta[] resourceDeltas = (null != rootDelta ? rootDelta.getAffectedChildren(
@@ -304,8 +307,7 @@ public class PostBuildListener implements IResourceChangeListener {
 			}
 		}
 		// Most commonly used when an activated project has new requirements on UI plug-in(s), when UI
-		// plug-ins
-		// are not allowed
+		// plug-ins are not allowed
 		if (bundleTransition.containsPending(project, Transition.DEACTIVATE, Boolean.TRUE)) {
 			deactivate.addPendingProject(project);
 			ishandled = true;
