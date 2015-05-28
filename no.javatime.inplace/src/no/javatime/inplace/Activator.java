@@ -21,13 +21,11 @@ import no.javatime.inplace.bundlejobs.ActivateBundleJob;
 import no.javatime.inplace.bundlejobs.BundleJobListener;
 import no.javatime.inplace.bundlejobs.DeactivateJob;
 import no.javatime.inplace.bundlejobs.UninstallJob;
-import no.javatime.inplace.bundlejobs.UpdateJob;
 import no.javatime.inplace.bundlejobs.events.intface.BundleExecutorEvent;
 import no.javatime.inplace.bundlejobs.events.intface.BundleExecutorEventListener;
 import no.javatime.inplace.bundlejobs.events.intface.BundleExecutorEventManager;
 import no.javatime.inplace.bundlejobs.intface.BundleExecutor;
 import no.javatime.inplace.bundlejobs.intface.Uninstall;
-import no.javatime.inplace.bundlejobs.intface.Update;
 import no.javatime.inplace.dialogs.ExternalTransition;
 import no.javatime.inplace.dl.preferences.intface.CommandOptions;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions;
@@ -98,11 +96,11 @@ public class Activator extends AbstractUIPlugin implements BundleExecutorEventLi
 		ICommandListener {
 
 	public static final String PLUGIN_ID = "no.javatime.inplace"; //$NON-NLS-1$
-	
+
 	private static Activator plugin;
 	private static BundleContext context;
 	private static Bundle bundle;
-	
+
 	/**
 	 * Framework launching property specifying whether Equinox's FrameworkWiring implementation should
 	 * refresh bundles with equal symbolic names.
@@ -477,11 +475,13 @@ public class Activator extends AbstractUIPlugin implements BundleExecutorEventLi
 	}
 
 	/**
-	 * Callback for the "Build Automatically" main menu option. Auto build is set to true when
-	 * "Build Automatically" is switched on.
+	 * Listener for the "Build Automatically" main menu option. Auto build is set to true in the
+	 * workspace region when "Build Automatically" is switched on. 
 	 * <p>
-	 * When auto build is switched on the post builder is not invoked, so an update job is scheduled
-	 * here to update projects being built when the auto build option is switched on.
+	 * Auto build is not set to false when "Build Automatically" is switched off
+	 *  
+	 * @see BundleRegion#isAutoBuildActivated(boolean)
+	 * @see BundleRegion#setAutoBuildChanged(boolean)
 	 */
 	@Override
 	public void commandChanged(CommandEvent commandEvent) {
@@ -491,20 +491,16 @@ public class Activator extends AbstractUIPlugin implements BundleExecutorEventLi
 		try {
 			BundleRegion region = getBundleRegionService();
 			IWorkbench workbench = getWorkbench();
-			if (!region.isRegionActivated() || (null != workbench && workbench.isClosing())) {
+			Command autoBuildCmd = commandEvent.getCommand();
+
+			if (!region.isRegionActivated() || (null != workbench && workbench.isClosing())
+					|| !autoBuildCmd.isDefined()) {
 				return;
 			}
-			Command autoBuildCmd = commandEvent.getCommand();
-			if (autoBuildCmd.isDefined() && !getBundleProjectCandidatesService().isAutoBuilding()) {
-				if (getCommandOptionsService().isUpdateOnBuild()) {
-					region.setAutoBuildChanged(true);
-					// Wait for builder to start. The post build listener does not
-					// always receive all projects to update when auto build is switched on
-					Update update = new UpdateJob();
-					getBundleExecutorEventService().add(update, 1000);
-				}
-			} else {
-				region.setAutoBuildChanged(false);
+			if (!getBundleProjectCandidatesService().isAutoBuilding()
+					&& !region.isAutoBuildActivated(false)) {
+				// Auto build has been switched on
+				region.setAutoBuildChanged(true);
 			}
 		} catch (ExtenderException e) {
 			StatusManager.getManager().handle(
@@ -693,8 +689,9 @@ public class Activator extends AbstractUIPlugin implements BundleExecutorEventLi
 							}
 						} catch (IllegalStateException e) {
 							String msg = WarnMessage.getInstance().formatString("node_removed_preference_store");
-							StatusManager.getManager().handle(
-									new BundleStatus(StatusCode.WARNING, Activator.PLUGIN_ID, msg), StatusManager.LOG);
+							StatusManager.getManager()
+									.handle(new BundleStatus(StatusCode.WARNING, Activator.PLUGIN_ID, msg),
+											StatusManager.LOG);
 						}
 					}
 				} else {
@@ -715,8 +712,9 @@ public class Activator extends AbstractUIPlugin implements BundleExecutorEventLi
 							// Ignore. Will be defined as no transition when loaded again
 						} catch (IllegalStateException e) {
 							String msg = WarnMessage.getInstance().formatString("node_removed_preference_store");
-							StatusManager.getManager().handle(
-									new BundleStatus(StatusCode.WARNING, Activator.PLUGIN_ID, msg), StatusManager.LOG);
+							StatusManager.getManager()
+									.handle(new BundleStatus(StatusCode.WARNING, Activator.PLUGIN_ID, msg),
+											StatusManager.LOG);
 						}
 					}
 				}
