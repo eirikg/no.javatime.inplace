@@ -29,17 +29,33 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IResourceChangeEvent;
 import org.eclipse.core.resources.IResourceChangeListener;
 import org.eclipse.core.resources.IResourceDelta;
+import org.eclipse.core.resources.IncrementalProjectBuilder;
 import org.eclipse.ui.statushandlers.StatusManager;
 
 /**
  * Listen to projects that are going to be built. This callback is also invoked when auto build is
- * switched off. Register opened, created and imported projects and add a pending build transition
+ * switched off. Register opened, created and imported projects and add a pending build bundleTransition
  * after workspace resources have been changed. Listen to pre build notifications. Also clears any
  * errors (not build errors) on uninstalled bundle projects.
  */
 public class PreBuildListener implements IResourceChangeListener {
 
-	final private ActivateProject projectActivation = new ActivateProjectJob();
+	private BundleTransition bundleTransition;
+	private BundleProjectCandidates bundleProjectCandidates;
+	final private ActivateProject projectActivator;
+
+	public PreBuildListener() {
+
+		try {
+			bundleTransition = Activator.getBundleTransitionService();
+			bundleProjectCandidates = Activator.getBundleProjectCandidatesService();
+		} catch (ExtenderException e) {
+			StatusManager.getManager().handle(
+					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),
+					StatusManager.LOG);
+		}
+		projectActivator = new ActivateProjectJob();
+	}
 
 	/**
 	 * Register bundle as pending for build when receiving the pre build change event and auto build
@@ -49,30 +65,33 @@ public class PreBuildListener implements IResourceChangeListener {
 	 * type of automatic build
 	 */
 	public void resourceChanged(IResourceChangeEvent event) {
+		
+		final int buildKind = event.getBuildKind();
 
+		// Clean build calls pre build listener twice. The first call is of kind {@code CLEAN_BUILD]
+		if (buildKind == IncrementalProjectBuilder.CLEAN_BUILD || buildKind == 0) {
+			return;
+		}
 		JavaTimeBuilder.preBuild();
 		IResourceDelta rootDelta = event.getDelta();
 		IResourceDelta[] projectDeltas	=	(null != rootDelta ? rootDelta.getAffectedChildren(IResourceDelta.ADDED
 					| IResourceDelta.CHANGED, IResource.NONE) : null);
-		boolean isWSNatureEnabled = projectActivation.isProjectWorkspaceActivated();
+		boolean isWSNatureEnabled = projectActivator.isProjectWorkspaceActivated();
 		if (null != projectDeltas) {
 			for (IResourceDelta projectDelta : projectDeltas) {
 				IResource projectResource = projectDelta.getResource();
 				if (projectResource.isAccessible() && (projectResource.getType() & (IResource.PROJECT)) != 0) {
 					IProject project = projectResource.getProject();
 					try {
-						BundleTransition transition = Activator.getBundleTransitionService();
 						if (!isWSNatureEnabled) {
 							// Clear any errors detected from last activation that caused the workspace to be
 							// deactivated. The error should be visible in a deactivated workspace until the project
 							// is built
-							transition.clearTransitionError(project);
+							bundleTransition.clearTransitionError(project);
 						} else {
-							if (projectActivation.isProjectActivated(project)) {
-								BundleProjectCandidates bundleProjectCandidates = Activator
-										.getBundleProjectCandidatesService();
+							if (projectActivator.isProjectActivated(project)) {
 								if (!bundleProjectCandidates.isAutoBuilding()) {
-									transition.addPending(project, Transition.BUILD);
+									bundleTransition.addPending(project, Transition.BUILD);
 								} else {
 									BundleTransitionListener.addBundleTransition(new TransitionEvent(project,
 											Transition.BUILD));
@@ -84,10 +103,6 @@ public class PreBuildListener implements IResourceChangeListener {
 								project.getName());
 						StatusManager.getManager().handle(
 								new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, msg, e), StatusManager.LOG);
-					} catch (ExtenderException e) {
-						StatusManager.getManager().handle(
-								new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),
-								StatusManager.LOG);
 					}
 				}
 			}

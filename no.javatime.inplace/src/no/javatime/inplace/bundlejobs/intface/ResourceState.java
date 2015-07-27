@@ -2,6 +2,10 @@ package no.javatime.inplace.bundlejobs.intface;
 
 import java.util.Collection;
 
+import no.javatime.inplace.dl.preferences.intface.CommandOptions;
+import no.javatime.inplace.extender.intface.ExtenderException;
+import no.javatime.inplace.region.intface.InPlaceException;
+
 import org.eclipse.core.resources.IProject;
 
 /**
@@ -20,11 +24,22 @@ public interface ResourceState {
 	public final static String RESOURCE_STATE_SERVICE = "Resource-State-Service";
 
 	/**
+	 * Get the save options
+	 * <p>
+	 * The save options may also be used as a service 
+	 * 
+	 * @return The save options
+	 * @see SaveOptions#SAVE_OPTONS_SERVICE
+	 */
+	public SaveOptions getSaveOptions();
+
+	/**
 	 * Get projects containing modified not saved resources
 	 * 
 	 * @return projects containing modified not saved resources or an empty collection
+	 * @throws ExtenderException If failing to get the bundle project candidate service
 	 */
-	public Collection<IProject> getDirtyProjects();
+	public Collection<IProject> getDirtyProjects() throws ExtenderException;
 
 	/**
 	 * Get projects containing modified not saved resources among the specified projects
@@ -39,35 +54,67 @@ public interface ResourceState {
 	 * 
 	 * @return true if there are any projects in the workspace with unmodified resources. Otherwise
 	 * false
+	 * @throws ExtenderException If failing to get the bundle project candidate service
 	 */
-	public Boolean areResourcesDirty();
+	public boolean areResourcesDirty() throws ExtenderException;
 
 	/**
-	 * Displays a save file dialog with a list of all dirty editors in the workspace that needs to be
-	 * saved. If no files are dirty the save file dialog is not displayed and {@code true} is
-	 * returned.
-	 * <p>
-	 * This is an adaption of the launch target dialog 
+	 * If there exist dirty files belonging to an activated bundle project and auto build and auto
+	 * update is switched on, saving dirty files will generate an update job after build.
 	 * 
-	 * @return true if files are saved or no files are modified. False if modified files are not saved
+	 * @return If saving files triggers an update operation return true. Otherwise false
+	 * @see SaveOptions#isTriggerUpdate()
 	 */
-	public Boolean saveModifiedResources();
+	public boolean isTriggerUpdate();
 
 	/**
-	 * Displays a save file dialog with a list of editors that apply to the next build that need to be
-	 * saved. If no files are dirty the save file dialog is not displayed and {@code true} is
-	 * returned.
-	 * <p>
-	 * This is a more simple dialog than used in {@link #saveModifiedResources()}
+	 * Determines if there are dirty files to be saved based on the the save files preference settings.
+	 * For saving files to be true there must also exist dirty files in the workspace.
 	 * 
-	 * @return true if files are saved or no files are modified. False if modified files are not saved
+	 * @return True if there are dirty files and the preference setting for saving files is true. Otherwise
+	 * false
+	 * @see SaveOptions
 	 */
-	public Boolean saveModifiedFiles();
+	public boolean isSaveFiles();
+
+	/**
+	 * If the options for saving dirty files on, save all dirty files without any prompt.
+	 * <p>
+	 * If auto build is on, activated bundle projects are saved and the "Update on Build" option is on
+	 * a build is triggered after save followed by an update. To manually save the workspace or a
+	 * snapshot of the workspace use {@link #saveWorkspace(boolean)}
+	 * 
+	 * @throws ExtenderException If failing to get the bundle executor service
+	 * @throws InPlaceException if the save options job fails
+	 * @see CommandOptions#setIsSaveFilesBeforeBundleOperation(boolean)
+	 * @see CommandOptions#isSaveFilesBeforeBundleOperation()
+	 */
+	public void saveFiles() throws InPlaceException, ExtenderException;
+
+	/**
+	 * Determines if a snapshot of the workspace should be saved based on the save workspace snapshot
+	 * preference setting
+	 * <p>
+	 * 
+	 * @return If the workspace should be saved based on its preference setting return {@code true}.
+	 * Otherwise false.
+	 * @see BundleExecutor#isSaveWorkspaceSnaphot()
+	 */
+	public boolean isSaveWorkspaceSnapshot();
+
+	/**
+	 * Save a snapshot of the workspace
+	 * <p>
+	 * To monitor the save operation use {@code ISaveParticipant}
+	 * <p>
+	 * Any errors during save are logged
+	 */
+	public void saveWorkspaceSnapshot();
 
 	/**
 	 * Check if there is a bundle executor job currently running
 	 * 
-	 * @return the bundle executor job currently or null if no bundle executor job is running.
+	 * @return the bundle executor job currently running or null if no bundle executor job is running.
 	 */
 	public BundleExecutor getRunningBundleJob();
 
@@ -80,11 +127,9 @@ public interface ResourceState {
 	 * Any interrupt or service failures exceptions are sent to the error log view
 	 * 
 	 * @param log If waiting for the builder to finish, the log parameter is true and logging is
-	 * enabled log a message indicating a builder wait state, otherwise no logging is performed
+	 * enabled, log a message indicating a builder wait state, otherwise no logging is performed
 	 */
 	public void waitOnBuilder(boolean log);
-
-	public void waitOnBundleJob();
 
 	/**
 	 * Check if there is a job belonging to the {@code BundleExecutor.FAMILY_BUNDLE_LIFECYCLE} and is
@@ -93,4 +138,12 @@ public interface ResourceState {
 	 * @return true if a bundle job is running, waiting or sleeping, otherwise false.
 	 */
 	public Boolean hasBundleJobState();
+
+	/**
+	 * Blocks execution while a bundle job is running
+	 * <p>
+	 * Any interrupt or service failures exceptions are sent to the error log view
+	 * 
+	 */
+	public void waitOnBundleJob();
 }

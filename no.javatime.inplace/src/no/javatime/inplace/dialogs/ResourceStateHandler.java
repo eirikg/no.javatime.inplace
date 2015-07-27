@@ -11,121 +11,92 @@
 package no.javatime.inplace.dialogs;
 
 import java.util.Collection;
-import java.util.LinkedHashSet;
 
 import no.javatime.inplace.Activator;
+import no.javatime.inplace.builder.SaveOptionsJob;
+import no.javatime.inplace.builder.SaveSnapShotOption;
 import no.javatime.inplace.bundlejobs.BundleJob;
 import no.javatime.inplace.bundlejobs.intface.BundleExecutor;
 import no.javatime.inplace.bundlejobs.intface.ResourceState;
+import no.javatime.inplace.bundlejobs.intface.SaveOptions;
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.log.intface.BundleLogException;
 import no.javatime.inplace.msg.Msg;
+import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 
 import org.eclipse.core.resources.IProject;
-import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.jobs.IJobManager;
 import org.eclipse.core.runtime.jobs.Job;
-import org.eclipse.debug.internal.ui.DebugUIPlugin;
-import org.eclipse.debug.internal.ui.IInternalDebugUIConstants;
-import org.eclipse.debug.internal.ui.launchConfigurations.SaveScopeResourcesHandler;
-import org.eclipse.jface.dialogs.IDialogConstants;
-import org.eclipse.jface.dialogs.MessageDialogWithToggle;
-import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.osgi.util.NLS;
-import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.statushandlers.StatusManager;
 
 /**
- * Adaption of the save dialog before launching in Eclipse.
  *
  */
-@SuppressWarnings("restriction")
-public class ResourceStateHandler extends SaveScopeResourcesHandler implements ResourceState {
+public class ResourceStateHandler implements ResourceState {
 	
-	private Collection<IProject> dirtyProjects;
+	private SaveOptionsJob saveOptionsJob = null;
 	
-	public ResourceStateHandler() {
-		dirtyProjects = new LinkedHashSet<IProject>();	
+	public SaveOptions getSaveOptions() {
+
+		return null == saveOptionsJob ? new SaveOptionsJob() : saveOptionsJob;	
 	}
 	
-	/* (non-Javadoc)
-	 * @see no.javatime.inplace.dialogs.ResourceState#getDirtyProjects()
-	 */
 	@Override
-	public Collection<IProject> getDirtyProjects() {
-		synchronized (dirtyProjects) {
-			areResourcesDirty();
-			Collection<IProject> dirtyProjects = new LinkedHashSet<>(this.dirtyProjects);
-			return dirtyProjects;
-		}
+	public Collection<IProject> getDirtyProjects() throws ExtenderException {
+
+		return SaveOptionsJob.getDirtyProjects();
 	}
 
-	/* (non-Javadoc)
-	 * @see no.javatime.inplace.dialogs.ResourceState#getDirtyProjects(java.util.Collection)
-	 */
 	@Override
 	public Collection<IProject> getDirtyProjects(Collection<IProject> projects) {
 
-		synchronized (dirtyProjects) {
-			Collection<IProject> dirtyProjects = new LinkedHashSet<>(projects);
-			dirtyProjects.retainAll(this.dirtyProjects);
-			return dirtyProjects;
-		}
-	}
-
-	/* (non-Javadoc)
-	 * @see no.javatime.inplace.dialogs.ResourceState#areResourcesDirty()
-	 */
-	@Override
-	public Boolean areResourcesDirty () {
-
-		synchronized (dirtyProjects) {
-			Collection<IProject> projects = Activator.getBundleProjectCandidatesService().getProjects();	
-			this.dirtyProjects.clear();
-			IResource[] resources = getScopedDirtyResources(projects.toArray(new IProject[projects.size()]));
-			if (resources.length > 0) {
-				for (int i = 0; i < resources.length; i++) {
-					IProject project = resources[i].getProject();
-					if (null != project) {
-						this.dirtyProjects.add(project);
-					}
-				}
-				return Boolean.TRUE;
-			} else {
-				return Boolean.FALSE;
-			}
-		}
+		return SaveOptionsJob.getScopedDirtyProjects(projects);
 	}
 
 	@Override
-	public Boolean saveModifiedResources() {
+	public boolean areResourcesDirty () throws ExtenderException {
 
-		Boolean isDirty = areResourcesDirty();
-		if (!isDirty) {
-			return Boolean.TRUE;
-		}	
-		Collection<IProject> projects = Activator.getBundleProjectCandidatesService().getProjects();
-		IPreferenceStore store = DebugUIPlugin.getDefault().getPreferenceStore();
-		String save = store.getString(IInternalDebugUIConstants.PREF_SAVE_DIRTY_EDITORS_BEFORE_LAUNCH);
-		int ret = showSaveDialog(projects.toArray(new IProject[projects.size()]), 
-				!save.equals(MessageDialogWithToggle.NEVER), save.equals(MessageDialogWithToggle.PROMPT));
-		if(ret == IDialogConstants.OK_ID) {
-			doSave();
-			return Boolean.TRUE;
-		}
-		return Boolean.FALSE;
+		return SaveOptionsJob.getDirtyProjects().size() > 0  ? true : false;
+	}
+
+	@Override
+	public boolean isSaveFiles() {
+		SaveOptions saveOptions = getSaveOptions();
+		return saveOptions.isSaveFiles();
+	}
+
+	@Override
+	public boolean isSaveWorkspaceSnapshot() {
+		SaveOptions saveOptions = getSaveOptions();
+		return saveOptions.isSaveWorkspaceSnaphot();
 	}
 	
 	@Override
-	public Boolean saveModifiedFiles() {
+	public boolean isTriggerUpdate() {
+		
+		SaveOptions saveOptions = getSaveOptions();
+		return saveOptions.isTriggerUpdate();
+	}
 
-		if (!PlatformUI.getWorkbench().saveAllEditors(true)) {
-			return false;
+	@Override
+	public void saveWorkspaceSnapshot() {
+
+		SaveSnapShotOption saveSnapshot = new SaveSnapShotOption();
+		saveSnapshot.saveWorkspace(new NullProgressMonitor());
+	}
+
+	@Override
+	public void saveFiles() throws InPlaceException, ExtenderException {
+
+		SaveOptions saveOptions = getSaveOptions();
+		if (saveOptions.isSaveFiles()) {
+			Activator.getBundleExecutorEventService().add(saveOptions);
 		}
-		return true;
 	}
 	
 	@Override
@@ -219,19 +190,13 @@ public class ResourceStateHandler extends SaveScopeResourcesHandler implements R
 		return null;
 	}
 
-	/**
-	 * Wait for a bundle job to finish before returning,
-	 */
-	public void waitOnBundleJob() {
+	 
+	 public void waitOnBundleJob() {
 
 		IJobManager jobMan = Job.getJobManager();
 		Job[] bundleJobs = jobMan.find(BundleExecutor.FAMILY_BUNDLE_LIFECYCLE); 
 		if (bundleJobs.length >= 1) {
 			try {
-				if (Activator.getMessageOptionsService().isBundleOperations()) {
-					Activator.log(new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, 
-							NLS.bind(Msg.WAITING_ON_JOB_INFO, bundleJobs[0].getName())));
-				}
 				bundleJobs[0].join();
 				waitOnBundleJob();
 			} catch (InterruptedException e) {

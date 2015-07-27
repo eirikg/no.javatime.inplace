@@ -73,7 +73,6 @@ public class ExternalTransition implements BundleTransitionEventListener {
 						final BundleProjectCandidates bundleProjectcandidates = Activator.getBundleProjectCandidatesService();
 						IBundleStatus reqStatus = null;
 						int autoDependencyAction = 1; // Default auto dependency action
-						new ResourceStateHandler().saveModifiedResources();
 						Boolean dependencies = false;
 						Collection<IProject> reqProjects = Collections.<IProject> emptySet();
 						if (bundleRegion.isBundleActivated(bundle)) {

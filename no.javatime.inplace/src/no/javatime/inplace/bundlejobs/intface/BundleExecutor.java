@@ -45,6 +45,27 @@ public interface BundleExecutor {
 	public static final String FAMILY_BUNDLE_LIFECYCLE = "BundleFamily";
 
 	/**
+	 * Determines if a snapshot of the workspace should be saved based on the save workspace snapshot
+	 * preference setting
+	 * <p>
+	 * 
+	 * @return If the workspace should be saved based on its preference setting return {@code true}.
+	 * Otherwise false.
+	 */
+	public boolean isSaveWorkspaceSnaphot();
+
+	/**
+	 * Override to save or not save a workspace snapshot.
+	 * <p>
+	 * If true a snapshot is saved before this job is scheduled.
+	 * 
+	 * @param saveWorkspace True to save a workspace snapshot and false to not save a workspace
+	 * snapshot.
+	 */
+
+	public void setSaveWorkspaceSnaphot(boolean saveWorkspaceSnaphot);
+
+	/**
 	 * Schedules a bundle executor to run with a delay.
 	 * <p>
 	 * This method is otherwise equal to {@code getJob().schedule(long)}
@@ -198,6 +219,8 @@ public interface BundleExecutor {
 
 	/**
 	 * Get all logged status objects added by this job
+	 * <p>
+	 * The collection is unguarded (not returning a copy of the log status list)
 	 * 
 	 * @return a list of status objects or an empty list
 	 * @see BundleLog#enableLogging(boolean)
@@ -209,6 +232,8 @@ public interface BundleExecutor {
 	 * Get all error status information added by this job
 	 * <p>
 	 * Errors are sent to the error log and the bundle log
+	 * <p>
+	 * The collection is unguarded (not returning a copy of the error status list)
 	 * 
 	 * @return a list of status objects where each status object describes the nature of the status or
 	 * an empty list
@@ -221,6 +246,18 @@ public interface BundleExecutor {
 	 * @return true if bundle error status objects exists in the status list, otherwise false
 	 */
 	public boolean hasErrorStatus();
+
+	/**
+	 * Get the status of a bundle job so far. If the job has generated any errors or warnings a bundle
+	 * status object with {@code StatucCode.JOBERROR} is returned otherwise a status object with
+	 * {@code StatusCode.OK} is returned. The message in the returned status object contains the name
+	 * of the job.
+	 * <p>
+	 * Generated errors and warnings so far may be obtained from {@link #getErrorStatusList()}
+	 * 
+	 * @return A bundle status object describing the status of the a bundle job so far
+	 */
+	public IBundleStatus getJobSatus();
 
 	/**
 	 * Add a bundle status. The bundle status is logged if the logging option is on, and also sent to

@@ -83,7 +83,8 @@ public class TogglePolicyJob extends NatureJob implements TogglePolicy {
 
 		try {
 			super.runInWorkspace(monitor);
-			BundleTransitionListener.addBundleTransitionListener(this);
+			BundleTransitionListener.addBundleTransitionListener(this);			
+			saveDirtyMetaFiles(false);
 			for (IProject project : getPendingProjects()) {
 				try {
 					bundleProjectMeta.toggleActivationPolicy(project);

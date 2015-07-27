@@ -67,7 +67,7 @@ public class BundleJobListener extends JobChangeAdapter {
 	 */
 	@Override
 	public void done(IJobChangeEvent event) {
-		
+
 		final Job job = event.getJob();
 		if (job instanceof BundleJob) {
 			final BundleJob bundleJob = (BundleJob) job;
@@ -78,28 +78,24 @@ public class BundleJobListener extends JobChangeAdapter {
 					// final String execTime = Long.toString(System.currentTimeMillis() - startTime);
 					final Collection<IBundleStatus> logList = bundleJob.getLogStatusList();
 					if (logList.size() > 0) {
-//						ExecutorService executor = Executors.newSingleThreadExecutor();
-//						executor.execute(new Runnable() {
-//							@Override
-//							public void run() {
-								IBundleStatus multiStatus = new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID,
-										NLS.bind(Msg.JOB_NAME_TRACE, bundleJob.getName(), 
-												new DecimalFormat().format(System.currentTimeMillis() - bundleJob.getStartedTime())));
-								for (IBundleStatus status : logList) {
-									multiStatus.add(status);
-								}
-								multiStatus.setStatusCode();
-								Activator.log(multiStatus);
-//							}
-//						});
-//						executor.shutdown();
+						IBundleStatus multiStatus = new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID,
+								NLS.bind(
+										Msg.JOB_NAME_TRACE,
+										bundleJob.getName(),
+										new DecimalFormat().format(System.currentTimeMillis()
+												- bundleJob.getStartedTime())));
+						for (IBundleStatus status : logList) {
+							multiStatus.add(status);
+						}
+						multiStatus.setStatusCode();
+						Activator.log(multiStatus);
 					}
 				}
 				// Send the error list to the error log
-				Collection<IBundleStatus> errorList = logCancelStatus(bundleJob);
+				Collection<IBundleStatus> errorList = bundleJob.getErrorStatusList(); //logCancelStatus(bundleJob);
 				if (errorList.size() > 0) {
-					IBundleStatus multiStatus = new BundleStatus(StatusCode.ERROR, Activator.PLUGIN_ID, NLS.bind(
-							Msg.END_JOB_ROOT_ERROR, bundleJob.getName()));
+					IBundleStatus multiStatus = new BundleStatus(StatusCode.ERROR, Activator.PLUGIN_ID,
+							NLS.bind(Msg.END_JOB_ROOT_ERROR, bundleJob.getName()));
 					for (IBundleStatus status : errorList) {
 						multiStatus.add(status);
 					}
@@ -120,7 +116,7 @@ public class BundleJobListener extends JobChangeAdapter {
 			}
 		}
 	}
-		
+
 	/**
 	 * If the bundle job has been cancelled, log it
 	 * 
@@ -144,8 +140,14 @@ public class BundleJobListener extends JobChangeAdapter {
 	}
 
 	/**
-	 * Schedule bundle jobs if there are any pending bundle operations of type activate, deactivate or
-	 * refresh among all bundle projects.
+	 * Schedule bundle jobs if there are any pending bundle operations of type activate and deactivate
+	 * among activated and deactivated workspace bundle projects.
+	 * <p>
+	 * Deactivated bundle projects are activated when activated bundles to resolve depends on
+	 * deactivated bundle projects. The deactivated projects are identified and marked as pending for
+	 * activation in the resolver hook (delayed activation or more specific, delayed activation and
+	 * update in an activated workspace)
+	 * 
 	 * @throws ExtenderException if failing to get any of the transition, candidate or region services
 	 */
 	private void schedulePendingOperations() throws ExtenderException {
@@ -156,9 +158,7 @@ public class BundleJobListener extends JobChangeAdapter {
 		BundleExecutor bundleJob = null;
 
 		Collection<IProject> deactivatedProjects = bundleProjectcandidates.getCandidates();
-		
-		// This usually comes from a delayed update when activated bundles to resolve depends on
-		// deactivated bundles
+
 		Collection<IProject> projectsToActivate = bundleTransition.getPendingProjects(
 				deactivatedProjects, Transition.ACTIVATE_PROJECT);
 		if (projectsToActivate.size() > 0) {
@@ -174,10 +174,12 @@ public class BundleJobListener extends JobChangeAdapter {
 						activatedProjects.remove(deactivatedProject);
 						if (activatedProjects.size() > 0) {
 							String msg = NLS.bind(Msg.IMPLICIT_ACTIVATION_INFO,
-									bundleProjectcandidates.formatProjectList(activatedProjects), deactivatedProject.getName());
+									bundleProjectcandidates.formatProjectList(activatedProjects),
+									deactivatedProject.getName());
 							IBundleStatus status = new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, msg);
 							msg = NLS.bind(Msg.DELAYED_RESOLVE_INFO,
-									bundleProjectcandidates.formatProjectList(activatedProjects), deactivatedProject.getName());
+									bundleProjectcandidates.formatProjectList(activatedProjects),
+									deactivatedProject.getName());
 							status.add(new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, msg));
 							bundleJob.addLogStatus(status);
 						}
@@ -190,13 +192,6 @@ public class BundleJobListener extends JobChangeAdapter {
 
 		Collection<IProject> activatedProjects = bundleRegion.getActivatedProjects();
 
-		Collection<IProject> projectsToRefresh = bundleTransition.getPendingProjects(activatedProjects,
-				Transition.REFRESH);
-		if (projectsToRefresh.size() > 0) {
-			bundleJob = new RefreshJob(Msg.REFRESH_JOB, projectsToRefresh);
-			bundleTransition.removePending(projectsToRefresh, Transition.REFRESH);
-			Activator.getBundleExecutorEventService().add(bundleJob);
-		}
 		Collection<IProject> projectsToDeactivate = bundleTransition.getPendingProjects(
 				activatedProjects, Transition.DEACTIVATE);
 		if (projectsToDeactivate.size() > 0) {

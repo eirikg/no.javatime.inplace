@@ -113,10 +113,13 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 	 */
 	public static synchronized void preBuild() {
 		
-		builds.clear();
 		startTime = System.currentTimeMillis();
 	}
 	
+	public static boolean hasBuild() {
+		return builds.size() > 0 ? true : false;
+	}
+
 	/**
 	 * Log build time and projects built
 	 * <p>
@@ -140,6 +143,8 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 			StatusManager.getManager().handle(
 					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),
 					StatusManager.LOG);
+		} finally {
+			builds.clear();
 		}
 	}
 	
@@ -201,9 +206,8 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 
 		try {
 			IProject project = getProject();
-			// Build is no longer pending. Remove as early as possible
-			// Also removed in the post build listener
 			bundleTransition.removeTransitionError(project, TransitionError.BUILD);
+//			bundleTransition.removePending(project, Transition.BUILD);
 			if (Category.DEBUG && Category.getState(Category.build))
 				TraceMessage.getInstance().getString("start_build");
 			IResourceDelta delta = getDelta(project);
@@ -301,7 +305,7 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 			if (Category.DEBUG && Category.getState(Category.build))
 				TraceMessage.getInstance().getString("end_build");
 		} catch (InPlaceException | ExtenderException | CoreException | ProjectLocationException e) {
-			ExceptionMessage.getInstance().handleMessage(e, e.getMessage());
+			StatusManager.getManager().handle(new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e), StatusManager.LOG);
 		}
 		return null; // ok to return null;
 	}

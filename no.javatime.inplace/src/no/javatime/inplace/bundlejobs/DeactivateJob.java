@@ -16,6 +16,7 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 
 import no.javatime.inplace.Activator;
+import no.javatime.inplace.WorkspaceSaveParticipant;
 import no.javatime.inplace.bundlejobs.intface.Deactivate;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.extender.intface.ExtenderException;
@@ -177,18 +178,11 @@ public class DeactivateJob extends NatureJob implements Deactivate {
 		// All not activated bundles are collectively either in state installed or in state uninstalled.
 		Collection<Bundle> activatedBundles = bundleRegion.getActivatedBundles();
 		pendingBundles = closure.bundleDeactivation(pendingBundles, activatedBundles);
-		// Collection<IProject> pendingProjects = closure.projectDeactivation(getPendingProjects(), true);
-
 		resetPendingProjects(bundleRegion.getProjects(pendingBundles));
+		saveDirtyMetaFiles(true);
 		if (isCheckBuildErrors()) {
 			deactivateBuildErrorClosure(getPendingProjects());
-		}
-		
-		if (Msg.DEACTIVATE_ON_SHUTDOWN_JOB.equals(getName())) {
-			Activator.getInstance().savePluginSettings(true, false);
-		} else {
-			Activator.getInstance().savePluginSettings(true, true);
-		}
+		}		
 		if (activatedBundles.size() <= pendingBundles.size()) {
 			// This is the last project(s) to deactivate, move all bundles to state uninstalled
 			Collection<Bundle> allBundles = bundleRegion.getBundles();
@@ -226,7 +220,7 @@ public class DeactivateJob extends NatureJob implements Deactivate {
 							if (null != bundlesToRefresh) {
 								bundlesToRefresh = new LinkedHashSet<Bundle>();
 							}
-							bundlesToRefresh.addAll(getRequiringClosure(Collections
+							bundlesToRefresh.addAll(getRefreshClosure(Collections
 									.<Bundle> singletonList(bundle), activatedBundles));
 						}
 					}
@@ -256,6 +250,11 @@ public class DeactivateJob extends NatureJob implements Deactivate {
 						getName(), bundleRegion.formatBundleList(pendingBundles, true));
 				addError(e, msg);
 			}
+		}
+		if (Msg.DEACTIVATE_ON_SHUTDOWN_JOB.equals(getName())) {
+			WorkspaceSaveParticipant.saveBundleStateSettings(true, false);
+		} else {
+			WorkspaceSaveParticipant.saveBundleStateSettings(true, true);
 		}
 		return getLastErrorStatus();
 	}

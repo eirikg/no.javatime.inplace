@@ -1,12 +1,12 @@
 package no.javatime.inplace;
 
+import no.javatime.inplace.builder.AutoBuildListener;
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.log.intface.BundleLogException;
 import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 
-import org.eclipse.core.commands.Command;
 import org.eclipse.ui.IStartup;
 import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.PlatformUI;
@@ -40,31 +40,32 @@ public class StartUp implements IStartup {
 		activator.addResourceListeners();
 		activator.processLastSavedState(true);
 		try {
-			Activator.getBundleExecutorEventService().add(new StartUpJob(StartUpJob.startupName));
-		final IWorkbench workbench = PlatformUI.getWorkbench();
-		if (null != workbench && !workbench.isStarting()) {
-			// Not strictly necessary to run an UI thread
-			Activator.getDisplay().asyncExec(new Runnable() {
-				public void run() {
-					// Adding at this point should ensure that all static contexts are loaded
-					activator.addDynamicExtensions();
-					ICommandService service = (ICommandService) workbench.getService(ICommandService.class);
-					Command autoBuildCommand = service
-							.getCommand("org.eclipse.ui.project.buildAutomatically");
-					if (null != autoBuildCommand && autoBuildCommand.isDefined()) {
-						activator.addAutobuildListener(autoBuildCommand);
-					} else {
-						Activator.log(new BundleStatus(StatusCode.WARNING, Activator.PLUGIN_ID,
-								Msg.AUTO_BUILD_LISTENER_NOT_ADDED_WARN));
+			StartUpJob startUp = new StartUpJob(StartUpJob.startupName);
+			startUp.schedule();
+			final IWorkbench workbench = PlatformUI.getWorkbench();
+			if (null != workbench && !workbench.isStarting()) {
+				// Not strictly necessary to run an UI thread
+				Activator.getDisplay().asyncExec(new Runnable() {
+					public void run() {
+						// Adding at this point should ensure that all static contexts are loaded
+						activator.addDynamicExtensions();
 					}
+				});
+
+				// Listen to toggling of auto build
+				ICommandService service = (ICommandService) workbench.getService(ICommandService.class);
+				if (null == service) {
+					Activator.log(new BundleStatus(StatusCode.WARNING, Activator.PLUGIN_ID,
+							Msg.AUTO_BUILD_LISTENER_NOT_ADDED_WARN));
+					return;
 				}
-			});
-		} else {
-			if (null == Activator.getInstance().getAutoBuildCommand()) {
+				service.addExecutionListener(new AutoBuildListener());
+			} else {
 				Activator.log(new BundleStatus(StatusCode.WARNING, Activator.PLUGIN_ID,
 						Msg.DYNAMIC_MONITORING_WARN));
+				Activator.log(new BundleStatus(StatusCode.WARNING, Activator.PLUGIN_ID,
+						Msg.AUTO_BUILD_LISTENER_NOT_ADDED_WARN));
 			}
-		}
 		} catch (BundleLogException | ExtenderException e) {
 			StatusManager.getManager().handle(
 					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),

@@ -20,16 +20,22 @@ public class BundleExecutorEventManagerImpl implements BundleExecutorEventManage
 	public void add(BundleExecutor bundleExecutor) {
 		add(bundleExecutor, 0);
 	}
+	
+	@Override
+	public int listeners() {
 
+		return bundleJobNotifier.jobListeners();
+	}
+	
 	@Override
 	public synchronized void add(BundleExecutor bundleExecutor, long delay) {
 
-		if (bundleJobNotifier.jobListeners() == 1) {
-			// Fallback. If no other listeners are installed
-			// the default is to schedule the job.
-			bundleExecutor.getJob().schedule(delay);
-			return;
-		}
+//		if (bundleJobNotifier.jobListeners() == 1) {
+//			// Fallback. If no other listeners are installed
+//			// the default is to schedule the job.
+//			bundleExecutor.getJob().schedule(delay);
+//			return;
+//		}
 		bundleJobNotifier.addBundleJob(bundleExecutor, delay);
 		if (Category.DEBUG && Category.getState(Category.listeners))
 			TraceMessage.getInstance().getString("added_job",

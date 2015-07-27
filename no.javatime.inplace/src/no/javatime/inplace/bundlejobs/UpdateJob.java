@@ -87,11 +87,11 @@ public class UpdateJob extends BundleJob implements Update {
 	public UpdateJob(String name, IProject project) {
 		super(name, project);
 	}
-
+	
 	/**
 	 * Runs the update bundle(s) operation.
 	 * 
-	 * @return A bundle status object obtained from {@link #getJobSatus()} 
+	 * @return A bundle status object obtained from {@link #getJobSatus()}
 	 */
 	@Override
 	public IBundleStatus runInWorkspace(IProgressMonitor monitor) {
@@ -175,6 +175,7 @@ public class UpdateJob extends BundleJob implements Update {
 		// corrected bundle error or an activation of the bundle) are started after update
 		Collection<Bundle> bundlesToRestart = new LinkedHashSet<>();
 		for (Bundle bundle : requiringClosure) {
+			// Providing bundles of bundles tagged with start are calculated by the start operation
 			if (bundleTransition.containsPending(bundle, Transition.START, Boolean.TRUE)
 					|| (bundle.getState() & (Bundle.ACTIVE | Bundle.STARTING | Bundle.INSTALLED)) != 0) {
 				bundlesToRestart.add(bundle);
@@ -226,17 +227,20 @@ public class UpdateJob extends BundleJob implements Update {
 	 * job. The resulting set of pending bundle projects to update is a subset of the requiring
 	 * (update) closure within the specified domain of bundle projects.
 	 * <p>
-	 * Only bundles tagged with {@code Transition#UPDATE} are added. The current set of pending
+	 * Only bundles tagged with {@code Transition.UPDATE} are added. The current set of pending
 	 * projects may be empty and it is assumed that any pending projects in the set are tagged with
-	 * {@code Transition#UPDATE}.
+	 * {@code Transition.UPDATE}.
 	 * <p>
 	 * The following steps are executed to collect bundle projects to update:
 	 * <ol>
 	 * <li>Get all pending projects already added to this job.
-	 * <li>If auto build has been switched off and than switched on again between two update jobs; -
-	 * include all bundles that have been built.
-	 * <li>If the "Refresh on Update" option is on, all requiring bundles tagged for update to the
-	 * bundles to update are added to the list of bundles to update
+	 * <li>If the "Refresh on Update" option is on
+	 * <ol>
+	 * <li>all requiring bundles tagged for update ({@code Transition.UPDATE}) to the bundles to
+	 * update are added to the list of bundles to update
+	 * <li>all bundles tagged with {@code Trasnition.REFRESH} and their requiring bundles are added to
+	 * requiring closure
+	 * </ol>
 	 * <li>Duplicate workspace bundles and their requiring bundles to bundles to update are added to
 	 * requiring closure (see below) of the set of bundles to update (they are in one way dependent of
 	 * each other and have to be resolved)
@@ -258,23 +262,13 @@ public class UpdateJob extends BundleJob implements Update {
 		Collection<Bundle> requiringClosure = null;
 		// The initial set of bundle projects to update
 		Collection<Bundle> bundlesToUpdate = bundleRegion.getBundles(getPendingProjects());
-		// If auto build has been switched off and than switched on, include all bundle projects that
-		// have been built
-		if (bundleRegion.isAutoBuildActivated(true)) {
-			Collection<Bundle> pendingBundles = bundleTransition.getPendingBundles(domain,
-					Transition.UPDATE);
-			pendingBundles.removeAll(bundlesToUpdate);
-			if (pendingBundles.size() > 0) {
-				bundlesToUpdate.addAll(pendingBundles);
-				addPendingProjects(bundleRegion.getProjects(pendingBundles));
-			}
-		}
 		Collection<Bundle> installedBundles = bundleRegion.getBundles(domain, Bundle.INSTALLED);
 		if (commandOptions.isRefreshOnUpdate()) {
 			// Get the requiring closure of bundles to update. Any bundles in the domain
 			// with the same symbolic name as in the requiring closure are added to the
 			// requiring closure (required by the resolver). Duplicates are reported by update
-			requiringClosure = getRequiringClosure(bundlesToUpdate, domain);
+			requiringClosure = getRefreshClosure(bundlesToUpdate, domain);
+
 			// Get all activated bundles in state installed and their requiring bundles
 			installedBundles.removeAll(requiringClosure);
 			if (installedBundles.size() > 0) {
@@ -290,8 +284,8 @@ public class UpdateJob extends BundleJob implements Update {
 			// Add all activated bundles in state installed to the closure
 			requiringClosure.addAll(installedBundles);
 		}
-		
-		//Get the latest updated version of a coherent set (closure) of running bundles to update
+
+		// Get the latest updated version of a coherent set (closure) of running bundles to update
 		Collection<Bundle> pendingBundles = bundleTransition.getPendingBundles(requiringClosure,
 				Transition.UPDATE);
 		pendingBundles.removeAll(bundlesToUpdate);
@@ -299,7 +293,8 @@ public class UpdateJob extends BundleJob implements Update {
 			addPendingProjects(bundleRegion.getProjects(pendingBundles));
 		}
 
-		// Remove workspace bundles and their requiring bundle projects that are duplicates of external bundles
+		// Remove workspace bundles and their requiring bundle projects that are duplicates of external
+		// bundles
 		Collection<IProject> duplicateProjects = getExternalDuplicateClosures(getPendingProjects(),
 				Msg.USE_CURR_REV_DUPLICATES_ERROR);
 		if (null != duplicateProjects) {
@@ -538,7 +533,15 @@ public class UpdateJob extends BundleJob implements Update {
 
 		initServices();
 		Collection<IProject> pendingProjectsCopy = new LinkedHashSet<>(getPendingProjects());
-		Collection<Bundle> bundles = getUpdateClosure(bundleRegion.getActivatedBundles());
+		Collection<Bundle> actiavtedBundles = bundleRegion.getActivatedBundles();
+		Collection<Bundle> refreshBundles = bundleTransition.getPendingBundles(actiavtedBundles,
+				Transition.REFRESH);
+		Collection<Bundle> bundles = getUpdateClosure(actiavtedBundles);
+		if (refreshBundles.size() > 0) {
+			for (Bundle bundle : refreshBundles) {
+				bundleTransition.addPending(bundle, Transition.REFRESH);
+			}
+		}
 		resetPendingProjects(pendingProjectsCopy);
 		return bundleRegion.getProjects(bundles);
 	}
@@ -558,7 +561,7 @@ public class UpdateJob extends BundleJob implements Update {
 
 		return UpdateScheduler.addProjectToUpdateJob(project, null);
 	}
-	
+
 	@Override
 	public Collection<IProject> getUpdateOrder() throws ExtenderException {
 

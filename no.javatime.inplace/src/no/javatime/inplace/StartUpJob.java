@@ -16,7 +16,6 @@ import java.util.Collections;
 import no.javatime.inplace.bundlejobs.ActivateBundleJob;
 import no.javatime.inplace.bundlejobs.DeactivateJob;
 import no.javatime.inplace.bundlejobs.NatureJob;
-import no.javatime.inplace.bundlejobs.intface.ActivateBundle;
 import no.javatime.inplace.bundlejobs.intface.BundleExecutor;
 import no.javatime.inplace.bundlejobs.intface.Deactivate;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
@@ -103,7 +102,7 @@ public class StartUpJob extends NatureJob implements BundleExecutor {
 					addLogStatus(new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, msg));
 				}
 			}
-			ActivateBundle activateBundle = new ActivateBundleJob(Msg.STARTUP_ACTIVATE_BUNDLE_JOB);
+			ActivateBundleJob activateBundle = new ActivateBundleJob(Msg.STARTUP_ACTIVATE_BUNDLE_JOB);
 			Collection<IProject> activatedProjects = getActivatedProjects();
 			if (activatedProjects.size() > 0) {
 				Collection<IProject> deactivatedProjects = deactivateBuildErrorClosures(activatedProjects);
@@ -112,7 +111,8 @@ public class StartUpJob extends NatureJob implements BundleExecutor {
 				} else {
 					// Install all projects and set activated projects to the same state as they had at shutdown
 					activateBundle.addPendingProjects(activatedProjects);
-					activateBundle.setPersistState(true);
+					activateBundle.setRestoreSessionState(true);
+					activateBundle.setSaveWorkspaceSnaphot(false);
 					Activator.getBundleExecutorEventService().add(activateBundle, 0);
 				}
 			} else {

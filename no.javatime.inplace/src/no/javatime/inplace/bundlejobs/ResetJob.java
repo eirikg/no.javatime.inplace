@@ -13,6 +13,7 @@ package no.javatime.inplace.bundlejobs;
 import java.util.Collection;
 
 import no.javatime.inplace.Activator;
+import no.javatime.inplace.WorkspaceSaveParticipant;
 import no.javatime.inplace.bundlejobs.intface.ActivateBundle;
 import no.javatime.inplace.bundlejobs.intface.Reset;
 import no.javatime.inplace.bundlejobs.intface.Uninstall;
@@ -106,14 +107,17 @@ public class ResetJob extends BundleJob implements Reset {
 				return getJobSatus();
 			}
 			// Save current state of bundles to be used by the activate job to restore the saved current state
-			Activator.getInstance().savePluginSettings(true, false);
+			WorkspaceSaveParticipant.saveBundleStateSettings(true, false);
 			Uninstall uninstallJob = new UninstallJob(Msg.RESET_UNINSTALL_JOB, projectsToReset);
 			uninstallJob.getJob().setProgressGroup(groupMonitor, 1);
 			uninstallJob.setAddRequiring(false);
+			uninstallJob.setUnregister(true);
+			uninstallJob.setSaveWorkspaceSnaphot(false);
 			Activator.getBundleExecutorEventService().add(uninstallJob, 0);
 			ActivateBundle activateBundleJob = new ActivateBundleJob(Msg.RESET_ACTIVATE_JOB,
 					projectsToReset);
-			activateBundleJob.setPersistState(true);
+			activateBundleJob.setRestoreSessionState(true);
+			activateBundleJob.setSaveWorkspaceSnaphot(false);
 			activateBundleJob.getJob().setProgressGroup(groupMonitor, 1);
 			Activator.getBundleExecutorEventService().add(activateBundleJob, 0);
 		} catch (OperationCanceledException e) {

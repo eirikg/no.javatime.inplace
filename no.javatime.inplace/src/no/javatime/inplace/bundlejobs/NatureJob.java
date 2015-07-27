@@ -17,6 +17,7 @@ import java.util.LinkedHashSet;
 
 import no.javatime.inplace.Activator;
 import no.javatime.inplace.builder.JavaTimeNature;
+import no.javatime.inplace.builder.SaveOptionsJob;
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
@@ -32,12 +33,14 @@ import no.javatime.util.messages.WarnMessage;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IProjectDescription;
+import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.osgi.util.NLS;
+import org.eclipse.ui.ide.IDE;
 import org.osgi.framework.Bundle;
 
 /**
@@ -79,10 +82,10 @@ public abstract class NatureJob extends BundleJob {
 	 * Does nothing
 	 */
 	@Override
-	public IBundleStatus runInWorkspace(IProgressMonitor monitor) throws CoreException, ExtenderException {
+	public IBundleStatus runInWorkspace(IProgressMonitor monitor) throws CoreException,
+			ExtenderException {
 		return super.runInWorkspace(monitor);
 	}
-
 
 	public Boolean isProjectActivated(IProject project) throws InPlaceException, ExtenderException {
 
@@ -94,7 +97,7 @@ public abstract class NatureJob extends BundleJob {
 	}
 
 	public Boolean isProjectWorkspaceActivated() throws InPlaceException, ExtenderException {
-		
+
 		bundleProjectCandidates = Activator.getBundleProjectCandidatesService();
 		for (IProject project : bundleProjectCandidates.getBundleProjects()) {
 			if (isProjectActivated(project)) {
@@ -120,7 +123,7 @@ public abstract class NatureJob extends BundleJob {
 	public Collection<IProject> getDeactivatedProjects() throws InPlaceException, ExtenderException {
 
 		bundleProjectCandidates = Activator.getBundleProjectCandidatesService();
-		return  bundleProjectCandidates.getCandidates();
+		return bundleProjectCandidates.getCandidates();
 	}
 
 	/**
@@ -439,6 +442,54 @@ public abstract class NatureJob extends BundleJob {
 			String msg = WarnMessage.getInstance().formatString("add_nature_project_invalid",
 					project.getName());
 			addWarning(null, msg, project);
+		}
+	}
+
+	/**
+	 * Prompt to save dirty manifest and project meta files
+	 * 
+	 * @param includeProjectMetaFiles true if to be prompted for saving project meta files
+	 * @return
+	 * @throws OperationCanceledException If not all files are saved
+	 */
+	protected void saveDirtyMetaFiles(final boolean includeProjectMetaFiles)
+			throws OperationCanceledException {
+
+		final Collection<IResource> dirtyResources = SaveOptionsJob.getScopedDirtyMetaFiles(
+				getPendingProjects(), includeProjectMetaFiles);
+		if (dirtyResources.size() > 0) {
+			Activator.getDisplay().syncExec(new Runnable() {
+				@Override
+				public void run() {
+					final IResource[] dirtyResourcesArray = (IResource[]) dirtyResources
+							.toArray(new IResource[dirtyResources.size()]);
+					boolean allSaved = IDE.saveAllEditors(dirtyResourcesArray, true);
+					Collection<IResource> pendingDirtyResources = SaveOptionsJob.getScopedDirtyMetaFiles(
+							getPendingProjects(), includeProjectMetaFiles);
+					if (!allSaved || pendingDirtyResources.size() > 0) {
+						addCancelMessage(null, NLS.bind(Msg.SAVE_FILES_CANCELLED_INFO, getName()));
+					}
+					if (messageOptions.isBundleOperations()) {
+						for (IResource dirtyResource : dirtyResources) {
+							IProject dirtyProject = dirtyResource.getProject();
+							if (null != dirtyProject) {
+								if (pendingDirtyResources.contains(dirtyResource)) {
+									addLogStatus(new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, NLS.bind(
+											Msg.NOT_SAVE_RESOURCE_IN_PROJECT_INFO, dirtyResource.getName(),
+											dirtyProject.getName())));
+								} else {
+									addLogStatus(new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, NLS.bind(
+											Msg.SAVE_RESOURCE_IN_PROJECT_INFO, dirtyResource.getName(),
+											dirtyProject.getName())));
+								}
+							}
+						}
+					}
+				}
+			});
+		}
+		if (getLastErrorStatus().getStatusCode() == StatusCode.CANCEL) {
+			throw new OperationCanceledException(getLastErrorStatus().getMessage());
 		}
 	}
 

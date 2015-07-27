@@ -101,7 +101,8 @@ public class Msg extends NLS {
   public static String POLICY_JOB;
   public static String SHUT_DOWN_JOB;
   public static String DEACTIVATE_ON_SHUTDOWN_JOB;
-
+  public static String SAVE_OPTIONS_JOB;
+  
   // Errors
 	public static String BEGIN_SHUTDOWN_ERROR;
 	public static String END_SHUTDOWN_ERROR;
@@ -115,7 +116,9 @@ public class Msg extends NLS {
 	public static String UNREG_SERVICE_ERROR;
   public static String USE_CURR_REV_DUPLICATES_ERROR;
   public static String DUPLICATE_WS_BUNDLE_INSTALL_ERROR;
-
+  public static String SAVE_FILES_OPTION_ERROR;
+  public static String SAVE_WORKSPACE_SNAPSHOT_ERROR;
+  
 	// Warnings
 	public static String EXTERNAL_UNINSTALL_WARN;
 	public static String REQUIRING_BUNDLES_WARN;
@@ -133,7 +136,8 @@ public class Msg extends NLS {
 	public static String SERVICE_EXECUTOR_EXP;
 	public static String NULL_EXTENDER_EXP;
 	public static String NULL_EXTENSION_EXP;
-
+	public static String INTERRUPT_EXP;
+	
 	// Info messages
 	public static String DEACTIVATE_BUILD_ERROR_INFO;
 	public static String UPDATE_BUILD_ERROR_INFO;
@@ -174,7 +178,13 @@ public class Msg extends NLS {
 	public static String UNINSTALLED_REQUIRING_BUNDLES_INFO;
 	public static String NOT_RESOLVED_BUNDLE_WARN;
 	public static String PROVIDING_TO_NOT_RESOLVED_BUNDLES_WARN;
-
+	public static String SAVE_WORKSPACE_SNAPSHOT_INFO;
+	public static String SAVE_WORKSPACE_INFO;
+	public static String SAVE_PROJECT_FILES_INFO;
+	public static String SAVE_RESOURCE_IN_PROJECT_INFO;
+	public static String NOT_SAVE_RESOURCE_IN_PROJECT_INFO;
+	public static String SAVE_FILES_CANCELLED_INFO;
+	
 	// Dialog and View messages
 	public static String DEACTIVATE_QUESTION_DLG;
 	public static String DEACTIVATE_QUESTION_REQ_DLG;

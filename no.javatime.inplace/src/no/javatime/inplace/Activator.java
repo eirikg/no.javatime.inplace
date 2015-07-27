@@ -13,6 +13,7 @@ package no.javatime.inplace;
 import java.util.Collection;
 import java.util.Collections;
 
+import no.javatime.inplace.builder.BundleExecutorInterceptor;
 import no.javatime.inplace.builder.PostBuildListener;
 import no.javatime.inplace.builder.PreBuildListener;
 import no.javatime.inplace.builder.PreChangeListener;
@@ -21,10 +22,9 @@ import no.javatime.inplace.bundlejobs.ActivateBundleJob;
 import no.javatime.inplace.bundlejobs.BundleJobListener;
 import no.javatime.inplace.bundlejobs.DeactivateJob;
 import no.javatime.inplace.bundlejobs.UninstallJob;
-import no.javatime.inplace.bundlejobs.events.intface.BundleExecutorEvent;
-import no.javatime.inplace.bundlejobs.events.intface.BundleExecutorEventListener;
 import no.javatime.inplace.bundlejobs.events.intface.BundleExecutorEventManager;
 import no.javatime.inplace.bundlejobs.intface.BundleExecutor;
+import no.javatime.inplace.bundlejobs.intface.ResourceState;
 import no.javatime.inplace.bundlejobs.intface.Uninstall;
 import no.javatime.inplace.dialogs.ExternalTransition;
 import no.javatime.inplace.dl.preferences.intface.CommandOptions;
@@ -32,6 +32,7 @@ import no.javatime.inplace.dl.preferences.intface.DependencyOptions;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.dl.preferences.intface.MessageOptions;
 import no.javatime.inplace.extender.intface.ExtenderException;
+import no.javatime.inplace.log.intface.BundleLog;
 import no.javatime.inplace.log.intface.BundleLogException;
 import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.pl.console.intface.BundleConsoleFactory;
@@ -56,9 +57,6 @@ import no.javatime.util.messages.Category;
 import no.javatime.util.messages.ExceptionMessage;
 import no.javatime.util.messages.WarnMessage;
 
-import org.eclipse.core.commands.Command;
-import org.eclipse.core.commands.CommandEvent;
-import org.eclipse.core.commands.ICommandListener;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResourceChangeEvent;
 import org.eclipse.core.resources.IResourceChangeListener;
@@ -92,8 +90,7 @@ import org.osgi.service.prefs.BackingStoreException;
  * <li>Bundle project service for managing of bundle bundlePeojectMeta information
  * <ul/>
  */
-public class Activator extends AbstractUIPlugin implements BundleExecutorEventListener,
-		ICommandListener {
+public class Activator extends AbstractUIPlugin {
 
 	public static final String PLUGIN_ID = "no.javatime.inplace"; //$NON-NLS-1$
 
@@ -135,8 +132,10 @@ public class Activator extends AbstractUIPlugin implements BundleExecutorEventLi
 	private BundleJobListener jobChangeListener = new BundleJobListener();
 	// Listen to external bundle commands
 	private ExternalTransition externalTransitionListener = new ExternalTransition();
-	// Listen to toggling of auto build
-	private Command autoBuildCommand;
+	
+	ISaveParticipant saveParticipant = new WorkspaceSaveParticipant();
+	private BundleExecutorInterceptor saveOptionsListener = new BundleExecutorInterceptor();
+	
 	// Register and track extenders and get and unget services provided by this and other bundles
 	private static ExtenderTracker extenderTracker;
 
@@ -156,7 +155,7 @@ public class Activator extends AbstractUIPlugin implements BundleExecutorEventLi
 		extenderTracker = new ExtenderTracker(context, Bundle.ACTIVE, null);
 		extenderTracker.open();
 		extenderTracker.trackOwn();
-		getBundleExecutorEventService().addListener(plugin);
+		getBundleExecutorEventService().addListener(saveOptionsListener);
 		BundleTransitionListener.addBundleTransitionListener(externalTransitionListener);
 		Job.getJobManager().addJobChangeListener(jobChangeListener);
 	}
@@ -165,13 +164,18 @@ public class Activator extends AbstractUIPlugin implements BundleExecutorEventLi
 	public void stop(BundleContext context) throws Exception {
 
 		try {
+			try {
+				IWorkspace workspace = ResourcesPlugin.getWorkspace();
+				workspace.removeSaveParticipant(PLUGIN_ID);
+			} catch (IllegalStateException e) {
+				// Ignore
+			}
 			// Remove resource listeners as soon as possible to prevent scheduling of new bundle jobs
 			removeResourceListeners();
-			removeAutoBuildListener();
 			removeDynamicExtensions();
 			shutDownBundles();
 		} finally {
-			getBundleExecutorEventService().removeListener(plugin);
+			getBundleExecutorEventService().removeListener(saveOptionsListener);
 			BundleTransitionListener.removeBundleTransitionListener(externalTransitionListener);
 			Job.getJobManager().removeJobChangeListener(jobChangeListener);
 			extenderTracker.close();
@@ -185,6 +189,11 @@ public class Activator extends AbstractUIPlugin implements BundleExecutorEventLi
 	public static BundleExecutorEventManager getBundleExecutorEventService() throws ExtenderException {
 
 		return extenderTracker.bundleExecutorEventManagerExtender.getService();
+	}
+
+	public static ResourceState getResourceStateService() {
+
+		return extenderTracker.resourceStateExtender.getService();
 	}
 
 	public static DependencyOptions getDependencyOptionsService() throws ExtenderException {
@@ -242,6 +251,17 @@ public class Activator extends AbstractUIPlugin implements BundleExecutorEventLi
 	}
 
 	/**
+	 * Return the bundle log service
+	 * 
+	 * @return the bundle log service
+	 * @throws ExtenderException if failing to get the extender service for the bundle log
+	 */
+	public static BundleLog getBundleLogService() throws ExtenderException {
+
+		return extenderTracker.bundleLogExtender.getService(bundle);
+	}
+	
+	/**
 	 * Log the specified status object to the bundle log
 	 * 
 	 * @return the bundle status message
@@ -269,6 +289,8 @@ public class Activator extends AbstractUIPlugin implements BundleExecutorEventLi
 	/**
 	 * Uninstalls or deactivates (optional) all workspace bundles. Bundle closures with build errors
 	 * are deactivated. Any runtime errors are sent to error console
+	 * <p>
+	 * Must prevSave state of bundles after
 	 */
 	public void shutDownBundles() {
 
@@ -289,20 +311,21 @@ public class Activator extends AbstractUIPlugin implements BundleExecutorEventLi
 					Collection<IProject> deactivatedProjects = deactivateBuildErrorClosures(activatedProjects);
 					if (deactivatedProjects.size() > 0) {
 						activatedProjects.removeAll(deactivatedProjects);
-					} else {
-						savePluginSettings(true, false);
+						getResourceStateService().waitOnBundleJob();
 					}
 					if (activatedProjects.size() > 0) {
 						BundleProjectCandidates bundleProjectcandidates = getBundleProjectCandidatesService();
-						savePluginSettings(true, false);
+						// savePluginSettings(true, false);
 						activatedProjects = bundleProjectcandidates.getBundleProjects();
 						shutDownJob = new UninstallJob(Msg.SHUT_DOWN_JOB);
 						((Uninstall) shutDownJob).setUnregister(true);
 					}
+					WorkspaceSaveParticipant.saveBundleStateSettings(true, false);
 				}
 				if (activatedProjects.size() > 0) {
 					shutDownJob.addPendingProjects(activatedProjects);
 					shutDownJob.getJob().setUser(false);
+					shutDownJob.setSaveWorkspaceSnaphot(false);
 					shutDownJob.getJob().schedule();
 				}
 				IJobManager jobManager = Job.getJobManager();
@@ -324,13 +347,18 @@ public class Activator extends AbstractUIPlugin implements BundleExecutorEventLi
 				savePluginSettings(true, false);
 			}
 		} catch (InPlaceException | BundleLogException | ExtenderException e) {
-			ExceptionMessage.getInstance().handleMessage(e, e.getMessage());
+			StatusManager.getManager().handle(
+					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),
+					StatusManager.LOG);
 		} catch (IllegalStateException e) {
 			String msg = ExceptionMessage.getInstance().formatString("job_state_exception",
 					e.getLocalizedMessage());
-			ExceptionMessage.getInstance().handleMessage(e, msg);
+			StatusManager.getManager().handle(
+					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, msg, e), StatusManager.LOG);
 		} catch (Exception e) {
-			ExceptionMessage.getInstance().handleMessage(e, e.getMessage());
+			StatusManager.getManager().handle(
+					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),
+					StatusManager.LOG);
 		}
 	}
 
@@ -443,70 +471,6 @@ public class Activator extends AbstractUIPlugin implements BundleExecutorEventLi
 		DynamicExtensionContribution.INSTANCE.removeExtension(
 				DynamicExtensionContribution.statusHandlerExtensionPointId,
 				DynamicExtensionContribution.statusHandlerExtensionId);
-	}
-
-	/**
-	 * Remove the listener for the auto build service command
-	 */
-	void removeAutoBuildListener() {
-		if (null != autoBuildCommand && autoBuildCommand.isDefined()) {
-			autoBuildCommand.removeCommandListener(this);
-		}
-	}
-
-	public Command getAutoBuildCommand() {
-		return autoBuildCommand;
-	}
-
-	/**
-	 * Add the listener for the auto build command
-	 * <p>
-	 * The auto build command service parameter must be created after the workbench has been started.
-	 * This may not always be true in this start method. If not set changes in auto build will not be
-	 * reacted upon by the the listener
-	 * 
-	 * @param autoBuildCommand the auto build command service to listen to
-	 */
-	void addAutobuildListener(Command autoBuildCommand) {
-		if (null != autoBuildCommand && autoBuildCommand.isDefined()) {
-			this.autoBuildCommand = autoBuildCommand;
-			autoBuildCommand.addCommandListener(this);
-		}
-	}
-
-	/**
-	 * Listener for the "Build Automatically" main menu option. Auto build is set to true in the
-	 * workspace region when "Build Automatically" is switched on. 
-	 * <p>
-	 * Auto build is not set to false when "Build Automatically" is switched off
-	 *  
-	 * @see BundleRegion#isAutoBuildActivated(boolean)
-	 * @see BundleRegion#setAutoBuildChanged(boolean)
-	 */
-	@Override
-	public void commandChanged(CommandEvent commandEvent) {
-		if (null == plugin) {
-			return;
-		}
-		try {
-			BundleRegion region = getBundleRegionService();
-			IWorkbench workbench = getWorkbench();
-			Command autoBuildCmd = commandEvent.getCommand();
-
-			if (!region.isRegionActivated() || (null != workbench && workbench.isClosing())
-					|| !autoBuildCmd.isDefined()) {
-				return;
-			}
-			if (!getBundleProjectCandidatesService().isAutoBuilding()
-					&& !region.isAutoBuildActivated(false)) {
-				// Auto build has been switched on
-				region.setAutoBuildChanged(true);
-			}
-		} catch (ExtenderException e) {
-			StatusManager.getManager().handle(
-					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),
-					StatusManager.LOG);
-		}
 	}
 
 	/**
@@ -636,8 +600,8 @@ public class Activator extends AbstractUIPlugin implements BundleExecutorEventLi
 	 * When <code>allResolve</code> parameter is true and a project is activated the stored state is
 	 * set to resolve.
 	 * 
-	 * @param flush true to save settings to storage
-	 * @param allResolve true to save state as resolve for all activated bundle projects
+	 * @param flush true to prevSave settings to storage
+	 * @param allResolve true to prevSave state as resolve for all activated bundle projects
 	 */
 	public void savePluginSettings(Boolean flush, Boolean allResolve) {
 		try {
@@ -736,7 +700,7 @@ public class Activator extends AbstractUIPlugin implements BundleExecutorEventLi
 	}
 
 	/**
-	 * Access previous saved state for resource change events that occurred since the last save.
+	 * Access previous saved state for resource change events that occurred since the last prevSave.
 	 * Restore checked menu entries through the command service and other settings through the
 	 * preference service
 	 * 
@@ -745,8 +709,7 @@ public class Activator extends AbstractUIPlugin implements BundleExecutorEventLi
 	public void processLastSavedState(Boolean sync) {
 
 		// Access previous saved state so change events will be created for
-		// changes that have occurred since the last save
-		ISaveParticipant saveParticipant = new WorkspaceSaveParticipant();
+		// changes that have occurred since the last prevSave
 		ISavedState lastState;
 		try {
 			lastState = ResourcesPlugin.getWorkspace().addSaveParticipant(
@@ -759,11 +722,16 @@ public class Activator extends AbstractUIPlugin implements BundleExecutorEventLi
 		}
 	}
 
-	public boolean isRefreshDuplicateBSNAllowed() {
-		return allowRefreshDuplicateBSN;
+	/**
+	 * Returns the shared instance
+	 * 
+	 * @return the shared instance
+	 */
+	public static Activator getDefault() {
+		return plugin;
 	}
 
-	@Override
-	public void bundleJobEvent(BundleExecutorEvent event) {
+	public boolean isRefreshDuplicateBSNAllowed() {
+		return allowRefreshDuplicateBSN;
 	}
 }

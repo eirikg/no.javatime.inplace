@@ -15,6 +15,7 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 
 import no.javatime.inplace.Activator;
+import no.javatime.inplace.WorkspaceSaveParticipant;
 import no.javatime.inplace.bundlejobs.intface.ActivateBundle;
 import no.javatime.inplace.bundlejobs.intface.Deactivate;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions;
@@ -49,7 +50,7 @@ import org.osgi.framework.Bundle;
 public class ActivateBundleJob extends NatureJob implements ActivateBundle {
 
 	// Activate bundles according to their state in preference store
-	private Boolean useStoredState = false;
+	private Boolean isRestoreSessionState = false;
 
 	/**
 	 * Default constructor with a default job name
@@ -96,7 +97,7 @@ public class ActivateBundleJob extends NatureJob implements ActivateBundle {
 	/**
 	 * Runs the bundle(s) activation operation.
 	 * 
-	 * @return A bundle status object obtained from {@link #getJobSatus()} 
+	 * @return A bundle status object obtained from {@link #getJobSatus()}
 	 */
 	@Override
 	public IBundleStatus runInWorkspace(IProgressMonitor monitor) {
@@ -135,7 +136,7 @@ public class ActivateBundleJob extends NatureJob implements ActivateBundle {
 			monitor.done();
 			BundleTransitionListener.removeBundleTransitionListener(this);
 		}
-		return getJobSatus();		
+		return getJobSatus();
 	}
 
 	/**
@@ -160,7 +161,7 @@ public class ActivateBundleJob extends NatureJob implements ActivateBundle {
 	 */
 	private IBundleStatus activate(IProgressMonitor monitor) throws OperationCanceledException,
 			InterruptedException, InPlaceException, ExtenderException {
-		
+
 		Collection<Bundle> activatedBundles = null;
 		ProjectSorter projectSorter = new ProjectSorter();
 		// At least one project must be activated (nature enabled) for workspace bundles to be activated
@@ -333,7 +334,8 @@ public class ActivateBundleJob extends NatureJob implements ActivateBundle {
 
 		IBundleStatus status = createStatus();
 		bundleTransition.removeTransitionError(TransitionError.DUPLICATE);
-		Collection<IProject> externalDuplicates = getExternalDuplicateClosures(getPendingProjects(), null);
+		Collection<IProject> externalDuplicates = getExternalDuplicateClosures(getPendingProjects(),
+				null);
 		if (null != externalDuplicates) {
 			removePendingProjects(externalDuplicates);
 		}
@@ -354,20 +356,35 @@ public class ActivateBundleJob extends NatureJob implements ActivateBundle {
 	 * Restore bundle state from previous session. If activated bundles to start has requirements on a
 	 * bundle to resolve, start the bundle to resolve if the dependency option on the bundle allows
 	 * it.
+	 * <p>
+	 * To remember the target state ({@code Bundle.RESOLVED} or {@code Bundle.ACTIVE}) of an activated
+	 * bundle project between sessions, the preference store should be consulted. This is relevant at
+	 * startup of the IDE to retain the states as from before shutdown. The preference store may also
+	 * be utilized when a set of bundles are reset (uninstalled and then activated in one
+	 * transaction), saving their state before uninstall and restoring the state when activated.
+	 * <p>
+	 * Default is to start activated bundle projects and install deactivated bundle projects in an
+	 * activated workspace. Therefore the state of bundles in state {@code Bundle#RESOLVED} are
+	 * persisted at shutdown and restored at startup. For an uncontrolled shutdown (crash) of the IDE,
+	 * all activated bundles has state {@code Bundle.RESOLVED} as their persisted state.
+	 * <p>
+	 * Additional bundles to start are added and bundles to not start are removed from the specified
+	 * collection of bundles.
 	 * 
-	 * @param bundles bundles to activate
-	 * @param bs dependency sorter
-	 * @throws InPlaceException if one of the specified bundles is null
+	 * @param bundles Initial set of bundles to restore to their state from the previous session. This
+	 * is an output parameter.
+	 * @throws CircularReferenceException - if cycles are detected in the bundle graph
 	 */
-	private void restoreSessionStates(Collection<Bundle> bundles) throws InPlaceException {
-		BundleSorter bundleSorter = new BundleSorter();
-		if (getPersistState() && bundles.size() > 0) {
+	private void restoreSessionStates(Collection<Bundle> bundles) throws CircularReferenceException {
+
+		if (getIsRestoreSessionState() && bundles.size() > 0) {
 			IEclipsePreferences store = Activator.getEclipsePreferenceStore();
 			if (null == store) {
 				addStatus(new BundleStatus(StatusCode.WARNING, Activator.PLUGIN_ID,
 						Msg.INIT_WORKSPACE_STORE_WARN, null));
 				return;
 			}
+			BundleSorter bundleSorter = new BundleSorter();
 			// Default is to start the bundle, so it is sufficient to handle bundles with state resolved
 			Collection<Bundle> activatedBundles = bundleRegion.getActivatedBundles();
 			for (Bundle bundle : activatedBundles) {
@@ -432,7 +449,8 @@ public class ActivateBundleJob extends NatureJob implements ActivateBundle {
 									}
 								}
 							} catch (ExtenderException e) {
-								addStatus(new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e));
+								addStatus(new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID,
+										e.getMessage(), e));
 							}
 						} else {
 							bundles.remove(bundle); // Do not start this bundle
@@ -440,18 +458,18 @@ public class ActivateBundleJob extends NatureJob implements ActivateBundle {
 					}
 				}
 			}
-			Activator.getInstance().savePluginSettings(true, true);
+			WorkspaceSaveParticipant.saveBundleStateSettings(true, true);
 		}
 	}
 
 	@Override
-	public void setPersistState(Boolean persist) {
-		this.useStoredState = persist;
+	public void setRestoreSessionState(Boolean restore) {
+		this.isRestoreSessionState = restore;
 	}
 
 	@Override
-	public Boolean getPersistState() {
-		return useStoredState;
+	public Boolean getIsRestoreSessionState() {
+		return isRestoreSessionState;
 	}
 
 	/**

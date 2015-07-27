@@ -13,6 +13,7 @@ import no.javatime.inplace.bundlejobs.NatureJob;
 import no.javatime.inplace.bundlejobs.intface.ActivateBundle;
 import no.javatime.inplace.bundlejobs.intface.ActivateProject;
 import no.javatime.inplace.bundlejobs.intface.Install;
+import no.javatime.inplace.bundlejobs.intface.ResourceState;
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.closure.BundleClosures;
@@ -41,6 +42,11 @@ class AddBundleProjectJob extends NatureJob implements AddBundleProject {
 		super(Msg.ADD_BUNDLE_PROJECT_JOB);
 	}
 
+	/**
+	 * Constructs a add bundle job with a given job name
+	 * 
+	 * @param name job name
+	 */
 	public AddBundleProjectJob(String name) {
 		super(name);
 	}
@@ -80,8 +86,12 @@ class AddBundleProjectJob extends NatureJob implements AddBundleProject {
 			if (!isProjectWorkspaceActivated()) {
 				return getJobSatus();
 			}
+
 			// Install all new projects in an activated workspace
 			Install install = new InstallJob(Msg.INSTALL_JOB, newProjects);
+			install.setSaveWorkspaceSnaphot(false);
+			ResourceState resourceState = Activator.getResourceStateService();
+			boolean isTriggerUpdate = resourceState.isTriggerUpdate();
 			Activator.getBundleExecutorEventService().add(install, 0);
 			// New and existing deactivated projects that provides capabilities to new and existing
 			// projects
@@ -97,6 +107,16 @@ class AddBundleProjectJob extends NatureJob implements AddBundleProject {
 				BundleTransitionListener.addBundleTransition(new TransitionEvent(newProject,
 						Transition.NEW_PROJECT));
 				bundleTransition.removePending(newProject, Transition.NEW_PROJECT);
+				// Build (calling pre and post build listener adding and removing the build transition)
+				// is run before this job
+//				if (!bundleProjectCandidates.isAutoBuilding()) {
+//					boolean activated = isProjectActivated(newProject);
+//					// Install which is already scheduled register the bundle project but it runs after this job
+//					bundleRegion.registerBundleProject(newProject, null, activated);
+//					if (activated) {
+//						bundleTransition.addPending(newProject, Transition.BUILD);
+//					}
+//				} 
 				// Deactivated projects that are not providers are already scheduled for install
 				// Project is not registered (install job is in waiting state) with the workspace yet.
 				if (isProjectActivated(newProject)) {
@@ -116,11 +136,13 @@ class AddBundleProjectJob extends NatureJob implements AddBundleProject {
 						Msg.ACTIVATE_PROJECT_JOB, deactivatedProviders);
 				// Do not add requiring projects. They will be resolved as part of the requiring
 				// closure when providers are resolved
+				activateProject.setSaveWorkspaceSnaphot(false);
 				Activator.getBundleExecutorEventService().add(activateProject, 0);
 			}
 			// Provide information when auto build is turned off
 			if (messageOptions.isBundleOperations()
 					&& !bundleProjectCandidates.isAutoBuilding()) {
+				
 				IBundleStatus status = new BundleStatus(StatusCode.WARNING, Activator.PLUGIN_ID,
 						Msg.BUILDER_OFF_INFO);
 				status.add(new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, NLS.bind(
@@ -131,10 +153,11 @@ class AddBundleProjectJob extends NatureJob implements AddBundleProject {
 			// Deactivated providers are handled by the activate project job
 			newActivatedBundleProjects.removeAll(deactivatedProviders);
 			// Activate bundles for all new projects that are activated
-			if (newActivatedBundleProjects.size() > 0) {
+			if (newActivatedBundleProjects.size() > 0 && !isTriggerUpdate) {
 				ActivateBundle activateBundle = new ActivateBundleJob(
 						Msg.ACTIVATE_BUNDLE_JOB, newActivatedBundleProjects);
-				Activator.getBundleExecutorEventService().add(activateBundle, 0);
+					activateBundle.setSaveWorkspaceSnaphot(false);
+					Activator.getBundleExecutorEventService().add(activateBundle, 0);
 			}
 		} catch (CircularReferenceException e) {
 			String msg = ExceptionMessage.getInstance().formatString("circular_reference", getName());

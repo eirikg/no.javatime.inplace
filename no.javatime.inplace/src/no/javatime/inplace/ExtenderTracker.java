@@ -4,6 +4,9 @@ import java.util.Collection;
 import java.util.Dictionary;
 
 import no.javatime.inplace.bundlejobs.events.intface.BundleExecutorEventManager;
+import no.javatime.inplace.bundlejobs.intface.BundleExecutorServiceFactory;
+import no.javatime.inplace.bundlejobs.intface.ResourceState;
+import no.javatime.inplace.bundlejobs.intface.Update;
 import no.javatime.inplace.dl.preferences.intface.CommandOptions;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions;
 import no.javatime.inplace.dl.preferences.intface.MessageOptions;
@@ -40,6 +43,7 @@ class ExtenderTracker extends ExtenderBundleTracker {
 
 	Bundle thisBundle;
 	Extender<BundleExecutorEventManager> bundleExecutorEventManagerExtender;
+	Extender<ResourceState> resourceStateExtender;
 	Extender<BundleCommand> bundleCommandExtender;
 	Extender<BundleRegion> bundleRegionExtender;
 	Extender<BundleTransition> bundleTransitionExtender;
@@ -76,7 +80,7 @@ class ExtenderTracker extends ExtenderBundleTracker {
 //			track(thisBundle, Start.class.getName(), new BundleExecutorServiceFactory(headers.get(Start.START_BUNDLE_SERVICE)));
 //			track(thisBundle, Stop.class.getName(), new BundleExecutorServiceFactory(headers.get(Stop.STOP_BUNDLE_SERVICE)));
 //			track(thisBundle, Refresh.class.getName(), new BundleExecutorServiceFactory(headers.get(Refresh.REFRESH_BUNDLE_SERVICE)));
-//			track(thisBundle, Update.class.getName(), new BundleExecutorServiceFactory(headers.get(Update.UPDATE_BUNDLE_SERVICE)));
+				trackExtender(thisBundle, Update.class.getName(), new BundleExecutorServiceFactory(headers.get(Update.UPDATE_BUNDLE_SERVICE)));
 //			track(thisBundle, Reset.class.getName(), new BundleExecutorServiceFactory(headers.get(Reset.RESET_BUNDLE_SERVICE)));
 //			track(thisBundle, TogglePolicy.class.getName(), new BundleExecutorServiceFactory(headers.get(TogglePolicy.TOGGLE_POLICY_SERVICE)));
 //			track(thisBundle, UpdateBundleClassPath.class.getName(), new BundleExecutorServiceFactory(headers.get(UpdateBundleClassPath.UPDATE_BUNDLE_CLASS_PATH_SERVICE)));
@@ -84,6 +88,7 @@ class ExtenderTracker extends ExtenderBundleTracker {
 			String serviceName = headers.get(BundleExecutorEventManager.BUNDLE_EXECUTOR_EVENT_MANAGER_SERVICE);
 			if (null != serviceName) {
 				bundleExecutorEventManagerExtender = trackExtender(thisBundle, BundleExecutorEventManager.class.getName(), serviceName);
+				resourceStateExtender = trackExtender(thisBundle, ResourceState.class.getName(), headers.get(ResourceState.RESOURCE_STATE_SERVICE));
 			}
 		} catch (ExtenderException | IllegalStateException e) {
 			StatusManager.getManager().handle(

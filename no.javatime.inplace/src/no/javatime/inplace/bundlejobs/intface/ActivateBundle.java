@@ -19,7 +19,7 @@ package no.javatime.inplace.bundlejobs.intface;
  * by default installed, resolved and started (state ACTIVE or STARTING).
  * <li>When reactivating the workspace (e.g. at startup or by executing the {@link Reset} service)
  * deactivated projects are installed and activated projects are moved to the same state as at shut
- * down if {@link #setPersistState(Boolean)} is set to {@code true} and started if not.
+ * down if {@link #setRestoreSessionState(Boolean)} is set to {@code true} and started if not.
  * <li>If bundles to activate are dependent on other providing bundles, the independent providing
  * bundles are added to the this bundle operation. The dependency is transitive.
  * </ol>
@@ -52,7 +52,7 @@ public interface ActivateBundle extends BundleExecutor {
 	public final static String ACTIVATE_BUNDLE_SERVICE = "Activate-Bundle-Service";
 
 	/**
-	 * Store and use state of activated bundles in the preference store at start up.
+	 * Activate bundle projects according to their state in the preference store.
 	 * <p>
 	 * When {@code true} persisted bundles will be activated according to their persisted state as of
 	 * at shut down of the IDE at next start up of the IDE.
@@ -66,15 +66,15 @@ public interface ActivateBundle extends BundleExecutor {
 	 * An exception to these rules is when the IDE terminates unexpectedly. Than activated bundle
 	 * projects are resolved if possible but not started even if the state was active at shutdown.
 	 * 
-	 * @param persist true if bundle state from preference store is to be used. Otherwise false
+	 * @param restore true if bundle state from preference store is to be used. Otherwise false
 	 */
-	public void setPersistState(Boolean persist);
+	public void setRestoreSessionState(Boolean restore);
 
 	/**
-	 * Check if to store and activate bundles according to bundle state in preference store
+	 * Check if to restore and activate bundles according to bundle state in preference store
 	 * 
 	 * @return true if bundle state from preference store is to be used. Otherwise false
 	 */
-	public Boolean getPersistState();
+	public Boolean getIsRestoreSessionState();
 
 }

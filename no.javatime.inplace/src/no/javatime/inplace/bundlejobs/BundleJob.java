@@ -58,6 +58,7 @@ import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.osgi.util.NLS;
+import org.eclipse.ui.progress.IProgressConstants2;
 import org.eclipse.ui.statushandlers.StatusManager;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
@@ -66,18 +67,21 @@ import org.osgi.framework.BundleException;
  * Support processing of bundle operations on bundles added as pending projects to bundle jobs.
  * <p>
  * Pending bundle projects are added to a job before it is scheduled and the bundle projects are
- * executed according to the job type.
+ * executed according to type of bundle job.
  */
 public class BundleJob extends JobStatus implements BundleExecutor {
-
-	/** Use the same rules as the build system */
-	private static final ISchedulingRule buildRule = ResourcesPlugin.getWorkspace().getRuleFactory()
-			.buildRule();
 
 	/**
 	 * Unsorted list of unique pending projects to process in a job
 	 */
 	private Collection<IProject> pendingProjects = new LinkedHashSet<>();
+
+	/**
+	 * Initialized according to preference setting. 
+	 * 
+	 * If true a workspace snapshot should be saved before running this job
+	 */
+	private boolean isSaveWorkspaceSnaphot;
 
 	/**
 	 * Construct a bundle job with a bundle name. Sets job priority and scheduling rule.
@@ -86,8 +90,7 @@ public class BundleJob extends JobStatus implements BundleExecutor {
 	 */
 	public BundleJob(String name) {
 		super(name);
-		setPriority(Job.BUILD);
-		setRule(buildRule);
+		init();
 	}
 
 	/**
@@ -100,8 +103,7 @@ public class BundleJob extends JobStatus implements BundleExecutor {
 	public BundleJob(String name, Collection<IProject> projects) {
 		super(name);
 		addPendingProjects(projects);
-		setPriority(Job.BUILD);
-		setRule(buildRule);
+		init();
 	}
 
 	/**
@@ -114,10 +116,34 @@ public class BundleJob extends JobStatus implements BundleExecutor {
 	public BundleJob(String name, IProject project) {
 		super(name);
 		addPendingProject(project);
-		setPriority(Job.BUILD);
-		setRule(buildRule);
+		init();
 	}
 	
+	private void init() {
+		setPriority(Job.BUILD);
+		setRule(bundleRule());
+		setProperty(IProgressConstants2.SHOW_IN_TASKBAR_ICON_PROPERTY, Boolean.TRUE);	
+		try {
+			if (null == commandOptions) {
+				commandOptions = Activator.getCommandOptionsService();
+			}
+			isSaveWorkspaceSnaphot = commandOptions.isSaveSnapshotBeforeBundleOperation() ? true : false;
+		} catch (ExtenderException e) {
+			isSaveWorkspaceSnaphot = false;
+		}
+	}
+	
+	/**
+	 * Use the same rule as the build job locking the whole workspace while the job is running
+	 * 
+	 * @return The workspace root scheduling rule
+	 */
+	public ISchedulingRule bundleRule() {
+
+		return  ResourcesPlugin.getWorkspace().getRuleFactory()
+				.buildRule();
+	}
+
 	/**
 	 * Runs the bundle(s) operation.
 	 */
@@ -139,6 +165,14 @@ public class BundleJob extends JobStatus implements BundleExecutor {
 			return true;
 		}
 		return false;
+	}
+	
+	public boolean isSaveWorkspaceSnaphot() {
+		return isSaveWorkspaceSnaphot;
+	}
+
+	public void setSaveWorkspaceSnaphot(boolean saveWorkspaceSnaphot) {
+		this.isSaveWorkspaceSnaphot = saveWorkspaceSnaphot;
 	}
 
 	@Override
@@ -589,28 +623,43 @@ public class BundleJob extends JobStatus implements BundleExecutor {
 
 	/**
 	 * Calculates the requiring dependency closure giving an initial set of bundles and a
-	 * scope that limits the set of requiring bundles
+	 * domain that limits the set of requiring bundles
 	 * <p>
-	 * If bundles in the specified scope of bundles have the same symbolic name as any from the
+	 * If bundles in the specified domain of bundles have the same symbolic name as any from the
 	 * specified initial set of bundles they are added to the requiring closure
+	 * <p>
+	 * If any activated bundle are tagged with a pending {@code Transition.REFRESH} the bundles and
+	 * their requiring bundles are added to the requiring closure 
 	 * 
 	 * @param bundles the initial set of bundles to calculate the dependency closure from
-	 * @param bundleScope set of possible requiring bundles
+	 * @param domain set of possible requiring bundles
 	 * @return set of bundles to refresh including the specified initial set of bundles or an empty set
 	 * @throws CircularReferenceException If cycles are detected in the bundle graph
 	 * @throws InPlaceException If failing to get the dependency options service
 	 */
-	public Collection<Bundle> getRequiringClosure(Collection<Bundle> bundles,
-			Collection<Bundle> bundleScope) throws InPlaceException, CircularReferenceException {
+	public Collection<Bundle> getRefreshClosure(Collection<Bundle> bundles,
+			Collection<Bundle> domain) throws InPlaceException, CircularReferenceException {
 
 		BundleClosures bc = new BundleClosures();
 		Collection<Bundle> bundleClosure = bc.bundleDeactivation(Closure.REQUIRING, bundles,
-				bundleScope);
+				domain);
+
+		// Add any bundles tagged with refresh and their requiring closure to the requiring closure
+		Collection<Bundle> refreshBundles = bundleTransition.getPendingBundles(domain, Transition.REFRESH);
+		if (refreshBundles.size() > 0) {
+			for (Bundle bundle : refreshBundles) {
+				bundleTransition.removePending(bundle, Transition.REFRESH);
+			}
+			Collection<Bundle> refreshClosure = bc.bundleDeactivation(Closure.REQUIRING, refreshBundles, domain);			
+			bundleClosure.addAll(refreshClosure);
+		}
+		
+	
 		// The resolver always include bundles with the same symbolic name in the refresh process
 		Map<IProject, Bundle> duplicates = bundleRegion.getSymbolicNameDuplicates(
-				bundleRegion.getProjects(bundleClosure), bundleScope);
+				bundleRegion.getProjects(bundleClosure), domain);
 		if (duplicates.size() > 0) {
-			bundleClosure.addAll(bc.bundleDeactivation(Closure.REQUIRING, duplicates.values(), bundleScope)); 
+			bundleClosure.addAll(bc.bundleDeactivation(Closure.REQUIRING, duplicates.values(), domain)); 
 		}
 		return bundleClosure;
 	}
@@ -823,6 +872,7 @@ public class BundleJob extends JobStatus implements BundleExecutor {
 		}
 		return result;
 	}
+
 	/**
 	 * Remove all bundles from the specified set of bundles tagged with a transition error and their providing bundles
 	 *  

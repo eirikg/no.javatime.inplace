@@ -15,6 +15,7 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 
 import no.javatime.inplace.Activator;
+import no.javatime.inplace.WorkspaceSaveParticipant;
 import no.javatime.inplace.bundlejobs.intface.ActivateProject;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.extender.intface.ExtenderException;
@@ -164,6 +165,7 @@ public class ActivateProjectJob extends NatureJob implements ActivateProject {
 			if (!result.hasStatus(StatusCode.OK) && !result.hasStatus(StatusCode.INFO)) {
 				return result;
 			}
+			saveDirtyMetaFiles(true);
 			activateNature(getPendingProjects(), new SubProgressMonitor(monitor, 1));
 			// An activate project job triggers an update job when the workspace is activated and
 			// an activate bundle job when the workspace is deactivated
@@ -176,7 +178,7 @@ public class ActivateProjectJob extends NatureJob implements ActivateProject {
 					}
 				}
 			}
-			Activator.getInstance().savePluginSettings(true, true);
+			WorkspaceSaveParticipant.saveBundleStateSettings(true, true);
 		} else {
 			if (messageOptions.isBundleOperations()) {
 				addLogStatus(new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID,

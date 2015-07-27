@@ -7,11 +7,8 @@ import java.util.Map;
 
 import no.javatime.inplace.Activator;
 import no.javatime.inplace.bundlejobs.ActivateBundleJob;
-import no.javatime.inplace.bundlejobs.UpdateJob;
 import no.javatime.inplace.bundlejobs.intface.ActivateBundle;
-import no.javatime.inplace.bundlejobs.intface.BundleExecutor;
 import no.javatime.inplace.bundlejobs.intface.Update;
-import no.javatime.inplace.dialogs.ResourceStateHandler;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.dl.preferences.intface.MessageOptions;
 import no.javatime.inplace.extender.intface.ExtenderException;
@@ -37,50 +34,14 @@ import org.eclipse.ui.statushandlers.StatusManager;
 import org.osgi.framework.Bundle;
 
 /**
- * Helper class for scheduling and adding projects to update jobs.
+ * Helper class for adding projects to update jobs.
  * <p>
  * Duplicate projects that have become unique are scheduled for activation (and update). Projects
  * that are identified as members in build errors closures are neither scheduled for update or added
  * to any update job.
  */
 public class UpdateScheduler {
-
-	/**
-	 * Schedules an update job for the specified projects. Projects that are members in build error
-	 * closures are not added to the update job. Uninstalled duplicate projects that now are unique -
-	 * by changing their symbolic name and/or version - are scheduled for activation.
-	 * <p>
-	 * Only activated projects with a pending update transition are scheduled for update
-	 * 
-	 * @param projects projects to schedule for update. Must not be null
-	 * @param bundleRegion The bundle region service used to check if region is activated
-	 * @param bundleProjectCandidates The candidate service used to get installable projects
-	 * @param delay number of milliseconds before starting the update job
-	 * @throws ExtenderException if failing to add update or activate to the job executor service
-	 */
-
-	static public void scheduleUpdateJob(Collection<IProject> projects,
-			final BundleRegion bundleRegion, final BundleTransition bundleTransition,
-			final BundleProjectCandidates bundleProjectCandidates, long delay) throws ExtenderException {
-
-		Update updateJob = new UpdateJob();
-		for (IProject project : projects) {
-			if (bundleRegion.isBundleActivated(project)
-					&& bundleTransition.containsPending(project, Transition.UPDATE, false)) {
-				addProjectToUpdateJob(project, updateJob);
-			}
-		}
-		ActivateBundle postActivateBundleJob = null;
-		if (updateJob.pendingProjects() > 0) {
-			postActivateBundleJob = resolveduplicates(null, updateJob, bundleRegion, bundleTransition,
-					bundleProjectCandidates);
-			jobHandler(updateJob, delay);
-		}
-		if (null != postActivateBundleJob) {
-			jobHandler(postActivateBundleJob, delay);
-		}
-	}
-
+	
 	/**
 	 * Adds the specified bundle project to the specified update job if the bundle project has no
 	 * build error closures.
@@ -136,7 +97,6 @@ public class UpdateScheduler {
 		boolean isUpdate = true;
 		// Do not update when there are activated requiring projects or deactivated proving projects
 		// with build errors
-
 		// Activated requiring closure. Activated bundles with build errors requiring
 		// capabilities from the project to update
 		try {
@@ -342,24 +302,4 @@ public class UpdateScheduler {
 		}
 		return symbolicKeymap;
 	}
-
-	/**
-	 * Default way to schedule jobs, with no delay, saving files before schedule, waiting on builder
-	 * to finish, no progress dialog and run the job via the bundle view if visible showing a half
-	 * busy cursor and also displaying the job name in the content bar of the bundle view
-	 * 
-	 * @param job to schedule
-	 * @param delay number of msecs to wait before starting the job
-	 * @throws ExtenderException If failing to add he specified job to job queue
-	 */
-	static private void jobHandler(BundleExecutor job, long delay) throws ExtenderException {
-
-		ResourceStateHandler so = new ResourceStateHandler();
-		if (so.saveModifiedResources()) {
-			so.waitOnBuilder(true);
-			Activator.getBundleExecutorEventService().add(job, delay);
-
-		}
-	}
-
 }

@@ -148,9 +148,11 @@ public class PreChangeListener implements IResourceChangeListener {
 			executor.execute(new Runnable() {
 				@Override
 				public void run() {
-					new ResourceStateHandler().waitOnBuilder(true);
 					// Put in waiting queue until delete or close project (eclipse) job finish
+//					BundleProjectCandidates bpc = Activator.getBundleProjectCandidatesService();
+//					boolean autoBuild = bpc.setAutoBuild(false);
 					Activator.getBundleExecutorEventService().add(removeBundleProject);
+//					bpc.setAutoBuild(autoBuild);
 				}
 			});
 		} catch (RejectedExecutionException e) {

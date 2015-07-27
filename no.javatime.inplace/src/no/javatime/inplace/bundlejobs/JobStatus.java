@@ -7,6 +7,7 @@ import java.util.Collections;
 import java.util.List;
 
 import no.javatime.inplace.Activator;
+import no.javatime.inplace.builder.SaveOptionsJob;
 import no.javatime.inplace.bundlejobs.intface.ActivateProject;
 import no.javatime.inplace.dl.preferences.intface.CommandOptions;
 import no.javatime.inplace.dl.preferences.intface.MessageOptions;
@@ -59,7 +60,7 @@ public class JobStatus extends WorkspaceJob implements BundleTransitionEventList
 	protected MessageOptions messageOptions;
 	protected CommandOptions commandOptions;
 
-	long startTime;
+	protected long startTime;
 
 	// List of error status objects
 	private List<IBundleStatus> errStatusList = new ArrayList<>();
@@ -96,7 +97,15 @@ public class JobStatus extends WorkspaceJob implements BundleTransitionEventList
 
 		initServices();
 		startTime = System.currentTimeMillis();
-		return new BundleStatus(StatusCode.OK, Activator.PLUGIN_ID, null);
+		SaveOptionsJob so = new SaveOptionsJob();
+		IBundleStatus jobStatus = so.saveFiles();
+		if (jobStatus.getStatusCode() != StatusCode.OK) {
+			addStatus(so.getErrorStatusList());
+		}
+		for (IBundleStatus status : so.getLogStatusList()) {
+			addLogStatus(status);
+		}
+		return getJobSatus();
 	}
 
 	/**
@@ -137,19 +146,9 @@ public class JobStatus extends WorkspaceJob implements BundleTransitionEventList
 		return startTime;
 	}
 
-	/**
-	 * Get the status of a bundle job so far. If the job has generated any errors or warnings a bundle
-	 * status object with {@code StatucCode.JOBINFO} is returned otherwise a status object with
-	 * {@code StatusCode.OK} is returned. The message in the returned status object contains the name
-	 * of the job.
-	 * <p>
-	 * Generated errors and warnings so far may be obtained from {@link #getErrorStatusList()}
-	 * 
-	 * @return A bundle status object describing the status of the a bundle job so far
-	 */
-	protected IBundleStatus getJobSatus() {
+	public IBundleStatus getJobSatus() {
 
-		StatusCode statusCode = hasErrorStatus() ? StatusCode.JOBINFO : StatusCode.OK;
+		StatusCode statusCode = hasErrorStatus() ? StatusCode.JOBERROR : StatusCode.OK;
 		return new BundleStatus(statusCode, Activator.PLUGIN_ID, getName());
 	}
 
@@ -553,7 +552,7 @@ public class JobStatus extends WorkspaceJob implements BundleTransitionEventList
 	}
 
 	/**
-	 * Creates a new status object with {@code StatusCode#OK}. The created status object is not added
+	 * Creates a new status object with {@code StatusCode.OK}. The created status object is not added
 	 * to the status list
 	 * 
 	 * @return the new status object
@@ -582,10 +581,10 @@ public class JobStatus extends WorkspaceJob implements BundleTransitionEventList
 	}
 
 	/**
-	 * Get the last added bundle status object added by this job
+	 * Get the last bundle status object added by this job
 	 * 
-	 * @return a the last added bundle status with added by this job or a status object with
-	 * {@code StatusCode} = OK if the list is empty
+	 * @return The last bundle status added by this job or a status object with
+	 * {@code StatusCode} = OK if no error status object have been added
 	 */
 	protected IBundleStatus getLastErrorStatus() {
 

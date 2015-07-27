@@ -32,7 +32,7 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.osgi.util.NLS;
 
-public class UpdateBundleClassPathJob extends BundleJob implements UpdateBundleClassPath {
+public class UpdateBundleClassPathJob extends NatureJob implements UpdateBundleClassPath {
 
 	private boolean addToPath = true;
 
@@ -85,6 +85,7 @@ public class UpdateBundleClassPathJob extends BundleJob implements UpdateBundleC
 		try {
 			super.runInWorkspace(monitor);
 			BundleTransitionListener.addBundleTransitionListener(this);
+			saveDirtyMetaFiles(false);
 			for (IProject project : getPendingProjects()) {
 				try {
 					if (!BuildErrorClosure.hasManifestBuildErrors(project)) {
@@ -108,6 +109,7 @@ public class UpdateBundleClassPathJob extends BundleJob implements UpdateBundleC
 				if (messageOptions.isBundleOperations()) {
 					addInfoMessage(Msg.ATOBUILD_OFF_RESET_INFO);
 				}
+				resetJob.setSaveWorkspaceSnaphot(false);
 				Activator.getBundleExecutorEventService().add(resetJob, 0);
 			}
 		} catch (OperationCanceledException e) {

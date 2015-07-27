@@ -30,6 +30,15 @@ public interface BundleExecutorEventManager {
 	public void add(BundleExecutor bundleExecutor);
 
 	/**
+	 * Number of registered listeners. 
+	 * <p>
+	 * There will always be at least one listener installed by this bundle 
+	 * 
+	 * @return number of registered listeners
+	 */
+	public int listeners();
+
+	/**
 	 * Adds a bundle executor operation managed by job listeners
 	 * 
 	 * @param bundleExecutor bundle executor operation to add for later execution by listeners

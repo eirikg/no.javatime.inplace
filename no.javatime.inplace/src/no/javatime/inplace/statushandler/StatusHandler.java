@@ -15,7 +15,6 @@ import java.util.Set;
 
 import no.javatime.inplace.Activator;
 import no.javatime.inplace.bundlejobs.intface.BundleExecutor;
-import no.javatime.inplace.dialogs.ResourceStateHandler;
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.log.intface.BundleLogException;
 import no.javatime.inplace.msg.Msg;
@@ -171,8 +170,7 @@ public class StatusHandler extends WorkbenchErrorHandler {
 	 */
 	private boolean interruptBundleJob() {
 
-		ResourceStateHandler so = new ResourceStateHandler();
-		BundleExecutor bundleExtecutor = so.getRunningBundleJob();
+		BundleExecutor bundleExtecutor = Activator.getResourceStateService().getRunningBundleJob();
 		if (null != bundleExtecutor) {
 			bundleExtecutor.getJob().cancel();
 			Thread thread = bundleExtecutor.getJob().getThread();
