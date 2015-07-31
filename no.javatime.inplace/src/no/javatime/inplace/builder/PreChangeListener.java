@@ -94,9 +94,16 @@ public class PreChangeListener implements IResourceChangeListener {
 					uninstall.setUnregister(true);
 					Activator.getBundleExecutorEventService().add(uninstall);
 				} else {
+					String jobName = null;
 					// Schedule the removed project for uninstall
-					transition.addPending(project, Transition.REMOVE_PROJECT);
-					scheduleRemoveBundleProject(project);
+					if (event.getType() == IResourceChangeEvent.PRE_CLOSE) {
+						transition.addPending(project, Transition.CLOSE_PROJECT);
+						jobName = Msg.CLOSE_BUNDLE_PROJECT_JOB;
+					} else if (event.getType() == IResourceChangeEvent.PRE_DELETE) {
+						transition.addPending(project, Transition.DELETE_PROJECT);
+						jobName = Msg.REMOVE_BUNDLE_PROJECT_JOB;
+					}
+					scheduleRemoveBundleProject(project, jobName);
 				}
 			} catch (ExtenderException e) {
 				StatusManager.getManager().handle(
@@ -123,7 +130,7 @@ public class PreChangeListener implements IResourceChangeListener {
 	 * @param project this project is added to the returned job
 	 * @return a scheduled bundle job handling removal of bundle projects. Never null.
 	 */
-	private BundleExecutor scheduleRemoveBundleProject(IProject project) {
+	private BundleExecutor scheduleRemoveBundleProject(IProject project, String jobName) {
 
 		// If any, add this project to an existing and waiting remove bundle job
 		IJobManager jobMan = Job.getJobManager();
@@ -141,7 +148,7 @@ public class PreChangeListener implements IResourceChangeListener {
 		// and if needed a new one after the job has finished. A new job will wait for the close or
 		// remove project(s) to finish so it should suffice with only one remove bundle project job
 		final RemoveBundleProject removeBundleProject = new RemoveBundleProjectJob(
-				RemoveBundleProjectJob.removeBundleProjectName, project);
+				jobName, project);
 
 		ExecutorService executor = Executors.newSingleThreadExecutor();
 		try {
@@ -149,10 +156,7 @@ public class PreChangeListener implements IResourceChangeListener {
 				@Override
 				public void run() {
 					// Put in waiting queue until delete or close project (eclipse) job finish
-//					BundleProjectCandidates bpc = Activator.getBundleProjectCandidatesService();
-//					boolean autoBuild = bpc.setAutoBuild(false);
 					Activator.getBundleExecutorEventService().add(removeBundleProject);
-//					bpc.setAutoBuild(autoBuild);
 				}
 			});
 		} catch (RejectedExecutionException e) {

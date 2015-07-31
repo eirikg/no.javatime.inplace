@@ -41,7 +41,8 @@ public class Msg extends NLS {
 	public static String JOB_NAME_TRACE;
 	public static String FRAMEWORK_BUNDLE_OP_TRACE;
 	public static String ADD_PROJECT_OP_TRACE;
-	public static String REMOVE_PROJECT_OP_TRACE;
+	public static String DELETE_PROJECT_OP_TRACE;
+	public static String CLOSE_PROJECT_OP_TRACE;
 	
 	// Build trace operations
 	public static String BUILD_HEADER_TRACE;
@@ -63,6 +64,7 @@ public class Msg extends NLS {
 	public static String INIT_DEACTIVATED_WORKSPACE_JOB;
   public static String UPDATE_BUNDLE_CLASS_PATH_JOB; 
   public static String REMOVE_BUNDLE_PROJECT_JOB;
+  public static String CLOSE_BUNDLE_PROJECT_JOB;
   public static String ADD_BUNDLE_PROJECT_JOB;
   public static String DEACTIVATE_AFTER_STOP_OP_JOB;
   public static String UPDATE_JOB;
@@ -149,8 +151,6 @@ public class Msg extends NLS {
 	public static String CLASS_PATH_DEV_PARAM_INFO;
 	public static String REFRESH_HINT_INFO;
 	public static String CANCEL_JOB_INFO;
-	public static String BUILDER_OFF_LIST_INFO;
-	public static String BUILDER_OFF_INFO;
 	public static String NO_PROJECTS_TO_ACTIVATE_INFO;
 	public static String ADD_BUNDLES_TO_ACTIVATE_INFO;
 	public static String UNINSTALL_BEFORE_ACTIVATE_INFO;

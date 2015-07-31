@@ -55,8 +55,6 @@ public class WorkspaceRegionImpl implements BundleRegion {
 
 	public final static WorkspaceRegionImpl INSTANCE = new WorkspaceRegionImpl();
 
-	private boolean autoBuild;
-
 	// Default initial capacity of 16 assume peak on 22 bundles in workspace to avoid rehash
 	private static int initialCapacity = Math.round(20 / 0.75f) + 1;
 
@@ -95,7 +93,7 @@ public class WorkspaceRegionImpl implements BundleRegion {
 	}
 
 	@Override
-	public BundleProjectCandidates getCanidatesService(Bundle user) throws ExtenderException {
+	public BundleProjectCandidates getCandidatesService(Bundle user) throws ExtenderException {
 
 		return Activator.getBundleProjectCandidatesService(user);
 	}
@@ -104,20 +102,6 @@ public class WorkspaceRegionImpl implements BundleRegion {
 	public BundleProjectMeta getMetaService(Bundle user) throws ExtenderException {
 
 		return Activator.getbundlePrrojectMetaService(user);
-	}
-
-	@Override
-	public boolean isAutoBuildActivated(boolean disable) {
-		boolean autoBuild = this.autoBuild;
-		if (disable) {
-			this.autoBuild = false;
-		}
-		return autoBuild;
-	}
-
-	@Override
-	public void setAutoBuildChanged(boolean autoBuild) {
-		this.autoBuild = autoBuild;
 	}
 
 	@Override

@@ -363,10 +363,10 @@ public class BundleNode {
 	public boolean containsPendingCommand(EnumSet<BundleTransition.Transition> operations) {
 		for (BundleTransition.Transition op : operations) {
 			if (this.pendingTranitions.contains(op)) {
-				return Boolean.TRUE;
+				return true;
 			}
 		}
-		return Boolean.FALSE;
+		return false;
 	}
 
 	/**
@@ -377,12 +377,11 @@ public class BundleNode {
 	 * @return true if this operation is associated with this bundle node
 	 */
 	public boolean containsPendingCommand(BundleTransition.Transition operation, boolean remove) {
-		// TODO if (remove) return remove() else return contains()
-		boolean hasOperation = pendingTranitions.contains(operation);
+
 		if (remove) {
-			pendingTranitions.remove(operation);
+			return pendingTranitions.remove(operation);
 		}
-		return hasOperation;
+		return pendingTranitions.contains(operation);
 	}
 
 	/**
@@ -560,8 +559,11 @@ public class BundleNode {
 			case UPDATE_ACTIVATION_POLICY:
 				typeName = "UPDATE_ACTIVATION_POLICY";
 				break;
-			case REMOVE_PROJECT:
-				typeName = "REMOVE_PROJECT";
+			case CLOSE_PROJECT:
+				typeName = "CLOSE_PROJECT";
+				break;
+			case DELETE_PROJECT:
+				typeName = "DELETE_PROJECT";
 				break;
 			case RENAME_PROJECT:
 				typeName = "RENAME_PROJECT";

@@ -37,7 +37,7 @@ public interface ResourceState {
 	 * Get projects containing modified not saved resources
 	 * 
 	 * @return projects containing modified not saved resources or an empty collection
-	 * @throws ExtenderException If failing to get the bundle project candidate service
+	 * @throws ExtenderException If failing to get the save options or the bundle project candidate service
 	 */
 	public Collection<IProject> getDirtyProjects() throws ExtenderException;
 
@@ -63,9 +63,10 @@ public interface ResourceState {
 	 * update is switched on, saving dirty files will generate an update job after build.
 	 * 
 	 * @return If saving files triggers an update operation return true. Otherwise false
+	 * @throws ExtenderException If failing to get the save options service
 	 * @see SaveOptions#isTriggerUpdate()
 	 */
-	public boolean isTriggerUpdate();
+	public boolean isTriggerUpdate() throws ExtenderException ;
 
 	/**
 	 * Determines if there are dirty files to be saved based on the the save files preference settings.
@@ -73,18 +74,19 @@ public interface ResourceState {
 	 * 
 	 * @return True if there are dirty files and the preference setting for saving files is true. Otherwise
 	 * false
+	 * @throws ExtenderException If failing to get the save options service
 	 * @see SaveOptions
 	 */
-	public boolean isSaveFiles();
+	public boolean isSaveFiles() throws ExtenderException ;
 
 	/**
-	 * If the options for saving dirty files on, save all dirty files without any prompt.
+	 * If the options for saving dirty files is on, save all dirty files without any prompt.
 	 * <p>
 	 * If auto build is on, activated bundle projects are saved and the "Update on Build" option is on
 	 * a build is triggered after save followed by an update. To manually save the workspace or a
 	 * snapshot of the workspace use {@link #saveWorkspace(boolean)}
 	 * 
-	 * @throws ExtenderException If failing to get the bundle executor service
+	 * @throws ExtenderException If failing to get the save options service
 	 * @throws InPlaceException if the save options job fails
 	 * @see CommandOptions#setIsSaveFilesBeforeBundleOperation(boolean)
 	 * @see CommandOptions#isSaveFilesBeforeBundleOperation()

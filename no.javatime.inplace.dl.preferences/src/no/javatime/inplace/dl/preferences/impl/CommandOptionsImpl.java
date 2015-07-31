@@ -13,6 +13,8 @@ public class CommandOptionsImpl extends ManifestOptionsImpl implements CommandOp
 	private final static boolean defIsRefreshOnUpdate = true;
 	private final static boolean defIsAutoHandleExternalCommands = true;
 	private final static boolean defIsAllowUIContributions = true;
+	private final static boolean defIsSaveFilesBeforeBundleOperation = true;
+	private final static boolean defIsSaveSnapshotBeforeBundleOperation = false;
 	private final static boolean defIsTimeOut = false;
 	private final static boolean defIsManualTerminate = true;
 	private final static boolean defIsDeactivateOnTerminate = true;
@@ -158,6 +160,36 @@ public class CommandOptionsImpl extends ManifestOptionsImpl implements CommandOp
 	@Override
 	public void setIsAllowUIContributions(boolean contributions) {
 		getPrefs().putBoolean(IS_ALLOW_UI_CONTRIBUTIONS, contributions);
+	}
+
+	@Override
+	public boolean isSaveFilesBeforeBundleOperation() {
+		return getPrefs().getBoolean(IS_SAVE_FILES_BEFORE_BUNDLE_OPERATION, getDefaultIsSaveFilesBeforeBundleOperation());
+	}
+
+	@Override
+	public boolean getDefaultIsSaveFilesBeforeBundleOperation() {
+		return defIsSaveFilesBeforeBundleOperation;
+	}
+
+	@Override
+	public void setIsSaveFilesBeforeBundleOperation(boolean save) {
+		getPrefs().putBoolean(IS_SAVE_FILES_BEFORE_BUNDLE_OPERATION, save);
+	}
+
+	@Override
+	public boolean isSaveSnapshotBeforeBundleOperation() {
+		return getPrefs().getBoolean(IS_SAVE_SNAPSHOT_BEFORE_BUNDLE_OPERATION, getDefaultIsSaveSnapshotBeforeBundleOperation());
+	}
+
+	@Override
+	public boolean getDefaultIsSaveSnapshotBeforeBundleOperation() {
+		return defIsSaveSnapshotBeforeBundleOperation;
+	}
+
+	@Override
+	public void setIsSaveSnapshotBeforeBundleOperation(boolean save) {
+		getPrefs().putBoolean(IS_SAVE_SNAPSHOT_BEFORE_BUNDLE_OPERATION, save);
 	}
 
 	@Override

@@ -39,11 +39,10 @@ import org.eclipse.ui.statushandlers.StatusManager;
  */
 public class ResourceStateHandler implements ResourceState {
 	
-	private SaveOptionsJob saveOptionsJob = null;
 	
-	public SaveOptions getSaveOptions() {
+	public SaveOptions getSaveOptions() throws ExtenderException {
 
-		return null == saveOptionsJob ? new SaveOptionsJob() : saveOptionsJob;	
+		return Activator.getSaveOptionsService();
 	}
 	
 	@Override
@@ -65,29 +64,17 @@ public class ResourceStateHandler implements ResourceState {
 	}
 
 	@Override
-	public boolean isSaveFiles() {
+	public boolean isSaveFiles() throws ExtenderException {
 		SaveOptions saveOptions = getSaveOptions();
 		return saveOptions.isSaveFiles();
 	}
 
-	@Override
-	public boolean isSaveWorkspaceSnapshot() {
-		SaveOptions saveOptions = getSaveOptions();
-		return saveOptions.isSaveWorkspaceSnaphot();
-	}
 	
 	@Override
-	public boolean isTriggerUpdate() {
+	public boolean isTriggerUpdate() throws ExtenderException {
 		
 		SaveOptions saveOptions = getSaveOptions();
 		return saveOptions.isTriggerUpdate();
-	}
-
-	@Override
-	public void saveWorkspaceSnapshot() {
-
-		SaveSnapShotOption saveSnapshot = new SaveSnapShotOption();
-		saveSnapshot.saveWorkspace(new NullProgressMonitor());
 	}
 
 	@Override
@@ -98,6 +85,21 @@ public class ResourceStateHandler implements ResourceState {
 			Activator.getBundleExecutorEventService().add(saveOptions);
 		}
 	}
+
+	@Override
+	public boolean isSaveWorkspaceSnapshot() throws ExtenderException{
+
+		SaveSnapShotOption saveSnapshot = new SaveSnapShotOption();
+		return saveSnapshot.isSaveSnapshot();
+	}
+
+	@Override
+	public void saveWorkspaceSnapshot() {
+
+		SaveSnapShotOption saveSnapshot = new SaveSnapShotOption();
+		saveSnapshot.saveWorkspace(new NullProgressMonitor());
+	}
+
 	
 	@Override
 	public void waitOnBuilder(boolean log) {

@@ -171,27 +171,33 @@ public class Activator extends AbstractUIPlugin implements BundleExecutorEventLi
 			Boolean setUser) {
 
 		bundleJob.setUser(setUser);
-		Activator.getDisplay().asyncExec(new Runnable() {
-			@Override
-			public void run() {
-				BundleView bv = (BundleView) ViewUtil.get(BundleView.ID);
-				if (null != bv) {
-					IWorkbenchPartSite partSite = bv.getSite();
-					IWorkbenchSiteProgressService siteService = (null != partSite) ? (IWorkbenchSiteProgressService) partSite
-							.getAdapter(IWorkbenchSiteProgressService.class) : null;
-					if (null != siteService) {
-						siteService.showBusyForFamily(BundleExecutor.FAMILY_BUNDLE_LIFECYCLE);
-						siteService.showBusyForFamily(ResourcesPlugin.FAMILY_AUTO_BUILD);
-						siteService.showBusyForFamily(ResourcesPlugin.FAMILY_MANUAL_BUILD);
-						siteService.schedule(bundleJob, delay, true);
+		IWorkbench workbench = Activator.getDefault().getWorkbench();
+		if (null == workbench || workbench.isClosing()) {
+			bundleJob.schedule(delay);
+		} else {
+			// Run synchronized in case the caller tries to wait on (join) this job 
+			Activator.getDisplay().syncExec(new Runnable() {
+				@Override
+				public void run() {
+					BundleView bv = (BundleView) ViewUtil.get(BundleView.ID);
+					if (null != bv) {
+						IWorkbenchPartSite partSite = bv.getSite();
+						IWorkbenchSiteProgressService siteService = (null != partSite) ? (IWorkbenchSiteProgressService) partSite
+								.getService(IWorkbenchSiteProgressService.class) : null;
+								if (null != siteService) {
+									siteService.showBusyForFamily(BundleExecutor.FAMILY_BUNDLE_LIFECYCLE);
+									siteService.showBusyForFamily(ResourcesPlugin.FAMILY_AUTO_BUILD);
+									siteService.showBusyForFamily(ResourcesPlugin.FAMILY_MANUAL_BUILD);
+									siteService.schedule(bundleJob, delay, true);
+								} else {
+									bundleJob.schedule(delay);
+								}
 					} else {
 						bundleJob.schedule(delay);
 					}
-				} else {
-					bundleJob.schedule(delay);
 				}
-			}
-		});
+			});
+		}
 	}
 
 	/**

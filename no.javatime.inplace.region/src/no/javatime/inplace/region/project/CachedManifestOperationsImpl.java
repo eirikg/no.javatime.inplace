@@ -21,6 +21,7 @@ import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 
 import no.javatime.inplace.region.intface.BundleProjectCandidates;
+import no.javatime.inplace.region.intface.BundleProjectMeta;
 import no.javatime.inplace.region.intface.BundleRegion;
 import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.intface.ProjectLocationException;
@@ -53,7 +54,8 @@ public class CachedManifestOperationsImpl {
 			return;
 		}
 		for (IProject project : projects) {
-			IFile manifestFile = project.getFile(BundleProjectMetaImpl.MANIFEST_FILE_NAME);
+			IFile manifestFile = project.getFile(BundleProjectMeta.MANIFEST_RELATIVE_PATH
+					+ BundleProjectMeta.MANIFEST_FILE_NAME);
 			Manifest manifest = loadManifest(project, manifestFile);
 			Attributes attributes = manifest.getMainAttributes();
 			String lazyPolicy = attributes.getValue(Constants.BUNDLE_ACTIVATIONPOLICY);

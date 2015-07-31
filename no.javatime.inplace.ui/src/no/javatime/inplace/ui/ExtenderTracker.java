@@ -18,7 +18,6 @@ import no.javatime.inplace.bundlejobs.intface.Update;
 import no.javatime.inplace.bundlejobs.intface.UpdateBundleClassPath;
 import no.javatime.inplace.dl.preferences.intface.CommandOptions;
 import no.javatime.inplace.dl.preferences.intface.MessageOptions;
-import no.javatime.inplace.extender.intface.BundleServiceScopeFactory;
 import no.javatime.inplace.extender.intface.Extender;
 import no.javatime.inplace.extender.intface.ExtenderBundleTracker;
 import no.javatime.inplace.extender.intface.ExtenderException;
@@ -85,7 +84,7 @@ public class ExtenderTracker extends ExtenderBundleTracker {
 				trackExtender(bundle, Reset.class.getName(), new BundleExecutorServiceFactory(headers.get(Reset.RESET_BUNDLE_SERVICE)));
 				trackExtender(bundle, TogglePolicy.class.getName(), new BundleExecutorServiceFactory(headers.get(TogglePolicy.TOGGLE_POLICY_SERVICE)));
 				trackExtender(bundle, UpdateBundleClassPath.class.getName(), new BundleExecutorServiceFactory(headers.get(UpdateBundleClassPath.UPDATE_BUNDLE_CLASS_PATH_SERVICE)));
-				resourceStateExtender = trackExtender(bundle, ResourceState.class.getName(), new BundleServiceScopeFactory<ResourceState>(headers.get(ResourceState.RESOURCE_STATE_SERVICE)));
+				resourceStateExtender = trackExtender(bundle, ResourceState.class.getName(), headers.get(ResourceState.RESOURCE_STATE_SERVICE));
 				serviceName = headers.get(BundleExecutorEventManager.BUNDLE_EXECUTOR_EVENT_MANAGER_SERVICE);
 				if (null != serviceName) {
 					bundleExecManagerExtender = trackExtender(bundle, BundleExecutorEventManager.class.getName(), serviceName);

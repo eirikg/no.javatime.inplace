@@ -57,7 +57,7 @@ public class Activator implements BundleActivator {
 
 	public static BundleProjectCandidates getCandidatesService() throws ExtenderException {
 
-		return getRegionService().getCanidatesService(bundle);
+		return getRegionService().getCandidatesService(bundle);
 	}
 
 

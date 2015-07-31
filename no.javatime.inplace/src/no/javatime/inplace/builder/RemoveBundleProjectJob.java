@@ -9,7 +9,6 @@ import no.javatime.inplace.builder.intface.RemoveBundleProject;
 import no.javatime.inplace.bundlejobs.NatureJob;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.extender.intface.ExtenderException;
-import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.closure.BundleClosures;
 import no.javatime.inplace.region.closure.CircularReferenceException;
 import no.javatime.inplace.region.events.TransitionEvent;
@@ -29,15 +28,6 @@ import org.eclipse.core.runtime.SubProgressMonitor;
 import org.osgi.framework.Bundle;
 
 public class RemoveBundleProjectJob extends NatureJob implements RemoveBundleProject {
-
-	final public static String removeBundleProjectName = Msg.REMOVE_BUNDLE_PROJECT_JOB;
-
-	/**
-	 * Constructs a removal job with a default job name
-	 */
-	public RemoveBundleProjectJob() {
-		super(removeBundleProjectName);
-	}
 
 	/**
 	 * Constructs a removal job with a given job name
@@ -92,23 +82,20 @@ public class RemoveBundleProjectJob extends NatureJob implements RemoveBundlePro
 					IProject project = bundleRegion.getProject(bundle);
 					Collection<Bundle> singletonList = Collections.singletonList(bundle);
 					if (project.isAccessible()) {
-						// Deactivate bundle with requirements on closed project
+						// Deactivate bundle with requirements on removed project
 						stop(singletonList, null, new SubProgressMonitor(monitor, 1));
 						bundleTransition.addPending(project, Transition.UNRESOLVE);
 						deactivateNature(Collections.singletonList(project), new SubProgressMonitor(monitor, 1));
 						refresh(singletonList, new SubProgressMonitor(monitor, 1));
 					} else {
-						// Uninstall, refresh and unregister closed project
-						BundleTransitionListener.addBundleTransition(new TransitionEvent(project,
-								Transition.REMOVE_PROJECT));
-						bundleTransition.removePending(project, Transition.REMOVE_PROJECT);
+						// Stop and uninstall removed project
 						stop(singletonList, null, new SubProgressMonitor(monitor, 1));
-						bundleRegion.setActivation(project, false);
+						bundleRegion.setActivation(project, false);	
 						uninstall(singletonList, new SubProgressMonitor(monitor, 1), false, false);
 					}
 				}
 			}
-			// If all remaining activated projects are either closed or deactivated
+			// If all remaining activated projects are either closed, deleted or deactivated
 			if (!bundleRegion.isRegionActivated()) {
 				Collection<Bundle> deactivatedBundles = bundleRegion.getDeactivatedBundles();
 				// Uninstall & refresh
@@ -136,9 +123,20 @@ public class RemoveBundleProjectJob extends NatureJob implements RemoveBundlePro
 			addError(e, msg);
 		} finally {
 			monitor.done();
-			// Unregister removed projects from the workspace
 			for (IProject removedProject : getPendingProjects()) {
-				bundleRegion.unregisterBundleProject(removedProject);
+				if (bundleTransition.containsPending(removedProject, Transition.CLOSE_PROJECT, false)) {
+					// Do not unregister closed projects to preserve pending build transition
+					BundleTransitionListener.addBundleTransition(new TransitionEvent(removedProject,
+							Transition.CLOSE_PROJECT));
+					bundleTransition.removePending(removedProject, Transition.CLOSE_PROJECT);
+					
+				} else if (bundleTransition.containsPending(removedProject, Transition.DELETE_PROJECT, false)) {
+					BundleTransitionListener.addBundleTransition(new TransitionEvent(removedProject,
+							Transition.DELETE_PROJECT));
+					bundleTransition.removePending(removedProject, Transition.DELETE_PROJECT);
+					// Unregister deleted projects from the workspace region
+					bundleRegion.unregisterBundleProject(removedProject);					
+				}
 			}
 			BundleTransitionListener.removeBundleTransitionListener(this);
 		}

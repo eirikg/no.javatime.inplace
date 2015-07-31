@@ -51,6 +51,7 @@ public class BundleTransitionImpl implements BundleTransition {
 		return bn.setTransitionError(TransitionError.ERROR);
 	}
 
+	@Override
 	public boolean setTransitionError(IProject project, TransitionError error) throws ProjectLocationException {
 
 		BundleNode bn = ws.getBundleNode(project);
@@ -69,6 +70,7 @@ public class BundleTransitionImpl implements BundleTransition {
 		return bn.setTransitionError(TransitionError.ERROR);
 	}
 
+	@Override
 	public boolean setTransitionError(Bundle bundle, TransitionError error) {
 		if (null == bundle) {
 			return false;
@@ -203,6 +205,7 @@ public class BundleTransitionImpl implements BundleTransition {
 		return ws.containsPendingCommand(project, operation, remove);
 	}
 
+	@Override
 	public boolean containsPending(Collection<Bundle> bundles, Transition operation, boolean remove) {
 		for (Bundle bundle : bundles) {
 			if(ws.containsPendingCommand(bundle, operation, remove)) {
@@ -257,6 +260,7 @@ public class BundleTransitionImpl implements BundleTransition {
 		return ws.removePendingCommand(project, operation);
 	}
 
+	@Override
 	public boolean removePending(Collection<IProject> projects, Transition operation) {
 		boolean removed = true;
 		for (IProject project : projects) {

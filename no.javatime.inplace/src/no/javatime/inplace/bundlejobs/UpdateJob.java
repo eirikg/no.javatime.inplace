@@ -537,6 +537,7 @@ public class UpdateJob extends BundleJob implements Update {
 		Collection<Bundle> refreshBundles = bundleTransition.getPendingBundles(actiavtedBundles,
 				Transition.REFRESH);
 		Collection<Bundle> bundles = getUpdateClosure(actiavtedBundles);
+		// Bundles tagged with refresh are removed by get update closure
 		if (refreshBundles.size() > 0) {
 			for (Bundle bundle : refreshBundles) {
 				bundleTransition.addPending(bundle, Transition.REFRESH);

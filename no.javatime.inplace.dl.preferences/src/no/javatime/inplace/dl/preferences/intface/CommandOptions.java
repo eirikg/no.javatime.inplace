@@ -17,6 +17,8 @@ public interface CommandOptions extends ManifestOptions {
 	public static final String IS_REFRESH_ON_UPDATE = "isRefreshOnUpdate";
 	public static final String IS_AUTO_HANDLE_EXTERNAL_COMMANDS = "isAutoHandleExternalCommands";
 	public static final String IS_ALLOW_UI_CONTRIBUTIONS = "isAllowUIContributions";
+	public static final String IS_SAVE_FILES_BEFORE_BUNDLE_OPERATION = "isSaveFilesBeforeBundleOperation";
+	public static final String IS_SAVE_SNAPSHOT_BEFORE_BUNDLE_OPERATION = "isSaveSnapshotBeforeBundleOperation";
 
 	/**
 	 * Get option for allowing UI contributions using extensions
@@ -38,6 +40,18 @@ public interface CommandOptions extends ManifestOptions {
 	 * @param contributions true to allow UI contributions using UI extensions and false to not
 	 */
 	public void setIsAllowUIContributions(boolean contributions);
+
+	public boolean isSaveFilesBeforeBundleOperation();
+
+	public boolean getDefaultIsSaveFilesBeforeBundleOperation();
+
+	public void setIsSaveFilesBeforeBundleOperation(boolean save);
+
+	public boolean isSaveSnapshotBeforeBundleOperation();
+
+	public boolean getDefaultIsSaveSnapshotBeforeBundleOperation();
+
+	public void setIsSaveSnapshotBeforeBundleOperation(boolean save);
 
 	/**
 	 * Get option for handling external bundle commands

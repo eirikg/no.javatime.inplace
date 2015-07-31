@@ -158,9 +158,6 @@ public class RefreshJob extends BundleJob implements Refresh {
 		if (monitor.isCanceled()) {
 			throw new OperationCanceledException();
 		}
-		if (monitor.isCanceled()) {
-			throw new OperationCanceledException();
-		}
 		refresh(bundlesToRefresh, new SubProgressMonitor(monitor, 1));
 		if (monitor.isCanceled()) {
 			throw new OperationCanceledException();

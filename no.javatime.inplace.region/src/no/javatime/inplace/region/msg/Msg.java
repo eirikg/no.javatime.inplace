@@ -40,8 +40,9 @@ public class Msg extends NLS {
 	public static String BUNDLE_ID_FILE_SCHEME_REF;
 	public static String MANIFEST_FILE_RELATIVE_PATH_REF;
 	public static String MANIFEST_FILE_NAME_REF;
+	public static String PROJECT_META_FILE_REF;
 	public static String PLUGIN_ID_NATURE_ID;
-	
+
 	private static final String BUNDLE_NAME = "no.javatime.inplace.region.msg.messages"; //$NON-NLS-1$
 
 	static {

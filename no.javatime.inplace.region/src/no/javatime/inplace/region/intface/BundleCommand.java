@@ -262,7 +262,8 @@ public interface BundleCommand {
 	public Collection<Bundle> getRemovalPending() throws InPlaceException;
 
 	/**
-	 * A bundle project is about to change its state while a bundle command is executing.
+	 * A bundle operation is active and executing. The bundle is changing its state while a
+	 * bundle command is executing.
 	 * 
 	 * @param project check if the project is in a state changing process
 	 * @return true if the project is state changing. False if not.

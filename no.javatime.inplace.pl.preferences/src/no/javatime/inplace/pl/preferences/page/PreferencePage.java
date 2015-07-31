@@ -149,6 +149,23 @@ public class PreferencePage extends FieldEditorPreferencePage implements IWorkbe
 
 		addField(new SpacerFieldEditor(getFieldEditorParent()));
 
+		// Save options
+		GroupFieldEditor groupSaveEditor = new GroupFieldEditor(Msg.SAVE_GROUP_LABEL,
+				getFieldEditorParent());
+		addField(groupSaveEditor);
+		// Save dirty editors
+		booleanEditor = new BooleanFieldEditor(CommandOptions.IS_SAVE_FILES_BEFORE_BUNDLE_OPERATION,
+				Msg.IS_SAVE_FILES_BEFORE_BUNDLE_OPERATION_LABEL, groupSaveEditor.getMemberFieldEditorParent());
+		addField(booleanEditor);
+		groupSaveEditor.add(booleanEditor);
+		// Save a snapshot of the workspace
+		booleanEditor = new BooleanFieldEditor(CommandOptions.IS_SAVE_SNAPSHOT_BEFORE_BUNDLE_OPERATION,
+				Msg.IS_SAVE_SNAPSHOT_BEFORE_BUNDLE_OPERATION_LABEL, groupSaveEditor.getMemberFieldEditorParent());
+		addField(booleanEditor);
+		groupSaveEditor.add(booleanEditor);
+
+		// addField(new SpacerFieldEditor(getFieldEditorParent()));
+
 		// Enable/Disable to include bundles contributing to the UI using extension
 		addField(new LabelFieldEditor(Msg.ALLOW_EXTIONS_TEXT_LABEL, getFieldEditorParent()));
 		booleanEditor = new BooleanFieldEditor(CommandOptions.IS_ALLOW_UI_CONTRIBUTIONS,
@@ -156,9 +173,9 @@ public class PreferencePage extends FieldEditorPreferencePage implements IWorkbe
 		addField(booleanEditor);
 
 		// Footnote
-		addField(new SpacerFieldEditor(getFieldEditorParent()));
 		addField(new SeparatorFieldEditor(getFieldEditorParent()));
 		addField(new LabelFieldEditor(Msg.AVAILABLE_FROM_MAIN_MENU_LABEL, getFieldEditorParent()));
+
 	}
 
 	@Override
@@ -207,6 +224,8 @@ public class PreferencePage extends FieldEditorPreferencePage implements IWorkbe
 			prefStore.setValue(CommandOptions.IS_AUTO_HANDLE_EXTERNAL_COMMANDS,
 					cmdStore.isAutoHandleExternalCommands());
 			prefStore.setValue(CommandOptions.IS_ALLOW_UI_CONTRIBUTIONS, cmdStore.isAllowUIContributions());
+			prefStore.setValue(CommandOptions.IS_SAVE_FILES_BEFORE_BUNDLE_OPERATION, cmdStore.isSaveFilesBeforeBundleOperation());
+			prefStore.setValue(CommandOptions.IS_SAVE_SNAPSHOT_BEFORE_BUNDLE_OPERATION, cmdStore.isSaveSnapshotBeforeBundleOperation());
 		} catch (IllegalStateException e) {
 			StatusManager.getManager().handle(
 					new BundleStatus(StatusCode.ERROR, Activator.PLUGIN_ID, Msg.INIT_PREF_PAGE_ERROR, e),
@@ -268,6 +287,8 @@ public class PreferencePage extends FieldEditorPreferencePage implements IWorkbe
 			cmdStore.setIsAutoHandleExternalCommands(prefStore
 					.getBoolean(CommandOptions.IS_AUTO_HANDLE_EXTERNAL_COMMANDS));
 			cmdStore.setIsAllowUIContributions(prefStore.getBoolean(CommandOptions.IS_ALLOW_UI_CONTRIBUTIONS));
+			cmdStore.setIsSaveFilesBeforeBundleOperation(prefStore.getBoolean(CommandOptions.IS_SAVE_FILES_BEFORE_BUNDLE_OPERATION));
+			cmdStore.setIsSaveSnapshotBeforeBundleOperation(prefStore.getBoolean(CommandOptions.IS_SAVE_SNAPSHOT_BEFORE_BUNDLE_OPERATION));
 			cmdStore.flush();
 		} catch (IllegalStateException e) {
 			StatusManager.getManager().handle(

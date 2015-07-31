@@ -188,7 +188,7 @@ public class BundlePropertiesSource implements IPropertySource {
 				return bundleproperties.getLastInstalledOrUpdated();
 			}
 		} catch (InPlaceException e) {
-			StatusManager.getManager().handle(new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, null, e),
+			StatusManager.getManager().handle(new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),
 					StatusManager.LOG);
 		}
 		return null;	

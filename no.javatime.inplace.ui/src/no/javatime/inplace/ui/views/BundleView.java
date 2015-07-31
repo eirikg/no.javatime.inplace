@@ -656,7 +656,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 				return;
 			}
 			IWorkbench workbench = activator.getWorkbench();
-			if (null != workbench && workbench.isClosing()) {
+			if (null == workbench || workbench.isClosing()) {
 				return;
 			}
 			try {

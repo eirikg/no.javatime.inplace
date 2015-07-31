@@ -31,7 +31,6 @@ import no.javatime.util.messages.ExceptionMessage;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.osgi.util.NLS;
 
 class AddBundleProjectJob extends NatureJob implements AddBundleProject {
 
@@ -138,17 +137,6 @@ class AddBundleProjectJob extends NatureJob implements AddBundleProject {
 				// closure when providers are resolved
 				activateProject.setSaveWorkspaceSnaphot(false);
 				Activator.getBundleExecutorEventService().add(activateProject, 0);
-			}
-			// Provide information when auto build is turned off
-			if (messageOptions.isBundleOperations()
-					&& !bundleProjectCandidates.isAutoBuilding()) {
-				
-				IBundleStatus status = new BundleStatus(StatusCode.WARNING, Activator.PLUGIN_ID,
-						Msg.BUILDER_OFF_INFO);
-				status.add(new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, NLS.bind(
-						Msg.BUILDER_OFF_LIST_INFO,
-						bundleProjectCandidates.formatProjectList(getPendingProjects()))));
-				addLogStatus(status);
 			}
 			// Deactivated providers are handled by the activate project job
 			newActivatedBundleProjects.removeAll(deactivatedProviders);

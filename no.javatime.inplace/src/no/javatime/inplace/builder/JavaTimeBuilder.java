@@ -207,7 +207,7 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 		try {
 			IProject project = getProject();
 			bundleTransition.removeTransitionError(project, TransitionError.BUILD);
-//			bundleTransition.removePending(project, Transition.BUILD);
+			bundleTransition.removePending(project, Transition.BUILD);
 			if (Category.DEBUG && Category.getState(Category.build))
 				TraceMessage.getInstance().getString("start_build");
 			IResourceDelta delta = getDelta(project);
@@ -234,7 +234,6 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 				}
 			}
 			if (null != resourceDelta && resourceDelta.length == 0) { // no change since last build
-				bundleTransition.removePending(project, Transition.BUILD);
 				if (messageOptions.isBundleOperations()) {
 					String msg = NLS.bind(Msg.NO_RESOURCE_DELTA_BUILD_TRACE,
 							new Object[] { project.getName() });

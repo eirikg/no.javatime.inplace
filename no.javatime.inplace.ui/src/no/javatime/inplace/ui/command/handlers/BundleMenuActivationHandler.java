@@ -11,7 +11,6 @@
 package no.javatime.inplace.ui.command.handlers;
 
 import java.util.Collection;
-import java.util.LinkedHashSet;
 
 import no.javatime.inplace.bundlejobs.intface.ActivateProject;
 import no.javatime.inplace.bundlejobs.intface.BundleExecutor;
@@ -32,6 +31,8 @@ import no.javatime.inplace.log.intface.BundleLogView;
 import no.javatime.inplace.pl.console.intface.BundleConsoleFactory;
 import no.javatime.inplace.pl.dependencies.intface.DependencyDialog;
 import no.javatime.inplace.region.intface.BundleProjectCandidates;
+import no.javatime.inplace.region.intface.BundleTransition;
+import no.javatime.inplace.region.intface.BundleTransition.Transition;
 import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.ui.Activator;
 import no.javatime.inplace.ui.command.contributions.BundleCommandsContributionItems;
@@ -77,14 +78,12 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 	 */
 	protected void installHandler(Collection<IProject> projects) throws ExtenderException {
 
-		ResourceState resourceState = Activator.getResourceStateService();
-		if (resourceState.saveModifiedResources()) {
-			Extender<Install> installExt = Activator.getTracker().getTrackedExtender(Install.class.getName());
-			Install install = installExt.getService();
-			install.addPendingProjects(projects);
-			Activator.getBundleExecEventService().add(install);
-			installExt.ungetService();
-		}
+		Extender<Install> installExt = Activator.getTracker().getTrackedExtender(
+				Install.class.getName());
+		Install install = installExt.getService();
+		install.addPendingProjects(projects);
+		Activator.getBundleExecEventService().add(install);
+		installExt.ungetService();
 	}
 
 	/**
@@ -96,18 +95,16 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 	 */
 	static public void activateProjectHandler(Collection<IProject> projects) throws ExtenderException {
 
-		ResourceState resourceState = Activator.getResourceStateService();
-		if (resourceState.saveModifiedResources()) {
-			Extender<ActivateProject> activateProjectExt = Activator.getTracker().getTrackedExtender(
-					ActivateProject.class.getName());
-			ActivateProject activateproject = activateProjectExt.getService();
-			if (Activator.getBundleRegionService().getActivatedProjects().size() == 0) {
-				activateproject.getJob().setName(Msg.ACTIVATE_WORKSPACE_JOB);
-			}
-			activateproject.addPendingProjects(projects);
-			Activator.getBundleExecEventService().add(activateproject);
-			activateProjectExt.ungetService();
+		Extender<ActivateProject> activateProjectExt = Activator.getTracker().getTrackedExtender(
+				ActivateProject.class.getName());
+		ActivateProject activateproject = activateProjectExt.getService();
+		if (Activator.getBundleRegionService().getActivatedProjects().size() == 0) {
+			activateproject.getJob().setName(Msg.ACTIVATE_WORKSPACE_JOB);
 		}
+		activateproject.addPendingProjects(projects);
+		activateproject.setSaveWorkspaceSnaphot(false);
+		Activator.getBundleExecEventService().add(activateproject);
+		activateProjectExt.ungetService();
 	}
 
 	/**
@@ -119,21 +116,18 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 	 */
 	static public void deactivateHandler(Collection<IProject> projects) throws ExtenderException {
 
-		ResourceState resourceState = Activator.getResourceStateService();
-		if (resourceState.saveModifiedResources()) {
-			Extender<Deactivate> deactivateExtender = Activator.getTracker().getTrackedExtender(
-					Deactivate.class.getName());
-			Deactivate deactivate = deactivateExtender.getService();
-			if (Activator.getBundleRegionService().getActivatedProjects().size() <= projects.size()) {
-				deactivate.getJob().setName(Msg.DEACTIVATE_WORKSPACE_JOB);
-			} else {
-				// Same as default name for job
-				deactivate.getJob().setName(Msg.DEACTIVATE_BUNDLES_JOB);
-			}
-			deactivate.addPendingProjects(projects);
-			Activator.getBundleExecEventService().add(deactivate);
-			deactivateExtender.ungetService();
+		Extender<Deactivate> deactivateExtender = Activator.getTracker().getTrackedExtender(
+				Deactivate.class.getName());
+		Deactivate deactivate = deactivateExtender.getService();
+		if (Activator.getBundleRegionService().getActivatedProjects().size() <= projects.size()) {
+			deactivate.getJob().setName(Msg.DEACTIVATE_WORKSPACE_JOB);
+		} else {
+			// Same as default name for job
+			deactivate.getJob().setName(Msg.DEACTIVATE_BUNDLES_JOB);
 		}
+		deactivate.addPendingProjects(projects);
+		Activator.getBundleExecEventService().add(deactivate);
+		deactivateExtender.ungetService();
 	}
 
 	/**
@@ -145,14 +139,43 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 	 */
 	static public void startHandler(Collection<IProject> projects) throws ExtenderException {
 
-		if (updated()) {
+		if (projects.size() > 0) {
 			Extender<Start> startExt = Activator.getTracker().getTrackedExtender(Start.class.getName());
 			Start start = startExt.getService();
 			start.addPendingProjects(projects);
-			// Put update in the job queue before starting projects
-			Activator.getBundleExecEventService().add(start);
+			ResourceState resourceState = Activator.getResourceStateService();
+			// If save triggers a build, the projects started on next update triggered by build
+			if (resourceState.isTriggerUpdate()) {
+				BundleTransition transition = Activator.getBundleTransitionService();
+				// Start bundles via update
+				for (IProject project : start.getPendingProjects()) {
+					transition.addPending(project, Transition.START);
+				}
+				Collection<IProject> updateClosure = getUpdateClosure(resourceState);
+				start.removePendingProjects(updateClosure);
+				transition.removePending(start.getPendingProjects(), Transition.START);
+			}
+			if (start.hasPendingProjects()) {
+				// Start will save files and if a build is triggered an update will run afterwards
+				Activator.getBundleExecEventService().add(start);
+			} else {
+				// All bundles to start are contained in the update closure
+				// Triggers a build and an update which also starts the bundles
+				resourceState.saveFiles();
+			}
 			startExt.ungetService();
 		}
+	}
+
+	private static Collection<IProject> getUpdateClosure(ResourceState resourceState) {
+
+		Extender<Update> updateExt = Activator.getTracker().getTrackedExtender(Update.class.getName());
+		Update update = updateExt.getService();
+		Collection<IProject> dirtyProjects = resourceState.getDirtyProjects();
+		update.addPendingProjects(dirtyProjects);
+		Collection<IProject> updateClosure = update.getRequiringUpdateClosure();
+		updateExt.ungetService();
+		return updateClosure;
 	}
 
 	/**
@@ -164,7 +187,8 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 	 */
 	static public void stopHandler(Collection<IProject> projects) throws ExtenderException {
 
-		if (updated()) {
+		if (projects.size() > 0) {
+			// Always stop bundles before any update triggered by dirty resources
 			Extender<Stop> stopExt = Activator.getTracker().getTrackedExtender(Stop.class.getName());
 			Stop stop = stopExt.getService();
 			stop.addPendingProjects(projects);
@@ -182,41 +206,25 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 	 */
 	static public void refreshHandler(Collection<IProject> projects) throws ExtenderException {
 
-		ResourceState resourceState = Activator.getResourceStateService();
-		// Get any dirty projects before trying to update
-		Collection<IProject> dirtyProjects = resourceState.getDirtyProjects();
-		// Updated dirty projects or no dirty projects to update
-		if (updated()) {
-			Extender<Refresh> refreshExt = Activator.getTracker().getTrackedExtender(Refresh.class.getName());
-			Refresh refresh = refreshExt.getService();
-			// Has update saved and updated dirty projects
-			if (dirtyProjects.size() > 0) {
-				// If the refresh on update option is on, the update job will refresh the bundles
-				// that are common (including closure) in dirty projects and projects to refresh
-				if (Activator.getCommandOptionsService().isRefreshOnUpdate()) {
-					Collection<IProject> copyProjects = new LinkedHashSet<>(projects);
-					Extender<Update> updateExtender = Activator.getTracker().getTrackedExtender(
-							Update.class.getName());
-					Update update = updateExtender.getService();
-					update.addPendingProjects(dirtyProjects);
-					Collection<IProject> closure = update.getRequiringUpdateClosure();
-					copyProjects.removeAll(closure);
-					if (copyProjects.size() > 0) {
-						refresh.addPendingProjects(copyProjects);
-					}
-					updateExtender.ungetService();
-				} else {
-					refresh.addPendingProjects(projects);
+		if (projects.size() > 0) {
+			ResourceState resourceState = Activator.getResourceStateService();
+			// If save triggers a build, the projects are tagged to be started on next build
+			if (Activator.getCommandOptionsService().isRefreshOnUpdate()
+					&& resourceState.isTriggerUpdate()) {
+				BundleTransition transition = Activator.getBundleTransitionService();
+				// These will be refreshed by update when the update requiring closure is calculated  
+				for (IProject project : projects) {
+					transition.addPending(project, Transition.REFRESH);
 				}
-				resourceState.waitOnBuilder(false);
-				resourceState.waitOnBundleJob();
+				resourceState.saveFiles();
 			} else {
+				Extender<Refresh> refreshExt = Activator.getTracker().getTrackedExtender(
+						Refresh.class.getName());
+				Refresh refresh = refreshExt.getService();
 				refresh.addPendingProjects(projects);
-			}
-			if (refresh.hasPendingProjects()) {
 				Activator.getBundleExecEventService().add(refresh);
+				refreshExt.ungetService();
 			}
-			refreshExt.ungetService();
 		}
 	}
 
@@ -237,47 +245,32 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 	 * @throws ExtenderException if failing to get the extender or the service for this bundle
 	 * operation
 	 */
-	static public void updateHandler(Collection<IProject> projects)
-			throws ExtenderException {
+	static public void updateHandler(Collection<IProject> projects) throws ExtenderException {
 
-		Extender<Update> updateExt = null;
 		if (projects.size() > 0) {
-			Collection<IProject> updateProjects = new LinkedHashSet<>(projects);
-			ResourceState resourceState = Activator.getResourceStateService();
-			Collection<IProject> dirtyProjects = resourceState.getDirtyProjects();
-			if (resourceState.saveModifiedResources()) {
-				updateExt = Activator.getTracker().getTrackedExtender(Update.class.getName());
-				Update update = updateExt.getService();
-				if (dirtyProjects.size() > 0 
-						&& Activator.getBundleProjectCandidatesService().isAutoBuilding()) {
-					if (Activator.getCommandOptionsService().isUpdateOnBuild()) {
-						updateProjects.removeAll(dirtyProjects);
-					}
-					// Update built projects first
-					resourceState.waitOnBuilder(false);
+			Extender<Update> updateExt = Activator.getTracker()
+					.getTrackedExtender(Update.class.getName());
+			Update update = updateExt.getService();
+			for (IProject project : projects) {
+				if (update.canUpdate(project)) {
+					update.addUpdateTransition(project);
+					update.addPendingProject(project);
 				}
-				for (IProject updateProject : updateProjects) {
-					if (update.canUpdate(updateProject)) {
-						update.addPendingProject(updateProject);
-						update.addUpdateTransition(updateProject);
-					}
-				}
-				// If files are saved and auto build is on, the builder is scheduled before this update job
-				// It is of no importance who runs the update job first, the auto builder calling the post
-				// builder scheduling an update or this update. The second update job will return (the
-				// update transitions are removed from the updated projects by the first update job) with no
-				// common projects to update.
-				if (update.hasPendingProjects()) {
-					Activator.getBundleExecEventService().add(update);
-				}
-				updateExt.ungetService();
 			}
+			ResourceState resourceState = Activator.getResourceStateService();
+			// If save triggers a build, the projects have been tagged to be updated on next build
+			if (resourceState.isTriggerUpdate()) {
+				resourceState.saveFiles();
+			} else {
+				Activator.getBundleExecEventService().add(update);
+			}
+			updateExt.ungetService();
 		}
 	}
 
 	/**
-	 * Schedules a reset job for the specified projects by running an uninstall job and an activate
-	 * bundle job in sequence.
+	 * Schedules a reset job for the specified projects by running an uninstall bundle job followed by
+	 * an activate bundle job.
 	 * 
 	 * @param projects to reset
 	 * @throws ExtenderException if failing to get the extender or the service for this bundle
@@ -285,32 +278,11 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 	 */
 	static public void resetHandler(final Collection<IProject> projects) throws ExtenderException {
 
-		ResourceState resourceState = Activator.getResourceStateService();
-		if (resourceState.saveModifiedResources()) {
-			Extender<Reset> resetExt = Activator.getTracker().getTrackedExtender(Reset.class.getName());
-			Reset reset = resetExt.getService();
-			reset.addPendingProjects(projects);
-			Activator.getBundleExecEventService().add(reset);
-			resetExt.ungetService();
-		}
-	}
-
-	/**
-	 * Ask for save of any modified projects if auto build is off and calls update if auto build is on
-	 * 
-	 * @return false if there are any modified files after asking for save or calling update. True if
-	 * there modified files after asking for save or calling update
-	 */
-	private static boolean updated() {
-
-		ResourceState resourceState = Activator.getResourceStateService();
-		if (!Activator.getCommandOptionsService().isUpdateOnBuild()) {
-			resourceState.saveModifiedResources();
-		} else if (resourceState.areResourcesDirty()) {
-			updateHandler(resourceState.getDirtyProjects());
-		}
-		// Resource state after save and update, after save or no save
-		return !resourceState.areResourcesDirty();
+		Extender<Reset> resetExt = Activator.getTracker().getTrackedExtender(Reset.class.getName());
+		Reset reset = resetExt.getService();
+		reset.addPendingProjects(projects);
+		Activator.getBundleExecEventService().add(reset);
+		resetExt.ungetService();
 	}
 
 	/**
@@ -319,14 +291,13 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 	protected void interruptHandler() throws ExtenderException {
 
 		ResourceState resourceState = Activator.getResourceStateService();
-		if (resourceState.saveModifiedResources()) {
-			BundleExecutor executor = resourceState.getRunningBundleJob();
-			if (null != executor) {
-				Thread thread = executor.getJob().getThread();
-				if (null != thread) {
-					// Requires that the user code (e.g. in the start method) is aware of interrupts
-					thread.interrupt();
-				}
+		resourceState.saveFiles();
+		BundleExecutor executor = resourceState.getRunningBundleJob();
+		if (null != executor) {
+			Thread thread = executor.getJob().getThread();
+			if (null != thread) {
+				// Requires that the user code (e.g. in the start method) is aware of interrupts
+				thread.interrupt();
 			}
 		}
 	}
@@ -344,17 +315,16 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 	protected void stopOperationHandler() throws ExtenderException, InPlaceException {
 
 		final ResourceState resourceState = Activator.getResourceStateService();
-		if (resourceState.saveModifiedResources()) {
-			Activator.getDisplay().asyncExec(new Runnable() {
-				@Override
-				public void run() {
-					BundleExecutor executor = resourceState.getRunningBundleJob();
-					if (null != executor && null != executor.isStateChanging()) {
-						executor.stopCurrentOperation();
-					}
+		resourceState.saveFiles();
+		Activator.getDisplay().asyncExec(new Runnable() {
+			@Override
+			public void run() {
+				BundleExecutor executor = resourceState.getRunningBundleJob();
+				if (null != executor && null != executor.isStateChanging()) {
+					executor.stopCurrentOperation();
 				}
-			});
-		}
+			}
+		});
 	}
 
 	/**
@@ -366,15 +336,13 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 	 */
 	protected void policyHandler(final Collection<IProject> projects) throws ExtenderException {
 
-		ResourceState resourceState = Activator.getResourceStateService();
-		if (resourceState.saveModifiedResources()) {
-			Extender<TogglePolicy> policyExt = Activator.getTracker().getTrackedExtender(
-					TogglePolicy.class.getName());
-			TogglePolicy policy = policyExt.getService();
-			policy.addPendingProjects(projects);
-			Activator.getBundleExecEventService().add(policy);
-			policyExt.ungetService();
-		}
+		Extender<TogglePolicy> policyExt = Activator.getTracker().getTrackedExtender(
+				TogglePolicy.class.getName());
+		TogglePolicy policy = policyExt.getService();
+		policy.addPendingProjects(projects);
+		policy.setSaveWorkspaceSnaphot(false);
+		Activator.getBundleExecEventService().add(policy);
+		policyExt.ungetService();
 	}
 
 	/**
@@ -389,16 +357,14 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 	public static void updateClassPathHandler(final Collection<IProject> projects,
 			final boolean addToPath) throws ExtenderException {
 
-		ResourceState resourceState = Activator.getResourceStateService();
-		if (resourceState.saveModifiedResources()) {
-			Extender<UpdateBundleClassPath> classPathExt = Activator.getTracker().getTrackedExtender(
-					UpdateBundleClassPath.class.getName());
-			UpdateBundleClassPath classPath = classPathExt.getService();
-			classPath.addPendingProjects(projects);
-			classPath.setAddToPath(addToPath);
-			Activator.getBundleExecEventService().add(classPath);
-			classPathExt.ungetService();
-		}
+		Extender<UpdateBundleClassPath> classPathExt = Activator.getTracker().getTrackedExtender(
+				UpdateBundleClassPath.class.getName());
+		UpdateBundleClassPath classPath = classPathExt.getService();
+		classPath.addPendingProjects(projects);
+		classPath.setAddToPath(addToPath);
+		classPath.setSaveWorkspaceSnaphot(false);
+		Activator.getBundleExecEventService().add(classPath);
+		classPathExt.ungetService();
 	}
 
 	/**

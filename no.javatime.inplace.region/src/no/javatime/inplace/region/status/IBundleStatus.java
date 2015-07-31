@@ -27,7 +27,7 @@ public interface IBundleStatus extends IStatus {
 	 * Status codes assigned to <code>BundleStatus</code> objects. Used instead of <code>IStatus</code> status types.
 	 */
 	public enum StatusCode {
-		OK, CANCEL, INFO, WARNING, ERROR, EXCEPTION, BUILDERROR, JOBINFO
+		OK, CANCEL, INFO, WARNING, ERROR, EXCEPTION, BUILDERROR, JOBERROR
 	}
 
 	/**

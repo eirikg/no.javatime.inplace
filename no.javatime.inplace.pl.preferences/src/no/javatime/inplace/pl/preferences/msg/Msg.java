@@ -38,6 +38,9 @@ public class Msg extends NLS {
 	public static String IS_EAGER_ON_ACTIVATE_LABEL;
 	public static String ALLOW_EXTIONS_TEXT_LABEL;
 	public static String IS_ALLOW_UI_CONTRIBUTIONS_LABEL;
+	public static String SAVE_GROUP_LABEL;
+	public static String IS_SAVE_FILES_BEFORE_BUNDLE_OPERATION_LABEL;
+	public static String IS_SAVE_SNAPSHOT_BEFORE_BUNDLE_OPERATION_LABEL;
 	public static String AVAILABLE_FROM_MAIN_MENU_LABEL;
 	
 

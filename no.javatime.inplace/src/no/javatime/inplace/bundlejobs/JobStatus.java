@@ -7,8 +7,8 @@ import java.util.Collections;
 import java.util.List;
 
 import no.javatime.inplace.Activator;
-import no.javatime.inplace.builder.SaveOptionsJob;
 import no.javatime.inplace.bundlejobs.intface.ActivateProject;
+import no.javatime.inplace.bundlejobs.intface.SaveOptions;
 import no.javatime.inplace.dl.preferences.intface.CommandOptions;
 import no.javatime.inplace.dl.preferences.intface.MessageOptions;
 import no.javatime.inplace.extender.intface.ExtenderException;
@@ -59,9 +59,9 @@ public class JobStatus extends WorkspaceJob implements BundleTransitionEventList
 	protected BundleProjectMeta bundleProjectMeta;
 	protected MessageOptions messageOptions;
 	protected CommandOptions commandOptions;
-
+	protected SaveOptions saveOptions;
 	protected long startTime;
-
+	
 	// List of error status objects
 	private List<IBundleStatus> errStatusList = new ArrayList<>();
 
@@ -75,6 +75,14 @@ public class JobStatus extends WorkspaceJob implements BundleTransitionEventList
 	 */
 	public JobStatus(String name) {
 		super(name);
+	}
+	
+	public SaveOptions getSaveOptions () throws ExtenderException {
+
+		if (null == saveOptions) {
+			return saveOptions = Activator.getSaveOptionsService();
+		}
+		return saveOptions;
 	}
 
 	/**
@@ -97,12 +105,14 @@ public class JobStatus extends WorkspaceJob implements BundleTransitionEventList
 
 		initServices();
 		startTime = System.currentTimeMillis();
-		SaveOptionsJob so = new SaveOptionsJob();
-		IBundleStatus jobStatus = so.saveFiles();
+		// Save files before executing this bundle operation
+		// This may trigger a build and an update to be scheduled after this job
+		SaveOptions saveOptions = getSaveOptions();
+		IBundleStatus jobStatus = saveOptions.saveFiles();
 		if (jobStatus.getStatusCode() != StatusCode.OK) {
-			addStatus(so.getErrorStatusList());
+			addStatus(saveOptions.getErrorStatusList());
 		}
-		for (IBundleStatus status : so.getLogStatusList()) {
+		for (IBundleStatus status : saveOptions.getLogStatusList()) {
 			addLogStatus(status);
 		}
 		return getJobSatus();
@@ -258,10 +268,14 @@ public class JobStatus extends WorkspaceJob implements BundleTransitionEventList
 				addLogStatus(Msg.FRAMEWORK_BUNDLE_OP_TRACE, new Object[] { bundle.getSymbolicName(),
 						bundleCommand.getStateName(bundle) }, bundle);
 				break;
-			case REMOVE_PROJECT:
+			case DELETE_PROJECT:
 				// Do not test for nature. Project files are not accessible at this point
-				String remActivated = bundleRegion.isBundleActivated(project) ? "activated" : "deactivated";
-				addLogStatus(Msg.REMOVE_PROJECT_OP_TRACE, new Object[] { remActivated, project.getName() },
+				addLogStatus(Msg.DELETE_PROJECT_OP_TRACE, new Object[] { project.getName() },
+						project);
+				break;
+			case CLOSE_PROJECT:
+				// Do not test for nature. Project files are not accessible at this point
+				addLogStatus(Msg.CLOSE_PROJECT_OP_TRACE, new Object[] { project.getName() },
 						project);
 				break;
 			case NEW_PROJECT: {

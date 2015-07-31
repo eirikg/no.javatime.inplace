@@ -25,6 +25,7 @@ import no.javatime.inplace.bundlejobs.UninstallJob;
 import no.javatime.inplace.bundlejobs.events.intface.BundleExecutorEventManager;
 import no.javatime.inplace.bundlejobs.intface.BundleExecutor;
 import no.javatime.inplace.bundlejobs.intface.ResourceState;
+import no.javatime.inplace.bundlejobs.intface.SaveOptions;
 import no.javatime.inplace.bundlejobs.intface.Uninstall;
 import no.javatime.inplace.dialogs.ExternalTransition;
 import no.javatime.inplace.dl.preferences.intface.CommandOptions;
@@ -194,6 +195,11 @@ public class Activator extends AbstractUIPlugin {
 	public static ResourceState getResourceStateService() {
 
 		return extenderTracker.resourceStateExtender.getService();
+	}
+
+	public static SaveOptions getSaveOptionsService() {
+
+		return extenderTracker.saveOptionsExtender.getService();
 	}
 
 	public static DependencyOptions getDependencyOptionsService() throws ExtenderException {

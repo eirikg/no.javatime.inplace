@@ -127,7 +127,7 @@ public class BundleJob extends JobStatus implements BundleExecutor {
 			if (null == commandOptions) {
 				commandOptions = Activator.getCommandOptionsService();
 			}
-			isSaveWorkspaceSnaphot = commandOptions.isSaveSnapshotBeforeBundleOperation() ? true : false;
+			isSaveWorkspaceSnaphot = commandOptions.isSaveSnapshotBeforeBundleOperation();
 		} catch (ExtenderException e) {
 			isSaveWorkspaceSnaphot = false;
 		}
@@ -150,7 +150,7 @@ public class BundleJob extends JobStatus implements BundleExecutor {
 	@Override
 	public IBundleStatus runInWorkspace(IProgressMonitor monitor) throws CoreException, ExtenderException {
 
-		return  super.runInWorkspace(monitor);
+		return super.runInWorkspace(monitor);
 	}
 
 	/**
@@ -310,8 +310,7 @@ public class BundleJob extends JobStatus implements BundleExecutor {
 				} catch (BundleActivatorException e) {
 					result = addError(e, e.getLocalizedMessage(), bundle);
 					// Only check for output folder in class path if class path is set to be updated on
-					// activation
-					// If missing instruct the bundle and its requiring bundles to resolve, but not start.
+					// activation. If missing instruct the bundle and its requiring bundles to resolve, but not start.
 					IBundleStatus classPathStatus = checkClassPath(Collections.<Bundle> singletonList(bundle));
 					// Add class path messages into the activation exception
 					if (!classPathStatus.hasStatus(StatusCode.OK)) {
@@ -599,7 +598,7 @@ public class BundleJob extends JobStatus implements BundleExecutor {
 			sleep(sleepTime);
 		localMonitor.subTask(Msg.REFRESH_TASK_JOB);
 		if (Category.DEBUG && Category.getState(Category.listeners)) {
-			// Report on any additional bundles refreshed than those specified
+			// Report on any additional bundles to refreshed by the framework than calculated
 			Collection<Bundle> dependencyClosure = bundleCommand.getDependencyClosure(bundlesToRefresh);
 			dependencyClosure.removeAll(bundlesToRefresh);
 			if (dependencyClosure.size() > 0) {

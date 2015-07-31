@@ -6,6 +6,7 @@ import java.util.Dictionary;
 import no.javatime.inplace.bundlejobs.events.intface.BundleExecutorEventManager;
 import no.javatime.inplace.bundlejobs.intface.BundleExecutorServiceFactory;
 import no.javatime.inplace.bundlejobs.intface.ResourceState;
+import no.javatime.inplace.bundlejobs.intface.SaveOptions;
 import no.javatime.inplace.bundlejobs.intface.Update;
 import no.javatime.inplace.dl.preferences.intface.CommandOptions;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions;
@@ -44,6 +45,7 @@ class ExtenderTracker extends ExtenderBundleTracker {
 	Bundle thisBundle;
 	Extender<BundleExecutorEventManager> bundleExecutorEventManagerExtender;
 	Extender<ResourceState> resourceStateExtender;
+	Extender<SaveOptions> saveOptionsExtender;	
 	Extender<BundleCommand> bundleCommandExtender;
 	Extender<BundleRegion> bundleRegionExtender;
 	Extender<BundleTransition> bundleTransitionExtender;
@@ -89,6 +91,7 @@ class ExtenderTracker extends ExtenderBundleTracker {
 			if (null != serviceName) {
 				bundleExecutorEventManagerExtender = trackExtender(thisBundle, BundleExecutorEventManager.class.getName(), serviceName);
 				resourceStateExtender = trackExtender(thisBundle, ResourceState.class.getName(), headers.get(ResourceState.RESOURCE_STATE_SERVICE));
+				saveOptionsExtender = trackExtender(thisBundle, SaveOptions.class.getName(), new BundleExecutorServiceFactory(headers.get(SaveOptions.SAVE_OPTONS_SERVICE)));
 			}
 		} catch (ExtenderException | IllegalStateException e) {
 			StatusManager.getManager().handle(

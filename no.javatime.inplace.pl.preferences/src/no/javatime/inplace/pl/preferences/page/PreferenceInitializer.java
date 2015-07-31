@@ -37,6 +37,8 @@ public class PreferenceInitializer extends AbstractPreferenceInitializer {
 			prefStore.setDefault(CommandOptions.IS_EAGER_ON_ACTIVATE, cmdStore.getDefaultIsEagerOnActivate());
 			prefStore.setDefault(CommandOptions.IS_AUTO_HANDLE_EXTERNAL_COMMANDS, cmdStore.getDefaultIsAutoHandleExternalCommands());
 			prefStore.setDefault(CommandOptions.IS_ALLOW_UI_CONTRIBUTIONS, cmdStore.getDefaultIsAllowUIContributions());
+			prefStore.setDefault(CommandOptions.IS_SAVE_FILES_BEFORE_BUNDLE_OPERATION, cmdStore.getDefaultIsSaveFilesBeforeBundleOperation());
+			prefStore.setDefault(CommandOptions.IS_SAVE_SNAPSHOT_BEFORE_BUNDLE_OPERATION, cmdStore.getDefaultIsSaveSnapshotBeforeBundleOperation());
 			prefStore.setDefault(CommandOptions.IS_UPDATE_DEFAULT_OUTPUT_FOLDER, cmdStore.getDefaultUpdateDefaultOutPutFolder());
 
 		} catch (IllegalStateException e) {

@@ -10,6 +10,7 @@
  *******************************************************************************/
 package no.javatime.inplace.region.intface;
 
+import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.util.messages.ExceptionMessage;
 
 /**
@@ -54,6 +55,10 @@ public class InPlaceException extends RuntimeException {
 	 */
 	public InPlaceException(String msg) {
 		super(msg);
+	}
+
+	public InPlaceException(IBundleStatus  status) {
+		super(status.getMessage(), status.getException());
 	}
 
 	/**

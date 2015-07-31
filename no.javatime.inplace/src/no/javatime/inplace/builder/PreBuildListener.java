@@ -16,6 +16,7 @@ import no.javatime.inplace.bundlejobs.intface.ActivateProject;
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.region.events.TransitionEvent;
 import no.javatime.inplace.region.intface.BundleProjectCandidates;
+import no.javatime.inplace.region.intface.BundleRegion;
 import no.javatime.inplace.region.intface.BundleTransition;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
 import no.javatime.inplace.region.intface.BundleTransitionListener;
@@ -42,6 +43,7 @@ public class PreBuildListener implements IResourceChangeListener {
 
 	private BundleTransition bundleTransition;
 	private BundleProjectCandidates bundleProjectCandidates;
+	private BundleRegion bundleRegion;
 	final private ActivateProject projectActivator;
 
 	public PreBuildListener() {
@@ -49,6 +51,7 @@ public class PreBuildListener implements IResourceChangeListener {
 		try {
 			bundleTransition = Activator.getBundleTransitionService();
 			bundleProjectCandidates = Activator.getBundleProjectCandidatesService();
+			bundleRegion = Activator.getBundleRegionService();
 		} catch (ExtenderException e) {
 			StatusManager.getManager().handle(
 					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),
@@ -90,8 +93,11 @@ public class PreBuildListener implements IResourceChangeListener {
 							bundleTransition.clearTransitionError(project);
 						} else {
 							if (projectActivator.isProjectActivated(project)) {
-								if (!bundleProjectCandidates.isAutoBuilding()) {
-									bundleTransition.addPending(project, Transition.BUILD);
+//								if (!bundleProjectCandidates.isAutoBuilding()) {
+									// Preserve build pending state for projects being opened or moved
+									if (!isOpenOrMove(projectDelta, project)) {
+										bundleTransition.addPending(project, Transition.BUILD);
+//									}
 								} else {
 									BundleTransitionListener.addBundleTransition(new TransitionEvent(project,
 											Transition.BUILD));
@@ -108,4 +114,31 @@ public class PreBuildListener implements IResourceChangeListener {
 			}
 		}
 	}
+	
+	/**
+	 * Check if the specified project is being opened or moved
+	 * 
+	 * @param projectDelta changes in a project specified as deltas since the last build
+	 * @param project The project has a specified delta which is the basis for which bundle operation
+	 * to perform
+	 * @return True if the project is being opened or moved. Otherwise false
+	*/
+	private boolean isOpenOrMove(final IResourceDelta projectDelta, final IProject project) {
+
+		if ((projectDelta.getKind() & (IResourceDelta.CHANGED)) != 0) {
+			if ((projectDelta.getFlags() & IResourceDelta.OPEN) != 0) {
+				return true;
+			} else if ((projectDelta.getFlags() & IResourceDelta.DESCRIPTION) != 0) {
+				String projectLoaction = bundleRegion.getProjectLocationIdentifier(project, null);
+				String bundleLocation = bundleRegion.getBundleLocationIdentifier(project);
+				// If path is different its a move (the path of the project description is changed)
+				// The replaced flag is set on files being moved but not set on project level.
+				if (!projectLoaction.equals(bundleLocation)) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
 }

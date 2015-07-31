@@ -3,8 +3,6 @@ package no.javatime.inplace.region.intface;
 import java.util.Collection;
 import java.util.EnumSet;
 
-import no.javatime.inplace.region.intface.BundleTransition.Transition;
-
 import org.eclipse.core.resources.IProject;
 import org.osgi.framework.Bundle;
 
@@ -29,72 +27,115 @@ public interface BundleTransition {
 	public final static String BUNDLE_TRANSITION_SERVICE = "Bundle-Transition-Service";
 
 	/**
-	 * Semantic tagging of bundles specifying that a transition is active (or current) or is pending
-	 * (planned) on a bundle. A bundle is tagged right before a simple or composite OSGi command is
-	 * executed (active), when changing the characteristics of a bundle (e.g. toggling activation
-	 * policy or altering the bundle class path) and when a transition is scheduled for execution some
-	 * time in the future (pending transitions).
+	 * Semantic tagging of bundle projects specifying that a transition is;
+	 * <ol>
+	 * <li>Active (or current); - The transition is currently executing; and/or
+	 * <li>Pending (or planned); - The transition will either be executed some time in the future or
+	 * depending on external events removed or replaced by another pending transition
+	 * </ol>
 	 * <p>
-	 * Active transitions can be accessed using the {@linkplain BundleCommand#getTransition(IProject)}
-	 * . Accessing scheduled transitions can among others be obtained by using the
-	 * {@linkplain BundleCommand#containsPending(Bundle, Transition, boolean)} and
-	 * {@linkplain BundleCommand#containsPending(IProject, Transition, boolean)}
+	 * There are two kind of transitions:
+	 * <ol>
+	 * <li>Bundle operations initiated from the workbench or triggered by a build. A bundle
+	 * transitions changes the state of the bundle.
+	 * <li>CRUD operations initiated from the workbench or by bundle jobs modifying project meta data
+	 * (.project and manifest files). A CRUD transition change the persistent state of a bundle
+	 * project
+	 * </ol>
+	 * Further a transition may be atomic (in the OSGi sense) or composite. Composite transitions
+	 * comprises one or more atomic transitions. E.g. {@code Transition.ACTIVATE_BUNDLE} comprises the
+	 * necessary atomic transitions to start a bundle depending on the initial state of the bundle.
+	 * <p>
+	 * A transaction is comprised of one or more transitions and are always executed in sequence by a
+	 * bundle job. The number and order of the transitions may vary depending on user options and the
+	 * state of the workspace.
+	 * 
+	 * @see BundleTransition#containsPending(Bundle, Transition, boolean)
+	 * @see BundleTransition#containsPending(IProject, Transition, boolean)
+	 * @see BundleTransition#getPendingTransitions(IProject)
+	 * @see BundleTransition#getTransition(Bundle)
+	 * @see BundleTransition#getTransition(IProject)
+	 * @see BundleCommand#isStateChanging(IProject)
 	 */
 	public static enum Transition {
+
 		/**
-		 * Active when a starting a bundle
+		 * Active when a bundle is started
+		 * <p>
+		 * Activated bundles tagged with a pending {@code Transition.START} transition are added to the
+		 * set of bundles to start before the start (providing) closure is calculated
 		 */
 		START,
 		/**
-		 * Active when stopping a bundle
+		 * Active when a bundle is stopped
 		 */
 		STOP,
 		/**
-		 * Set as active when a bundle is started with lazy policy
+		 * Active when a bundle is started with lazy policy
 		 */
 		LAZY_ACTIVATE,
 		/**
-		 * Used when activating (install, resolve and/or refresh and optionally starting) a bundle
+		 * Pending when a:
+		 * <ol>
+		 * <li>Bundle is in state {@code BUNDLE.UNINSTALLED} and activated.
+		 * <li>Project is moved to another location
+		 * </ol>
 		 */
 		ACTIVATE_BUNDLE,
 		/**
-		 * Used when activating (enables a nature) a project
+		 * Pending when this bundle project should be activated. This occurs usually when a change in
+		 * dependencies between bundles occurs. E.g. when a deactivated bundle project is imported by an
+		 * activated bundle project and the activated bundle project is resolved
 		 */
 		ACTIVATE_PROJECT,
 		/**
-		 * Use together with {@code Transition.ACTIVATE_BUNDLE}. If a deactivated bundle in state
-		 * {@code BUNDLE.INSTALLED} is activated in an active workspace (a workspace is activated if at
-		 * least one bundle bundle project is activated) the bundle is updated as part of the activation
-		 * process. When auto build is switched off this transition force an update of the bundle even
-		 * if it has not been built yet.
+		 * Pending to instruct the bundle to updated as part of the activation process. This occurs when
+		 * a deactivated bundle project in state {@code BUNDLE.INSTALLED} is activated in an active
+		 * workspace (a workspace is activated if at least one bundle bundle project is activated).
 		 */
 		UPDATE_ON_ACTIVATE,
 		/**
-		 * Used when deactivating a bundle. In an activated workspace the bundle is stopped and
-		 * unresolved (refresh with no resolve) with {@code BUNDLE.INSTALLED} as the terminal state. If
-		 * the bundle is among the last set of bundles to deactivate the workspace is also deactivated
-		 * and the bundle is stopped, uninstalled and refreshed. The nature (see
-		 * {@link Transition#ACTIVATE_PROJECT} is always removed when deactivating a bundle.
+		 * Pending to instruct a deactivating of a bundle project. This occurs usually when a change in
+		 * dependencies between bundles occurs. E.g. when a deactivated bundle project is imported by an
+		 * activated bundle project and the deactivated bundle has UI contributions enabled when not
+		 * allowed (preference setting).
 		 */
 		DEACTIVATE,
 		/**
-		 * Active when installing a bundle
+		 * Active when a bundle is installed.
+		 * <p>
+		 * Pending when an activated bundle project is imported or opened in an activated workspace and
+		 * does not fulfill the requirements to be activated.
 		 */
 		INSTALL,
 		/**
-		 * Active when installing a bundle
+		 * Active when a bundle is uninstalled.
+		 * <p>
+		 * Pending when an activated bundle project is moved. Moved activated bundle projects are
+		 * uninstalled and then activated again after the move operation
 		 */
 		UNINSTALL,
 		/**
-		 * Active when updating a bundle
+		 * Active when a bundle is updated
+		 * <p>
+		 * Pending when:
+		 * <ol>
+		 * <li>an activated bundle project needs to be updated after a build
+		 * <li>a deactivated bundle project is activated in an activated workspace
+		 * </ol>
 		 */
 		UPDATE,
 		/**
-		 * Active when a project is saved but not built yet
+		 * Active when a project is building
+		 * <p>
+		 * Pending when an activated bundle project needs to be built (e.g. modified)
 		 */
 		BUILD,
 		/**
-		 * Active when a bundle is refreshed
+		 * Active when a project is refreshed
+		 * <p>
+		 * Pending bundles tagged with a pending {@code Transition.REFRESH} transition are added to
+		 * the set of bundles to refresh before the refresh (requiring) closure is calculated
 		 */
 		REFRESH,
 		/**
@@ -108,13 +149,13 @@ public interface BundleTransition {
 		/**
 		 * Initiated by the framework resolver when a requiring closure is executed (e.g. by unistall
 		 * and refresh operations). There is no explicit unresolve command in OSGi. This is usually
-		 * controlled explicit by handing the complete requiring closure to the resolver when
-		 * executing the closure. If one or more bundles are excluded from the closure at
-		 * resolve time, the resolver will unresolve the excluded bundles anyway and initiate unresolve
-		 * events for the excluded bundles. It may in some situations be necessary to exclude bundles
-		 * from the closure. Bundles excluded from the closure set are tagged with a pending unresolve
-		 * transition to inform other parties (e.g. the bundle event handler or the resolver hook) that
-		 * we are aware of not having a complete or valid closure.
+		 * controlled explicit by handing the complete requiring closure to the resolver when executing
+		 * the closure. If one or more bundles are excluded from the closure at resolve time, the
+		 * resolver will unresolve the excluded bundles anyway and initiate unresolve events for the
+		 * excluded bundles. It may in some situations be necessary to exclude bundles from the closure.
+		 * Bundles excluded from the closure set are tagged with a pending unresolve transition to
+		 * inform other parties (e.g. the bundle event handler or the resolver hook) that we are aware
+		 * of not having a complete or valid closure.
 		 */
 		UNRESOLVE,
 		/**
@@ -143,9 +184,13 @@ public interface BundleTransition {
 		 */
 		UPDATE_DEV_CLASSPATH,
 		/**
-		 * Remove project from workspace 
+		 * Close project
 		 */
-		REMOVE_PROJECT,
+		CLOSE_PROJECT,
+		/**
+		 * Delete project
+		 */
+		DELETE_PROJECT,
 		/**
 		 * Rename of project with the JavaTime nature enabled
 		 */
@@ -181,6 +226,7 @@ public interface BundleTransition {
 	 * transition is defined for the specified project
 	 * @throws ProjectLocationException if the specified project is null or the location of the
 	 * specified project could not be found
+	 * @see BundleCommand#isStateChanging(IProject)
 	 */
 	Transition getTransition(IProject project) throws ProjectLocationException;
 
@@ -235,6 +281,7 @@ public interface BundleTransition {
 	 * 
 	 * @param bundle the bundle to obtain the current transition from
 	 * @return the current or most recent transition. If no transition is defined return null.
+	 * @see BundleCommand#isStateChanging(IProject)
 	 */
 	Transition getTransition(Bundle bundle);
 

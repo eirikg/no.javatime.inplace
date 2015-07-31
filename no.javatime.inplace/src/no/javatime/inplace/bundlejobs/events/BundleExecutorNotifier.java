@@ -14,10 +14,19 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
 
+import no.javatime.inplace.Activator;
 import no.javatime.inplace.bundlejobs.events.intface.BundleExecutorEvent;
 import no.javatime.inplace.bundlejobs.events.intface.BundleExecutorEventListener;
 import no.javatime.inplace.bundlejobs.intface.BundleExecutor;
+import no.javatime.inplace.extender.intface.ExtenderException;
+import no.javatime.inplace.region.status.BundleStatus;
+import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
+
+import org.eclipse.ui.statushandlers.StatusManager;
 
 class BundleExecutorNotifier {
 
@@ -39,13 +48,14 @@ class BundleExecutorNotifier {
 	}
 
 	protected synchronized void fireJobEvent(BundleExecutorEvent evt) {
+		// execute(evt);
 		for (Iterator<BundleExecutorEventListener> iterator = jobListeners.iterator(); iterator.hasNext();) {
 			iterator.next().bundleJobEvent(evt);
 		}
 	}
 	
 	public void addBundleJob(BundleExecutor bundleExecutor) {
-		BundleExecutorEvent event = new BundleExecutorEventImpl(this, bundleExecutor, 0);
+		final BundleExecutorEvent event = new BundleExecutorEventImpl(this, bundleExecutor, 0);
 		fireJobEvent(event);
 	}
 
@@ -53,4 +63,38 @@ class BundleExecutorNotifier {
 		BundleExecutorEvent event = new BundleExecutorEventImpl(this, bundleExecutor, delay);
 		fireJobEvent(event);
 	}
+	
+	private synchronized void execute(final BundleExecutorEvent event) {
+
+		ExecutorService executor = Executors.newSingleThreadExecutor();
+		// Run in a separate thread while waiting for the builder to finish
+		try {
+			executor.execute(new Runnable() {
+
+				/**
+				 * Wait on builder to finish before passing the job to listeners
+				 */
+				@Override
+				public void run() {
+					try {
+						Activator.getResourceStateService().waitOnBuilder(false);
+						for (Iterator<BundleExecutorEventListener> iterator = jobListeners.iterator(); iterator.hasNext();) {
+							iterator.next().bundleJobEvent(event);
+						}
+					} catch (ExtenderException e) {
+						StatusManager.getManager().handle(
+								new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),
+								StatusManager.LOG);
+					}
+				}
+			});
+		} catch (RejectedExecutionException e) {
+			StatusManager.getManager().handle(
+					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),
+					StatusManager.LOG);
+		} finally {
+			executor.shutdown();
+		}
+	}
+
 }

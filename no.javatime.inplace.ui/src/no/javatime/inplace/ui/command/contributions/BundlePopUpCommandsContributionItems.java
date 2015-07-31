@@ -229,8 +229,9 @@ public class BundlePopUpCommandsContributionItems extends BundleCommandsContribu
 	 */
 	private CommandContributionItem addRefresh(Boolean activated, Bundle bundle)
 			throws InPlaceException, ExtenderException {
+
 		String refreshLabel = Msg.REFRESH_POPUP_LABEL;
-		if (Activator.getBundleCommandService().getBundleRevisions(bundle).size() > 1) {
+		if (null != bundle && Activator.getBundleCommandService().getBundleRevisions(bundle).size() > 1) {
 			refreshLabel = Msg.REFRESH_PENDING_LABEL;
 		}
 		// Conditional enabling of refresh

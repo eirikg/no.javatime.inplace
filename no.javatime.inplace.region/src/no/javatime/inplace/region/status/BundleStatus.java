@@ -217,7 +217,7 @@ public class BundleStatus extends MultiStatus implements IBundleStatus {
 	 */
 	private int convertToSeverity(StatusCode statusCode) {
 
-		if (statusCode == StatusCode.INFO || statusCode == StatusCode.JOBINFO
+		if (statusCode == StatusCode.INFO || statusCode == StatusCode.JOBERROR
 				|| statusCode == StatusCode.CANCEL) {
 			setSeverity(IStatus.INFO);
 		} else if(statusCode == StatusCode.ERROR

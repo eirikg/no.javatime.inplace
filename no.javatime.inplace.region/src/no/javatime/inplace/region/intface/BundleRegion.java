@@ -89,7 +89,7 @@ public interface BundleRegion {
 	 * @throws ExtenderException If the bundle context of the service is no longer valid or the
 	 * returned service from the framework is null
 	 */
-	public BundleProjectCandidates getCanidatesService(Bundle user) throws ExtenderException;
+	public BundleProjectCandidates getCandidatesService(Bundle user) throws ExtenderException;
 
 	/**
 	 * Get the bundle project meta service
@@ -154,12 +154,12 @@ public interface BundleRegion {
 	 * {@code StateLess} and {@code Transition.NOTRANSITION}
 	 * <p>
 	 * If the specified activation status is true and the bundle is in state
-	 * {@code Bundle#UNINSTALLED} or in state {@code Bundle#INSTALLED} a
-	 * {@code Transition#ACTIVATE_BUNDLE} is added a pending bundle command. This indicates that the
+	 * {@code Bundle.UNINSTALLED} or in state {@code Bundle.INSTALLED} a
+	 * {@code Transition.ACTIVATE_BUNDLE} is added as a pending command. This indicates that the
 	 * bundle should be resolved and optionally started.
 	 * <p>
-	 * If the the specified activation status is false and the bundle state is {@code Bundle#RESOLVED}, {@code Bundle#STARTING}, {@code Bundle#ACTIVE} or {@code Bundle#STOPPING} a
-	 * {@code Transition#DEACTIVATE} is added as a pending bundle command. This indicates that the
+	 * If the the specified activation status is false and the bundle state is {@code Bundle.RESOLVED}, {@code Bundle.STARTING}, {@code Bundle.ACTIVE} or {@code Bundle.STOPPING} a
+	 * {@code Transition.DEACTIVATE} is added as a pending bundle command. This indicates that the
 	 * bundle should be deactivated.
 	 * <p>
 	 * You can control this manually by removing pending operations on a registered bundle, and then
@@ -382,10 +382,9 @@ public interface BundleRegion {
 	public Collection<Bundle> getJarBundles();
 
 	/**
-	 * If the symbolic name and version of one of the specified projects equals one
-	 * of the specified candidate projects its a duplicate. Only activated projects are
-	 * considered. It is not the cached symbolic keys, but the symbolic keys from the manifest that
-	 * are compared
+	 * If the symbolic name and version of one of the specified projects equals one of the specified
+	 * candidate projects its a duplicate. Only activated projects are considered. It is not the
+	 * cached symbolic keys, but the symbolic keys from the manifest that are compared
 	 * 
 	 * @param projects to check for duplicates against the candidate bundles.
 	 * @param candidates a set of projects to find duplicates among
@@ -468,21 +467,6 @@ public interface BundleRegion {
 	 * string
 	 */
 	public String getSymbolicKey(Bundle bundle, IProject project);
-
-	/**
-	 * If changed to automatic build. May be false even if auto build is true.
-	 * 
-	 * @param disable set true to indicate that the auto build is not switched on.
-	 * @return true if auto build were set. Otherwise false
-	 */
-	public boolean isAutoBuildActivated(boolean disable);
-
-	/**
-	 * Set if auto build changes to true.
-	 * 
-	 * @param autoBuild true if auto build is switched on. Otherwise false
-	 */
-	public void setAutoBuildChanged(boolean autoBuild);
 
 	/**
 	 * Formats a comma separated list of bundle symbolic names optionally appended with the version

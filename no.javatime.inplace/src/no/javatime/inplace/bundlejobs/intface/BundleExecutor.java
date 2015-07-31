@@ -45,27 +45,6 @@ public interface BundleExecutor {
 	public static final String FAMILY_BUNDLE_LIFECYCLE = "BundleFamily";
 
 	/**
-	 * Determines if a snapshot of the workspace should be saved based on the save workspace snapshot
-	 * preference setting
-	 * <p>
-	 * 
-	 * @return If the workspace should be saved based on its preference setting return {@code true}.
-	 * Otherwise false.
-	 */
-	public boolean isSaveWorkspaceSnaphot();
-
-	/**
-	 * Override to save or not save a workspace snapshot.
-	 * <p>
-	 * If true a snapshot is saved before this job is scheduled.
-	 * 
-	 * @param saveWorkspace True to save a workspace snapshot and false to not save a workspace
-	 * snapshot.
-	 */
-
-	public void setSaveWorkspaceSnaphot(boolean saveWorkspaceSnaphot);
-
-	/**
 	 * Schedules a bundle executor to run with a delay.
 	 * <p>
 	 * This method is otherwise equal to {@code getJob().schedule(long)}
@@ -216,6 +195,40 @@ public interface BundleExecutor {
 	 * @return number of pending bundle projects
 	 */
 	public int pendingProjects();
+
+	/**
+	 * Get the save options service.
+	 * <p>
+	 * By default dirty files are saved before the a bundle operation is executed.
+	 * Use this service interface to investigate or alter the default behavior of the
+	 * save files option.
+	 * 
+	 * @return The save options service interface
+	 * @throws ExtenderException If failing to get the save files options service
+	 */
+	public SaveOptions getSaveOptions () throws ExtenderException;
+
+	/**
+	 * Determines if a snapshot of the workspace should be saved. If not altered with
+	 * {@link #setSaveWorkspaceSnaphot(boolean)} the result is based on the save workspace snapshot
+	 * preference setting
+	 * <p>
+	 * 
+	 * @return If the workspace should be saved based on its preference setting return {@code true}.
+	 * Otherwise false.
+	 */
+	public boolean isSaveWorkspaceSnaphot();
+
+	/**
+	 * Override to save or not save a workspace snapshot.
+	 * <p>
+	 * If true a snapshot is saved before this job is scheduled.
+	 * 
+	 * @param saveWorkspace True to save a workspace snapshot and false to not save a workspace
+	 * snapshot.
+	 */
+
+	public void setSaveWorkspaceSnaphot(boolean saveWorkspaceSnaphot);
 
 	/**
 	 * Get all logged status objects added by this job

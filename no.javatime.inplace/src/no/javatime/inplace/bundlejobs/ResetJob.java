@@ -16,6 +16,7 @@ import no.javatime.inplace.Activator;
 import no.javatime.inplace.WorkspaceSaveParticipant;
 import no.javatime.inplace.bundlejobs.intface.ActivateBundle;
 import no.javatime.inplace.bundlejobs.intface.Reset;
+import no.javatime.inplace.bundlejobs.intface.SaveOptions;
 import no.javatime.inplace.bundlejobs.intface.Uninstall;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.extender.intface.ExtenderException;
@@ -31,7 +32,6 @@ import no.javatime.util.messages.ErrorMessage;
 import no.javatime.util.messages.ExceptionMessage;
 
 import org.eclipse.core.resources.IProject;
-import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.jobs.Job;
@@ -86,6 +86,8 @@ public class ResetJob extends BundleJob implements Reset {
 	@Override
 	public IBundleStatus runInWorkspace(IProgressMonitor monitor) {
 		try {
+			SaveOptions saveOptions = getSaveOptions();
+			saveOptions.disableSaveFiles(true);
 			super.runInWorkspace(monitor);
 			BundleTransitionListener.addBundleTransitionListener(this);
 			groupMonitor.beginTask(Msg.RESET_JOB, 3);
@@ -108,18 +110,18 @@ public class ResetJob extends BundleJob implements Reset {
 			}
 			// Save current state of bundles to be used by the activate job to restore the saved current state
 			WorkspaceSaveParticipant.saveBundleStateSettings(true, false);
-			Uninstall uninstallJob = new UninstallJob(Msg.RESET_UNINSTALL_JOB, projectsToReset);
-			uninstallJob.getJob().setProgressGroup(groupMonitor, 1);
-			uninstallJob.setAddRequiring(false);
-			uninstallJob.setUnregister(true);
-			uninstallJob.setSaveWorkspaceSnaphot(false);
-			Activator.getBundleExecutorEventService().add(uninstallJob, 0);
-			ActivateBundle activateBundleJob = new ActivateBundleJob(Msg.RESET_ACTIVATE_JOB,
+			Uninstall uninstall = new UninstallJob(Msg.RESET_UNINSTALL_JOB, projectsToReset);
+			uninstall.getJob().setProgressGroup(groupMonitor, 1);
+			uninstall.setAddRequiring(false);
+			uninstall.setUnregister(true);
+			uninstall.setSaveWorkspaceSnaphot(false);
+			Activator.getBundleExecutorEventService().add(uninstall, 0);
+			ActivateBundle activateBundle = new ActivateBundleJob(Msg.RESET_ACTIVATE_JOB,
 					projectsToReset);
-			activateBundleJob.setRestoreSessionState(true);
-			activateBundleJob.setSaveWorkspaceSnaphot(false);
-			activateBundleJob.getJob().setProgressGroup(groupMonitor, 1);
-			Activator.getBundleExecutorEventService().add(activateBundleJob, 0);
+			activateBundle.setRestoreSessionState(true);
+			activateBundle.setSaveWorkspaceSnaphot(false);
+			activateBundle.getJob().setProgressGroup(groupMonitor, 1);
+			Activator.getBundleExecutorEventService().add(activateBundle, 0);
 		} catch (OperationCanceledException e) {
 			addCancelMessage(e, NLS.bind(Msg.CANCEL_JOB_INFO, getName()));
 		} catch (CircularReferenceException e) {
@@ -136,9 +138,9 @@ public class ResetJob extends BundleJob implements Reset {
 		} catch (NullPointerException e) {
 			String msg = ExceptionMessage.getInstance().formatString("npe_job", getName());
 			addError(e, msg);
-		} catch (CoreException e) {
-			String msg = ErrorMessage.getInstance().formatString("error_end_job", getName());
-			return new BundleStatus(StatusCode.ERROR, Activator.PLUGIN_ID, msg, e);
+//		} catch (CoreException e) {
+//			String msg = ErrorMessage.getInstance().formatString("error_end_job", getName());
+//			return new BundleStatus(StatusCode.ERROR, Activator.PLUGIN_ID, msg, e);
 		} catch (Exception e) {
 			String msg = ExceptionMessage.getInstance().formatString("exception_job", getName());
 			addError(e, msg);

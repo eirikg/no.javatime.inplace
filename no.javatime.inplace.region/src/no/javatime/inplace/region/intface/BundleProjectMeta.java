@@ -45,6 +45,11 @@ public interface BundleProjectMeta {
 	final public static String MANIFEST_FILE_NAME = Msg.MANIFEST_FILE_NAME_REF;
 
 	/**
+	 * Standard relative file path and name of the project meta file
+	 */
+	final public static String PROJECT_META_FILE_NAME = Msg.PROJECT_META_FILE_REF;
+
+	/**
 	 * Convenience method. Finds and return the bundle project service for a given project.
 	 * 
 	 * @param project to get the bundle service for

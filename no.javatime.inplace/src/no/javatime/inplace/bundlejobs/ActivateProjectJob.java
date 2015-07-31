@@ -186,14 +186,6 @@ public class ActivateProjectJob extends NatureJob implements ActivateProject {
 			}
 			return getLastErrorStatus();
 		}
-		if (messageOptions.isBundleOperations() && !bundleProjectCandidates.isAutoBuilding()) {
-			IBundleStatus status = new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID,
-					Msg.BUILDER_OFF_INFO);
-			status.add(new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, NLS.bind(
-					Msg.BUILDER_OFF_LIST_INFO,
-					bundleProjectCandidates.formatProjectList(getPendingProjects()))));
-			addLogStatus(status);
-		}
 		return getLastErrorStatus();
 	}
 

@@ -30,7 +30,7 @@ Stop-Bundle-Service: no.javatime.inplace.bundlejobs.StopJob
 Update-Bundle-Service: no.javatime.inplace.bundlejobs.UpdateJob
 Toggle-Policy-Service: no.javatime.inplace.bundlejobs.TogglePolicyJob
 Update-Bundle-Class-Path-Service: no.javatime.inplace.bundlejobs.UpdateBundleClassPathJob
-Save-Options-Service: no.javatime.inplace.bundlejobs.SaveOptionsJob
+Save-Options-Service: no.javatime.inplace.builder.SaveOptionsJob
 Resource-State-Service: no.javatime.inplace.dialogs.ResourceStateHandler
 Bundle-Executor-Event-Manager-Service: no.javatime.inplace.bundlejobs.events.BundleExecutorEventManagerImpl
 Import-Package: no.javatime.inplace.dl.preferences.intface,

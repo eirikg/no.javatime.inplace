@@ -38,7 +38,7 @@ public class LogViewLabelProvider extends LabelProvider implements ITableLabelPr
 	private Image warningImage;
 	private Image errorWithStackImage;
 	private Image hierarchicalImage;
-	ArrayList consumers = new ArrayList();
+	ArrayList<Object> consumers = new ArrayList<>();
 	private DateFormat dateFormat = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT);
 
 	private LogView logView;
