@@ -71,11 +71,11 @@ public class PreBuildListener implements IResourceChangeListener {
 
 		final int buildKind = event.getBuildKind();
 
+		JavaTimeBuilder.preBuild();
 		// Clean build calls pre build listener twice. The first call is of kind {@code CLEAN_BUILD]
 		if (buildKind == IncrementalProjectBuilder.CLEAN_BUILD || buildKind == 0) {
 			return;
 		}
-		JavaTimeBuilder.preBuild();
 		IResourceDelta rootDelta = event.getDelta();
 		IResourceDelta[] projectDeltas = (null != rootDelta ? rootDelta.getAffectedChildren(
 				IResourceDelta.ADDED | IResourceDelta.CHANGED, IResource.NONE) : null);
