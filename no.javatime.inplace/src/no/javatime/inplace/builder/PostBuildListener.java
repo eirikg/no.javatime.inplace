@@ -117,7 +117,7 @@ public class PostBuildListener implements IResourceChangeListener {
 	private CommandOptions commandOptions;
 	private ResourceState resourceState;
 	final private ActivateProject projectActivator;
-	// Reduce the number of scheduled update jobs. 
+	// Reduce the number of scheduled update jobs.
 	// If true wait for the next build before scheduling update
 	private boolean isTriggerUpdate;
 
@@ -181,6 +181,7 @@ public class PostBuildListener implements IResourceChangeListener {
 			if (null == resourceDeltas || resourceDeltas.length == 0) {
 				for (IProject project : bundleProjectCandidates.getInstallable()) {
 					try {
+						removePendingBuildTransition(buildKind, project);
 						if (null != bundleTransition.getPendingTransitions(project)) {
 							handlePendingTransition(project, activateBundle, update, deactivate, uninstall,
 									install);
@@ -204,6 +205,7 @@ public class PostBuildListener implements IResourceChangeListener {
 						try {
 							if (Category.DEBUG && Category.getState(Category.listeners))
 								ProjectChangeListener.traceDeltaKind(event, projectDelta, project);
+							removePendingBuildTransition(buildKind, project);
 							if (!handlePendingTransition(project, activateBundle, update, deactivate, uninstall,
 									install)) {
 								handleCRUDOperation(projectDelta, project, activateBundle, addBundleProject,
@@ -356,6 +358,39 @@ public class PostBuildListener implements IResourceChangeListener {
 				addBundleProject.addPendingProject(project);
 				return true;
 			}
+		}
+		return false;
+	}
+
+	/**
+	 * Remove the pending {@link Transition#BUILD build} transition from the specified project
+	 * <p>
+	 * 
+	 * The pending build transition is only removed from deactivated bundle projects but not
+	 * when auto build is off and the build kind is auto build. In all other cases the pending build
+	 * transition is removed:
+	 * <ol>
+	 * <li>When automatic build is on (this includes all kind of builds)
+	 * <li>A manual build when automatic build is off (this includes incremental, full and clean
+	 * build)
+	 * </ol>
+	 * <p>
+	 * Pending builds for activated bundle projects are handled by the {@link JavaTimeBuilder}
+	 * 
+	 * @param buildKind Kind of build. One of incremental build, full build, clean build or auto build
+	 * @param project to remove the pending build transition from
+	 * @return true if the pending build transition is cleared from the specified project. Otherwise
+	 * false
+	 */
+	private boolean removePendingBuildTransition(final int buildKind, final IProject project) {
+
+		if (!bundleRegion.isBundleActivated(project)) {
+			if (!bundleProjectCandidates.isAutoBuilding()
+					&& buildKind == IncrementalProjectBuilder.AUTO_BUILD) {
+				return false;
+			}	
+			bundleTransition.removePending(project, Transition.BUILD);
+			return true;
 		}
 		return false;
 	}

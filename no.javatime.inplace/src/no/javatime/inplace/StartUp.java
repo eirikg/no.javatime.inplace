@@ -37,7 +37,7 @@ public class StartUp implements IStartup {
 	public void earlyStartup() {
 
 		final Activator activator = Activator.getInstance();
-		activator.addResourceListeners();
+		// activator.addResourceListeners();
 		activator.processLastSavedState(true);
 		try {
 			StartUpJob startUp = new StartUpJob(StartUpJob.startupName);

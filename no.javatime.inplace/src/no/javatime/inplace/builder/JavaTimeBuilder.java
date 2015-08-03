@@ -59,9 +59,9 @@ import org.eclipse.ui.statushandlers.StatusManager;
 import org.osgi.framework.Bundle;
 
 /**
- * Checks and adds pending bundle operations to bundle projects that are JavaTime nature enabled
- * (activated). What kind of bundle operation to add to the bundle project is determined by the
- * resource delta and the life cycle state of the bundle project.
+ * Remove and add pending bundle transitions to bundle projects that are JavaTime nature enabled
+ * (activated). Type of bundle operation to add is determined by the resource delta and the life
+ * cycle state of the bundle project.
  * <p>
  * An exception - to only considering the resource delta and the state - is the move CRUD operation
  * for a bundle project. If the moved project is in at least state installed it is tagged with an
@@ -88,9 +88,9 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 	private BundleProjectCandidates bundleProjectCandidates;
 	private BundleTransition bundleTransition;
 	private BundleRegion bundleRegion;
-	private MessageOptions messageOptions; 
+	private MessageOptions messageOptions;
 	private CommandOptions commandOptions;
-		
+
 	public JavaTimeBuilder() {
 
 		try {
@@ -107,15 +107,15 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 	}
 
 	/**
-	 * Record build start time 
+	 * Record build start time
 	 * <p>
 	 * Invoke before build in pre build listener
 	 */
 	public static synchronized void preBuild() {
-		
+
 		startTime = System.currentTimeMillis();
 	}
-	
+
 	public static boolean hasBuild() {
 		return builds.size() > 0 ? true : false;
 	}
@@ -123,16 +123,16 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 	/**
 	 * Log build time and projects built
 	 * <p>
-	 * Invoke after build in post build listener 
+	 * Invoke after build in post build listener
 	 */
 	public synchronized static void postBuild() {
-		
+
 		try {
 			if (Activator.getMessageOptionsService().isBundleOperations()) {
 				if (!builds.isEmpty()) {
-					IBundleStatus mStatus = new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID,
-							NLS.bind(Msg.BUILD_HEADER_TRACE, 
-									new DecimalFormat().format(System.currentTimeMillis() - startTime)));
+					IBundleStatus mStatus = new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, NLS.bind(
+							Msg.BUILD_HEADER_TRACE,
+							new DecimalFormat().format(System.currentTimeMillis() - startTime)));
 					for (IBundleStatus status : builds) {
 						mStatus.add(status);
 					}
@@ -147,7 +147,7 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 			builds.clear();
 		}
 	}
-	
+
 	// Incremental build
 	class DeltaVisitor implements IResourceDeltaVisitor {
 
@@ -289,12 +289,12 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 								msg = ExceptionMessage.getInstance().formatString(
 										"project_to_move_is_not_accessible");
 							}
-							IBundleStatus status = new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, msg,
-									e);
+							IBundleStatus status = new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID,
+									msg, e);
 							StatusManager.getManager().handle(status, StatusManager.LOG);
 						}
 					} else {
-						// Any source change is safeguarded by install. Implies that any update is superfluous 
+						// Any source change is safeguarded by install. Implies that any update is superfluous
 						bundleTransition.removePending(project, Transition.UPDATE);
 					}
 				} else {
@@ -304,7 +304,9 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 			if (Category.DEBUG && Category.getState(Category.build))
 				TraceMessage.getInstance().getString("end_build");
 		} catch (InPlaceException | ExtenderException | CoreException | ProjectLocationException e) {
-			StatusManager.getManager().handle(new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e), StatusManager.LOG);
+			StatusManager.getManager().handle(
+					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),
+					StatusManager.LOG);
 		}
 		return null; // ok to return null;
 	}
@@ -328,20 +330,21 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 			throws CoreException, ExtenderException {
 
 		if (messageOptions.isBundleOperations()) {
-				IProject project = getProject();
-				Bundle bundle = bundleRegion.getBundle(project);
-				String msg = NLS.bind(Msg.INCREMENTAL_BUILD_TRACE, new Object[] { project.getName(),
-						project.getLocation().toOSString() });
-				IBundleStatus status = new BundleStatus(StatusCode.INFO, bundle, project, msg, null);
-				synchronized (builds) {
-					builds.add(status);
-				}
+			IProject project = getProject();
+			Bundle bundle = bundleRegion.getBundle(project);
+			String msg = NLS.bind(Msg.INCREMENTAL_BUILD_TRACE, new Object[] { project.getName(),
+					project.getLocation().toOSString() });
+			IBundleStatus status = new BundleStatus(StatusCode.INFO, bundle, project, msg, null);
+			synchronized (builds) {
+				builds.add(status);
 			}
-			if (Category.DEBUG && Category.getState(Category.build))
-				delta.accept(new DeltaVisitor());
+		}
+		if (Category.DEBUG && Category.getState(Category.build))
+			delta.accept(new DeltaVisitor());
 	}
 
-	private boolean isMoveOperation(IProject project) throws ProjectLocationException, ExtenderException {
+	private boolean isMoveOperation(IProject project) throws ProjectLocationException,
+			ExtenderException {
 
 		String projectLoaction = bundleRegion.getProjectLocationIdentifier(project, null);
 		String bundleLocation = bundleRegion.getBundleLocationIdentifier(project);
@@ -463,8 +466,8 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 		} catch (InPlaceException e) {
 			String msg = WarnMessage.getInstance().formatString("uicontributors_fail_get",
 					project.getName());
-			IBundleStatus status = new BundleStatus(StatusCode.WARNING, Activator.PLUGIN_ID, project, msg,
-					null);
+			IBundleStatus status = new BundleStatus(StatusCode.WARNING, Activator.PLUGIN_ID, project,
+					msg, null);
 			StatusManager.getManager().handle(status, StatusManager.LOG);
 		}
 	}

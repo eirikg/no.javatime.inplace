@@ -85,6 +85,7 @@ public class UpdateBundleClassPathJob extends NatureJob implements UpdateBundleC
 		try {
 			super.runInWorkspace(monitor);
 			BundleTransitionListener.addBundleTransitionListener(this);
+			monitor.beginTask(getName(), 1);
 			saveDirtyMetaFiles(false);
 			for (IProject project : getPendingProjects()) {
 				try {

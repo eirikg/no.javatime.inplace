@@ -5,7 +5,6 @@ import no.javatime.inplace.bundlejobs.events.intface.BundleExecutorEvent;
 import no.javatime.inplace.bundlejobs.events.intface.BundleExecutorEventListener;
 import no.javatime.inplace.bundlejobs.intface.BundleExecutor;
 import no.javatime.inplace.extender.intface.ExtenderException;
-import no.javatime.inplace.log.intface.BundleLog;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 
@@ -22,7 +21,21 @@ import org.eclipse.ui.statushandlers.StatusManager;
  */
 public class BundleExecutorInterceptor implements BundleExecutorEventListener {
 
-	private SaveSnapShotOption saveSnapshot = new SaveSnapShotOption();
+	private SaveSnapShotOption saveSnapshot;
+
+	
+	/**
+	 * 
+	 * @return An instance of the save workspace snapshot option
+	 */
+	public SaveSnapShotOption getSaveSnapshot() {
+		
+		if (null == saveSnapshot) {
+			saveSnapshot = new SaveSnapShotOption();
+		}
+		return saveSnapshot;
+	}
+
 
 	/**
 	 * If this is the only bundle job executor event listener schedule any job event
@@ -37,9 +50,7 @@ public class BundleExecutorInterceptor implements BundleExecutorEventListener {
 			BundleExecutor bundleExecutor = event.getBundlExecutor();
 			// Save a snapshot before running this executor
 			if (bundleExecutor.isSaveWorkspaceSnaphot()) {
-				BundleLog log = Activator.getBundleLogService();
-				log.log(new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, "Save snapshot before: " + bundleExecutor.getName()));
-				saveSnapshot.saveWorkspace(new NullProgressMonitor());
+				getSaveSnapshot().saveWorkspace(new NullProgressMonitor());
 			}
 			// If no other registered listeners, schedule the job
 			if (Activator.getBundleExecutorEventService().listeners() == 1) {

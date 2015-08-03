@@ -13,7 +13,7 @@ public class CommandOptionsImpl extends ManifestOptionsImpl implements CommandOp
 	private final static boolean defIsRefreshOnUpdate = true;
 	private final static boolean defIsAutoHandleExternalCommands = true;
 	private final static boolean defIsAllowUIContributions = true;
-	private final static boolean defIsSaveFilesBeforeBundleOperation = true;
+	private final static boolean defIsSaveFilesBeforeBundleOperation = false;
 	private final static boolean defIsSaveSnapshotBeforeBundleOperation = false;
 	private final static boolean defIsTimeOut = false;
 	private final static boolean defIsManualTerminate = true;

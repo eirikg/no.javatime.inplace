@@ -42,7 +42,6 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IResourceChangeEvent;
 import org.eclipse.core.resources.IResourceChangeListener;
-import org.eclipse.core.resources.IResourceDelta;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IAdaptable;
@@ -294,7 +293,8 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 		ResourcesPlugin.getWorkspace().addResourceChangeListener(
 				this,
 				IResourceChangeEvent.PRE_CLOSE | IResourceChangeEvent.PRE_DELETE
-						| IResourceChangeEvent.POST_BUILD | IResourceChangeEvent.POST_CHANGE);
+						| IResourceChangeEvent.PRE_BUILD | IResourceChangeEvent.POST_BUILD
+						| IResourceChangeEvent.POST_CHANGE);
 		// Local bundle actions, tool bars and pull down menu
 		createLocalActions();
 		IActionBars actionBars = getViewSite().getActionBars();
@@ -572,6 +572,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 	 */
 	@Override
 	public void resourceChanged(IResourceChangeEvent event) {
+
 		int eventType = event.getType();
 		// Before Close, Delete and Rename
 		if ((eventType & (IResourceChangeEvent.PRE_CLOSE | IResourceChangeEvent.PRE_DELETE)) != 0) {
@@ -588,35 +589,8 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 							StatusManager.LOG);
 				}
 			}
-		} else if ((eventType & (IResourceChangeEvent.POST_BUILD)) != 0) {
-			IResourceDelta rootDelta = event.getDelta();
-			IResourceDelta[] projectDeltas = rootDelta.getAffectedChildren(IResourceDelta.ADDED
-					| IResourceDelta.CHANGED, IResource.NONE);
-			IResource projectResource = null;
-			boolean isBuildingPending = true;
-			for (IResourceDelta projectDelta : projectDeltas) {
-				try {
-					projectResource = projectDelta.getResource();
-					if (projectResource.isAccessible()
-							&& (projectResource.getType() & (IResource.PROJECT)) != 0) {
-						IProject project = projectResource.getProject();
-						if (Activator.getBundleRegionService().isBundleActivated(project)
-								&& Activator.getBundleTransitionService().containsPending(project,
-										Transition.BUILD, false)) {
-							isBuildingPending = true;
-						}
-					}
-				} catch (ExtenderException e) {
-					StatusManager.getManager().handle(
-							new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),
-							StatusManager.LOG);
-				}
-			}
-			if (isBuildingPending) {
-				showProjectInfo();
-			}
-			// Create, Rename, Import, Close, Open, Move, Delete, Build
-		} else if ((eventType & (IResourceChangeEvent.POST_CHANGE)) != 0) {
+		} else if ((eventType & (IResourceChangeEvent.PRE_BUILD 
+				| IResourceChangeEvent.POST_BUILD | IResourceChangeEvent.POST_CHANGE)) != 0) {
 			showProjectInfo();
 		}
 	}
@@ -1062,8 +1036,8 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 		if (null == project || isBundleJobRunning() || !bundleProjectCandidates.isInstallable(project)) {
 			setUIElement(resetAction, false, Msg.RESET_GENERAL_LABEL, Msg.RESET_GENERAL_LABEL,
 					BundleCommandsContributionItems.resetImage);
-			setUIElement(startStopAction, false, Msg.START_STOP_GENERAL_LABEL, Msg.START_STOP_GENERAL_LABEL,
-					BundleCommandsContributionItems.startImage);
+			setUIElement(startStopAction, false, Msg.START_STOP_GENERAL_LABEL,
+					Msg.START_STOP_GENERAL_LABEL, BundleCommandsContributionItems.startImage);
 			setUIElement(activateAction, false, Msg.ACTIVATE_GENERAL_LABEL, Msg.ACTIVATE_GENERAL_LABEL,
 					BundleCommandsContributionItems.activateImage);
 			setUpdateRefresh(false, null);
@@ -1074,8 +1048,8 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 				setNonBundleCommandsAction(false, false, false, Msg.FLIP_DETAILS_LABEL,
 						Msg.FLIP_DETAILS_LABEL, BundleCommandsContributionItems.bundleListImage);
 			}
-			setUIElement(updateClassPathAction, false, Msg.UPDATE_CLASS_PATH_LABEL, Msg.UPDATE_CLASS_PATH_LABEL,
-					BundleCommandsContributionItems.classPathImage);
+			setUIElement(updateClassPathAction, false, Msg.UPDATE_CLASS_PATH_LABEL,
+					Msg.UPDATE_CLASS_PATH_LABEL, BundleCommandsContributionItems.classPathImage);
 			return;
 		}
 		// Enable all non bundle commands. Flip page is dependent on the active page
@@ -1119,7 +1093,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 				setUpdateRefresh(true, bundle);
 			} else {
 				// Project is activated but bundle is not yet. Meaning that the bundle has not been
-				// installed and resolved/started yet. 
+				// installed and resolved/started yet.
 				setUIElement(startStopAction, false, Msg.START_LABEL, Msg.START_LABEL,
 						BundleCommandsContributionItems.startImage);
 				// Conditional enabling of update and refresh
@@ -1129,17 +1103,17 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 			setUIElement(resetAction, true, Msg.RESET_POPUP_LABEL, Msg.RESET_POPUP_LABEL,
 					BundleCommandsContributionItems.resetImage);
 			// Always possible to deactivate an activated project
-			setUIElement(activateAction, activateAction.isEnabled(), Msg.DEACTIVATE_POPUP_LABEL, Msg.DEACTIVATE_POPUP_LABEL,
-					BundleCommandsContributionItems.deactivateImage);
+			setUIElement(activateAction, activateAction.isEnabled(), Msg.DEACTIVATE_POPUP_LABEL,
+					Msg.DEACTIVATE_POPUP_LABEL, BundleCommandsContributionItems.deactivateImage);
 		} else {
 			// Enable activate and disable start/stop, refresh, reset and update when project is
 			// deactivated
 			setUIElement(resetAction, false, Msg.RESET_GENERAL_LABEL, Msg.RESET_GENERAL_LABEL,
 					BundleCommandsContributionItems.resetImage);
-			setUIElement(startStopAction, false, Msg.START_STOP_GENERAL_LABEL, Msg.START_STOP_GENERAL_LABEL,
-					BundleCommandsContributionItems.startImage);
-			setUIElement(activateAction, activateAction.isEnabled(), Msg.ACTIVATE_LABEL, Msg.ACTIVATE_LABEL,
-					BundleCommandsContributionItems.activateImage);
+			setUIElement(startStopAction, false, Msg.START_STOP_GENERAL_LABEL,
+					Msg.START_STOP_GENERAL_LABEL, BundleCommandsContributionItems.startImage);
+			setUIElement(activateAction, activateAction.isEnabled(), Msg.ACTIVATE_LABEL,
+					Msg.ACTIVATE_LABEL, BundleCommandsContributionItems.activateImage);
 			setUpdateRefresh(false, null);
 		}
 	}
@@ -1182,9 +1156,10 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 			boolean flipPageState, String flipPageToolTipText, String flipPageText,
 			ImageDescriptor flipPageImage) {
 
-		setUIElement(editManifestAction, editManifestState, Msg.OPEN_IN_EDITOR_LABEL, Msg.OPEN_IN_EDITOR_GENERAL_LABEL,
-				mfEditorImage);
-		setUIElement(linkWithAction, linkWithState, Msg.LINK_WITH_EXPLORERS_LABEL, Msg.LINK_WITH_EXPLORERS_GENERAL_LABEL, linkedWithImage);
+		setUIElement(editManifestAction, editManifestState, Msg.OPEN_IN_EDITOR_LABEL,
+				Msg.OPEN_IN_EDITOR_GENERAL_LABEL, mfEditorImage);
+		setUIElement(linkWithAction, linkWithState, Msg.LINK_WITH_EXPLORERS_LABEL,
+				Msg.LINK_WITH_EXPLORERS_GENERAL_LABEL, linkedWithImage);
 		setUIElement(flipPageAction, flipPageState, flipPageText, flipPageToolTipText, flipPageImage);
 	}
 

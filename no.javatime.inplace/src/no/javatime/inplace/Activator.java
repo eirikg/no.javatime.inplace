@@ -159,6 +159,7 @@ public class Activator extends AbstractUIPlugin {
 		getBundleExecutorEventService().addListener(saveOptionsListener);
 		BundleTransitionListener.addBundleTransitionListener(externalTransitionListener);
 		Job.getJobManager().addJobChangeListener(jobChangeListener);
+		addResourceListeners();
 	}
 
 	@Override
