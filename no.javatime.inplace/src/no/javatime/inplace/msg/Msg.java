@@ -46,6 +46,7 @@ public class Msg extends NLS {
 	
 	// Build trace operations
 	public static String BUILD_HEADER_TRACE;
+	public static String BUILD_HEADER_TRACE_AUTO_BUILD_OFF;
 	public static String NO_RESOURCE_DELTA_BUILD_TRACE;
 	public static String NO_RESOURCE_DELTA_BUILD_AVAILABLE_TRACE;
 	public static String INCREMENTAL_BUILD_TRACE;

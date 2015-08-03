@@ -85,6 +85,7 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 	// Log information
 	private static Collection<IBundleStatus> builds = new ArrayList<>();
 	private static long startTime;
+	private static boolean autoBuildOff;
 	private BundleProjectCandidates bundleProjectCandidates;
 	private BundleTransition bundleTransition;
 	private BundleRegion bundleRegion;
@@ -112,8 +113,19 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 	 * Invoke before build in pre build listener
 	 */
 	public static synchronized void preBuild() {
-
-		startTime = System.currentTimeMillis();
+		try {
+			if (!Activator.getBundleProjectCandidatesService().isAutoBuilding()) {
+				autoBuildOff = true;
+			} else {
+				autoBuildOff = false;
+				startTime = System.currentTimeMillis();
+			}
+		} catch (ExtenderException e) {
+			StatusManager.getManager().handle(
+					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),
+					StatusManager.LOG);
+			autoBuildOff = false;
+		}
 	}
 
 	public static boolean hasBuild() {
@@ -128,11 +140,17 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 	public synchronized static void postBuild() {
 
 		try {
+			IBundleStatus mStatus = null;
 			if (Activator.getMessageOptionsService().isBundleOperations()) {
 				if (!builds.isEmpty()) {
-					IBundleStatus mStatus = new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, NLS.bind(
-							Msg.BUILD_HEADER_TRACE,
-							new DecimalFormat().format(System.currentTimeMillis() - startTime)));
+					if (autoBuildOff) {
+						mStatus = new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, 
+								Msg.BUILD_HEADER_TRACE_AUTO_BUILD_OFF);						
+					} else {
+						mStatus = new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, NLS.bind(
+								Msg.BUILD_HEADER_TRACE,
+								new DecimalFormat().format(System.currentTimeMillis() - startTime)));
+					}
 					for (IBundleStatus status : builds) {
 						mStatus.add(status);
 					}
@@ -145,6 +163,7 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 					StatusManager.LOG);
 		} finally {
 			builds.clear();
+			autoBuildOff = false;
 		}
 	}
 
