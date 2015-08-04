@@ -48,7 +48,6 @@ import no.javatime.inplace.region.intface.BundleTransition;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
 import no.javatime.inplace.region.intface.BundleTransitionListener;
 import no.javatime.inplace.region.intface.InPlaceException;
-import no.javatime.inplace.region.intface.ProjectLocationException;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
@@ -56,7 +55,6 @@ import no.javatime.inplace.statushandler.ActionSetContexts;
 import no.javatime.inplace.statushandler.DynamicExtensionContribution;
 import no.javatime.util.messages.Category;
 import no.javatime.util.messages.ExceptionMessage;
-import no.javatime.util.messages.WarnMessage;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResourceChangeEvent;
@@ -80,7 +78,6 @@ import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.eclipse.ui.statushandlers.StatusManager;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
-import org.osgi.service.prefs.BackingStoreException;
 
 /**
  * A bundle manager plug-in. Provides the following functionality:
@@ -351,7 +348,7 @@ public class Activator extends AbstractUIPlugin {
 					System.err.println(Msg.END_SHUTDOWN_ERROR);
 				}
 			} else {
-				savePluginSettings(true, false);
+				WorkspaceSaveParticipant.saveBundleStateSettings(true, false);
 			}
 		} catch (InPlaceException | BundleLogException | ExtenderException e) {
 			StatusManager.getManager().handle(
@@ -599,111 +596,6 @@ public class Activator extends AbstractUIPlugin {
 
 	static public IEclipsePreferences getEclipsePreferenceStore() {
 		return InstanceScope.INSTANCE.getNode(PLUGIN_ID);
-	}
-
-	/**
-	 * Save various settings through the preference service at the workspace level
-	 * <p>
-	 * When <code>allResolve</code> parameter is true and a project is activated the stored state is
-	 * set to resolve.
-	 * 
-	 * @param flush true to prevSave settings to storage
-	 * @param allResolve true to prevSave state as resolve for all activated bundle projects
-	 */
-	public void savePluginSettings(Boolean flush, Boolean allResolve) {
-		try {
-			IEclipsePreferences prefs = getEclipsePreferenceStore();
-			if (null == prefs) {
-				String msg = WarnMessage.getInstance().formatString("failed_getting_preference_store");
-				StatusManager.getManager().handle(
-						new BundleStatus(StatusCode.WARNING, Activator.PLUGIN_ID, msg), StatusManager.LOG);
-				return;
-			}
-			try {
-				prefs.clear();
-			} catch (BackingStoreException e) {
-				String msg = WarnMessage.getInstance().formatString("failed_clearing_preference_store");
-				StatusManager.getManager().handle(
-						new BundleStatus(StatusCode.WARNING, Activator.PLUGIN_ID, msg, e), StatusManager.LOG);
-				return; // Use existing values
-			}
-			if (allResolve) {
-				BundleRegion bundleRegion = getBundleRegionService();
-				if (bundleRegion.isRegionActivated()) {
-					Collection<IProject> natureEnabled = bundleRegion.getActivatedProjects();
-					for (IProject project : natureEnabled) {
-						try {
-							String symbolicKey = getBundleRegionService().getSymbolicKey(null, project);
-							if (symbolicKey.isEmpty()) {
-								continue;
-							}
-							prefs.putInt(symbolicKey, Bundle.RESOLVED);
-						} catch (IllegalStateException e) {
-							String msg = WarnMessage.getInstance().formatString("node_removed_preference_store");
-							StatusManager.getManager().handle(
-									new BundleStatus(StatusCode.WARNING, Activator.PLUGIN_ID, project, msg, null),
-									StatusManager.LOG);
-						}
-					}
-				}
-			} else {
-				BundleRegion region = getBundleRegionService();
-				if (region.isRegionActivated()) {
-					for (Bundle bundle : region.getBundles()) {
-						try {
-							String symbolicKey = region.getSymbolicKey(bundle, null);
-							if (symbolicKey.isEmpty()) {
-								continue;
-							}
-							if ((bundle.getState() & (Bundle.RESOLVED)) != 0) {
-								prefs.putInt(symbolicKey, bundle.getState());
-							}
-						} catch (IllegalStateException e) {
-							String msg = WarnMessage.getInstance().formatString("node_removed_preference_store");
-							StatusManager.getManager()
-									.handle(new BundleStatus(StatusCode.WARNING, Activator.PLUGIN_ID, msg),
-											StatusManager.LOG);
-						}
-					}
-				} else {
-					BundleProjectCandidates bundleProject = getBundleProjectCandidatesService();
-					Collection<IProject> projects = bundleProject.getBundleProjects();
-					for (IProject project : projects) {
-						try {
-							Transition transition = Activator.getBundleTransitionService().getTransition(project);
-							// if (!BundleProjectCandidatesImpl.INSTANCE.isNatureEnabled(project) &&
-							if (transition == Transition.REFRESH || transition == Transition.UNINSTALL) {
-								String symbolicKey = getBundleRegionService().getSymbolicKey(null, project);
-								if (symbolicKey.isEmpty()) {
-									continue;
-								}
-								prefs.putInt(symbolicKey, transition.ordinal());
-							}
-						} catch (ProjectLocationException e) {
-							// Ignore. Will be defined as no transition when loaded again
-						} catch (IllegalStateException e) {
-							String msg = WarnMessage.getInstance().formatString("node_removed_preference_store");
-							StatusManager.getManager()
-									.handle(new BundleStatus(StatusCode.WARNING, Activator.PLUGIN_ID, msg),
-											StatusManager.LOG);
-						}
-					}
-				}
-			}
-			try {
-				if (flush) {
-					prefs.flush();
-				}
-			} catch (BackingStoreException e) {
-				String msg = WarnMessage.getInstance().formatString("failed_flushing_preference_store");
-				StatusManager.getManager().handle(
-						new BundleStatus(StatusCode.WARNING, Activator.PLUGIN_ID, msg), StatusManager.LOG);
-			}
-		} catch (ExtenderException e) {
-			StatusManager.getManager().handle(
-					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),
-					StatusManager.LOG);
-		}
 	}
 
 	/**
