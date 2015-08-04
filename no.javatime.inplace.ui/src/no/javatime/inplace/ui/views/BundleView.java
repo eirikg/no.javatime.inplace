@@ -71,6 +71,7 @@ import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.SWTException;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Menu;
@@ -292,9 +293,8 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 		BundleTransitionListener.addBundleTransitionListener(this);
 		ResourcesPlugin.getWorkspace().addResourceChangeListener(
 				this,
-				IResourceChangeEvent.PRE_CLOSE | IResourceChangeEvent.PRE_DELETE
-						| IResourceChangeEvent.PRE_BUILD | IResourceChangeEvent.POST_BUILD
-						| IResourceChangeEvent.POST_CHANGE);
+				IResourceChangeEvent.PRE_CLOSE | IResourceChangeEvent.PRE_DELETE 
+				| IResourceChangeEvent.PRE_BUILD | IResourceChangeEvent.POST_BUILD);
 		// Local bundle actions, tool bars and pull down menu
 		createLocalActions();
 		IActionBars actionBars = getViewSite().getActionBars();
@@ -589,9 +589,15 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 							StatusManager.LOG);
 				}
 			}
-		} else if ((eventType & (IResourceChangeEvent.PRE_BUILD 
-				| IResourceChangeEvent.POST_BUILD | IResourceChangeEvent.POST_CHANGE)) != 0) {
-			showProjectInfo();
+		} else if ((eventType & (IResourceChangeEvent.PRE_BUILD | IResourceChangeEvent.POST_BUILD )) != 0) {
+			try {	
+				IWorkbench workbench = Activator.getDefault().getWorkbench();
+				if (null != workbench && !workbench.isClosing()) {
+					showProjectInfo();
+				}
+			} catch (SWTException e) {
+				// Ignore not updating bundle view
+			}
 		}
 	}
 
