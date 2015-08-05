@@ -29,16 +29,18 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IResourceChangeEvent;
 import org.eclipse.core.resources.IResourceChangeListener;
 import org.eclipse.core.resources.IResourceDelta;
-import org.eclipse.core.resources.IncrementalProjectBuilder;
+import org.eclipse.ui.IWorkbench;
+import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.statushandlers.StatusManager;
 
 /**
  * Listen to pre build notifications. Remove transition errors from and add pending build
  * transitions to bundle projects.
  * <p>
- * Error transitions are removed from all bundle projects when the workspace is deactivated. Pending
- * build transitions are added to all projects in an activated workspace not being opened or moved.
- * Pending build state is preserved for closed and source location of moved projects.
+ * Error transitions are removed from all bundle projects when the workspace is deactivated.
+ * <p>
+ * Pending build transitions are added to all projects in an activated workspace not being opened or
+ * moved. Pending build state is preserved for closed and for source location of moved projects.
  * <p>
  * Note that this callback is also invoked when auto build is switched off.
  */
@@ -70,10 +72,12 @@ public class PreBuildListener implements IResourceChangeListener {
 	public void resourceChanged(IResourceChangeEvent event) {
 
 		final int buildKind = event.getBuildKind();
-
+		IWorkbench workbench = PlatformUI.getWorkbench();
+		if (null == workbench || workbench.isClosing()) {
+			return;
+		}
 		JavaTimeBuilder.preBuild();
-		// Clean build calls pre build listener twice. The first call is of kind {@code CLEAN_BUILD]
-		if (buildKind == IncrementalProjectBuilder.CLEAN_BUILD || buildKind == 0) {
+		if (buildKind == 0) {
 			return;
 		}
 		IResourceDelta rootDelta = event.getDelta();

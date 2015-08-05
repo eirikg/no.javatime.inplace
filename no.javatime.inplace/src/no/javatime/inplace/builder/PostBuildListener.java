@@ -56,6 +56,8 @@ import org.eclipse.core.resources.IResourceChangeListener;
 import org.eclipse.core.resources.IResourceDelta;
 import org.eclipse.core.resources.IncrementalProjectBuilder;
 import org.eclipse.osgi.util.NLS;
+import org.eclipse.ui.IWorkbench;
+import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.statushandlers.StatusManager;
 import org.osgi.framework.Bundle;
 
@@ -145,15 +147,18 @@ public class PostBuildListener implements IResourceChangeListener {
 	@Override
 	public void resourceChanged(IResourceChangeEvent event) {
 
+		IWorkbench workbench = PlatformUI.getWorkbench();
+		if (null == workbench || workbench.isClosing()) {
+			return;
+		}
 		try {
 			final int buildKind = event.getBuildKind();
 			// Nothing to do in a deactivated workspace where all bundle projects are uninstalled
-			// Clean build calls post build listener twice. The first call is of kind {@code CLEAN_BUILD]
+			// Clean build calls post build listener twice. The first call is of kind {@code CLEAN_BUILD}
 			if (!projectActivator.isProjectWorkspaceActivated()
 					|| buildKind == IncrementalProjectBuilder.CLEAN_BUILD || buildKind == 0) {
 				return;
 			}
-
 			// Updates a project if it is activated in an activated workspace
 			// and after a build where the project is pending for update and auto build is on
 			final Update update = new UpdateJob();

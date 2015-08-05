@@ -180,7 +180,7 @@ public class WorkspaceSaveParticipant implements ISaveParticipant {
 	 * 
 	 * @param prefs The preference store
 	 */
-	public static void saveBundleTransitionSettings(IEclipsePreferences prefs)
+	private static void saveBundleTransitionSettings(IEclipsePreferences prefs)
 			throws ExtenderException {
 
 		BundleProjectCandidates bundleProject = Activator.getBundleProjectCandidatesService();
