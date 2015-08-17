@@ -40,6 +40,8 @@ import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.osgi.util.NLS;
+import org.eclipse.ui.IWorkbench;
+import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.ide.IDE;
 import org.osgi.framework.Bundle;
 
@@ -89,7 +91,9 @@ public abstract class NatureJob extends BundleJob {
 
 	public Boolean isProjectActivated(IProject project) throws InPlaceException, ExtenderException {
 
-		bundleProjectCandidates = Activator.getBundleProjectCandidatesService();
+		if (null == bundleProjectCandidates) {
+			bundleProjectCandidates = Activator.getBundleProjectCandidatesService();
+		}
 		if (bundleProjectCandidates.isNatureEnabled(project, JavaTimeNature.JAVATIME_NATURE_ID)) {
 			return true;
 		}
@@ -98,7 +102,9 @@ public abstract class NatureJob extends BundleJob {
 
 	public Boolean isProjectWorkspaceActivated() throws InPlaceException, ExtenderException {
 
-		bundleProjectCandidates = Activator.getBundleProjectCandidatesService();
+		if (null == bundleProjectCandidates) {
+			bundleProjectCandidates = Activator.getBundleProjectCandidatesService();
+		}
 		for (IProject project : bundleProjectCandidates.getBundleProjects()) {
 			if (isProjectActivated(project)) {
 				return true;
@@ -109,7 +115,9 @@ public abstract class NatureJob extends BundleJob {
 
 	public Collection<IProject> getActivatedProjects() throws InPlaceException, ExtenderException {
 
-		bundleProjectCandidates = Activator.getBundleProjectCandidatesService();
+		if (null == bundleProjectCandidates) {
+			bundleProjectCandidates = Activator.getBundleProjectCandidatesService();
+		}
 		Collection<IProject> projects = new LinkedHashSet<IProject>();
 
 		for (IProject project : bundleProjectCandidates.getBundleProjects()) {
@@ -122,7 +130,9 @@ public abstract class NatureJob extends BundleJob {
 
 	public Collection<IProject> getDeactivatedProjects() throws InPlaceException, ExtenderException {
 
-		bundleProjectCandidates = Activator.getBundleProjectCandidatesService();
+		if (null == bundleProjectCandidates) {
+			bundleProjectCandidates = Activator.getBundleProjectCandidatesService();
+		}
 		return bundleProjectCandidates.getCandidates();
 	}
 
@@ -147,10 +157,10 @@ public abstract class NatureJob extends BundleJob {
 					sleep(sleepTime);
 				progress.subTask(NLS.bind(Msg.INSTALL_SUB_TASK_JOB, project.getName()));
 				// Get the activation status of the corresponding project
-				boolean activated = isProjectActivated(project);
-				bundle = bundleCommand.install(project, activated);
+				boolean isActivated = isProjectActivated(project);
+				bundle = bundleCommand.install(project, isActivated);
 				// Project must be activated and bundle must be successfully installed to be activated
-				if (null != bundle && activated) {
+				if (null != bundle && isActivated) {
 					activatedBundles.add(bundle);
 				}
 			} catch (DuplicateBundleException e) {
@@ -455,6 +465,10 @@ public abstract class NatureJob extends BundleJob {
 	protected void saveDirtyMetaFiles(final boolean includeProjectMetaFiles)
 			throws OperationCanceledException {
 
+		IWorkbench workbench = PlatformUI.getWorkbench();
+		if (null == workbench || workbench.isClosing()) {
+			return;
+		}
 		final Collection<IResource> dirtyResources = SaveOptionsJob.getScopedDirtyMetaFiles(
 				getPendingProjects(), includeProjectMetaFiles);
 		if (dirtyResources.size() > 0) {

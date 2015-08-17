@@ -220,15 +220,25 @@ public interface BundleExecutor {
 	public boolean isSaveWorkspaceSnaphot();
 
 	/**
-	 * Override to save or not save a workspace snapshot.
+	 * Override preference settings to save or not save a workspace snapshot.
 	 * <p>
 	 * If true a snapshot is saved before this job is scheduled.
 	 * 
 	 * @param saveWorkspace True to save a workspace snapshot and false to not save a workspace
 	 * snapshot.
 	 */
-
 	public void setSaveWorkspaceSnaphot(boolean saveWorkspaceSnaphot);
+	
+	
+	/**
+	 * Override preference settings to save or not save dirty files.
+	 * <p>
+	 * If true a dirty files are saved as part of the bundle operation.
+	 * 
+	 * @param saveFiles True to save dirty files and false to not save dirty files
+	 * snapshot.
+	 */
+	public void setSaveFiles(boolean saveFiles);
 
 	/**
 	 * Get all logged status objects added by this job

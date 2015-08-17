@@ -849,21 +849,20 @@ public class BundleCommandImpl implements BundleCommand {
 		return bundle.getState();
 	}
 
-	/**
-	 * Get the mnemonic state name of the specified bundle. If {@code Bundle} is {@code null} return
-	 * "UNINSTALLED".
-	 * 
-	 * @param bundle the bundle with a state
-	 * @return the state name of the bundle
-	 */
 	@Override
 	public String getStateName(Bundle bundle) {
 
 		if (null == bundle) {
 			return "UNINSTALLED";
 		}
+		return getStateName(bundle.getState());
+	}
+	
+	@Override
+	public String getStateName(int state) {
+
 		String typeName = null;
-		switch (bundle.getState()) {
+		switch (state) {
 		case Bundle.INSTALLED:
 			typeName = "INSTALLED";
 			break;
@@ -889,7 +888,7 @@ public class BundleCommandImpl implements BundleCommand {
 		}
 		return typeName;
 	}
-
+	
 	/**
 	 * Get the mnemonic state name of the bundle for the specified bundle event.
 	 * 

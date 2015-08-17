@@ -8,8 +8,10 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import no.javatime.inplace.Activator;
+import no.javatime.inplace.StatePersistParticipant;
 import no.javatime.inplace.bundlejobs.BundleJob;
 import no.javatime.inplace.bundlejobs.UpdateJob;
+import no.javatime.inplace.bundlejobs.intface.BundleExecutor;
 import no.javatime.inplace.bundlejobs.intface.Update;
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.msg.Msg;
@@ -20,18 +22,18 @@ import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import no.javatime.util.messages.ErrorMessage;
+import no.javatime.util.messages.WarnMessage;
 
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.commands.IExecutionListener;
 import org.eclipse.core.commands.NotHandledException;
 import org.eclipse.core.resources.IProject;
-import org.eclipse.core.resources.WorkspaceJob;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.ui.statushandlers.StatusManager;
-import org.osgi.framework.Bundle;
+import org.osgi.service.prefs.BackingStoreException;
 
 /**
  * Update activated bundle projects and remove pending build transitions for deactivated bundle
@@ -92,6 +94,35 @@ public class AutoBuildListener implements IExecutionListener {
 		}
 	}
 
+	BundleExecutor removeBuildTransition = new BundleJob("Remove pending build transition") {
+		@Override
+		public IBundleStatus runInWorkspace(IProgressMonitor monitor) throws CoreException {
+
+			try {
+				getSaveOptions().disableSaveFiles(true);
+				super.runInWorkspace(monitor);
+				monitor.beginTask(getName(), 1);
+				// Remove pending build transition for deactivated bundle projects
+				// Activated bundle projects are removed by the java time builder
+				for (IProject project : getPendingProjects()) {
+					bundleTransition.removePending(project, Transition.BUILD);
+				}
+				StatePersistParticipant.savePendingBuildTransitions(StatePersistParticipant.getSessionPreferences());
+			} catch (BackingStoreException e) {
+				String msg = WarnMessage.getInstance().formatString("failed_getting_preference_store");
+				addError(e, msg);
+			} catch (ExtenderException e) {
+				addError(e, NLS.bind(Msg.SERVICE_EXECUTOR_EXP, getName()));
+			} catch (CoreException e) {
+				String msg = ErrorMessage.getInstance().formatString("error_end_job", getName());
+				return new BundleStatus(StatusCode.ERROR, Activator.PLUGIN_ID, msg, e);
+			} finally {
+				monitor.done();
+			}
+			return getJobSatus();
+		}
+	};
+
 	/**
 	 * Auto build has been switched on. Wait for the builder to finish and update bundles if the post
 	 * build listener has not been called.
@@ -103,37 +134,12 @@ public class AutoBuildListener implements IExecutionListener {
 	private void execute(final BundleRegion bundleRegion) {
 
 		BundleTransition bundleTransition = Activator.getBundleTransitionService();
-		final Collection<Bundle> pendingbundles = bundleTransition.getPendingBundles(
-				bundleRegion.getDeactivatedBundles(), Transition.BUILD);
-
-		WorkspaceJob removeBuildTransition = new BundleJob("Remove pending build transition") {
-			@Override
-			public IBundleStatus runInWorkspace(IProgressMonitor monitor) throws CoreException {
-
-				try {
-					getSaveOptions().disableSaveFiles(true);
-					super.runInWorkspace(monitor);
-					monitor.beginTask(getName(), 1);
-					// Remove pending build transition for deactivated bundle projects
-					// Activated bundle projects are removed by the java time builder
-					for (Bundle bundle : pendingbundles) {
-						bundleTransition.removePending(bundle, Transition.BUILD);
-					}
-				} catch (ExtenderException e) {
-					addError(e, NLS.bind(Msg.SERVICE_EXECUTOR_EXP, getName()));
-				} catch (CoreException e) {
-					String msg = ErrorMessage.getInstance().formatString("error_end_job", getName());
-					return new BundleStatus(StatusCode.ERROR, Activator.PLUGIN_ID, msg, e);
-				} finally {
-					monitor.done();
-				}
-				return getJobSatus();
-			}
-		};
-		if (pendingbundles.size() > 0) {
-			removeBuildTransition.schedule();
+		final Collection<IProject> pendingProjects = bundleTransition.getPendingProjects(
+				bundleRegion.getProjects(), Transition.BUILD);
+		removeBuildTransition.addPendingProjects(pendingProjects);
+		if (pendingProjects.size() > 0) {
+			removeBuildTransition.getJob().schedule();
 		}
-
 		ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(1);
 		try {
 			scheduledExecutorService.schedule(new Callable<Object>() {

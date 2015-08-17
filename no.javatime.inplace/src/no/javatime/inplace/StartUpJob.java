@@ -11,48 +11,53 @@
 package no.javatime.inplace;
 
 import java.util.Collection;
-import java.util.Collections;
 
+import no.javatime.inplace.builder.AutoBuildListener;
 import no.javatime.inplace.bundlejobs.ActivateBundleJob;
-import no.javatime.inplace.bundlejobs.DeactivateJob;
-import no.javatime.inplace.bundlejobs.NatureJob;
-import no.javatime.inplace.bundlejobs.intface.BundleExecutor;
-import no.javatime.inplace.bundlejobs.intface.Deactivate;
-import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.msg.Msg;
-import no.javatime.inplace.region.closure.BuildErrorClosure;
-import no.javatime.inplace.region.closure.BuildErrorClosure.ActivationScope;
 import no.javatime.inplace.region.closure.CircularReferenceException;
-import no.javatime.inplace.region.intface.BundleTransition.Transition;
 import no.javatime.inplace.region.intface.BundleTransitionListener;
 import no.javatime.inplace.region.intface.InPlaceException;
-import no.javatime.inplace.region.intface.ProjectLocationException;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
-import no.javatime.util.messages.ErrorMessage;
 import no.javatime.util.messages.ExceptionMessage;
+import no.javatime.util.messages.WarnMessage;
 
 import org.eclipse.core.resources.IProject;
-import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.OperationCanceledException;
-import org.eclipse.core.runtime.preferences.IEclipsePreferences;
+import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.osgi.util.NLS;
+import org.eclipse.ui.IWorkbench;
+import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.commands.ICommandService;
 import org.eclipse.ui.statushandlers.StatusManager;
 import org.osgi.framework.Bundle;
+import org.osgi.service.prefs.BackingStoreException;
 
 /**
- * In an activated workspace install all projects and set activated projects to the same state as
- * they had at the last shutdown. If the workspace is deactivated set deactivated projects to
- * {@code Transition#UNINSTALL}. If a project has never been activated the default state for the
- * transition will be {@code Transition#NOTRANSITION}
- * 
+ * In an activated workspace activate all bundle projects where the activation level (bundle state)
+ * is the same as at the last shutdown. Transition states are calculated for both activated and
+ * deactivated bundle projects. Any pending transitions from the previous session are added to both
+ * deactivated and activated bundle projects
+ * <p>
+ * In a deactivated workspace the activation level for all bundle projects are
+ * {@code Bundle.UNINSTALLED}. The transition state is set to the same as at shutdown and any
+ * pending transition from the previous session are added. After first installation of the InPlace
+ * Activator the activation level is {@code Bundle.UNINSTALLED} and the transition state is
+ * {@code Transition.NO_TRANSITION}
+ * <p>
+ * If activated bundle projects had build errors at shut down or the "Deactivate on Exit" preference
+ * option was on at shutdown (or manually changed to on after shutdown), the workspace will be
+ * deactivated and the activation level, transition state and any pending transitions will be the
+ * same as in a deactivated workspace.
+ * <p>
+ * After an abnormal termination of a session, states are regenerated based on activation rules and
+ * states from the previous session. See {@link StatePersistParticipant} for further details.
  */
-public class StartUpJob extends NatureJob implements BundleExecutor {
-
-	final public static String startupName = Msg.INIT_WORKSPACE_JOB;
+class StartUpJob extends ActivateBundleJob {
 
 	/**
 	 * Construct a startup job with a given name
@@ -74,7 +79,7 @@ public class StartUpJob extends NatureJob implements BundleExecutor {
 	}
 
 	/**
-	 * Construct a starupjob with a given name and a bundle project to toggle
+	 * Construct a startup job with a given name and a bundle project to toggle
 	 * 
 	 * @param name job name
 	 * @param project bundle project to toggle
@@ -86,39 +91,91 @@ public class StartUpJob extends NatureJob implements BundleExecutor {
 	/**
 	 * Runs the bundle project(s) startup operation
 	 * 
-	 * @return a {@code BundleStatus} object with {@code BundleStatusCode.OK} if job terminated
-	 * normally and no status objects have been added to this job status list and
-	 * {@code BundleStatusCode.ERROR} if the job fails or {@code BundleStatusCode.JOBINFO} if any
-	 * status objects have been added to the job status list.
+	 * @return a {@code BundleStatus} object with {@code BundleStatusCode.OK} if the job terminated
+	 * normally or {@code BundleStatusCode.JOBINFO} if any status objects have been added to the job
+	 * status list.
 	 */
 	@Override
 	public IBundleStatus runInWorkspace(IProgressMonitor monitor) {
-		try {
-			super.runInWorkspace(monitor);
-			if (messageOptions.isBundleOperations()) {
+
+			try {
+				final IBundleStatus multiStatus = new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, "Session Settings");
+				initServices();
+				startTime = System.currentTimeMillis();
+				final Activator activator = Activator.getInstance();
+				activator.processLastSavedState();
+				final IWorkbench workbench = PlatformUI.getWorkbench();
+				if (null != workbench && !workbench.isStarting()) {
+					// Not strictly necessary to run in an UI thread
+					Activator.getDisplay().asyncExec(new Runnable() {
+						public void run() {
+							// Adding at this point should ensure that all static contexts are loaded
+							IBundleStatus status = activator.addDynamicExtensions();
+							if (null != status) {
+								multiStatus.add(status);
+							}
+						}
+					});
+					// Listen to toggling of auto build
+					ICommandService service = (ICommandService) workbench.getService(ICommandService.class);
+					if (null == service) {
+						addLogStatus(new BundleStatus(StatusCode.WARNING, Activator.PLUGIN_ID,
+								Msg.AUTO_BUILD_LISTENER_NOT_ADDED_WARN));
+					} else {
+						service.addExecutionListener(new AutoBuildListener());
+					}
+				} else {
+					addLogStatus(new BundleStatus(StatusCode.WARNING, Activator.PLUGIN_ID,
+							Msg.DYNAMIC_MONITORING_WARN));
+					addLogStatus(new BundleStatus(StatusCode.WARNING, Activator.PLUGIN_ID,
+							Msg.AUTO_BUILD_LISTENER_NOT_ADDED_WARN));
+				}
+			
+				if (messageOptions.isBundleOperations()) {
 				String osgiDev = Activator.getbundlePrrojectMetaService().inDevelopmentMode();
 				if (null != osgiDev) {
 					String msg = NLS.bind(Msg.CLASS_PATH_DEV_PARAM_INFO, osgiDev);
-					addLogStatus(new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, msg));
+					multiStatus.add(new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, msg));
 				}
-			}
-			ActivateBundleJob activateBundle = new ActivateBundleJob(Msg.STARTUP_ACTIVATE_BUNDLE_JOB);
-			Collection<IProject> activatedProjects = getActivatedProjects();
-			if (activatedProjects.size() > 0) {
-				Collection<IProject> deactivatedProjects = deactivateBuildErrorClosures(activatedProjects);
-				if (deactivatedProjects.size() > 0) {
-					initDeactivatedWorkspace();
-				} else {
-					// Install all projects and set activated projects to the same state as they had at shutdown
-					activateBundle.addPendingProjects(activatedProjects);
-					activateBundle.setRestoreSessionState(true);
-					activateBundle.setSaveWorkspaceSnaphot(false);
-					Activator.getBundleExecutorEventService().add(activateBundle, 0);
+			}	
+			addLogStatus(multiStatus);
+			// If workspace session is true it implies an IDE crash, and false indicates a normal exit
+			boolean isRecoveryMode = StatePersistParticipant.isWorkspaceSession();
+			// Setting the session to false signals that the workbench is not yet up and running
+			// and the workbench state must be recovered at startup
+			StatePersistParticipant.setWorkspaceSession(!isRecoveryMode);
+			Collection<IProject> activatedPendingProjects = getPendingProjects();
+			if (activatedPendingProjects.size() > 0) {
+				if (!deactivateWorkspace(monitor, activatedPendingProjects, isRecoveryMode)) {
+					// Activate workspace
+					if (isRecoveryMode) {
+						addLogStatus(Msg.RECOVERY_RESOLVE_BUNDLE_INFO);
+					}
+					// Bundle projects are registered when installed by the activate bundle job
+					super.runInWorkspace(monitor);
 				}
 			} else {
-				// Register all projects as bundle projects and set their initial transition
-				initDeactivatedWorkspace();
+				// Deactivated workspace
+				registerBundleProjects();
+				if (isRecoveryMode) {
+					addLogStatus(Msg.RECOVERY_NO_ACTION_BUNDLE_INFO);
+				}
+				StatePersistParticipant.restoreSessionState();
 			}
+			// Workspace has been recovered. Indicate a normal start up
+			StatePersistParticipant.setWorkspaceSession(true);
+		} catch (IllegalStateException e) {
+			String msg = WarnMessage.getInstance().formatString("node_removed_preference_store");
+			addError(e, msg);
+		} catch (BackingStoreException e) {
+			String msg = WarnMessage.getInstance().formatString("failed_getting_preference_store");
+			addError(e, msg);
+		} catch (CircularReferenceException e) {
+			String msg = ExceptionMessage.getInstance().formatString("circular_reference_termination");
+			IBundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, msg,
+					null);
+			multiStatus.add(e.getStatusList());
+			StatusManager.getManager().handle(multiStatus, StatusManager.LOG);
 		} catch (OperationCanceledException e) {
 			addCancelMessage(e, NLS.bind(Msg.CANCEL_JOB_INFO, getName()));
 		} catch (InPlaceException | ExtenderException e) {
@@ -129,115 +186,79 @@ public class StartUpJob extends NatureJob implements BundleExecutor {
 		} catch (NullPointerException e) {
 			String msg = ExceptionMessage.getInstance().formatString("npe_job", getName());
 			addError(e, msg);
-		} catch (CoreException e) {
-			String msg = ErrorMessage.getInstance().formatString("error_end_job", getName());
-			return new BundleStatus(StatusCode.ERROR, Activator.PLUGIN_ID, msg, e);
 		} catch (Exception e) {
 			String msg = ExceptionMessage.getInstance().formatString("exception_job", getName());
 			addError(e, msg);
 		} finally {
-			monitor.done();
-			BundleTransitionListener.removeBundleTransitionListener(this);
 		}
 		return getJobSatus();
 	}
 
 	/**
-	 * Register all bundle projects and set the transition for all deactivated projects to the last
-	 * transition before shut down. If a project has never been activated the default state for the
-	 * transition will be {@code Transition#NOTRANSITION}
-	 */
-	private void initDeactivatedWorkspace() {
-
-		IBundleStatus status = null;
-
-		try {
-			final IEclipsePreferences store = Activator.getEclipsePreferenceStore();
-			if (null == store) {
-				addStatus(new BundleStatus(StatusCode.WARNING, Activator.PLUGIN_ID,
-						Msg.INIT_WORKSPACE_STORE_WARN, null));
-				return;
-			}
-			Collection<IProject> plugins = bundleProjectCandidates.getBundleProjects();
-			for (IProject project : plugins) {
-				try {
-					String symbolicKey = bundleRegion.getSymbolicKey(null, project);
-					int state = store.getInt(symbolicKey, Transition.UNINSTALL.ordinal());
-					// Register all projects
-					if (state == Transition.UNINSTALL.ordinal()) {
-						bundleRegion.registerBundleProject(project, null, false);
-						bundleTransition.setTransition(project, Transition.NOTRANSITION);
-					} else if (state == Transition.REFRESH.ordinal()) {
-						bundleRegion.registerBundleProject(project, null, false);
-						bundleTransition.setTransition(project, Transition.REFRESH);
-					} else {
-						bundleRegion.registerBundleProject(project, null, false);
-						bundleTransition.setTransition(project, Transition.NOTRANSITION);									
-					}
-				} catch (ProjectLocationException e) {
-					if (null == status) {
-						String msg = ExceptionMessage.getInstance().formatString("project_init_location");
-						status = new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, msg, null);
-					}
-					status.add(new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, project,
-							project.getName(), e));
-					addStatus(status);
-				}
-			}
-		} catch (CircularReferenceException e) {
-			String msg = ExceptionMessage.getInstance().formatString("circular_reference", getName());
-			BundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, msg);
-			multiStatus.add(e.getStatusList());
-			addStatus(multiStatus);
-		}
-	}
-	
-	/**
-	 * Deactivate workspace if there are any build error closures. Build error closures are
-	 * deactivated at shutdown so a build error closure at this point indicates that there
-	 * has been an abnormal shutdown. The initial state of both deactivated and activated
-	 * bundles are initially uninstalled at startup. Closures to deactivate are:
+	 * Deactivate workspace if the "deactivate on exit" preference is on or if there are build errors
+	 * among the specified projects or any requiring projects to the specified projects
 	 * <p>
-	 * <ol>
-	 * <li><b>Providing resolve closures</b>
-	 * <p>
-	 * <br>
-	 * <b>Deactivated providing closure.</b> Resolve is rejected when deactivated bundles with build
-	 * errors provides capabilities to projects to resolve (and start). This closure require the
-	 * providing bundles to be activated when the requiring bundles are resolved. This is usually an
-	 * impossible position. Activating and updating does not allow a requiring bundle to activate
-	 * without activating the providing bundle.
-	 * <p>
-	 * <br>
-	 * <b>Activated providing closure.</b> It is illegal to resolve an activated project when there
-	 * are activated bundles with build errors that provides capabilities to the project to resolve.
-	 * The requiring bundles to resolve will force the providing bundles with build errors to resolve.
-	 * </ol>
+	 * If the IDE terminated the bundles are refreshed (this is strictly not necessary)
 	 * 
-	 * @param activatedProjects all activated bundle projects
-	 * @return projects that are deactivated or an empty set
+	 * @param monitor progress monitor
+	 * @param activatedPendingProjects All activated bundle projects in workspace
+	 * @return True if the workspace has been deactivated. Otherwise false
+	 * @throws BackingStoreException Failure to access the preference store for bundle states
+	 * @throws InPlaceException Failing to access an open project
+	 * @throws IllegalStateException if the current backing store node (or an ancestor) has been
+	 * removed when accessing bundle state information
+	 * 
 	 */
-	private Collection<IProject> deactivateBuildErrorClosures(Collection<IProject> activatedProjects) {
+	private boolean deactivateWorkspace(IProgressMonitor monitor,
+			Collection<IProject> activatedPendingProjects, boolean isRecoveryMode) throws IllegalStateException,
+			InPlaceException, BackingStoreException {
 
-		Deactivate deactivateErrorClosureJob = new DeactivateJob("Deactivate on startup");
-		try {
-			// Deactivated and activated providing closure. Deactivated and activated projects with build
-			// errors providing capabilities to project to resolve (and start) at startup
-			BuildErrorClosure be = new BuildErrorClosure(activatedProjects, Transition.DEACTIVATE,
-					Closure.PROVIDING, Bundle.UNINSTALLED, ActivationScope.ALL);
-			if (be.hasBuildErrors()) {
-				deactivateErrorClosureJob.addPendingProjects(activatedProjects);
-				deactivateErrorClosureJob.getJob().setUser(false);
-				deactivateErrorClosureJob.getJob().schedule();
-				return activatedProjects;
+		if (SessionJobsInitiator.isDeactivateOnExit(activatedPendingProjects)) {
+			try {
+				setName(Msg.DEACTIVATE_WORKSPACE_JOB);
+				BundleTransitionListener.addBundleTransitionListener(this);
+				monitor.beginTask(Msg.DEACTIVATE_TASK_JOB, getTicks());
+				registerBundleProjects();
+				deactivateNature(activatedPendingProjects, new SubProgressMonitor(monitor, 1));
+				if (isRecoveryMode) {
+					// Bundles have not been refreshed when IDE crashes
+					Collection<IProject> projects = bundleRegion.getProjects();
+					boolean isBundleOperation = messageOptions.isBundleOperations();
+					messageOptions.setIsBundleOperations(false);
+					install(projects, monitor);
+					Collection<Bundle> bundles = bundleRegion.getBundles();
+					uninstall(bundles, monitor, false, false);
+					messageOptions.setIsBundleOperations(isBundleOperation);
+					refresh(bundles, monitor);
+					addLogStatus(Msg.RECOVERY_DEACTIVATE_BUNDLE_INFO);
+				} else {
+					if (commandOptions.isDeactivateOnExit()) {
+						addLogStatus(Msg.STARTUP_DEACTIVATE_ON_EXIT_INFO);
+					} else {
+						addLogStatus(Msg.STARTUP_DEACTIVATE_BUILD_ERROR_INFO);
+					}
+				}
+				StatePersistParticipant.restoreSessionState();
+				return true;
+			} finally {
+				BundleTransitionListener.removeBundleTransitionListener(this);
+				monitor.done();
 			}
-		} catch (CircularReferenceException e) {
-			String msg = ExceptionMessage.getInstance().formatString("circular_reference_termination");
-			IBundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, msg,
-					null);
-			multiStatus.add(e.getStatusList());
-			StatusManager.getManager().handle(multiStatus, StatusManager.LOG);
 		}
-		return Collections.<IProject> emptySet();
+		return false;
+	}
+
+	/**
+	 * Register all bundle projects in the workspace region assuming that no bundle projects have been
+	 * installed
+	 * <p>
+	 * Bundle projects are registered when first installed
+	 */
+	private void registerBundleProjects() {
+
+		Collection<IProject> projects = bundleProjectCandidates.getBundleProjects();
+		for (IProject project : projects) {
+			bundleRegion.registerBundleProject(project, null, false);
+		}
 	}
 }

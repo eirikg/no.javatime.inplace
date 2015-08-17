@@ -24,16 +24,15 @@ public interface Deactivate extends BundleExecutor {
 	public final static String DEACTIVATE_BUNDLE_SERVICE = "Deactivate-Bundle-Service";
 
 	/**
-	 * Check build errors if logging is enabled when deactivating pending bundle projects.
+	 * Determine to log build errors on deactivate
 	 * 
-	 * 
-	 * @return true if build is going to be checked on deactivate. Otherwise false.
+	 * @return true if true, log build errors on deactivate. Otherwise false.
 	 * @see #setCheckBuildErrors(boolean)
 	 */
 	public boolean isCheckBuildErrors();
 
 	/**
-	 * Check build errors on deactivate of pending projects. It is not possible to activate projects
+	 * Check build errors of pending projects on deactivate. It is not possible to activate projects
 	 * with build errors.
 	 * <p>
 	 * If there are build errors the projects with build errors are reported as errors and can be

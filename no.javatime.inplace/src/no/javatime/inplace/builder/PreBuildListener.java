@@ -14,6 +14,8 @@ import no.javatime.inplace.Activator;
 import no.javatime.inplace.bundlejobs.ActivateProjectJob;
 import no.javatime.inplace.bundlejobs.intface.ActivateProject;
 import no.javatime.inplace.extender.intface.ExtenderException;
+import no.javatime.inplace.region.events.BundleTransitionEvent;
+import no.javatime.inplace.region.events.BundleTransitionEventListener;
 import no.javatime.inplace.region.events.TransitionEvent;
 import no.javatime.inplace.region.intface.BundleRegion;
 import no.javatime.inplace.region.intface.BundleTransition;
@@ -44,7 +46,7 @@ import org.eclipse.ui.statushandlers.StatusManager;
  * <p>
  * Note that this callback is also invoked when auto build is switched off.
  */
-public class PreBuildListener implements IResourceChangeListener {
+public class PreBuildListener implements IResourceChangeListener, BundleTransitionEventListener {
 
 	private BundleTransition bundleTransition;
 	private BundleRegion bundleRegion;
@@ -80,10 +82,12 @@ public class PreBuildListener implements IResourceChangeListener {
 		if (buildKind == 0) {
 			return;
 		}
+		boolean isWorkspaceActivated = projectActivator.isProjectWorkspaceActivated();
+		if (!isWorkspaceActivated) {
+		}
 		IResourceDelta rootDelta = event.getDelta();
 		IResourceDelta[] projectDeltas = (null != rootDelta ? rootDelta.getAffectedChildren(
 				IResourceDelta.ADDED | IResourceDelta.CHANGED, IResource.NONE) : null);
-		boolean isWorkspaceActivated = projectActivator.isProjectWorkspaceActivated();
 		if (null != projectDeltas) {
 			for (IResourceDelta projectDelta : projectDeltas) {
 				IResource projectResource = projectDelta.getResource();
@@ -94,6 +98,7 @@ public class PreBuildListener implements IResourceChangeListener {
 						if (!isWorkspaceActivated) {
 							// The error should be visible in a deactivated workspace until the project is built
 							bundleTransition.clearTransitionError(project);
+							// bundleTransition.removePending(project, Transition.BUILD);
 						} else {
 							// Preserve build pending state for projects being opened or moved
 							if (!isOpenOrMove(projectDelta, project)) {
@@ -139,6 +144,14 @@ public class PreBuildListener implements IResourceChangeListener {
 			}
 		}
 		return false;
+	}
+
+	@Override
+	public void bundleTransitionChanged(BundleTransitionEvent event) {
+		Transition transition = event.getTransition();
+		if (transition == Transition.DEACTIVATE) {
+			// bundleTransition.removePending(bundleRegion.getProjects(), Transition.BUILD);	
+		}
 	}
 
 }

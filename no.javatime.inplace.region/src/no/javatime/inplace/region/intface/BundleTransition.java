@@ -202,7 +202,7 @@ public interface BundleTransition {
 		/**
 		 * No transition defined. This is also the case if a transition is canceled or rejected
 		 */
-		NOTRANSITION,
+		NO_TRANSITION,
 	}
 
 	public static enum TransitionError {
@@ -222,7 +222,7 @@ public interface BundleTransition {
 	 * executing when the transition is retrieved.
 	 * 
 	 * @param project the bundle project to get the transition for
-	 * @return the transition of the bundle project or {@code Transition.NOTRANSITION} if no
+	 * @return the transition of the bundle project or {@code Transition.NO_TRANSITION} if no
 	 * transition is defined for the specified project
 	 * @throws ProjectLocationException if the specified project is null or the location of the
 	 * specified project could not be found
@@ -246,11 +246,21 @@ public interface BundleTransition {
 	 * Get the textual representation of the specified transition
 	 * 
 	 * @param transition the transition to get the name for
-	 * @param format TODO
-	 * @param caption TODO
+	 * @param format Convert name to lower case and replace any underscore characters with blanks
+	 * @param caption Convert first character in name to upper case
+	 * 
 	 * @return the name of the transition or "NO TRANSITION" if the specified transition is null
+	 * @see #getTransition(String)
 	 */
 	String getTransitionName(Transition transition, boolean format, boolean caption);
+	
+	/**
+	 * Get a transition based on its textual name
+	 * 
+	 * @return The transition mapping from a textual transition name
+	 * @see #getTransitionName(Transition, boolean, boolean)
+	 */
+	Transition getTransition(String transitionName);
 
 	/**
 	 * Place a transition as the current or last transition executed on the specified project. Any

@@ -244,7 +244,7 @@ public class WorkspaceRegionImpl implements BundleRegion {
 	 * be registered during or after it is installed but before it is resolved.
 	 * <p>
 	 * If the bundle does not exists it is initialized with state {@code StateLess} and
-	 * {@code Transition.NOTRANSITION}
+	 * {@code Transition.NO_TRANSITION}
 	 * <p>
 	 * 
 	 * @param project the project project to register. Must not be null.

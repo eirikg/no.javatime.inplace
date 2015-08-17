@@ -10,42 +10,29 @@
  *******************************************************************************/
 package no.javatime.inplace;
 
-import java.util.Collection;
-import java.util.Collections;
-
 import no.javatime.inplace.builder.BundleExecutorInterceptor;
 import no.javatime.inplace.builder.PostBuildListener;
 import no.javatime.inplace.builder.PreBuildListener;
 import no.javatime.inplace.builder.PreChangeListener;
 import no.javatime.inplace.builder.ProjectChangeListener;
-import no.javatime.inplace.bundlejobs.ActivateBundleJob;
 import no.javatime.inplace.bundlejobs.BundleJobListener;
-import no.javatime.inplace.bundlejobs.DeactivateJob;
-import no.javatime.inplace.bundlejobs.UninstallJob;
 import no.javatime.inplace.bundlejobs.events.intface.BundleExecutorEventManager;
-import no.javatime.inplace.bundlejobs.intface.BundleExecutor;
 import no.javatime.inplace.bundlejobs.intface.ResourceState;
 import no.javatime.inplace.bundlejobs.intface.SaveOptions;
-import no.javatime.inplace.bundlejobs.intface.Uninstall;
 import no.javatime.inplace.dialogs.ExternalTransition;
 import no.javatime.inplace.dl.preferences.intface.CommandOptions;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions;
-import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.dl.preferences.intface.MessageOptions;
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.log.intface.BundleLog;
 import no.javatime.inplace.log.intface.BundleLogException;
 import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.pl.console.intface.BundleConsoleFactory;
-import no.javatime.inplace.region.closure.BuildErrorClosure;
-import no.javatime.inplace.region.closure.BuildErrorClosure.ActivationScope;
-import no.javatime.inplace.region.closure.CircularReferenceException;
 import no.javatime.inplace.region.intface.BundleCommand;
 import no.javatime.inplace.region.intface.BundleProjectCandidates;
 import no.javatime.inplace.region.intface.BundleProjectMeta;
 import no.javatime.inplace.region.intface.BundleRegion;
 import no.javatime.inplace.region.intface.BundleTransition;
-import no.javatime.inplace.region.intface.BundleTransition.Transition;
 import no.javatime.inplace.region.intface.BundleTransitionListener;
 import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.status.BundleStatus;
@@ -54,21 +41,13 @@ import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import no.javatime.inplace.statushandler.ActionSetContexts;
 import no.javatime.inplace.statushandler.DynamicExtensionContribution;
 import no.javatime.util.messages.Category;
-import no.javatime.util.messages.ExceptionMessage;
 
-import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResourceChangeEvent;
-import org.eclipse.core.resources.IResourceChangeListener;
-import org.eclipse.core.resources.ISaveParticipant;
 import org.eclipse.core.resources.ISavedState;
 import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.jobs.IJobManager;
 import org.eclipse.core.runtime.jobs.Job;
-import org.eclipse.core.runtime.preferences.IEclipsePreferences;
-import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.IWorkbench;
@@ -119,19 +98,19 @@ public class Activator extends AbstractUIPlugin {
 	// Get the workbench window from UI thread
 	private IWorkbenchWindow workBenchWindow;
 	// Receives notification before a project is renamed, deleted or closed
-	private IResourceChangeListener preChangeListener;
+	private PreChangeListener preChangeListener;
 	// Receives notification after a build
-	private IResourceChangeListener postBuildListener;
+	private PostBuildListener postBuildListener;
 	// Receives notification after a resource change, before build and after post build
-	private IResourceChangeListener preBuildListener;
+	private PreBuildListener preBuildListener;
 	// Debug listener
-	private IResourceChangeListener projectChangeListener;
+	private ProjectChangeListener projectChangeListener;
 	// Listen to scheduled bundle jobs
 	private BundleJobListener jobChangeListener = new BundleJobListener();
 	// Listen to external bundle commands
 	private ExternalTransition externalTransitionListener = new ExternalTransition();
 	
-	ISaveParticipant saveParticipant = new WorkspaceSaveParticipant();
+	StatePersistParticipant saveParticipant = new StatePersistParticipant();
 	private BundleExecutorInterceptor saveOptionsListener = new BundleExecutorInterceptor();
 	
 	// Register and track extenders and get and unget services provided by this and other bundles
@@ -172,8 +151,13 @@ public class Activator extends AbstractUIPlugin {
 			// Remove resource listeners as soon as possible to prevent scheduling of new bundle jobs
 			removeResourceListeners();
 			removeDynamicExtensions();
-			shutDownBundles();
+			SessionJobsInitiator.shutDown();
+		} catch (ExtenderException e) {
+			StatusManager.getManager().handle(
+					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),
+					StatusManager.LOG);
 		} finally {
+			// Let the builder and shutdown job finish before stopping
 			getBundleExecutorEventService().removeListener(saveOptionsListener);
 			BundleTransitionListener.removeBundleTransitionListener(externalTransitionListener);
 			Job.getJobManager().removeJobChangeListener(jobChangeListener);
@@ -291,168 +275,13 @@ public class Activator extends AbstractUIPlugin {
 	}
 
 	/**
-	 * Uninstalls or deactivates (optional) all workspace bundles. Bundle closures with build errors
-	 * are deactivated. Any runtime errors are sent to error console
-	 * <p>
-	 * Must prevSave state of bundles after
-	 */
-	public void shutDownBundles() {
-
-		// Send output to standard console when shutting down
-		try {
-			getBundleConsoleService().setSystemOutToIDEDefault();
-		} catch (ExtenderException | NullPointerException e) {
-			// Ignore and send to current setting
-		}
-		try {
-			BundleRegion bundleRegion = getBundleRegionService();
-			if (bundleRegion.isRegionActivated()) {
-				BundleExecutor shutDownJob = null;
-				Collection<IProject> activatedProjects = bundleRegion.getActivatedProjects();
-				if (getCommandOptionsService().isDeactivateOnExit()) {
-					shutDownJob = new DeactivateJob(Msg.DEACTIVATE_ON_SHUTDOWN_JOB);
-				} else {
-					Collection<IProject> deactivatedProjects = deactivateBuildErrorClosures(activatedProjects);
-					if (deactivatedProjects.size() > 0) {
-						activatedProjects.removeAll(deactivatedProjects);
-						getResourceStateService().waitOnBundleJob();
-					}
-					if (activatedProjects.size() > 0) {
-						BundleProjectCandidates bundleProjectcandidates = getBundleProjectCandidatesService();
-						// savePluginSettings(true, false);
-						activatedProjects = bundleProjectcandidates.getBundleProjects();
-						shutDownJob = new UninstallJob(Msg.SHUT_DOWN_JOB);
-						((Uninstall) shutDownJob).setUnregister(true);
-					}
-					WorkspaceSaveParticipant.saveBundleStateSettings(true, false);
-				}
-				if (activatedProjects.size() > 0) {
-					shutDownJob.addPendingProjects(activatedProjects);
-					shutDownJob.getJob().setUser(false);
-					shutDownJob.setSaveWorkspaceSnaphot(false);
-					shutDownJob.getJob().schedule();
-				}
-				IJobManager jobManager = Job.getJobManager();
-				// Wait for build and bundle jobs
-				jobManager.join(BundleExecutor.FAMILY_BUNDLE_LIFECYCLE, null);
-				jobManager.join(ResourcesPlugin.FAMILY_AUTO_BUILD, null);
-				jobManager.join(ResourcesPlugin.FAMILY_MANUAL_BUILD, null);
-				if (shutDownJob.getErrorStatusList().size() > 0) {
-					final IBundleStatus multiStatus = shutDownJob.createMultiStatus(new BundleStatus(
-							StatusCode.ERROR, Activator.PLUGIN_ID, shutDownJob.getName()));
-					// The custom or standard status handler is not invoked at shutdown
-					log(multiStatus);
-
-					System.err.println(Msg.BEGIN_SHUTDOWN_ERROR);
-					printStatus(multiStatus);
-					System.err.println(Msg.END_SHUTDOWN_ERROR);
-				}
-			} else {
-				WorkspaceSaveParticipant.saveBundleStateSettings(true, false);
-			}
-		} catch (InPlaceException | BundleLogException | ExtenderException e) {
-			StatusManager.getManager().handle(
-					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),
-					StatusManager.LOG);
-		} catch (IllegalStateException e) {
-			String msg = ExceptionMessage.getInstance().formatString("job_state_exception",
-					e.getLocalizedMessage());
-			StatusManager.getManager().handle(
-					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, msg, e), StatusManager.LOG);
-		} catch (Exception e) {
-			StatusManager.getManager().handle(
-					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),
-					StatusManager.LOG);
-		}
-	}
-
-	/**
-	 * Deactivate bundle projects with build errors to prevent resolve and start of bundles with build
-	 * errors closures at startup by the {@link ActivateBundleJob}. Note that the initial state of
-	 * both deactivated and activated bundles are initially uninstalled at startup. Closures to
-	 * deactivate are:
-	 * <p>
-	 * <ol>
-	 * <li><b>Requiring deactivate closures</b>
-	 * <p>
-	 * <br>
-	 * <b>Activated requiring closure.</b> An activated bundle is not deactivated when there exists
-	 * activated bundles with build errors requiring capabilities from this activated bundle project
-	 * to be resolved at startup. This closure overlap with the Activated providing closure
-	 * <p>
-	 * <br>
-	 * <b>Deactivated requiring closure.</b> Deactivated bundle projects with build errors requiring
-	 * capabilities from a project to activate is allowed due to the deactivated requiring bundle is
-	 * not forced to be activated.
-	 * <p>
-	 * <br>
-	 * <li><b>Providing resolve closures</b>
-	 * <p>
-	 * <br>
-	 * <b>Deactivated providing closure.</b> Resolve is rejected when deactivated bundles with build
-	 * errors provides capabilities to projects to resolve (and start). This closure require the
-	 * providing bundles to be activated when the requiring bundles are resolved. This is usually an
-	 * impossible position. Activating and updating does not allow a requiring bundle to activate
-	 * without activating the providing bundle.
-	 * <p>
-	 * <br>
-	 * <b>Activated providing closure.</b> It is illegal to resolve an activated project when there
-	 * are activated bundles with build errors that provides capabilities to the project to resolve.
-	 * The requiring bundles to resolve will force the providing bundles with build errors to resolve.
-	 * </ol>
-	 * 
-	 * @param activatedProjects all activated bundle projects
-	 * @return projects that are deactivated or an empty set
-	 */
-	private Collection<IProject> deactivateBuildErrorClosures(Collection<IProject> activatedProjects) {
-
-		DeactivateJob deactivateErrorClosureJob = new DeactivateJob(Msg.DEACTIVATE_ON_SHUTDOWN_JOB);
-		try {
-			// Deactivated and activated providing closure. Deactivated and activated projects with build
-			// errors providing capabilities to project to resolve (and start) at startup
-			BuildErrorClosure be = new BuildErrorClosure(activatedProjects, Transition.DEACTIVATE,
-					Closure.PROVIDING, Bundle.UNINSTALLED, ActivationScope.ALL);
-			if (be.hasBuildErrors()) {
-				Collection<IProject> errorClosure = be.getBuildErrorClosures();
-				deactivateErrorClosureJob.addPendingProjects(errorClosure);
-				deactivateErrorClosureJob.setUser(false);
-				deactivateErrorClosureJob.schedule();
-				return errorClosure;
-			}
-		} catch (CircularReferenceException e) {
-			String msg = ExceptionMessage.getInstance().formatString("circular_reference_termination");
-			IBundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, msg,
-					null);
-			multiStatus.add(e.getStatusList());
-			StatusManager.getManager().handle(multiStatus, StatusManager.LOG);
-		}
-		return Collections.<IProject> emptySet();
-	}
-
-	/**
-	 * Print status and sub status objects to system err
-	 * 
-	 * @param status status object to print to system err
-	 */
-	private void printStatus(IStatus status) {
-		Throwable t = status.getException();
-		if (null != t) {
-			t.printStackTrace();
-		} else {
-			System.err.println(status.getMessage());
-		}
-		IStatus[] children = status.getChildren();
-		for (int i = 0; i < children.length; i++) {
-			printStatus(children[i]);
-		}
-	}
-
-	/**
 	 * Adds custom status handler, a command extension for the debug line break point and management
 	 * for defining undefined action sets.
+	 * @return Log status object if the extension was added. Otherwise null
+	 * @throws InPlaceExeption If failing to add the status handler
 	 */
-	public void addDynamicExtensions() {
-		DynamicExtensionContribution.INSTANCE.addCustomStatusHandler();
+	public IBundleStatus addDynamicExtensions() throws InPlaceException  {
+		IBundleStatus status = DynamicExtensionContribution.INSTANCE.addCustomStatusHandler();
 		// Add missing line break point command
 		DynamicExtensionContribution.INSTANCE.addToggleLineBreakPointCommand();
 		Boolean isInstalled = actionSetContexts.init();
@@ -461,6 +290,7 @@ public class Activator extends AbstractUIPlugin {
 					new BundleStatus(StatusCode.WARNING, Activator.PLUGIN_ID,
 							Msg.INSTALL_CONTEXT_FOR_ACTION_SET_WARN), StatusManager.LOG);
 		}
+		return status;
 	}
 
 	/**
@@ -507,6 +337,7 @@ public class Activator extends AbstractUIPlugin {
 		workspace.addResourceChangeListener(postBuildListener, IResourceChangeEvent.POST_BUILD);
 		preBuildListener = new PreBuildListener();
 		workspace.addResourceChangeListener(preBuildListener, IResourceChangeEvent.PRE_BUILD);
+		BundleTransitionListener.addBundleTransitionListener(preBuildListener);
 		if (Category.DEBUG && Category.isEnabled(Category.listeners)) {
 			projectChangeListener = new ProjectChangeListener();
 			workspace.addResourceChangeListener(projectChangeListener, IResourceChangeEvent.PRE_CLOSE
@@ -521,6 +352,7 @@ public class Activator extends AbstractUIPlugin {
 	public void removeResourceListeners() {
 		IWorkspace workspace = ResourcesPlugin.getWorkspace();
 		workspace.removeResourceChangeListener(postBuildListener);
+		BundleTransitionListener.removeBundleTransitionListener(preBuildListener);
 		workspace.removeResourceChangeListener(preBuildListener);
 		workspace.removeResourceChangeListener(preChangeListener);
 		if (Category.DEBUG && Category.isEnabled(Category.listeners)) {
@@ -594,21 +426,13 @@ public class Activator extends AbstractUIPlugin {
 		return activeWorkbenchWindow.getActivePage();
 	}
 
-	static public IEclipsePreferences getEclipsePreferenceStore() {
-		return InstanceScope.INSTANCE.getNode(PLUGIN_ID);
-	}
-
 	/**
-	 * Access previous saved state for resource change events that occurred since the last prevSave.
-	 * Restore checked menu entries through the command service and other settings through the
-	 * preference service
-	 * 
-	 * @param sync true to prevent others changing the settings
+	 * Access previous saved state for resource change events that occurred since the last save.
 	 */
-	public void processLastSavedState(Boolean sync) {
+	public void processLastSavedState() {
 
 		// Access previous saved state so change events will be created for
-		// changes that have occurred since the last prevSave
+		// changes that have occurred since the last save
 		ISavedState lastState;
 		try {
 			lastState = ResourcesPlugin.getWorkspace().addSaveParticipant(

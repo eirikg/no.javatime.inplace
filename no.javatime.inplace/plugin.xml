@@ -67,7 +67,7 @@
    <extension
 	 point="org.eclipse.ui.startup">
 	 <startup
-	   class="no.javatime.inplace.StartUp">
+	   class="no.javatime.inplace.SessionJobsInitiator">
 	 </startup>
    </extension>
 <!-- ================================================================================= -->

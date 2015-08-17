@@ -151,7 +151,7 @@ public interface BundleRegion {
 	/**
 	 * Register the specified project and the associated bundle with the region as a bundle project.
 	 * If the specified bundle does not exist, is invalid or is null it is initialized with state
-	 * {@code StateLess} and {@code Transition.NOTRANSITION}
+	 * {@code StateLess} and {@code Transition.NO_TRANSITION}
 	 * <p>
 	 * If the specified activation status is true and the bundle is in state
 	 * {@code Bundle.UNINSTALLED} or in state {@code Bundle.INSTALLED} a
@@ -169,7 +169,7 @@ public interface BundleRegion {
 	 * already registered it is updated with the specified bundle and the specified activation status
 	 * 
 	 * When the same bundle project is registered multiple times the bundle and the activation status
-	 * of the bundle is updated and any existing information about the bundle project is kept.
+	 * of the bundle is updated and any existing information about the bundle project is retained.
 	 * 
 	 * @param project project to register. Must not be null
 	 * @param bundle bundle to register. May be null
@@ -215,7 +215,7 @@ public interface BundleRegion {
 	public Collection<IProject> getProjects(Collection<Bundle> bundles);
 
 	/**
-	 * Get all deactivated projects in an activated workspace or all activated projects
+	 * Get all deactivated projects or all activated projects in an activated workspace
 	 * 
 	 * @param activated if true get all activated projects. If false get all deactivated projects.
 	 * @return all activated projects if the specified activation parameter is true, otherwise return

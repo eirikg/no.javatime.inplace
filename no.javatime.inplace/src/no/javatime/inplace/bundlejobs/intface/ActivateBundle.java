@@ -50,31 +50,4 @@ public interface ActivateBundle extends BundleExecutor {
 	 * bundle operation
 	 */
 	public final static String ACTIVATE_BUNDLE_SERVICE = "Activate-Bundle-Service";
-
-	/**
-	 * Activate bundle projects according to their state in the preference store.
-	 * <p>
-	 * When {@code true} persisted bundles will be activated according to their persisted state as of
-	 * at shut down of the IDE at next start up of the IDE.
-	 * <p>
-	 * If a bundle project is in an activated state at start up it will always be resolved if
-	 * possible. If the bundle project state was active at shutdown it will be started on start up.
-	 * <p>
-	 * Deactivated bundles are installed at start up in an activated workspace. Bundle projects stay
-	 * in an uninstalled state at start up in a deactivated workspace.
-	 * <p>
-	 * An exception to these rules is when the IDE terminates unexpectedly. Than activated bundle
-	 * projects are resolved if possible but not started even if the state was active at shutdown.
-	 * 
-	 * @param restore true if bundle state from preference store is to be used. Otherwise false
-	 */
-	public void setRestoreSessionState(Boolean restore);
-
-	/**
-	 * Check if to restore and activate bundles according to bundle state in preference store
-	 * 
-	 * @return true if bundle state from preference store is to be used. Otherwise false
-	 */
-	public Boolean getIsRestoreSessionState();
-
 }

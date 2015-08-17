@@ -13,6 +13,7 @@ package no.javatime.inplace.bundlejobs;
 import java.util.Collection;
 
 import no.javatime.inplace.Activator;
+import no.javatime.inplace.StatePersistParticipant;
 import no.javatime.inplace.bundlejobs.intface.Uninstall;
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.msg.Msg;
@@ -25,6 +26,7 @@ import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import no.javatime.util.messages.ErrorMessage;
 import no.javatime.util.messages.ExceptionMessage;
+import no.javatime.util.messages.WarnMessage;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
@@ -32,11 +34,13 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.osgi.util.NLS;
+import org.eclipse.ui.statushandlers.StatusManager;
 import org.osgi.framework.Bundle;
+import org.osgi.service.prefs.BackingStoreException;
 
 public class UninstallJob extends NatureJob implements Uninstall {
 
-	// Remove the bundle project from the workspace region 
+	// Remove the bundle project from the workspace region
 	private boolean unregisterBundleProject = false;
 	private boolean includeRequiring = true;
 
@@ -46,6 +50,7 @@ public class UninstallJob extends NatureJob implements Uninstall {
 	public UninstallJob() {
 		super(Msg.UNINSTALL_JOB);
 	}
+
 	/**
 	 * Construct an uninstall job with a given name
 	 * 
@@ -75,7 +80,9 @@ public class UninstallJob extends NatureJob implements Uninstall {
 		super(name, project);
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see no.javatime.inplace.bundlejobs.Uninstall#isBundleProjectUnregistered()
 	 */
 	@Override
@@ -83,7 +90,9 @@ public class UninstallJob extends NatureJob implements Uninstall {
 		return unregisterBundleProject;
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see no.javatime.inplace.bundlejobs.Uninstall#unregisterBundleProject(boolean)
 	 */
 	@Override
@@ -91,7 +100,9 @@ public class UninstallJob extends NatureJob implements Uninstall {
 		this.unregisterBundleProject = unregister;
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see no.javatime.inplace.bundlejobs.Uninstall#isIncludeRequiring()
 	 */
 	@Override
@@ -99,20 +110,20 @@ public class UninstallJob extends NatureJob implements Uninstall {
 		return includeRequiring;
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see no.javatime.inplace.bundlejobs.Uninstall#setIncludeRequiring(boolean)
 	 */
 	@Override
 	public void setAddRequiring(boolean includeRequiring) {
 		this.includeRequiring = includeRequiring;
 	}
-	
-
 
 	/**
 	 * Runs the bundle(s) uninstall operation.
 	 * 
-	 * @return A bundle status object obtained from {@link #getJobSatus()} 
+	 * @return A bundle status object obtained from {@link #getJobSatus()}
 	 */
 	@Override
 	public IBundleStatus runInWorkspace(IProgressMonitor monitor) {
@@ -122,7 +133,7 @@ public class UninstallJob extends NatureJob implements Uninstall {
 			monitor.beginTask(Msg.UNINSTALL_TASK_JOB, getTicks());
 			BundleTransitionListener.addBundleTransitionListener(this);
 			uninstall(monitor);
-		} catch(InterruptedException e) {
+		} catch (InterruptedException e) {
 			String msg = ExceptionMessage.getInstance().formatString("interrupt_job", getName());
 			addError(e, msg);
 		} catch (OperationCanceledException e) {
@@ -132,10 +143,18 @@ public class UninstallJob extends NatureJob implements Uninstall {
 			BundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, msg);
 			multiStatus.add(e.getStatusList());
 			addStatus(multiStatus);
-		} catch (ExtenderException e) {			
+		} catch (IllegalStateException e) {
+			String msg = WarnMessage.getInstance().formatString("node_removed_preference_store");
+			StatusManager.getManager().handle(
+					new BundleStatus(StatusCode.WARNING, Activator.PLUGIN_ID, msg), StatusManager.LOG);
+		} catch (BackingStoreException e) {
+			String msg = WarnMessage.getInstance().formatString("failed_getting_preference_store");
+			addError(e, msg);
+		} catch (ExtenderException e) {
 			addError(e, NLS.bind(Msg.SERVICE_EXECUTOR_EXP, getName()));
 		} catch (InPlaceException e) {
-			String msg = ExceptionMessage.getInstance().formatString("terminate_job_with_errors", getName());
+			String msg = ExceptionMessage.getInstance().formatString("terminate_job_with_errors",
+					getName());
 			addError(e, msg);
 		} catch (NullPointerException e) {
 			String msg = ExceptionMessage.getInstance().formatString("npe_job", getName());
@@ -150,32 +169,43 @@ public class UninstallJob extends NatureJob implements Uninstall {
 			monitor.done();
 			BundleTransitionListener.removeBundleTransitionListener(this);
 		}
-		return getJobSatus();		
+		return getJobSatus();
 	}
 
 	/**
-	 * Stops, uninstalls and refreshes a set of pending bundle projects and all bundle projects requiring
-	 * capabilities from the pending bundle projects.
+	 * Stops, uninstalls and refreshes a set of pending bundle projects and all bundle projects
+	 * requiring capabilities from the pending bundle projects.
 	 * 
 	 * @param monitor the progress monitor to use for reporting progress and job cancellation.
-	 * @return status object describing the result of uninstalling with {@code StatusCode.OK} if no failure,
-	 *         otherwise one of the failure codes are returned. If more than one bundle fails, status of the
-	 *         last failed bundle is returned. All failures are added to the job status list
+	 * @return status object describing the result of uninstalling with {@code StatusCode.OK} if no
+	 * failure, otherwise one of the failure codes are returned. If more than one bundle fails, status
+	 * of the last failed bundle is returned. All failures are added to the job status list
+	 * @throws InterruptedException if the deactivate process is interrupted internally or from an
+	 * external source. Deactivate is also interrupted if a task running the stop method is terminated
+	 * abnormally
 	 * @throws OperationCanceledException after stop and uninstall
+	 * @throws BackingStoreException Failure to access the preference store for bundle states
+	 * @throws IllegalStateException if the current backing store node (or an ancestor) has been
+	 * removed when accessing bundle state information
 	 */
-	private IBundleStatus uninstall(IProgressMonitor monitor) throws InterruptedException{
+	private IBundleStatus uninstall(IProgressMonitor monitor) throws InterruptedException,
+			OperationCanceledException, BackingStoreException, IllegalStateException {
 
 		Collection<Bundle> pendingBundles = bundleRegion.getBundles(getPendingProjects());
 		if (pendingBundles.size() == 0) {
 			return getLastErrorStatus();
 		}
 		Collection<Bundle> bundlesToUninstall = null;
-		if (includeRequiring){
+		if (includeRequiring) {
 			BundleSorter bs = new BundleSorter();
 			bs.setAllowCycles(Boolean.TRUE);
-			bundlesToUninstall = bs.sortDeclaredRequiringBundles(pendingBundles, bundleRegion.getBundles());
+			bundlesToUninstall = bs.sortDeclaredRequiringBundles(pendingBundles,
+					bundleRegion.getBundles());
 		} else {
 			bundlesToUninstall = pendingBundles;
+		}
+		if (pendingBundles.containsAll(bundleRegion.getActivatedBundles())) {
+			StatePersistParticipant.saveSessionState(false);
 		}
 		stop(bundlesToUninstall, null, new SubProgressMonitor(monitor, 1));
 		if (monitor.isCanceled()) {

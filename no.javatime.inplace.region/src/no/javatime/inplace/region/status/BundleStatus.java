@@ -41,7 +41,7 @@ public class BundleStatus extends MultiStatus implements IBundleStatus {
 	private IProject project;
 	private Bundle bundle;
 	private int bundleState = 0;
-	private Transition bundleTransition = Transition.NOTRANSITION;;
+	private Transition bundleTransition = Transition.NO_TRANSITION;;
 	
 
 	/**

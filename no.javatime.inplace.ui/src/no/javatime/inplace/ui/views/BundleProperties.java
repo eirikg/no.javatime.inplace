@@ -305,10 +305,13 @@ public class BundleProperties {
 
 	public String getLastTransition() {
 		try {
-			return bundleTransition.getTransitionName(project);
+			Transition transitiont = bundleTransition.getTransition(project);
+			if (transitiont != Transition.NO_TRANSITION) {
+				return bundleTransition.getTransitionName(transitiont, false, false);
+			}
 		} catch (ProjectLocationException e) {
 		}
-		return bundleTransition.getTransitionName(Transition.NOTRANSITION, false, false);
+		return "<".concat(bundleTransition.getTransitionName(Transition.NO_TRANSITION, true, true)).concat(">");
 	}
 
 	/**

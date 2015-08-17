@@ -176,7 +176,6 @@ public class Msg extends NLS {
 	public static String ATOBUILD_OFF_RESET_INFO;
 	public static String AUTOUPDATE_OFF_INFO;
 	public static String CONDITIONAL_START_BUNDLE_INFO;
-	public static String UNINSTALLED_REQUIRING_BUNDLES_INFO;
 	public static String NOT_RESOLVED_BUNDLE_WARN;
 	public static String PROVIDING_TO_NOT_RESOLVED_BUNDLES_WARN;
 	public static String SAVE_WORKSPACE_SNAPSHOT_INFO;
@@ -185,7 +184,12 @@ public class Msg extends NLS {
 	public static String SAVE_RESOURCE_IN_PROJECT_INFO;
 	public static String NOT_SAVE_RESOURCE_IN_PROJECT_INFO;
 	public static String SAVE_FILES_CANCELLED_INFO;
-	
+	public static String RECOVERY_RESOLVE_BUNDLE_INFO;
+	public static String RECOVERY_DEACTIVATE_BUNDLE_INFO;
+	public static String RECOVERY_NO_ACTION_BUNDLE_INFO;
+	public static String STARTUP_DEACTIVATE_BUILD_ERROR_INFO;
+	public static String STARTUP_DEACTIVATE_ON_EXIT_INFO;
+
 	// Dialog and View messages
 	public static String DEACTIVATE_QUESTION_DLG;
 	public static String DEACTIVATE_QUESTION_REQ_DLG;

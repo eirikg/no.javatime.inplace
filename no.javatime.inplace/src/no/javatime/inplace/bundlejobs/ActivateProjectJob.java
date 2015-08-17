@@ -15,7 +15,6 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 
 import no.javatime.inplace.Activator;
-import no.javatime.inplace.WorkspaceSaveParticipant;
 import no.javatime.inplace.bundlejobs.intface.ActivateProject;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.extender.intface.ExtenderException;
@@ -166,19 +165,22 @@ public class ActivateProjectJob extends NatureJob implements ActivateProject {
 				return result;
 			}
 			saveDirtyMetaFiles(true);
+			boolean isWorkspaceActivated =  isProjectWorkspaceActivated();
 			activateNature(getPendingProjects(), new SubProgressMonitor(monitor, 1));
+//			if (!isWorkspaceActivated) {
+//				StatePersistParticipant.saveSessionState(true);
+//			}
 			// An activate project job triggers an update job when the workspace is activated and
 			// an activate bundle job when the workspace is deactivated
 			// If Update on Build is switched off and workspace is activated, mark that these projects
 			// should be updated as part of the activation process
-			if (!commandOptions.isUpdateOnBuild() && bundleRegion.isRegionActivated()) {
+			if (!commandOptions.isUpdateOnBuild() && isWorkspaceActivated) {
 				for (IProject project : getPendingProjects()) {
 					if (isProjectActivated(project)) {
 						bundleTransition.addPending(project, Transition.UPDATE_ON_ACTIVATE);
 					}
 				}
 			}
-			WorkspaceSaveParticipant.saveBundleStateSettings(true, true);
 		} else {
 			if (messageOptions.isBundleOperations()) {
 				addLogStatus(new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID,

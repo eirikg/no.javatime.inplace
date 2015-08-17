@@ -16,9 +16,8 @@ import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 
 import no.javatime.inplace.Activator;
-import no.javatime.inplace.extender.intface.ExtenderException;
-import no.javatime.inplace.log.intface.BundleLogException;
 import no.javatime.inplace.msg.Msg;
+import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
@@ -125,78 +124,70 @@ public class DynamicExtensionContribution {
 	 * and support for the status handler parameter to Eclipse: -statushandler no.javatime.inplace.status. If
 	 * not present use the eclipse.product entry in config.ini if present. Otherwise use the standard status
 	 * handler.
+	 * <p>
 	 * 
-	 * @return true if the extension was added, otherwise false
+	 * @return Log status object if the extension was added. Otherwise null
+	 * @throws InPlaceExeption If failing to add the status handler
 	 */
-	public Boolean addCustomStatusHandler() {
+	public IBundleStatus addCustomStatusHandler() throws InPlaceException {
 
-		Boolean extAdded = true;
+		Boolean extAdded = false;
 		// Product binding identifier for the current Eclipse product
 		String productId = Platform.getProduct() != null ? Platform.getProduct().getId() : defaultProductId;
+		String statusHandlerId = formatStatusHandlerId();
+		String statusHandlerClassName = StatusHandler.class.getName();
+		StringBuffer sb = new StringBuffer();
+		sb.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+		sb.append("<?eclipse version=\"3.4\"?>");
+		sb.append("<plugin>");
+		sb.append("<extension");
+		sb.append("	id=");
+		sb.append(statusHandlerId);
+		sb.append("	name=");
+		sb.append(statusHandlerId);
+		sb.append("	point=\"");
+		sb.append(statusHandlerExtensionPointId);
+		sb.append("\">");
+		sb.append("<statusHandler");
+		sb.append("	class=");
+		sb.append('\"');
+		sb.append(statusHandlerClassName);
+		sb.append('\"');
+		sb.append("	id=");
+		sb.append(statusHandlerId);
+		sb.append('>');
+		sb.append("</statusHandler>");
+		sb.append(formatProductBinding(productId));
+		// Add support for the -statushandler command line switch to Eclipse
+		// Usage: -statushandler no.javatime.inplace.statushandler
+		sb.append(formatProductBinding(statusHandlerExtensionId));
+		sb.append(formatProductBinding(defaultProductId));
+		sb.append("</extension>");
+		sb.append("</plugin>");
+		extAdded = addExtension(sb.toString());
+		if (!extAdded) {
+			// If adding this customized status handler fails, use the standard which will display a dialog
+			Bundle bundle = Activator.getInstance().getBundle();
+			String msg = ErrorMessage.getInstance().formatString("failed_to_add_status_handler_contribution",
+					(null == bundle) ? null : bundle.getSymbolicName());
+			throw new InPlaceException(msg);
+		}
+		IBundleStatus status = null;
 		if (extAdded) {
-			String statusHandlerId = formatStatusHandlerId();
-			String statusHandlerClassName = StatusHandler.class.getName();
-			StringBuffer sb = new StringBuffer();
-			sb.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
-			sb.append("<?eclipse version=\"3.4\"?>");
-			sb.append("<plugin>");
-			sb.append("<extension");
-			sb.append("	id=");
-			sb.append(statusHandlerId);
-			sb.append("	name=");
-			sb.append(statusHandlerId);
-			sb.append("	point=\"");
-			sb.append(statusHandlerExtensionPointId);
-			sb.append("\">");
-			sb.append("<statusHandler");
-			sb.append("	class=");
-			sb.append('\"');
-			sb.append(statusHandlerClassName);
-			sb.append('\"');
-			sb.append("	id=");
-			sb.append(statusHandlerId);
-			sb.append('>');
-			sb.append("</statusHandler>");
-			sb.append(formatProductBinding(productId));
-			// Add support for the -statushandler command line switch to Eclipse
-			// Usage: -statushandler no.javatime.inplace.statushandler
-			sb.append(formatProductBinding(statusHandlerExtensionId));
-			sb.append(formatProductBinding(defaultProductId));
-			sb.append("</extension>");
-			sb.append("</plugin>");
-			extAdded = addExtension(sb.toString());
-			if (!extAdded) {
-				// If adding this customized status handler fails, use the standard which will display a dialog
-				Bundle bundle = Activator.getInstance().getBundle();
-				String msg = ErrorMessage.getInstance().formatString("failed_to_add_status_handler_contribution",
-						(null == bundle) ? null : bundle.getSymbolicName());
-				StatusManager.getManager().handle(new BundleStatus(StatusCode.ERROR, Activator.PLUGIN_ID, msg),
-						StatusManager.LOG);
+			String msg = null;
+			if (!productId.equals(defaultProductId)) {
+				msg = NLS.bind(Msg.CUSTOMIZED_STATUS_HANDLER_INFO, statusHandlerExtensionId, productId);
+				status = new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, msg);
+			} else if (statusFromCommandline()) {
+				msg = NLS.bind(Msg.CUSTOMIZED_STATUS_HANDLER_CMD_LINE_INFO, statusHandlerExtensionId, productId);
+				status  = new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, msg);
+			} else {
+				status = new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, Msg.STANDARD_STATUS_HANDLER_INFO);
+				status.add(new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, Msg.USE_CUSTOMIZED_STATUS_HANDLER_INFO));
+				Activator.log(status);
 			}
 		}
-		try {
-			if (Activator.getMessageOptionsService().isBundleOperations()) {
-				if (extAdded) {
-					String msg = null;
-					if (!productId.equals(defaultProductId)) {
-						msg = NLS.bind(Msg.CUSTOMIZED_STATUS_HANDLER_INFO, statusHandlerExtensionId, productId);
-						Activator.log(new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, msg));					
-					} else if (statusFromCommandline()) {
-						msg = NLS.bind(Msg.CUSTOMIZED_STATUS_HANDLER_CMD_LINE_INFO, statusHandlerExtensionId, productId);
-						Activator.log(new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, msg));
-					} else {
-						IBundleStatus status = new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, Msg.STANDARD_STATUS_HANDLER_INFO);
-						status.add(new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, Msg.USE_CUSTOMIZED_STATUS_HANDLER_INFO));
-						Activator.log(status);
-					}
-				}
-			}
-		} catch (BundleLogException | ExtenderException e) {
-			StatusManager.getManager().handle(
-					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),
-					StatusManager.LOG);
-		}
-		return extAdded;
+		return status;
 	}
 	
 	private Boolean statusFromCommandline() {

@@ -17,7 +17,6 @@ import no.javatime.inplace.region.intface.BundleTransition;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
 import no.javatime.inplace.region.intface.BundleTransition.TransitionError;
 import no.javatime.inplace.region.intface.InPlaceException;
-import no.javatime.inplace.region.manager.BundleCommandImpl;
 import no.javatime.inplace.region.project.BundleProjectMetaImpl;
 import no.javatime.util.messages.Category;
 import no.javatime.util.messages.TraceMessage;
@@ -57,7 +56,7 @@ public class BundleNode {
 	// Current bundle state. Terminal state of the current transition
 	private BundleState state = StateFactory.INSTANCE.stateLess;
 	// Current (is executing) or last executed transition
-	private Transition transition = Transition.NOTRANSITION;
+	private Transition transition = Transition.NO_TRANSITION;
 	// True while a transition is executing (current transition)
 	private boolean isStateChanging;
 	// Error status of the current transition
@@ -66,7 +65,7 @@ public class BundleNode {
 	// Initial state of the current transition and terminal state of the previous transition
 	private BundleState prevState = StateFactory.INSTANCE.stateLess;
 	// Previous transition
-	private Transition prevTransition = Transition.NOTRANSITION;
+	private Transition prevTransition = Transition.NO_TRANSITION;
 	// Error status of the previous transition
 	private TransitionError prevTransitionError = TransitionError.NOERROR;
 	// A set of pending transitions in random order waiting to be executed
@@ -495,8 +494,7 @@ public class BundleNode {
 	 * 
 	 * @return the name of the transition or an empty string if no transition is found at the
 	 * specified location
-	 * @see Bundle#getLocation()
-	 * @see BundleCommandImpl#getBundleLocationIdentifier(org.eclipse.core.resources.IProject)
+	 * @see #getTransition(String)
 	 */
 	static public String getTransitionName(Transition transition, boolean format, boolean caption) {
 
@@ -571,7 +569,7 @@ public class BundleNode {
 			case NEW_PROJECT:
 				typeName = "NEW_PROJECT";
 				break;
-			case NOTRANSITION:
+			case NO_TRANSITION:
 			default:
 			}
 		}
@@ -583,6 +581,94 @@ public class BundleNode {
 			}
 		}
 		return typeName;
+	}
+	
+	/**
+	 * Get a transition based on its textual name
+	 * 
+	 * @return The transition mapping from a textual transition name
+	 * @see #getTransitionName(Transition, boolean, boolean)
+	 */
+	static public Transition getTransition(String transitionName) {
+
+		Transition transition = Transition.NO_TRANSITION;
+
+		if (null != transitionName) {
+			switch (transitionName) {
+			case "INSTALL":
+				transition = Transition.INSTALL;
+				break;
+			case "STOP":
+				transition = Transition.STOP;
+				break;
+			case "UNINSTALL":
+				transition = Transition.UNINSTALL;
+				break;
+			case "RESOLVE":
+				transition = Transition.RESOLVE;
+				break;
+			case "UNRESOLVE":
+				transition = Transition.UNRESOLVE;
+				break;
+			case "LAZY_ACTIVATE":
+				transition = Transition.LAZY_ACTIVATE;
+				break;
+			case "START":
+				transition = Transition.START;
+				break;
+			case "UPDATE_ON_ACTIVATE":
+				transition = Transition.UPDATE_ON_ACTIVATE;
+				break;
+			case "DEACTIVATE":
+				transition = Transition.DEACTIVATE;
+				break;
+			case "RESET":
+				transition = Transition.RESET;
+				break;
+			case "REFRESH":
+				transition = Transition.REFRESH;
+				break;
+			case "EXTERNAL":
+				transition = Transition.EXTERNAL;
+				break;
+			case "UPDATE":
+				transition = Transition.UPDATE;
+				break;
+			case "ACTIVATE_BUNDLE":
+				transition = Transition.ACTIVATE_BUNDLE;
+				break;
+			case "ACTIVATE_PROJECT":
+				transition = Transition.ACTIVATE_PROJECT;
+				break;
+			case "BUILD":
+				transition = Transition.BUILD;
+				break;
+			case "UPDATE_CLASSPATH":
+				transition = Transition.UPDATE_CLASSPATH;
+				break;
+			case "REMOVE_CLASSPATH":
+				transition = Transition.REMOVE_CLASSPATH;
+				break;
+			case "UPDATE_ACTIVATION_POLICY":
+				transition = Transition.UPDATE_ACTIVATION_POLICY;
+				break;
+			case "CLOSE_PROJECT":
+				transition = Transition.CLOSE_PROJECT;
+				break;
+			case "DELETE_PROJECT":
+				transition = Transition.DELETE_PROJECT;
+				break;
+			case "RENAME_PROJECT":
+				transition = Transition.RENAME_PROJECT;
+				break;
+			case "NEW_PROJECT":
+				transition = Transition.NEW_PROJECT;
+				break;
+			case "NO_TRANSITION":
+			default:
+			}
+		}
+		return transition;
 	}
 
 }

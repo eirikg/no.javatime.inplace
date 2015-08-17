@@ -23,7 +23,7 @@ public class BundleTransitionImpl implements BundleTransition {
 	public Transition getTransition(IProject project) throws ProjectLocationException {
 		BundleNode bn = ws.getBundleNode(project);
 		if (null == bn) {
-			return Transition.NOTRANSITION;
+			return Transition.NO_TRANSITION;
 		}
 		return bn.getTransition();
 	}
@@ -32,7 +32,7 @@ public class BundleTransitionImpl implements BundleTransition {
 	public String getTransitionName(IProject project) throws ProjectLocationException {
 		BundleNode bn = ws.getBundleNode(project);
 		if (null == bn) {
-			return BundleNode.getTransitionName(Transition.NOTRANSITION, false, false);
+			return BundleNode.getTransitionName(Transition.NO_TRANSITION, false, false);
 		}
 		return BundleNode.getTransitionName(bn.getTransition(), false, false);
 	}
@@ -40,6 +40,10 @@ public class BundleTransitionImpl implements BundleTransition {
 	@Override
 	public String getTransitionName(Transition transition, boolean format, boolean caption) {
 		return BundleNode.getTransitionName(transition, format, caption);
+	}
+	@Override
+	public Transition getTransition(String transitionName) {
+		return BundleNode.getTransition(transitionName);
 	}
 
 	@Override

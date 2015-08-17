@@ -289,6 +289,15 @@ public interface BundleCommand {
 	public String getStateName(Bundle bundle);
 
 	/**
+	 * Get the mnemonic state name of the specified bundle state. If the specified state is  unknown
+	 * "UNKNOWN_STATE" is returned.
+	 * 
+	 * @param A valid state for {@code Bundle} 
+	 * @return the state name the specified state
+	 */
+	public String getStateName(int state);
+
+	/**
 	 * Get the mnemonic state name of the bundle for the specified bundle event.
 	 * 
 	 * @param event the bundle event of a bundle with a state

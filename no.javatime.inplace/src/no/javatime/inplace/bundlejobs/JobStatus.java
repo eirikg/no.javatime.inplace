@@ -84,7 +84,11 @@ public class JobStatus extends WorkspaceJob implements BundleTransitionEventList
 		}
 		return saveOptions;
 	}
-
+	
+	public void setSaveFiles(boolean saveFiles) {
+		
+		getSaveOptions().disableSaveFiles(saveFiles);
+	}
 	/**
 	 * Runs the bundle(s) status operation.
 	 * <p>
@@ -344,6 +348,12 @@ public class JobStatus extends WorkspaceJob implements BundleTransitionEventList
 	 */
 	protected IBundleStatus addLogStatus(String message, Bundle bundle, IProject project) {
 		IBundleStatus status = new BundleStatus(StatusCode.INFO, bundle, project, message, null);
+		this.logStatusList.add(status);
+		return status;
+	}
+	
+	protected IBundleStatus addLogStatus(String message) {
+		IBundleStatus status = new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, message);
 		this.logStatusList.add(status);
 		return status;
 	}
