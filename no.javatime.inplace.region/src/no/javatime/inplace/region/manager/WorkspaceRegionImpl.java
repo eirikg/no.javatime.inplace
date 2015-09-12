@@ -218,12 +218,12 @@ public class WorkspaceRegionImpl implements BundleRegion {
 			if (null != node && node.isStateChanging()) {
 				Bundle bundle = node.getBundle();
 				// Verify by interrogating the thread
-//				if (!BundleThread.isStateChanging(bundle)) {
-//					String msg = NLS.bind(Msg.STATE_CHANGE_ERROR, bundle);
-//					StatusManager.getManager().handle(
-//							new BundleStatus(StatusCode.WARNING, Activator.PLUGIN_ID, bundle, msg, null),
-//							StatusManager.LOG);
-//				}
+				// if (!BundleThread.isStateChanging(bundle)) {
+				// String msg = NLS.bind(Msg.STATE_CHANGE_ERROR, bundle);
+				// StatusManager.getManager().handle(
+				// new BundleStatus(StatusCode.WARNING, Activator.PLUGIN_ID, bundle, msg, null),
+				// StatusManager.LOG);
+				// }
 				return bundle;
 			}
 		}
@@ -496,7 +496,7 @@ public class WorkspaceRegionImpl implements BundleRegion {
 
 		Map<String, IProject> newSymbolicNameMap = new HashMap<String, IProject>();
 		Map<IProject, Bundle> duplicateMap = new HashMap<IProject, Bundle>();
-		
+
 		for (IProject project : projects) {
 			try {
 				String symbolicName = getSymbolicNameFromManifest(project);
@@ -851,9 +851,32 @@ public class WorkspaceRegionImpl implements BundleRegion {
 	}
 
 	/**
-	 * Remove the project and its associated bundle.
+	 * Use with care.
+	 * 
+	 * @param bundleId Key for removal of the mapping from bundleId to project
+	 * @return The associated project or null
+	 */
+	@SuppressWarnings("unused")
+	private IProject remove(Long bundleId) {
+
+		IProject project = null;
+		if (null != bundleId) {
+			project = bundleProjects.remove(bundleId);
+			if (null != project) {
+				BundleNode node = getBundleNode(project);
+				if (null != node) {
+					node.setActivated(false);
+				}
+			}
+		}
+		return project;
+	}
+
+	/**
+	 * Remove the project and its associated bundle from the bundle project region.
 	 * <p>
-	 * Also remove the bundle project from a separate hash map for direct access
+	 * Also remove the bundle project, if there is a bundle, from a separate hash map for direct
+	 * access
 	 * 
 	 * @param project project to remove. Must not be null
 	 * @throws InPlaceException if the specified project parameter is null

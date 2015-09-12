@@ -21,16 +21,21 @@ import org.eclipse.ui.statushandlers.StatusManager;
 import org.osgi.framework.Bundle;
 
 /**
- * Schedules bundle jobs for activating bundles at session start (start up) and uninstalling bundles
- * at session end (shut down). See {@link StartUpJob} and {@link ShutDownJob} for details about the
- * bundle jobs.
+ * Schedules bundle jobs for activating or deactivating bundles at session start and uninstalling
+ * bundles at session end. A session last from the point when bundle projects are activated and to
+ * the point when bundles are started to get uninstalled. If bundle projects are deactivated when a
+ * session starts it ends the point when bundles are started to get deactivated.
+ * 
+ * Examples of sessions are workspace session (startup/shutdown), deactivate/activate session and
+ * when the Reset (uninstall/activate) bundle command is executed. See {@link StartUpJob} and
+ * {@link ShutDownJob} for details about the bundle jobs.
  * <p>
  * The {@code earlyStartup()} method is called after initializing the plug-in in the
  * {@code start(BundleContext)} method. Initializations that depends on the workbench should be done
  * here and not when the plug-in is initialized
  * 
  */
-public class SessionJobsInitiator implements IStartup {
+public class SessionManager implements IStartup {
 
 	/**
 	 * Schedule a start up job for activating bundles
@@ -45,7 +50,7 @@ public class SessionJobsInitiator implements IStartup {
 			startUpJob.setSaveWorkspaceSnaphot(false);
 			startUpJob.setSaveFiles(false);
 			// Run build first to avoid running an update job after the start up job
-			Activator.getResourceStateService().waitOnBuilder(true);
+			Activator.getResourceStateService().waitOnBuilder(false);
 			Activator.getBundleExecutorEventService().add(startUpJob, 0);
 		} catch (BundleLogException | ExtenderException e) {
 			StatusManager.getManager().handle(
@@ -73,7 +78,7 @@ public class SessionJobsInitiator implements IStartup {
 			shutDownJob.setSaveFiles(false);
 			ResourceState resourceState = Activator.getResourceStateService();
 			Activator.getBundleExecutorEventService().add(shutDownJob, 0);
-			// Wait on the job listener to finish
+			// Wait for builder and bundle jobs to finish before proceeding
 			resourceState.waitOnBuilder(false);
 			resourceState.waitOnBundleJob();
 		} catch (ExtenderException e) {
@@ -122,5 +127,4 @@ public class SessionJobsInitiator implements IStartup {
 		}
 		return false;
 	}
-
 }

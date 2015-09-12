@@ -80,12 +80,35 @@ public class AutoBuildListener implements IExecutionListener {
 
 		if (commandId.equals("org.eclipse.ui.project.buildAutomatically")) {
 			try {
-				BundleRegion bundleRegion = Activator.getBundleRegionService();
-				if (bundleRegion.isRegionActivated()) {
-					if (Activator.getBundleProjectCandidatesService().isAutoBuilding()) {
+				if (Activator.getBundleProjectCandidatesService().isAutoBuilding()) {
+					try {
+						// Remove all saved pending build transitions
+						StatePersistParticipant.clearPendingBuildTransitions(StatePersistParticipant.getSessionPreferences());
+					} catch (IllegalStateException | BackingStoreException e) {
+						String msg = WarnMessage.getInstance().formatString("failed_getting_preference_store");
+						StatusManager.getManager().handle(
+								new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, msg, e),
+								StatusManager.LOG);
+					}
+					BundleRegion bundleRegion = Activator.getBundleRegionService();
+					if (bundleRegion.isRegionActivated()) {
 						execute(bundleRegion);
+					} else {
+						// Execute waits on builder
+						// Let the post build listener remove pending builds 
+						Activator.getResourceStateService().waitOnBuilder(false);
+					}
+					BundleTransition bundleTransition = Activator.getBundleTransitionService();
+					// Remove pending build transition for deactivated bundle projects
+					// Activated bundle projects are removed by the java time builder
+					final Collection<IProject> pendingProjects = bundleTransition.getPendingProjects(
+							bundleRegion.getProjects(false), Transition.BUILD);
+					if (pendingProjects.size() > 0) {
+						removeBuildTransition.addPendingProjects(pendingProjects);
+						removeBuildTransition.getJob().schedule();
 					}
 				}
+
 			} catch (ExtenderException e) {
 				StatusManager.getManager().handle(
 						new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),
@@ -102,15 +125,9 @@ public class AutoBuildListener implements IExecutionListener {
 				getSaveOptions().disableSaveFiles(true);
 				super.runInWorkspace(monitor);
 				monitor.beginTask(getName(), 1);
-				// Remove pending build transition for deactivated bundle projects
-				// Activated bundle projects are removed by the java time builder
 				for (IProject project : getPendingProjects()) {
 					bundleTransition.removePending(project, Transition.BUILD);
 				}
-				StatePersistParticipant.savePendingBuildTransitions(StatePersistParticipant.getSessionPreferences());
-			} catch (BackingStoreException e) {
-				String msg = WarnMessage.getInstance().formatString("failed_getting_preference_store");
-				addError(e, msg);
 			} catch (ExtenderException e) {
 				addError(e, NLS.bind(Msg.SERVICE_EXECUTOR_EXP, getName()));
 			} catch (CoreException e) {
@@ -133,13 +150,6 @@ public class AutoBuildListener implements IExecutionListener {
 	 */
 	private void execute(final BundleRegion bundleRegion) {
 
-		BundleTransition bundleTransition = Activator.getBundleTransitionService();
-		final Collection<IProject> pendingProjects = bundleTransition.getPendingProjects(
-				bundleRegion.getProjects(), Transition.BUILD);
-		removeBuildTransition.addPendingProjects(pendingProjects);
-		if (pendingProjects.size() > 0) {
-			removeBuildTransition.getJob().schedule();
-		}
 		ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(1);
 		try {
 			scheduledExecutorService.schedule(new Callable<Object>() {
@@ -170,7 +180,7 @@ public class AutoBuildListener implements IExecutionListener {
 					}
 					return null;
 				}
-			}, 2, TimeUnit.SECONDS);
+			}, 1, TimeUnit.SECONDS);
 		} catch (RejectedExecutionException e) {
 			StatusManager.getManager().handle(
 					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),

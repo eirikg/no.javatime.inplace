@@ -272,8 +272,10 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 				if (null == bundle) {
 					ActivateProject activate = new ActivateProjectJob();
 					if (!bundleRegion.isProjectRegistered(project)) {
+						// TODO TEST THIS After setting false in register bundle project 
 						boolean natureEnabled = activate.isProjectActivated(project);
-						bundleRegion.registerBundleProject(project, bundle, natureEnabled);
+						// bundleRegion.registerBundleProject(project, bundle, natureEnabled);
+						bundleRegion.registerBundleProject(project, bundle, false);
 					}
 					// When an activated project is imported or opened, install in an activated workspace
 					// before deactivating the bundle

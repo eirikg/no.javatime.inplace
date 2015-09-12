@@ -63,10 +63,10 @@ public class JobStatus extends WorkspaceJob implements BundleTransitionEventList
 	protected long startTime;
 	
 	// List of error status objects
-	private List<IBundleStatus> errStatusList = new ArrayList<>();
+	private List<IBundleStatus> errStatusList;
 
 	// List of historic status objects
-	private List<IBundleStatus> logStatusList = new ArrayList<>();
+	private List<IBundleStatus> logStatusList;
 
 	/**
 	 * Construct a job with the name of the job to run
@@ -75,6 +75,17 @@ public class JobStatus extends WorkspaceJob implements BundleTransitionEventList
 	 */
 	public JobStatus(String name) {
 		super(name);
+		init();
+	}
+	
+	private void init() {
+		errStatusList = new ArrayList<>();
+		logStatusList = new ArrayList<>();
+		saveOptions = null;	
+	}
+
+	public void end() {
+		init();
 	}
 	
 	public SaveOptions getSaveOptions () throws ExtenderException {
@@ -121,7 +132,7 @@ public class JobStatus extends WorkspaceJob implements BundleTransitionEventList
 		}
 		return getJobSatus();
 	}
-
+	
 	/**
 	 * The initialization of services are delayed until bundle jobs are scheduled. Exceptions are when
 	 * member methods in job interface services are accessed prior to scheduling of a bundle job

@@ -107,12 +107,14 @@ public class BundleJobListener extends JobChangeAdapter {
 					if (messageOptions.isBundleOperations()) {
 						getBundlesJobRunState(bundleJob);
 					}
-				}
-				schedulePendingOperations();
+				}				
 			} catch (BundleLogException | ExtenderException e) {
 				StatusManager.getManager().handle(
 						new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),
 						StatusManager.LOG);
+			} finally {
+				bundleJob.end();
+				schedulePendingOperations();				
 			}
 		}
 	}

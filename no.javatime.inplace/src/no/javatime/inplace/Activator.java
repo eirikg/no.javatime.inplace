@@ -151,7 +151,7 @@ public class Activator extends AbstractUIPlugin {
 			// Remove resource listeners as soon as possible to prevent scheduling of new bundle jobs
 			removeResourceListeners();
 			removeDynamicExtensions();
-			SessionJobsInitiator.shutDown();
+			SessionManager.shutDown();
 		} catch (ExtenderException e) {
 			StatusManager.getManager().handle(
 					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),

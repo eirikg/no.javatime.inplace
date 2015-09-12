@@ -56,6 +56,7 @@ public class ActivateBundleJob extends NatureJob implements ActivateBundle {
 	 */
 	public ActivateBundleJob() {
 		super(Msg.ACTIVATE_BUNDLE_JOB);
+		init();
 	}
 
 	/**
@@ -67,6 +68,7 @@ public class ActivateBundleJob extends NatureJob implements ActivateBundle {
 	 */
 	public ActivateBundleJob(String name) {
 		super(name);
+		init();
 	}
 
 	/**
@@ -79,6 +81,7 @@ public class ActivateBundleJob extends NatureJob implements ActivateBundle {
 	 */
 	public ActivateBundleJob(String name, Collection<IProject> projects) {
 		super(name, projects);
+		init();
 	}
 
 	/**
@@ -91,6 +94,17 @@ public class ActivateBundleJob extends NatureJob implements ActivateBundle {
 	 */
 	public ActivateBundleJob(String name, IProject project) {
 		super(name, project);
+	}
+
+	private void init() {
+		
+		activatedBundles = null;
+	}
+	
+	@Override
+	public void end() {
+		super.end();		
+		init();
 	}
 
 	/**
@@ -143,7 +157,7 @@ public class ActivateBundleJob extends NatureJob implements ActivateBundle {
 			BundleTransitionListener.removeBundleTransitionListener(this);
 		}
 		return getJobSatus();
-	}
+	}	
 
 	/**
 	 * Install, resolve and start pending bundles to activate. A bundle is marked as activated if its

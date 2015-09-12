@@ -11,12 +11,14 @@
 package no.javatime.inplace.builder;
 
 import no.javatime.inplace.Activator;
+import no.javatime.inplace.StatePersistParticipant;
 import no.javatime.inplace.bundlejobs.ActivateProjectJob;
 import no.javatime.inplace.bundlejobs.intface.ActivateProject;
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.region.events.BundleTransitionEvent;
 import no.javatime.inplace.region.events.BundleTransitionEventListener;
 import no.javatime.inplace.region.events.TransitionEvent;
+import no.javatime.inplace.region.intface.BundleProjectCandidates;
 import no.javatime.inplace.region.intface.BundleRegion;
 import no.javatime.inplace.region.intface.BundleTransition;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
@@ -25,15 +27,18 @@ import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import no.javatime.util.messages.ExceptionMessage;
+import no.javatime.util.messages.WarnMessage;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IResourceChangeEvent;
 import org.eclipse.core.resources.IResourceChangeListener;
 import org.eclipse.core.resources.IResourceDelta;
+import org.eclipse.core.resources.IncrementalProjectBuilder;
 import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.statushandlers.StatusManager;
+import org.osgi.service.prefs.BackingStoreException;
 
 /**
  * Listen to pre build notifications. Remove transition errors from and add pending build
@@ -50,11 +55,13 @@ public class PreBuildListener implements IResourceChangeListener, BundleTransiti
 
 	private BundleTransition bundleTransition;
 	private BundleRegion bundleRegion;
+	private BundleProjectCandidates bundlProjecteCandidates;
 	final private ActivateProject projectActivator;
 
 	public PreBuildListener() {
 
 		try {
+			bundlProjecteCandidates = Activator.getBundleProjectCandidatesService();
 			bundleTransition = Activator.getBundleTransitionService();
 			bundleRegion = Activator.getBundleRegionService();
 		} catch (ExtenderException e) {
@@ -98,17 +105,30 @@ public class PreBuildListener implements IResourceChangeListener, BundleTransiti
 						if (!isWorkspaceActivated) {
 							// The error should be visible in a deactivated workspace until the project is built
 							bundleTransition.clearTransitionError(project);
-							// bundleTransition.removePending(project, Transition.BUILD);
-						} else {
-							// Preserve build pending state for projects being opened or moved
-							if (!isOpenOrMove(projectDelta, project)) {
-								bundleTransition.addPending(project, Transition.BUILD);
-							} else {
-								BundleTransitionListener.addBundleTransition(new TransitionEvent(project,
-										Transition.BUILD));
+						} 
+						try {
+							// Add a pending build to the preference store to retain pending build between sessions
+							// A request for auto build when auto build is switched off
+							if (!bundlProjecteCandidates.isAutoBuilding()) {
+								if (buildKind == IncrementalProjectBuilder.AUTO_BUILD) {
+								StatePersistParticipant.savePendingBuildTransition(
+										StatePersistParticipant.getSessionPreferences(), project, true);
+								}
 							}
+						} catch (IllegalStateException | BackingStoreException e) {
+							String msg = WarnMessage.getInstance().formatString("failed_getting_preference_store");
+							StatusManager.getManager().handle(
+									new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, msg, e),
+									StatusManager.LOG);
 						}
-					} catch (InPlaceException e) {
+						// Preserve build pending state for projects being opened or moved
+						if (!isOpenOrMove(projectDelta, project)) {
+							bundleTransition.addPending(project, Transition.BUILD);
+						} else {
+							BundleTransitionListener.addBundleTransition(new TransitionEvent(project,
+									Transition.BUILD));
+						}
+					} catch (ExtenderException | InPlaceException e) {
 						String msg = ExceptionMessage.getInstance().formatString("preparing_osgi_command",
 								project.getName());
 						StatusManager.getManager().handle(

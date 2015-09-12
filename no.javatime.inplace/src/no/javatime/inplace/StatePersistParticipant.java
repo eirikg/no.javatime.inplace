@@ -52,8 +52,8 @@ import org.osgi.service.prefs.Preferences;
 /**
  * Maintain a persistent workspace region state (activation level (bundle state), bundle transition
  * state and pending transitions). The workspace region state is persisted when ending a session and
- * restored when starting an new session. Examples of sessions are startup/shutdown,
- * deactivate/activate workspace and when the Reset (uninstall/activate) bundle command is executed.
+ * restored when starting an new session. Examples of sessions are workspace session (startup/shutdown),
+ * deactivate/activate session and when the Reset (uninstall/activate) bundle command is executed.
  * <p>
  * For each bundle project the bundle state, transition state and pending transitions are persisted.
  * With this information at hand it is possible to restore the active state from the persisted
@@ -72,8 +72,8 @@ import org.osgi.service.prefs.Preferences;
  * (activated/deactivated) and the persisted activation level.
  * <li>Pending transitions</li>
  * <p>
- * If bundle projects have any pending transitions they are saved at the end of a session and added
- * as pending transitions to bundle projects when a session starts.
+ * If bundle projects have any pending transitions they are saved at the end of a workspace session
+ * (shut down) and added as pending transitions to bundle projects when the workspace session starts.
  * <li>Recovery mode.</li>
  * <p>
  * A persisted property indicating that the workspace is running is enabled at start up and disabled
@@ -91,13 +91,13 @@ public class StatePersistParticipant implements ISaveParticipant {
 	private static String bundleStateNode = "bundle.state";
 	/** Preference node for persisted transition states */
 	private static String bundleTransitionNode = "bundle.transition.state";
-	/** Bundle Project state when deactivated */
+	/** Bundle Project activation level (state) when deactivated */
 	private static String deactivateState = "deactivate";
 	/** Preference node for persisted pending transitions */
 	private static String bundlePendingTransitionNode = "bundle.pending.transition";
 	/** Preference node for persisted state of the workspace region */
 	private static String workspaceRegionNode = "workspace.region.state";
-	/** Indicates if the the workspace region is active or not */
+	/** Internal definition of the workspace state as running or not running) */
 	private static String workspaceSession = "active.session";
 	/** Calculate time used by a full workspace save */
 	private long startTime;
@@ -152,8 +152,8 @@ public class StatePersistParticipant implements ISaveParticipant {
 	 * See {@link #restoreTransitionState(IEclipsePreferences)} for a specification on how transitions
 	 * states are restored
 	 * <p>
-	 * See {@link #restorePendingTransitions(IEclipsePreferences)} for a specification on how pending
-	 * transitions are restored
+	 * See {@link #restorePendingBuildTransitions(IEclipsePreferences)} for a specification on how
+	 * pending transitions are restored
 	 * <p>
 	 * See class description for a specification on how states are recovered if a session terminates
 	 * abnormally.
@@ -170,55 +170,80 @@ public class StatePersistParticipant implements ISaveParticipant {
 
 		IEclipsePreferences prefs = getSessionPreferences();
 		BundleRegion bundleRegion = Activator.getBundleRegionService();
-		Collection<Bundle> activatedBundles = bundleRegion.getActivatedBundles();
-		if (activatedBundles.size() > 0) {
+		Collection<Bundle> startLevelBundles = bundleRegion.getActivatedBundles();
+		if (startLevelBundles.size() > 0) {
 			BundleTransition bundleTransition = Activator.getBundleTransitionService();
 			if (isWorkspaceSession()) {
-				// Normal mode
-				Collection<Bundle> resolveStateBundles = restoreActivationLevel(prefs, activatedBundles,
+				// Normal mode in an activated workspace
+				// Transition states are calculated when bundles are activated and
+				// pending transitions are always added independent of activation mode and recovery mode
+				Collection<Bundle> resolveLevelBundles = restoreActivationLevel(prefs, startLevelBundles,
 						Bundle.RESOLVED);
-				if (resolveStateBundles.size() > 0) {
-					activatedBundles.removeAll(resolveStateBundles);
-					// This is an additional verification check in case stored states or bundle activation
-					// mode has been changes since last session
-					BundleClosures bc = new BundleClosures();
-					Collection<Bundle> providingBundles = bc.bundleActivation(Closure.PROVIDING,
-							activatedBundles, resolveStateBundles);
-					// Does any bundles to only resolve provide capabilities to any of the bundles to start
-					providingBundles.retainAll(resolveStateBundles);
-					if (providingBundles.size() > 0) {
-						resolveStateBundles.removeAll(providingBundles);
-						// Start these, due to requirements from bundles to start
-						// activatedBundles.addAll(providingBundles);
-						MessageOptions messageOptions = Activator.getMessageOptionsService();
-						if (messageOptions.isBundleOperations()) {
-							String msg = NLS.bind(Msg.CONDITIONAL_START_BUNDLE_INFO,
-									new Object[] { bundleRegion.formatBundleList(providingBundles, true) });
-							BundleLog logger = Activator.getBundleLogService();
-							logger.log(new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, msg));
-						}
-					}
-					for (Bundle bundle : resolveStateBundles) {
-						// Do not start bundles that were in state resolved in last session
-						bundleTransition.addPending(bundle, Transition.RESOLVE);
-
-					}
+				if (resolveLevelBundles.size() > 0) {
+					// Save bundle state for all bundles in state resolve
+					startLevelBundles.removeAll(resolveLevelBundles);
+					setActivationLevel(bundleRegion, bundleTransition, startLevelBundles, resolveLevelBundles);
 				}
 			} else {
-				// Recovery mode
-				for (Bundle bundle : activatedBundles) {
+				// Recovery mode in an activated workspace
+				// Transition states are calculated when bundles are activated
+				// Set activation level to resolved for all activated bundles
+				for (Bundle bundle : startLevelBundles) {
 					bundleTransition.addPending(bundle, Transition.RESOLVE);
 				}
 			}
-			restorePendingTransitions(prefs);
-			// Set to recovery mode in case of abnormal termination of a session
-			prefs.node(bundleStateNode).clear();
-			prefs.node(bundleTransitionNode).clear();
-			prefs.node(bundlePendingTransitionNode).clear();
 		} else {
+			// Normal and recovery mode in a deactivated workspace
+			// Activation level is uninstalled 
+			// Use transition state from previous session
 			restoreTransitionState(prefs);
 		}
+		// Always restore pending transitions independent of workspace activation mode and recovery mode
+		restorePendingBuildTransitions(prefs);
+		// Do not retain the activation level from the previous session
+		prefs.node(bundleStateNode).clear();
 		prefs.flush();
+	}
+
+	/**
+	 * Set activation level {@code Bundle.RESOLVED} for all bundles contained in the specified resolve
+	 * level parameter and calculate additional bundles to start with {@code Bundle.RESOLVED} as the
+	 * activation level when activated bundles to start have requirements on bundles with
+	 * {@code Bundle.RESOLVED} as the activation level.
+	 * 
+	 * @param bundleRegion The bundle workspace region service
+	 * @param bundleTransition The bundle transition service
+	 * @param startLevelBundles All activated bundles to start
+	 * @param resolveLevelBundles All bundles with the {@code Bundle.RESOLVED} activation level
+	 * @throws ExtenderException If failing to access the message options service
+	 */
+	private static void setActivationLevel(BundleRegion bundleRegion,
+			BundleTransition bundleTransition, Collection<Bundle> startLevelBundles,
+			Collection<Bundle> resolveLevelBundles) throws ExtenderException {
+
+		// This is an additional validation check in case stored states or bundle activation
+		// mode has been changes since last session
+		BundleClosures bc = new BundleClosures();
+		Collection<Bundle> providingBundles = bc.bundleActivation(Closure.PROVIDING, startLevelBundles,
+				resolveLevelBundles);
+		// Does any bundles to only resolve provide capabilities to any of the bundles to start
+		providingBundles.retainAll(resolveLevelBundles);
+		if (providingBundles.size() > 0) {
+			resolveLevelBundles.removeAll(providingBundles);
+			// Start these, due to requirements from bundles to start
+			// activatedBundles.addAll(providingBundles);
+			MessageOptions messageOptions = Activator.getMessageOptionsService();
+			if (messageOptions.isBundleOperations()) {
+				String msg = NLS.bind(Msg.CONDITIONAL_START_BUNDLE_INFO,
+						new Object[] { bundleRegion.formatBundleList(providingBundles, true) });
+				BundleLog logger = Activator.getBundleLogService();
+				logger.log(new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, msg));
+			}
+		}
+		for (Bundle bundle : resolveLevelBundles) {
+			// Do not start bundles that were in state resolved in last session
+			bundleTransition.addPending(bundle, Transition.RESOLVE);
+		}
 	}
 
 	/**
@@ -227,6 +252,17 @@ public class StatePersistParticipant implements ISaveParticipant {
 	 * <p>
 	 * See {@link #restoreActivationLevel(IEclipsePreferences, Bundle) for a specification of
 	 * activation levels. An exception to these rules, is to start bundles with
+	 * 
+	 * 
+	 * 
+	 * 
+	 * 
+	 * 
+	 * 
+	 * 
+	 * 
+	 * 
+	 * 
 	 * 
 	 * {@code Bundle.RESOLVED} as the activation level when activated bundles to start have
 	 * requirements on bundles with {@code Bundle.RESOLVED} as the activation level.
@@ -403,12 +439,14 @@ public class StatePersistParticipant implements ISaveParticipant {
 	 * @throws InPlaceException Failing to access an open project
 	 * @throws IllegalStateException if the current backing store node (or an ancestor) has been
 	 * removed when accessing bundle state information
-	 * @see {@link #savePendingBuildTransitions(IEclipsePreferences)}
+	 * @see {@link #savePendingBuildTransitions(IEclipsePreferences, boolean)}
 	 */
-	private static void restorePendingTransitions(IEclipsePreferences prefs)
+	private static void restorePendingBuildTransitions(IEclipsePreferences prefs)
 			throws ExtenderException, BackingStoreException, InPlaceException, IllegalStateException {
 
 		if (prefs.nodeExists(bundlePendingTransitionNode)) {
+			// BundleRegion bundleRegion = Activator.getBundleRegionService();
+			// if (bundleRegion.isRegionActivated()) {
 			Preferences pendingPrefs = prefs.node(bundlePendingTransitionNode);
 			BundleProjectCandidates bundleProjects = Activator.getBundleProjectCandidatesService();
 			BundleTransition bundleTransition = Activator.getBundleTransitionService();
@@ -426,6 +464,7 @@ public class StatePersistParticipant implements ISaveParticipant {
 					bundleTransition.addPending(project, Transition.BUILD);
 				}
 			}
+			// }
 		}
 	}
 
@@ -463,12 +502,12 @@ public class StatePersistParticipant implements ISaveParticipant {
 		prefs.clear();
 		saveActivationLevel(prefs, isDeactivate);
 		saveTransitionState(prefs, isDeactivate);
-		savePendingBuildTransitions(prefs);
+		savePendingBuildTransitions(prefs, isWorkspaceSession());
 		prefs.flush();
 	}
 
 	/**
-	 * Save the activation level of bundle projects.
+	 * Save the activation level of bundle projects in an activated workspace.
 	 * <p>
 	 * See {@link #restoreActivationLevel(IEclipsePreferences, Bundle)} for a specification of
 	 * activation levels.
@@ -488,7 +527,7 @@ public class StatePersistParticipant implements ISaveParticipant {
 	 * removed when accessing bundle state information
 	 * @see #restoreActivationLevel(IEclipsePreferences, Bundle)
 	 */
-	private static void saveActivationLevel(IEclipsePreferences prefs, boolean isDeactivate)
+	public static void saveActivationLevel(IEclipsePreferences prefs, boolean isDeactivate)
 			throws ExtenderException, BackingStoreException, IllegalStateException {
 
 		Preferences stateNode = prefs.node(bundleStateNode);
@@ -517,8 +556,8 @@ public class StatePersistParticipant implements ISaveParticipant {
 	}
 
 	/**
-	 * Save state of bundle projects in a deactivated workspace to preference store based on their
-	 * last transition.
+	 * Updates state of bundle projects to preference store based on their current (or last executed)
+	 * transition when the workspace is ending.
 	 * <p>
 	 * Transition state is only saved if the workspace is deactivated. In an activated workspace
 	 * transition state are calculated based on the activation mode (activated/deactivated) and the
@@ -541,9 +580,9 @@ public class StatePersistParticipant implements ISaveParticipant {
 			throws ExtenderException, BackingStoreException, IllegalStateException {
 
 		Preferences transitionNode = prefs.node(bundleTransitionNode);
-		transitionNode.clear();
-		BundleRegion bundleRegion = Activator.getBundleRegionService();
-		if (!bundleRegion.isRegionActivated() || isDeactivate) {
+		if (isDeactivate) {
+			// transitionNode.clear();
+			BundleRegion bundleRegion = Activator.getBundleRegionService();
 			BundleTransition bundleTransition = Activator.getBundleTransitionService();
 			Transition transition = Transition.NO_TRANSITION;
 			// All bundle projects have the same transition state after deactivation
@@ -562,32 +601,63 @@ public class StatePersistParticipant implements ISaveParticipant {
 	}
 
 	/**
-	 * Save pending transitions found in bundle projects independent of activation mode
+	 * Save pending transitions found in activated and deactivated bundle projects when the workspace
+	 * session (shut down) is ending.
 	 * 
 	 * @param prefs The preference store
+	 * @param isWorkspaceSession True if the workspace is defined to be running and false if it is
+	 * being ending
 	 * @throws BackingStoreException Failure to access the preference store for bundle states
 	 * @throws ExtenderException General failure obtaining extender service(s)
 	 * @throws IllegalStateException if the current backing store node (or an ancestor) has been
 	 * removed when accessing bundle state information
-	 * @see #restorePendingTransitions(IEclipsePreferences)
+	 * @see #restorePendingBuildTransitions(IEclipsePreferences)
 	 */
-	public static void savePendingBuildTransitions(IEclipsePreferences prefs)
-			throws ExtenderException, BackingStoreException, IllegalStateException {
+	public static void savePendingBuildTransitions(IEclipsePreferences prefs,
+			boolean isWorkspaceSession) throws ExtenderException, BackingStoreException,
+			IllegalStateException {
 
 		Preferences pendingPrefs = prefs.node(bundlePendingTransitionNode);
 		pendingPrefs.clear();
-		BundleProjectCandidates bundleProject = Activator.getBundleProjectCandidatesService();
-		BundleTransition bundleTransition = Activator.getBundleTransitionService();
-		Collection<IProject> projects = bundleTransition.getPendingProjects(
-				bundleProject.getBundleProjects(), Transition.BUILD);
-		String buildTransitionName = bundleTransition.getTransitionName(Transition.BUILD, false, false);
-		for (IProject project : projects) {
-			String symbolicKey = Activator.getBundleRegionService().getSymbolicKey(null, project);
-			if (symbolicKey.isEmpty()) {
-				continue;
+		// Shutting down
+		if (!isWorkspaceSession) {
+			BundleTransition bundleTransition = Activator.getBundleTransitionService();
+			BundleProjectCandidates bundleProject = Activator.getBundleProjectCandidatesService();
+			Collection<IProject> projects = bundleTransition.getPendingProjects(
+					bundleProject.getBundleProjects(), Transition.BUILD);
+			String buildTransitionName = bundleTransition.getTransitionName(Transition.BUILD, false,
+					false);
+			for (IProject project : projects) {
+				String symbolicKey = Activator.getBundleRegionService().getSymbolicKey(null, project);
+				if (symbolicKey.isEmpty()) {
+					continue;
+				}
+				pendingPrefs.put(symbolicKey, buildTransitionName);
 			}
+		}
+		pendingPrefs.flush();
+	}
+
+	public static void savePendingBuildTransition(IEclipsePreferences prefs, IProject project,
+			boolean isWorkspaceSession) throws ExtenderException, BackingStoreException,
+			IllegalStateException {
+
+		Preferences pendingPrefs = prefs.node(bundlePendingTransitionNode);
+		if (isWorkspaceSession) {
+			BundleTransition bundleTransition = Activator.getBundleTransitionService();
+			String buildTransitionName = bundleTransition.getTransitionName(Transition.BUILD, false,
+					false);
+			String symbolicKey = Activator.getBundleRegionService().getSymbolicKey(null, project);
 			pendingPrefs.put(symbolicKey, buildTransitionName);
 		}
+		pendingPrefs.flush();
+	}
+
+	public static void clearPendingBuildTransitions(IEclipsePreferences prefs) throws ExtenderException, BackingStoreException,
+			IllegalStateException {
+
+		Preferences pendingPrefs = prefs.node(bundlePendingTransitionNode);
+		pendingPrefs.clear();
 		pendingPrefs.flush();
 	}
 
@@ -610,12 +680,16 @@ public class StatePersistParticipant implements ISaveParticipant {
 	/**
 	 * Always {@code true} when the workspace is running. If the the workspace terminates abnormally
 	 * the session state will be {@code true} and {@code false} when terminated normally. An abnormal
-	 * termination indicates that the workspace region state should be recovered. For a normal
-	 * termination persisted states and pending transitions are initialized from the preference store.
+	 * termination indicates that the workspace region state should be recovered.
 	 * <p>
-	 * If the workspace terminates unexpectedly, appropriate actions is taken to recover bundle
-	 * states, transition states and pending transition (workspace region state) in the
-	 * {@link StartUpJob}
+	 * For the purpose of storing state information and handle recovery of the workspace state the
+	 * workspace is, except for recovery, defined to not be be running when the scheduled
+	 * {@link ShotDownJob} is in state running and is defined to be running when the scheduled
+	 * {@link StartUpJob} is in state running.
+	 * <p>
+	 * If the workspace terminates unexpectedly, the workspace will be in state running after
+	 * termination, and appropriate actions is taken to recover bundle states, transition states and
+	 * pending transition (workspace region state) in the {@link StartUpJob}
 	 * 
 	 * @param isWorkspaceSession Set to {@code true} when the workspace starts normally and after
 	 * recovery and {@code false} when terminating.

@@ -174,7 +174,8 @@ public class BundleCommandImpl implements BundleCommand {
 			bundle = bundleRegion.getBundle(project);
 			if (null != bundle) {
 				stop(bundle, false);
-				uninstall(bundle, true);
+				uninstall(bundle, false);
+				refresh(Collections.<Bundle>singletonList(bundle));
 			}
 		}
 		return bundle;

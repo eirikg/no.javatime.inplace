@@ -33,12 +33,13 @@ import org.eclipse.ui.ide.ResourceUtil;
 public class SaveOptionsJob extends BundleJob implements SaveOptions {
 
 	private boolean isDisableSaveFiles;
+
 	/**
 	 * Default constructor wit a default job name
 	 */
 	public SaveOptionsJob() {
 		super(Msg.SAVE_OPTIONS_JOB);
-		setSaveWorkspaceSnaphot(false);
+		init();
 	}
 
 	/**
@@ -48,9 +49,46 @@ public class SaveOptionsJob extends BundleJob implements SaveOptions {
 	 */
 	public SaveOptionsJob(String name) {
 		super(name);
+		init();
+	}
+	
+	private void init() {
+		isDisableSaveFiles = false;
 		setSaveWorkspaceSnaphot(false);
 	}
+	
+	@Override
+	public void end() {
+		super.end();
+		init();
+	}
 
+	/**
+	 * Runs the bundle(s) save operation.
+	 * 
+	 * @return A bundle status object obtained from {@link #getJobSatus()}
+	 */
+	@Override
+	public IBundleStatus runInWorkspace(final IProgressMonitor monitor) throws CoreException {
+
+		try {
+			startTime = System.currentTimeMillis();
+			saveFiles();
+		} catch (OperationCanceledException e) {
+			addCancelMessage(e, NLS.bind(Msg.CANCEL_JOB_INFO, getName()));
+		} catch (InPlaceException | ExtenderException e) {
+			String msg = ExceptionMessage.getInstance().formatString("terminate_job_with_errors",
+					getName());
+			addError(e, msg);
+		} catch (Exception e) {
+			String msg = ExceptionMessage.getInstance().formatString("exception_job", getName());
+			addError(e, msg);
+		} finally {
+			monitor.done();
+		}
+		return getJobSatus();
+	}
+	
 	@Override
 	public void resetPendingProjects(Collection<IProject> projects) {
 
@@ -104,32 +142,6 @@ public class SaveOptionsJob extends BundleJob implements SaveOptions {
 	@Override
 	public SaveOptions getSaveOptions() throws ExtenderException {
 		return this;
-	}
-	
-	/**
-	 * Runs the bundle(s) save operation.
-	 * 
-	 * @return A bundle status object obtained from {@link #getJobSatus()}
-	 */
-	@Override
-	public IBundleStatus runInWorkspace(final IProgressMonitor monitor) throws CoreException {
-
-		try {
-			startTime = System.currentTimeMillis();
-			saveFiles();
-		} catch (OperationCanceledException e) {
-			addCancelMessage(e, NLS.bind(Msg.CANCEL_JOB_INFO, getName()));
-		} catch (InPlaceException | ExtenderException e) {
-			String msg = ExceptionMessage.getInstance().formatString("terminate_job_with_errors",
-					getName());
-			addError(e, msg);
-		} catch (Exception e) {
-			String msg = ExceptionMessage.getInstance().formatString("exception_job", getName());
-			addError(e, msg);
-		} finally {
-			monitor.done();
-		}
-		return getJobSatus();
 	}
 	
 	@Override

@@ -25,7 +25,6 @@ import no.javatime.inplace.region.closure.BuildErrorClosure;
 import no.javatime.inplace.region.closure.BuildErrorClosure.ActivationScope;
 import no.javatime.inplace.region.closure.BundleClosures;
 import no.javatime.inplace.region.closure.CircularReferenceException;
-import no.javatime.inplace.region.events.TransitionEvent;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
 import no.javatime.inplace.region.intface.BundleTransitionListener;
 import no.javatime.inplace.region.intface.InPlaceException;
@@ -49,23 +48,14 @@ import org.osgi.service.prefs.BackingStoreException;
 public class DeactivateJob extends NatureJob implements Deactivate {
 
 	/** Ignore build errors when deactivating */
-	private boolean checkBuildErrors = false;
-
-	@Override
-	public boolean isCheckBuildErrors() {
-		return checkBuildErrors;
-	}
-
-	@Override
-	public void setCheckBuildErrors(boolean checkBuildErrors) {
-		this.checkBuildErrors = checkBuildErrors;
-	}
+	private boolean checkBuildErrors;
 
 	/**
 	 * Default constructor wit a default job name
 	 */
 	public DeactivateJob() {
 		super(Msg.DEACTIVATE_BUNDLES_JOB);
+		init();
 	}
 
 	/**
@@ -75,6 +65,7 @@ public class DeactivateJob extends NatureJob implements Deactivate {
 	 */
 	public DeactivateJob(String name) {
 		super(name);
+		init();
 	}
 
 	/**
@@ -85,6 +76,7 @@ public class DeactivateJob extends NatureJob implements Deactivate {
 	 */
 	public DeactivateJob(String name, Collection<IProject> projects) {
 		super(name, projects);
+		init();
 	}
 
 	/**
@@ -95,6 +87,17 @@ public class DeactivateJob extends NatureJob implements Deactivate {
 	 */
 	public DeactivateJob(String name, IProject project) {
 		super(name, project);
+		init();
+	}
+	
+	private void init() {
+		checkBuildErrors = false;
+	}
+	
+	@Override
+	public void end() {
+		super.end();
+		init();
 	}
 
 	/**
@@ -210,11 +213,11 @@ public class DeactivateJob extends NatureJob implements Deactivate {
 				if (monitor.isCanceled()) {
 					throw new OperationCanceledException();
 				}
-				BundleTransitionListener.addBundleTransition(new TransitionEvent((IProject) null,
-						Transition.DEACTIVATE));
-				//bundleTransition.removePending(bundleRegion.getProjects(), Transition.BUILD);
 				deactivateNature(getPendingProjects(), new SubProgressMonitor(monitor, 1));
-				StatePersistParticipant.saveSessionState(true);
+				StatePersistParticipant.saveTransitionState(StatePersistParticipant.getSessionPreferences(), true);
+				// StatePersistParticipant.saveSessionState(true);
+//				BundleTransitionListener.addBundleTransition(new TransitionEvent((IProject) null,
+//						Transition.DEACTIVATE));
 			} catch (InPlaceException e) {
 				String msg = ExceptionMessage.getInstance().formatString(
 						"deactivate_job_uninstalled_state", getName(),
@@ -293,6 +296,17 @@ public class DeactivateJob extends NatureJob implements Deactivate {
 		}
 		return Collections.<IProject> emptySet();
 	}
+
+	@Override
+	public boolean isCheckBuildErrors() {
+		return checkBuildErrors;
+	}
+
+	@Override
+	public void setCheckBuildErrors(boolean checkBuildErrors) {
+		this.checkBuildErrors = checkBuildErrors;
+	}
+
 
 	/**
 	 * Number of ticks used by this job.

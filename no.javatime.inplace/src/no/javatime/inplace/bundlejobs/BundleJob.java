@@ -74,7 +74,7 @@ public class BundleJob extends JobStatus implements BundleExecutor {
 	/**
 	 * Unsorted list of unique pending projects to process in a job
 	 */
-	private Collection<IProject> pendingProjects = new LinkedHashSet<>();
+	private Collection<IProject> pendingProjects;
 
 	/**
 	 * Initialized according to preference setting. 
@@ -102,8 +102,8 @@ public class BundleJob extends JobStatus implements BundleExecutor {
 	 */
 	public BundleJob(String name, Collection<IProject> projects) {
 		super(name);
-		addPendingProjects(projects);
 		init();
+		addPendingProjects(projects);
 	}
 
 	/**
@@ -115,13 +115,14 @@ public class BundleJob extends JobStatus implements BundleExecutor {
 	 */
 	public BundleJob(String name, IProject project) {
 		super(name);
-		addPendingProject(project);
 		init();
+		addPendingProject(project);
 	}
 	
 	private void init() {
 		setPriority(Job.BUILD);
 		setRule(bundleRule());
+		pendingProjects = new LinkedHashSet<>();
 		setProperty(IProgressConstants2.SHOW_IN_TASKBAR_ICON_PROPERTY, Boolean.TRUE);	
 		try {
 			if (null == commandOptions) {
@@ -132,7 +133,13 @@ public class BundleJob extends JobStatus implements BundleExecutor {
 			isSaveWorkspaceSnaphot = false;
 		}
 	}
-	
+
+	@Override
+	public void end() {
+		super.end();
+		init();
+	}
+
 	/**
 	 * Use the same rule as the build job locking the whole workspace while the job is running
 	 * 
@@ -152,7 +159,7 @@ public class BundleJob extends JobStatus implements BundleExecutor {
 
 		return super.runInWorkspace(monitor);
 	}
-
+	
 	/**
 	 * Determine if this job belongs to the bundle family
 	 * 

@@ -118,6 +118,7 @@ public class StatusHandler extends WorkbenchErrorHandler {
 			}
 			// Send to error log
 			if (bundleStatus.getStatusCode() != StatusCode.INFO) {
+				statusAdapter.setStatus(bundleStatus);
 				super.handle(statusAdapter, style);
 			}
 		} else {

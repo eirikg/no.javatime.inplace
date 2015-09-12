@@ -38,24 +38,16 @@ import org.osgi.framework.Bundle;
 import org.osgi.service.prefs.BackingStoreException;
 
 /**
- * In an activated workspace activate all bundle projects where the activation level (bundle state)
- * is the same as at the last shutdown. Transition states are calculated for both activated and
- * deactivated bundle projects. Any pending transitions from the previous session are added to both
- * deactivated and activated bundle projects
- * <p>
- * In a deactivated workspace the activation level for all bundle projects are
- * {@code Bundle.UNINSTALLED}. The transition state is set to the same as at shutdown and any
- * pending transition from the previous session are added. After first installation of the InPlace
- * Activator the activation level is {@code Bundle.UNINSTALLED} and the transition state is
- * {@code Transition.NO_TRANSITION}
+ * In a normal shut down situation activates or deactivate bundles at start up. The activation
+ * level, transition state and pending transitions added to bundles is determined by the
+ * {@link StatePersistParticipant} class.
  * <p>
  * If activated bundle projects had build errors at shut down or the "Deactivate on Exit" preference
  * option was on at shutdown (or manually changed to on after shutdown), the workspace will be
- * deactivated and the activation level, transition state and any pending transitions will be the
- * same as in a deactivated workspace.
+ * deactivated and otherwise activated.
  * <p>
- * After an abnormal termination of a session, states are regenerated based on activation rules and
- * states from the previous session. See {@link StatePersistParticipant} for further details.
+ * After an abnormal termination of the workspace, states are regenerated based on activation rules
+ * and states from the previous session according to rules in {@code StatePersistParticipant}.
  */
 class StartUpJob extends ActivateBundleJob {
 
@@ -98,52 +90,15 @@ class StartUpJob extends ActivateBundleJob {
 	@Override
 	public IBundleStatus runInWorkspace(IProgressMonitor monitor) {
 
-			try {
-				final IBundleStatus multiStatus = new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, "Session Settings");
-				initServices();
-				startTime = System.currentTimeMillis();
-				final Activator activator = Activator.getInstance();
-				activator.processLastSavedState();
-				final IWorkbench workbench = PlatformUI.getWorkbench();
-				if (null != workbench && !workbench.isStarting()) {
-					// Not strictly necessary to run in an UI thread
-					Activator.getDisplay().asyncExec(new Runnable() {
-						public void run() {
-							// Adding at this point should ensure that all static contexts are loaded
-							IBundleStatus status = activator.addDynamicExtensions();
-							if (null != status) {
-								multiStatus.add(status);
-							}
-						}
-					});
-					// Listen to toggling of auto build
-					ICommandService service = (ICommandService) workbench.getService(ICommandService.class);
-					if (null == service) {
-						addLogStatus(new BundleStatus(StatusCode.WARNING, Activator.PLUGIN_ID,
-								Msg.AUTO_BUILD_LISTENER_NOT_ADDED_WARN));
-					} else {
-						service.addExecutionListener(new AutoBuildListener());
-					}
-				} else {
-					addLogStatus(new BundleStatus(StatusCode.WARNING, Activator.PLUGIN_ID,
-							Msg.DYNAMIC_MONITORING_WARN));
-					addLogStatus(new BundleStatus(StatusCode.WARNING, Activator.PLUGIN_ID,
-							Msg.AUTO_BUILD_LISTENER_NOT_ADDED_WARN));
-				}
-			
-				if (messageOptions.isBundleOperations()) {
-				String osgiDev = Activator.getbundlePrrojectMetaService().inDevelopmentMode();
-				if (null != osgiDev) {
-					String msg = NLS.bind(Msg.CLASS_PATH_DEV_PARAM_INFO, osgiDev);
-					multiStatus.add(new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, msg));
-				}
-			}	
-			addLogStatus(multiStatus);
+		try {
 			// If workspace session is true it implies an IDE crash, and false indicates a normal exit
 			boolean isRecoveryMode = StatePersistParticipant.isWorkspaceSession();
 			// Setting the session to false signals that the workbench is not yet up and running
 			// and the workbench state must be recovered at startup
 			StatePersistParticipant.setWorkspaceSession(!isRecoveryMode);
+			initServices();
+			startTime = System.currentTimeMillis();
+			init();
 			Collection<IProject> activatedPendingProjects = getPendingProjects();
 			if (activatedPendingProjects.size() > 0) {
 				if (!deactivateWorkspace(monitor, activatedPendingProjects, isRecoveryMode)) {
@@ -162,7 +117,7 @@ class StartUpJob extends ActivateBundleJob {
 				}
 				StatePersistParticipant.restoreSessionState();
 			}
-			// Workspace has been recovered. Indicate a normal start up
+			// Indicate a normal start up
 			StatePersistParticipant.setWorkspaceSession(true);
 		} catch (IllegalStateException e) {
 			String msg = WarnMessage.getInstance().formatString("node_removed_preference_store");
@@ -210,19 +165,18 @@ class StartUpJob extends ActivateBundleJob {
 	 * 
 	 */
 	private boolean deactivateWorkspace(IProgressMonitor monitor,
-			Collection<IProject> activatedPendingProjects, boolean isRecoveryMode) throws IllegalStateException,
-			InPlaceException, BackingStoreException {
+			Collection<IProject> activatedPendingProjects, boolean isRecoveryMode)
+			throws IllegalStateException, InPlaceException, BackingStoreException {
 
-		if (SessionJobsInitiator.isDeactivateOnExit(activatedPendingProjects)) {
+		if (SessionManager.isDeactivateOnExit(activatedPendingProjects)) {
 			try {
 				setName(Msg.DEACTIVATE_WORKSPACE_JOB);
 				BundleTransitionListener.addBundleTransitionListener(this);
 				monitor.beginTask(Msg.DEACTIVATE_TASK_JOB, getTicks());
-				registerBundleProjects();
+				Collection<IProject> projects = registerBundleProjects();
 				deactivateNature(activatedPendingProjects, new SubProgressMonitor(monitor, 1));
 				if (isRecoveryMode) {
 					// Bundles have not been refreshed when IDE crashes
-					Collection<IProject> projects = bundleRegion.getProjects();
 					boolean isBundleOperation = messageOptions.isBundleOperations();
 					messageOptions.setIsBundleOperations(false);
 					install(projects, monitor);
@@ -248,17 +202,63 @@ class StartUpJob extends ActivateBundleJob {
 		return false;
 	}
 
+	private void init() {
+
+		final IBundleStatus multiStatus = new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID,
+				"Session Settings");
+		final Activator activator = Activator.getInstance();
+		activator.processLastSavedState();
+		final IWorkbench workbench = PlatformUI.getWorkbench();
+		if (null != workbench && !workbench.isStarting()) {
+			// Not strictly necessary to run in an UI thread
+			Activator.getDisplay().asyncExec(new Runnable() {
+				public void run() {
+					// Adding at this point should ensure that all static contexts are loaded
+					IBundleStatus status = activator.addDynamicExtensions();
+					if (messageOptions.isBundleOperations()) {
+						if (null != status) {
+							multiStatus.add(status);
+						}
+					}
+				}
+			});
+			// Listen to toggling of auto build
+			ICommandService service = (ICommandService) workbench.getService(ICommandService.class);
+			if (null != service) {
+				service.addExecutionListener(new AutoBuildListener());
+			} else {
+				addLogStatus(new BundleStatus(StatusCode.WARNING, Activator.PLUGIN_ID,
+						Msg.AUTO_BUILD_LISTENER_NOT_ADDED_WARN));
+			}
+		} else {
+			addLogStatus(new BundleStatus(StatusCode.WARNING, Activator.PLUGIN_ID,
+					Msg.DYNAMIC_MONITORING_WARN));
+			addLogStatus(new BundleStatus(StatusCode.WARNING, Activator.PLUGIN_ID,
+					Msg.AUTO_BUILD_LISTENER_NOT_ADDED_WARN));
+		}
+		// Log development mode
+		if (messageOptions.isBundleOperations()) {
+			String osgiDev = bundleProjectMeta.inDevelopmentMode();
+			if (null != osgiDev) {
+				String msg = NLS.bind(Msg.CLASS_PATH_DEV_PARAM_INFO, osgiDev);
+				multiStatus.add(new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, msg));
+			}
+		}
+		addLogStatus(multiStatus);
+	}
+
 	/**
 	 * Register all bundle projects in the workspace region assuming that no bundle projects have been
 	 * installed
 	 * <p>
-	 * Bundle projects are registered when first installed
+	 * Bundles are registered when first installed
 	 */
-	private void registerBundleProjects() {
+	private Collection<IProject> registerBundleProjects() {
 
 		Collection<IProject> projects = bundleProjectCandidates.getBundleProjects();
 		for (IProject project : projects) {
 			bundleRegion.registerBundleProject(project, null, false);
 		}
+		return projects;
 	}
 }

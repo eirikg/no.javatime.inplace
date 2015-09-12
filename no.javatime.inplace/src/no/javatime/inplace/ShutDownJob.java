@@ -25,24 +25,22 @@ import no.javatime.util.messages.WarnMessage;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 import org.osgi.service.prefs.BackingStoreException;
 
 /**
- * In an activated workspace activate all bundle projects where the activation level (bundle state)
- * is the same as at the last shutdown. Transition states are calculated for both activated and
- * deactivated bundle projects. Any pending transitions from the previous session are added to both
- * deactivated and activated bundle projects
+ * Uninstall and save bundle project workspace state for all bundle projects when shutting down.
  * <p>
- * In a deactivated workspace the activation level for all bundle projects are
- * {@code Bundle.UNINSTALLED}. The transition state is set to the same as at shutdown and any
- * pending transition from the previous session are added. After first installation of the InPlace
- * Activator the activation level is {@code Bundle.UNINSTALLED} and the transition state is
- * {@code Transition.NO_TRANSITION}
  * <p>
- * If activated bundle projects had build errors at shut down or the "deactivate on exit" preference
- * option was on at shutdown (or manually changed to on after shutdown), the workspace will be
- * deactivated and the activation level, transition state and any pending transitions will be the
- * same as in a deactivated workspace.
+ * See {@link StatePersistParticipant} for a specification of saving and restoring the bundle
+ * project workspace state.
+ * <p>
+ * If activated bundle projects have build errors at shut down or the "Deactivate on Exit"
+ * preference option is on at shutdown (or manually changed to on after shutdown), the workspace
+ * will be deactivated at start up
+ * 
+ * @see StartUpJob
+ * @see StatePersistParticipant
  */
 class ShutDownJob extends UninstallJob {
 
@@ -87,13 +85,18 @@ class ShutDownJob extends UninstallJob {
 
 		try {
 			bundleRegion = Activator.getBundleRegionService();
+			// Signal that we are shutting down
+			StatePersistParticipant.setWorkspaceSession(false);
+			IEclipsePreferences sessionPrefs = StatePersistParticipant.getSessionPreferences();
 			if (bundleRegion.isRegionActivated()) {
-				super.runInWorkspace(monitor);					
+				// Indicates a normal shut down
+				// Activation levels and transition states are stored in the uninstall job
+				super.runInWorkspace(monitor);
 				if (getErrorStatusList().size() > 0) {
-					final IBundleStatus multiStatus = createMultiStatus(new BundleStatus(
-							StatusCode.ERROR, Activator.PLUGIN_ID, getName()));
-					// Send output to standard console when shutting down
+					final IBundleStatus multiStatus = createMultiStatus(new BundleStatus(StatusCode.ERROR,
+							Activator.PLUGIN_ID, getName()));
 					try {
+						// Send errors to default output console when shutting down
 						Activator.getBundleConsoleService().setSystemOutToIDEDefault();
 					} catch (ExtenderException | NullPointerException e) {
 						// Ignore and send to current setting
@@ -102,20 +105,18 @@ class ShutDownJob extends UninstallJob {
 					printStatus(multiStatus);
 					System.err.println(Msg.END_SHUTDOWN_ERROR);
 				}
-				// Not allowed to deactivate (modify project meta files) workspace at shutdown
-				// Save transition state after uninstall if workspace is going to be deactivated at startup
-				if (SessionJobsInitiator.isDeactivateOnExit(bundleRegion.getActivatedProjects())) {
-					// Need to restore transition state after the workspace is deactivated at startup
-					StatePersistParticipant.saveTransitionState(StatePersistParticipant.getSessionPreferences(), true);
-				} 
-				for (IProject project : getPendingProjects()) {
-					bundleRegion.unregisterBundleProject(project);
-				}
 			} else {
-				StatePersistParticipant.saveSessionState(false);
+				// Activation levels are - always in state uninstalled - not saved in an deactivated
+				// workspace. 
+				// Save transition state for bundles in a deactivated workspace
+				StatePersistParticipant.saveTransitionState(sessionPrefs, true);
 			}
-			// Indicate a normal shut down
-			StatePersistParticipant.setWorkspaceSession(false);
+			// They should be, but ensure that saved and current pending transitions are in sync
+			StatePersistParticipant.savePendingBuildTransitions(sessionPrefs,
+					StatePersistParticipant.isWorkspaceSession());
+			for (IProject project : getPendingProjects()) {
+				bundleRegion.unregisterBundleProject(project);
+			}
 		} catch (IllegalStateException e) {
 			String msg = WarnMessage.getInstance().formatString("node_removed_preference_store");
 			addError(e, msg);

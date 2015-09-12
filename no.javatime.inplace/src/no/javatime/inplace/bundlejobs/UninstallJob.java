@@ -41,14 +41,15 @@ import org.osgi.service.prefs.BackingStoreException;
 public class UninstallJob extends NatureJob implements Uninstall {
 
 	// Remove the bundle project from the workspace region
-	private boolean unregisterBundleProject = false;
-	private boolean includeRequiring = true;
+	private boolean unregisterBundleProject;
+	private boolean includeRequiring;
 
 	/**
 	 * Default constructor wit a default job name
 	 */
 	public UninstallJob() {
 		super(Msg.UNINSTALL_JOB);
+		init();
 	}
 
 	/**
@@ -58,6 +59,7 @@ public class UninstallJob extends NatureJob implements Uninstall {
 	 */
 	public UninstallJob(String name) {
 		super(name);
+		init();
 	}
 
 	/**
@@ -68,6 +70,7 @@ public class UninstallJob extends NatureJob implements Uninstall {
 	 */
 	public UninstallJob(String name, Collection<IProject> projects) {
 		super(name, projects);
+		init();
 	}
 
 	/**
@@ -78,6 +81,19 @@ public class UninstallJob extends NatureJob implements Uninstall {
 	 */
 	public UninstallJob(String name, IProject project) {
 		super(name, project);
+		init();
+	}
+
+	
+	private void init() {
+		unregisterBundleProject = false;
+		includeRequiring = true;
+	}
+
+	@Override
+	public void end() {		
+		super.end();
+		init();
 	}
 
 	/*
@@ -171,7 +187,7 @@ public class UninstallJob extends NatureJob implements Uninstall {
 		}
 		return getJobSatus();
 	}
-
+	
 	/**
 	 * Stops, uninstalls and refreshes a set of pending bundle projects and all bundle projects
 	 * requiring capabilities from the pending bundle projects.
@@ -204,14 +220,19 @@ public class UninstallJob extends NatureJob implements Uninstall {
 		} else {
 			bundlesToUninstall = pendingBundles;
 		}
-		if (pendingBundles.containsAll(bundleRegion.getActivatedBundles())) {
-			StatePersistParticipant.saveSessionState(false);
+		boolean isUninstallWorkspace = pendingBundles.containsAll(bundleRegion.getActivatedBundles());
+		if (isUninstallWorkspace) {
+			// StatePersistParticipant.saveSessionState(false);
+			StatePersistParticipant.saveActivationLevel(StatePersistParticipant.getSessionPreferences(), false);
 		}
 		stop(bundlesToUninstall, null, new SubProgressMonitor(monitor, 1));
 		if (monitor.isCanceled()) {
 			throw new OperationCanceledException();
 		}
 		uninstall(bundlesToUninstall, new SubProgressMonitor(monitor, 1), true, unregisterBundleProject);
+		if (isUninstallWorkspace && !unregisterBundleProject) {
+			StatePersistParticipant.saveTransitionState(StatePersistParticipant.getSessionPreferences(), true);
+		}
 		if (monitor.isCanceled()) {
 			throw new OperationCanceledException();
 		}

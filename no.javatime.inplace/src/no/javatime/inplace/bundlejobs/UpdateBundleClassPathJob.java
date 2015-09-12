@@ -41,6 +41,7 @@ public class UpdateBundleClassPathJob extends NatureJob implements UpdateBundleC
 	 */
 	public UpdateBundleClassPathJob() {
 		super(Msg.UPDATE_BUNDLE_CLASS_PATH_JOB);
+		init();
 	}
 	
 	/**
@@ -50,6 +51,7 @@ public class UpdateBundleClassPathJob extends NatureJob implements UpdateBundleC
 	 */
 	public UpdateBundleClassPathJob(String name) {
 		super(name);
+		init();
 	}
 
 	/**
@@ -60,6 +62,7 @@ public class UpdateBundleClassPathJob extends NatureJob implements UpdateBundleC
 	 */
 	public UpdateBundleClassPathJob(String name, Collection<IProject> projects) {
 		super(name, projects);
+		init();
 	}
 
 	/**
@@ -70,6 +73,17 @@ public class UpdateBundleClassPathJob extends NatureJob implements UpdateBundleC
 	 */
 	public UpdateBundleClassPathJob(String name, IProject project) {
 		super(name, project);
+		init();
+	}
+
+	private void init() {		
+		addToPath = true;
+	}
+	
+	@Override
+	public void end() {
+		super.end();
+		init();
 	}
 
 	/**

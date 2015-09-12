@@ -88,6 +88,12 @@ public abstract class NatureJob extends BundleJob {
 			ExtenderException {
 		return super.runInWorkspace(monitor);
 	}
+	
+	@Override
+	public void end() {
+
+		super.end();
+	}
 
 	public Boolean isProjectActivated(IProject project) throws InPlaceException, ExtenderException {
 

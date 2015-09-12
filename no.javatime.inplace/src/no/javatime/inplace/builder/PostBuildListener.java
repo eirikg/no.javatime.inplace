@@ -112,6 +112,7 @@ import org.osgi.framework.Bundle;
  */
 public class PostBuildListener implements IResourceChangeListener {
 
+	// Bundle services
 	private BundleRegion bundleRegion;
 	private BundleTransition bundleTransition;
 	private BundleProjectCandidates bundleProjectCandidates;
@@ -119,9 +120,26 @@ public class PostBuildListener implements IResourceChangeListener {
 	private CommandOptions commandOptions;
 	private ResourceState resourceState;
 	final private ActivateProject projectActivator;
+
 	// Reduce the number of scheduled update jobs.
 	// If true wait for the next build before scheduling update
 	private boolean isTriggerUpdate;
+	// Updates a project if it is activated in an activated workspace
+	// and after a build where the project is pending for update and auto build is on
+	final private Update update = new UpdateJob();
+	// After projects are activated in a deactivated workspace and when moved in an active
+	// workspace
+	final ActivateBundle activateBundle = new ActivateBundleJob();
+	// Project with new requirements on UI plug-in(s), when UI plug-ins are not allowed
+	final Deactivate deactivate = new DeactivateJob();
+	// Project moved and uninstalled before reactivated again
+	final Uninstall uninstall = new UninstallJob();
+	// When a project is activated and in state uninstalled or deactivated and in state
+	// uninstalled
+	final Install install = new InstallJob();
+	// Add new (opened, imported, created) and renamed projects to the workspace region
+	// Deactivated bundle projects are installed and activated bundle projects are activated
+	final AddBundleProject addBundleProject = new AddBundleProjectJob();
 
 	public PostBuildListener() {
 
@@ -153,34 +171,22 @@ public class PostBuildListener implements IResourceChangeListener {
 		}
 		try {
 			final int buildKind = event.getBuildKind();
-			// Nothing to do in a deactivated workspace where all bundle projects are uninstalled
 			// Clean build calls post build listener twice. The first call is of kind {@code CLEAN_BUILD}
-			if (!projectActivator.isProjectWorkspaceActivated()
-					|| buildKind == IncrementalProjectBuilder.CLEAN_BUILD || buildKind == 0) {
+			if (buildKind == IncrementalProjectBuilder.CLEAN_BUILD || buildKind == 0) {
 				return;
 			}
-			// Updates a project if it is activated in an activated workspace
-			// and after a build where the project is pending for update and auto build is on
-			final Update update = new UpdateJob();
 			isTriggerUpdate = resourceState.isTriggerUpdate();
-			// After projects are activated in a deactivated workspace and when moved in an active
-			// workspace
-			final ActivateBundle activateBundle = new ActivateBundleJob();
-			// Project with new requirements on UI plug-in(s), when UI plug-ins are not allowed
-			final Deactivate deactivate = new DeactivateJob();
-			// Project moved and uninstalled before reactivated again
-			final Uninstall uninstall = new UninstallJob();
-			// When a project is activated and in state uninstalled or deactivated and in state
-			// uninstalled
-			final Install install = new InstallJob();
-			// Add new (opened, imported, created) and renamed projects to the workspace region
-			// Deactivated bundle projects are installed and activated bundle projects are activated
-			final AddBundleProject addBundleProject = new AddBundleProjectJob();
 
 			final IResourceDelta rootDelta = event.getDelta();
 			// Ignore removed (deleted or closed) projects uninstalled in the pre-change listener
 			IResourceDelta[] resourceDeltas = (null != rootDelta ? rootDelta.getAffectedChildren(
 					IResourceDelta.ADDED | IResourceDelta.CHANGED, IResource.NONE) : null);
+			// Only check for removal of pending transitions in a deactivated workspace.
+			// Pending transitions for activated projects are removed in the JavaTime builder
+			if (!projectActivator.isProjectWorkspaceActivated()) {
+				removePendingBuildTransition(buildKind, resourceDeltas);
+				return;
+			}
 			// A null resource delta implies an unspecified change or a full build. An empty resource
 			// delta implies no change since last build, but resourceState may have pending transitions
 			if (null == resourceDeltas || resourceDeltas.length == 0) {
@@ -367,17 +373,42 @@ public class PostBuildListener implements IResourceChangeListener {
 		return false;
 	}
 
+	private void removePendingBuildTransition(final int buildKind, IResourceDelta[] resourceDeltas) {
+
+		if (null == resourceDeltas || resourceDeltas.length == 0) {
+			for (IProject project : bundleProjectCandidates.getInstallable()) {
+				removePendingBuildTransition(buildKind, project);
+			}
+		} else {
+			for (IResourceDelta projectDelta : resourceDeltas) {
+				IResource projectResource = projectDelta.getResource();
+				if (projectResource.isAccessible()
+						&& (projectResource.getType() & (IResource.PROJECT)) != 0) {
+					IProject project = projectResource.getProject();
+					removePendingBuildTransition(buildKind, project);
+				}
+			}
+		}
+	}
+
 	/**
 	 * Remove the pending {@link Transition#BUILD build} transition from the specified project
 	 * <p>
 	 * 
-	 * The pending build transition is only removed from deactivated bundle projects but not
-	 * when auto build is off and the build kind is auto build. In all other cases the pending build
-	 * transition is removed:
+	 * Remove pending build transition from deactivated bundle projects, but not when auto build is
+	 * off and the build kind is auto build. This is interpreted as a request for auto build when auto
+	 * build is off.
+	 * <p>
+	 * To retain pending builds between IDE sessions - including when the IDE crashes - a pending
+	 * build entry is added to the preference store in the pre build listener when there is a request
+	 * for auto build and auto build is off. An alternative is to implemented this in the post build
+	 * listener testing for the same conditions.
+	 * 
+	 * 
+	 * The ending build transition is removed when: is removed when:
 	 * <ol>
-	 * <li>When automatic build is on (this includes all kind of builds)
-	 * <li>A manual build when automatic build is off (this includes incremental, full and clean
-	 * build)
+	 * <li>Automatic build is on (this includes all kind of builds)
+	 * <li>Manual build and automatic build is off (this includes incremental, full and clean build)
 	 * </ol>
 	 * <p>
 	 * Pending builds for activated bundle projects are handled by the {@link JavaTimeBuilder}
@@ -389,11 +420,12 @@ public class PostBuildListener implements IResourceChangeListener {
 	 */
 	private boolean removePendingBuildTransition(final int buildKind, final IProject project) {
 
+		// To ensure that activated projects have been built, only remove in the JavaTime Builder
 		if (!bundleRegion.isBundleActivated(project)) {
 			if (!bundleProjectCandidates.isAutoBuilding()
 					&& buildKind == IncrementalProjectBuilder.AUTO_BUILD) {
 				return false;
-			}	
+			}
 			bundleTransition.removePending(project, Transition.BUILD);
 			return true;
 		}
