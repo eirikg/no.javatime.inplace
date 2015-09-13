@@ -113,7 +113,6 @@ public class BundleJobListener extends JobChangeAdapter {
 						new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),
 						StatusManager.LOG);
 			} finally {
-				bundleJob.end();
 				schedulePendingOperations();				
 			}
 		}

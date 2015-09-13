@@ -259,13 +259,14 @@ public interface BundleRegion {
 	 * Determine if a bundle that is member of the workspace region is currently executing a bundle
 	 * operation
 	 * 
-	 * @return the bundle currently executing a bundle operation
+	 * @return the bundle currently executing a bundle operation or {@code null} if there is no
+	 * operation currently executing
 	 */
 	public Bundle isRegionStateChanging();
 
 	/**
 	 * Check if the bundle associated with the specified project is activated. The condition is
-	 * satisfied if the project and the associated bundle is registered with the region.
+	 * satisfied if the project is activated and the associated bundle is registered with the region.
 	 * 
 	 * @param bundleProject to check for activation
 	 * @return true if the specified project is registered with the region and the bundle object is
@@ -277,7 +278,7 @@ public interface BundleRegion {
 
 	/**
 	 * Check if the bundle with the specified bundle id is activated. The condition is satisfied if
-	 * the project and the associated bundle is registered with the region.
+	 * the project is activated and the associated bundle is registered with the region.
 	 * 
 	 * @param bundleId id of bundle object to check for activation mode
 	 * @return true if the bundle object is activated. If not activated or the specified bundle is not
@@ -287,7 +288,7 @@ public interface BundleRegion {
 
 	/**
 	 * Check if the specified bundle is activated. The condition is satisfied if the associated
-	 * project of the bundle and the specified bundle is registered with the region.
+	 * project is activated and the specified bundle is registered with the region.
 	 * 
 	 * @param bundle bundle object to check for activation mode
 	 * @return true if the bundle object is activated. If not activated or the specified bundle is not

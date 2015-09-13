@@ -14,7 +14,6 @@ import java.util.Collection;
 
 import no.javatime.inplace.Activator;
 import no.javatime.inplace.bundlejobs.intface.ActivateBundle;
-import no.javatime.inplace.bundlejobs.intface.BundleExecutor;
 import no.javatime.inplace.bundlejobs.intface.Reset;
 import no.javatime.inplace.bundlejobs.intface.SaveOptions;
 import no.javatime.inplace.bundlejobs.intface.Uninstall;
@@ -23,7 +22,6 @@ import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.closure.BundleClosures;
 import no.javatime.inplace.region.closure.CircularReferenceException;
-import no.javatime.inplace.region.intface.BundleTransition.Transition;
 import no.javatime.inplace.region.intface.BundleTransitionListener;
 import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.status.BundleStatus;
@@ -33,7 +31,6 @@ import no.javatime.util.messages.ErrorMessage;
 import no.javatime.util.messages.ExceptionMessage;
 
 import org.eclipse.core.resources.IProject;
-import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.jobs.Job;
@@ -91,6 +88,9 @@ public class ResetJob extends BundleJob implements Reset {
 			SaveOptions saveOptions = getSaveOptions();
 			saveOptions.disableSaveFiles(true);
 			super.runInWorkspace(monitor);
+			if (!bundleRegion.isRegionActivated()) {
+				return getJobSatus();
+			}
 			BundleTransitionListener.addBundleTransitionListener(this);
 			groupMonitor.beginTask(Msg.RESET_JOB, 3);
 			BundleClosures closures = new BundleClosures();
@@ -116,44 +116,12 @@ public class ResetJob extends BundleJob implements Reset {
 			uninstall.setAddRequiring(false);
 			uninstall.setUnregister(true);
 			uninstall.setSaveWorkspaceSnaphot(false);
-			final Collection<IProject> buildPendingProjects = 
-					bundleTransition.getPendingProjects(bundleRegion.getProjects(), Transition.BUILD);			
-			Activator.getBundleExecutorEventService().add(uninstall, 0);
+			Activator.getBundleExecutorEventService().add(uninstall, 0);			
 			ActivateBundle activateBundle = new ActivateBundleJob(Msg.RESET_ACTIVATE_JOB,
 					projectsToReset);
 			activateBundle.setSaveWorkspaceSnaphot(false);
 			activateBundle.getJob().setProgressGroup(groupMonitor, 1);
 			Activator.getBundleExecutorEventService().add(activateBundle, 0);
-
-			BundleExecutor addBuildTransition = new BundleJob("Add pending build transition") {
-				@Override
-				public IBundleStatus runInWorkspace(IProgressMonitor monitor) throws CoreException {
-
-					try {
-						getSaveOptions().disableSaveFiles(true);
-						super.runInWorkspace(monitor);
-						monitor.beginTask(getName(), 1);
-						// Remove pending build transition for deactivated bundle projects
-						// Activated bundle projects are removed by the java time builder
-						for (IProject project : buildPendingProjects) {
-							bundleTransition.addPending(project, Transition.BUILD);
-						}
-					} catch (ExtenderException e) {
-						addError(e, NLS.bind(Msg.SERVICE_EXECUTOR_EXP, getName()));
-					} catch (CoreException e) {
-						String msg = ErrorMessage.getInstance().formatString("error_end_job", getName());
-						return new BundleStatus(StatusCode.ERROR, Activator.PLUGIN_ID, msg, e);
-					} finally {
-						monitor.done();
-					}
-					return getJobSatus();
-				}
-			};
-			if (buildPendingProjects.size() > 0) {
-				addBuildTransition.setSaveWorkspaceSnaphot(false);
-				Activator.getBundleExecutorEventService().add(addBuildTransition, 0);
-			}
-
 		} catch (OperationCanceledException e) {
 			addCancelMessage(e, NLS.bind(Msg.CANCEL_JOB_INFO, getName()));
 		} catch (CircularReferenceException e) {
@@ -170,9 +138,6 @@ public class ResetJob extends BundleJob implements Reset {
 		} catch (NullPointerException e) {
 			String msg = ExceptionMessage.getInstance().formatString("npe_job", getName());
 			addError(e, msg);
-//		} catch (CoreException e) {
-//			String msg = ErrorMessage.getInstance().formatString("error_end_job", getName());
-//			return new BundleStatus(StatusCode.ERROR, Activator.PLUGIN_ID, msg, e);
 		} catch (Exception e) {
 			String msg = ExceptionMessage.getInstance().formatString("exception_job", getName());
 			addError(e, msg);

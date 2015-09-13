@@ -126,20 +126,20 @@ public class PostBuildListener implements IResourceChangeListener {
 	private boolean isTriggerUpdate;
 	// Updates a project if it is activated in an activated workspace
 	// and after a build where the project is pending for update and auto build is on
-	final private Update update = new UpdateJob();
+	private Update update;
 	// After projects are activated in a deactivated workspace and when moved in an active
 	// workspace
-	final ActivateBundle activateBundle = new ActivateBundleJob();
+	ActivateBundle activateBundle;
 	// Project with new requirements on UI plug-in(s), when UI plug-ins are not allowed
-	final Deactivate deactivate = new DeactivateJob();
+	Deactivate deactivate;
 	// Project moved and uninstalled before reactivated again
-	final Uninstall uninstall = new UninstallJob();
+	Uninstall uninstall;
 	// When a project is activated and in state uninstalled or deactivated and in state
 	// uninstalled
-	final Install install = new InstallJob();
+	Install install;
 	// Add new (opened, imported, created) and renamed projects to the workspace region
 	// Deactivated bundle projects are installed and activated bundle projects are activated
-	final AddBundleProject addBundleProject = new AddBundleProjectJob();
+	AddBundleProject addBundleProject;
 
 	public PostBuildListener() {
 
@@ -175,8 +175,6 @@ public class PostBuildListener implements IResourceChangeListener {
 			if (buildKind == IncrementalProjectBuilder.CLEAN_BUILD || buildKind == 0) {
 				return;
 			}
-			isTriggerUpdate = resourceState.isTriggerUpdate();
-
 			final IResourceDelta rootDelta = event.getDelta();
 			// Ignore removed (deleted or closed) projects uninstalled in the pre-change listener
 			IResourceDelta[] resourceDeltas = (null != rootDelta ? rootDelta.getAffectedChildren(
@@ -187,6 +185,13 @@ public class PostBuildListener implements IResourceChangeListener {
 				removePendingBuildTransition(buildKind, resourceDeltas);
 				return;
 			}
+			update = new UpdateJob();
+			activateBundle = new ActivateBundleJob();
+			deactivate = new DeactivateJob();
+			uninstall = new UninstallJob();
+			install = new InstallJob();
+			addBundleProject = new AddBundleProjectJob();
+			isTriggerUpdate = resourceState.isTriggerUpdate();
 			// A null resource delta implies an unspecified change or a full build. An empty resource
 			// delta implies no change since last build, but resourceState may have pending transitions
 			if (null == resourceDeltas || resourceDeltas.length == 0) {
