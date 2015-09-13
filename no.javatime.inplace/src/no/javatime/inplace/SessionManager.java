@@ -2,6 +2,9 @@ package no.javatime.inplace;
 
 import java.util.Collection;
 
+import no.javatime.inplace.bundlejobs.DeactivateJob;
+import no.javatime.inplace.bundlejobs.UninstallJob;
+import no.javatime.inplace.bundlejobs.intface.BundleExecutor;
 import no.javatime.inplace.bundlejobs.intface.ResourceState;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.extender.intface.ExtenderException;
@@ -12,30 +15,48 @@ import no.javatime.inplace.region.closure.BuildErrorClosure.ActivationScope;
 import no.javatime.inplace.region.closure.CircularReferenceException;
 import no.javatime.inplace.region.intface.BundleRegion;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
+import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.status.BundleStatus;
+import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
+import no.javatime.util.messages.ExceptionMessage;
+import no.javatime.util.messages.WarnMessage;
 
 import org.eclipse.core.resources.IProject;
+import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 import org.eclipse.ui.IStartup;
+import org.eclipse.ui.IWorkbench;
+import org.eclipse.ui.IWorkbenchListener;
+import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.statushandlers.StatusManager;
 import org.osgi.framework.Bundle;
+import org.osgi.service.prefs.BackingStoreException;
 
 /**
- * Schedules bundle jobs for activating or deactivating bundles at session start and uninstalling
- * bundles at session end. A session last from the point when bundle projects are activated and to
- * the point when bundles are started to get uninstalled. If bundle projects are deactivated when a
- * session starts it ends the point when bundles are started to get deactivated.
- * 
+ * Initialize and clears the the region workspace at start up and shut down respectively and
+ * schedules bundle jobs for activating bundles at session start and deactivating or uninstalling
+ * bundles at session end.
+ * <p>
+ * A session last from the point when bundle projects are activated and to the point when bundles
+ * are started to get uninstalled. If bundle projects are deactivated when a session starts it ends
+ * at the point when bundles are started to get deactivated.
+ * <p>
+ * The workspace is deactivated at start up if it should but has not been deactivated at shut down
+ * due to an abnormal termination of a session.
+ * <p>
  * Examples of sessions are workspace session (startup/shutdown), deactivate/activate session and
- * when the Reset (uninstall/activate) bundle command is executed. See {@link StartUpJob} and
- * {@link ShutDownJob} for details about the bundle jobs.
+ * when the Reset (uninstall/activate) bundle command is executed.
  * <p>
  * The {@code earlyStartup()} method is called after initializing the plug-in in the
  * {@code start(BundleContext)} method. Initializations that depends on the workbench should be done
  * here and not when the plug-in is initialized
+ * <p>
+ * The {@code preShutdown(IWorkbench, boolean)} method deactivates or uninstalls the workspace and
+ * is called before the IDE begin the shut down process.
  * 
  */
-public class SessionManager implements IStartup {
+public class SessionManager implements IStartup, IWorkbenchListener {
 
 	/**
 	 * Schedule a start up job for activating bundles
@@ -49,42 +70,116 @@ public class SessionManager implements IStartup {
 			// Override save preference options settings at startup
 			startUpJob.setSaveWorkspaceSnaphot(false);
 			startUpJob.setSaveFiles(false);
-			// Run build first to avoid running an update job after the start up job
+			// Let build run first to avoid running an update job after the start up job
 			Activator.getResourceStateService().waitOnBuilder(false);
 			Activator.getBundleExecutorEventService().add(startUpJob, 0);
 		} catch (BundleLogException | ExtenderException e) {
 			StatusManager.getManager().handle(
 					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),
 					StatusManager.LOG);
+		} finally {
+			IWorkbench workbench = PlatformUI.getWorkbench();
+			if (null != workbench) {
+				workbench.addWorkbenchListener(this);
+			}
 		}
 	}
 
 	/**
-	 * Schedule a shut down job for uninstalling bundles and wait for the job to finish.
-	 * <p>
-	 * Errors are sent to the error log
+	 * In cases where the workspace is deactivated at shut down project meta files are modified and
+	 * the deactivation of projects must be done before the IDE starts its own shutdown process
 	 */
-	public static void shutDown() {
+	@Override
+	public boolean preShutdown(IWorkbench workbench, boolean forced) {
+		earlyShutDown(workbench);
+		return true;
+	}
 
-		ShutDownJob shutDownJob = null;
+	/**
+	 * Not in use. The listener is removed in {@code preShutdown(IWorkbench, boolean)}
+	 */
+	@Override
+	public void postShutdown(IWorkbench workbench) {
+		return;
+	}
+
+	/**
+	 * Schedule a shut down job for deactivation or uninstalling bundles and waits for the job to
+	 * finish.
+	 * <p>
+	 * Errors are sent to the error log and to the default console
+	 * 
+	 * @param workbench The listener for this workbench is removed before returning
+	 */
+	private void earlyShutDown(IWorkbench workbench) {
+
+		BundleExecutor shutDownJob = null;
 		try {
-			shutDownJob = new ShutDownJob(Msg.SHUT_DOWN_JOB);
+			// Signal that we are shutting down
+			StatePersistParticipant.setWorkspaceSession(false);
+			IEclipsePreferences sessionPrefs = StatePersistParticipant.getSessionPreferences();
 			BundleRegion bundleRegion = Activator.getBundleRegionService();
-			shutDownJob.addPendingProjects(bundleRegion.getProjects());
-			shutDownJob.setUser(false);
-			// Full workbench save is performed by the workbench at shutdown
-			shutDownJob.setSaveWorkspaceSnaphot(false);
-			// Saving is determined by the user when the workbench is closing
-			shutDownJob.setSaveFiles(false);
-			ResourceState resourceState = Activator.getResourceStateService();
-			Activator.getBundleExecutorEventService().add(shutDownJob, 0);
-			// Wait for builder and bundle jobs to finish before proceeding
-			resourceState.waitOnBuilder(false);
-			resourceState.waitOnBundleJob();
-		} catch (ExtenderException e) {
+			Collection<IProject> activatedProjects = bundleRegion.getActivatedProjects();
+			if (activatedProjects.size() > 0) {
+				if (isDeactivateOnExit(activatedProjects)) {
+					shutDownJob = new DeactivateJob(Msg.SHUT_DOWN_JOB, activatedProjects);
+				} else {
+					shutDownJob = new UninstallJob(Msg.SHUT_DOWN_JOB, bundleRegion.getProjects());
+				}
+				shutDownJob.getJob().setUser(false);
+				// Full workbench save is performed by the workbench at shutdown
+				shutDownJob.setSaveWorkspaceSnaphot(false);
+				// Saving is determined by the user when the workbench is closing
+				shutDownJob.setSaveFiles(false);
+				Activator.getBundleExecutorEventService().add(shutDownJob, 0);
+				// Wait for builder and bundle jobs to finish before proceeding
+				ResourceState resourceState = Activator.getResourceStateService();
+				resourceState.waitOnBuilder(false);
+				resourceState.waitOnBundleJob();
+				if (shutDownJob.getErrorStatusList().size() > 0) {
+					final IBundleStatus multiStatus = shutDownJob.createMultiStatus(new BundleStatus(
+							StatusCode.ERROR, Activator.PLUGIN_ID, shutDownJob.getName()));
+					try {
+						// Send errors to default output console when shutting down
+						Activator.getBundleConsoleService().setSystemOutToIDEDefault();
+					} catch (ExtenderException | NullPointerException e) {
+						// Ignore and send to current system err setting
+					}
+					System.err.println(Msg.BEGIN_SHUTDOWN_ERROR);
+					printStatus(multiStatus);
+					System.err.println(Msg.END_SHUTDOWN_ERROR);
+				}
+			} else {
+				// Activation levels are always in state uninstalled and not saved in an deactivated
+				// workspace. Save transition state for bundles in a deactivated workspace
+				StatePersistParticipant.saveTransitionState(sessionPrefs, true);
+			}
+			// They should be, but ensure that saved and current pending transitions are in sync
+			StatePersistParticipant.savePendingBuildTransitions(sessionPrefs,
+					StatePersistParticipant.isWorkspaceSession());
+			for (IProject project : bundleRegion.getProjects()) {
+				bundleRegion.unregisterBundleProject(project);
+			}
+		} catch (IllegalStateException e) {
+			String msg = WarnMessage.getInstance().formatString("node_removed_preference_store");
 			StatusManager.getManager().handle(
-					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),
-					StatusManager.LOG);
+					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, msg, e), StatusManager.LOG);
+		} catch (BackingStoreException e) {
+			String msg = WarnMessage.getInstance().formatString("failed_getting_preference_store");
+			StatusManager.getManager().handle(
+					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, msg, e), StatusManager.LOG);
+		} catch (InPlaceException | ExtenderException e) {
+			StatusManager.getManager().handle(
+					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, Msg.INIT_BUNDLE_STATE_ERROR,
+							e), StatusManager.LOG);
+			String msg = ExceptionMessage.getInstance().formatString("terminate_job_with_errors",
+					shutDownJob.getName());
+			StatusManager.getManager().handle(
+					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, msg, e), StatusManager.LOG);
+		} finally {
+			if (null != workbench) {
+				workbench.removeWorkbenchListener(this);
+			}
 		}
 	}
 
@@ -126,5 +221,23 @@ public class SessionManager implements IStartup {
 			return true;
 		}
 		return false;
+	}
+
+	/**
+	 * Print status and sub status objects to system err
+	 * 
+	 * @param status status object to print to system err
+	 */
+	private void printStatus(IStatus status) {
+		Throwable t = status.getException();
+		if (null != t) {
+			t.printStackTrace();
+		} else {
+			System.err.println(status.getMessage());
+		}
+		IStatus[] children = status.getChildren();
+		for (int i = 0; i < children.length; i++) {
+			printStatus(children[i]);
+		}
 	}
 }

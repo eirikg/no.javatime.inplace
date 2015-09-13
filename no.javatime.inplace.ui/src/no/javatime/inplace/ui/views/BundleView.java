@@ -293,8 +293,8 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 		BundleTransitionListener.addBundleTransitionListener(this);
 		ResourcesPlugin.getWorkspace().addResourceChangeListener(
 				this,
-				IResourceChangeEvent.PRE_CLOSE | IResourceChangeEvent.PRE_DELETE 
-				| IResourceChangeEvent.PRE_BUILD | IResourceChangeEvent.POST_BUILD);
+				IResourceChangeEvent.PRE_CLOSE | IResourceChangeEvent.PRE_DELETE
+						| IResourceChangeEvent.PRE_BUILD | IResourceChangeEvent.POST_BUILD);
 		// Local bundle actions, tool bars and pull down menu
 		createLocalActions();
 		IActionBars actionBars = getViewSite().getActionBars();
@@ -589,8 +589,8 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 							StatusManager.LOG);
 				}
 			}
-		} else if ((eventType & (IResourceChangeEvent.PRE_BUILD | IResourceChangeEvent.POST_BUILD )) != 0) {
-			try {	
+		} else if ((eventType & (IResourceChangeEvent.PRE_BUILD | IResourceChangeEvent.POST_BUILD)) != 0) {
+			try {
 				IWorkbench workbench = Activator.getDefault().getWorkbench();
 				if (null != workbench && !workbench.isClosing()) {
 					showProjectInfo();
@@ -1449,11 +1449,19 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 	 * @see BundleView#getGlobalSelectedProject(ISelection)
 	 */
 	private IProject getSelectedProject() {
-		int index = bundleListPage.getTable().getSelectionIndex();
-		if (index >= 0) {
-			TableItem[] ti = bundleListPage.getTable().getItems();
-			BundleProperties bp = (BundleProperties) ti[index].getData();
-			return bp.getProject();
+		try {
+			if (!bundleListPage.getTable().isDisposed()) {
+				int index = bundleListPage.getTable().getSelectionIndex();
+				if (index >= 0) {
+					TableItem[] ti = bundleListPage.getTable().getItems();
+					BundleProperties bp = (BundleProperties) ti[index].getData();
+					return bp.getProject();
+				}
+			}
+		} catch (SWTException e) {
+			StatusManager.getManager().handle(
+					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID,
+							Msg.THREAD_INVALID_ACCESS_EXCEPTION, e), StatusManager.LOG);
 		}
 		return null;
 	}

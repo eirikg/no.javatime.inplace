@@ -67,7 +67,7 @@ import org.osgi.framework.BundleContext;
  * <li>Bundle project service for managing of bundle bundlePeojectMeta information
  * <ul/>
  */
-public class Activator extends AbstractUIPlugin {
+public class Activator extends AbstractUIPlugin  {
 
 	public static final String PLUGIN_ID = "no.javatime.inplace"; //$NON-NLS-1$
 
@@ -151,7 +151,6 @@ public class Activator extends AbstractUIPlugin {
 			// Remove resource listeners as soon as possible to prevent scheduling of new bundle jobs
 			removeResourceListeners();
 			removeDynamicExtensions();
-			SessionManager.shutDown();
 		} catch (ExtenderException e) {
 			StatusManager.getManager().handle(
 					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),

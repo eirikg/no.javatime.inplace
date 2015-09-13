@@ -98,9 +98,10 @@ class StartUpJob extends ActivateBundleJob {
 			StatePersistParticipant.setWorkspaceSession(!isRecoveryMode);
 			initServices();
 			startTime = System.currentTimeMillis();
-			init();
+			startUpInit();
 			Collection<IProject> activatedPendingProjects = getPendingProjects();
 			if (activatedPendingProjects.size() > 0) {
+				// Indicates an IDE crash. Bundle projects have not been deactivated at shutdown
 				if (!deactivateWorkspace(monitor, activatedPendingProjects, isRecoveryMode)) {
 					// Activate workspace
 					if (isRecoveryMode) {
@@ -202,7 +203,7 @@ class StartUpJob extends ActivateBundleJob {
 		return false;
 	}
 
-	private void init() {
+	private void startUpInit() {
 
 		final IBundleStatus multiStatus = new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID,
 				"Session Settings");

@@ -9,7 +9,7 @@ public class Msg extends NLS {
 	public static String PREFERENCE_FLUSH_EXCEPTION;
 	public static String SERVICE_UNAVAILABLE_EXCEPTION;
 	public static String PROPERTY_PAGE_NOT_UPDATED_EXCEPTION;
-	
+	public static String THREAD_INVALID_ACCESS_EXCEPTION; 
 	// Errors
 	public static String ADD_CONTRIBUTION_ERROR;
 	public static String ADD_MENU_EXEC_ERROR;
