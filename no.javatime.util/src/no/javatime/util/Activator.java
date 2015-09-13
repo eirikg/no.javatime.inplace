@@ -73,8 +73,8 @@ public class Activator extends AbstractUIPlugin {
 	 */
 	public void stop(BundleContext context) throws Exception {
 		savePluginSettings(true);
-		plugin = null;
 		super.stop(context);
+		plugin = null;
 	}
 
 	/**

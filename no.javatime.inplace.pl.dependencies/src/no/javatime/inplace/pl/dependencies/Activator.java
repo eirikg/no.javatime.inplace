@@ -62,8 +62,8 @@ public class Activator extends AbstractUIPlugin {
 	public void stop(BundleContext context) throws Exception {
 
 		extenderBundleTracker.close();
-		plugin = null;
 		super.stop(context);
+		plugin = null;
 	}
 
 	public DependencyOptions getDependencyOptionsService() throws InPlaceException {

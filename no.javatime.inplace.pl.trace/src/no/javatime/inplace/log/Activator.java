@@ -101,9 +101,9 @@ public class Activator extends AbstractUIPlugin {
 			extendedLogServiceTracker.close();
 			extendedLogReaderServiceTracker.close();
 		}
+		super.stop(context);
 		plugin = null;
 		Activator.context = null;
-		super.stop(context);
 	}
 
 	public static Activator getDefault() {
