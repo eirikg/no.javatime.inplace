@@ -181,7 +181,7 @@ public class Activator extends AbstractUIPlugin implements ServiceListener {
 	}
 
 	/**
-	 * Lazy start of the bundle command provider until the OSGi console opens
+	 * Delay start of the bundle project command provider until the OSGi console opens
 	 */
 	@Override
 	public void serviceChanged(ServiceEvent event) {
@@ -192,11 +192,12 @@ public class Activator extends AbstractUIPlugin implements ServiceListener {
 			if (Activator.getContext().getService(sr) instanceof ConsoleSession) {
 				Bundle[] bundles = Activator.getContext().getBundles();
 				for (int i = 0; i < bundles.length; i++) {
-					if ((bundles[i].getState() & (Bundle.RESOLVED)) != 0) {					
-						String provider = bundles[i].getHeaders().get(Constants.BUNDLE_NAME);
-						if (null != provider && provider.startsWith("Bundle Project")) {
+					if ((bundles[i].getState() & (Bundle.RESOLVED)) != 0) {
+						String provider = bundles[i].getHeaders().get(Constants.BUNDLE_SYMBOLICNAME);
+						if (null != provider && provider.equals("no.javatime.inplace.cmd.console")) {
 							try {
 								bundles[i].start(Bundle.START_TRANSIENT);
+								break;
 							} catch (BundleException | IllegalStateException | SecurityException e) {
 								String msg = NLS.bind(Msg.CMD_PROVIDER_NOT_STARTED_WARN, bundles[i].getSymbolicName());
 								IBundleStatus status = new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, msg, e);

@@ -39,7 +39,6 @@ import org.osgi.util.tracker.BundleTrackerCustomizer;
 public class ExtenderTracker extends ExtenderBundleTracker {
 
 	Extender<BundleRegion> bundleRegionExtender;
-	Extender<BundleTransition> bundleTransitionExtender;
 	Extender<CommandOptions> commandOptionsExtender;
 
 	public ExtenderTracker(BundleContext context, int stateMask,
