@@ -117,7 +117,7 @@ public class AutoBuildListener implements IExecutionListener {
 		}
 	}
 
-	BundleExecutor removeBuildTransition = new BundleJob("Remove pending build transition") {
+	private BundleExecutor removeBuildTransition = new BundleJob("Remove pending build transition") {
 		@Override
 		public IBundleStatus runInWorkspace(IProgressMonitor monitor) throws CoreException {
 

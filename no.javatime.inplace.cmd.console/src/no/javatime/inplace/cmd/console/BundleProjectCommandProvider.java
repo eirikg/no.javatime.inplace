@@ -137,7 +137,7 @@ public class BundleProjectCommandProvider implements CommandProvider {
 
 	public void cmd(String cmd, CommandInterpreter ci, BundleExecutor executor, String fullCmdname) {
 
-		boolean activationMode = cmd.startsWith("a") ? true : false;
+		boolean activationMode = cmd.charAt(0) == 'a' ? true : false;
 		Extension<ActivateProject> activateExtension = null;
 		try {
 			Collection<IProject> projects = getProjects(cmd, ci);
@@ -278,7 +278,7 @@ public class BundleProjectCommandProvider implements CommandProvider {
 		BundleProjectCandidates candidates = Activator.getCandidatesService();
 		BundleRegion bundleRegion = Activator.getRegionService();
 		if (bpArg.equals("*")) {
-			if (cmd.startsWith("a")) {
+			if (cmd.charAt(0) == 'a') {
 				return candidates.getCandidates();
 			} else {
 				return bundleRegion.getActivatedProjects();
@@ -320,7 +320,7 @@ public class BundleProjectCommandProvider implements CommandProvider {
 						ci.println(cmd + ": " + project.getName() + " is not a bundle project");
 					}
 				} else {
-					if (cmd.startsWith("u")) {
+					if (cmd.charAt(0) == 'u') {
 						// Force an update even if the "Update on build" option is off
 						BundleTransition transition = Activator.getTransitionService();
 						transition.addPending(project, Transition.UPDATE);

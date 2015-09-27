@@ -210,7 +210,7 @@ public abstract class BundleCommandsContributionItems extends CompoundContributi
 	 * @return contribution for hiding or showing the bundle log view or null if failed to get the log view
 	 */
 	protected CommandContributionItem addToggleBundleLogView(String menuId, String commandId) {
-		Extension<BundleLogView> extension = null;;
+		Extension<BundleLogView> extension = null;
 		try {	
 			extension = Activator.getTracker().getExtension(BundleLogView.class.getName());
 			BundleLogView logView = extension.getTrackedService();

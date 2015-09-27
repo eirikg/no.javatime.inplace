@@ -121,7 +121,9 @@ public class BundleJob extends JobStatus implements BundleExecutor {
 	
 	private void init() {
 		setPriority(Job.BUILD);
-		setRule(bundleRule());
+		if (!bundleRule().equals(getRule())) {
+			setRule(bundleRule());
+		}
 		pendingProjects = new LinkedHashSet<>();
 		setProperty(IProgressConstants2.SHOW_IN_TASKBAR_ICON_PROPERTY, Boolean.TRUE);	
 		try {
@@ -137,6 +139,7 @@ public class BundleJob extends JobStatus implements BundleExecutor {
 	@Override
 	public void end() {
 		super.end();
+		// Can not change the rule when a job is already runnung
 		init();
 	}
 

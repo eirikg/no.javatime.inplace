@@ -100,7 +100,6 @@ public class SessionManager implements IStartup, IWorkbenchListener {
 	 */
 	@Override
 	public void postShutdown(IWorkbench workbench) {
-		return;
 	}
 
 	/**

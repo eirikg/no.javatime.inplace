@@ -481,7 +481,7 @@ public abstract class NatureJob extends BundleJob {
 			Activator.getDisplay().syncExec(new Runnable() {
 				@Override
 				public void run() {
-					final IResource[] dirtyResourcesArray = (IResource[]) dirtyResources
+					final IResource[] dirtyResourcesArray = dirtyResources
 							.toArray(new IResource[dirtyResources.size()]);
 					boolean allSaved = IDE.saveAllEditors(dirtyResourcesArray, true);
 					Collection<IResource> pendingDirtyResources = SaveOptionsJob.getScopedDirtyMetaFiles(

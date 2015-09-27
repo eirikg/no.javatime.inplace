@@ -78,7 +78,7 @@ public class BundleJobListener extends JobChangeAdapter {
 					// final String execTime = Long.toString(System.currentTimeMillis() - startTime);
 					final Collection<IBundleStatus> logList = bundleJob.getLogStatusList();
 					if (logList.size() > 0) {
-						IBundleStatus multiStatus = new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID,
+						final IBundleStatus multiStatus = new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID,
 								NLS.bind(
 										Msg.JOB_NAME_TRACE,
 										bundleJob.getName(),
@@ -126,6 +126,7 @@ public class BundleJobListener extends JobChangeAdapter {
 	 * @return a copy of the error status list with the cancel status removed from the status list or
 	 * a copy of the status list if it does not contain any cancel status
 	 */
+	@SuppressWarnings("unused")
 	private Collection<IBundleStatus> logCancelStatus(BundleJob bundleJob) {
 
 		Collection<IBundleStatus> statusList = bundleJob.getErrorStatusList();

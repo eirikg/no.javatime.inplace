@@ -17,6 +17,7 @@ import java.util.List;
 
 import no.javatime.inplace.bundlejobs.intface.ActivateProject;
 import no.javatime.inplace.bundlejobs.intface.BundleExecutor;
+import no.javatime.inplace.bundlejobs.intface.Reset;
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.extender.intface.Extension;
 import no.javatime.inplace.region.events.BundleTransitionEvent;
@@ -45,7 +46,10 @@ import org.eclipse.core.resources.IResourceChangeListener;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IAdaptable;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Platform;
+import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.IJobChangeEvent;
 import org.eclipse.core.runtime.jobs.IJobChangeListener;
 import org.eclipse.core.runtime.jobs.IJobManager;
@@ -593,7 +597,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 			try {
 				IWorkbench workbench = Activator.getDefault().getWorkbench();
 				if (null != workbench && !workbench.isClosing()) {
-					showProjectInfo();
+					showProjectInfo(0);
 				}
 			} catch (SWTException e) {
 				// Ignore not updating bundle view
@@ -643,7 +647,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 				// Update page when building
 				if (!Activator.getCommandOptionsService().isUpdateOnBuild()
 						&& Activator.getBundleTransitionService().containsPending(Transition.UPDATE)) {
-					showProjectInfo();
+					showProjectInfo(0);
 				}
 			} catch (ExtenderException e) {
 				StatusManager.getManager().handle(
@@ -656,7 +660,11 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 			if (null != workbench && workbench.isClosing()) {
 				return;
 			}
-			showProjectInfo();
+			// Delay update of view for bundle jobs that triggers other bundle jobs
+			// to avoid early enablement of the activate/deactivate and reset
+			if (!(job instanceof ActivateProject) && !(job instanceof Reset)) {
+				showProjectInfo(0);
+			}
 			pagebook.getDisplay().asyncExec(new Runnable() {
 				@Override
 				public void run() {
@@ -826,7 +834,12 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 					try {
 						Collection<IProject> projects = Collections.<IProject> singletonList(project);
 						if (Activator.getBundleRegionService().isBundleActivated(project)) {
-							BundleMenuActivationHandler.deactivateHandler(projects);
+							BundleRegion bundleRegion = Activator.getBundleRegionService();
+							Bundle bundle = bundleRegion.getBundle(project);
+							if (null != bundle && (bundle.getState() & 
+									(Bundle.RESOLVED | Bundle.STARTING | Bundle.STOPPING | Bundle.ACTIVE)) != 0) {
+								BundleMenuActivationHandler.deactivateHandler(projects);
+							}
 						} else {
 							BundleMenuActivationHandler.activateProjectHandler(projects);
 						}
@@ -1210,6 +1223,31 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 		action.setImageDescriptor(imageDescriptor);
 	}
 
+	/** 
+	 * Show project information in list and details page view after the specified delay.
+	 * 
+	 * @param delay Delay in msec before displaying project info
+	 * @see #showProjectInfo()
+	 */
+	private void showProjectInfo(int delay) {
+
+		if (delay != 0) {
+			Job job = new Job("") {
+
+				@Override
+				protected IStatus run(IProgressMonitor monitor) {
+
+					showProjectInfo();
+					return new Status(Status.OK, Activator.PLUGIN_ID, "");
+				}
+			};
+			job.setUser(false);
+			job.schedule(delay);
+		} else {
+			showProjectInfo();
+		}			
+	 }
+
 	/**
 	 * Show project information in list and details page view. For renamed, deleted and moved projects
 	 * switch to list page view if the project as a resource has changed as a consequence of one of
@@ -1280,7 +1318,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 	 */
 	public void showProjects(Collection<IJavaProject> javaProjects, Boolean setSelection) {
 
-		if (/* isBundleJobRunning() || */null == javaProjects) {
+		if (null == javaProjects) {
 			return;
 		}
 		if (listTitleImage == null || listTitleImage.isDisposed()) {
@@ -1614,7 +1652,6 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 
 			@Override
 			public void sort(IPropertySheetEntry[] entries) {
-				return; // do nothing;
 			}
 		}
 

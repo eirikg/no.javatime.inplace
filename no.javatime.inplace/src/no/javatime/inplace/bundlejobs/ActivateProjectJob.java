@@ -167,9 +167,6 @@ public class ActivateProjectJob extends NatureJob implements ActivateProject {
 			saveDirtyMetaFiles(true);
 			boolean isWorkspaceActivated =  isProjectWorkspaceActivated();
 			activateNature(getPendingProjects(), new SubProgressMonitor(monitor, 1));
-//			if (!isWorkspaceActivated) {
-//				StatePersistParticipant.saveSessionState(true);
-//			}
 			// An activate project job triggers an update job when the workspace is activated and
 			// an activate bundle job when the workspace is deactivated
 			// If Update on Build is switched off and workspace is activated, mark that these projects
