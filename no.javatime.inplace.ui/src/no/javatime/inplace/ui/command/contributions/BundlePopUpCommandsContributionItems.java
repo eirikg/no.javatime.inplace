@@ -13,7 +13,7 @@ package no.javatime.inplace.ui.command.contributions;
 import java.util.ArrayList;
 
 import no.javatime.inplace.extender.intface.ExtenderException;
-import no.javatime.inplace.region.closure.BuildErrorClosure;
+import no.javatime.inplace.region.closure.BundleProjectBuildError;
 import no.javatime.inplace.region.intface.BundleCommand;
 import no.javatime.inplace.region.intface.BundleProjectMeta;
 import no.javatime.inplace.region.intface.BundleRegion;
@@ -295,7 +295,7 @@ public class BundlePopUpCommandsContributionItems extends BundleCommandsContribu
 	private CommandContributionItem addClassPath(IProject project) {
 
 		try {
-			if (!BuildErrorClosure.hasManifestBuildErrors(project)) {
+			if (!BundleProjectBuildError.hasManifestBuildErrors(project)) {
 				BundleProjectMeta bundlePrrojectMeta = Activator.getBundleProjectMetaService();
 				if (!bundlePrrojectMeta.isDefaultOutputFolder(project)) {
 					return createContibution(menuId, dynamicPopUpCommandId, Msg.ADD_CLASSPATH_POPUP_LABEL,

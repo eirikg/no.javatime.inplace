@@ -12,17 +12,16 @@ package no.javatime.inplace.bundlejobs;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.LinkedHashSet;
 
 import no.javatime.inplace.Activator;
 import no.javatime.inplace.bundlejobs.intface.ActivateProject;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.msg.Msg;
-import no.javatime.inplace.region.closure.BuildErrorClosure;
-import no.javatime.inplace.region.closure.BuildErrorClosure.ActivationScope;
+import no.javatime.inplace.region.closure.BundleBuildErrorClosure;
 import no.javatime.inplace.region.closure.BundleClosures;
 import no.javatime.inplace.region.closure.CircularReferenceException;
+import no.javatime.inplace.region.closure.ProjectBuildErrorClosure.ActivationScope;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
 import no.javatime.inplace.region.intface.BundleTransition.TransitionError;
 import no.javatime.inplace.region.intface.BundleTransitionListener;
@@ -242,31 +241,33 @@ public class ActivateProjectJob extends NatureJob implements ActivateProject {
 
 		// Uninstalled projects missing build state or with build errors in manifest prevents activation
 		// of any project
-		if (!isProjectWorkspaceActivated()) {
-			Collection<IProject> errorProjects = BuildErrorClosure
-					.getBuildErrors((bundleProjectCandidates.getBundleProjects()));
-			IBundleStatus multiStatus = new BundleStatus(StatusCode.ERROR, Activator.PLUGIN_ID,
-					Msg.FATAL_ACTIVATE_ERROR);
-			for (IProject project : errorProjects) {
-				if (!BuildErrorClosure.hasBuildState(project)) {
-					multiStatus.add(new BundleStatus(StatusCode.WARNING, Activator.PLUGIN_ID, project, NLS
-							.bind(Msg.BUILD_STATE_ERROR, project.getName()), null));
-				} else if (BuildErrorClosure.hasManifestBuildErrors(project)) {
-					multiStatus.add(new BundleStatus(StatusCode.ERROR, Activator.PLUGIN_ID, project, NLS.bind(
-							Msg.MANIFEST_BUILD_ERROR, project.getName()), null));
-				}
-			}
-			if (multiStatus.getChildren().length > 0) {
-				addStatus(multiStatus);
-				return new LinkedHashSet<IProject>(projects);
-			}
-		}
+//		if (!isProjectWorkspaceActivated()) {
+//			Collection<IProject> errorProjects = BundleProjectBuildError.getBundleErrors((bundleProjectCandidates.getBundleProjects()));
+//			if (errorProjects.size() > 0) {
+//				
+//			}
+//			IBundleStatus multiStatus = new BundleStatus(StatusCode.ERROR, Activator.PLUGIN_ID,
+//					Msg.FATAL_ACTIVATE_ERROR);
+//			for (IProject project : errorProjects) {
+//				if (!BundleProjectBuildError.hasBuildState(project)) {
+//					multiStatus.add(new BundleStatus(StatusCode.WARNING, Activator.PLUGIN_ID, project, NLS
+//							.bind(Msg.BUILD_STATE_ERROR, project.getName()), null));
+//				} else if (BundleProjectBuildError.hasManifestBuildErrors(project)) {
+//					multiStatus.add(new BundleStatus(StatusCode.ERROR, Activator.PLUGIN_ID, project, NLS.bind(
+//							Msg.MANIFEST_BUILD_ERROR, project.getName()), null));
+//				}
+//			}
+//			if (multiStatus.getChildren().length > 0) {
+//				addStatus(multiStatus);
+//				return new LinkedHashSet<IProject>(projects);
+//			}
+//		}
 
 		// Deactivated providing closure. In this case the activation scope is deactivated as long as we
 		// are not checking activated providing or requiring bundles with build errors
 		// Activated requiring closure is not checked (see method comments)
 		// Note that the bundles to activate are not activated yet.
-		BuildErrorClosure be = new BuildErrorClosure(projects, Transition.ACTIVATE_PROJECT,
+		BundleBuildErrorClosure be = new BundleBuildErrorClosure(projects, Transition.ACTIVATE_PROJECT,
 				Closure.PROVIDING, Bundle.UNINSTALLED, ActivationScope.DEACTIVATED);
 		if (be.hasBuildErrors()) {
 			Collection<IProject> errorClosure = be.getBuildErrorClosures();

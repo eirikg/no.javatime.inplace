@@ -11,7 +11,7 @@
 package no.javatime.inplace.ui.views;
 
 import no.javatime.inplace.extender.intface.ExtenderException;
-import no.javatime.inplace.region.closure.BuildErrorClosure;
+import no.javatime.inplace.region.closure.BundleProjectBuildError;
 import no.javatime.inplace.region.closure.BundleSorter;
 import no.javatime.inplace.region.intface.BundleCommand;
 import no.javatime.inplace.region.intface.BundleTransition;
@@ -130,9 +130,11 @@ public class BundleListLabelProvider extends LabelProvider implements ITableLabe
 					boolean isProjectActivated = Activator.getBundleRegionService().isBundleActivated(project);
 					BundleCommand bundleCommand = Activator.getBundleCommandService(); 
 					BundleTransition bundleTransition = Activator.getBundleTransitionService();
-					if (!BuildErrorClosure.hasBuildState(project)) {
-						return warningImage;
-					} else if (BuildErrorClosure.hasBuildErrors(project)) {
+					if (!BundleProjectBuildError.hasBuildState(project)) {
+						return errorImage;
+					} else if (BundleProjectBuildError.hasManifestBuildErrors(project)) {
+						return errorImage;
+					} else if (BundleProjectBuildError.hasBuildErrors(project)) {
 						return warningImage;
 					} else if (bundleTransition.containsPending(project, Transition.BUILD, false)) {
 						return pendingImage;

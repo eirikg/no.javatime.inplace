@@ -129,8 +129,8 @@ public interface BundleCommand {
 	 * @param bundles bundles to resolve.
 	 * @return true if all specified bundles are resolved; false otherwise.
 	 * @throws InPlaceException if the framework is null, a bundle is created with another framework
-	 * or a security permission is missing. See {@link FrameworkWiring#resolveBundles(Collection)} for
-	 * details.
+	 * or a security permission is missing. 
+	 * 
 	 * @see FrameworkWiring#resolveBundles(Collection)
 	 */
 	public Boolean resolve(Collection<Bundle> bundles) throws InPlaceException;

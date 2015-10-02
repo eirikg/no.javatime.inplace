@@ -23,7 +23,7 @@ import no.javatime.inplace.bundlejobs.intface.BundleExecutor;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.msg.Msg;
-import no.javatime.inplace.region.closure.BuildErrorClosure;
+import no.javatime.inplace.region.closure.BundleBuildErrorClosure;
 import no.javatime.inplace.region.closure.BundleClosures;
 import no.javatime.inplace.region.closure.BundleSorter;
 import no.javatime.inplace.region.closure.CircularReferenceException;
@@ -693,7 +693,7 @@ public class BundleJob extends JobStatus implements BundleExecutor {
 			localMonitor.subTask(Msg.RESOLVE_TASK_JOB);
 			if (!bundleCommand.resolve(bundlesToResolve)) {
 				Collection<IProject> projectsToResolve = bundleRegion.getProjects(bundlesToResolve);
-				BuildErrorClosure be = new BuildErrorClosure(projectsToResolve, Transition.RESOLVE,
+				BundleBuildErrorClosure be = new BundleBuildErrorClosure(projectsToResolve, Transition.RESOLVE,
 						Closure.REQUIRING);
 				if (be.hasBuildErrors()) {
 					Collection<IProject> buildErrClosure = be.getBuildErrorClosures();

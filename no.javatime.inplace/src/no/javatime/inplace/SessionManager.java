@@ -1,18 +1,21 @@
 package no.javatime.inplace;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 
 import no.javatime.inplace.bundlejobs.DeactivateJob;
 import no.javatime.inplace.bundlejobs.UninstallJob;
-import no.javatime.inplace.bundlejobs.intface.BundleExecutor;
 import no.javatime.inplace.bundlejobs.intface.ResourceState;
+import no.javatime.inplace.bundlejobs.intface.Uninstall;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.log.intface.BundleLogException;
 import no.javatime.inplace.msg.Msg;
-import no.javatime.inplace.region.closure.BuildErrorClosure;
-import no.javatime.inplace.region.closure.BuildErrorClosure.ActivationScope;
+import no.javatime.inplace.region.closure.BundleBuildErrorClosure;
+import no.javatime.inplace.region.closure.BundleProjectBuildError;
 import no.javatime.inplace.region.closure.CircularReferenceException;
+import no.javatime.inplace.region.closure.ProjectBuildErrorClosure.ActivationScope;
 import no.javatime.inplace.region.intface.BundleRegion;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
 import no.javatime.inplace.region.intface.InPlaceException;
@@ -112,32 +115,57 @@ public class SessionManager implements IStartup, IWorkbenchListener {
 	 */
 	private void earlyShutDown(IWorkbench workbench) {
 
-		BundleExecutor shutDownJob = null;
 		try {
 			// Signal that we are shutting down
 			StatePersistParticipant.setWorkspaceSession(false);
 			IEclipsePreferences sessionPrefs = StatePersistParticipant.getSessionPreferences();
 			BundleRegion bundleRegion = Activator.getBundleRegionService();
 			Collection<IProject> activatedProjects = bundleRegion.getActivatedProjects();
+			Collection<IProject> bundleProjects = bundleRegion.getProjects();
 			if (activatedProjects.size() > 0) {
-				if (isDeactivateOnExit(activatedProjects)) {
-					shutDownJob = new DeactivateJob(Msg.SHUT_DOWN_JOB, activatedProjects);
-				} else {
-					shutDownJob = new UninstallJob(Msg.SHUT_DOWN_JOB, bundleRegion.getProjects());
-				}
-				shutDownJob.getJob().setUser(false);
-				// Full workbench save is performed by the workbench at shutdown
-				shutDownJob.setSaveWorkspaceSnaphot(false);
-				// Saving is determined by the user when the workbench is closing
-				shutDownJob.setSaveFiles(false);
-				Activator.getBundleExecutorEventService().add(shutDownJob, 0);
-				// Wait for builder and bundle jobs to finish before proceeding
+				Collection<IBundleStatus> errorStatusList = new ArrayList<>(2);
 				ResourceState resourceState = Activator.getResourceStateService();
-				resourceState.waitOnBuilder(false);
-				resourceState.waitOnBundleJob();
-				if (shutDownJob.getErrorStatusList().size() > 0) {
-					final IBundleStatus multiStatus = shutDownJob.createMultiStatus(new BundleStatus(
-							StatusCode.ERROR, Activator.PLUGIN_ID, shutDownJob.getName()));
+				Collection<IProject> projectsToDeactivate = isDeactivateOnExit(bundleProjects, activatedProjects); 
+				if (projectsToDeactivate.size() > 0) {
+					DeactivateJob deactivateJob = new DeactivateJob(Msg.DEACTIVATE_ON_SHUTDOWN_JOB, projectsToDeactivate);
+					deactivateJob.getJob().setUser(false);
+					// Full workbench save is performed by the workbench at shutdown
+					deactivateJob.setSaveWorkspaceSnaphot(false);
+					// Saving is determined by the user when the workbench is closing
+					deactivateJob.setSaveFiles(false);
+					Activator.getBundleExecutorEventService().add(deactivateJob, 0);
+					// Wait for builder and bundle jobs to finish before proceeding
+					resourceState.waitOnBuilder(false);
+					resourceState.waitOnBundleJob();
+					if (deactivateJob.getErrorStatusList().size() > 0) {
+						final IBundleStatus multiStatus = deactivateJob.createMultiStatus(new BundleStatus(
+								StatusCode.ERROR, Activator.PLUGIN_ID, deactivateJob.getName()));
+						errorStatusList.add(multiStatus);
+					}
+				}
+				if (projectsToDeactivate.size() < activatedProjects.size()) {
+					// Uninstall in an activated workspace 
+					Uninstall uninstallJob = new UninstallJob(Msg.SHUT_DOWN_JOB, bundleProjects);
+					uninstallJob.getJob().setUser(false);
+					// Full workbench save is performed by the workbench at shutdown
+					uninstallJob.setSaveWorkspaceSnaphot(false);
+					// Saving is determined by the user when the workbench is closing
+					uninstallJob.setSaveFiles(false);
+					Activator.getBundleExecutorEventService().add(uninstallJob, 0);
+					// Wait for builder and bundle jobs to finish before proceeding
+					resourceState.waitOnBuilder(false);
+					resourceState.waitOnBundleJob();
+					if (uninstallJob.getErrorStatusList().size() > 0) {
+						final IBundleStatus multiStatus = uninstallJob.createMultiStatus(new BundleStatus(
+								StatusCode.ERROR, Activator.PLUGIN_ID, uninstallJob.getName()));
+						errorStatusList.add(multiStatus);
+					}
+				} else {
+					// Activation levels are always in state uninstalled and not saved in an deactivated
+					// workspace. Save transition state for bundles in a deactivated workspace
+					StatePersistParticipant.saveTransitionState(sessionPrefs, true);
+				}
+				if (errorStatusList.size() > 0) {
 					try {
 						// Send errors to default output console when shutting down
 						Activator.getBundleConsoleService().setSystemOutToIDEDefault();
@@ -145,7 +173,9 @@ public class SessionManager implements IStartup, IWorkbenchListener {
 						// Ignore and send to current system err setting
 					}
 					System.err.println(Msg.BEGIN_SHUTDOWN_ERROR);
-					printStatus(multiStatus);
+					for (IBundleStatus status : errorStatusList) {
+						printStatus(status);
+					}
 					System.err.println(Msg.END_SHUTDOWN_ERROR);
 				}
 			} else {
@@ -172,7 +202,7 @@ public class SessionManager implements IStartup, IWorkbenchListener {
 					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, Msg.INIT_BUNDLE_STATE_ERROR,
 							e), StatusManager.LOG);
 			String msg = ExceptionMessage.getInstance().formatString("terminate_job_with_errors",
-					shutDownJob.getName());
+					Msg.SHUT_DOWN_JOB);
 			StatusManager.getManager().handle(
 					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, msg, e), StatusManager.LOG);
 		} finally {
@@ -209,17 +239,23 @@ public class SessionManager implements IStartup, IWorkbenchListener {
 	 * @return true if there are build errors among the closures of activated bundle projects or the
 	 * "Deactivate on Exit" option is on.
 	 */
-	public static boolean isDeactivateOnExit(Collection<IProject> activatedProjects)
+	public static Collection<IProject> isDeactivateOnExit(Collection<IProject> projects, Collection<IProject> activatedProjects)
 			throws ExtenderException, CircularReferenceException {
 
+		// Deactivate workspace if some projects are missing build state
+		if (BundleProjectBuildError.hasBuildState(projects).size() > 0) {
+			return activatedProjects;
+		}
 		// Deactivated and activated providing closure. Deactivated and activated projects with build
 		// errors providing capabilities to project to resolve (and start) at startup
-		BuildErrorClosure be = new BuildErrorClosure(activatedProjects, Transition.DEACTIVATE,
+		BundleBuildErrorClosure be = new BundleBuildErrorClosure(activatedProjects, Transition.DEACTIVATE,
 				Closure.PROVIDING, Bundle.UNINSTALLED, ActivationScope.ALL);
-		if (be.hasBuildErrors() || Activator.getCommandOptionsService().isDeactivateOnExit()) {
-			return true;
+		if (Activator.getCommandOptionsService().isDeactivateOnExit()) {
+			return activatedProjects;
+		} else if (be.hasBuildErrors()) {
+			return be.getBuildErrorClosures();
 		}
-		return false;
+		return Collections.<IProject>emptySet();
 	}
 
 	/**

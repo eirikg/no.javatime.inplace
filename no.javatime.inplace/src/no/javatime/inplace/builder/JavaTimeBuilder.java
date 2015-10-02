@@ -25,7 +25,8 @@ import no.javatime.inplace.dl.preferences.intface.MessageOptions;
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.log.intface.BundleLogException;
 import no.javatime.inplace.msg.Msg;
-import no.javatime.inplace.region.closure.BuildErrorClosure;
+import no.javatime.inplace.region.closure.BundleBuildErrorClosure;
+import no.javatime.inplace.region.closure.BundleProjectBuildError;
 import no.javatime.inplace.region.closure.CircularReferenceException;
 import no.javatime.inplace.region.closure.ProjectDependencies;
 import no.javatime.inplace.region.closure.ProjectSorter;
@@ -286,7 +287,10 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 				logDependentUIContributors(project);
 				bundleTransition.addPending(project, Transition.DEACTIVATE);
 			} else {
-				if (!BuildErrorClosure.hasBuildErrors(project) && BuildErrorClosure.hasBuildState(project)) {
+				// Use same closure rules as for update
+				BundleBuildErrorClosure be = new BundleBuildErrorClosure(Collections.<IProject> singletonList(project),
+						Transition.UPDATE, Closure.REQUIRING);
+				if (!be.hasBuildErrors()) {
 					// Do not handle newly opened, created or imported bundles
 					if (null != bundle) {
 						// Moved projects requires a reactivate (uninstall and bundle activate)
@@ -319,7 +323,7 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 						bundleTransition.removePending(project, Transition.UPDATE);
 					}
 				} else {
-					logBuildError(project);
+					logBuildError(be, project);
 				}
 			}
 			if (Category.DEBUG && Category.getState(Category.build))
@@ -381,21 +385,16 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 	 * 
 	 * @param project with build error
 	 */
-	private void logBuildError(IProject project) throws ExtenderException {
+	private void logBuildError(BundleBuildErrorClosure be, IProject project) throws ExtenderException {
 
-		BuildErrorClosure be = null;
 		boolean cycle = false;
 		try {
+			// Check for cycles
 			ProjectDependencies.getProvidingProjects(project);
 			ProjectDependencies.getRequiringProjects(project);
 			try {
-				// Use same closure rules as update
-				be = new BuildErrorClosure(Collections.<IProject> singletonList(project),
-						Transition.UPDATE, Closure.REQUIRING);
-				// Get the closures to reveal any cycles
 				if (be.getBuildErrors().size() > 0) {
-					if (BuildErrorClosure.hasBuildErrors(project)
-							|| !BuildErrorClosure.hasBuildState(project)) {
+					if (BundleProjectBuildError.hasBundleErrors(project)) {
 						bundleTransition.setTransitionError(project, TransitionError.BUILD);
 					}
 				}

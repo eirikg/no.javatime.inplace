@@ -14,7 +14,7 @@ import java.util.Collections;
 import java.util.Map;
 
 import no.javatime.inplace.extender.intface.ExtenderException;
-import no.javatime.inplace.region.closure.BuildErrorClosure;
+import no.javatime.inplace.region.closure.BundleProjectBuildError;
 import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
@@ -155,7 +155,7 @@ public class BundlePopUpActivationHandler extends BundleMenuActivationHandler im
 				boolean isLazy = Activator.getBundleProjectMetaService().getActivationPolicy(project);
 				element.setChecked(!isLazy);
 			} catch (InPlaceException e) {
-				if (!BuildErrorClosure.hasManifestBuildErrors(project) && BuildErrorClosure.hasBuildState(project)) {	
+				if (!BundleProjectBuildError.hasManifestBuildErrors(project) && BundleProjectBuildError.hasBuildState(project)) {	
 					String msg = ExceptionMessage.getInstance().formatString("error_set_policy", javaProject.getProject().getName());
 					StatusManager.getManager().handle(new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, msg, e),
 							StatusManager.LOG);

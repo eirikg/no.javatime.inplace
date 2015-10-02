@@ -17,7 +17,7 @@ import no.javatime.inplace.bundlejobs.intface.Install;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.msg.Msg;
-import no.javatime.inplace.region.closure.BuildErrorClosure;
+import no.javatime.inplace.region.closure.BundleBuildErrorClosure;
 import no.javatime.inplace.region.closure.CircularReferenceException;
 import no.javatime.inplace.region.closure.ProjectSorter;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
@@ -140,8 +140,9 @@ public class InstallJob extends NatureJob implements Install {
 		IBundleStatus status = createStatus();
 
 		Collection<IProject> projectErrorClosures = null;
+		BundleBuildErrorClosure be = null;
 		try {
-			BuildErrorClosure be = new BuildErrorClosure(getPendingProjects(), Transition.INSTALL,
+			be = new BundleBuildErrorClosure(getPendingProjects(), Transition.INSTALL,
 					Closure.REQUIRING);
 			if (be.hasBuildErrors()) {
 				projectErrorClosures = be.getBuildErrorClosures();
@@ -171,8 +172,7 @@ public class InstallJob extends NatureJob implements Install {
 			}
 
 		} catch (CircularReferenceException e) {
-			projectErrorClosures = BuildErrorClosure.getBuildErrors(getPendingProjects());
-			projectErrorClosures.addAll(BuildErrorClosure.hasBuildState(getPendingProjects()));
+			projectErrorClosures = be.getBuildErrorClosures();
 			if (projectErrorClosures.size() > 0) {
 				status.setStatusCode(StatusCode.BUILDERROR);
 				removePendingProjects(projectErrorClosures);

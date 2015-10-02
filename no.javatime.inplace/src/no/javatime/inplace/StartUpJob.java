@@ -17,6 +17,7 @@ import no.javatime.inplace.bundlejobs.ActivateBundleJob;
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.closure.CircularReferenceException;
+import no.javatime.inplace.region.intface.BundleRegion;
 import no.javatime.inplace.region.intface.BundleTransitionListener;
 import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.status.BundleStatus;
@@ -167,9 +168,12 @@ class StartUpJob extends ActivateBundleJob {
 	 */
 	private boolean deactivateWorkspace(IProgressMonitor monitor,
 			Collection<IProject> activatedPendingProjects, boolean isRecoveryMode)
-			throws IllegalStateException, InPlaceException, BackingStoreException {
-
-		if (SessionManager.isDeactivateOnExit(activatedPendingProjects)) {
+			throws IllegalStateException, ExtenderException, InPlaceException, BackingStoreException {
+		
+		BundleRegion bundleRegion = Activator.getBundleRegionService();
+		Collection<IProject> bundleProjects = bundleRegion.getProjects();
+		Collection<IProject> projectsToDeactivate = SessionManager.isDeactivateOnExit(bundleProjects, activatedPendingProjects); 
+		if (projectsToDeactivate.size() > 0) {
 			try {
 				setName(Msg.DEACTIVATE_WORKSPACE_JOB);
 				BundleTransitionListener.addBundleTransitionListener(this);

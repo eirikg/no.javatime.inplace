@@ -22,7 +22,7 @@ import java.util.Properties;
 
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.region.Activator;
-import no.javatime.inplace.region.closure.BuildErrorClosure;
+import no.javatime.inplace.region.closure.BundleProjectBuildError;
 import no.javatime.inplace.region.events.TransitionEvent;
 import no.javatime.inplace.region.intface.BundleProjectMeta;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
@@ -76,7 +76,7 @@ public class BundleProjectMetaImpl extends CachedManifestOperationsImpl implemen
 	
 	@Override
 	public Boolean isDefaultOutputFolder(IProject project) throws InPlaceException {
-		if (!BuildErrorClosure.hasManifest(project)) {
+		if (!BundleProjectBuildError.hasManifest(project)) {
 			throw new InPlaceException("no_manifest_found_project", project.getName());
 		}
 
@@ -178,7 +178,7 @@ public class BundleProjectMetaImpl extends CachedManifestOperationsImpl implemen
 	@Override
 	public Boolean addDefaultOutputFolder(IProject project) throws InPlaceException {
 		try {
-			if (!BuildErrorClosure.hasManifest(project)) {
+			if (!BundleProjectBuildError.hasManifest(project)) {
 				throw new InPlaceException("no_manifest_found_project", project.getName());
 			}
 			IBundleProjectDescription bundleProjDesc = Activator.getBundleDescription(project);
@@ -243,7 +243,7 @@ public class BundleProjectMetaImpl extends CachedManifestOperationsImpl implemen
 		boolean removed = false;
 
 		try {
-			if (!BuildErrorClosure.hasManifest(project)) {
+			if (!BundleProjectBuildError.hasManifest(project)) {
 				throw new InPlaceException("no_manifest_found_project", project.getName());
 			}
 			IBundleProjectDescription bundleProjDesc = Activator.getBundleDescription(project);

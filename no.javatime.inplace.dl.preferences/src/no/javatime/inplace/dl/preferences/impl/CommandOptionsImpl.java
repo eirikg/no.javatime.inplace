@@ -10,6 +10,7 @@ public class CommandOptionsImpl extends ManifestOptionsImpl implements CommandOp
 	
 	private final static boolean defIsDeactivateOnExit = false;
 	private final static boolean defIsUpdateOnBuild = true;
+	private final static boolean defIsActivateOnCompileErrors = true;
 	private final static boolean defIsRefreshOnUpdate = true;
 	private final static boolean defIsAutoHandleExternalCommands = true;
 	private final static boolean defIsAllowUIContributions = true;
@@ -101,7 +102,23 @@ public class CommandOptionsImpl extends ManifestOptionsImpl implements CommandOp
 	public void setIsDeactivateOnExit(boolean deactivate) {
 		getPrefs().putBoolean(IS_DEACTIVATE_ON_EXIT, deactivate);
 	}
+	
+	@Override
+	public boolean isActivateOnCompileError() {
+		return getPrefs().getBoolean(IS_ACTIVATE_ON_COMPILE_ERROR, getDefaultIsActivateOnCompileError());
+	}
 
+	@Override
+	public boolean getDefaultIsActivateOnCompileError() {
+		return defIsActivateOnCompileErrors;
+	}
+
+	@Override
+	public void setIsActivateOnCompileError(boolean compileError) {
+		getPrefs().putBoolean(IS_ACTIVATE_ON_COMPILE_ERROR, compileError);
+	}
+
+	
 	@Override
 	public boolean isUpdateOnBuild() {
 		return getPrefs().getBoolean(IS_UPDATE_ON_BUILD, getDefaultIsUpdateOnBuild());

@@ -20,12 +20,7 @@ import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 
-import org.eclipse.core.resources.IFile;
-import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IProject;
-import org.eclipse.core.resources.IResource;
-import org.eclipse.core.runtime.CoreException;
-import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.osgi.util.NLS;
 import org.osgi.framework.Bundle;
 
@@ -54,7 +49,7 @@ import org.osgi.framework.Bundle;
  * closures. There may be a need for this combination in an activation process; - that is when an
  * installed bundle is activated but not yet resolved.
  */
-public class BuildErrorClosure {
+public class ProjectBuildErrorClosure {
 
 	final static private BundleRegion bundleRegion = WorkspaceRegionImpl.INSTANCE;
 	final static private BundleTransition bundleTransition = BundleTransitionImpl.INSTANCE;
@@ -66,7 +61,7 @@ public class BuildErrorClosure {
 
 	private Collection<IProject> initialProjects;
 	private Collection<IProject> projectClosures;
-	private Collection<IProject> errorProjects;
+	protected Collection<IProject> errorProjects;
 	private Collection<IProject> errorClosures;
 	private Transition currentTransition;
 	private Closure closure = Closure.REQUIRING;
@@ -80,7 +75,7 @@ public class BuildErrorClosure {
 	 * determined by type of closure, activation level and activation scope.
 	 * <p>
 	 * See
-	 * {@link BuildErrorClosure#BuildErrorClosure(Collection, Transition, Closure, int, ActivationScope)}
+	 * {@link ProjectBuildErrorClosure#BuildErrorClosure(Collection, Transition, Closure, int, ActivationScope)}
 	 * for a specification of default values for the closure, activation level and activation scope.
 	 * 
 	 * @param initialProjects set of projects to calculate the error closures from
@@ -90,7 +85,7 @@ public class BuildErrorClosure {
 	 * {@code Closure.REQUIRING}) The providing/requiring closure is interpreted as bundle projects
 	 * providing/requiring capabilities to/from an initial project.
 	 */
-	public BuildErrorClosure(Collection<IProject> initialProjects, Transition transition,
+	public ProjectBuildErrorClosure(Collection<IProject> initialProjects, Transition transition,
 			Closure closure) {
 		this.initialProjects = new LinkedHashSet<>(initialProjects);
 		this.currentTransition = transition;
@@ -123,7 +118,7 @@ public class BuildErrorClosure {
 	 * @param activationScope is deactivated ({@code ActivationLevel.DEACTIVATED}), activated (
 	 * {@code ActivationLevel.ACTIVATED}) or all ({@code ActivationLevel.ALL}) projects
 	 */
-	public BuildErrorClosure(Collection<IProject> initialProjects, Transition transition,
+	public ProjectBuildErrorClosure(Collection<IProject> initialProjects, Transition transition,
 			Closure closure, int activationLevel, ActivationScope scope) {
 		this.initialProjects = new LinkedHashSet<>(initialProjects);
 		this.currentTransition = transition;
@@ -293,8 +288,7 @@ public class BuildErrorClosure {
 	public Collection<IProject> getBuildErrors() throws CircularReferenceException,
 	InPlaceException {
 		if (null == errorProjects) {
-			errorProjects = getBuildErrors(getProjectClosures());
-			errorProjects.addAll(hasBuildState(getProjectClosures()));
+			errorProjects = BundleProjectBuildError.getBuildErrors(getProjectClosures());
 		}
 		return errorProjects;
 	}
@@ -413,136 +407,5 @@ public class BuildErrorClosure {
 			}
 		}
 		return buildStatus;
-	}
-
-	/**
-	 * Check if there are build errors from the most recent build.
-	 * 
-	 * @return List of projects with build errors or an empty list
-	 * @throws InPlaceException if one of the specified projects does not exist or is closed
-	 */
-	public static Collection<IProject> getBuildErrors(Collection<IProject> projects)
-			throws InPlaceException {
-		Collection<IProject> errors = new LinkedHashSet<>();
-		for (IProject project : projects) {
-			if (hasBuildErrors(project)) {
-				errors.add(project);
-			}
-		}
-		return errors;
-	}
-
-	/**
-	 * Check if the compilation state of an {@link IJavaProject} has errors.
-	 * 
-	 * @param project the {@link IJavaProject} to check for errors
-	 * @return <code>true</code> if the project has compilation errors (or has never been built),
-	 * <code>false</code> otherwise
-	 * @throws InPlaceException if project does not exist or is closed
-	 */
-	public static boolean hasBuildErrors(IProject project) throws InPlaceException {
-
-		try {
-			if (null != project && project.isAccessible()) {
-				IMarker[] problems = project.findMarkers(IMarker.PROBLEM, true, IResource.DEPTH_INFINITE);
-				// check if any of these have a severity attribute that indicates an error
-				for (int problemsIndex = 0; problemsIndex < problems.length; problemsIndex++) {
-					if (IMarker.SEVERITY_ERROR == problems[problemsIndex].getAttribute(IMarker.SEVERITY,
-							IMarker.SEVERITY_INFO)) {
-						return true;
-					}
-				}
-			}
-		} catch (CoreException e) {
-			throw new InPlaceException(e, "has_build_errors", project);
-		}
-		return false;
-	}
-
-	/**
-	 * Check if the specified projects have build state
-	 * 
-	 * @param projects to check for build state
-	 * @return Set of projects missing build state among the specified projects or an empty set
-	 */
-	public static Collection<IProject> hasBuildState(Collection<IProject> projects) {
-		Collection<IProject> missingBuildState = new LinkedHashSet<>();
-		for (IProject project : projects) {
-			if (!hasBuildState(project)) {
-				missingBuildState.add(project);
-			}
-		}
-		return missingBuildState;
-	}
-
-	/**
-	 * Checks if the project has build state
-	 * 
-	 * @param project to check for build state
-	 * @return true if the project has build state, otherwise false
-	 * @throws InPlaceException if the specified project is null, open but does not exist or a core
-	 * exception is thrown (should not be the case)
-	 */
-	public static boolean hasBuildState(IProject project) throws InPlaceException {
-
-		IJavaProject javaProject = BundleProjectCandidatesImpl.INSTANCE.getJavaProject(project);
-		if (javaProject.hasBuildState()) {
-			return true;
-		}
-		return false;
-	}
-
-
-	/**
-	 * Check for existence and build errors in the manifest file in the specified project
-	 * <p>
-	 * Assumes that the manifest file is located at the default location
-	 * 
-	 * @param project to check for the existence and build errors in the manifest file at the default location
-	 * @return true if the manifest file does not exist or contains build errors and false otherwise
-	 * @throws InPlaceException if a core exception occurs. The exception contains a status object describing the failure
-	 * @see #hasManifest(IProject)
-	 * @see BundleProjectMeta#MANIFEST_RELATIVE_PATH
-	 * @see BundleProjectMeta#MANIFEST_FILE_NAME
-	 */
-	public static boolean hasManifestBuildErrors(IProject project) throws InPlaceException {
-		
-		try {
-			if (!hasManifest(project)) {
-				return true;
-			}
-			IMarker[] problems = project.findMarkers(IMarker.PROBLEM, true, IResource.DEPTH_INFINITE);
-			// check if any of these have a severity attribute that indicates an error
-			for (int problemsIndex = 0; problemsIndex < problems.length; problemsIndex++) {
-				if (IMarker.SEVERITY_ERROR == problems[problemsIndex].getAttribute(IMarker.SEVERITY,
-						IMarker.SEVERITY_INFO)) {
-					IResource resource = problems[problemsIndex].getResource();
-					if (resource instanceof IFile && resource.getName().equals(BundleProjectMetaImpl.MANIFEST_FILE_NAME)) {
-						return true;
-					}
-				}
-			}
-		} catch (CoreException e) {
-			throw new InPlaceException(e, "manifest_has_errors", project);
-		}
-		return false;
-	}
-
-	/**
-	 * Check for existence of a manifest file at the default location in the specified project
-	 * 
-	 * @param project to check for the existence of a manifest file at the default location
-	 * @return true if the manifest file exist at the default location and false otherwise
-	 * @see BundleProjectMeta#MANIFEST_RELATIVE_PATH
-	 * @see BundleProjectMeta#MANIFEST_FILE_NAME
-	 */
-	public static Boolean hasManifest(IProject project) {
-		if (null != project && project.isAccessible()) {
-			IFile manifestFile = project.getFile(BundleProjectMeta.MANIFEST_RELATIVE_PATH + BundleProjectMetaImpl.MANIFEST_FILE_NAME);
-			if (manifestFile.exists()) {
-				return true;
-			}
-		}
-		return false;
 	}
 }

@@ -20,9 +20,9 @@ import no.javatime.inplace.bundlejobs.intface.Deactivate;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.msg.Msg;
-import no.javatime.inplace.region.closure.BuildErrorClosure;
-import no.javatime.inplace.region.closure.BuildErrorClosure.ActivationScope;
+import no.javatime.inplace.region.closure.BundleBuildErrorClosure;
 import no.javatime.inplace.region.closure.CircularReferenceException;
+import no.javatime.inplace.region.closure.ProjectBuildErrorClosure.ActivationScope;
 import no.javatime.inplace.region.closure.ProjectSorter;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
 import no.javatime.inplace.region.intface.BundleTransition.TransitionError;
@@ -360,37 +360,38 @@ public class ActivateBundleJob extends NatureJob implements ActivateBundle {
 			throws InPlaceException, CircularReferenceException {
 
 		IBundleStatus status = createStatus();
-		Collection<IProject> projectErrorClosures = null;
+		Collection<IProject> bundleErrorClosures = null;
 		Collection<IProject> activatedProjects = bundleRegion.getProjects(activatedBundles);
+		BundleBuildErrorClosure be = null;
 		try {
-			BuildErrorClosure be = new BuildErrorClosure(activatedProjects, Transition.ACTIVATE_BUNDLE,
+			be = new BundleBuildErrorClosure(activatedProjects, Transition.ACTIVATE_BUNDLE,
 					Closure.REQUIRING, Bundle.INSTALLED, ActivationScope.ACTIVATED);
 			if (be.hasBuildErrors()) {
-				projectErrorClosures = be.getBuildErrorClosures();
-				activatedProjects.removeAll(projectErrorClosures);
+				bundleErrorClosures = be.getBuildErrorClosures();
+				activatedProjects.removeAll(bundleErrorClosures);
 				if (messageOptions.isBundleOperations()) {
 					addLogStatus(be.getErrorClosureStatus());
 				}
 			}
-			be = new BuildErrorClosure(activatedProjects, Transition.ACTIVATE_BUNDLE, Closure.PROVIDING,
+			be = new BundleBuildErrorClosure(activatedProjects, Transition.ACTIVATE_BUNDLE, Closure.PROVIDING,
 					Bundle.INSTALLED, ActivationScope.ALL);
 			if (be.hasBuildErrors()) {
-				if (null != projectErrorClosures) {
-					projectErrorClosures.addAll(be.getBuildErrorClosures());
+				if (null != bundleErrorClosures) {
+					bundleErrorClosures.addAll(be.getBuildErrorClosures());
 				} else {
-					projectErrorClosures = be.getBuildErrorClosures();
+					bundleErrorClosures = be.getBuildErrorClosures();
 				}
 				if (messageOptions.isBundleOperations()) {
 					addLogStatus(be.getErrorClosureStatus());
 				}
 			}
-			if (null != projectErrorClosures) {
+			if (null != bundleErrorClosures) {
 
-				Deactivate daj = new DeactivateJob(Msg.DEACTIVATE_BUNDLES_JOB, projectErrorClosures);
+				Deactivate daj = new DeactivateJob(Msg.DEACTIVATE_BUNDLES_JOB, bundleErrorClosures);
 				Activator.getBundleExecutorEventService().add(daj, 0);
-				removePendingProjects(projectErrorClosures);
+				removePendingProjects(bundleErrorClosures);
 				if (null != activatedBundles) {
-					Collection<Bundle> bundleErrorClosure = bundleRegion.getBundles(projectErrorClosures);
+					Collection<Bundle> bundleErrorClosure = bundleRegion.getBundles(bundleErrorClosures);
 					// Do not resolve activated bundle closures with build errors
 					for (Bundle bundle : bundleErrorClosure) {
 						bundleRegion.setActivation(bundle, false);
@@ -399,12 +400,11 @@ public class ActivateBundleJob extends NatureJob implements ActivateBundle {
 				}
 			}
 		} catch (CircularReferenceException e) {
-			projectErrorClosures = BuildErrorClosure.getBuildErrors(getPendingProjects());
-			projectErrorClosures.addAll(BuildErrorClosure.hasBuildState(getPendingProjects()));
-			if (projectErrorClosures.size() > 0) {
-				removePendingProjects(projectErrorClosures);
+			bundleErrorClosures = be.getBuildErrors();
+			if (bundleErrorClosures.size() > 0) {
+				removePendingProjects(bundleErrorClosures);
 				if (null != activatedBundles) {
-					Collection<Bundle> bundleErrorClosure = bundleRegion.getBundles(projectErrorClosures);
+					Collection<Bundle> bundleErrorClosure = bundleRegion.getBundles(bundleErrorClosures);
 					activatedBundles.removeAll(bundleErrorClosure);
 				}
 			}

@@ -18,9 +18,9 @@ import no.javatime.inplace.bundlejobs.intface.Refresh;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.msg.Msg;
-import no.javatime.inplace.region.closure.BuildErrorClosure;
-import no.javatime.inplace.region.closure.BuildErrorClosure.ActivationScope;
+import no.javatime.inplace.region.closure.BundleBuildErrorClosure;
 import no.javatime.inplace.region.closure.CircularReferenceException;
+import no.javatime.inplace.region.closure.ProjectBuildErrorClosure.ActivationScope;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
 import no.javatime.inplace.region.intface.BundleTransitionListener;
 import no.javatime.inplace.region.intface.InPlaceException;
@@ -179,7 +179,7 @@ public class RefreshJob extends BundleJob implements Refresh {
 		boolean containsErrorClosures = false;
 
 		Collection<IProject> projectsToRefresh = bundleRegion.getProjects(bundlesToRefresh);
-		BuildErrorClosure be = new BuildErrorClosure(projectsToRefresh, 
+		BundleBuildErrorClosure be = new BundleBuildErrorClosure(projectsToRefresh, 
 				Transition.REFRESH, Closure.REQUIRING, Bundle.RESOLVED, ActivationScope.ACTIVATED);
 		if (be.hasBuildErrors()) {
 			Collection<IProject> buildErrClosures = be.getBuildErrorClosures();
@@ -191,7 +191,7 @@ public class RefreshJob extends BundleJob implements Refresh {
 			containsErrorClosures = true;
 		}
 		if (!containsErrorClosures) {
-			be = new BuildErrorClosure(projectsToRefresh, 
+			be = new BundleBuildErrorClosure(projectsToRefresh, 
 					Transition.REFRESH, Closure.PROVIDING, Bundle.RESOLVED, ActivationScope.ACTIVATED);
 			if (be.hasBuildErrors()) {
 				Collection<IProject> buildErrClosures = be.getBuildErrorClosures();

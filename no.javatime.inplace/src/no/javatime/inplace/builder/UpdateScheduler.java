@@ -14,8 +14,8 @@ import no.javatime.inplace.dl.preferences.intface.MessageOptions;
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.log.intface.BundleLogException;
 import no.javatime.inplace.msg.Msg;
-import no.javatime.inplace.region.closure.BuildErrorClosure;
-import no.javatime.inplace.region.closure.BuildErrorClosure.ActivationScope;
+import no.javatime.inplace.region.closure.ProjectBuildErrorClosure.ActivationScope;
+import no.javatime.inplace.region.closure.BundleBuildErrorClosure;
 import no.javatime.inplace.region.closure.CircularReferenceException;
 import no.javatime.inplace.region.closure.ProjectSorter;
 import no.javatime.inplace.region.intface.BundleProjectCandidates;
@@ -100,7 +100,7 @@ public class UpdateScheduler {
 		// Activated requiring closure. Activated bundles with build errors requiring
 		// capabilities from the project to update
 		try {
-			BuildErrorClosure be = new BuildErrorClosure(Collections.<IProject> singletonList(project),
+			BundleBuildErrorClosure be = new BundleBuildErrorClosure(Collections.<IProject> singletonList(project),
 					Transition.UPDATE, Closure.REQUIRING);
 			BundleProjectCandidates bundleProjectCandidates = Activator.getBundleProjectCandidatesService();
 			MessageOptions messageOptions = Activator.getMessageOptionsService(); 
@@ -120,7 +120,7 @@ public class UpdateScheduler {
 			// Deactivated providing closure. Deactivated projects with build errors providing
 			// capabilities to project to update
 			if (isUpdate) {
-				be = new BuildErrorClosure(Collections.<IProject> singletonList(project),
+				be = new BundleBuildErrorClosure(Collections.<IProject> singletonList(project),
 						Transition.UPDATE, Closure.PROVIDING, Bundle.UNINSTALLED, ActivationScope.DEACTIVATED);
 				if (be.hasBuildErrors()) {
 					if (messageOptions.isBundleOperations()) {

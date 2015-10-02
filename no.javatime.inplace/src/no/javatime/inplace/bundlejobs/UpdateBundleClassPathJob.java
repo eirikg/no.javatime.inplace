@@ -17,7 +17,7 @@ import no.javatime.inplace.bundlejobs.intface.Reset;
 import no.javatime.inplace.bundlejobs.intface.UpdateBundleClassPath;
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.msg.Msg;
-import no.javatime.inplace.region.closure.BuildErrorClosure;
+import no.javatime.inplace.region.closure.BundleProjectBuildError;
 import no.javatime.inplace.region.intface.BundleTransitionListener;
 import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.status.BundleStatus;
@@ -103,7 +103,7 @@ public class UpdateBundleClassPathJob extends NatureJob implements UpdateBundleC
 			saveDirtyMetaFiles(false);
 			for (IProject project : getPendingProjects()) {
 				try {
-					if (!BuildErrorClosure.hasManifestBuildErrors(project)) {
+					if (!BundleProjectBuildError.hasManifestBuildErrors(project)) {
 						if (addToPath) {
 							if (bundleProjectMeta.addDefaultOutputFolder(project)) {
 								resetJob.addPendingProject(project);

@@ -111,9 +111,11 @@ public class Msg extends NLS {
 	public static String END_SHUTDOWN_ERROR;
 	public static String INSTALL_ERROR;
 	public static String SYMBOLIC_NAME_ERROR;
+	// Moved to region
 	public static String FATAL_ACTIVATE_ERROR;
 	public static String MANIFEST_BUILD_ERROR;
 	public static String BUILD_STATE_ERROR;
+	// End moved to region
 	public static String END_JOB_ROOT_ERROR;
 	public static String INIT_BUNDLE_STATE_ERROR;
 	public static String UNREG_SERVICE_ERROR;

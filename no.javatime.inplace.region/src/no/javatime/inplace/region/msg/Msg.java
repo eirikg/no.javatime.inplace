@@ -9,6 +9,9 @@ public class Msg extends NLS {
 	public static String SYMBOLIC_NAME_ERROR;
 	public static String STATE_CHANGE_ERROR;
 	public static String UNREG_SERVICE_ERROR;
+	public static String FATAL_ACTIVATE_ERROR;
+	public static String MANIFEST_BUILD_ERROR;
+	public static String BUILD_STATE_ERROR;
 
 	// Warning messages 	
 	public static String REQUIRING_BUNDLES_BUILD_ERROR_WARN;

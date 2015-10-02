@@ -4,10 +4,11 @@ package no.javatime.inplace.dl.preferences.intface;
  * Service interface for access and flushing of commands and manifest (extended interface) options
  */
 public interface CommandOptions extends ManifestOptions {
-	
+
 	public final static String COMMAND_OPTIONS_SERVICE = "Command-Options-Service";
 
 	public static final String IS_UPDATE_ON_BUILD = "isUpdateOnBuild";
+	public static final String IS_ACTIVATE_ON_COMPILE_ERROR = "isActivateOnError";
 	public static final String IS_DEACTIVATE_ON_EXIT = "isDeactivateOnExit";
 	public static final String TIMEOUT_SECONDS = "timeoutSeconds";
 	public static final String DEFAULT_TIMEOUT_SECONDS = "defaultTimeoutSeconds";
@@ -96,6 +97,29 @@ public interface CommandOptions extends ManifestOptions {
 	public void setIsRefreshOnUpdate(boolean refresh);
 
 	/**
+	 * Should bundle projects be activated or updated when they contains compile time errors
+	 * 
+	 * @return true if activate or update with compile time errors, otherwise false.
+	 */
+	public boolean isActivateOnCompileError();
+
+	/**
+	 * Get default option for projects to be activated or updated when they contains compile time
+	 * errors
+	 * 
+	 * @return true if default is to activate or update with compile time errors, otherwise false.
+	 */
+	public boolean getDefaultIsActivateOnCompileError();
+
+	/**
+	 * Set whether bundle projects should be activated or updated when bundle projects contains
+	 * compile time errors
+	 * 
+	 * @param compileError true to activate or update with compile time errors, otherwise false.
+	 */
+	public void setIsActivateOnCompileError(boolean compileError);
+
+	/**
 	 * Should bundles be updated right after they are built
 	 * 
 	 * @return true if update after build, otherwise false.
@@ -119,27 +143,28 @@ public interface CommandOptions extends ManifestOptions {
 	/**
 	 * Check for enabling/disabling the timeout functionality in Start and Stop methods
 	 * 
-	 * @return true if the timeout functionality is enabled in Start and Stop methods. False if this functionality is
-	 *         disabled.
+	 * @return true if the timeout functionality is enabled in Start and Stop methods. False if this
+	 * functionality is disabled.
 	 */
 	public boolean isTimeOut();
 
 	/**
 	 * Get the default for enabling/disabling timeout in Start and Stop methods
 	 * 
-	 * @return true if the default timeout functionality is enabled in Start and Stop methods and false if not
+	 * @return true if the default timeout functionality is enabled in Start and Stop methods and
+	 * false if not
 	 */
 	public boolean getDefaultIsTimeOut();
-	
+
 	/**
-	 * Set value determining if Start and Stop should be manually stopped 
+	 * Set value determining if Start and Stop should be manually stopped
 	 * 
 	 * @param terminate true to force stopping running start and stop methods. Otherwise false
 	 */
 	public void setIsManualTerminate(boolean terminate);
 
 	/**
-	 * Get value determining if Start and Stop should be manually stopped 
+	 * Get value determining if Start and Stop should be manually stopped
 	 * 
 	 * @return True if force termination of start and stop methods. Otherwise false
 	 */
@@ -147,15 +172,16 @@ public interface CommandOptions extends ManifestOptions {
 
 	/**
 	 * Get default value determining if Start and Stop should be manually stopped
-	 *  
+	 * 
 	 * @return True if default is to force termination of start and stop methods. Otherwise false
 	 */
 	public boolean getDefaultIsManualTerminate();
-	
+
 	/**
 	 * Enable or disable the timeout functionality in Start and Stop methods
 	 * 
-	 * @param timeOut true to enable the timeout function i Start and Stop methods. False to disable this functionality.
+	 * @param timeOut true to enable the timeout function i Start and Stop methods. False to disable
+	 * this functionality.
 	 */
 	public void setIsTimeOut(boolean timeOut);
 
@@ -167,8 +193,9 @@ public interface CommandOptions extends ManifestOptions {
 	public int getTimeout();
 
 	/**
-	 * Default thread timeout value in seconds for Start and Stop methods in bundles. Default is 5000 ms if not set as a
-	 * configuration parameter using the "equinox.statechange.timeout" configuration setting
+	 * Default thread timeout value in seconds for Start and Stop methods in bundles. Default is 5000
+	 * ms if not set as a configuration parameter using the "equinox.statechange.timeout"
+	 * configuration setting
 	 * 
 	 * @return the default timeout value for the "equinox.statechange.timeout" setting
 	 */
@@ -183,17 +210,20 @@ public interface CommandOptions extends ManifestOptions {
 	public int getStateChangeWait();
 
 	/**
-	 * Set the time in seconds as the time to wait before returning from the Start and Stop methods in a bundle.
+	 * Set the time in seconds as the time to wait before returning from the Start and Stop methods in
+	 * a bundle.
 	 * 
-	 * @param seconds time to wait in seconds before returning from the Start and Stop methods in a bundle
+	 * @param seconds time to wait in seconds before returning from the Start and Stop methods in a
+	 * bundle
 	 */
 	public void setTimeOut(int seconds);
 
 	/**
-	 * Set the default timeout interval in seconds for this session only. At restart of the Framework the default equinox
-	 * state change default timeout is used.
+	 * Set the default timeout interval in seconds for this session only. At restart of the Framework
+	 * the default equinox state change default timeout is used.
 	 * <p>
-	 * To permanently change the default timeout setting use "equinox.statechange.timeout" configuration setting *
+	 * To permanently change the default timeout setting use "equinox.statechange.timeout"
+	 * configuration setting *
 	 * 
 	 * @param seconds timeout in seconds for start and stop methods
 	 */

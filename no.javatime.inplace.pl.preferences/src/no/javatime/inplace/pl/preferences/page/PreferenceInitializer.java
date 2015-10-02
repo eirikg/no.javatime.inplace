@@ -33,6 +33,7 @@ public class PreferenceInitializer extends AbstractPreferenceInitializer {
 			prefStore.setDefault(CommandOptions.IS_DEACTIVATE_ON_EXIT, cmdStore.getDefaultIsDeactivateOnExit());
 			prefStore.setDefault(CommandOptions.IS_DEACTIVATE_ON_TERMINATE, cmdStore.getDefaultIsDeactivateOnTerminate());
 			prefStore.setDefault(CommandOptions.IS_UPDATE_ON_BUILD, cmdStore.getDefaultIsUpdateOnBuild());
+			prefStore.setDefault(CommandOptions.IS_ACTIVATE_ON_COMPILE_ERROR, cmdStore.getDefaultIsActivateOnCompileError());
 			prefStore.setDefault(CommandOptions.IS_REFRESH_ON_UPDATE, cmdStore.getDefaultIsRefreshOnUpdate());
 			prefStore.setDefault(CommandOptions.IS_EAGER_ON_ACTIVATE, cmdStore.getDefaultIsEagerOnActivate());
 			prefStore.setDefault(CommandOptions.IS_AUTO_HANDLE_EXTERNAL_COMMANDS, cmdStore.getDefaultIsAutoHandleExternalCommands());

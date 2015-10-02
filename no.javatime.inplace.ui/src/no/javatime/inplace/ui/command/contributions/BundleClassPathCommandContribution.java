@@ -3,9 +3,11 @@ package no.javatime.inplace.ui.command.contributions;
 import java.util.ArrayList;
 import java.util.Collection;
 
+import no.javatime.inplace.bundlejobs.intface.ActivateProject;
 import no.javatime.inplace.dl.preferences.intface.MessageOptions;
+import no.javatime.inplace.extender.intface.Extender;
 import no.javatime.inplace.extender.intface.ExtenderException;
-import no.javatime.inplace.region.closure.BuildErrorClosure;
+import no.javatime.inplace.region.closure.BundleProjectBuildError;
 import no.javatime.inplace.region.intface.BundleProjectCandidates;
 import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.status.BundleStatus;
@@ -70,7 +72,7 @@ public class BundleClassPathCommandContribution extends BundleMainCommandsContri
 			Collection<IProject> errProjects = null;
 			for (IProject project : projects) {
 				try {
-					if (!BuildErrorClosure.hasManifestBuildErrors(project)) {
+					if (!BundleProjectBuildError.hasManifestBuildErrors(project)) {
 						if (!Activator.getBundleProjectMetaService().isDefaultOutputFolder(project)) {
 							nAdd++;
 						} else {
@@ -80,9 +82,18 @@ public class BundleClassPathCommandContribution extends BundleMainCommandsContri
 						if (null == errProjects) {
 							errProjects = new ArrayList<IProject>();
 						}
-						errProjects.add(project);
+						Extender<ActivateProject> activateProjectExt = Activator.getTracker().getTrackedExtender(
+								ActivateProject.class.getName());
+						try {
+							ActivateProject activateproject = activateProjectExt.getService();
+							if (activateproject.isProjectActivated(project)) {
+								errProjects.add(project);
+							}
+						} finally {
+							activateProjectExt.ungetService();
+						}
 					}
-				} catch (InPlaceException e) {
+				} catch (ExtenderException | InPlaceException e) {
 				}
 			}
 			if (null != errProjects) {

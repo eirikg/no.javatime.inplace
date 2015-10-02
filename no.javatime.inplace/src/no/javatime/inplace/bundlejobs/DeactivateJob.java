@@ -21,10 +21,10 @@ import no.javatime.inplace.bundlejobs.intface.Deactivate;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.msg.Msg;
-import no.javatime.inplace.region.closure.BuildErrorClosure;
-import no.javatime.inplace.region.closure.BuildErrorClosure.ActivationScope;
+import no.javatime.inplace.region.closure.BundleBuildErrorClosure;
 import no.javatime.inplace.region.closure.BundleClosures;
 import no.javatime.inplace.region.closure.CircularReferenceException;
+import no.javatime.inplace.region.closure.ProjectBuildErrorClosure.ActivationScope;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
 import no.javatime.inplace.region.intface.BundleTransitionListener;
 import no.javatime.inplace.region.intface.InPlaceException;
@@ -280,7 +280,7 @@ public class DeactivateJob extends NatureJob implements Deactivate {
 
 	private Collection<IProject> deactivateBuildErrorClosure(Collection<IProject> activatedProjects) {
 
-		BuildErrorClosure be = new BuildErrorClosure(activatedProjects, Transition.DEACTIVATE,
+		BundleBuildErrorClosure be = new BundleBuildErrorClosure(activatedProjects, Transition.DEACTIVATE,
 				Closure.PROVIDING, Bundle.UNINSTALLED, ActivationScope.ALL);
 		if (be.hasBuildErrors()) {
 			Collection<IProject> buildErrorClosures = be.getBuildErrorClosures();

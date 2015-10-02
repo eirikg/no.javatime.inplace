@@ -104,6 +104,12 @@ public class PreferencePage extends FieldEditorPreferencePage implements IWorkbe
 		addField(booleanEditor);
 		groupCmdEditor.add(booleanEditor);
 
+		// Enable/Disable to activate and update projects with compile time errors
+		booleanEditor = new BooleanFieldEditor(CommandOptions.IS_ACTIVATE_ON_COMPILE_ERROR,
+				Msg.IS_ACTIVATE_ON_COMPILE_ERROR_LABEL, groupCmdEditor.getMemberFieldEditorParent());
+		addField(booleanEditor);
+		groupCmdEditor.add(booleanEditor);
+
 		// Enable/Disable to run refresh after update
 		booleanEditor = new BooleanFieldEditor(CommandOptions.IS_REFRESH_ON_UPDATE,
 				Msg.IS_REFRESH_ON_UPDATE_LABEL, groupCmdEditor.getMemberFieldEditorParent());
@@ -167,10 +173,15 @@ public class PreferencePage extends FieldEditorPreferencePage implements IWorkbe
 		// addField(new SpacerFieldEditor(getFieldEditorParent()));
 
 		// Enable/Disable to include bundles contributing to the UI using extension
-		addField(new LabelFieldEditor(Msg.ALLOW_EXTIONS_TEXT_LABEL, getFieldEditorParent()));
+		addField(new LabelFieldEditor(Msg.ALLOW_EXTENSIONS_TEXT_LABEL, getFieldEditorParent()));
 		booleanEditor = new BooleanFieldEditor(CommandOptions.IS_ALLOW_UI_CONTRIBUTIONS,
 				Msg.IS_ALLOW_UI_CONTRIBUTIONS_LABEL, getFieldEditorParent());
 		addField(booleanEditor);
+
+		// Enable/Disable to activate and update projects with compile time errors
+//		booleanEditor = new BooleanFieldEditor(CommandOptions.IS_ACTIVATE_ON_COMPILE_ERROR,
+//				Msg.IS_ACTIVATE_ON_COMPILE_ERROR_LABEL, getFieldEditorParent());
+//		addField(booleanEditor);
 
 		// Footnote
 		addField(new SeparatorFieldEditor(getFieldEditorParent()));
@@ -219,6 +230,7 @@ public class PreferencePage extends FieldEditorPreferencePage implements IWorkbe
 			prefStore.setValue(CommandOptions.IS_UPDATE_DEFAULT_OUTPUT_FOLDER,
 					cmdStore.isUpdateDefaultOutPutFolder());
 			prefStore.setValue(CommandOptions.IS_UPDATE_ON_BUILD, cmdStore.isUpdateOnBuild());
+			prefStore.setValue(CommandOptions.IS_ACTIVATE_ON_COMPILE_ERROR, cmdStore.isActivateOnCompileError());
 			prefStore.setValue(CommandOptions.IS_REFRESH_ON_UPDATE, cmdStore.isRefreshOnUpdate());
 			prefStore.setValue(CommandOptions.IS_EAGER_ON_ACTIVATE, cmdStore.isEagerOnActivate());
 			prefStore.setValue(CommandOptions.IS_AUTO_HANDLE_EXTERNAL_COMMANDS,
@@ -282,6 +294,7 @@ public class PreferencePage extends FieldEditorPreferencePage implements IWorkbe
 			cmdStore.setIsUpdateDefaultOutPutFolder(prefStore
 					.getBoolean(CommandOptions.IS_UPDATE_DEFAULT_OUTPUT_FOLDER));
 			cmdStore.setIsUpdateOnBuild(prefStore.getBoolean(CommandOptions.IS_UPDATE_ON_BUILD));
+			cmdStore.setIsActivateOnCompileError(prefStore.getBoolean(CommandOptions.IS_ACTIVATE_ON_COMPILE_ERROR));
 			cmdStore.setIsRefreshOnUpdate(prefStore.getBoolean(CommandOptions.IS_REFRESH_ON_UPDATE));
 			cmdStore.setIsEagerOnActivate(prefStore.getBoolean(CommandOptions.IS_EAGER_ON_ACTIVATE));
 			cmdStore.setIsAutoHandleExternalCommands(prefStore

@@ -200,9 +200,9 @@ public interface BundleRegion {
 	public boolean isProjectRegistered(IProject project);
 
 	/**
-	 * Get associated projects for all installed (activated and deactivated) bundles
+	 * Get all registered (activated and deactivated) bundle projects
 	 * 
-	 * @return associated projects for all installed bundles
+	 * @return all registered (activated and deactivated) bundle projects
 	 */
 	public Collection<IProject> getProjects();
 

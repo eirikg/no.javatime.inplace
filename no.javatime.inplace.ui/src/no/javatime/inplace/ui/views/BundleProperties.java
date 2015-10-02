@@ -15,7 +15,7 @@ import java.util.Collections;
 import java.util.Date;
 
 import no.javatime.inplace.extender.intface.ExtenderException;
-import no.javatime.inplace.region.closure.BuildErrorClosure;
+import no.javatime.inplace.region.closure.BundleProjectBuildError;
 import no.javatime.inplace.region.closure.BundleSorter;
 import no.javatime.inplace.region.closure.CircularReferenceException;
 import no.javatime.inplace.region.closure.ProjectSorter;
@@ -247,9 +247,11 @@ public class BundleProperties {
 		boolean isProjectActivated = bundleRegion.isBundleActivated(project);
 
 		try {
-			if (!BuildErrorClosure.hasBuildState(project)) {
+			if (!BundleProjectBuildError.hasBuildState(project)) {
 				return "Missing Build State";
-			} else if (BuildErrorClosure.hasBuildErrors(project)) {
+			} else if (BundleProjectBuildError.hasManifestBuildErrors(project)) {
+				return "Problems in Manifest file"; 
+			} else if (BundleProjectBuildError.hasBuildErrors(project)) {
 				return "Build Problems";
 			} else if (bundleTransition.containsPending(project, Transition.BUILD, false)) {
 				return "Build Pending";
@@ -374,7 +376,7 @@ public class BundleProperties {
 			}
 		} catch (InPlaceException e) {
 			// Don't spam this meassage.
-			if (!BuildErrorClosure.hasManifestBuildErrors(project) && BuildErrorClosure.hasBuildState(project)) {
+			if (!BundleProjectBuildError.hasManifestBuildErrors(project) && BundleProjectBuildError.hasBuildState(project)) {
 				String msg = ErrorMessage.getInstance().formatString("error_get_policy", project.getName());
 				StatusManager.getManager().handle(
 						new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, msg, e), StatusManager.LOG);
