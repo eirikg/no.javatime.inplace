@@ -39,6 +39,7 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.OperationCanceledException;
+import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.ui.statushandlers.StatusManager;
@@ -89,11 +90,11 @@ public class DeactivateJob extends NatureJob implements Deactivate {
 		super(name, project);
 		init();
 	}
-	
+
 	private void init() {
 		checkBuildErrors = false;
 	}
-	
+
 	@Override
 	public void end() {
 		super.end();
@@ -214,10 +215,8 @@ public class DeactivateJob extends NatureJob implements Deactivate {
 					throw new OperationCanceledException();
 				}
 				deactivateNature(getPendingProjects(), new SubProgressMonitor(monitor, 1));
-				StatePersistParticipant.saveTransitionState(StatePersistParticipant.getSessionPreferences(), true);
-				// StatePersistParticipant.saveSessionState(true);
-//				BundleTransitionListener.addBundleTransition(new TransitionEvent((IProject) null,
-//						Transition.DEACTIVATE));
+				StatePersistParticipant.saveTransitionState(
+						StatePersistParticipant.getSessionPreferences(), true);
 			} catch (InPlaceException e) {
 				String msg = ExceptionMessage.getInstance().formatString(
 						"deactivate_job_uninstalled_state", getName(),
@@ -260,9 +259,16 @@ public class DeactivateJob extends NatureJob implements Deactivate {
 				if (null != bundlesToRefresh) {
 					pendingBundles.addAll(bundlesToRefresh);
 				}
-				// Deactivated bundles will not be resolved (rejected by the resolver hook) during refresh
-				// and thus enter state INSTALLED
-				refresh(pendingBundles, new SubProgressMonitor(monitor, 2));
+				try {
+					// Deactivated bundles will not be resolved (rejected by the resolver hook) during refresh
+					// and thus enter state INSTALLED
+					refresh(pendingBundles, new SubProgressMonitor(monitor, 2));
+				} catch (InPlaceException e) {
+					handleRefreshException(new SubProgressMonitor(monitor, 1), e, pendingBundles);
+					if (null != bundlesToRestart) {
+						bundlesToRestart.removeAll(pendingBundles);
+					}
+				}
 				if (monitor.isCanceled()) {
 					throw new OperationCanceledException();
 				}
@@ -278,10 +284,34 @@ public class DeactivateJob extends NatureJob implements Deactivate {
 		return getLastErrorStatus();
 	}
 
+	/**
+	 * Adds the specified exception to the log and reinstalls bundles that are at least in state
+	 * resolved
+	 * 
+	 * @param monitor Progress monitor for reinstalling bundles
+	 * @param throwable The refresh exception
+	 * @param bundlesToResolve bundles to refresh/resolve
+	 */
+	private void handleRefreshException(IProgressMonitor monitor, Throwable throwable,
+			Collection<Bundle> bundlesToResolve) {
+
+		SubMonitor progress = SubMonitor.convert(monitor, bundlesToResolve.size());
+		try {
+			addError(throwable, NLS.bind(Msg.REFRESH_EXP, getName()));
+			Collection<Bundle> notInstalledBundles = bundleRegion.getBundles(bundlesToResolve,
+					Bundle.RESOLVED | Bundle.ACTIVE | Bundle.STARTING | Bundle.STOPPING);
+			if (notInstalledBundles.size() > 0) {
+				reInstall(bundleRegion.getProjects(bundlesToResolve), monitor, false, Bundle.RESOLVED);
+			}
+		} finally {
+			progress.worked(1);
+		}
+	}
+
 	private Collection<IProject> deactivateBuildErrorClosure(Collection<IProject> activatedProjects) {
 
-		BundleBuildErrorClosure be = new BundleBuildErrorClosure(activatedProjects, Transition.DEACTIVATE,
-				Closure.PROVIDING, Bundle.UNINSTALLED, ActivationScope.ALL);
+		BundleBuildErrorClosure be = new BundleBuildErrorClosure(activatedProjects,
+				Transition.DEACTIVATE, Closure.PROVIDING, Bundle.UNINSTALLED, ActivationScope.ALL);
 		if (be.hasBuildErrors()) {
 			Collection<IProject> buildErrorClosures = be.getBuildErrorClosures();
 			String msg = NLS.bind(Msg.DEACTIVATE_BUILD_ERROR_INFO,
@@ -306,7 +336,6 @@ public class DeactivateJob extends NatureJob implements Deactivate {
 	public void setCheckBuildErrors(boolean checkBuildErrors) {
 		this.checkBuildErrors = checkBuildErrors;
 	}
-
 
 	/**
 	 * Number of ticks used by this job.

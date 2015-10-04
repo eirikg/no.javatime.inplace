@@ -142,7 +142,8 @@ public class Msg extends NLS {
 	public static String NULL_EXTENDER_EXP;
 	public static String NULL_EXTENSION_EXP;
 	public static String INTERRUPT_EXP;
-	
+	public static String REFRESH_EXP;
+
 	// Info messages
 	public static String DEACTIVATE_BUILD_ERROR_INFO;
 	public static String UPDATE_BUILD_ERROR_INFO;

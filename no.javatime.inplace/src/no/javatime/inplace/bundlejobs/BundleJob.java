@@ -629,7 +629,7 @@ public class BundleJob extends JobStatus implements BundleExecutor {
 			localMonitor.worked(bundlesToRefresh.size());
 		}
 	}
-
+	
 	/**
 	 * Calculates the requiring dependency closure giving an initial set of bundles and a
 	 * domain that limits the set of requiring bundles
@@ -687,11 +687,20 @@ public class BundleJob extends JobStatus implements BundleExecutor {
 	protected Collection<Bundle> resolve(Collection<Bundle> bundlesToResolve,
 			SubProgressMonitor monitor) {
 		SubMonitor localMonitor = SubMonitor.convert(monitor, 1);
+		if (Category.getState(Category.progressBar))
+			sleep(sleepTime);
+		localMonitor.subTask(Msg.RESOLVE_TASK_JOB);
+		boolean isResolved = true;
 		try {
-			if (Category.getState(Category.progressBar))
-				sleep(sleepTime);
-			localMonitor.subTask(Msg.RESOLVE_TASK_JOB);
-			if (!bundleCommand.resolve(bundlesToResolve)) {
+			isResolved = bundleCommand.resolve(bundlesToResolve);
+		} catch (InPlaceException e) {
+			String msg = ExceptionMessage.getInstance().formatString("resolve_job", getName(),
+					bundleRegion.formatBundleList(bundlesToResolve, true));
+			addError(e, msg);
+			isResolved = false;
+		}
+		try {			
+			if (!isResolved) {
 				Collection<IProject> projectsToResolve = bundleRegion.getProjects(bundlesToResolve);
 				BundleBuildErrorClosure be = new BundleBuildErrorClosure(projectsToResolve, Transition.RESOLVE,
 						Closure.REQUIRING);
@@ -715,6 +724,8 @@ public class BundleJob extends JobStatus implements BundleExecutor {
 						int state = bundleCommand.getState(bundle);
 						if ((state & (Bundle.UNINSTALLED | Bundle.INSTALLED)) != 0) {
 							notResolvedBundles.add(bundle);
+							// Must deactivate to not get an activated bundle in state installed
+							bundleTransition.addPending(bundle, Transition.DEACTIVATE);
 							notResolvedProjects.add(project);
 							String msgNotResolvedBundle = NLS.bind(Msg.NOT_RESOLVED_BUNDLE_WARN, bundle,
 									project.getName());
@@ -749,7 +760,7 @@ public class BundleJob extends JobStatus implements BundleExecutor {
 						}
 					}
 				}
-				if (notResolvedBundles.size() > 0) {
+				if (null != notResolvedBundles && notResolvedBundles.size() > 0) {
 					createMultiStatus(new BundleStatus(StatusCode.WARNING, Activator.PLUGIN_ID,
 							Msg.NOT_RESOLVED_ROOT_WARN), startStatus);
 					return notResolvedBundles;
@@ -758,10 +769,6 @@ public class BundleJob extends JobStatus implements BundleExecutor {
 			if (monitor.isCanceled()) {
 				throw new OperationCanceledException();
 			}
-		} catch (InPlaceException e) {
-			String msg = ExceptionMessage.getInstance().formatString("resolve_job", getName(),
-					bundleRegion.formatBundleList(bundlesToResolve, true));
-			addError(e, msg);
 		} finally {
 			localMonitor.worked(1);
 		}

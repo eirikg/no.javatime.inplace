@@ -210,7 +210,7 @@ public interface BundleTransition {
 		/**
 		 * A state indicating that a bundle command/operation did not complete or did complete, but
 		 * possibly in an inconsistent manner. May for instance happen when executing an infinite loop
-		 * in Start/Stop methods Never ending or operations that timeout will have an incomplete
+		 * in Start/Stop methods. Never ending or operations that timeout will have an incomplete
 		 * transition error and the state will be the state the bundle had when the previous transition
 		 * ended.
 		 */

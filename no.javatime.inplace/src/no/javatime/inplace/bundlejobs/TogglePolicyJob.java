@@ -117,7 +117,7 @@ public class TogglePolicyJob extends NatureJob implements TogglePolicy {
 					if (null != bundle) {
 						if ((bundle.getState() & (Bundle.INSTALLED)) != 0) {
 							reInstall(Collections.<IProject> singletonList(project), new SubProgressMonitor(
-									monitor, 1));
+									monitor, 1), true, Bundle.INSTALLED);
 						} else if ((bundle.getState() & (Bundle.RESOLVED)) != 0) {
 							// Do not start bundle if in state resolve when toggling policy
 							bundleTransition.addPending(bundle, Transition.RESOLVE);

@@ -145,12 +145,12 @@ public class StartJob extends BundleJob implements Start {
 		Collection<Bundle> bundlesToStart = bundleRegion.getBundles(getPendingProjects());
 		Collection<Bundle> activatedBundles = bundleRegion.getActivatedBundles();
 		// Add bundles according to dependency options
-		BundleClosures pd = new BundleClosures();
-		bundlesToStart = pd.bundleActivation(bundlesToStart, activatedBundles);
+		BundleClosures bundleClosure = new BundleClosures();
+		bundlesToStart = bundleClosure.bundleActivation(bundlesToStart, activatedBundles);
 		Collection<Bundle> notResolvedBundles = new LinkedHashSet<Bundle>();
 		for (Bundle bundle : bundlesToStart) {
 			int state = bundle.getState();
-			if ((state & (Bundle.UNINSTALLED | Bundle.STARTING | Bundle.ACTIVE)) != 0) {
+			if ((state & (Bundle.UNINSTALLED | Bundle.STARTING | Bundle.STOPPING | Bundle.ACTIVE)) != 0) {
 				notResolvedBundles.add(bundle);
 				// These comes from install and there should be no need to refresh
 			} else if ((state & (Bundle.INSTALLED)) != 0) {
@@ -178,8 +178,7 @@ public class StartJob extends BundleJob implements Start {
 		if (monitor.isCanceled()) {
 			throw new OperationCanceledException();
 		}
-		start(bundlesToStart, null, new SubProgressMonitor(
-				monitor, 1));
+		start(bundlesToStart, null, new SubProgressMonitor(monitor, 1));
 		// Warn about missing providing closures in state RESOLVED
 		try {
 			DependencyOptions dependencyOptions = Activator.getDependencyOptionsService();

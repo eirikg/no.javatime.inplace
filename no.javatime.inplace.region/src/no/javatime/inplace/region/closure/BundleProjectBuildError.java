@@ -153,7 +153,7 @@ public class BundleProjectBuildError {
 	public static boolean hasBuildState(IProject project) throws InPlaceException {
 
 		IJavaProject javaProject = BundleProjectCandidatesImpl.INSTANCE.getJavaProject(project);
-		if (javaProject.hasBuildState()) {
+		if (null != javaProject && javaProject.hasBuildState()) {
 			return true;
 		}
 		return false;

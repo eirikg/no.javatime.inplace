@@ -119,6 +119,15 @@ public interface IBundleStatus extends IStatus {
 	 *          or <code>CANCEL</code>
 	 */
 	void setSeverity(int severity);
+	
+	
+	/**
+	 * Sets the exception.
+	 *
+	 * @param exception a low-level exception, or <code>null</code> if not
+	 *    applicable 
+	 */
+	void setException(Throwable exception);
 
 	/**
 	 * Adds a list of status objects as children to this multi status

@@ -129,7 +129,12 @@ public class BundleStatus extends MultiStatus implements IBundleStatus {
 		super(pluginId, IStatus.OK, message, exception);
 		init(statusCode, bundle, null);
 	}
-		
+
+	@Override
+	public void setException(Throwable exception) {
+		super.setException(exception);
+	}	
+	
 	/**
 	 * Creates a new status object. The underlying <code>Status</code> object is assigned a status 
 	 * converted from the specified {@code StatusCode}

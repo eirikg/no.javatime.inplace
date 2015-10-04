@@ -50,6 +50,7 @@ import no.javatime.inplace.region.state.BundleNode;
 import no.javatime.inplace.region.state.BundleState;
 import no.javatime.inplace.region.state.BundleStateEvents;
 import no.javatime.inplace.region.status.BundleStatus;
+import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import no.javatime.util.messages.Category;
 import no.javatime.util.messages.ExceptionMessage;
@@ -371,11 +372,12 @@ public class BundleCommandImpl implements BundleCommand {
 		if (null == bundles || bundles.size() == 0) {
 			return; // Ok to return when no bundles to refresh
 		}
-			// Report on any additional bundles refreshed than those specified
-			//Collection<Bundle> dependencyClosure = getDependencyClosure(bundles);
-			// dependencyClosure.removeAll(bundles);
 
+		// Report on any additional bundles refreshed than those specified
+			// Collection<Bundle> dependencyClosure = getDependencyClosure(bundles);
+			// dependencyClosure.removeAll(bundles);
 		try { // wait block
+			final IBundleStatus refreshStatus = new BundleStatus(StatusCode.OK, Activator.PLUGIN_ID,"");
 			for (Bundle bundle : bundles) {
 				if (WorkspaceRegionImpl.INSTANCE.exist(bundle)) {
 					BundleNode node = bundleRegion.getBundleNode(bundle);
@@ -392,32 +394,41 @@ public class BundleCommandImpl implements BundleCommand {
 					@Override
 					public void frameworkEvent(FrameworkEvent event) {
 
-						if (Category.getState(Category.bundleEvents)) {
-							TraceMessage.getInstance().getString("framework_event",
-									BundleCommandImpl.INSTANCE.getStateName(event),
-									event.getBundle().getSymbolicName());
-						}
-
-						if ((event.getType() & (FrameworkEvent.ERROR)) != 0) {
-							for (Bundle bundle : bundles) {
-								BundleNode node = bundleRegion.getBundleNode(bundle);
-								node.setTransitionError(TransitionError.ERROR);
+						try {
+							if (Category.getState(Category.bundleEvents)) {
+								TraceMessage.getInstance().getString("framework_event",
+										BundleCommandImpl.INSTANCE.getStateName(event),
+										event.getBundle().getSymbolicName());
 							}
-							StatusManager.getManager().handle(
-									new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, event.getBundle()
-											.getBundleId(), null, event.getThrowable()), StatusManager.LOG);
-						}
 
-						synchronized (thisBundleCommand) { // Notify to proceed
-							if (Category.DEBUG && Category.getState(Category.listeners))
-								TraceMessage.getInstance().getString("notify_refresh_finished",
-										BundleCommandImpl.class.getSimpleName(),
-										bundleRegion.formatBundleList(bundles, true));
-							thisBundleCommand.refreshed = true;
-							thisBundleCommand.notifyAll();
+							if ((event.getType() & (FrameworkEvent.ERROR)) != 0) {
+								for (Bundle bundle : bundles) {
+									BundleNode node = bundleRegion.getBundleNode(bundle);
+									node.setTransitionError(TransitionError.ERROR);
+								}
+								refreshStatus.setStatusCode(StatusCode.EXCEPTION);
+								Throwable throwable = event.getThrowable();
+								if (null != throwable) { 
+									refreshStatus.setMessage(throwable.getMessage()); 
+									refreshStatus.setException(throwable);
+								}
+								refreshStatus.setBundle(event.getBundle());
+								StatusManager.getManager().handle(refreshStatus, StatusManager.LOG);
+							}
+						} finally {
+							synchronized (thisBundleCommand) { // Notify to proceed
+								if (Category.DEBUG && Category.getState(Category.listeners))
+									TraceMessage.getInstance().getString("notify_refresh_finished",
+											BundleCommandImpl.class.getSimpleName(),
+											bundleRegion.formatBundleList(bundles, true));
+								thisBundleCommand.refreshed = true;
+								thisBundleCommand.notifyAll();
+							}
 						}
 					}
 				});
+			
+			// Refresh	
 			} catch (SecurityException e) {
 				for (Bundle bundle : bundles) {
 					BundleNode node = bundleRegion.getBundleNode(bundle);
@@ -433,6 +444,7 @@ public class BundleCommandImpl implements BundleCommand {
 				throw new InPlaceException(e, "bundles_argument_refresh_bundle",
 						bundleRegion.formatBundleList(bundles, true));
 			}
+
 			synchronized (this) {
 				while (!this.refreshed) {
 					if (Category.DEBUG && Category.getState(Category.listeners))
@@ -441,9 +453,11 @@ public class BundleCommandImpl implements BundleCommand {
 					this.wait();
 				}
 			}
+		// Wait
 		} catch (InterruptedException e) {
 			throw new InPlaceException(e, "interrupt_exception_refresh",
 					BundleCommandImpl.class.getSimpleName());
+
 		} finally {
 			if (Category.DEBUG && Category.getState(Category.listeners))
 				TraceMessage.getInstance().getString("continuing_after_refresh",

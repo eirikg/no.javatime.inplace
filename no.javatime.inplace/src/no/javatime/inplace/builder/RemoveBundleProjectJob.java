@@ -9,6 +9,7 @@ import no.javatime.inplace.builder.intface.RemoveBundleProject;
 import no.javatime.inplace.bundlejobs.NatureJob;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.extender.intface.ExtenderException;
+import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.closure.BundleClosures;
 import no.javatime.inplace.region.closure.CircularReferenceException;
 import no.javatime.inplace.region.events.TransitionEvent;
@@ -24,7 +25,9 @@ import no.javatime.util.messages.ExceptionMessage;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.core.runtime.SubProgressMonitor;
+import org.eclipse.osgi.util.NLS;
 import org.osgi.framework.Bundle;
 
 public class RemoveBundleProjectJob extends NatureJob implements RemoveBundleProject {
@@ -81,12 +84,19 @@ public class RemoveBundleProjectJob extends NatureJob implements RemoveBundlePro
 				for (Bundle bundle : reqBundleClosure) {
 					IProject project = bundleRegion.getProject(bundle);
 					Collection<Bundle> singletonList = Collections.singletonList(bundle);
+					// If accessible it is not closed
 					if (project.isAccessible()) {
-						// Deactivate bundle with requirements on removed project
-						stop(singletonList, null, new SubProgressMonitor(monitor, 1));
-						bundleTransition.addPending(project, Transition.UNRESOLVE);
-						deactivateNature(Collections.singletonList(project), new SubProgressMonitor(monitor, 1));
-						refresh(singletonList, new SubProgressMonitor(monitor, 1));
+						try {
+							// Deactivate bundle with requirements on removed project
+							stop(singletonList, null, new SubProgressMonitor(monitor, 1));
+							bundleTransition.addPending(project, Transition.UNRESOLVE);
+							deactivateNature(Collections.singletonList(project), new SubProgressMonitor(monitor, 1));
+							// Deactivated bundles will not be resolved (rejected by the resolver hook) during refresh
+							// and thus enter state INSTALLED
+							refresh(singletonList, new SubProgressMonitor(monitor, 1));
+						} catch (InPlaceException e) {
+							handleRefreshException(new SubProgressMonitor(monitor, 1), e, singletonList);
+						}
 					} else {
 						// Stop and uninstall removed project
 						stop(singletonList, null, new SubProgressMonitor(monitor, 1));
@@ -98,10 +108,18 @@ public class RemoveBundleProjectJob extends NatureJob implements RemoveBundlePro
 			// If all remaining activated projects are either closed, deleted or deactivated
 			if (!bundleRegion.isRegionActivated()) {
 				Collection<Bundle> deactivatedBundles = bundleRegion.getDeactivatedBundles();
-				// Uninstall & refresh
-				uninstall(deactivatedBundles, new SubProgressMonitor(monitor, 1), true, false);
+				try {
+					// Uninstall & refresh
+					uninstall(deactivatedBundles, new SubProgressMonitor(monitor, 1), true, false);
+				} catch (InPlaceException e) {
+					handleRefreshException(new SubProgressMonitor(monitor, 1), e, deactivatedBundles);
+				}
 			} else {
-				refresh(pendingBundles, new SubProgressMonitor(monitor, 1));
+				try {
+					refresh(pendingBundles, new SubProgressMonitor(monitor, 1));
+				} catch (InPlaceException e) {
+					handleRefreshException(new SubProgressMonitor(monitor, 1), e, pendingBundles);
+				}
 			}
 		} catch (InterruptedException e) {
 			String msg = ExceptionMessage.getInstance().formatString("interrupt_job", getName());
@@ -175,5 +193,28 @@ public class RemoveBundleProjectJob extends NatureJob implements RemoveBundlePro
 			clearPendingProjects();
 		}
 		return notScheduledProjects;
+	}
+	/**
+	 * Adds the specified exception to the log and reinstalls bundles that are at least in state
+	 * resolved
+	 * 
+	 * @param monitor Progress monitor for reinstalling bundles
+	 * @param throwable The refresh exception
+	 * @param bundlesToResolve bundles to refresh/resolve
+	 */
+	private void handleRefreshException(IProgressMonitor monitor, Throwable throwable,
+			Collection<Bundle> bundlesToResolve) {
+
+		SubMonitor progress = SubMonitor.convert(monitor, bundlesToResolve.size());
+		try {
+			addError(throwable, NLS.bind(Msg.REFRESH_EXP, getName()));
+			Collection<Bundle> notInstalledBundles = bundleRegion.getBundles(bundlesToResolve,
+					Bundle.RESOLVED | Bundle.ACTIVE | Bundle.STARTING | Bundle.STOPPING);
+			if (notInstalledBundles.size() > 0) {
+				reInstall(bundleRegion.getProjects(bundlesToResolve), monitor, false, Bundle.RESOLVED);
+			}
+		} finally {
+			progress.worked(1);
+		}
 	}
 }

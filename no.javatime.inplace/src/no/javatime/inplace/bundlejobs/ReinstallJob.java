@@ -31,6 +31,7 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.osgi.util.NLS;
+import org.osgi.framework.Bundle;
 
 public class ReinstallJob extends NatureJob implements Reinstall {
 
@@ -119,7 +120,7 @@ public class ReinstallJob extends NatureJob implements Reinstall {
 	 *         last failed bundle is returned. All failures are added to the job status list
 	 */
 	private IBundleStatus reinstall(IProgressMonitor monitor) {
-		return reInstall(getPendingProjects(), new SubProgressMonitor(monitor, 1));
+		return reInstall(getPendingProjects(), new SubProgressMonitor(monitor, 1), true, Bundle.INSTALLED);
 	}
 
 	/**

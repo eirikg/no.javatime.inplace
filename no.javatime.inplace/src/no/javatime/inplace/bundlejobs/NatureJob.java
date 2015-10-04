@@ -235,7 +235,11 @@ public abstract class NatureJob extends BundleJob {
 				}
 			}
 			if (null == errorBundles && refresh) {
-				refresh(bundles, new SubProgressMonitor(monitor, 1));
+				try {
+					refresh(bundles, new SubProgressMonitor(monitor, 1));
+				} catch (InPlaceException e) {
+					addError(e, NLS.bind(Msg.REFRESH_EXP, getName()));
+				}
 			}
 			if (unregister) {
 				if (null != errorBundles) {
@@ -252,27 +256,28 @@ public abstract class NatureJob extends BundleJob {
 	/**
 	 * Reinstalls the specified bundle projects. Failures to reinstall are added to the job status
 	 * list. Only specified bundle projects in state INSTALLED are re-installed.
-	 * 
-	 * @param projectsToInstall a collection of bundle projects to re install
 	 * @param monitor monitor the progress monitor to use for reporting progress to the user.
+	 * @param refresh true to refresh after uninstall and false if not
+	 * @param states Bundle states that must be satisfied for the specified bundles to be reinstalled
+	 * @param projectsToInstall a collection of bundle projects to re install
 	 * @return installed and activated bundle projects. An empty set means that zero or more
 	 * deactivated bundles have been installed
 	 */
 	protected IBundleStatus reInstall(Collection<IProject> projectsToReinstall,
-			IProgressMonitor monitor) {
+			IProgressMonitor monitor, boolean refresh, int states) {
 
 		IBundleStatus status = new BundleStatus(StatusCode.OK, Activator.PLUGIN_ID, "");
 		SubMonitor progress = SubMonitor.convert(monitor, projectsToReinstall.size());
 
 		for (IProject project : projectsToReinstall) {
 			Bundle bundle = bundleRegion.getBundle(project);
-			if ((null != bundle) && (bundle.getState() & (Bundle.INSTALLED)) != 0) {
+			if ((null != bundle) && (bundle.getState() & (states)) != 0) {
 				try {
 					if (Category.getState(Category.progressBar))
 						sleep(sleepTime);
 					progress.subTask(NLS.bind(Msg.REINSTALL_SUB_TASK_JOB, project.getName()));
 					IBundleStatus result = uninstall(Collections.<Bundle> singletonList(bundle),
-							new SubProgressMonitor(monitor, 1), true, false);
+							new SubProgressMonitor(monitor, 1), refresh, false);
 					if (result.hasStatus(StatusCode.OK)) {
 						install(Collections.<IProject> singletonList(project), new SubProgressMonitor(monitor,
 								1));
@@ -366,7 +371,7 @@ public abstract class NatureJob extends BundleJob {
 								// Uninstall and install bundles when toggling from lazy to eager activation policy
 								if (null != bundle) {
 									reInstall(Collections.<IProject> singletonList(project), new SubProgressMonitor(
-											monitor, 1));
+											monitor, 1), true, Bundle.INSTALLED);
 									bundle = bundleRegion.getBundle(project);
 								}
 							}
@@ -512,7 +517,7 @@ public abstract class NatureJob extends BundleJob {
 			throw new OperationCanceledException(getLastErrorStatus().getMessage());
 		}
 	}
-
+	
 	/**
 	 * Builds the collection of projects
 	 * 

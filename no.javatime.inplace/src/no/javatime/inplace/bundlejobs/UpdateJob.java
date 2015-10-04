@@ -87,7 +87,7 @@ public class UpdateJob extends BundleJob implements Update {
 	public UpdateJob(String name, IProject project) {
 		super(name, project);
 	}
-	
+
 	/**
 	 * Runs the update bundle(s) operation.
 	 * 
@@ -197,7 +197,12 @@ public class UpdateJob extends BundleJob implements Update {
 		// (6) Refresh updated bundles and their closures or resolve updated bundles
 		if (requiringClosure.size() > 0) {
 			if (commandOptions.isRefreshOnUpdate()) {
-				refresh(requiringClosure, new SubProgressMonitor(monitor, 1));
+				try {
+					refresh(requiringClosure, new SubProgressMonitor(monitor, 1));
+				} catch (InPlaceException e) {
+					bundlesToRestart.removeAll(requiringClosure);
+					handleRefreshException(e, requiringClosure);
+				}
 			} else {
 				Collection<Bundle> notResolvedBundles = resolve(requiringClosure, new SubProgressMonitor(
 						monitor, 1));
@@ -422,32 +427,6 @@ public class UpdateJob extends BundleJob implements Update {
 		return sortedBundlesToUpdate;
 	}
 
-	/**
-	 * Removes all bundles in the specified error status list and their requiring bundles from the
-	 * specified bundles to refresh out parameter
-	 * 
-	 * @param errorStatusList Status objects for error bundles to remove from bundles to refresh
-	 * @param bundlesTorRefresh A non-null out parameter where any error bundles and their requiring
-	 * bundles found in the error status list parameter are removed
-	 */
-	private void handleUpdateExceptions(Collection<IBundleStatus> errorStatusList,
-			Collection<Bundle> bundlesTorRefresh) {
-
-		if (errorStatusList.size() > 0) {
-			Collection<Bundle> bundles = new LinkedHashSet<Bundle>();
-			for (IBundleStatus bundleStatus : errorStatusList) {
-				Bundle bundle = bundleStatus.getBundle();
-				if (null != bundle) {
-					BundleSorter bs = new BundleSorter();
-					Collection<Bundle> affectedBundles = bs.sortDeclaredRequiringBundles(
-							Collections.singleton(bundle), bundlesTorRefresh);
-					bundles.addAll(affectedBundles);
-				}
-			}
-			bundlesTorRefresh.removeAll(bundles);
-		}
-	}
-
 	private Collection<Bundle> getActivatedInstalledClosure(Collection<Bundle> requiringClosure,
 			Collection<Bundle> activatedBundles) {
 
@@ -572,6 +551,54 @@ public class UpdateJob extends BundleJob implements Update {
 		Collection<Bundle> orderedBundles = getUpdateOrder(pendingBundles, false);
 		Collection<IProject> orderedProjects = bundleRegion.getProjects(orderedBundles);
 		return orderedProjects;
+	}
+
+	/**
+	 * Removes all bundles in the specified error status list and their requiring bundles from the
+	 * specified bundles to refresh out parameter
+	 * 
+	 * @param errorStatusList Status objects for error bundles to remove from bundles to refresh
+	 * @param bundlesTorRefresh A non-null out parameter where any error bundles and their requiring
+	 * bundles found in the error status list parameter are removed
+	 */
+	private void handleUpdateExceptions(Collection<IBundleStatus> errorStatusList,
+			Collection<Bundle> bundlesTorRefresh) {
+
+		if (errorStatusList.size() > 0) {
+			Collection<Bundle> bundles = new LinkedHashSet<Bundle>();
+			for (IBundleStatus bundleStatus : errorStatusList) {
+				Bundle bundle = bundleStatus.getBundle();
+				if (null != bundle) {
+					BundleSorter bs = new BundleSorter();
+					Collection<Bundle> affectedBundles = bs.sortDeclaredRequiringBundles(
+							Collections.singleton(bundle), bundlesTorRefresh);
+					bundles.addAll(affectedBundles);
+				}
+			}
+			bundlesTorRefresh.removeAll(bundles);
+		}
+	}
+
+	/**
+	 * Adds the specified exception to the log and adds deactivate as a pending transition to bundles
+	 * in state installed and uninstalled
+	 * 
+	 * @param throwable The refresh exception
+	 * @param bundlesToResolve bundles to refresh/resolve
+	 */
+	private void handleRefreshException(Throwable throwable, Collection<Bundle> bundlesToResolve) {
+
+		for (Bundle bundle : bundlesToResolve) {
+			// Bundle may be rejected by the resolver hook due to dependencies on deactivated bundles
+			if (bundleRegion.isBundleActivated(bundle)) {
+				int state = bundleCommand.getState(bundle);
+				if ((state & (Bundle.UNINSTALLED | Bundle.INSTALLED)) != 0) {
+					// Must deactivate to not get an activated bundle in state installed
+					bundleTransition.addPending(bundle, Transition.DEACTIVATE);
+				}
+			}
+		}
+		addError(throwable, NLS.bind(Msg.REFRESH_EXP, getName()));
 	}
 
 	/**

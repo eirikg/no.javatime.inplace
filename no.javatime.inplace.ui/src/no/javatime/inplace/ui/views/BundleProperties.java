@@ -250,7 +250,7 @@ public class BundleProperties {
 			if (!BundleProjectBuildError.hasBuildState(project)) {
 				return "Missing Build State";
 			} else if (BundleProjectBuildError.hasManifestBuildErrors(project)) {
-				return "Problems in Manifest file"; 
+				return "Manifest file problems"; 
 			} else if (BundleProjectBuildError.hasBuildErrors(project)) {
 				return "Build Problems";
 			} else if (bundleTransition.containsPending(project, Transition.BUILD, false)) {
