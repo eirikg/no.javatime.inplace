@@ -132,6 +132,8 @@ public class BundleListLabelProvider extends LabelProvider implements ITableLabe
 					BundleTransition bundleTransition = Activator.getBundleTransitionService();
 					if (!BundleProjectBuildError.hasBuildState(project)) {
 						return errorImage;
+					} else if (!BundleProjectBuildError.hasProjectDescription(project)) {
+						return errorImage;
 					} else if (BundleProjectBuildError.hasManifestBuildErrors(project)) {
 						return errorImage;
 					} else if (BundleProjectBuildError.hasBuildErrors(project)) {

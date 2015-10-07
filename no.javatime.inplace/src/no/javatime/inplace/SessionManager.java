@@ -125,9 +125,18 @@ public class SessionManager implements IStartup, IWorkbenchListener {
 			if (activatedProjects.size() > 0) {
 				Collection<IBundleStatus> errorStatusList = new ArrayList<>(2);
 				ResourceState resourceState = Activator.getResourceStateService();
-				Collection<IProject> projectsToDeactivate = isDeactivateOnExit(bundleProjects, activatedProjects); 
+				Collection<IProject> projectsToDeactivate = isDeactivateOnExit(bundleProjects,
+						activatedProjects);
 				if (projectsToDeactivate.size() > 0) {
-					DeactivateJob deactivateJob = new DeactivateJob(Msg.DEACTIVATE_ON_SHUTDOWN_JOB, projectsToDeactivate);
+					DeactivateJob deactivateJob = new DeactivateJob(Msg.DEACTIVATE_ON_SHUTDOWN_JOB,
+							projectsToDeactivate);
+					if (Activator.getCommandOptionsService().isDeactivateOnExit()) {
+						deactivateJob.addLogStatus(new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID,
+								Msg.DEACTIVATE_ON_EXIT_INFO));
+					} else {
+						deactivateJob.addLogStatus(new BundleStatus(StatusCode.WARNING, Activator.PLUGIN_ID,
+								Msg.DEACTIVATE_ON_EXIT_ERROR_WARN));
+					}
 					deactivateJob.getJob().setUser(false);
 					// Full workbench save is performed by the workbench at shutdown
 					deactivateJob.setSaveWorkspaceSnaphot(false);
@@ -144,7 +153,7 @@ public class SessionManager implements IStartup, IWorkbenchListener {
 					}
 				}
 				if (projectsToDeactivate.size() < activatedProjects.size()) {
-					// Uninstall in an activated workspace 
+					// Uninstall in an activated workspace
 					Uninstall uninstallJob = new UninstallJob(Msg.SHUT_DOWN_JOB, bundleProjects);
 					uninstallJob.getJob().setUser(false);
 					// Full workbench save is performed by the workbench at shutdown
@@ -239,8 +248,8 @@ public class SessionManager implements IStartup, IWorkbenchListener {
 	 * @return true if there are build errors among the closures of activated bundle projects or the
 	 * "Deactivate on Exit" option is on.
 	 */
-	public static Collection<IProject> isDeactivateOnExit(Collection<IProject> projects, Collection<IProject> activatedProjects)
-			throws ExtenderException, CircularReferenceException {
+	public static Collection<IProject> isDeactivateOnExit(Collection<IProject> projects,
+			Collection<IProject> activatedProjects) throws ExtenderException, CircularReferenceException {
 
 		// Deactivate workspace if some projects are missing build state
 		if (BundleProjectBuildError.hasBuildState(projects).size() > 0) {
@@ -248,14 +257,14 @@ public class SessionManager implements IStartup, IWorkbenchListener {
 		}
 		// Deactivated and activated providing closure. Deactivated and activated projects with build
 		// errors providing capabilities to project to resolve (and start) at startup
-		BundleBuildErrorClosure be = new BundleBuildErrorClosure(activatedProjects, Transition.DEACTIVATE,
-				Closure.PROVIDING, Bundle.UNINSTALLED, ActivationScope.ALL);
+		BundleBuildErrorClosure be = new BundleBuildErrorClosure(activatedProjects,
+				Transition.DEACTIVATE, Closure.PROVIDING, Bundle.UNINSTALLED, ActivationScope.ALL);
 		if (Activator.getCommandOptionsService().isDeactivateOnExit()) {
 			return activatedProjects;
 		} else if (be.hasBuildErrors()) {
 			return be.getBuildErrorClosures();
 		}
-		return Collections.<IProject>emptySet();
+		return Collections.<IProject> emptySet();
 	}
 
 	/**

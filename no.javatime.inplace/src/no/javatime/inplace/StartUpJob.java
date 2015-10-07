@@ -29,6 +29,7 @@ import no.javatime.util.messages.WarnMessage;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.OperationCanceledException;
+import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.ui.IWorkbench;
@@ -92,6 +93,7 @@ class StartUpJob extends ActivateBundleJob {
 	public IBundleStatus runInWorkspace(IProgressMonitor monitor) {
 
 		try {
+			BundleTransitionListener.addBundleTransitionListener(this);
 			// If workspace session is true it implies an IDE crash, and false indicates a normal exit
 			boolean isRecoveryMode = StatePersistParticipant.isWorkspaceSession();
 			// Setting the session to false signals that the workbench is not yet up and running
@@ -119,8 +121,6 @@ class StartUpJob extends ActivateBundleJob {
 				}
 				StatePersistParticipant.restoreSessionState();
 			}
-			// Indicate a normal start up
-			StatePersistParticipant.setWorkspaceSession(true);
 		} catch (IllegalStateException e) {
 			String msg = WarnMessage.getInstance().formatString("node_removed_preference_store");
 			addError(e, msg);
@@ -147,6 +147,17 @@ class StartUpJob extends ActivateBundleJob {
 			String msg = ExceptionMessage.getInstance().formatString("exception_job", getName());
 			addError(e, msg);
 		} finally {
+			try {
+				// Flag a normal start up (after recovery)
+				StatePersistParticipant.setWorkspaceSession(true);
+			} catch (IllegalStateException e) {
+				String msg = WarnMessage.getInstance().formatString("node_removed_preference_store");
+				addError(e, msg);
+			} catch (BackingStoreException e) {
+				String msg = WarnMessage.getInstance().formatString("failed_getting_preference_store");
+				addError(e, msg);
+			}		
+			BundleTransitionListener.removeBundleTransitionListener(this);
 		}
 		return getJobSatus();
 	}
@@ -170,38 +181,40 @@ class StartUpJob extends ActivateBundleJob {
 			Collection<IProject> activatedPendingProjects, boolean isRecoveryMode)
 			throws IllegalStateException, ExtenderException, InPlaceException, BackingStoreException {
 		
+		SubMonitor progress = SubMonitor.convert(monitor, activatedPendingProjects.size());
 		BundleRegion bundleRegion = Activator.getBundleRegionService();
 		Collection<IProject> bundleProjects = bundleRegion.getProjects();
 		Collection<IProject> projectsToDeactivate = SessionManager.isDeactivateOnExit(bundleProjects, activatedPendingProjects); 
 		if (projectsToDeactivate.size() > 0) {
 			try {
 				setName(Msg.DEACTIVATE_WORKSPACE_JOB);
-				BundleTransitionListener.addBundleTransitionListener(this);
 				monitor.beginTask(Msg.DEACTIVATE_TASK_JOB, getTicks());
 				Collection<IProject> projects = registerBundleProjects();
 				deactivateNature(activatedPendingProjects, new SubProgressMonitor(monitor, 1));
 				if (isRecoveryMode) {
 					// Bundles have not been refreshed when IDE crashes
 					boolean isBundleOperation = messageOptions.isBundleOperations();
-					messageOptions.setIsBundleOperations(false);
-					install(projects, monitor);
-					Collection<Bundle> bundles = bundleRegion.getBundles();
-					uninstall(bundles, monitor, false, false);
-					messageOptions.setIsBundleOperations(isBundleOperation);
+					Collection<Bundle> bundles = null;
+					try {
+						messageOptions.setIsBundleOperations(false);
+						install(projects, monitor);
+						bundles = bundleRegion.getBundles();
+						uninstall(bundles, monitor, false, false);
+					} finally {
+						messageOptions.setIsBundleOperations(isBundleOperation);						
+					}
 					refresh(bundles, monitor);
 					addLogStatus(Msg.RECOVERY_DEACTIVATE_BUNDLE_INFO);
+				} 
+				if (commandOptions.isDeactivateOnExit()) {
+					addLogStatus(Msg.STARTUP_DEACTIVATE_ON_EXIT_INFO);
 				} else {
-					if (commandOptions.isDeactivateOnExit()) {
-						addLogStatus(Msg.STARTUP_DEACTIVATE_ON_EXIT_INFO);
-					} else {
-						addLogStatus(Msg.STARTUP_DEACTIVATE_BUILD_ERROR_INFO);
-					}
+					addLogStatus(Msg.STARTUP_DEACTIVATE_BUILD_ERROR_INFO);
 				}
 				StatePersistParticipant.restoreSessionState();
 				return true;
 			} finally {
-				BundleTransitionListener.removeBundleTransitionListener(this);
-				monitor.done();
+				progress.worked(1);
 			}
 		}
 		return false;

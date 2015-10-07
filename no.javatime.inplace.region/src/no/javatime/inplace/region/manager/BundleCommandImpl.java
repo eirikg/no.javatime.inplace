@@ -453,7 +453,17 @@ public class BundleCommandImpl implements BundleCommand {
 					this.wait();
 				}
 			}
-		// Wait
+		// TODO Remove test code
+//		if (null == null) {
+//			refreshStatus.setStatusCode(StatusCode.EXCEPTION);
+//			for (Bundle bundle : bundles) {
+//				BundleNode node = bundleRegion.getBundleNode(bundle);
+//				node.setTransitionError(TransitionError.EXCEPTION);
+//			}
+//			throw new InPlaceException(refreshStatus);
+//		}
+
+			// Wait
 		} catch (InterruptedException e) {
 			throw new InPlaceException(e, "interrupt_exception_refresh",
 					BundleCommandImpl.class.getSimpleName());

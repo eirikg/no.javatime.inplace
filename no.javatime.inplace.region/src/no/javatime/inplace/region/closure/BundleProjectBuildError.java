@@ -70,8 +70,7 @@ public class BundleProjectBuildError {
 
 		Collection<IProject> errProjects = new LinkedHashSet<>();
 		for (IProject project : projects) {
-			if (!BundleProjectBuildError.hasBuildState(project)
-					|| BundleProjectBuildError.hasManifestBuildErrors(project)) {
+			if (hasBundleErrors(project)) {
 				errProjects.add(project);
 			}
 		}
@@ -90,8 +89,8 @@ public class BundleProjectBuildError {
 	public static boolean hasBundleErrors(IProject project)
 			throws ExtenderException, InPlaceException, CircularReferenceException {
 
-		if (!BundleProjectBuildError.hasBuildState(project)
-				|| BundleProjectBuildError.hasManifestBuildErrors(project)) {
+		if (!hasBuildState(project)
+				|| hasManifestBuildErrors(project) || !hasProjectDescription(project)) {
 			return true;
 		}
 		return false;
@@ -210,6 +209,23 @@ public class BundleProjectBuildError {
 			IFile manifestFile = project.getFile(BundleProjectMeta.MANIFEST_RELATIVE_PATH
 					+ BundleProjectMetaImpl.MANIFEST_FILE_NAME);
 			if (manifestFile.exists()) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Check for existence of a project description file at the default location in the specified project
+	 * 
+	 * @param project to check for the existence of a project description file at the default location
+	 * @return true if the project description file exist at the default location and false otherwise
+	 * @see BundleProjectMeta#PROJECT_META_FILE_NAME
+	 */
+	public static Boolean hasProjectDescription(IProject project) {
+		if (null != project && project.isAccessible()) {
+			IFile projectDesc = project.getFile(BundleProjectMetaImpl.PROJECT_META_FILE_NAME);
+			if (projectDesc.exists()) {
 				return true;
 			}
 		}

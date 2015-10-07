@@ -14,9 +14,9 @@ import no.javatime.inplace.dl.preferences.intface.MessageOptions;
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.log.intface.BundleLogException;
 import no.javatime.inplace.msg.Msg;
-import no.javatime.inplace.region.closure.ProjectBuildErrorClosure.ActivationScope;
 import no.javatime.inplace.region.closure.BundleBuildErrorClosure;
 import no.javatime.inplace.region.closure.CircularReferenceException;
+import no.javatime.inplace.region.closure.ProjectBuildErrorClosure.ActivationScope;
 import no.javatime.inplace.region.closure.ProjectSorter;
 import no.javatime.inplace.region.intface.BundleProjectCandidates;
 import no.javatime.inplace.region.intface.BundleRegion;
@@ -112,7 +112,6 @@ public class UpdateScheduler {
 					IBundleStatus bundleStatus = be.getErrorClosureStatus();
 					if (null != bundleStatus) {
 						Activator.log(bundleStatus);
-						// StatusManager.getManager().handle(bundleStatus, StatusManager.LOG);
 					}
 				}
 				isUpdate = false;

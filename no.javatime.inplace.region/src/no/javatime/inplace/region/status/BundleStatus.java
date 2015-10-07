@@ -18,7 +18,6 @@ import no.javatime.inplace.region.intface.BundleTransition.Transition;
 import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.manager.BundleTransitionImpl;
 import no.javatime.inplace.region.manager.WorkspaceRegionImpl;
-import no.javatime.util.messages.ErrorMessage;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IWorkspace;
@@ -26,9 +25,7 @@ import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.MultiStatus;
-import org.eclipse.core.runtime.Status;
 import org.eclipse.pde.core.project.IBundleProjectDescription;
-import org.eclipse.ui.statushandlers.StatusManager;
 import org.osgi.framework.Bundle;
 
 /**
@@ -152,7 +149,7 @@ public class BundleStatus extends MultiStatus implements IBundleStatus {
 
 	private void init(StatusCode statusCode, Bundle bundle, IProject project) {
 		String symbolicName = null;
-		// Must have a symbolic name
+		// Must have a symbolic name without throwing any exceptions
 		if (null != bundle) {
 			symbolicName = bundle.getSymbolicName();
 			this.bundle = bundle;
@@ -166,42 +163,44 @@ public class BundleStatus extends MultiStatus implements IBundleStatus {
 				bundleState = bundle.getState();
 				bundleTransition = BundleTransitionImpl.INSTANCE.getTransition(bundle);
 			} else {
-				IBundleProjectDescription pd = Activator.getBundleDescription(project);
-				symbolicName = pd.getSymbolicName();
+				try {
+					IBundleProjectDescription pd = Activator.getBundleDescription(project);
+					symbolicName = pd.getSymbolicName();
+				} catch (InPlaceException e) {
+				}
 			}
 		} else {
 			// Worst case. Symbolic name is not always the same as the plug-gin id.
 			if (null == symbolicName) {
-				try {
 					symbolicName = getPlugin();
 					IWorkspace workspace = ResourcesPlugin.getWorkspace();
 					IWorkspaceRoot root = workspace.getRoot();
 					for (IProject bundleProject : root.getProjects()) {
-						IBundleProjectDescription bundleProjDesc = Activator.getBundleDescription(bundleProject);
-						String pdSymbolicName = bundleProjDesc.getSymbolicName();
-						if (null != pdSymbolicName && pdSymbolicName.equals(symbolicName)) {
-							// Drop comparison with version. Use the first one available
-							project = bundleProject;
-							break;
+						try {
+							IBundleProjectDescription bundleProjDesc = Activator.getBundleDescription(bundleProject);
+							String pdSymbolicName = bundleProjDesc.getSymbolicName();
+							if (null != pdSymbolicName && pdSymbolicName.equals(symbolicName)) {
+								// Drop comparison with version. Use the first one available
+								project = bundleProject;
+								break;
+							}
+						} catch (InPlaceException e) {
 						}
 					}
 					if (null != project) {
-						bundle = WorkspaceRegionImpl.INSTANCE.getBundle(project);
-						if (null != bundle) {
-							symbolicName = bundle.getSymbolicName();
-							this.bundle = bundle;
-							bundleTransition = BundleTransitionImpl.INSTANCE.getTransition(bundle);
-						} else {
-							IBundleProjectDescription pd = Activator.getBundleDescription(project);
-							symbolicName = pd.getSymbolicName();
+						try {
+							bundle = WorkspaceRegionImpl.INSTANCE.getBundle(project);
+							if (null != bundle) {
+								symbolicName = bundle.getSymbolicName();
+								this.bundle = bundle;
+								bundleTransition = BundleTransitionImpl.INSTANCE.getTransition(bundle);
+							} else {
+								IBundleProjectDescription pd = Activator.getBundleDescription(project);
+								symbolicName = pd.getSymbolicName();
+							}
+						} catch (InPlaceException e) {
 						}
 					}
-				} catch (InPlaceException e) {
-					String msg = ErrorMessage.getInstance().formatString("manifest_missing");
-					// Do not use bundle status due to infinite recursion
-					StatusManager.getManager().handle(new Status(IStatus.ERROR, Activator.PLUGIN_ID, msg, e),
-							StatusManager.LOG);
-				}
 			}
 		}
 		if (null == symbolicName) {

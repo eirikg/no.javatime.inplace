@@ -111,6 +111,9 @@ public class Msg extends NLS {
 	public static String END_SHUTDOWN_ERROR;
 	public static String INSTALL_ERROR;
 	public static String SYMBOLIC_NAME_ERROR;
+	public static String MISSING_PROJECT_DESC_ERROR;
+	public static String TOGGLE_NATURE_ERROR;
+	public static String ADD_NATURE_PROJECT_ERROR;
 	// Moved to region
 	public static String FATAL_ACTIVATE_ERROR;
 	public static String MANIFEST_BUILD_ERROR;
@@ -134,6 +137,7 @@ public class Msg extends NLS {
 	public static String NOT_RESOLVED_ROOT_WARN;
 	public static String AUTO_BUILD_LISTENER_NOT_ADDED_WARN;
 	public static String DYNAMIC_MONITORING_WARN;
+	public static String DEACTIVATE_ON_EXIT_ERROR_WARN;
 
 	// Exceptions
 	public static String GET_SERVICE_EXP;
@@ -147,6 +151,8 @@ public class Msg extends NLS {
 	// Info messages
 	public static String DEACTIVATE_BUILD_ERROR_INFO;
 	public static String UPDATE_BUILD_ERROR_INFO;
+	public static String PROVIDING_BUNDLES_INFO;
+	public static String REQUIRING_BUNDLES_INFO;
 	public static String ACTIVATED_BUNDLES_INFO;
 	public static String IMPLICIT_ACTIVATION_INFO;
 	public static String DELAYED_RESOLVE_INFO;
@@ -189,6 +195,7 @@ public class Msg extends NLS {
 	public static String SAVE_FILES_CANCELLED_INFO;
 	public static String RECOVERY_RESOLVE_BUNDLE_INFO;
 	public static String RECOVERY_DEACTIVATE_BUNDLE_INFO;
+	public static String DEACTIVATE_ON_EXIT_INFO;
 	public static String RECOVERY_NO_ACTION_BUNDLE_INFO;
 	public static String STARTUP_DEACTIVATE_BUILD_ERROR_INFO;
 	public static String STARTUP_DEACTIVATE_ON_EXIT_INFO;

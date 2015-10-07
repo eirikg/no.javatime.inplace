@@ -29,7 +29,6 @@ import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import no.javatime.util.messages.Category;
 import no.javatime.util.messages.ErrorMessage;
-import no.javatime.util.messages.WarnMessage;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IProjectDescription;
@@ -88,7 +87,7 @@ public abstract class NatureJob extends BundleJob {
 			ExtenderException {
 		return super.runInWorkspace(monitor);
 	}
-	
+
 	@Override
 	public void end() {
 
@@ -256,6 +255,7 @@ public abstract class NatureJob extends BundleJob {
 	/**
 	 * Reinstalls the specified bundle projects. Failures to reinstall are added to the job status
 	 * list. Only specified bundle projects in state INSTALLED are re-installed.
+	 * 
 	 * @param monitor monitor the progress monitor to use for reporting progress to the user.
 	 * @param refresh true to refresh after uninstall and false if not
 	 * @param states Bundle states that must be satisfied for the specified bundles to be reinstalled
@@ -298,60 +298,64 @@ public abstract class NatureJob extends BundleJob {
 	 * Deactivates the specified projects by removing the JavaTime nature from the projects. If update
 	 * Bundle-ClassPat on Activate/Deactivate is switched on, remove the default output folder from
 	 * the header.
+	 * <p>
+	 * Failure to deactivate nature for projects and non existing and closed projects are logged
 	 * 
 	 * @param projectsToDeactivate are the projects to deactivate by removing the JavaTime nature from
 	 * the projects
 	 * @param monitor the progress monitor to use for reporting progress.
-	 * @return status object describing the result of deactivating nature with {@code StatusCode.OK}
-	 * if no failure, otherwise one of the failure codes are returned. If more than one bundle fails,
-	 * status of the last failed bundle is returned. All failures are added to the job status list
-	 * @throws InPlaceException failed to remove nature or the default output folder
+	 * @return Projects where nature deactivation failed. Non existent and closed projects are ignored 
 	 */
-	protected IBundleStatus deactivateNature(Collection<IProject> projectsToDeactivate,
-			SubProgressMonitor monitor) throws InPlaceException {
+	protected Collection<IProject> deactivateNature(Collection<IProject> projectsToDeactivate,
+			SubProgressMonitor monitor) {
 
 		SubMonitor localMonitor = SubMonitor.convert(monitor, projectsToDeactivate.size());
-
+		Collection<IProject> projects = null;
 		for (IProject project : projectsToDeactivate) {
 			try {
 				if (Category.getState(Category.progressBar))
 					sleep(sleepTime);
 				localMonitor.subTask(NLS.bind(Msg.DISABLE_NATURE_SUB_TASK_JOB, project.getName()));
+
 				if (isProjectActivated(project)) {
+					bundleRegion.setActivation(project, false);
 					toggleNatureActivation(project, new SubProgressMonitor(monitor, 1));
-				}
-				if (commandOptions.isUpdateDefaultOutPutFolder()) {
-					bundleProjectMeta.removeDefaultOutputFolder(project);
+					if (commandOptions.isUpdateDefaultOutPutFolder()) {
+						bundleProjectMeta.removeDefaultOutputFolder(project);
+					}
 				}
 				bundleTransition.clearTransitionError(project);
-				bundleRegion.setActivation(project, false);
+			} catch (CoreException e) {
+				if (null == projects) {
+					projects = new LinkedHashSet<>();
+				}
+				projects.add(project);
+				addError(e, e.getLocalizedMessage(), project);
 			} catch (InPlaceException e) {
 				addError(e, e.getLocalizedMessage(), project);
-				throw e;
 			} finally {
 				localMonitor.worked(1);
 			}
 		}
-		return getLastErrorStatus();
+		return projects;
 	}
 
 	/**
 	 * Activates the specified projects by adding the JavaTime nature to the projects. Updates output
 	 * folder and reinstalls bundles with lazy activation policy when the Set Activation Policy to
 	 * Eager on activate option is set in an activated workspace.
-	 * 
+	 * <p>
+	 * Failure to activate nature for projects and non existing and closed projects are logged
 	 * 
 	 * @param projectsToActivate are the projects to activate by assigning the JavaTime nature to them
 	 * @param monitor the progress monitor to use for reporting progress.
-	 * @return status object describing the result of activating nature with {@code StatusCode.OK} if
-	 * no failure, otherwise one of the failure codes are returned. If more than one bundle fails,
-	 * status of the last failed bundle is returned. All failures are added to the job status list
+	 * @return Projects where nature activation failed. Non existent and closed projects are ignored 
 	 */
-	protected IBundleStatus activateNature(Collection<IProject> projectsToActivate,
+	protected Collection<IProject> activateNature(Collection<IProject> projectsToActivate,
 			SubProgressMonitor monitor) {
-
-		IBundleStatus result = new BundleStatus(StatusCode.OK, Activator.PLUGIN_ID, "");
+		
 		SubMonitor localMonitor = SubMonitor.convert(monitor, projectsToActivate.size());
+		Collection<IProject> projects = null;
 
 		for (IProject project : projectsToActivate) {
 			try {
@@ -361,7 +365,7 @@ public abstract class NatureJob extends BundleJob {
 					if (!isProjectActivated(project)) {
 						toggleNatureActivation(project, new SubProgressMonitor(monitor, 1));
 					}
-					result = resolveBundleClasspath(project);
+					resolveBundleClasspath(project);
 					Bundle bundle = bundleRegion.getBundle(project);
 					try {
 						if (commandOptions.isEagerOnActivate()) {
@@ -377,7 +381,7 @@ public abstract class NatureJob extends BundleJob {
 							}
 						}
 					} catch (InPlaceException e) {
-						result = addError(e, e.getLocalizedMessage(), project);
+						addError(e, e.getLocalizedMessage(), project);
 					}
 					boolean isInstalled = null != bundle ? true : false;
 					// Wait to set the bundle as activated to after it is installed
@@ -394,13 +398,19 @@ public abstract class NatureJob extends BundleJob {
 						bundleTransition.addPending(project, Transition.ACTIVATE_BUNDLE);
 					}
 				}
+			} catch (CoreException e) {
+				if (null == projects) {
+					projects = new LinkedHashSet<>();
+				}
+				projects.add(project);				
+				addError(e, e.getLocalizedMessage(), project);
 			} catch (InPlaceException e) {
-				result = addError(e, e.getLocalizedMessage(), project);
+				addError(e, e.getLocalizedMessage(), project);
 			} finally {
 				localMonitor.worked(1);
 			}
 		}
-		return result;
+		return projects;
 	}
 
 	/**
@@ -409,16 +419,18 @@ public abstract class NatureJob extends BundleJob {
 	 * 
 	 * @param project the project to add or remove JavaTime nature on
 	 * @param monitor the progress monitor to use for reporting progress.
-	 * @throws InPlaceException Fails to remove or add the nature from/to the project.
+	 * @throws InPlaceException Project does not exist or is not open
+	 * @throws CoreException Workspace out of sync with the file in the file system, file modification
+	 * not allowed or resource is not allowed
 	 */
-	public void toggleNatureActivation(IProject project, IProgressMonitor monitor)
-			throws InPlaceException {
+	private void toggleNatureActivation(IProject project, IProgressMonitor monitor)
+			throws InPlaceException, CoreException {
 
-		if (project.exists() && project.isOpen()) {
-			try {
+		SubMonitor localMonitor = SubMonitor.convert(monitor, 1);
+		try {
+			if (project.exists() && project.isOpen()) {
 				IProjectDescription description = project.getDescription();
 				String[] natures = description.getNatureIds();
-				SubMonitor localMonitor = SubMonitor.convert(monitor, 1);
 				for (int i = 0; i < natures.length; ++i) {
 					if (JavaTimeNature.JAVATIME_NATURE_ID.equals(natures[i])) {
 						// Remove the nature
@@ -436,7 +448,6 @@ public abstract class NatureJob extends BundleJob {
 								addLogStatus(Msg.DISABLE_NATURE_TRACE, new Object[] { project.getName() }, bundle);
 							}
 						}
-						localMonitor.worked(1);
 						return;
 					}
 				}
@@ -455,14 +466,12 @@ public abstract class NatureJob extends BundleJob {
 						addLogStatus(Msg.ENABLE_NATURE_TRACE, new Object[] { project.getName() }, bundle);
 					}
 				}
-				localMonitor.worked(1);
-			} catch (CoreException e) {
-				throw new InPlaceException(e, "error_changing_nature", project.getName());
+			} else {
+				addWarning(null, NLS.bind(Msg.ADD_NATURE_PROJECT_ERROR, project), project);
+				throw new InPlaceException(NLS.bind(Msg.TOGGLE_NATURE_ERROR, project.getName()));
 			}
-		} else {
-			String msg = WarnMessage.getInstance().formatString("add_nature_project_invalid",
-					project.getName());
-			addWarning(null, msg, project);
+		} finally {
+			localMonitor.worked(1);
 		}
 	}
 
@@ -517,7 +526,7 @@ public abstract class NatureJob extends BundleJob {
 			throw new OperationCanceledException(getLastErrorStatus().getMessage());
 		}
 	}
-	
+
 	/**
 	 * Builds the collection of projects
 	 * 

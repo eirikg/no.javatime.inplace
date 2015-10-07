@@ -892,8 +892,12 @@ public class WorkspaceRegionImpl implements BundleRegion {
 			if (Category.DEBUG && Category.getState(Category.dag))
 				TraceMessage.getInstance().getString("removed_node", project.getName());
 			Long bundleId = deletedNode.getBundleId();
+			IProject delProject = null;
 			if (null != bundleId) {
-				bundleProjects.remove(bundleId);
+				delProject = bundleProjects.remove(bundleId);
+			}
+			if (null == delProject) {
+				TraceMessage.getInstance().getString("null_remove_node", project.getName());				
 			}
 			return bundleId;
 		}

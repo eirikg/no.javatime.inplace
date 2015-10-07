@@ -249,8 +249,10 @@ public class BundleProperties {
 		try {
 			if (!BundleProjectBuildError.hasBuildState(project)) {
 				return "Missing Build State";
+			} else if (!BundleProjectBuildError.hasProjectDescription(project)) {
+				return "Missing project description";
 			} else if (BundleProjectBuildError.hasManifestBuildErrors(project)) {
-				return "Manifest file problems"; 
+				return "Manifest Problems"; 
 			} else if (BundleProjectBuildError.hasBuildErrors(project)) {
 				return "Build Problems";
 			} else if (bundleTransition.containsPending(project, Transition.BUILD, false)) {
