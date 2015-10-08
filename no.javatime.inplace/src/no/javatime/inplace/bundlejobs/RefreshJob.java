@@ -18,10 +18,7 @@ import no.javatime.inplace.bundlejobs.intface.Refresh;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.msg.Msg;
-import no.javatime.inplace.region.closure.BundleBuildErrorClosure;
 import no.javatime.inplace.region.closure.CircularReferenceException;
-import no.javatime.inplace.region.closure.ProjectBuildErrorClosure.ActivationScope;
-import no.javatime.inplace.region.intface.BundleTransition.Transition;
 import no.javatime.inplace.region.intface.BundleTransitionListener;
 import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.status.BundleStatus;
@@ -140,20 +137,13 @@ public class RefreshJob extends BundleJob implements Refresh {
 		// Get the requiring closure of bundles to refresh and add bundles to the requiring closure
 		// with same symbolic name as in the refresh closure.
 		Collection<Bundle> bundlesToRefresh = getRefreshClosure(initialBundleSet, bundleRegion.getActivatedBundles());
-		Collection<Bundle> errorBundles = removeTransitionErrorClosures(bundlesToRefresh);
-		if (null != errorBundles) {
-			String msg = ErrorMessage.getInstance().formatString("bundle_errors_refresh", bundleRegion.formatBundleList(errorBundles, false));
-			addError(null, msg);
-		}
-		if (containsBuildErrorClosures(bundlesToRefresh)) {
-			throw new OperationCanceledException();
-		}
 		Collection<Bundle> bundlesToRestart = new LinkedHashSet<Bundle>();		
 		for (Bundle bundle : bundlesToRefresh) {
 			if ((bundle.getState() & (Bundle.ACTIVE | Bundle.STARTING)) != 0) {
 				bundlesToRestart.add(bundle);
 			}
 		}
+		// Ok to stop/refresh/start with build errors
 		stop(bundlesToRestart, null, new SubProgressMonitor(monitor, 1));
 		if (monitor.isCanceled()) {
 			throw new OperationCanceledException();
@@ -167,45 +157,6 @@ public class RefreshJob extends BundleJob implements Refresh {
 		return getLastErrorStatus();
 	}
 	
-	/**
-	 * If there are any activated bundles with build errors, terminate to avoid
-	 * the resolver to try to resolve bundles with build errors
-	 * 
-	 * @param bundlesToRefresh bundles to check for error closures. Error closures are removed
-	 * from this collection of bundles to refresh
-	 * @return true if any build error closures are detected. Otherwise false
-	 */
-	private boolean containsBuildErrorClosures(Collection<Bundle> bundlesToRefresh) {
-		boolean containsErrorClosures = false;
-
-		Collection<IProject> projectsToRefresh = bundleRegion.getProjects(bundlesToRefresh);
-		BundleBuildErrorClosure be = new BundleBuildErrorClosure(projectsToRefresh, 
-				Transition.REFRESH, Closure.REQUIRING, Bundle.RESOLVED, ActivationScope.ACTIVATED);
-		if (be.hasBuildErrors()) {
-			Collection<IProject> buildErrClosures = be.getBuildErrorClosures();
-			bundlesToRefresh.removeAll(bundleRegion.getBundles(buildErrClosures));
-			IBundleStatus bundleStatus = be.getErrorClosureStatus();
-			if (messageOptions.isBundleOperations()) {
-				addStatus(bundleStatus);			
-			}
-			containsErrorClosures = true;
-		}
-		if (!containsErrorClosures) {
-			be = new BundleBuildErrorClosure(projectsToRefresh, 
-					Transition.REFRESH, Closure.PROVIDING, Bundle.RESOLVED, ActivationScope.ACTIVATED);
-			if (be.hasBuildErrors()) {
-				Collection<IProject> buildErrClosures = be.getBuildErrorClosures();
-				bundlesToRefresh.removeAll(bundleRegion.getBundles(buildErrClosures));
-				IBundleStatus bundleStatus = be.getErrorClosureStatus();
-				if (messageOptions.isBundleOperations()) {
-					addStatus(bundleStatus);			
-				}
-				containsErrorClosures = true;
-			}
-		}
-		
-		return containsErrorClosures;
-	}
 	/**
 	 * Number of ticks used by this job.
 	 * 
