@@ -43,7 +43,7 @@ public interface DependencyOptions {
 		 * the initial set bundle projects before applying the requiring closure to this new set if initial bundle projects to 
 		 * activate or deactivate 
 		*/
-		PROVIDING_AND_REQURING,
+		PROVIDING_AND_REQUIRING,
 		
 		/** 
 		 * Dependent bundles are collectively members of an acyclic directed graph. This closure calculates the partial graphs 

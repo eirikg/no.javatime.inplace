@@ -232,7 +232,7 @@ public class BundleClosures {
 					resultSet = ps.sortRequiringProjects(initialSet, activated);
 				}
 				break;
-			case PROVIDING_AND_REQURING:
+			case PROVIDING_AND_REQUIRING:
 				if (sortAllprojects) {
 					resultSet = ps.sortProvidingProjects(initialSet);
 					resultSet = ps.sortRequiringProjects(resultSet);
@@ -405,7 +405,7 @@ public class BundleClosures {
 				case REQUIRING:
 					resultSet = bs.sortRequiringBundles(initialSet, scope);
 					break;
-				case PROVIDING_AND_REQURING:
+				case PROVIDING_AND_REQUIRING:
 					resultSet = bs.sortProvidingBundles(initialSet, scope);
 					resultSet = bs.sortRequiringBundles(resultSet, scope);
 					break;
@@ -427,7 +427,7 @@ public class BundleClosures {
 				case REQUIRING:
 					resultSet = bs.sortDeclaredRequiringBundles(initialSet, scope);
 					break;
-				case PROVIDING_AND_REQURING:
+				case PROVIDING_AND_REQUIRING:
 					resultSet = bs.sortDeclaredProvidingBundles(initialSet, scope);
 					resultSet = bs.sortDeclaredRequiringBundles(resultSet, scope);
 					break;

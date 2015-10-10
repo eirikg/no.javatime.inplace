@@ -4,6 +4,7 @@ import java.util.Collection;
 import java.util.LinkedHashSet;
 
 import no.javatime.inplace.extender.intface.ExtenderException;
+import no.javatime.inplace.region.Activator;
 import no.javatime.inplace.region.intface.BundleProjectMeta;
 import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.project.BundleProjectCandidatesImpl;
@@ -38,6 +39,26 @@ import org.eclipse.jdt.core.IJavaProject;
  * </ol>
  */
 public class BundleProjectBuildError {
+
+
+	public static Collection<IProject> getErrors(Collection<IProject> projects)
+			throws InPlaceException {
+		
+		if (Activator.getCommandOptionsService().isActivateOnCompileError()) {
+			return getBundleErrors(projects);
+		} else {
+			return getBuildErrors(projects);
+		}
+	}
+
+		public  static boolean hasErrors(IProject project) throws ExtenderException {
+		
+			if (Activator.getCommandOptionsService().isActivateOnCompileError()) {
+				return hasBundleErrors(project);
+			} else {
+				return hasBuildErrors(project);
+			}
+		}
 
 	/**
 	 * Check if the specified project has build state or there are build errors from the most recent

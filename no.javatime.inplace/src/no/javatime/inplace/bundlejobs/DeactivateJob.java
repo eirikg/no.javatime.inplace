@@ -319,7 +319,7 @@ public class DeactivateJob extends NatureJob implements Deactivate {
 							bundleProjectCandidates.formatProjectList(be.getBuildErrors()) });
 			be.setBuildErrorHeaderMessage(msg);
 			IBundleStatus bundleStatus = be.getErrorClosureStatus();
-			if (null != bundleStatus) {
+			if (bundleStatus.getStatusCode() != StatusCode.OK) {
 				addLogStatus(bundleStatus);
 			}
 			return buildErrorClosures;

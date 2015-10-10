@@ -35,13 +35,13 @@ public class DependencyOptionsImpl implements DependencyOptions {
 			EnumSet.of(Closure.PROVIDING, Closure.REQUIRING_AND_PROVIDING, Closure.PARTIAL_GRAPH);
 
 	final private EnumSet<Closure> deactivateProjectClosure = 
-			EnumSet.of(Closure.REQUIRING, Closure.PROVIDING_AND_REQURING, Closure.PARTIAL_GRAPH);
+			EnumSet.of(Closure.REQUIRING, Closure.PROVIDING_AND_REQUIRING, Closure.PARTIAL_GRAPH);
 	
 	final private EnumSet<Closure> activateBundleClosure = 
 			EnumSet.of(Closure.PROVIDING, Closure.REQUIRING, Closure.REQUIRING_AND_PROVIDING, Closure.PARTIAL_GRAPH, Closure.SINGLE);
 
 	final private EnumSet<Closure> deactivateBundleClosure = 
-			EnumSet.of(Closure.REQUIRING, Closure.PROVIDING, Closure.PROVIDING_AND_REQURING, Closure.PARTIAL_GRAPH, Closure.SINGLE);
+			EnumSet.of(Closure.REQUIRING, Closure.PROVIDING, Closure.PROVIDING_AND_REQUIRING, Closure.PARTIAL_GRAPH, Closure.SINGLE);
 
 
 	public DependencyOptionsImpl() {
@@ -150,7 +150,7 @@ public class DependencyOptionsImpl implements DependencyOptions {
 				if (operation.equals(Operation.ACTIVATE_BUNDLE)) {
 					return Closure.REQUIRING_AND_PROVIDING;
 				} else {
-					return Closure.PROVIDING_AND_REQURING;
+					return Closure.PROVIDING_AND_REQUIRING;
 				}
 			} else if (providing) {
 				return Closure.PROVIDING;
@@ -182,13 +182,13 @@ public class DependencyOptionsImpl implements DependencyOptions {
 					}
 					return false;
 				case REQUIRING:
-					if (!load(operation, Closure.PROVIDING_AND_REQURING)
+					if (!load(operation, Closure.PROVIDING_AND_REQUIRING)
 							&& !load(operation, Closure.PARTIAL_GRAPH)) {
 						return true;
 					}
 					return false;
 				case REQUIRING_AND_PROVIDING:
-				case PROVIDING_AND_REQURING:
+				case PROVIDING_AND_REQUIRING:
 				case PARTIAL_GRAPH:
 					return load(operation, closure);
 				default:
@@ -212,7 +212,7 @@ public class DependencyOptionsImpl implements DependencyOptions {
 				case PARTIAL_GRAPH:
 					return load(operation, closure);
 				case REQUIRING_AND_PROVIDING:
-				case PROVIDING_AND_REQURING:
+				case PROVIDING_AND_REQUIRING:
 					if (load(operation, Closure.PROVIDING)
 							&& load(operation, Closure.REQUIRING)) {
 						return true;
@@ -249,11 +249,11 @@ public class DependencyOptionsImpl implements DependencyOptions {
 					if (operation.equals(Operation.ACTIVATE_PROJECT)) {
 						store(operation, Closure.REQUIRING_AND_PROVIDING, false);
 					} else {
-						store(operation, Closure.PROVIDING_AND_REQURING, false);													
+						store(operation, Closure.PROVIDING_AND_REQUIRING, false);													
 					}
 					return true;
 				case REQUIRING_AND_PROVIDING:
-				case PROVIDING_AND_REQURING:
+				case PROVIDING_AND_REQUIRING:
 					store(operation, closure, true);
 					store(operation, Closure.PARTIAL_GRAPH, false);						
 					return true;
@@ -262,7 +262,7 @@ public class DependencyOptionsImpl implements DependencyOptions {
 					if (operation.equals(Operation.ACTIVATE_PROJECT)) {
 						store(operation, Closure.REQUIRING_AND_PROVIDING, false);
 					} else {
-						store(operation, Closure.PROVIDING_AND_REQURING, false);							
+						store(operation, Closure.PROVIDING_AND_REQUIRING, false);							
 					}
 					return true;
 				default:
@@ -282,7 +282,7 @@ public class DependencyOptionsImpl implements DependencyOptions {
 					store(operation, Closure.PARTIAL_GRAPH, false);						
 					return true;
 				case REQUIRING_AND_PROVIDING:
-				case PROVIDING_AND_REQURING:
+				case PROVIDING_AND_REQUIRING:
 					store(operation, Closure.REQUIRING, true);						
 					store(operation, Closure.PROVIDING, true);						
 					store(operation, Closure.PARTIAL_GRAPH, false);						

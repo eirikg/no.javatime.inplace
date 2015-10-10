@@ -281,7 +281,7 @@ public class DependencyDialogImpl extends TitleAreaDialog implements DependencyD
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				if (btnDeactivateProjectProvidingAndRequiring.getSelection()) {
-					set(Operation.DEACTIVATE_PROJECT, Closure.PROVIDING_AND_REQURING, true);
+					set(Operation.DEACTIVATE_PROJECT, Closure.PROVIDING_AND_REQUIRING, true);
 					setMessage(NLS.bind(Msg.PROVIDING_REQUIRING_OPERATION_DESC, Msg.DEACTIVATE_OPERATION), IMessageProvider.INFORMATION);
 				}
 			}
@@ -290,7 +290,7 @@ public class DependencyDialogImpl extends TitleAreaDialog implements DependencyD
 		btnDeactivateProjectProvidingAndRequiring.setText(Msg.PROVIDING_AND_REQUIRING_LABEL);
 		btnDeactivateProjectProvidingAndRequiring.setBounds(290, 20, 149, 16);
 		btnDeactivateProjectProvidingAndRequiring.setSelection(
-				get(Operation.DEACTIVATE_PROJECT, Closure.PROVIDING_AND_REQURING));		
+				get(Operation.DEACTIVATE_PROJECT, Closure.PROVIDING_AND_REQUIRING));		
 		btnDeactivateProjectPartialGraph = new Button(grpDeactivate, SWT.RADIO);
 		btnDeactivateProjectPartialGraph.addSelectionListener(new SelectionAdapter() {
 			@Override
@@ -493,7 +493,7 @@ public class DependencyDialogImpl extends TitleAreaDialog implements DependencyD
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				if (btnDeactivateBundleProvidingRequiring.getSelection()) {
-					set(Operation.DEACTIVATE_BUNDLE, Closure.PROVIDING_AND_REQURING, true);		
+					set(Operation.DEACTIVATE_BUNDLE, Closure.PROVIDING_AND_REQUIRING, true);		
 					setMessage(NLS.bind(Msg.PROVIDING_REQUIRING_OPERATION_DESC, Msg.STOP_OPERATION), IMessageProvider.INFORMATION);
 				}
 			}
@@ -502,7 +502,7 @@ public class DependencyDialogImpl extends TitleAreaDialog implements DependencyD
 		btnDeactivateBundleProvidingRequiring.setBounds(290, 20, 149, 16);
 		btnDeactivateBundleProvidingRequiring.setText(Msg.PROVIDING_AND_REQUIRING_LABEL);
 		btnDeactivateBundleProvidingRequiring.setSelection(
-				get(Operation.DEACTIVATE_BUNDLE, Closure.PROVIDING_AND_REQURING));		
+				get(Operation.DEACTIVATE_BUNDLE, Closure.PROVIDING_AND_REQUIRING));		
 		btnDeactivateBundlePartialGraph = new Button(grpStop, SWT.RADIO);
 		btnDeactivateBundlePartialGraph.addSelectionListener(new SelectionAdapter() {
 			@Override
@@ -615,7 +615,7 @@ private Group createGroup(String groupName, final String groupText) {
 		deactivateProjectRequiringClosure =
 				get(Operation.DEACTIVATE_PROJECT, Closure.REQUIRING);			
 		deactivateProjectProvidingAndRequiringClosure =
-				get(Operation.DEACTIVATE_PROJECT, Closure.PROVIDING_AND_REQURING);			
+				get(Operation.DEACTIVATE_PROJECT, Closure.PROVIDING_AND_REQUIRING);			
 		deactivateProjectPartialGraphClosure = 
 				get(Operation.DEACTIVATE_PROJECT, Closure.PARTIAL_GRAPH);			
 		// Start
@@ -635,7 +635,7 @@ private Group createGroup(String groupName, final String groupText) {
 		deactivateBundleRequiringClosure =
 				get(Operation.DEACTIVATE_BUNDLE, Closure.REQUIRING);			
 		deactivateBundleProvidingAndRequiringClosure =
-				get(Operation.DEACTIVATE_BUNDLE, Closure.PROVIDING_AND_REQURING);			
+				get(Operation.DEACTIVATE_BUNDLE, Closure.PROVIDING_AND_REQUIRING);			
 		deactivateBundlePartialGraphClosure =
 				get(Operation.DEACTIVATE_BUNDLE, Closure.PARTIAL_GRAPH);			
 		deactivateBundleSingleClosure =
@@ -653,7 +653,7 @@ private Group createGroup(String groupName, final String groupText) {
 		set(Operation.ACTIVATE_PROJECT, Closure.PARTIAL_GRAPH, activateProjectPartialGraphClosure);
 
 		set(Operation.DEACTIVATE_PROJECT, Closure.REQUIRING, deactivateProjectRequiringClosure);			
-		set(Operation.DEACTIVATE_PROJECT, Closure.PROVIDING_AND_REQURING, deactivateProjectProvidingAndRequiringClosure);			
+		set(Operation.DEACTIVATE_PROJECT, Closure.PROVIDING_AND_REQUIRING, deactivateProjectProvidingAndRequiringClosure);			
 		set(Operation.DEACTIVATE_PROJECT, Closure.PARTIAL_GRAPH, deactivateProjectPartialGraphClosure);
 
 		set(Operation.ACTIVATE_BUNDLE, Closure.PROVIDING, activateBundleProvidingClosure);			
@@ -664,7 +664,7 @@ private Group createGroup(String groupName, final String groupText) {
 		
 		set(Operation.DEACTIVATE_BUNDLE, Closure.PROVIDING, deactivateBundleProvidingClosure);			
 		set(Operation.DEACTIVATE_BUNDLE, Closure.REQUIRING, deactivateBundleRequiringClosure);			
-		set(Operation.DEACTIVATE_BUNDLE, Closure.PROVIDING_AND_REQURING, deactivateBundleProvidingAndRequiringClosure);			
+		set(Operation.DEACTIVATE_BUNDLE, Closure.PROVIDING_AND_REQUIRING, deactivateBundleProvidingAndRequiringClosure);			
 		set(Operation.DEACTIVATE_BUNDLE, Closure.PARTIAL_GRAPH, deactivateBundlePartialGraphClosure);
 		set(Operation.DEACTIVATE_BUNDLE, Closure.SINGLE, deactivateBundleSingleClosure);			
 	}
@@ -740,7 +740,7 @@ private Group createGroup(String groupName, final String groupText) {
 			switch (closure) {
 			case REQUIRING:
 				return btnDeactivateProjectRequiring;
-			case PROVIDING_AND_REQURING:
+			case PROVIDING_AND_REQUIRING:
 				return btnDeactivateProjectProvidingAndRequiring;
 			case PARTIAL_GRAPH:
 				return btnDeactivateProjectPartialGraph;
@@ -770,7 +770,7 @@ private Group createGroup(String groupName, final String groupText) {
 				return btnDeactivateBundleProviding;
 			case REQUIRING:
 				return btnDeactivateBundleRequiring;
-			case PROVIDING_AND_REQURING:
+			case PROVIDING_AND_REQUIRING:
 				return btnDeactivateBundleProvidingRequiring;
 			case PARTIAL_GRAPH:
 				return btnDeactivateBundlePartialGraph;

@@ -114,6 +114,7 @@ public class BundleMainActivationHandler extends BundleMenuActivationHandler {
 				updateHandler(region.getActivatedProjects());
 				break;
 			case BundleCommandsContributionItems.resetParamId:
+				// resetHandler(region.getActivatedProjects());				
 				resetHandler(projectCandidates.getInstallable());
 				break;
 			case BundleCommandsContributionItems.bundleViewParamId:

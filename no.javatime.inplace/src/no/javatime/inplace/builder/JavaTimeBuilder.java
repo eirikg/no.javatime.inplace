@@ -288,7 +288,7 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 				bundleTransition.addPending(project, Transition.DEACTIVATE);
 			} else {
 				// Use same closure rules as for update
-				if (!hasBuildErrors(project)) {
+				if (!BundleProjectBuildError.hasErrors(project)) {
 					// Do not handle newly opened, created or imported bundles
 					if (null != bundle) {
 						// Moved projects requires a reactivate (uninstall and bundle activate)
@@ -373,21 +373,6 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 		String bundleLocation = bundleRegion.getBundleLocationIdentifier(project);
 		if (!projectLoaction.equals(bundleLocation) && bundleProjectCandidates.isInstallable(project)) {
 			return true;
-		}
-		return false;
-	}
-
-	private boolean hasBuildErrors(IProject project) throws ExtenderException {
-		if (Activator.getCommandOptionsService().isActivateOnCompileError()) {
-			if (BundleProjectBuildError.getBundleErrors(Collections.<IProject> singletonList(project))
-					.size() > 0) {
-				return true;
-			}
-		} else {
-			if (BundleProjectBuildError.getBuildErrors(Collections.<IProject> singletonList(project))
-					.size() > 0) {
-				return true;
-			}
 		}
 		return false;
 	}
