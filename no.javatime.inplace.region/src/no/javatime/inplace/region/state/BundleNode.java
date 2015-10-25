@@ -18,6 +18,7 @@ import no.javatime.inplace.region.intface.BundleTransition.Transition;
 import no.javatime.inplace.region.intface.BundleTransition.TransitionError;
 import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.project.BundleProjectMetaImpl;
+import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.util.messages.Category;
 import no.javatime.util.messages.TraceMessage;
 
@@ -26,7 +27,7 @@ import org.osgi.framework.Bundle;
 
 /**
  * There is an unconditional bidirectional relationship between a project and a bundle. The term
- * describing this relationship and the involved entities is bundle project. A bundle project is
+ * describing this relationship and the involved entities is the bundle project. A bundle project is
  * characterized by a project that has the java and plug-in nature enabled, the relation between
  * them, the bundle and a common source code combined.The shared keys in this relation are:
  * <ol>
@@ -37,13 +38,25 @@ import org.osgi.framework.Bundle;
  * bundle id is also a primary key of a project and a bundle respectively. The bundle id does not
  * come into existence before the bundle is installed for the first time.
  * <p>
- * The project object (identifier) and the bundle id (accessed from the bundle object identifier) is
- * stored in this bundle node. All other foreign and primary keys are accessible through both of
- * these keys. An activation mode, internal state and transition, and a set of pending bundle
- * transitions are stored along with the two keys in the bundle node.
+ * Both keys; - The project object (identifier); and - The bundle object is stored in this bundle
+ * node. All other foreign and primary keys are accessible through both of these keys. The
+ * activation mode (activated or deactivated), the internal state, transition, transition errors and
+ * a set of pending bundle transitions are stored along with the two keys in the bundle node.
  * <p>
- * Bundle nodes are backed by and are the elements of a FSM which controls and updates the state and
- * transition attributes.
+ * A bundle node stores build and bundle errors:
+ * <ol>
+ * <li>Build errors are cleared before build and marked as build errors after a build of a project.
+ * A build is a kind of transition for projects
+ * <li>Bundle errors are cleared before a bundle transition is executed and set if the bundle
+ * transition fails. Bundle nodes objects are backed by and holds the state of a FSM where bundle
+ * errors represent the state of an error transition
+ * </ol>
+ * <p>
+ * The set of bundle errors is a subset of build errors and thus a bundle error is also a build
+ * error. The build error contains the last bundle error reported in a chain of bundle transitions
+ * and first cleared before the next build of the project even if the bundle error is cleared before
+ * any bundle transition. With some exceptions build errors prevents a bundle transition to be
+ * initiated while a bundle error is the consequence of executing a bundle transition.
  */
 public class BundleNode {
 
@@ -59,17 +72,19 @@ public class BundleNode {
 	private Transition transition = Transition.NO_TRANSITION;
 	// True while a transition is executing (current transition)
 	private boolean isStateChanging;
-	// Error status of the current transition
-	private TransitionError transitionError = TransitionError.NOERROR;
+	// Build time transition errors. Errors are cleared during build
+	private TransitionError buildTransitionError = TransitionError.NOERROR;
+	// Bundle life cycle transition errors. Bundle errors are cleared before a bundle operation
+	private TransitionError bundleTransitionError = TransitionError.NOERROR;
 	// Previous bundle state.
 	// Initial state of the current transition and terminal state of the previous transition
 	private BundleState prevState = StateFactory.INSTANCE.stateLess;
 	// Previous transition
 	private Transition prevTransition = Transition.NO_TRANSITION;
-	// Error status of the previous transition
-	private TransitionError prevTransitionError = TransitionError.NOERROR;
 	// A set of pending transitions in random order waiting to be executed
 	private EnumSet<Transition> pendingTranitions = EnumSet.noneOf(Transition.class);
+
+	private IBundleStatus status;
 
 	/**
 	 * Creates a bundle node with a one-to-one relationship between a project and a bundle, called a
@@ -86,6 +101,14 @@ public class BundleNode {
 		this.bundle = bundle;
 	}
 
+	public IBundleStatus getStatus() {
+		return status;
+	}
+
+	public void setStatus(IBundleStatus status) {
+		this.status = status;
+	}
+
 	public Transition getTransition() {
 		return transition;
 	}
@@ -96,30 +119,49 @@ public class BundleNode {
 		return tmp;
 	}
 
-	public boolean setTransitionError(TransitionError transitionError) {
-		this.transitionError = transitionError;
+	public boolean clearBuildTransitionError() {
+		this.buildTransitionError = TransitionError.NOERROR;
+		status = null;
 		return true;
 	}
 
-	public TransitionError getTransitionError() {
-		return transitionError;
-	}
-
-	public boolean hasTransitionError() {
-		return transitionError == TransitionError.NOERROR ? false : true;
-	}
-
-	public boolean clearTransitionError() {
-		this.transitionError = TransitionError.NOERROR;
+	private boolean clearBundleTransitionError() {
+		this.bundleTransitionError = TransitionError.NOERROR;
 		return true;
 	}
 
-	public boolean removeTransitionError(TransitionError transitionError) {
-		if (this.transitionError == transitionError) {
-			this.transitionError = TransitionError.NOERROR;
+	public boolean removeBuildTransitionError(TransitionError transitionError) {
+		if (this.buildTransitionError == transitionError) {
+			this.buildTransitionError = TransitionError.NOERROR;
 			return true;
 		}
 		return false;
+	}
+
+	public TransitionError getBuildTransitionError() {
+		return buildTransitionError;
+	}
+
+	public void setBuildTransitionError(TransitionError buildTransitionError) {
+		this.buildTransitionError = buildTransitionError;
+	}
+
+	public TransitionError getBundleTransitionError() {
+		return bundleTransitionError;
+	}
+
+	public void setBundleTransitionError(TransitionError bundleTransitionError) {
+		this.bundleTransitionError = bundleTransitionError;
+		// Bundle transitions is a subset of build transitions (see class comments)
+		this.buildTransitionError = bundleTransitionError;
+	}
+
+	public boolean hasBuildTransitionError() {
+		return buildTransitionError == TransitionError.NOERROR ? false : true;
+	}
+
+	public boolean hasBundleTransitionError() {
+		return bundleTransitionError == TransitionError.NOERROR ? false : true;
 	}
 
 	/**
@@ -228,10 +270,12 @@ public class BundleNode {
 				version = BundleProjectMetaImpl.INSTANCE.getBundleVersion(project);
 			} catch (InPlaceException e) {
 			}
-			if (null != symbolicName && null != version) {
+			if (null != symbolicName) {
 				key.append(symbolicName);
-				key.append('_');
-				key.append(version);
+				if (null != version) {
+					key.append('_');
+					key.append(version);
+				}
 			}
 		}
 		return key.toString();
@@ -424,7 +468,14 @@ public class BundleNode {
 	 * @param state the new current state
 	 */
 	public void begin(Transition transition, BundleState state) {
-		this.transitionError = TransitionError.NOERROR;
+		// If it is a bundle error also clear the bundle error from then build error
+		if (bundleTransitionError == TransitionError.SERVICE_EXCEPTION 
+				|| buildTransitionError == TransitionError.SERVICE_INCOMPLETE 
+				|| buildTransitionError == TransitionError.SERVICE_STATECHANGE) {
+			clearBuildTransitionError();
+		}
+		// Start a new bundle command with no bundle errors
+		clearBundleTransitionError();
 		this.prevTransition = this.transition;
 		this.prevState = this.state;
 		this.transition = transition;
@@ -446,7 +497,7 @@ public class BundleNode {
 	 * transition parameters to be overwritten. The bundle is no longer in a state changing state.
 	 */
 	public void commit(Transition transition, BundleState state) {
-		this.prevTransitionError = this.transitionError;
+
 		prevTransition = this.transition;
 		prevState = this.state;
 		this.transition = transition;
@@ -460,7 +511,7 @@ public class BundleNode {
 	 * changing state.
 	 */
 	public void rollBack() {
-		this.transitionError = this.prevTransitionError;
+
 		this.transition = this.prevTransition;
 		this.state = this.prevState;
 		isStateChanging = false;
@@ -582,7 +633,7 @@ public class BundleNode {
 		}
 		return typeName;
 	}
-	
+
 	/**
 	 * Get a transition based on its textual name
 	 * 

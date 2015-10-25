@@ -5,7 +5,10 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
+import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.region.Activator;
+import no.javatime.inplace.region.closure.ProjectBuildErrorClosure.ActivationScope;
+import no.javatime.inplace.region.intface.BundleProjectCandidates;
 import no.javatime.inplace.region.intface.BundleProjectMeta;
 import no.javatime.inplace.region.intface.BundleRegion;
 import no.javatime.inplace.region.intface.BundleTransition;
@@ -19,14 +22,19 @@ import no.javatime.inplace.region.project.BundleProjectMetaImpl;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
+import no.javatime.util.messages.ExceptionMessage;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.osgi.util.NLS;
+import org.eclipse.ui.statushandlers.StatusManager;
 import org.osgi.framework.Bundle;
 
 /**
- * Detects and reports build errors and missing build state for single projects and build error
- * closures based on an initial set of bundle projects.
+ * Detects and reports build errors for single projects and build error closures based on an initial
+ * set of bundle projects.
+ * <p>
+ * {@link BundleBuildErrorClosure Bundle build errors} is a subset of the build error closure. The
+ * subset is determined by the type of build errors in projects
  * <p>
  * A build error closure is identified when the closure of an initial set of projects (project
  * closure) contains one or more projects with build errors. Type of closure is set at construction
@@ -48,6 +56,9 @@ import org.osgi.framework.Bundle;
  * all bundles that are at least installed and activated will be considered when calculating the
  * closures. There may be a need for this combination in an activation process; - that is when an
  * installed bundle is activated but not yet resolved.
+ * 
+ * @see BundleBuildErrorClosure
+ * @see BundleProjectBuildError
  */
 public class ProjectBuildErrorClosure {
 
@@ -133,27 +144,58 @@ public class ProjectBuildErrorClosure {
 	 * set of independent projects with build errors - restricted to the project closures -, construct
 	 * the build error closures by calculating the requiring closure for each project with build
 	 * errors.
-	 * 
-	 * The final calculated build error closures than includes the the error projects and their
-	 * requiring closures restricted to the project closures. This means that providing projects to
-	 * projects with build errors are allowed given the position of the project with build errors in
-	 * the partial graph of the project closure (the closure calculated from the initial project).
-	 * 
-	 * @return all closures of projects with build errors
-	 * @throws CircularReferenceException if cycles are detected in the project graph
-	 * @throws InPlaceException if failing to get the dependency options service or illegal
-	 * operation/closure combination
+	 * <p>
+	 * Any invalid projects should have been weeded out at this point. But if any projects in a
+	 * closure are null or not accessible (open but not exists or closed) they are perceived as non
+	 * existent. If no valid projects are found an empty set is returned. This is perceived as there
+	 * are no bundle projects to check for errors.
+	 * <p>
+	 * The final calculated build error closures than includes the error projects and their requiring
+	 * closures restricted to the project closures. This means that providing projects to projects
+	 * with build errors are allowed given the position of the project with build errors in the
+	 * partial graph of the project closure (the closure calculated from the initial project).
+	 * @param includeDuplicates TODO
+	 * @return all closures of projects with build errors or an empty set
 	 */
-	public Collection<IProject> getBuildErrorClosures() throws InPlaceException,
-			CircularReferenceException {
-		if (null == errorClosures) {
-			// Get projects with build errors and their requiring projects. Providing projects to projects
-			// with build errors are excluded from the build error closure
-			errorClosures = getBundleProjectClosures(getBuildErrors(), Closure.REQUIRING, activationScope);
-			// The build error closure is a subset of the project closure. 
-			// Restrict the build error closures to the project closures (closures calculated from the
-			// initial set of projects given the type of closure)
-			errorClosures.retainAll(getProjectClosures());
+	public Collection<IProject> getBuildErrorClosures(boolean includeDuplicates) {
+
+		Collection<IProject> buildErrors = null;
+		try {
+			if (null == errorClosures) {
+				buildErrors = getBuildErrors(includeDuplicates);
+				// Get projects with build errors and their requiring projects. Providing projects to
+				// projects
+				// with build errors are excluded from the build error closure
+				errorClosures = getBundleProjectClosures(buildErrors, Closure.REQUIRING, activationScope);
+				// The build error closure is a subset of the project closure.
+				// Restrict the build error closures to the project closures (closures calculated from the
+				// initial set of projects given the type of closure)
+				errorClosures.retainAll(getProjectClosures());
+			}
+		} catch (InPlaceException e) {
+			if (null == errorClosures) {
+				errorClosures = new LinkedHashSet<>();
+			} else {
+				errorClosures.clear();
+			}
+			Collection<IProject> projects = bundleRegion.getProjects();
+			// Some projects are closed, does not exist or are null
+			for (IProject project : projects) {
+				if (!project.isAccessible()) {
+					bundleRegion.unregisterBundleProject(project);
+					StatusManager.getManager().handle(
+							new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, 
+									"Internal error: Trying to locate errors in closed/deleted project", e), StatusManager.LOG);
+				}	
+			}			
+		} catch (CircularReferenceException e) {
+			if (null == errorClosures) {
+				errorClosures = new LinkedHashSet<>();
+			}
+			Collection<IProject> cycles = e.getProjects();
+			if (null != cycles) {
+				errorClosures.addAll(cycles);
+			}
 		}
 		return errorClosures;
 	}
@@ -169,8 +211,7 @@ public class ProjectBuildErrorClosure {
 	 * @return all closures of the specified projects. If the specified projects is null or empty an
 	 * empty set is returned
 	 * @throws CircularReferenceException if cycles are detected in the project graph
-	 * @throws InPlaceException if failing to get the dependency options service or illegal
-	 * operation/closure combination
+	 * @throws InPlaceException if any referenced project is closed or does nor exist
 	 */
 	private Collection<IProject> getBundleProjectClosures(Collection<IProject> projects,
 			Closure closure, ActivationScope scope) throws InPlaceException, CircularReferenceException {
@@ -178,6 +219,7 @@ public class ProjectBuildErrorClosure {
 		if (null == projects || projects.size() == 0) {
 			return Collections.<IProject> emptySet();
 		}
+		WorkspaceRegionImpl bundleRegion = WorkspaceRegionImpl.INSTANCE;
 		if ((activationLevel & (Bundle.INSTALLED | Bundle.RESOLVED)) != 0) {
 			Collection<Bundle> bundleClosures = bundleRegion.getBundles(projects);
 			Collection<Bundle> bundleScope = null;
@@ -262,33 +304,40 @@ public class ProjectBuildErrorClosure {
 	/**
 	 * Check all projects for build errors among the closures constructed from the initial (starter)
 	 * set of projects.
+	 * @param includeDuplicates TODO
 	 * 
 	 * @return true if there are any projects with build errors among the calculated closures based on
 	 * the initial (starter) set of projects specified at construction time
-	 * @throws CircularReferenceException if cycles are detected in the project graph
-	 * @throws InPlaceException if failing to get the dependency options service or illegal
-	 * operation/closure combination
-	 * @see #getBuildErrors()
+	 * @see #getBuildErrors(boolean)
+	 * @see BundleProjectBuildError#hasBuildErrors(IProject, boolean)
+	 * @see BundleProjectBuildError#hasBundleErrors(IProject, boolean)
 	 */
-	public boolean hasBuildErrors() throws CircularReferenceException,
-			InPlaceException {
-		return getBuildErrors().size() > 0 ? true : false;
+	public boolean hasBuildErrors(boolean includeDuplicates) {
+		return getBuildErrors(includeDuplicates).size() > 0 ? true : false;
 	}
 
 	/**
 	 * All projects with build errors that are member of the closure constructed for the initial
 	 * (starter) set of projects.
+	 * @param includeDuplicates TODO
 	 * 
 	 * @return projects with build errors among the closures of the initial (starter) set of projects.
-	 * @throws CircularReferenceException if cycles are detected in the project graph
-	 * @throws InPlaceException if failing to get the dependency options service or illegal
-	 * operation/closure combination
-	 * @see #hasBuildErrors()
+	 * @see #hasBuildErrors(boolean)
+	 * @see BundleProjectBuildError#getBuildErrors(Collection, boolean)
+	 * @see BundleProjectBuildError#getBundleErrors(Collection, boolean)
 	 */
-	public Collection<IProject> getBuildErrors() throws CircularReferenceException,
-	InPlaceException {
-		if (null == errorProjects) {
-			errorProjects = BundleProjectBuildError.getBuildErrors(getProjectClosures());
+	public Collection<IProject> getBuildErrors(boolean includeDuplicates) throws InPlaceException {
+
+		try {
+			if (null == errorProjects) {
+				errorProjects = BundleProjectBuildError.getBuildErrors(getProjectClosures(), includeDuplicates);
+			}
+		} catch (CircularReferenceException e) {
+			if (null == errorProjects) {
+				errorProjects = new LinkedHashSet<>();
+			}
+			Collection<IProject> cycles = e.getProjects();
+			errorProjects.addAll(cycles);
 		}
 		return errorProjects;
 	}
@@ -305,7 +354,7 @@ public class ProjectBuildErrorClosure {
 	 * operation/closure combination
 	 * @see #getBundleClosures()
 	 */
-	public Collection<IProject> getProjectClosures() throws CircularReferenceException,
+	protected Collection<IProject> getProjectClosures() throws CircularReferenceException,
 			InPlaceException {
 		if (null == projectClosures) {
 			projectClosures = getBundleProjectClosures(initialProjects, closure, activationScope);
@@ -324,7 +373,8 @@ public class ProjectBuildErrorClosure {
 	 * operation/closure combination
 	 * @see #getProjectClosures()
 	 */
-	public Collection<Bundle> getBundleClosures() throws CircularReferenceException, InPlaceException {
+	protected Collection<Bundle> getBundleClosures() throws CircularReferenceException,
+			InPlaceException {
 		Collection<IProject> projects = getProjectClosures();
 		return bundleRegion.getBundles(projects);
 	}
@@ -352,60 +402,86 @@ public class ProjectBuildErrorClosure {
 	/**
 	 * Constructs a status object with information about the build error closures based on the initial
 	 * (starter) set of projects specified at construction time
+	 * <p>
+	 * Any exceptions are added to the returned bundle status object
 	 * 
 	 * @return status a multi status object with {@code StatusCode.WARNING} describing the build error
 	 * closures based on the initial set of bundle projects and the calculated error closures. Returns
 	 * a status object with {@code StatusCode.OK} along with the list of the project closures if there
 	 * are no build errors.
-	 * @throws CircularReferenceException if cycles are detected in the project graph
-	 * @throws InPlaceException if failing to get the dependency options service or illegal
-	 * operation/closure combination
-	 * @see #getBuildErrorClosures()
+	 * @see #getBuildErrorClosures(boolean)
 	 * @see #getProjectClosures()
 	 */
-	public IBundleStatus getErrorClosureStatus() throws InPlaceException,
-			CircularReferenceException {
+	public IBundleStatus getErrorClosureStatus() {
 
-		Collection<IProject> buildErrors = getBuildErrors();
-		if (buildErrors.size() == 0) {
-			String okMsg = NLS.bind(Msg.NO_BUILD_ERROR_INFO,
-					BundleProjectCandidatesImpl.INSTANCE.formatProjectList(getProjectClosures()));
-			return new BundleStatus(StatusCode.OK, Activator.PLUGIN_ID, okMsg, null);
-		}
-		Collection<IProject> buildErrorClosures = getBuildErrorClosures();
-		String name = bundleTransition.getTransitionName(currentTransition, true, false);
-		String msg = getBuildErrorHeaderMessage();
-		if (null == msg) {
-			msg = NLS.bind(Msg.AWAITING_BUILD_ERROR_INFO,
-					new Object[] { name, BundleProjectCandidatesImpl.INSTANCE.formatProjectList(buildErrorClosures),
-							BundleProjectCandidatesImpl.INSTANCE.formatProjectList(buildErrors) });
-		}
-		IBundleStatus buildStatus = new BundleStatus(StatusCode.WARNING, Activator.PLUGIN_ID, msg, null);
-		for (IProject errorProject : buildErrors) {
-			Collection<IProject> projectClosures = getBundleProjectClosures(
-					Collections.<IProject> singletonList(errorProject), Closure.PROVIDING,
-					ActivationScope.ALL);
-			projectClosures.remove(errorProject);
-			String errProjectIdent = bundleMeta.getSymbolicName(errorProject);
-			if (null == errProjectIdent) {
-				errProjectIdent = errorProject.getName();
-				errProjectIdent += " (P)";
+		IBundleStatus statusHeader = new BundleStatus(StatusCode.WARNING, Activator.PLUGIN_ID,
+				"Bundle Project Problems", null);
+		try {
+			Collection<IProject> errorProjects = getBuildErrors(true);
+			if (errorProjects.size() == 0) {
+				String okMsg = NLS.bind(Msg.NO_BUILD_ERROR_INFO,
+						BundleProjectCandidatesImpl.INSTANCE.formatProjectList(getProjectClosures()));
+				return new BundleStatus(StatusCode.OK, Activator.PLUGIN_ID, okMsg, null);
 			}
-			if (projectClosures.size() > 0) {
-				msg = NLS.bind(Msg.PROVIDING_BUNDLES_INFO,
-						errProjectIdent, BundleProjectCandidatesImpl.INSTANCE.formatProjectList(projectClosures));
-				buildStatus.add(new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, msg));
+			Collection<IProject> buildErrorClosures = getBuildErrorClosures(true);
+			String msg = getBuildErrorHeaderMessage();
+			if (null == msg) {
+				String name = bundleTransition.getTransitionName(currentTransition, true, false);
+				BundleProjectCandidates bundleProjectCandidates = BundleProjectCandidatesImpl.INSTANCE;
+				msg = NLS.bind(Msg.AWAITING_HEADER_ERROR_INFO, new Object[] { name,
+						bundleProjectCandidates.formatProjectList(buildErrorClosures),
+						bundleProjectCandidates.formatProjectList(errorProjects) });
 			}
-			projectClosures = getBundleProjectClosures(
-					Collections.<IProject> singletonList(errorProject), Closure.REQUIRING,
-					ActivationScope.ALL);
-			projectClosures.remove(errorProject);
-			if (projectClosures.size() > 0) {
-				msg = NLS.bind(Msg.REQUIRING_BUNDLES_INFO,
-						errProjectIdent, BundleProjectCandidatesImpl.INSTANCE.formatProjectList(projectClosures));
-				buildStatus.add(new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, msg));
+			statusHeader = new BundleStatus(StatusCode.WARNING, Activator.PLUGIN_ID, msg, null);
+			for (IProject errorProject : errorProjects) {
+				// Get providing closures to bundle project
+				Collection<IProject> projectClosures = getBundleProjectClosures(
+						Collections.<IProject> singletonList(errorProject), Closure.PROVIDING,
+						ActivationScope.ALL);
+				projectClosures.remove(errorProject);
+				String errProjectIdent = null;
+				try {
+					errProjectIdent = bundleMeta.getSymbolicName(errorProject);
+				} catch (InPlaceException e) {
+				}
+				if (null == errProjectIdent) {
+					errProjectIdent = errorProject.getName();
+					errProjectIdent += " (P)";
+				}
+				if (projectClosures.size() > 0) {
+					msg = NLS.bind(Msg.PROVIDING_BUNDLES_INFO, errProjectIdent,
+							BundleProjectCandidatesImpl.INSTANCE.formatProjectList(projectClosures));
+					statusHeader.add(new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, msg));
+				}
+				// Get requiring closures to bundle project
+				projectClosures = getBundleProjectClosures(
+						Collections.<IProject> singletonList(errorProject), Closure.REQUIRING,
+						ActivationScope.ALL);
+				projectClosures.remove(errorProject);
+				if (projectClosures.size() > 0) {
+					msg = NLS.bind(Msg.REQUIRING_BUNDLES_INFO, errProjectIdent,
+							BundleProjectCandidatesImpl.INSTANCE.formatProjectList(projectClosures));
+					statusHeader.add(new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, msg));
+				}
+				// Get any registered errors status on the bundle project
+				IBundleStatus bundleStatus = bundleRegion.getBundleStatus(errorProject);
+				if (null != bundleStatus) {
+					statusHeader.add(bundleStatus);
+				}
 			}
+		} catch (ExtenderException e) {
+			statusHeader
+					.add(new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e));
+		} catch (InPlaceException e) {
+			statusHeader
+					.add(new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e));
+		} catch (CircularReferenceException e) {
+			String msg = ExceptionMessage.getInstance().formatString("circular_reference_termination");
+			IBundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, msg,
+					e);
+			multiStatus.add(e.getStatusList());
+			statusHeader.add(multiStatus);
 		}
-		return buildStatus;
+		return statusHeader;
 	}
 }

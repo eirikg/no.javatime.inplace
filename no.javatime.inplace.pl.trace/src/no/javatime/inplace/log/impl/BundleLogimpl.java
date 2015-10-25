@@ -21,6 +21,7 @@ import org.eclipse.core.runtime.IStatus;
 import org.eclipse.equinox.log.Logger;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.ui.IWorkbench;
+import org.eclipse.ui.PlatformUI;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 
@@ -454,7 +455,7 @@ public class BundleLogimpl implements BundleLog {
 		// It logs the root message (in the log listener) to the error log in addition
 		// to the log status object to be logged
 		Activator activator = Activator.getDefault();
-		IWorkbench workbench = activator.getWorkbench();
+		IWorkbench workbench = PlatformUI.getWorkbench();
 		if (null != workbench && workbench.isClosing()) {
 			// Write directly to the log file
 			LogWriter logWriter = activator.getLogWriter();

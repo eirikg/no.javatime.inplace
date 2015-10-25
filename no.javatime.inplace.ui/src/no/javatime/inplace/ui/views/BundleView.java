@@ -17,7 +17,6 @@ import java.util.List;
 
 import no.javatime.inplace.bundlejobs.intface.ActivateProject;
 import no.javatime.inplace.bundlejobs.intface.BundleExecutor;
-import no.javatime.inplace.bundlejobs.intface.Reset;
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.extender.intface.Extension;
 import no.javatime.inplace.region.events.BundleTransitionEvent;
@@ -660,11 +659,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 			if (null != workbench && workbench.isClosing()) {
 				return;
 			}
-			// Delay update of view for bundle jobs that triggers other bundle jobs
-			// to avoid early enablement of the activate/deactivate and reset
-			if (!(job instanceof ActivateProject) && !(job instanceof Reset)) {
-				showProjectInfo(0);
-			}
+			showProjectInfo(0);
 			pagebook.getDisplay().asyncExec(new Runnable() {
 				@Override
 				public void run() {
@@ -836,8 +831,12 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 						if (Activator.getBundleRegionService().isBundleActivated(project)) {
 							BundleRegion bundleRegion = Activator.getBundleRegionService();
 							Bundle bundle = bundleRegion.getBundle(project);
-							if (null != bundle && (bundle.getState() & 
-									(Bundle.RESOLVED | Bundle.STARTING | Bundle.STOPPING | Bundle.ACTIVE)) != 0) {
+							// Must wait (activate deactivate button stays disabled) until activation
+							// has finished after triggered by activate project job. If not deactivate may
+							// intercept the activation process. That is between activate project and build, build
+							// activate bundle (deactivated workspace) or build and update (activated workspace)
+							if (null != bundle
+									&& (bundle.getState() & (Bundle.RESOLVED | Bundle.STARTING | Bundle.STOPPING | Bundle.ACTIVE)) != 0) {
 								BundleMenuActivationHandler.deactivateHandler(projects);
 							}
 						} else {
@@ -863,8 +862,14 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 				if (null != project) {
 					try {
 						if (Activator.getBundleRegionService().isBundleActivated(project)) {
-							BundleMenuActivationHandler.resetHandler(Collections
-									.<IProject> singletonList(project));
+							BundleRegion bundleRegion = Activator.getBundleRegionService();
+							Bundle bundle = bundleRegion.getBundle(project);
+							// See Activate/Deactivate action
+							if (null != bundle
+									&& (bundle.getState() & (Bundle.RESOLVED | Bundle.STARTING | Bundle.STOPPING | Bundle.ACTIVE)) != 0) {
+								BundleMenuActivationHandler.resetHandler(Collections
+										.<IProject> singletonList(project));
+							}
 						}
 					} catch (ExtenderException e) {
 						String msg = NLS.bind(Msg.ADD_MENU_EXEC_ERROR, Msg.RESET_POPUP_LABEL);
@@ -1093,7 +1098,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 							BundleCommandsContributionItems.stopImage);
 				} else { // bundle in state installed or resolved
 					try {
-						if (Activator.getBundleProjectMetaService().isFragment(bundle)) {
+						if (Activator.getBundleProjectMetaService().isCachedFragment(bundle)) {
 							setUIElement(startStopAction, false, Msg.START_LABEL, Msg.START_LABEL,
 									BundleCommandsContributionItems.startImage);
 						} else {
@@ -1223,7 +1228,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 		action.setImageDescriptor(imageDescriptor);
 	}
 
-	/** 
+	/**
 	 * Show project information in list and details page view after the specified delay.
 	 * 
 	 * @param delay Delay in msec before displaying project info
@@ -1245,8 +1250,8 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 			job.schedule(delay);
 		} else {
 			showProjectInfo();
-		}			
-	 }
+		}
+	}
 
 	/**
 	 * Show project information in list and details page view. For renamed, deleted and moved projects

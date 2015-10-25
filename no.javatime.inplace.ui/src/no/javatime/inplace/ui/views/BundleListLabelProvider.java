@@ -17,6 +17,7 @@ import no.javatime.inplace.region.intface.BundleCommand;
 import no.javatime.inplace.region.intface.BundleTransition;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
 import no.javatime.inplace.region.intface.BundleTransition.TransitionError;
+import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.intface.ProjectLocationException;
 import no.javatime.inplace.ui.Activator;
 
@@ -130,30 +131,40 @@ public class BundleListLabelProvider extends LabelProvider implements ITableLabe
 					boolean isProjectActivated = Activator.getBundleRegionService().isBundleActivated(project);
 					BundleCommand bundleCommand = Activator.getBundleCommandService(); 
 					BundleTransition bundleTransition = Activator.getBundleTransitionService();
-					if (!BundleProjectBuildError.hasBuildState(project)) {
+					if (bundleTransition.hasBuildTransitionError(project)) {
+						TransitionError error = bundleTransition.getBuildError(project);
+						if (error == TransitionError.WORKSPACE_DUPLICATE) {
+							return errorImage;
+						} else if (error == TransitionError.EXTERNAL_DUPLICATE) {
+							return errorImage;
+						} else if (error == TransitionError.CYCLE) {
+							return errorImage;
+						} else if (error == TransitionError.DEPENDENCY) {
+							return warningImage;
+						} else if (error == TransitionError.SERVICE_INCOMPLETE) {
+							return errorImage;							
+						} else if (error == TransitionError.BUILD) {
+							return warningImage; 
+						} else if (error == TransitionError.SERVICE_EXCEPTION) {
+							return errorImage;
+						} else if (error == TransitionError.SERVICE_STATECHANGE) {
+							return errorImage;
+						} else {
+							return errorImage;
+						}
+					} else if (!BundleProjectBuildError.hasBuildState(project)) {
 						return errorImage;
-					} else if (!BundleProjectBuildError.hasProjectDescription(project)) {
+					} else if (!BundleProjectBuildError.hasProjectDescriptionFile(project)) {
 						return errorImage;
 					} else if (BundleProjectBuildError.hasManifestBuildErrors(project)) {
 						return errorImage;
-					} else if (BundleProjectBuildError.hasBuildErrors(project)) {
+					} else if (BundleProjectBuildError.hasBuildErrors(project, false)) {
 						return warningImage;
 					} else if (bundleTransition.containsPending(project, Transition.BUILD, false)) {
 						return pendingImage;
 					} else if (isProjectActivated
 							&& bundleTransition.containsPending(project, Transition.UPDATE, false)) {
 						return pendingImage;
-					} else if (bundleTransition.hasTransitionError(project)) {
-						TransitionError error = bundleTransition.getError(project);
-						if (error == TransitionError.DEPENDENCY) {
-							return warningImage;
-						} else if (error == TransitionError.INCOMPLETE) {
-							return errorImage;							
-						} else if (error == TransitionError.BUILD) {
-							return warningImage; 
-						} else {
-							return errorImage;
-						}
 					} else if (bundleTransition.getTransition(project) == Transition.EXTERNAL) {
 						return pendingImage;
 					} else if (null != bundle && bundleCommand.getBundleRevisions(bundle).size() > 1) {
@@ -174,6 +185,8 @@ public class BundleListLabelProvider extends LabelProvider implements ITableLabe
 							return deactivatedImage;
 						}
 					}
+				} catch (InPlaceException e) {
+					return errorImage;
 				} catch (ProjectLocationException | ExtenderException e) {
 					return errorImage;
 				}

@@ -5,6 +5,7 @@ import java.util.Map;
 
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.region.msg.Msg;
+import no.javatime.inplace.region.status.IBundleStatus;
 
 import org.eclipse.core.resources.IProject;
 import org.osgi.framework.Bundle;
@@ -173,7 +174,7 @@ public interface BundleRegion {
 	 * 
 	 * @param project project to register. Must not be null
 	 * @param bundle bundle to register. May be null
-	 * @param acivateBundle true to mark the bundle as activated and false to mark the bundle as
+	 * @param acivate true to mark the bundle as activated and false to mark the bundle as
 	 * deactivated.
 	 * @see #unregisterBundleProject(IProject)
 	 * @see #install(IProject, Boolean)
@@ -184,7 +185,7 @@ public interface BundleRegion {
 	 * Unregister the specified workspace region project. Unregistering a project also unregisters
 	 * it's associated bundle
 	 * 
-	 * @param bundle bundle project to unregister
+	 * @param project bundle project to unregister
 	 * @see #registerBundleProject(IProject, Bundle, boolean)
 	 * @see #isProjectRegistered(IProject)
 	 * @see #uninstall(Bundle, Boolean)
@@ -200,9 +201,11 @@ public interface BundleRegion {
 	public boolean isProjectRegistered(IProject project);
 
 	/**
-	 * Get all registered (activated and deactivated) bundle projects
+	 * Get all registered bundle projects
+	 * <p>
+	 * Note this also include uninstalled bundle projects in a deactivated workspace.
 	 * 
-	 * @return all registered (activated and deactivated) bundle projects
+	 * @return all registered bundle projects
 	 */
 	public Collection<IProject> getProjects();
 
@@ -266,7 +269,8 @@ public interface BundleRegion {
 
 	/**
 	 * Check if the bundle associated with the specified project is activated. The condition is
-	 * satisfied if the project is activated and the associated bundle is registered as activated with the region.
+	 * satisfied if the project is activated and the associated bundle is registered as activated with
+	 * the region.
 	 * 
 	 * @param bundleProject to check for activation
 	 * @return true if the specified project is registered with the region and the bundle object is
@@ -381,19 +385,50 @@ public interface BundleRegion {
 	 * @return all installed jar bundles or an empty collection
 	 */
 	public Collection<Bundle> getJarBundles();
+	
+	/**
+	 * Check if the specified project is a duplicate of another workspace bundle project
+	 * 
+	 * @param project Bundle project to check for duplicate in
+	 * @throws WorkspaceDuplicateException If the specified project is a duplicate of another project
+	 */
+	public void workspaceDuplicate(IProject project) throws WorkspaceDuplicateException;
 
 	/**
-	 * If the symbolic name and version of one of the specified projects equals one of the specified
-	 * candidate projects its a duplicate. Only activated projects are considered. It is not the
-	 * cached symbolic keys, but the symbolic keys from the manifest that are compared
+	 * If the symbolic name and version of one of the specified projects equals another project among
+	 * the specified projects it is a duplicate. If duplicates are detected among the specified
+	 * projects, extend scope of search for additional duplicates in the specified candidates set of
+	 * the duplicates already found
+	 * <p>
+	 * If the specified candidates is null, the search for additional duplicates are performed on all
+	 * registered projects
+	 * <p>
+	 * Note that it is not the cached symbolic keys, but the symbolic keys from the manifest that are
+	 * compared
 	 * 
-	 * @param projects to check for duplicates against the candidate bundles.
-	 * @param candidates a set of projects to find duplicates among
-	 * @return map containing the specified project and the bundle which the specified project is a
-	 * duplicate of
+	 * @param projects Bundle projects to check for duplicates against each other
+	 * @param candidates The set of projects to search for duplicates among. If null, among all
+	 * registered bundles. Any duplicates within the specified projects not in this candidates set is
+	 * ignored
+	 * @return map containing duplicates where each project pair is a duplicate or an empty map
 	 */
 	public Map<IProject, IProject> getWorkspaceDuplicates(Collection<IProject> projects,
 			Collection<IProject> candidates);
+
+	/**
+	 * If the symbolic name (the version may be different) of one of the specified projects equals one
+	 * of the installed external (jar) bundles
+	 * <p>
+	 * It is the persisted symbolic name of the specified projects that is used for comparison with
+	 * the symbolic name of the latest installed version of the external bundles
+	 * <p>
+	 * If the associated bundles of the specified projects does not exist an empty set is returned
+	 * 
+	 * @param projects to check for duplicates against external installed (jar) bundles
+	 * @return map containing the specified project and the external bundle which the specified
+	 * project is a duplicate of
+	 */
+	public Map<IProject, Bundle> getExternalDuplicates(Collection<IProject> projects);
 
 	/**
 	 * If the symbolic name (the version may be different) of one of the specified projects equals one
@@ -420,6 +455,10 @@ public interface BundleRegion {
 	 * @return true if the bundle exist in the bundle region. Otherwise false
 	 */
 	public boolean exist(Bundle bundle);
+
+	public IBundleStatus getBundleStatus(IProject  project);
+
+	public void setBundleStatus(IProject project, IBundleStatus status);
 
 	/**
 	 * A bundle exist in the bundle region if it at least is installed. In an activated workspace all

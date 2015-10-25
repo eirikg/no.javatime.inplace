@@ -23,6 +23,7 @@ import no.javatime.inplace.region.intface.BundleRegion;
 import no.javatime.inplace.region.intface.BundleTransition;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
 import no.javatime.inplace.region.intface.BundleTransition.TransitionError;
+import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
@@ -104,10 +105,10 @@ public class UpdateScheduler {
 					Transition.UPDATE, Closure.REQUIRING);
 			BundleProjectCandidates bundleProjectCandidates = Activator.getBundleProjectCandidatesService();
 			MessageOptions messageOptions = Activator.getMessageOptionsService(); 
-			if (be.hasBuildErrors()) {
+			if (be.hasBuildErrors(false)) {
 				if (messageOptions.isBundleOperations()) {
 					String msg = NLS.bind(Msg.UPDATE_BUILD_ERROR_INFO, new Object[] { project.getName(),
-							bundleProjectCandidates.formatProjectList(be.getBuildErrors()) });
+							bundleProjectCandidates.formatProjectList(be.getBuildErrors(false)) });
 					be.setBuildErrorHeaderMessage(msg);
 					IBundleStatus bundleStatus = be.getErrorClosureStatus();
 					if (null != bundleStatus) {
@@ -121,10 +122,10 @@ public class UpdateScheduler {
 			if (isUpdate) {
 				be = new BundleBuildErrorClosure(Collections.<IProject> singletonList(project),
 						Transition.UPDATE, Closure.PROVIDING, Bundle.UNINSTALLED, ActivationScope.DEACTIVATED);
-				if (be.hasBuildErrors()) {
+				if (be.hasBuildErrors(false)) {
 					if (messageOptions.isBundleOperations()) {
 						String msg = NLS.bind(Msg.UPDATE_BUILD_ERROR_INFO, new Object[] { project.getName(),
-								bundleProjectCandidates.formatProjectList(be.getBuildErrors()) });
+								bundleProjectCandidates.formatProjectList(be.getBuildErrors(false)) });
 						be.setBuildErrorHeaderMessage(msg);
 						IBundleStatus bundleStatus = be.getErrorClosureStatus();
 						if (null != bundleStatus) {
@@ -138,7 +139,7 @@ public class UpdateScheduler {
 			if (isUpdate && null != update) {
 				update.addPendingProject(project);
 			}
-		} catch (BundleLogException e) {
+		} catch (InPlaceException | BundleLogException | ExtenderException e) {
 			StatusManager.getManager().handle(
 					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),
 					StatusManager.LOG);			
@@ -229,7 +230,7 @@ public class UpdateScheduler {
 
 		ActivateBundle postActivateBundleJob = null;
 
-		if (!bundleTransition.hasTransitionError(TransitionError.DUPLICATE)) {
+		if (!bundleTransition.hasBuildTransitionError(TransitionError.WORKSPACE_DUPLICATE)) {
 			return postActivateBundleJob;
 		}
 
@@ -251,7 +252,7 @@ public class UpdateScheduler {
 					Bundle bundle = bundleRegion.getBundle(project);
 					// Activate uninstalled bundles and update installed bundles
 					if (null == bundle) {
-						if (bundleTransition.getError(project) == TransitionError.DUPLICATE) {
+						if (bundleTransition.getBuildError(project) == TransitionError.WORKSPACE_DUPLICATE) {
 							if (null == postActivateBundleJob) {
 								postActivateBundleJob = new ActivateBundleJob();
 							}

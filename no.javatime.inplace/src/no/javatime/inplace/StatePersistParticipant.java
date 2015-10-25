@@ -303,7 +303,7 @@ public class StatePersistParticipant implements ISaveParticipant {
 							String prefsStateName = stateNode.get(symbolicKey, activeStateName);
 							if (prefsStateName.equals(stateName)) {
 								if ((activationLevel & (Bundle.RESOLVED)) != 0
-										&& bundleProjectMeta.isFragment(bundle)) {
+										&& bundleProjectMeta.isCachedFragment(bundle)) {
 									activationLevelBundles.add(bundle);
 								} else {
 									activationLevelBundles.add(bundle);
@@ -365,7 +365,7 @@ public class StatePersistParticipant implements ISaveParticipant {
 							String prefsStateName = stateNode.get(symbolicKey,
 									bundleCommand.getStateName(Bundle.ACTIVE));
 							if (prefsStateName.equals(bundleCommand.getStateName(Bundle.RESOLVED))
-									|| bundleProjectMeta.isFragment(bundle)) {
+									|| bundleProjectMeta.isCachedFragment(bundle)) {
 								state = Bundle.RESOLVED;
 							} else if (prefsStateName.equals(bundleCommand.getStateName(Bundle.ACTIVE))) {
 								state = Bundle.ACTIVE;
@@ -421,6 +421,7 @@ public class StatePersistParticipant implements ISaveParticipant {
 					// String prefsTransitionName = transitionNode.get(symbolicKey, noTransitionName);
 					bundleTransition.setTransition(project,
 							bundleTransition.getTransition(prefsTransitionName));
+					bundleTransition.clearBuildTransitionError(project);
 				} catch (IllegalStateException e) {
 					String msg = WarnMessage.getInstance().formatString("node_removed_preference_store");
 					StatusManager.getManager().handle(

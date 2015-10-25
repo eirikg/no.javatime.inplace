@@ -73,7 +73,9 @@ public class ExtenderTracker extends ExtenderBundleTracker {
 
 	@Override
 	public Collection<Extender<?>> addingBundle(Bundle bundle, BundleEvent event) throws ExtenderException {
-
+		if (((bundle.getState() & (Bundle.INSTALLED | Bundle.UNINSTALLED)) != 0)) {
+			return null;
+		}
 		if (!getFilter(bundle)) {
 			return null;
 		}

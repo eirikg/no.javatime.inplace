@@ -31,8 +31,14 @@ import no.javatime.inplace.region.intface.BundleTransition;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
 import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.intface.ProjectLocationException;
+import no.javatime.inplace.region.intface.WorkspaceDuplicateException;
+import no.javatime.inplace.region.msg.Msg;
+import no.javatime.inplace.region.project.BundleProjectMetaImpl;
 import no.javatime.inplace.region.state.BundleNode;
 import no.javatime.inplace.region.state.BundleState;
+import no.javatime.inplace.region.status.BundleStatus;
+import no.javatime.inplace.region.status.IBundleStatus;
+import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import no.javatime.util.messages.Category;
 import no.javatime.util.messages.ExceptionMessage;
 import no.javatime.util.messages.TraceMessage;
@@ -42,9 +48,8 @@ import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
-import org.eclipse.pde.core.project.IBundleProjectDescription;
+import org.eclipse.osgi.util.NLS;
 import org.osgi.framework.Bundle;
-import org.osgi.framework.Version;
 
 /**
  * Region for workspace bundles. Associate projects with workspace bundles, support static (not
@@ -458,6 +463,31 @@ public class WorkspaceRegionImpl implements BundleRegion {
 		return null;
 	}
 
+	public void workspaceDuplicate(IProject project) throws WorkspaceDuplicateException {
+
+		Map<IProject, IProject> duplicateMap = getWorkspaceDuplicates(
+				Collections.<IProject> singletonList(project), null);
+		if (duplicateMap.size() > 0) {
+			String msg = null;
+			for (Map.Entry<IProject, IProject> key : duplicateMap.entrySet()) {
+				IProject duplicateProject = key.getKey();
+				IProject otherDuplicateProject = key.getValue();
+				if (duplicateProject.equals(project)) {
+					msg = NLS.bind(
+							Msg.WORKSPACE_UPATE_DUPLICATE_ERROR,
+							new Object[] { BundleNode.formatSymbolicKey(null, project),
+									duplicateProject.getName(), otherDuplicateProject.getName() });
+					break;
+				}
+			}
+			BundleNode bundleNode = getBundleNode(project);
+			WorkspaceDuplicateException e = new WorkspaceDuplicateException(msg);
+			bundleNode.setStatus(new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, project,
+					msg, e));
+			throw e;
+		}
+	}
+
 	@Override
 	public Map<IProject, IProject> getWorkspaceDuplicates(Collection<IProject> candidateProjects,
 			Collection<IProject> candidates) {
@@ -474,9 +504,16 @@ public class WorkspaceRegionImpl implements BundleRegion {
 				duplicateMap.put(candidateProject, project);
 			}
 		}
+		// Extend scope of search for additional duplicates of the duplicates already found
 		if (candidateKeyMap.size() > 0) {
-			candidates.removeAll(candidateKeyMap.values());
-			for (IProject project : candidates) {
+			Collection<IProject> candidatesCopy = null;
+			if (null == candidates) {
+				candidatesCopy = getProjects();
+			} else {
+				candidatesCopy = new LinkedHashSet<>(candidates);
+			}
+			candidatesCopy.removeAll(candidateKeyMap.values());
+			for (IProject project : candidatesCopy) {
 				String symbolicKey = getSymbolicKey(null, project);
 				if (symbolicKey.length() == 0) {
 					continue;
@@ -491,6 +528,12 @@ public class WorkspaceRegionImpl implements BundleRegion {
 	}
 
 	@Override
+	public Map<IProject, Bundle> getExternalDuplicates(Collection<IProject> projects) {
+
+		return Activator.getDefault().getDuplicateEvents().getSymbolicNameDuplicates(projects);
+	}
+
+	@Override
 	public Map<IProject, Bundle> getSymbolicNameDuplicates(Collection<IProject> projects,
 			Collection<Bundle> candidateBundles) {
 
@@ -499,8 +542,10 @@ public class WorkspaceRegionImpl implements BundleRegion {
 
 		for (IProject project : projects) {
 			try {
-				String symbolicName = getSymbolicNameFromManifest(project);
-				newSymbolicNameMap.put(symbolicName, project);
+				String symbolicName = BundleProjectMetaImpl.INSTANCE.getSymbolicName(project);
+				if (null != symbolicName) {
+					newSymbolicNameMap.put(symbolicName, project);
+				}
 			} catch (InPlaceException e) {
 			}
 		}
@@ -516,48 +561,27 @@ public class WorkspaceRegionImpl implements BundleRegion {
 		return duplicateMap;
 	}
 
-	/**
-	 * Reads the current symbolic name from the manifest file (not the cache)
-	 * 
-	 * @param project containing the meta information
-	 * @return current symbolic name in manifest file or null
-	 * @throws InPlaceException if the project description could not be obtained
-	 */
-	public String getSymbolicNameFromManifest(IProject project) throws InPlaceException {
+	@Override
+	public boolean exist(Bundle bundle) {
 
-		IBundleProjectDescription bundleProjDesc = Activator.getBundleDescription(project);
-		if (null == bundleProjDesc) {
-			return null;
-		}
-		return bundleProjDesc.getSymbolicName();
+		return (null != bundleProjects.get(bundle.getBundleId())) ? true : false;
 	}
 
-	/**
-	 * Reads the current version from the manifest file (not the cache)
-	 * 
-	 * @param project containing the meta information
-	 * @return current version from manifest file as a string or null
-	 * @throws InPlaceException if the bundle project description could not be obtained
-	 */
-	public String getBundleVersionFromManifest(IProject project) throws InPlaceException {
-		if (null == project) {
-			return null;
-		}
-		IBundleProjectDescription bundleProjDesc = Activator.getBundleDescription(project);
-		if (null == bundleProjDesc) {
-			return null;
-		}
-		Version version = bundleProjDesc.getBundleVersion();
-		if (null != version) {
-			return version.toString();
+	@Override
+	public IBundleStatus getBundleStatus(IProject project) {
+		BundleNode node = getNode(project);
+		if (null != node) {
+			return node.getStatus();
 		}
 		return null;
 	}
 
 	@Override
-	public boolean exist(Bundle bundle) {
-
-		return (null != bundleProjects.get(bundle.getBundleId())) ? true : false;
+	public void setBundleStatus(IProject project, IBundleStatus status) {
+		BundleNode node = getNode(project);
+		if (null != node) {
+			node.setStatus(status);
+		}
 	}
 
 	@Override
@@ -629,6 +653,21 @@ public class WorkspaceRegionImpl implements BundleRegion {
 		BundleNode bn = getNode(project);
 		if (null != bn) {
 			bn.addPendingCommand(operation);
+		}
+	}
+
+	/**
+	 * Add a pending bundle operation to the specified bundle projects
+	 * 
+	 * @param project bundle projects to add the pending operation to
+	 * @param operation to register with the bundle projects
+	 */
+	void addPendingCommand(Collection<IProject> projects, Transition operation) {
+		for (IProject project : projects) {
+			BundleNode bn = getNode(project);
+			if (null != bn) {
+				bn.addPendingCommand(operation);
+			}
 		}
 	}
 
@@ -898,7 +937,7 @@ public class WorkspaceRegionImpl implements BundleRegion {
 			}
 			if (Category.DEBUG && Category.getState(Category.dag)) {
 				if (null == delProject) {
-					TraceMessage.getInstance().getString("null_remove_node", project.getName());				
+					TraceMessage.getInstance().getString("null_remove_node", project.getName());
 				}
 			}
 			return bundleId;

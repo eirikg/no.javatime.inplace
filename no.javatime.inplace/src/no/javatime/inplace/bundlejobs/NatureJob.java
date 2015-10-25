@@ -21,9 +21,10 @@ import no.javatime.inplace.builder.SaveOptionsJob;
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
-import no.javatime.inplace.region.intface.DuplicateBundleException;
+import no.javatime.inplace.region.intface.ExternalDuplicateException;
 import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.intface.ProjectLocationException;
+import no.javatime.inplace.region.intface.WorkspaceDuplicateException;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
@@ -138,7 +139,13 @@ public abstract class NatureJob extends BundleJob {
 		if (null == bundleProjectCandidates) {
 			bundleProjectCandidates = Activator.getBundleProjectCandidatesService();
 		}
-		return bundleProjectCandidates.getCandidates();
+		Collection<IProject> projects = new LinkedHashSet<IProject>();
+		for (IProject project : bundleProjectCandidates.getBundleProjects()) {
+			if (!isProjectActivated(project)) {
+				projects.add(project);
+			}
+		}
+		return projects;
 	}
 
 	/**
@@ -153,8 +160,8 @@ public abstract class NatureJob extends BundleJob {
 			IProgressMonitor monitor) {
 
 		SubMonitor progress = SubMonitor.convert(monitor, projectsToInstall.size());
-		Collection<Bundle> activatedBundles = new LinkedHashSet<>();
 
+		Collection<Bundle> activatedBundles = new LinkedHashSet<>();
 		for (IProject project : projectsToInstall) {
 			Bundle bundle = null; // Assume not installed
 			try {
@@ -168,24 +175,32 @@ public abstract class NatureJob extends BundleJob {
 				if (null != bundle && isActivated) {
 					activatedBundles.add(bundle);
 				}
-			} catch (DuplicateBundleException e) {
+			} catch (WorkspaceDuplicateException e) {
 				String msg = null;
-				try {
-					handleDuplicateException(project, e, null);
-				} catch (InPlaceException e1) {
-					msg = e1.getLocalizedMessage();
-					addError(e, msg, project);
-				}
+				addError(e, e.getMessage(), bundle);
+				throw e;
+//				try {	
+//					handleDuplicateException(project, e, null);
+//				} catch (InPlaceException e1) {
+//					msg = e1.getLocalizedMessage();
+//					addError(e, msg, project);
+//				}
+//				throw e;
+			} catch (ExternalDuplicateException e) {
+				addError(e, e.getMessage(), bundle);
+				throw e;
 			} catch (ProjectLocationException e) {
 				IBundleStatus status = addError(e, e.getLocalizedMessage());
 				String msg = ErrorMessage.getInstance().formatString("project_location", project.getName());
 				status.add(new BundleStatus(StatusCode.ERROR, Activator.PLUGIN_ID, project, msg, null));
 				msg = NLS.bind(Msg.REFRESH_HINT_INFO, project.getName());
 				status.add(new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, project, msg, null));
+				throw e;
 			} catch (InPlaceException e) {
 				String msg = ErrorMessage.getInstance().formatString("install_error_project",
 						project.getName());
 				addError(e, msg, project);
+				throw e;
 			} finally {
 				progress.worked(1);
 			}
@@ -279,10 +294,14 @@ public abstract class NatureJob extends BundleJob {
 					IBundleStatus result = uninstall(Collections.<Bundle> singletonList(bundle),
 							new SubProgressMonitor(monitor, 1), refresh, false);
 					if (result.hasStatus(StatusCode.OK)) {
-						install(Collections.<IProject> singletonList(project), new SubProgressMonitor(monitor,
-								1));
+						try {
+							install(Collections.<IProject> singletonList(project), new SubProgressMonitor(monitor, 1));
+						} catch (InPlaceException | WorkspaceDuplicateException | ProjectLocationException e) {
+							bundleTransition.addPendingCommand(getActivatedProjects(), Transition.DEACTIVATE);
+							return addStatus(new BundleStatus(StatusCode.JOBERROR, Activator.PLUGIN_ID, Msg.INSTALL_ERROR));
+						}
 					}
-				} catch (DuplicateBundleException e) {
+				} catch (WorkspaceDuplicateException e) {
 					addError(e, e.getLocalizedMessage(), project);
 				} catch (InPlaceException e) {
 					addError(e, e.getLocalizedMessage(), project);
@@ -324,7 +343,6 @@ public abstract class NatureJob extends BundleJob {
 						bundleProjectMeta.removeDefaultOutputFolder(project);
 					}
 				}
-				bundleTransition.clearTransitionError(project);
 			} catch (CoreException e) {
 				if (null == projects) {
 					projects = new LinkedHashSet<>();
@@ -356,7 +374,6 @@ public abstract class NatureJob extends BundleJob {
 		
 		SubMonitor localMonitor = SubMonitor.convert(monitor, projectsToActivate.size());
 		Collection<IProject> projects = null;
-
 		for (IProject project : projectsToActivate) {
 			try {
 				localMonitor.subTask(NLS.bind(Msg.ENABLE_NATURE_SUB_TASK_JOB, project.getName()));

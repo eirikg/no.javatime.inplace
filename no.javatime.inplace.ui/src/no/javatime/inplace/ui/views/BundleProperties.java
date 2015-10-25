@@ -247,41 +247,44 @@ public class BundleProperties {
 		boolean isProjectActivated = bundleRegion.isBundleActivated(project);
 
 		try {
-			if (!BundleProjectBuildError.hasBuildState(project)) {
+			if (bundleTransition.hasBuildTransitionError(project)) {
+			TransitionError error = bundleTransition.getBuildError(project);
+			bundleTransition.getBundleError(project);
+			if (error == TransitionError.WORKSPACE_DUPLICATE) {
+				return "Duplicate of Workspace Bundle";
+			} else if (error == TransitionError.EXTERNAL_DUPLICATE) {
+				return "Duplicate of External Bundle";
+			} else if (error == TransitionError.CYCLE) {
+				return "Circular Bundle Reference";
+			} else if (error == TransitionError.DEPENDENCY) {
+				return "Dependent Bundle";
+			} else if (error == TransitionError.SERVICE_INCOMPLETE) {
+				return "Incomplete Transition";
+			} else if (error == TransitionError.BUILD) {
+				return "Build Problems";
+			} else if (error == TransitionError.SERVICE_EXCEPTION) {
+				return "Run Problems";
+			} else if (error == TransitionError.SERVICE_STATECHANGE) {
+				return "State error";
+			} else if (isProjectActivated && (bundleCommand.getState(bundle) & (Bundle.UNINSTALLED)) != 0) {
+				return "Install Problems"; 
+			} else if (isProjectActivated && (bundleCommand.getState(bundle) & (Bundle.INSTALLED)) != 0) {
+				return "Resolve Problems";
+			} else {
+				return "Bundle Problems";
+			}
+		} else if (!BundleProjectBuildError.hasBuildState(project)) {
 				return "Missing Build State";
-			} else if (!BundleProjectBuildError.hasProjectDescription(project)) {
+			} else if (!BundleProjectBuildError.hasProjectDescriptionFile(project)) {
 				return "Missing project description";
 			} else if (BundleProjectBuildError.hasManifestBuildErrors(project)) {
 				return "Manifest Problems"; 
-			} else if (BundleProjectBuildError.hasBuildErrors(project)) {
+			} else if (BundleProjectBuildError.hasBuildErrors(project, false)) {
 				return "Build Problems";
 			} else if (bundleTransition.containsPending(project, Transition.BUILD, false)) {
 				return "Build Pending";
 			} else if (isProjectActivated && bundleTransition.containsPending(project, Transition.UPDATE, false)) {
 				return "Update Pending";
-			} else if (bundleTransition.hasTransitionError(project)) {
-				TransitionError error = bundleTransition.getError(project);
-				if (error == TransitionError.DUPLICATE) {
-					return "Duplicate";
-				} else if (error == TransitionError.CYCLE) {
-					return "Cycle";
-				} else if (error == TransitionError.DEPENDENCY) {
-					return "Dependent Bundle";
-				} else if (error == TransitionError.INCOMPLETE) {
-					return "Incomplete";
-				} else if (error == TransitionError.BUILD) {
-					return "Build Problems";
-				} else if (error == TransitionError.EXCEPTION) {
-					return "Exception";
-				} else if (error == TransitionError.STATECHANGE) {
-					return "State error";
-				} else if (isProjectActivated && (bundleCommand.getState(bundle) & (Bundle.UNINSTALLED)) != 0) {
-					return "Install Problems"; 
-				} else if (isProjectActivated && (bundleCommand.getState(bundle) & (Bundle.INSTALLED)) != 0) {
-					return "Resolve Problems";
-				} else {
-					return "Bundle Problems";
-				}
 			} else if (null != bundle && bundleCommand.getBundleRevisions(bundle).size() > 1) {
 				return "Refresh Pending" + " (" + getBundleRevisions() + ")";
 			} else if (isProjectActivated && (bundleCommand.getState(bundle) & (Bundle.RESOLVED)) != 0
@@ -303,7 +306,7 @@ public class BundleProperties {
 		} catch (ProjectLocationException e) {
 			return "Project Location Problem";
 		} catch (InPlaceException e) {
-			return "Bundle adapt Problem";
+			return "Bundle Problem";
 		}
 	}
 
@@ -377,11 +380,14 @@ public class BundleProperties {
 				return (bundlePrrojectMeta.getCachedActivationPolicy(bundle)) ? lazyyValueName : eagerValueName;
 			}
 		} catch (InPlaceException e) {
-			// Don't spam this meassage.
-			if (!BundleProjectBuildError.hasManifestBuildErrors(project) && BundleProjectBuildError.hasBuildState(project)) {
-				String msg = ErrorMessage.getInstance().formatString("error_get_policy", project.getName());
-				StatusManager.getManager().handle(
-						new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, msg, e), StatusManager.LOG);
+			try {				
+				// Don't spam this meassage.
+				if (!BundleProjectBuildError.hasManifestBuildErrors(project) && BundleProjectBuildError.hasBuildState(project)) {
+					String msg = ErrorMessage.getInstance().formatString("error_get_policy", project.getName());
+					StatusManager.getManager().handle(
+							new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, msg, e), StatusManager.LOG);
+				}
+			} catch (Exception e2) {
 			}
 		}
 		return "?";

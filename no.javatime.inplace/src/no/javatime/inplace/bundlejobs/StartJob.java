@@ -24,6 +24,7 @@ import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.closure.BundleClosures;
 import no.javatime.inplace.region.closure.BundleSorter;
 import no.javatime.inplace.region.closure.CircularReferenceException;
+import no.javatime.inplace.region.intface.BundleTransition.TransitionError;
 import no.javatime.inplace.region.intface.BundleTransitionListener;
 import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.status.BundleStatus;
@@ -154,18 +155,18 @@ public class StartJob extends BundleJob implements Start {
 				notResolvedBundles.add(bundle);
 				// These comes from install and there should be no need to refresh
 			} else if ((state & (Bundle.INSTALLED)) != 0) {
-				Collection<Bundle> errorBundles = removeTransitionErrorClosures(bundlesToStart);
-				if (null != errorBundles) {
-					String msg = ErrorMessage.getInstance().formatString("bundle_errors_start", bundleRegion.formatBundleList(errorBundles, false));
-					addError(null, msg);
-					notResolvedBundles.addAll(errorBundles);
-				} else {
+//				Collection<Bundle> errorBundles = removeTransitionErrorClosures(bundlesToStart);
+//				if (null != errorBundles) {
+//					String msg = ErrorMessage.getInstance().formatString("bundle_errors_start", bundleRegion.formatBundleList(errorBundles, false));
+//					addError(null, msg);
+//					notResolvedBundles.addAll(errorBundles);
+//				} else {
 					// Resolve and start in two steps, to control the resolve process before starting
 					if (null == bundlesToResolve) {
 						bundlesToResolve = new LinkedHashSet<Bundle>();
 					}
 					bundlesToResolve.add(bundle);
-				}
+//				}
 			}
 		}
 		if (null != bundlesToResolve) {
@@ -202,6 +203,38 @@ public class StartJob extends BundleJob implements Start {
 			addStatus(new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e));
 		}
 		return getLastErrorStatus();
+	}
+
+	/**
+	 * Remove all bundles from the specified set of bundles tagged with a transition error and their providing bundles
+	 *  
+	 * @param initialBundleSet set of bundles to remove transition errors from
+	 * @return reduced set of the specified initial set without bundles with transition errors and their providing bundles 
+	 */
+	@SuppressWarnings("unused")
+	private Collection<Bundle> removeTransitionErrorClosures(Collection<Bundle> initialBundleSet) {
+
+		BundleSorter bs = new BundleSorter();
+		Collection<Bundle> workspaceBundles = bundleRegion.getActivatedBundles();
+		Collection<Bundle> bErrorDepClosures = bs.sortDeclaredProvidingBundles(initialBundleSet,
+				workspaceBundles);
+		Collection<Bundle> bundles = null;
+		for (Bundle errorBundle : bErrorDepClosures) {
+			IProject errorProject = bundleRegion.getProject(errorBundle);
+			TransitionError transitionError = bundleTransition.getBuildError(errorBundle);
+			if (null != errorProject
+					&& (transitionError == TransitionError.WORKSPACE_DUPLICATE || transitionError == TransitionError.CYCLE)) {
+				if (null == bundles) {
+					bundles = new LinkedHashSet<Bundle>();
+				}
+				bundles.addAll(bs.sortDeclaredRequiringBundles(
+						Collections.<Bundle> singletonList(errorBundle), workspaceBundles));
+			}
+		}
+		if (null != bundles) {
+			initialBundleSet.removeAll(bundles);
+		}
+		return bundles;
 	}
 
 	/**

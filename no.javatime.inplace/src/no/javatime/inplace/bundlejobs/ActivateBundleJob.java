@@ -16,18 +16,17 @@ import java.util.LinkedHashSet;
 import no.javatime.inplace.Activator;
 import no.javatime.inplace.StatePersistParticipant;
 import no.javatime.inplace.bundlejobs.intface.ActivateBundle;
-import no.javatime.inplace.bundlejobs.intface.Deactivate;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.msg.Msg;
-import no.javatime.inplace.region.closure.BundleBuildErrorClosure;
 import no.javatime.inplace.region.closure.CircularReferenceException;
-import no.javatime.inplace.region.closure.ProjectBuildErrorClosure.ActivationScope;
 import no.javatime.inplace.region.closure.ProjectSorter;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
-import no.javatime.inplace.region.intface.BundleTransition.TransitionError;
 import no.javatime.inplace.region.intface.BundleTransitionListener;
+import no.javatime.inplace.region.intface.ExternalDuplicateException;
 import no.javatime.inplace.region.intface.InPlaceException;
+import no.javatime.inplace.region.intface.ProjectLocationException;
+import no.javatime.inplace.region.intface.WorkspaceDuplicateException;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
@@ -216,14 +215,12 @@ public class ActivateBundleJob extends NatureJob implements ActivateBundle {
 					removePendingProjects(e.getProjects());
 				}
 			}
-			activatedBundles = install(getPendingProjects(), monitor);
-			if (!getLastErrorStatus().isOK()) {
-				Deactivate daj = new DeactivateJob(Msg.DEACTIVATE_BUNDLES_JOB, getPendingProjects());
-				Activator.getBundleExecutorEventService().add(daj, 0);
-				return addStatus(new BundleStatus(StatusCode.ERROR, Activator.PLUGIN_ID, Msg.INSTALL_ERROR));
+			try {
+				activatedBundles = install(getPendingProjects(), monitor);
+			} catch (InPlaceException | WorkspaceDuplicateException | ExternalDuplicateException | ProjectLocationException e) {
+				bundleTransition.addPendingCommand(getActivatedProjects(), Transition.DEACTIVATE);
+				return addStatus(new BundleStatus(StatusCode.JOBERROR, Activator.PLUGIN_ID, Msg.INSTALL_ERROR));
 			}
-			// All circular references, closed and non-existing projects should have been discarded by now
-			handleDuplicates();
 		}
 		// No projects are activated or no activated bundle projects have been installed
 		if (null == activatedBundles || activatedBundles.size() == 0) {
@@ -272,146 +269,7 @@ public class ActivateBundleJob extends NatureJob implements ActivateBundle {
 		StatePersistParticipant.restoreSessionState();
 		start(activatedBundles, Closure.PROVIDING, new SubProgressMonitor(monitor, 1));
 		return getLastErrorStatus();
-	}
-	/**
-	 * Remove external and workspace duplicates from the the pending projects to activate.
-	 * 
-	 * @return {@code IBundleStatus} status with a {@code StatusCode.OK} if no errors. Return
-	 * {@code IBundleStatus} status with a {@code StatusCode.BUILDERROR} if there are projects with
-	 * build errors and there are no pending projects left. If there are build errors they are added
-	 * to the job status list.
-	 * @throws InPlaceException if one of the specified projects does not exist or is closed
-	 * @throws CircularReferenceException if cycles are detected among the specified projects
-	 */
-	private IBundleStatus handleDuplicates() throws InPlaceException, CircularReferenceException {
-
-		IBundleStatus status = createStatus();
-		bundleTransition.removeTransitionError(TransitionError.DUPLICATE);
-		Collection<IProject> externalDuplicates = getExternalDuplicateClosures(getPendingProjects(),
-				null);
-		if (null != externalDuplicates) {
-			removePendingProjects(externalDuplicates);
-		}
-		Collection<IProject> duplicates = removeWorkspaceDuplicates(getPendingProjects(), null, null,
-				bundleProjectCandidates.getInstallable(), Msg.DUPLICATE_WS_BUNDLE_INSTALL_ERROR);
-		if (null != duplicates) {
-			Collection<IProject> installedRequirers = projectSorter.sortRequiringProjects(duplicates,
-					true);
-			if (installedRequirers.size() > 0) {
-				removePendingProjects(installedRequirers);
-			}
-		}
-
-		return status;
-	}
-
-	/**
-	 * Restore bundle state and any pending transitions from the previous session. Bundles in state
-	 * resolve of the IDE should retain their resolved state from their previous
-	 * session.
-	 * <p>
-	 * An exception to this rule, is to start bundles to only resolve when activated bundles to start
-	 * have requirements on a bundle to only resolve.
-	 * <p>
-	 * Note that additional bundles to start are added and bundles to not start are removed from the
-	 * set of bundles to activate
-	 * 
-	 * @throws CircularReferenceException - if cycles are detected in the bundle graph
-	 */
-//	private void restoreSessionStates() throws CircularReferenceException {
-//
-//		if (getIsRestoreSessionState() && null != activatedBundles && activatedBundles.size() > 0) {
-//			IEclipsePreferences prefs = Activator.getEclipsePreferenceStore();
-//			if (null == prefs) {
-//				addStatus(new BundleStatus(StatusCode.WARNING, Activator.PLUGIN_ID,
-//						Msg.INIT_WORKSPACE_STORE_WARN, null));
-//				return;
-//			}
-//			Collection<Bundle> resolveStateBundles = StatePersistParticipant.restoreActivationLevel(prefs,
-//					activatedBundles, Bundle.RESOLVED);
-//			if (resolveStateBundles.size() > 0) {
-//				// Do not start bundles that were in state resolved at last shutdown
-//				activatedBundles.removeAll(resolveStateBundles);
-//				// This is an additional verification check in case stored states or bundle activation mode
-//				// has been changed since last shutdown
-//				BundleClosures bc = new BundleClosures();
-//				Collection<Bundle> providingBundles = bc.bundleActivation(Closure.PROVIDING,
-//						activatedBundles, resolveStateBundles);
-//				// Does any bundles to only resolve provide capabilities to any of the bundles to start
-//				providingBundles.retainAll(resolveStateBundles);
-//				if (providingBundles.size() > 0) {
-//					// Start these, due to requirements from bundles to start
-//					activatedBundles.addAll(providingBundles);
-//					if (messageOptions.isBundleOperations()) {
-//						String msg = NLS.bind(Msg.CONDITIONAL_START_BUNDLE_INFO,
-//								new Object[] { bundleRegion.formatBundleList(providingBundles, true) });
-//						addLogStatus(new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, msg));
-//					}
-//				}
-//			}
-//			StatePersistParticipant.restorePendingTransitions(prefs);
-//			// Set to recovery mode in case of abnormal shutdown of the IDE
-//			StatePersistParticipant.saveSessionState(true);
-//		}
-//	}
-
-	@SuppressWarnings("unused")
-	private IBundleStatus removeBuildErrorClosures(Collection<Bundle> activatedBundles)
-			throws InPlaceException, CircularReferenceException {
-
-		IBundleStatus status = createStatus();
-		Collection<IProject> bundleErrorClosures = null;
-		Collection<IProject> activatedProjects = bundleRegion.getProjects(activatedBundles);
-		BundleBuildErrorClosure be = null;
-		try {
-			be = new BundleBuildErrorClosure(activatedProjects, Transition.ACTIVATE_BUNDLE,
-					Closure.REQUIRING, Bundle.INSTALLED, ActivationScope.ACTIVATED);
-			if (be.hasBuildErrors()) {
-				bundleErrorClosures = be.getBuildErrorClosures();
-				activatedProjects.removeAll(bundleErrorClosures);
-				if (messageOptions.isBundleOperations()) {
-					addLogStatus(be.getErrorClosureStatus());
-				}
-			}
-			be = new BundleBuildErrorClosure(activatedProjects, Transition.ACTIVATE_BUNDLE, Closure.PROVIDING,
-					Bundle.INSTALLED, ActivationScope.ALL);
-			if (be.hasBuildErrors()) {
-				if (null != bundleErrorClosures) {
-					bundleErrorClosures.addAll(be.getBuildErrorClosures());
-				} else {
-					bundleErrorClosures = be.getBuildErrorClosures();
-				}
-				if (messageOptions.isBundleOperations()) {
-					addLogStatus(be.getErrorClosureStatus());
-				}
-			}
-			if (null != bundleErrorClosures) {
-
-				Deactivate daj = new DeactivateJob(Msg.DEACTIVATE_BUNDLES_JOB, bundleErrorClosures);
-				Activator.getBundleExecutorEventService().add(daj, 0);
-				removePendingProjects(bundleErrorClosures);
-				if (null != activatedBundles) {
-					Collection<Bundle> bundleErrorClosure = bundleRegion.getBundles(bundleErrorClosures);
-					// Do not resolve activated bundle closures with build errors
-					for (Bundle bundle : bundleErrorClosure) {
-						bundleRegion.setActivation(bundle, false);
-					}
-					activatedBundles.removeAll(bundleErrorClosure);
-				}
-			}
-		} catch (CircularReferenceException e) {
-			bundleErrorClosures = be.getBuildErrors();
-			if (bundleErrorClosures.size() > 0) {
-				removePendingProjects(bundleErrorClosures);
-				if (null != activatedBundles) {
-					Collection<Bundle> bundleErrorClosure = bundleRegion.getBundles(bundleErrorClosures);
-					activatedBundles.removeAll(bundleErrorClosure);
-				}
-			}
-		}
-		return status;
-	}
-	
+	}	
 	/**
 	 * Number of ticks used by this job.
 	 * 

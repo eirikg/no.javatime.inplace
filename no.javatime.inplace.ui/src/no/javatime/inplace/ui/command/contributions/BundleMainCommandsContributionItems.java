@@ -165,7 +165,7 @@ public class BundleMainCommandsContributionItems extends BundleCommandsContribut
 					continue;
 				}
 				int state = bundleCommand.getState(bundle);
-				if (!Activator.getBundleProjectMetaService().isFragment(bundle)
+				if (!Activator.getBundleProjectMetaService().isCachedFragment(bundle)
 						&& (state & (Bundle.INSTALLED | Bundle.RESOLVED | Bundle.STOPPING)) != 0) {
 					nStart++;
 					continue;

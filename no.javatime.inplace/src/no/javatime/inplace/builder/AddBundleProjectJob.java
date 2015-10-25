@@ -8,20 +8,25 @@ import no.javatime.inplace.Activator;
 import no.javatime.inplace.builder.intface.AddBundleProject;
 import no.javatime.inplace.bundlejobs.ActivateBundleJob;
 import no.javatime.inplace.bundlejobs.ActivateProjectJob;
-import no.javatime.inplace.bundlejobs.InstallJob;
 import no.javatime.inplace.bundlejobs.NatureJob;
 import no.javatime.inplace.bundlejobs.intface.ActivateBundle;
 import no.javatime.inplace.bundlejobs.intface.ActivateProject;
-import no.javatime.inplace.bundlejobs.intface.Install;
 import no.javatime.inplace.bundlejobs.intface.ResourceState;
+import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.msg.Msg;
+import no.javatime.inplace.region.closure.BundleBuildErrorClosure;
 import no.javatime.inplace.region.closure.BundleClosures;
+import no.javatime.inplace.region.closure.BundleProjectBuildError;
 import no.javatime.inplace.region.closure.CircularReferenceException;
+import no.javatime.inplace.region.closure.ProjectBuildErrorClosure.ActivationScope;
 import no.javatime.inplace.region.events.TransitionEvent;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
 import no.javatime.inplace.region.intface.BundleTransitionListener;
+import no.javatime.inplace.region.intface.ExternalDuplicateException;
 import no.javatime.inplace.region.intface.InPlaceException;
+import no.javatime.inplace.region.intface.ProjectLocationException;
+import no.javatime.inplace.region.intface.WorkspaceDuplicateException;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
@@ -31,6 +36,7 @@ import no.javatime.util.messages.ExceptionMessage;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.osgi.framework.Bundle;
 
 class AddBundleProjectJob extends NatureJob implements AddBundleProject {
 
@@ -80,24 +86,34 @@ class AddBundleProjectJob extends NatureJob implements AddBundleProject {
 			if (newProjects.size() == 0) {
 				return getJobSatus();
 			}
+			// Register project if it is not going to be registered by install
+			for (IProject project : getPendingProjects()) {
+				bundleRegion.registerBundleProject(project, null, isProjectActivated(project));
+			}
 			// New (deactivated and activated) projects added to the workspace are already opened
 			// New projects should be in state uninstalled in a deactivated workspace
 			if (!isProjectWorkspaceActivated()) {
 				return getJobSatus();
 			}
-
-			// Install all new projects in an activated workspace
-			Install install = new InstallJob(Msg.INSTALL_JOB, newProjects);
-			install.setSaveWorkspaceSnaphot(false);
+			// Catch any fatal errors in new projects before install detects them
+			if (BundleProjectBuildError.getBundleErrors(newProjects, true).size() > 0) {
+				bundleTransition.addPendingCommand(getActivatedProjects(), Transition.DEACTIVATE);
+				return addStatus(new BundleStatus(StatusCode.JOBERROR, Activator.PLUGIN_ID, Msg.INSTALL_ERROR));				
+			}			
+			try {
+				// Install all new projects in an activated workspace
+				install(newProjects, monitor);
+			} catch (InPlaceException | WorkspaceDuplicateException | ExternalDuplicateException | ProjectLocationException e) {
+				bundleTransition.addPendingCommand(getActivatedProjects(), Transition.DEACTIVATE);
+				return addStatus(new BundleStatus(StatusCode.JOBERROR, Activator.PLUGIN_ID, Msg.INSTALL_ERROR));
+			}
 			ResourceState resourceState = Activator.getResourceStateService();
 			boolean isTriggerUpdate = resourceState.isTriggerUpdate();
-			Activator.getBundleExecutorEventService().add(install, 0);
 			// New and existing deactivated projects that provides capabilities to new and existing
 			// projects
 			Collection<IProject> deactivatedProviders = new LinkedHashSet<>();
 			// New projects that have the JavaTime nature enabled
 			Collection<IProject> newActivatedBundleProjects = new LinkedHashSet<>();
-
 			BundleClosures closures = new BundleClosures();
 			// Divide new projects in activated projects requiring capabilities from
 			// deactivated projects and activated projects independent on deactivated
@@ -106,16 +122,6 @@ class AddBundleProjectJob extends NatureJob implements AddBundleProject {
 				BundleTransitionListener.addBundleTransition(new TransitionEvent(newProject,
 						Transition.NEW_PROJECT));
 				bundleTransition.removePending(newProject, Transition.NEW_PROJECT);
-				// Build (calling pre and post build listener adding and removing the build transition)
-				// is run before this job
-//				if (!bundleProjectCandidates.isAutoBuilding()) {
-//					boolean activated = isProjectActivated(newProject);
-//					// Install which is already scheduled register the bundle project but it runs after this job
-//					bundleRegion.registerBundleProject(newProject, null, activated);
-//					if (activated) {
-//						bundleTransition.addPending(newProject, Transition.BUILD);
-//					}
-//				} 
 				// Deactivated projects that are not providers are already scheduled for install
 				// Project is not registered (install job is in waiting state) with the workspace yet.
 				if (isProjectActivated(newProject)) {
@@ -168,5 +174,34 @@ class AddBundleProjectJob extends NatureJob implements AddBundleProject {
 		}
 		return getJobSatus();
 	}	
+	
+	/**
+	 * Find and return build error closures among the specified deactivated projects to activate.
+	 * 
+	 * @param projects projects to activate with possible build error closures
+	 * @return set of providing build error closures or an empty set
+	 */
+	private Collection<IProject> buildErrorClosure(Collection<IProject> projects) {
+
+		// Deactivated providing closure. In this case the activation scope is deactivated as long as we
+		// are not checking activated providing or requiring bundles with build errors
+		// Activated requiring closure is not checked (see method comments)
+		// Note that the bundles to activate are not activated yet.
+		BundleBuildErrorClosure be = new BundleBuildErrorClosure(projects, Transition.ACTIVATE_PROJECT,
+				Closure.PROVIDING, Bundle.UNINSTALLED, ActivationScope.DEACTIVATED);
+		if (be.hasBuildErrors(true)) {
+			Collection<IProject> errorClosure = be.getBuildErrorClosures(true);
+			try {
+				if (messageOptions.isBundleOperations()) {
+					addLogStatus(be.getErrorClosureStatus());
+				}
+			} catch (ExtenderException e) {
+				addLogStatus(be.getErrorClosureStatus());
+			}
+			return errorClosure;
+		}
+		return Collections.<IProject> emptySet();
+	}
+
 }
  

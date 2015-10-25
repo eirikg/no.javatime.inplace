@@ -4,7 +4,7 @@ import no.javatime.inplace.bundlejobs.intface.BundleExecutor;
 
 
 /**
- * Add external bundle projects to the workspace region. An external or new bundle project is a
+ * Add external projects to the workspace region. An external or new project is a
  * project that is opened, imported, created or renamed and needs to be installed or resolved.
  * <p>
  * A renamed project in an activated workspace is uninstalled in the pre change listener before it

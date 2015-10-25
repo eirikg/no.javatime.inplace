@@ -47,65 +47,69 @@ public class BundleTransitionImpl implements BundleTransition {
 	}
 
 	@Override
-	public boolean setTransitionError(IProject project) throws ProjectLocationException {
+	public boolean setBuildTransitionError(IProject project) throws ProjectLocationException {
 		BundleNode bn = ws.getBundleNode(project);
 		if (null == bn) {
 			return false;
 		}		
-		return bn.setTransitionError(TransitionError.ERROR);
+		bn.setBuildTransitionError(TransitionError.ERROR);
+		return true;
 	}
 
 	@Override
-	public boolean setTransitionError(IProject project, TransitionError error) throws ProjectLocationException {
+	public boolean setBuildTransitionError(IProject project, TransitionError error) throws ProjectLocationException {
 
 		BundleNode bn = ws.getBundleNode(project);
 		if (null == bn) {
 			return false;
 		}		
-		return bn.setTransitionError(error);
+		bn.setBuildTransitionError(error);
+		return true;
 	}
 	
 	@Override
-	public boolean setTransitionError(Bundle bundle) {
+	public boolean setBuildTransitionError(Bundle bundle) {
 		if (null == bundle) {
 			return false;
 		}
 		BundleNode bn = ws.getBundleNode(bundle);
-		return bn.setTransitionError(TransitionError.ERROR);
+		bn.setBuildTransitionError(TransitionError.ERROR);
+		return true;
 	}
 
 	@Override
-	public boolean setTransitionError(Bundle bundle, TransitionError error) {
+	public boolean setBuildTransitionError(Bundle bundle, TransitionError error) {
 		if (null == bundle) {
 			return false;
 		}
 		BundleNode bn = ws.getBundleNode(bundle);
-		return bn.setTransitionError(error);
+		bn.setBuildTransitionError(error);
+		return true;
 	}
 	
 	@Override
-	public boolean hasTransitionError(IProject project) throws ProjectLocationException {
+	public boolean hasBuildTransitionError(IProject project) throws ProjectLocationException {
 		BundleNode bn = ws.getBundleNode(project);
 		if (null == bn) {
 			return false;
 		}
-		return bn.hasTransitionError();
+		return bn.hasBuildTransitionError();
 	}
 
 	@Override
-	public boolean hasTransitionError(Bundle bundle) {
+	public boolean hasBuildTransitionError(Bundle bundle) {
 		BundleNode bn = ws.getBundleNode(bundle);
 		if (null == bn) {
 			return false;
 		}
-		return bn.hasTransitionError();
+		return bn.hasBuildTransitionError();
 	}
 
 	@Override
-	public boolean hasTransitionError(TransitionError transitionError) {
+	public boolean hasBuildTransitionError(TransitionError transitionError) {
 		for (IProject project : ws.getProjects()) {
 			BundleNode bn = ws.getBundleNode(project);
-			if  (bn.hasTransitionError()) {
+			if  (bn.hasBuildTransitionError()) {
 				return true;
 			}
 		}
@@ -113,16 +117,25 @@ public class BundleTransitionImpl implements BundleTransition {
 	}
 	
 	@Override
-	public TransitionError getError(IProject project) throws ProjectLocationException {
+	public TransitionError getBuildError(IProject project) throws ProjectLocationException {
 		BundleNode bn = ws.getBundleNode(project);
 		if (null == bn) {
 			return TransitionError.NOERROR;
 		}		
-		return bn.getTransitionError();
+		return bn.getBuildTransitionError();
 	}
 
+	public TransitionError getBundleError(IProject project) throws ProjectLocationException {
+		BundleNode bn = ws.getBundleNode(project);
+		if (null == bn) {
+			return TransitionError.NOERROR;
+		}		
+		return bn.getBundleTransitionError();
+	}
+
+
 	@Override
-	public TransitionError getError(Bundle bundle) throws ProjectLocationException {
+	public TransitionError getBuildError(Bundle bundle) throws ProjectLocationException {
 
 		if (null == bundle) {
 			return TransitionError.NOERROR;
@@ -132,47 +145,70 @@ public class BundleTransitionImpl implements BundleTransition {
 		if (null == bn) {
 			return TransitionError.NOERROR;			
 		}
-		return bn.getTransitionError();
+		return bn.getBuildTransitionError();
 	}
 	
 	@Override
-	public boolean clearTransitionError(IProject project) throws ProjectLocationException {
+	public boolean clearBuildTransitionError(IProject project) throws ProjectLocationException {
 
 		BundleNode bn = ws.getBundleNode(project);
 		if (null == bn) {
 			return false;
 		}		
-		return bn.clearTransitionError();
+		return bn.clearBuildTransitionError();
 	}
 
-	@Override
-	public boolean removeTransitionError(IProject project, TransitionError transitionError) throws ProjectLocationException {
+	/**
+	 * Remove the specified transition from bundle projects
+	 * 
+	 * @param transitionError to remove from all bundle projects containing the error
+	 * @throws ProjectLocationException if the specified project is null or the location of the
+	 * specified project could not be found
+	 */
+	@SuppressWarnings("unused")
+	private boolean removeBuildTransitionError(IProject project, TransitionError transitionError) throws ProjectLocationException {
 		BundleNode bn = ws.getBundleNode(project);
 		if (null == bn) {
 			return false;
 		}		
-		return bn.removeTransitionError(transitionError);
+		return bn.removeBuildTransitionError(transitionError);
 	}
 	
-	@Override
-	public void removeTransitionError(TransitionError transitionError) throws ProjectLocationException {
+	/**
+	 * Get all projects among the specified projects that contains the specified pending transition
+	 * 
+	 * @param projects bundle projects to check for the specified transition
+	 * @param transition transition to check for in the specified projects
+	 * @return all projects among the specified projects containing the specified transition or an
+	 * empty collection
+	 */
+	@SuppressWarnings("unused")
+	private void removeBuildTransitionError(TransitionError transitionError) throws ProjectLocationException {
 		for (IProject project : ws.getProjects()) {
 			BundleNode bn = ws.getBundleNode(project);
 			if (null == bn) {
 				continue;
 			}		
-			bn.removeTransitionError(transitionError);			
+			bn.removeBuildTransitionError(transitionError);			
 		}
 	}
 
-	@Override
-	public boolean removeTransitionError(Bundle bundle, TransitionError transitionError) {
+	/**
+	 * Get all bundles among the specified bundles that contains the specified transition
+	 * 
+	 * @param bundles bundle projects to check for the specified transition
+	 * @param transition transition to check for in the specified projects
+	 * @return all bundles among the specified bundles containing the specified transition or an empty
+	 * collection
+	 */
+	@SuppressWarnings("unused")
+	private boolean removeBuildTransitionError(Bundle bundle, TransitionError transitionError) {
 
 		if (null == bundle) {
 			return false;
 		}
 		BundleNode bn = ws.getBundleNode(bundle);
-		return bn.removeTransitionError(transitionError);
+		return bn.removeBuildTransitionError(transitionError);
 	}
 
 	@Override
@@ -181,7 +217,6 @@ public class BundleTransitionImpl implements BundleTransition {
 		if (null == bn) {
 			return null;
 		}
-		bn.clearTransitionError();
 		return bn.setTransition(transition);
 	}
 
@@ -191,7 +226,6 @@ public class BundleTransitionImpl implements BundleTransition {
 		if (null == bn) {
 			return null;
 		}		
-		bn.clearTransitionError();
 		return bn.setTransition(transition);
 	}
 	
@@ -230,17 +264,17 @@ public class BundleTransitionImpl implements BundleTransition {
 	}
 	
 	@Override
-	public EnumSet<BundleTransition.Transition> getPendingTransitions(IProject project) {
+	public EnumSet<Transition> getPendingTransitions(IProject project) {
 		return ws.getPendingCommands(project);
 	}
 	
 	@Override
-	public Collection<IProject> getPendingProjects(Collection<IProject> projects, BundleTransition.Transition command) {
+	public Collection<IProject> getPendingProjects(Collection<IProject> projects, Transition command) {
 		return ws.getPendingProjects(projects, command);
 	}
 
 	@Override
-	public Collection<Bundle> getPendingBundles(Collection<Bundle> bundles, BundleTransition.Transition command) {
+	public Collection<Bundle> getPendingBundles(Collection<Bundle> bundles, Transition command) {
 		return ws.getPendingBundles(bundles, command);
 	}
 
@@ -252,6 +286,11 @@ public class BundleTransitionImpl implements BundleTransition {
 	@Override
 	public void addPending(IProject project, Transition operation) {
 		ws.addPendingCommand(project, operation);
+	}
+
+	@Override
+	public void addPendingCommand(Collection<IProject> projects, Transition operation) {
+		ws.addPendingCommand(projects, operation);
 	}
 	
 	@Override

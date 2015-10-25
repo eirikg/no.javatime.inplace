@@ -13,8 +13,6 @@ import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.log.intface.BundleLogException;
 import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.closure.BundleBuildErrorClosure;
-import no.javatime.inplace.region.closure.BundleProjectBuildError;
-import no.javatime.inplace.region.closure.CircularReferenceException;
 import no.javatime.inplace.region.closure.ProjectBuildErrorClosure.ActivationScope;
 import no.javatime.inplace.region.intface.BundleRegion;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
@@ -142,15 +140,16 @@ public class SessionManager implements IStartup, IWorkbenchListener {
 					deactivateJob.setSaveWorkspaceSnaphot(false);
 					// Saving is determined by the user when the workbench is closing
 					deactivateJob.setSaveFiles(false);
+					deactivateJob.setCheckBuildErrors(true);
 					Activator.getBundleExecutorEventService().add(deactivateJob, 0);
-					// Wait for builder and bundle jobs to finish before proceeding
-					resourceState.waitOnBuilder(false);
+					// Wait on bundle job and builder to finish before proceeding
 					resourceState.waitOnBundleJob();
 					if (deactivateJob.getErrorStatusList().size() > 0) {
 						final IBundleStatus multiStatus = deactivateJob.createMultiStatus(new BundleStatus(
 								StatusCode.ERROR, Activator.PLUGIN_ID, deactivateJob.getName()));
 						errorStatusList.add(multiStatus);
 					}
+					resourceState.waitOnBuilder(false);
 				}
 				if (projectsToDeactivate.size() < activatedProjects.size()) {
 					// Uninstall in an activated workspace
@@ -161,14 +160,14 @@ public class SessionManager implements IStartup, IWorkbenchListener {
 					// Saving is determined by the user when the workbench is closing
 					uninstallJob.setSaveFiles(false);
 					Activator.getBundleExecutorEventService().add(uninstallJob, 0);
-					// Wait for builder and bundle jobs to finish before proceeding
-					resourceState.waitOnBuilder(false);
+					// Wait on bundle job and builder to finish before proceeding
 					resourceState.waitOnBundleJob();
 					if (uninstallJob.getErrorStatusList().size() > 0) {
 						final IBundleStatus multiStatus = uninstallJob.createMultiStatus(new BundleStatus(
 								StatusCode.ERROR, Activator.PLUGIN_ID, uninstallJob.getName()));
 						errorStatusList.add(multiStatus);
 					}
+					resourceState.waitOnBuilder(false);
 				} else {
 					// Activation levels are always in state uninstalled and not saved in an deactivated
 					// workspace. Save transition state for bundles in a deactivated workspace
@@ -222,49 +221,33 @@ public class SessionManager implements IStartup, IWorkbenchListener {
 	}
 
 	/**
-	 * If there are build errors among the closures of the specified activated bundle projects or the
-	 * "Deactivate on Exit" option is on this signals that bundle projects should be deactivated
-	 * instead of activated at start up.
+	 * If there are bundle projects with errors and the workspace is activated or the
+	 * "Deactivate on Exit" option is on return the set of activated projects
 	 * <p>
-	 * The following closure is checked for build errors:
-	 * <ol>
-	 * <br>
-	 * <li><b>Providing resolve closures</b>
-	 * <p>
-	 * <br>
-	 * <b>Deactivated providing closure.</b> Resolve is rejected when deactivated bundles with build
-	 * errors provides capabilities to projects to resolve (and start). This closure require the
-	 * providing bundles to be activated when the requiring bundles are resolved. This is usually an
-	 * impossible position. Activating and updating does not allow a requiring bundle to activate
-	 * without activating the providing bundle.
-	 * <p>
-	 * <br>
-	 * <b>Activated providing closure.</b> It is illegal to resolve an activated project when there
-	 * are activated bundles with build errors that provides capabilities to the project to resolve.
-	 * The requiring bundles to resolve will force the providing bundles with build errors to resolve.
-	 * </ol>
-	 * 
-	 * @param activatedProjects all or a scope of activated bundle projects
-	 * @return true if there are build errors among the closures of activated bundle projects or the
-	 * "Deactivate on Exit" option is on.
+	 * @param projects all workspace bundle projects
+	 * @param all activated bundle projects 
+	 * @return The set of specified activated projects if there are build errors among any projects or
+	 * the "Deactivate on Exit" option is on. Otherwise return an empty set.
 	 */
 	public static Collection<IProject> isDeactivateOnExit(Collection<IProject> projects,
-			Collection<IProject> activatedProjects) throws ExtenderException, CircularReferenceException {
+			Collection<IProject> activatedProjects) {
 
-		// Deactivate workspace if some projects are missing build state
-		if (BundleProjectBuildError.hasBuildState(projects).size() > 0) {
+		try {
+			if (Activator.getCommandOptionsService().isDeactivateOnExit()) {
+				return activatedProjects;
+			} 
+		} catch (ExtenderException e) {
+			StatusManager.getManager().handle(
+					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),
+					StatusManager.LOG);
 			return activatedProjects;
 		}
 		// Deactivated and activated providing closure. Deactivated and activated projects with build
 		// errors providing capabilities to project to resolve (and start) at startup
-		BundleBuildErrorClosure be = new BundleBuildErrorClosure(activatedProjects,
-				Transition.DEACTIVATE, Closure.PROVIDING, Bundle.UNINSTALLED, ActivationScope.ALL);
-		if (Activator.getCommandOptionsService().isDeactivateOnExit()) {
-			return activatedProjects;
-		} else if (be.hasBuildErrors()) {
-			return be.getBuildErrorClosures();
-		}
-		return Collections.<IProject> emptySet();
+		BundleBuildErrorClosure be = new BundleBuildErrorClosure(projects, Transition.DEACTIVATE,
+				Closure.PROVIDING, Bundle.UNINSTALLED, ActivationScope.ALL);
+		Collection<IProject> projectsToDeactivate = be.getBuildErrorClosures(true);
+		return projectsToDeactivate.size() > 0 ? activatedProjects : Collections.<IProject> emptySet(); 
 	}
 
 	/**

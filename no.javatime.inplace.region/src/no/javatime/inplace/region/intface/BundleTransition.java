@@ -206,15 +206,15 @@ public interface BundleTransition {
 	}
 
 	public static enum TransitionError {
-		NOERROR, ERROR, EXCEPTION, DUPLICATE, CYCLE, BUILD, DEPENDENCY, STATECHANGE,
+		NOERROR, ERROR, SERVICE_EXCEPTION, WORKSPACE_DUPLICATE, EXTERNAL_DUPLICATE, CYCLE, BUILD, DEPENDENCY, SERVICE_STATECHANGE,
 		/**
 		 * A state indicating that a bundle command/operation did not complete or did complete, but
 		 * possibly in an inconsistent manner. May for instance happen when executing an infinite loop
-		 * in Start/Stop methods. Never ending or operations that timeout will have an incomplete
+		 * in Start/Stop methods. Never ending operations and operations that time out will have an incomplete
 		 * transition error and the state will be the state the bundle had when the previous transition
 		 * ended.
 		 */
-		INCOMPLETE, UNINSTALL
+		SERVICE_INCOMPLETE, UNINSTALL
 	}
 
 	/**
@@ -304,9 +304,9 @@ public interface BundleTransition {
 	 * false
 	 * @throws ProjectLocationException if the specified project is null or the location of the
 	 * specified project could not be found
-	 * @see #setTransitionError(IProject, TransitionError)
+	 * @see #setBuildTransitionError(IProject, TransitionError)
 	 */
-	boolean setTransitionError(IProject project) throws ProjectLocationException;
+	boolean setBuildTransitionError(IProject project) throws ProjectLocationException;
 
 	/**
 	 * Mark the current transition of the specified bundle project with the specified transition error
@@ -319,7 +319,7 @@ public interface BundleTransition {
 	 * @throws ProjectLocationException if the specified project is null or the location of the
 	 * specified project could not be found
 	 */
-	boolean setTransitionError(IProject project, TransitionError error)
+	boolean setBuildTransitionError(IProject project, TransitionError error)
 			throws ProjectLocationException;
 
 	/**
@@ -329,9 +329,9 @@ public interface BundleTransition {
 	 * @param bundle bundle project with a transition to be marked as erroneous.
 	 * @return true if the error was set on transition for the specified bundle project, otherwise
 	 * false
-	 * @see #setTransitionError(Bundle, TransitionError)
+	 * @see #setBuildTransitionError(Bundle, TransitionError)
 	 */
-	boolean setTransitionError(Bundle bundle);
+	boolean setBuildTransitionError(Bundle bundle);
 
 	/**
 	 * Mark the current transition of the specified bundle project with the specified transition error
@@ -342,7 +342,7 @@ public interface BundleTransition {
 	 * @return true if the error was set on transition for the specified bundle project, otherwise
 	 * false
 	 */
-	boolean setTransitionError(Bundle bundle, TransitionError error);
+	boolean setBuildTransitionError(Bundle bundle, TransitionError error);
 
 	/**
 	 * Check if the current transition of the specified bundle project is erroneous.
@@ -353,7 +353,7 @@ public interface BundleTransition {
 	 * @throws ProjectLocationException if the specified project is null or the location of the
 	 * specified project could not be found
 	 */
-	boolean hasTransitionError(IProject project) throws ProjectLocationException;
+	boolean hasBuildTransitionError(IProject project) throws ProjectLocationException;
 
 	/**
 	 * Check if the current transition of the specified bundle project is erroneous.
@@ -362,7 +362,7 @@ public interface BundleTransition {
 	 * @return true if the current transition of the specified bundle project is erroneous or false if
 	 * not.
 	 */
-	boolean hasTransitionError(Bundle bundle);
+	boolean hasBuildTransitionError(Bundle bundle);
 
 	/**
 	 * Check if the specified transition error exist among at least one of the workspace bundle
@@ -372,7 +372,7 @@ public interface BundleTransition {
 	 * @return true if the specified transition error exist among at least one of the bundle projects
 	 * in the workspace
 	 */
-	boolean hasTransitionError(TransitionError transitionError);
+	boolean hasBuildTransitionError(TransitionError transitionError);
 
 	/**
 	 * Get the error associated with bundle project or {@code TransitionError#NOERROR} if no error
@@ -382,7 +382,17 @@ public interface BundleTransition {
 	 * @throws ProjectLocationException if the specified project is null or the location of the
 	 * specified project could not be found
 	 */
-	TransitionError getError(IProject project) throws ProjectLocationException;
+	TransitionError getBuildError(IProject project) throws ProjectLocationException;
+	
+	/**
+	 * Get the bundle error associated with bundle project or {@code TransitionError#NOERROR} if no error
+	 * 
+	 * @param project the bundle project containing the transition error
+	 * @return one of the {@code TransitionError} types or {@code TransitionError#NOERROR}
+	 * @throws ProjectLocationException if the specified project is null or the location of the
+	 * specified project could not be found
+	 */
+	TransitionError getBundleError(IProject project) throws ProjectLocationException;
 
 	/**
 	 * Get the error associated with bundle project or {@code TransitionError#NOERROR} if no error
@@ -390,7 +400,7 @@ public interface BundleTransition {
 	 * @param bundle the bundle project containing the transition error
 	 * @return one of the {@code TransitionError} types or {@code TransitionError#NOERROR}
 	 */
-	TransitionError getError(Bundle bundle);
+	TransitionError getBuildError(Bundle bundle);
 
 	/**
 	 * Clear the error flag of the current transition of the specified bundle project.
@@ -400,37 +410,7 @@ public interface BundleTransition {
 	 * @throws ProjectLocationException if the specified project is null or the location of the
 	 * specified project could not be found
 	 */
-	boolean clearTransitionError(IProject project) throws ProjectLocationException;
-
-	/**
-	 * Remove the specified transition error for a bundle project if the error exists
-	 * 
-	 * @param project the bundle project to remove the transition error for
-	 * @param transitionError the transition error to remove
-	 * @return true if the specified transition error was removed. Otherwise false
-	 * @throws ProjectLocationException if the specified project is null or the location of the
-	 * specified project could not be found
-	 */
-	boolean removeTransitionError(IProject project, TransitionError transitionError)
-			throws ProjectLocationException;
-
-	/**
-	 * Remove the specified transition error for a bundle project if the error exists
-	 * 
-	 * @param bundle the bundle project to remove the transition error for
-	 * @param transitionError the transition error to remove
-	 * @return true if the specified transition error was removed. Otherwise false
-	 */
-	boolean removeTransitionError(Bundle bundle, TransitionError transitionError);
-
-	/**
-	 * Remove the specified transition from bundle projects
-	 * 
-	 * @param transitionError to remove from all bundle projects containing the error
-	 * @throws ProjectLocationException if the specified project is null or the location of the
-	 * specified project could not be found
-	 */
-	void removeTransitionError(TransitionError transitionError) throws ProjectLocationException;
+	boolean clearBuildTransitionError(IProject project) throws ProjectLocationException;
 
 	/**
 	 * Get all projects among the specified projects that contains the specified pending transition
@@ -516,6 +496,14 @@ public interface BundleTransition {
 	 * @param transition to register with this bundle project
 	 */
 	public void addPending(IProject project, Transition transition);
+
+	/**
+	 * Add a pending bundle operation to the specified bundle projects
+	 * 
+	 * @param project bundle projects to add the pending operation to
+	 * @param operation to register with the bundle projects
+	 */
+	void addPendingCommand(Collection<IProject> projects, Transition operation);
 
 	/**
 	 * Add a pending transition to the bundle project. This is the same as using

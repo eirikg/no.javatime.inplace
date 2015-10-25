@@ -17,15 +17,19 @@ import java.io.InputStream;
 import java.net.URL;
 import java.util.Collection;
 import java.util.Dictionary;
+import java.util.Map;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 
+import no.javatime.inplace.region.Activator;
 import no.javatime.inplace.region.intface.BundleProjectCandidates;
 import no.javatime.inplace.region.intface.BundleProjectMeta;
 import no.javatime.inplace.region.intface.BundleRegion;
 import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.intface.ProjectLocationException;
 import no.javatime.inplace.region.manager.WorkspaceRegionImpl;
+import no.javatime.inplace.region.status.BundleStatus;
+import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import no.javatime.util.messages.ExceptionMessage;
 
 import org.eclipse.core.resources.IFile;
@@ -48,14 +52,95 @@ import org.osgi.framework.Constants;
  */
 public class CachedManifestOperationsImpl {
 
-	@SuppressWarnings("unused")
+	/**
+	 * Get the first header value of the specified header for the specified project
+	 * 
+	 * @param project project with the specified header
+	 * @param header header with a set of values  
+	 * @return the first value in the specified header or null
+	 * @throws InPlaceException if the manifest has an invalid syntax or if an error occurs while reading the manifest
+	 */
+	public String getHeader(IProject project, String header) throws InPlaceException {
+
+		String key = null; 
+		if (null != project && project.isAccessible()) {
+			IFile manifestFile = getManifestFile(project);
+			if (manifestFile.exists()) {
+				try {
+					Map<String, String> headers = ManifestElement.parseBundleManifest(manifestFile.getContents(), null);
+					key = getHeaderValue(headers, header);
+				} catch (CoreException | IOException | BundleException e) {
+					throw new InPlaceException(new BundleStatus(StatusCode.ERROR, Activator.PLUGIN_ID, e.getMessage(), e));
+				}
+			}
+		}
+		return key;
+	}
+	
+	/**
+	 * Get the manifest file of the specified project
+	 * 
+	 * @param project containing the manifest file
+	 * @return the handle of the manifest file or null if project is null
+	 */
+	public IFile getManifestFile(IProject project) {
+		if (null != project) {
+		IFile manifestFile = project.getFile(BundleProjectMeta.MANIFEST_RELATIVE_PATH
+				+ BundleProjectMetaImpl.MANIFEST_FILE_NAME);
+		return manifestFile;
+		}
+		return null;
+	}
+	
+	/**
+	 * Returns the header value from the Map of ManifestElement's or <code>null</code> if none.
+	 * 
+	 * @param headers map of ManifestElement's
+	 * @param key header name
+	 * @return header value or <code>null</code>
+	 * @throws CoreException if the header value is invalid
+	 */
+	private String getHeaderValue(Map<String, String> headers, String key) throws CoreException {
+		ManifestElement[] elements = parseHeader(headers, key);
+		if (elements != null) {
+			if (elements.length > 0) {
+				return elements[0].getValue();
+			}
+		}
+		return null;
+	}
+	/**
+	 * Parses the specified header.
+	 * 
+	 * @param headers all manifest headers
+	 * @param key the key of the header values to return
+	 * @return elements or <code>null</code> if none
+	 * @throws InPlaceException if the header value is invalid
+	 */
+	protected ManifestElement[] parseHeader(Map<String, String> headers, String key) throws InPlaceException {
+
+		String value = headers.get(key);
+		if (value != null) {
+			if (value.trim().length() > 0) {
+				try {
+					return ManifestElement.parseHeader(key, value);
+				} catch (BundleException e) {
+					throw new InPlaceException(new BundleStatus(StatusCode.ERROR, Activator.PLUGIN_ID, e.getMessage(), e));
+				}
+			}
+			// empty header
+			return new ManifestElement[0];
+		}
+		return null;
+	}
+
+		@SuppressWarnings("unused")
 	private void setActivationPolicy(Collection<IProject> projects, Boolean eagerActivation) {
 		if (null == projects) {
 			return;
 		}
 		for (IProject project : projects) {
-			IFile manifestFile = project.getFile(BundleProjectMeta.MANIFEST_RELATIVE_PATH
-					+ BundleProjectMeta.MANIFEST_FILE_NAME);
+			IFile manifestFile = getManifestFile(project);
 			Manifest manifest = loadManifest(project, manifestFile);
 			Attributes attributes = manifest.getMainAttributes();
 			String lazyPolicy = attributes.getValue(Constants.BUNDLE_ACTIVATIONPOLICY);
@@ -89,7 +174,7 @@ public class CachedManifestOperationsImpl {
 		if (null == project) {
 			return;
 		}
-		IFile manifestFile = project.getFile(BundleProjectMetaImpl.MANIFEST_FILE_NAME);
+		IFile manifestFile = getManifestFile(project);
 		Manifest manifest = loadManifest(project, manifestFile);
 		Attributes attributes = manifest.getMainAttributes();
 		String policy = attributes.getValue(Constants.BUNDLE_ACTIVATIONPOLICY);
@@ -125,7 +210,7 @@ public class CachedManifestOperationsImpl {
 	/* (non-Javadoc)
 	 * @see no.javatime.inplace.region.project.CachedmanifestOperations#isFragment(org.osgi.framework.Bundle)
 	 */
-	public Boolean isFragment(Bundle bundle) throws InPlaceException {
+	public Boolean isCachedFragment(Bundle bundle) throws InPlaceException {
 		if (null == bundle) {
 			throw new InPlaceException(ExceptionMessage.getInstance().getString("null_bundle_check_fragment"));
 		}
@@ -302,5 +387,24 @@ public class CachedManifestOperationsImpl {
 		} catch (CoreException e) {
 			throw new InPlaceException(e, "manifest_io_project", project.getName());
 		}
+	}
+
+	/**
+	 * Check for existence of a manifest file at the default location in the specified project
+	 * 
+	 * @param project to check for the existence of a manifest file at the default location
+	 * @return true if the manifest file exist at the default location and false otherwise
+	 * @see BundleProjectMeta#MANIFEST_RELATIVE_PATH
+	 * @see BundleProjectMeta#MANIFEST_FILE_NAME
+	 */
+	public boolean hasManifest(IProject project) {
+		if (null != project && project.isAccessible()) {
+			IFile manifestFile = project.getFile(BundleProjectMeta.MANIFEST_RELATIVE_PATH
+					+ BundleProjectMetaImpl.MANIFEST_FILE_NAME);
+			if (manifestFile.exists()) {
+				return true;
+			}
+		}
+		return false;
 	}	
 }

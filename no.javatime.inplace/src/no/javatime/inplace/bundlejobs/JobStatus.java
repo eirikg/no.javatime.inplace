@@ -4,6 +4,7 @@ import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
 
 import no.javatime.inplace.Activator;
@@ -13,6 +14,7 @@ import no.javatime.inplace.dl.preferences.intface.CommandOptions;
 import no.javatime.inplace.dl.preferences.intface.MessageOptions;
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.msg.Msg;
+import no.javatime.inplace.region.closure.CircularReferenceException;
 import no.javatime.inplace.region.closure.ProjectSorter;
 import no.javatime.inplace.region.events.BundleTransitionEvent;
 import no.javatime.inplace.region.events.BundleTransitionEventListener;
@@ -22,9 +24,9 @@ import no.javatime.inplace.region.intface.BundleProjectMeta;
 import no.javatime.inplace.region.intface.BundleRegion;
 import no.javatime.inplace.region.intface.BundleTransition;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
-import no.javatime.inplace.region.intface.DuplicateBundleException;
 import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.intface.ProjectLocationException;
+import no.javatime.inplace.region.intface.WorkspaceDuplicateException;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
@@ -325,11 +327,6 @@ public class JobStatus extends WorkspaceJob implements BundleTransitionEventList
 		IBundleStatus status = new BundleStatus(StatusCode.ERROR, Activator.PLUGIN_ID, project,
 				message, e);
 		this.errStatusList.add(status);
-		try {
-			bundleTransition.setTransitionError(project);
-		} catch (ProjectLocationException locEx) {
-			errorSettingTransition(project, locEx);
-		}
 		return status;
 	}
 
@@ -414,11 +411,6 @@ public class JobStatus extends WorkspaceJob implements BundleTransitionEventList
 		IBundleStatus status = new BundleStatus(StatusCode.ERROR, Activator.PLUGIN_ID, bundle, message,
 				e);
 		this.errStatusList.add(status);
-		try {
-			bundleTransition.setTransitionError(bundleRegion.getProject(bundle));
-		} catch (ProjectLocationException locEx) {
-			errorSettingTransition(bundleRegion.getProject(bundle), locEx);
-		}
 		return status;
 	}
 
@@ -432,11 +424,6 @@ public class JobStatus extends WorkspaceJob implements BundleTransitionEventList
 	protected IBundleStatus addError(Throwable e, IProject project) {
 		IBundleStatus status = new BundleStatus(StatusCode.ERROR, Activator.PLUGIN_ID, project, null, e);
 		this.errStatusList.add(status);
-		try {
-			bundleTransition.setTransitionError(project);
-		} catch (ProjectLocationException locEx) {
-			errorSettingTransition(project, locEx);
-		}
 		return status;
 	}
 
@@ -642,6 +629,99 @@ public class JobStatus extends WorkspaceJob implements BundleTransitionEventList
 		this.errStatusList.clear();
 	}
 
+	/**
+	 * Compares bundle projects for the same symbolic name and version. Each specified project is
+	 * compared to all other valid workspace projects as specified by
+	 * {@link BundleProjectCandidates#getInstallable()}.
+	 * <p>
+	 * When duplicates are detected the providing project - if any - in a set of duplicates is treated
+	 * as the one to be installed or updated while the rest of the duplicates in the set are those
+	 * left uninstalled or not updated. This becomes indirectly evident from the formulation of the
+	 * error messages sent to the log view.
+	 * <p>
+	 * Any errors that occurs while retrieving the symbolic name and version of bundles are added to
+	 * the job status list
+	 * 
+	 * @param duplicateProject duplicate project
+	 * @param duplicateException the duplicate exception object associated with the specified
+	 * duplicate project
+	 * @param message Extra info status message. Can be null 
+	 * @return a list of duplicate tuples. Returns an empty list if no duplicates are found.
+	 * @throws CircularReferenceException if cycles are detected in the project graph
+	 * @see #getErrorStatusList()
+	 */
+	protected Collection<IProject> handleDuplicateException(IProject duplicateProject,
+			WorkspaceDuplicateException duplicateException, String message)
+			throws CircularReferenceException {
+
+		// List of detected duplicate tuples
+		Collection<IProject> duplicates = new LinkedHashSet<IProject>();
+		String duplicateCandidateKey = bundleRegion.getSymbolicKey(null, duplicateProject);
+		if (null == duplicateCandidateKey || duplicateCandidateKey.length() == 0) {
+			String msg = ErrorMessage.getInstance().formatString("project_symbolic_identifier",
+					duplicateProject.getName());
+			addError(null, msg, duplicateProject);
+			return null;
+		}
+		ProjectSorter ps = new ProjectSorter();
+		ps.setAllowCycles(true);
+		Collection<IProject> installableProjects = bundleProjectCandidates.getInstallable();
+		installableProjects.remove(duplicateProject);
+		for (IProject duplicateProjectCandidate : installableProjects) {
+			IBundleStatus startStatus = null;
+			try {
+				String symbolicKey = bundleRegion.getSymbolicKey(null, duplicateProjectCandidate);
+				if (null == symbolicKey || symbolicKey.length() == 0) {
+					String msg = ErrorMessage.getInstance().formatString("project_symbolic_identifier",
+							duplicateProjectCandidate.getName());
+					addError(null, msg, duplicateProjectCandidate);
+					continue;
+				}
+				if (symbolicKey.equals(duplicateCandidateKey)) {
+					throw new WorkspaceDuplicateException("duplicate_bundle_project", symbolicKey,
+							duplicateProject.getName(), duplicateProjectCandidate.getName());
+				}
+			} catch (WorkspaceDuplicateException e) {
+				// Build the multi status error log message
+				String msg = null;
+				try {
+					msg = ErrorMessage.getInstance().formatString("duplicate_error",
+							bundleProjectMeta.getSymbolicName(duplicateProject),
+							bundleProjectMeta.getBundleVersion(duplicateProject));
+					startStatus = addError(e, msg, duplicateProject);
+					addError(null, e.getLocalizedMessage());
+					addError(duplicateException, duplicateException.getLocalizedMessage(), duplicateProject);
+					
+					// Inform about the requiring projects of the duplicate project
+					Collection<IProject> duplicateClosureSet = ps.sortRequiringProjects(Collections
+							.<IProject> singleton(duplicateProject));
+					duplicateClosureSet.remove(duplicateProject);
+					if (duplicateClosureSet.size() > 0) {
+						String affectedBundlesMsg = ErrorMessage.getInstance().formatString(
+								"duplicate_affected_bundles", duplicateProject.getName(),
+								bundleProjectCandidates.formatProjectList(duplicateClosureSet));
+						addInfoMessage(affectedBundlesMsg);
+					}
+					if (null != message) {
+						addInfoMessage(message);
+					}
+					String rootMsg = ExceptionMessage.getInstance().formatString("root_duplicate_exception");
+					createMultiStatus(new BundleStatus(StatusCode.ERROR, Activator.PLUGIN_ID, rootMsg),
+							startStatus);
+				} catch (InPlaceException e1) {
+					addError(e1, e1.getLocalizedMessage());
+				} finally {
+					duplicates.add(duplicateProjectCandidate);
+				}
+			} catch (ProjectLocationException e) {
+				addError(e, e.getLocalizedMessage(), duplicateProject);
+			} catch (InPlaceException e) {
+				addError(e, e.getLocalizedMessage(), duplicateProject);
+			}
+		}
+		return duplicates;
+	}
+
 	@SuppressWarnings("unused")
 	private IBundleStatus formateBundleStatus(Collection<IBundleStatus> statusList, String rootMessage) {
 		ProjectSorter bs = new ProjectSorter();
@@ -651,7 +731,7 @@ public class JobStatus extends WorkspaceJob implements BundleTransitionEventList
 		for (IBundleStatus bundleStatus : statusList) {
 			IProject project = bundleStatus.getProject();
 			Throwable e = bundleStatus.getException();
-			if (null != e && e instanceof DuplicateBundleException) {
+			if (null != e && e instanceof WorkspaceDuplicateException) {
 				if (null != project) {
 					duplicateClosureSet = bs.sortRequiringProjects(Collections.singleton(project));
 					duplicateClosureSet.remove(project);

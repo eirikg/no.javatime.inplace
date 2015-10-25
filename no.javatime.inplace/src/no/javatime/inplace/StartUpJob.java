@@ -19,7 +19,9 @@ import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.closure.CircularReferenceException;
 import no.javatime.inplace.region.intface.BundleRegion;
 import no.javatime.inplace.region.intface.BundleTransitionListener;
+import no.javatime.inplace.region.intface.WorkspaceDuplicateException;
 import no.javatime.inplace.region.intface.InPlaceException;
+import no.javatime.inplace.region.intface.ProjectLocationException;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
@@ -40,13 +42,13 @@ import org.osgi.framework.Bundle;
 import org.osgi.service.prefs.BackingStoreException;
 
 /**
- * In a normal shut down situation activates or deactivate bundles at start up. The activation
+ * Start up activates or deactivates bundle projects at start up. The activation
  * level, transition state and pending transitions added to bundles is determined by the
  * {@link StatePersistParticipant} class.
  * <p>
  * If activated bundle projects had build errors at shut down or the "Deactivate on Exit" preference
  * option was on at shutdown (or manually changed to on after shutdown), the workspace will be
- * deactivated and otherwise activated.
+ * deactivated, if not at shutdown, but otherwise activated.
  * <p>
  * After an abnormal termination of the workspace, states are regenerated based on activation rules
  * and states from the previous session according to rules in {@code StatePersistParticipant}.
@@ -182,14 +184,13 @@ class StartUpJob extends ActivateBundleJob {
 			throws IllegalStateException, ExtenderException, InPlaceException, BackingStoreException {
 		
 		SubMonitor progress = SubMonitor.convert(monitor, activatedPendingProjects.size());
-		BundleRegion bundleRegion = Activator.getBundleRegionService();
-		Collection<IProject> bundleProjects = bundleRegion.getProjects();
-		Collection<IProject> projectsToDeactivate = SessionManager.isDeactivateOnExit(bundleProjects, activatedPendingProjects); 
-		if (projectsToDeactivate.size() > 0) {
-			try {
+		try {
+			BundleRegion bundleRegion = Activator.getBundleRegionService();
+			Collection<IProject> bundleProjects = bundleProjectCandidates.getBundleProjects();
+			Collection<IProject> projectsToDeactivate = SessionManager.isDeactivateOnExit(bundleProjects, activatedPendingProjects); 
+			if (projectsToDeactivate.size() > 0) {
 				setName(Msg.DEACTIVATE_WORKSPACE_JOB);
 				monitor.beginTask(Msg.DEACTIVATE_TASK_JOB, getTicks());
-				Collection<IProject> projects = registerBundleProjects();
 				deactivateNature(activatedPendingProjects, new SubProgressMonitor(monitor, 1));
 				if (isRecoveryMode) {
 					// Bundles have not been refreshed when IDE crashes
@@ -197,7 +198,10 @@ class StartUpJob extends ActivateBundleJob {
 					Collection<Bundle> bundles = null;
 					try {
 						messageOptions.setIsBundleOperations(false);
-						install(projects, monitor);
+						try {
+							install(bundleProjects, monitor);
+						} catch (InPlaceException | WorkspaceDuplicateException | ProjectLocationException e) {
+						}
 						bundles = bundleRegion.getBundles();
 						uninstall(bundles, monitor, false, false);
 					} finally {
@@ -213,9 +217,9 @@ class StartUpJob extends ActivateBundleJob {
 				}
 				StatePersistParticipant.restoreSessionState();
 				return true;
-			} finally {
-				progress.worked(1);
 			}
+		} finally {
+			progress.worked(1);
 		}
 		return false;
 	}

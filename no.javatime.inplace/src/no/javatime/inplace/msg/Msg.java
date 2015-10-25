@@ -138,7 +138,8 @@ public class Msg extends NLS {
 	public static String AUTO_BUILD_LISTENER_NOT_ADDED_WARN;
 	public static String DYNAMIC_MONITORING_WARN;
 	public static String DEACTIVATE_ON_EXIT_ERROR_WARN;
-
+	public static String DEACTIVATE_ON_EXIT_ERROR_HEADING_WARN;
+	
 	// Exceptions
 	public static String GET_SERVICE_EXP;
 	public static String LOG_TRACE_EXP;

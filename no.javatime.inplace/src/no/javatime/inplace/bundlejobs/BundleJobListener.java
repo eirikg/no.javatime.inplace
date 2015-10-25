@@ -14,6 +14,9 @@ import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
 
 import no.javatime.inplace.Activator;
 import no.javatime.inplace.bundlejobs.intface.BundleExecutor;
@@ -24,7 +27,6 @@ import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.closure.CircularReferenceException;
 import no.javatime.inplace.region.closure.ProjectSorter;
 import no.javatime.inplace.region.intface.BundleProjectCandidates;
-import no.javatime.inplace.region.intface.BundleRegion;
 import no.javatime.inplace.region.intface.BundleTransition;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
 import no.javatime.inplace.region.status.BundleStatus;
@@ -153,53 +155,127 @@ public class BundleJobListener extends JobChangeAdapter {
 	 * @throws ExtenderException if failing to get any of the transition, candidate or region services
 	 */
 	private void schedulePendingOperations() throws ExtenderException {
+		execute();
 
-		BundleTransition bundleTransition = Activator.getBundleTransitionService();
-		BundleProjectCandidates bundleProjectcandidates = Activator.getBundleProjectCandidatesService();
-		BundleRegion bundleRegion = Activator.getBundleRegionService();
-		BundleExecutor bundleJob = null;
+//		BundleTransition bundleTransition = Activator.getBundleTransitionService();
+//
+//		ActivateProjectJob activateProjectJob = new ActivateProjectJob(Msg.ACTIVATE_PROJECT_JOB);
+//		Collection<IProject> deactivatedProjects = activateProjectJob.getDeactivatedProjects();
+//		Collection<IProject> projectsToActivate = bundleTransition.getPendingProjects(
+//				deactivatedProjects, Transition.ACTIVATE_PROJECT);
+//		if (projectsToActivate.size() > 0) {
+//			activateProjectJob.addPendingProjects(projectsToActivate);
+//			bundleTransition.removePending(projectsToActivate, Transition.ACTIVATE_PROJECT);
+//			if (Activator.getMessageOptionsService().isBundleOperations()) {
+//				try {
+//					ProjectSorter projectSorter = new ProjectSorter();
+//					// Inform about already activated projects that have requirements on deactivated projects
+//					for (IProject deactivatedProject : projectsToActivate) {
+//						Collection<IProject> activatedProjects = projectSorter.sortRequiringProjects(
+//								Collections.<IProject> singletonList(deactivatedProject), true);
+//						activatedProjects.remove(deactivatedProject);
+//						if (activatedProjects.size() > 0) {
+//							BundleProjectCandidates bundleProjectcandidates = Activator.getBundleProjectCandidatesService();
+//							String msg = NLS.bind(Msg.IMPLICIT_ACTIVATION_INFO,
+//									bundleProjectcandidates.formatProjectList(activatedProjects),
+//									deactivatedProject.getName());
+//							IBundleStatus status = new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, msg);
+//							msg = NLS.bind(Msg.DELAYED_RESOLVE_INFO,
+//									bundleProjectcandidates.formatProjectList(activatedProjects),
+//									deactivatedProject.getName());
+//							status.add(new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, msg));
+//							activateProjectJob.addLogStatus(status);
+//						}
+//					}
+//				} catch (CircularReferenceException e) {
+//				}
+//			}
+//			Activator.getBundleExecutorEventService().add(activateProjectJob, 0);
+//		}
+//
+//		DeactivateJob deactivateJob = new DeactivateJob(Msg.DEACTIVATE_BUNDLES_JOB);
+//		Collection<IProject> activatedProjects = deactivateJob.getActivatedProjects();
+//		Collection<IProject> projectsToDeactivate = bundleTransition.getPendingProjects(
+//				activatedProjects, Transition.DEACTIVATE);
+//		if (projectsToDeactivate.size() > 0) {
+//			deactivateJob.addPendingProjects(projectsToDeactivate);
+//			bundleTransition.removePending(projectsToDeactivate, Transition.DEACTIVATE);
+//			Activator.getBundleExecutorEventService().add(deactivateJob);
+//		}
+	}
 
-		Collection<IProject> deactivatedProjects = bundleProjectcandidates.getCandidates();
+	private void execute() {
 
-		Collection<IProject> projectsToActivate = bundleTransition.getPendingProjects(
-				deactivatedProjects, Transition.ACTIVATE_PROJECT);
-		if (projectsToActivate.size() > 0) {
-			bundleJob = new ActivateProjectJob(Msg.ACTIVATE_PROJECT_JOB, projectsToActivate);
-			bundleTransition.removePending(projectsToActivate, Transition.ACTIVATE_PROJECT);
-			if (Activator.getMessageOptionsService().isBundleOperations()) {
-				try {
-					ProjectSorter projectSorter = new ProjectSorter();
-					// Inform about already activated projects that have requirements on deactivated projects
-					for (IProject deactivatedProject : projectsToActivate) {
-						Collection<IProject> activatedProjects = projectSorter.sortRequiringProjects(
-								Collections.<IProject> singletonList(deactivatedProject), true);
-						activatedProjects.remove(deactivatedProject);
-						if (activatedProjects.size() > 0) {
-							String msg = NLS.bind(Msg.IMPLICIT_ACTIVATION_INFO,
-									bundleProjectcandidates.formatProjectList(activatedProjects),
-									deactivatedProject.getName());
-							IBundleStatus status = new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, msg);
-							msg = NLS.bind(Msg.DELAYED_RESOLVE_INFO,
-									bundleProjectcandidates.formatProjectList(activatedProjects),
-									deactivatedProject.getName());
-							status.add(new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, msg));
-							bundleJob.addLogStatus(status);
+		// Run in a separate thread to avoid builder deadlock
+		ExecutorService executor = Executors.newSingleThreadExecutor();
+		try {
+			executor.execute(new Runnable() {
+
+				/**
+				 * Wait on builder to finish before adding jobs for execution
+				 */
+				@Override
+				public void run() {
+					try {
+						BundleTransition bundleTransition = Activator.getBundleTransitionService();
+						ActivateProjectJob activateProjectJob = new ActivateProjectJob(Msg.ACTIVATE_PROJECT_JOB);
+						Collection<IProject> deactivatedProjects = activateProjectJob.getDeactivatedProjects();
+						Collection<IProject> projectsToActivate = bundleTransition.getPendingProjects(
+								deactivatedProjects, Transition.ACTIVATE_PROJECT);
+						if (projectsToActivate.size() > 0) {
+							activateProjectJob.addPendingProjects(projectsToActivate);
+							bundleTransition.removePending(projectsToActivate, Transition.ACTIVATE_PROJECT);
+							if (Activator.getMessageOptionsService().isBundleOperations()) {
+								try {
+									ProjectSorter projectSorter = new ProjectSorter();
+									// Inform about already activated projects that have requirements on deactivated projects
+									for (IProject deactivatedProject : projectsToActivate) {
+										Collection<IProject> activatedProjects = projectSorter.sortRequiringProjects(
+												Collections.<IProject> singletonList(deactivatedProject), true);
+										activatedProjects.remove(deactivatedProject);
+										if (activatedProjects.size() > 0) {
+											BundleProjectCandidates bundleProjectcandidates = Activator.getBundleProjectCandidatesService();
+											String msg = NLS.bind(Msg.IMPLICIT_ACTIVATION_INFO,
+													bundleProjectcandidates.formatProjectList(activatedProjects),
+													deactivatedProject.getName());
+											IBundleStatus status = new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, msg);
+											msg = NLS.bind(Msg.DELAYED_RESOLVE_INFO,
+													bundleProjectcandidates.formatProjectList(activatedProjects),
+													deactivatedProject.getName());
+											status.add(new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, msg));
+											activateProjectJob.addLogStatus(status);
+										}
+									}
+								} catch (CircularReferenceException e) {
+								}
+							}
+							Activator.getBundleExecutorEventService().add(activateProjectJob, 0);
 						}
+
+						DeactivateJob deactivateJob = new DeactivateJob(Msg.DEACTIVATE_BUNDLES_JOB);
+						Collection<IProject> activatedProjects = deactivateJob.getActivatedProjects();
+						Collection<IProject> projectsToDeactivate = bundleTransition.getPendingProjects(
+								activatedProjects, Transition.DEACTIVATE);
+						if (projectsToDeactivate.size() > 0) {
+							deactivateJob.addPendingProjects(projectsToDeactivate);
+							bundleTransition.removePending(projectsToDeactivate, Transition.DEACTIVATE);
+							Activator.getBundleExecutorEventService().add(deactivateJob);
+						}
+
+					} catch (ExtenderException e) {
+						StatusManager.getManager().handle(
+								new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),
+								StatusManager.LOG);
 					}
-				} catch (CircularReferenceException e) {
+
 				}
-			}
-			Activator.getBundleExecutorEventService().add(bundleJob, 0);
-		}
-
-		Collection<IProject> activatedProjects = bundleRegion.getActivatedProjects();
-
-		Collection<IProject> projectsToDeactivate = bundleTransition.getPendingProjects(
-				activatedProjects, Transition.DEACTIVATE);
-		if (projectsToDeactivate.size() > 0) {
-			bundleJob = new DeactivateJob(Msg.DEACTIVATE_BUNDLES_JOB, projectsToDeactivate);
-			bundleTransition.removePending(projectsToDeactivate, Transition.DEACTIVATE);
-			Activator.getBundleExecutorEventService().add(bundleJob);
+			});
+		} catch (RejectedExecutionException e) {
+			StatusManager.getManager().handle(
+					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),
+					StatusManager.LOG);
+		} finally {
+			executor.shutdown();
 		}
 	}
 

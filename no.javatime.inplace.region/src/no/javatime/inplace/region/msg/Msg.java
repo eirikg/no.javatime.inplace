@@ -12,6 +12,7 @@ public class Msg extends NLS {
 	public static String FATAL_ACTIVATE_ERROR;
 	public static String MANIFEST_BUILD_ERROR;
 	public static String BUILD_STATE_ERROR;
+	public static String MANIFEST_ERROR;
 
 	// Warning messages 	
 	public static String REQUIRING_BUNDLES_BUILD_ERROR_WARN;
@@ -25,7 +26,7 @@ public class Msg extends NLS {
 	public static String CLOSURE_INFO;
 	public static String PROVIDING_BUNDLES_INFO;
 	public static String REQUIRING_BUNDLES_INFO;
-	public static String AWAITING_BUILD_ERROR_INFO;
+	public static String AWAITING_HEADER_ERROR_INFO;
 	public static String NO_BUILD_ERROR_INFO;
 	public static String EXT_BUNDLE_OP_ORIGIN_INFO;
 	public static String EXT_BUNDLE_OP_INFO;
@@ -37,7 +38,12 @@ public class Msg extends NLS {
 	public static String PROJECT_NATURE_NULL_EXP;
 	public static String PROJECT_NATURE_CORE_EXP;
 	public static String GET_SERVICE_EXP;
-
+	public static String WORKSPACE_INSTALL_DUPLICATE_EXP;
+	public static String EXTERNAL_INSTALL_DUPLICATE_EXP;
+	public static String WORKSPACE_UPATE_DUPLICATE_EXP;
+	public static String WORKSPACE_UPATE_DUPLICATE_ERROR;
+	public static String EXTERNAL_UPDATE_DUPLICATE_EXP;
+	
 	// Location references
 	public static String BUNDLE_ID_REF_SCHEME_REF;
 	public static String BUNDLE_ID_FILE_SCHEME_REF;

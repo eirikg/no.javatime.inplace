@@ -13,11 +13,13 @@ package no.javatime.inplace.region.status;
 import java.util.Collection;
 
 import no.javatime.inplace.region.Activator;
+import no.javatime.inplace.region.intface.BundleProjectMeta;
 import no.javatime.inplace.region.intface.BundleRegion;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
 import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.manager.BundleTransitionImpl;
 import no.javatime.inplace.region.manager.WorkspaceRegionImpl;
+import no.javatime.inplace.region.project.BundleProjectMetaImpl;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IWorkspace;
@@ -25,7 +27,6 @@ import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.MultiStatus;
-import org.eclipse.pde.core.project.IBundleProjectDescription;
 import org.osgi.framework.Bundle;
 
 /**
@@ -164,21 +165,21 @@ public class BundleStatus extends MultiStatus implements IBundleStatus {
 				bundleTransition = BundleTransitionImpl.INSTANCE.getTransition(bundle);
 			} else {
 				try {
-					IBundleProjectDescription pd = Activator.getBundleDescription(project);
-					symbolicName = pd.getSymbolicName();
+					BundleProjectMeta bundleProjectMeta = BundleProjectMetaImpl.INSTANCE;
+					symbolicName = bundleProjectMeta.getSymbolicName(project);
 				} catch (InPlaceException e) {
 				}
 			}
 		} else {
-			// Worst case. Symbolic name is not always the same as the plug-gin id.
+			// Worst case. Symbolic name is not always the same as the plug-in id
 			if (null == symbolicName) {
 					symbolicName = getPlugin();
 					IWorkspace workspace = ResourcesPlugin.getWorkspace();
 					IWorkspaceRoot root = workspace.getRoot();
 					for (IProject bundleProject : root.getProjects()) {
 						try {
-							IBundleProjectDescription bundleProjDesc = Activator.getBundleDescription(bundleProject);
-							String pdSymbolicName = bundleProjDesc.getSymbolicName();
+							BundleProjectMeta bundleProjectMeta = BundleProjectMetaImpl.INSTANCE;
+							String pdSymbolicName = bundleProjectMeta.getSymbolicName(project);
 							if (null != pdSymbolicName && pdSymbolicName.equals(symbolicName)) {
 								// Drop comparison with version. Use the first one available
 								project = bundleProject;
@@ -195,8 +196,8 @@ public class BundleStatus extends MultiStatus implements IBundleStatus {
 								this.bundle = bundle;
 								bundleTransition = BundleTransitionImpl.INSTANCE.getTransition(bundle);
 							} else {
-								IBundleProjectDescription pd = Activator.getBundleDescription(project);
-								symbolicName = pd.getSymbolicName();
+								BundleProjectMeta bundleProjectMeta = BundleProjectMetaImpl.INSTANCE;
+								symbolicName = bundleProjectMeta.getSymbolicName(project);
 							}
 						} catch (InPlaceException e) {
 						}

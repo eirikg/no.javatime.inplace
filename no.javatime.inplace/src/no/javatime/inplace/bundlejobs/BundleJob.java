@@ -29,14 +29,10 @@ import no.javatime.inplace.region.closure.BundleSorter;
 import no.javatime.inplace.region.closure.CircularReferenceException;
 import no.javatime.inplace.region.closure.ProjectSorter;
 import no.javatime.inplace.region.intface.BundleActivatorException;
-import no.javatime.inplace.region.intface.BundleProjectCandidates;
 import no.javatime.inplace.region.intface.BundleStateChangeException;
 import no.javatime.inplace.region.intface.BundleThread;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
-import no.javatime.inplace.region.intface.BundleTransition.TransitionError;
-import no.javatime.inplace.region.intface.DuplicateBundleException;
 import no.javatime.inplace.region.intface.InPlaceException;
-import no.javatime.inplace.region.intface.ProjectLocationException;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
@@ -305,7 +301,7 @@ public class BundleJob extends JobStatus implements BundleExecutor {
 						}
 					}
 					if (!bundleTransition.containsPending(bundle, Transition.RESOLVE, true)
-							&& (!bundleProjectMeta.isFragment(bundle))
+							&& (!bundleProjectMeta.isCachedFragment(bundle))
 							&& ((bundle.getState() & (Bundle.RESOLVED | Bundle.STOPPING)) != 0)) {
 						int startOption = Bundle.START_TRANSIENT;
 						if (bundleProjectMeta.getCachedActivationPolicy(bundle)) {
@@ -704,8 +700,8 @@ public class BundleJob extends JobStatus implements BundleExecutor {
 				Collection<IProject> projectsToResolve = bundleRegion.getProjects(bundlesToResolve);
 				BundleBuildErrorClosure be = new BundleBuildErrorClosure(projectsToResolve, Transition.RESOLVE,
 						Closure.REQUIRING);
-				if (be.hasBuildErrors()) {
-					Collection<IProject> buildErrClosure = be.getBuildErrorClosures();
+				if (be.hasBuildErrors(false)) {
+					Collection<IProject> buildErrClosure = be.getBuildErrorClosures(false);
 					projectsToResolve.removeAll(buildErrClosure);
 					if (messageOptions.isBundleOperations()) {
 						IBundleStatus bundleStatus = be.getErrorClosureStatus();
@@ -889,275 +885,6 @@ public class BundleJob extends JobStatus implements BundleExecutor {
 		return result;
 	}
 
-	/**
-	 * Remove all bundles from the specified set of bundles tagged with a transition error and their providing bundles
-	 *  
-	 * @param initialBundleSet set of bundles to remove transition errors from
-	 * @return reduced set of the specified initial set without bundles with transition errors and their providing bundles 
-	 */
-	protected Collection<Bundle> removeTransitionErrorClosures(Collection<Bundle> initialBundleSet) {
-
-		BundleSorter bs = new BundleSorter();
-		Collection<Bundle> workspaceBundles = bundleRegion.getActivatedBundles();
-		Collection<Bundle> bErrorDepClosures = bs.sortDeclaredProvidingBundles(initialBundleSet,
-				workspaceBundles);
-		Collection<Bundle> bundles = null;
-		for (Bundle errorBundle : bErrorDepClosures) {
-			IProject errorProject = bundleRegion.getProject(errorBundle);
-			TransitionError transitionError = bundleTransition.getError(errorBundle);
-			if (null != errorProject
-					&& (transitionError == TransitionError.DUPLICATE || transitionError == TransitionError.CYCLE)) {
-				if (null == bundles) {
-					bundles = new LinkedHashSet<Bundle>();
-				}
-				bundles.addAll(bs.sortDeclaredRequiringBundles(
-						Collections.<Bundle> singletonList(errorBundle), workspaceBundles));
-			}
-		}
-		if (null != bundles) {
-			initialBundleSet.removeAll(bundles);
-		}
-		return bundles;
-	}
-
-	/**
-	 * Removes pending workspace projects and their requiring projects from the specified projects and
-	 * dependency closures of duplicate projects to workspace bundles.
-	 * 
-	 * @param projects duplicate candidates to workspace bundles
-	 * @param bDepClosures existing dependency closure of bundles to the specified candidate projects.
-	 * May be null.
-	 * @param pDepClosures Dependent closure to duplicates
-	 * @param scope Domain for duplicates
-	 * @param message information message added to the end of the error sent to the log view if
-	 * duplicates are detected. Null is allowed.
-	 * @return all duplicates and the requiring dependency closure for each duplicate or null if no
-	 * duplicates found.
-	 */
-	protected Collection<IProject> removeWorkspaceDuplicates(Collection<IProject> projects,
-			Collection<Bundle> bDepClosures, Collection<IProject> pDepClosures,
-			Collection<IProject> scope, String message) {
-
-		Map<IProject, IProject> wsDuplicates = bundleRegion.getWorkspaceDuplicates(projects, scope);
-		Collection<IProject> duplicateClosures = null;
-		if (wsDuplicates.size() > 0) {
-			duplicateClosures = new ArrayList<IProject>();
-			ProjectSorter ps = new ProjectSorter();
-			ps.setAllowCycles(true);
-			for (Map.Entry<IProject, IProject> key : wsDuplicates.entrySet()) {
-				IProject duplicateProject = key.getKey();
-				IProject duplicateProject1 = key.getValue();
-				try {
-					// If checked on an uninstalled bundle that is not registered yet
-					if (!bundleRegion.isProjectRegistered(duplicateProject)) {
-						bundleRegion.registerBundleProject(duplicateProject, null, false);
-					}
-					bundleTransition.setTransitionError(duplicateProject, TransitionError.DUPLICATE);
-					DuplicateBundleException duplicateBundleException = new DuplicateBundleException(
-							"duplicate_of_ws_bundle", duplicateProject.getName(),
-							bundleProjectMeta.getSymbolicName(duplicateProject1), duplicateProject1.getLocation());
-					handleDuplicateException(duplicateProject, duplicateBundleException, message);
-					Collection<IProject> requiringProjects = ps.sortRequiringProjects(Collections
-							.<IProject> singletonList(duplicateProject));
-					if (requiringProjects.size() > 0) {
-						for (IProject reqProject : requiringProjects) {
-							bundleTransition.removePending(reqProject, Transition.UPDATE);
-							bundleTransition.removePending(reqProject, Transition.UPDATE_ON_ACTIVATE);
-						}
-						projects.removeAll(requiringProjects);
-						duplicateClosures.addAll(requiringProjects);
-						if (null != bDepClosures) {
-							bDepClosures.removeAll(bundleRegion.getBundles(requiringProjects));
-						}
-						if (null != pDepClosures) {
-							pDepClosures.removeAll(requiringProjects);
-						}
-					} else {
-						projects.remove(duplicateProject);
-						duplicateClosures.add(duplicateProject);
-					}
-				} catch (ProjectLocationException e) {
-					addError(e, e.getLocalizedMessage(), duplicateProject);
-				}
-			}
-		}
-		return duplicateClosures;
-	}
-
-	/**
-	 * Removes pending workspace projects and their requiring projects from the specified projects and
-	 * dependency closures of duplicate projects to external bundles. -- Detect bundles which are
-	 * duplicates of external bundles -- Can not let update detect the duplicate -- OSGi will refresh
-	 * all dependent bundles of the jar bundle -- and suspend the refreshPackages and not return --
-	 * See private void suspendBundle(AbstractBundle bundle) { -- attempt to suspend the bundle or
-	 * obtain the state change lock -- Note that this may fail but we cannot quit the --
-	 * refreshPackages operation because of it. (bug 84169)
-	 * 
-	 * @param projects duplicate candidates to external bundles
-	 * @param message information message added to the end of the error sent to the log view if
-	 * duplicates are detected. Null is allowed.
-	 * @return all duplicates and the requiring dependency closure for each duplicate or null if no
-	 * duplicates found.
-	 */
-	protected Collection<IProject> getExternalDuplicateClosures(Collection<IProject> projects,
-			String message) {
-
-		if (!Activator.getInstance().isRefreshDuplicateBSNAllowed()) {
-			return null;
-		}
-		Map<IProject, Bundle> externalDuplicates = bundleRegion.getSymbolicNameDuplicates(projects,
-				bundleRegion.getJarBundles());
-		Collection<IProject> duplicateClosures = null;
-		if (externalDuplicates.size() > 0) {
-			duplicateClosures = new ArrayList<IProject>();
-			ProjectSorter ps = new ProjectSorter();
-			ps.setAllowCycles(true);
-			for (Map.Entry<IProject, Bundle> key : externalDuplicates.entrySet()) {
-				IBundleStatus startStatus = null;
-				IProject duplicate = key.getKey();
-				try {
-					// If checked on an uninstalled bundle that is not registered yet
-					if (!bundleRegion.isProjectRegistered(duplicate)) {
-						bundleRegion.registerBundleProject(duplicate, null, false);
-					}
-					bundleTransition.setTransitionError(duplicate, TransitionError.DUPLICATE);
-					String msg = ErrorMessage.getInstance().formatString("duplicate_of_jar_bundle",
-							duplicate.getName(), key.getValue().getSymbolicName(), key.getValue().getLocation());
-					startStatus = addError(null, msg);
-					Collection<IProject> requiringProjects = ps.sortRequiringProjects(Collections
-							.<IProject> singletonList(duplicate));
-					if (requiringProjects.size() > 0) {
-						String affectedBundlesMsg = ErrorMessage.getInstance().formatString(
-								"duplicate_affected_bundles", duplicate.getName(),
-								bundleProjectCandidates.formatProjectList(requiringProjects));
-						addInfoMessage(affectedBundlesMsg);
-						for (IProject reqProject : requiringProjects) {
-							bundleTransition.removePending(reqProject, Transition.UPDATE);
-							bundleTransition.removePending(reqProject, Transition.UPDATE_ON_ACTIVATE);
-						}
-						duplicateClosures.addAll(requiringProjects);
-					} else {
-						duplicateClosures.add(duplicate);
-					}
-					if (null != message) {
-						addInfoMessage(message);
-					}
-					String rootMsg = ErrorMessage.getInstance().formatString(
-							"detected_duplicate_of_jar_bundle");
-					createMultiStatus(new BundleStatus(StatusCode.ERROR, Activator.PLUGIN_ID, rootMsg),
-							startStatus);
-				} catch (ProjectLocationException e) {
-					addError(e, e.getLocalizedMessage(), duplicate);
-				}
-			}
-		}
-		return duplicateClosures;
-	}
-
-	/**
-	 * Compares bundle projects for the same symbolic name and version. Each specified project is
-	 * compared to all other valid workspace projects as specified by
-	 * {@link BundleProjectCandidates#getInstallable()}.
-	 * <p>
-	 * When duplicates are detected the providing project - if any - in a set of duplicates is treated
-	 * as the one to be installed or updated while the rest of the duplicates in the set are those
-	 * left uninstalled or not updated. This becomes indirectly evident from the formulation of the
-	 * error messages sent to the log view.
-	 * <p>
-	 * Any errors that occurs while retrieving the symbolic name and version of bundles are added to
-	 * the job status list
-	 * 
-	 * @param duplicateProject duplicate project
-	 * @param duplicateException the duplicate exception object associated with the specified
-	 * duplicate project
-	 * @param message Extra info status message. Can be null 
-	 * @return a list of duplicate tuples. Returns an empty list if no duplicates are found.
-	 * @throws CircularReferenceException if cycles are detected in the project graph
-	 * @see #getErrorStatusList()
-	 */
-	protected Collection<IProject> handleDuplicateException(IProject duplicateProject,
-			DuplicateBundleException duplicateException, String message)
-			throws CircularReferenceException {
-
-		// List of detected duplicate tuples
-		Collection<IProject> duplicates = new LinkedHashSet<IProject>();
-		TransitionError transitionError = TransitionError.DUPLICATE;
-
-		try {
-			transitionError = bundleTransition.getError(duplicateProject);
-		} catch (ProjectLocationException e) {
-			addError(e, e.getLocalizedMessage(), duplicateProject);
-		}
-
-		String duplicateCandidateKey = bundleRegion.getSymbolicKey(null, duplicateProject);
-		if (null == duplicateCandidateKey || duplicateCandidateKey.length() == 0) {
-			String msg = ErrorMessage.getInstance().formatString("project_symbolic_identifier",
-					duplicateProject.getName());
-			addError(null, msg, duplicateProject);
-			return null;
-		}
-		ProjectSorter ps = new ProjectSorter();
-		ps.setAllowCycles(true);
-		Collection<IProject> installableProjects = bundleProjectCandidates.getInstallable();
-		installableProjects.remove(duplicateProject);
-		for (IProject duplicateProjectCandidate : installableProjects) {
-			IBundleStatus startStatus = null;
-			try {
-				String symbolicKey = bundleRegion.getSymbolicKey(null, duplicateProjectCandidate);
-				if (null == symbolicKey || symbolicKey.length() == 0) {
-					String msg = ErrorMessage.getInstance().formatString("project_symbolic_identifier",
-							duplicateProjectCandidate.getName());
-					addError(null, msg, duplicateProjectCandidate);
-					continue;
-				}
-				if (symbolicKey.equals(duplicateCandidateKey)) {
-					throw new DuplicateBundleException("duplicate_bundle_project", symbolicKey,
-							duplicateProject.getName(), duplicateProjectCandidate.getName());
-				}
-			} catch (DuplicateBundleException e) {
-				// Build the multi status error log message
-				String msg = null;
-				try {
-					msg = ErrorMessage.getInstance().formatString("duplicate_error",
-							bundleProjectMeta.getSymbolicName(duplicateProject),
-							bundleProjectMeta.getBundleVersion(duplicateProject));
-					startStatus = addError(e, msg, duplicateProject);
-					addError(null, e.getLocalizedMessage());
-					addError(duplicateException, duplicateException.getLocalizedMessage(), duplicateProject);
-					// Inform about the requiring projects of the duplicate project
-					Collection<IProject> duplicateClosureSet = ps.sortRequiringProjects(Collections
-							.<IProject> singleton(duplicateProject));
-					duplicateClosureSet.remove(duplicateProject);
-					if (duplicateClosureSet.size() > 0) {
-						String affectedBundlesMsg = ErrorMessage.getInstance().formatString(
-								"duplicate_affected_bundles", duplicateProject.getName(),
-								bundleProjectCandidates.formatProjectList(duplicateClosureSet));
-						addInfoMessage(affectedBundlesMsg);
-					}
-					if (null != message) {
-						addInfoMessage(message);
-					}
-					String rootMsg = ExceptionMessage.getInstance().formatString("root_duplicate_exception");
-					createMultiStatus(new BundleStatus(StatusCode.ERROR, Activator.PLUGIN_ID, rootMsg),
-							startStatus);
-				} catch (InPlaceException e1) {
-					addError(e1, e1.getLocalizedMessage());
-				} finally {
-					duplicates.add(duplicateProjectCandidate);
-				}
-			} catch (ProjectLocationException e) {
-				addError(e, e.getLocalizedMessage(), duplicateProject);
-			} catch (InPlaceException e) {
-				addError(e, e.getLocalizedMessage(), duplicateProject);
-			}
-		}
-		try {
-			bundleTransition.setTransitionError(duplicateProject, transitionError);
-		} catch (ProjectLocationException e) {
-			addError(e, e.getLocalizedMessage(), duplicateProject);
-		}
-		return duplicates;
-	}
 
 	@Override
 	public void run(long delay) {

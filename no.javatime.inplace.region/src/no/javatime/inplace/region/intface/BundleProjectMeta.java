@@ -18,12 +18,14 @@ import org.osgi.framework.Bundle;
  * To be able to start a bundle on the development (or source) platform after it is installed and
  * resolved the default output folder should be added to the Bundle-ClassPah header of the bundle.
  * Use {@link #addDefaultOutputFolder(IProject) to add the folder.
+ * <p>
  * <p><p>
  * 
+ * 
  * After a bundle is installed using e.g. {@link BundleCommand#install(IProject, Boolean)} the
- * actual header information in the manifest file and the cached manifest accessed through the bundle may
- * over time be different. To synchronize the manifest headers an update followed by a refresh is not enough.
- * A re-installation of the bundle is necessary.  
+ * actual header information in the manifest file and the cached manifest accessed through the
+ * bundle may over time be different. To synchronize the manifest headers an update followed by a
+ * refresh is not enough. A re-installation of the bundle is necessary.
  * 
  */
 public interface BundleProjectMeta {
@@ -160,16 +162,28 @@ public interface BundleProjectMeta {
 	 * 
 	 * @param project containing the meta information
 	 * @return current symbolic name in manifest file or null
-	 * @throws InPlaceException if the project description could not be obtained
+	 * @throws InPlaceException if the manifest has an invalid syntax or if an error occurs while
+	 * reading the manifest
 	 */
 	public String getSymbolicName(IProject project) throws InPlaceException;
+
+	/**
+	 * Check if the associated bundle of the specified project is a fragment
+	 * 
+	 * @param project The project to check being a fragment  
+	 * @return true if the associated bundle is a fragment. Otherwise false
+	 * @throws InPlaceException if the manifest has an invalid syntax or if an error occurs while
+	 * reading the manifest
+	 */
+	public boolean isFragment(IProject project) throws InPlaceException;
 
 	/**
 	 * Reads the current version from the manifest file (not the cache)
 	 * 
 	 * @param project containing the meta information
 	 * @return current version from manifest file as a string or null
-	 * @throws InPlaceException if the bundle project description could not be obtained
+	 * @throws InPlaceException if the manifest has an invalid syntax or if an error occurs while
+	 * reading the manifest
 	 */
 	public String getBundleVersion(IProject project) throws InPlaceException;
 
@@ -218,7 +232,7 @@ public interface BundleProjectMeta {
 	 * @return true if the bundle is a fragment. Otherwise false.
 	 * @throws InPlaceException if bundle is null or a security violation
 	 */
-	public Boolean isFragment(Bundle bundle) throws InPlaceException;
+	public Boolean isCachedFragment(Bundle bundle) throws InPlaceException;
 
 	/**
 	 * Verify that the specified path is part of the cached class path in the specified bundle

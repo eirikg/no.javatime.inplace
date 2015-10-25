@@ -40,9 +40,10 @@ import no.javatime.inplace.region.intface.BundleStateChangeException;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
 import no.javatime.inplace.region.intface.BundleTransition.TransitionError;
 import no.javatime.inplace.region.intface.BundleTransitionListener;
-import no.javatime.inplace.region.intface.DuplicateBundleException;
+import no.javatime.inplace.region.intface.ExternalDuplicateException;
 import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.intface.ProjectLocationException;
+import no.javatime.inplace.region.intface.WorkspaceDuplicateException;
 import no.javatime.inplace.region.msg.Msg;
 import no.javatime.inplace.region.project.BundleProjectMetaImpl;
 import no.javatime.inplace.region.resolver.BundleResolveHookFactory;
@@ -58,6 +59,7 @@ import no.javatime.util.messages.TraceMessage;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.Status;
+import org.eclipse.osgi.util.NLS;
 import org.eclipse.ui.statushandlers.StatusManager;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -140,7 +142,7 @@ public class BundleCommandImpl implements BundleCommand {
 	}
 
 	@Override
-	public Bundle activate(IProject project) throws InPlaceException, DuplicateBundleException,
+	public Bundle activate(IProject project) throws InPlaceException, WorkspaceDuplicateException,
 	ProjectLocationException, InterruptedException, IllegalStateException, ExtenderException {
 
 		Bundle bundle = null;
@@ -184,7 +186,7 @@ public class BundleCommandImpl implements BundleCommand {
 	
 	@Override
 	public Bundle install(IProject project, Boolean activate) throws InPlaceException,
-			DuplicateBundleException, ProjectLocationException {
+			WorkspaceDuplicateException, ProjectLocationException {
 
 		// Register or update the bundle project. 
 		Bundle bundle = bundleRegion.getBundle(project);
@@ -219,14 +221,14 @@ public class BundleCommandImpl implements BundleCommand {
 	 * @return the installed bundle object
 	 * @throws InPlaceException for any of the
 	 * {@link BundleContext#installBundle(String, InputStream)} exceptions except duplicate bundles
-	 * @throws DuplicateBundleException if a bundle with the same symbolic name and version already
+	 * @throws WorkspaceDuplicateException if a bundle with the same symbolic name and version already
 	 * exists
 	 * @throws ProjectLocationException if the specified project is null or the location of the
 	 * specified project could not be found
 	 * @see BundleContext#installBundle(String, InputStream)
 	 * @see #install(IProject, Boolean)
 	 */
-	protected Bundle install(IProject project) throws InPlaceException, DuplicateBundleException,
+	protected Bundle install(IProject project) throws InPlaceException, WorkspaceDuplicateException,
 			ProjectLocationException {
 
 		Bundle bundle = null;
@@ -237,35 +239,40 @@ public class BundleCommandImpl implements BundleCommand {
 		try {
 			final BundleState state = bundleNode.getState();
 			state.install(bundleNode);
+			Activator.getDefault().getDuplicateEvents().symbolicNameDuplicate(project);			
 			locationIdentifier = bundleRegion.getBundleLocationIdentifier(project);
 			URL bundleReference = new URL(locationIdentifier);
 			is = bundleReference.openStream();
 			bundle = Activator.getContext().installBundle(locationIdentifier, is);
 		} catch (MalformedURLException e) {
-			bundleTransition.setTransitionError(project);
+			bundleNode.setBundleTransitionError(TransitionError.SERVICE_EXCEPTION);
 			throw new InPlaceException(e, "bundle_install_malformed_error", locationIdentifier);
 		} catch (IOException e) {
-			bundleTransition.setTransitionError(project);
+			bundleNode.setBundleTransitionError(TransitionError.SERVICE_EXCEPTION);
 			throw new InPlaceException(e, "bundle_install_error", locationIdentifier);
 		} catch (NullPointerException npe) {
-			bundleTransition.setTransitionError(project);
+			bundleNode.setBundleTransitionError(TransitionError.SERVICE_EXCEPTION);
 			throw new InPlaceException(npe, "bundle_install_npe_error", locationIdentifier);
 		} catch (IllegalStateException e) {
-			bundleTransition.setTransitionError(project);
+			bundleNode.setBundleTransitionError(TransitionError.SERVICE_EXCEPTION);
 			throw new InPlaceException(e, "bundle_state_error", locationIdentifier);
 		} catch (SecurityException e) {
-			bundleTransition.setTransitionError(project);
+			bundleNode.setBundleTransitionError(TransitionError.SERVICE_EXCEPTION);
 			throw new InPlaceException(e, "bundle_security_error", locationIdentifier);
 		} catch (BundleException e) {
 			if (e.getType() == BundleException.DUPLICATE_BUNDLE_ERROR) {
-				bundleTransition.setTransitionError(project, TransitionError.DUPLICATE);
-				throw new DuplicateBundleException(e, "duplicate_bundle_install_error", locationIdentifier);
+				bundleNode.setBundleTransitionError(TransitionError.WORKSPACE_DUPLICATE);
+				String msg = NLS.bind(Msg.WORKSPACE_INSTALL_DUPLICATE_EXP, bundleRegion.getSymbolicKey(null, project), locationIdentifier);
+				throw new WorkspaceDuplicateException(e, msg);
 			} else {
-				bundleTransition.setTransitionError(project);
+				bundleNode.setBundleTransitionError(TransitionError.SERVICE_EXCEPTION);
 				throw new InPlaceException(e, "bundle_install_error", locationIdentifier);
 			}
+		} catch (ExternalDuplicateException e) {
+			bundleNode.setBundleTransitionError(TransitionError.EXTERNAL_DUPLICATE);
+			throw e;
 		} catch (ProjectLocationException e) {
-			bundleTransition.setTransitionError(project);
+			bundleNode.setBundleTransitionError(TransitionError.SERVICE_EXCEPTION);
 			throw e;
 		} finally {
 			try {
@@ -273,17 +280,17 @@ public class BundleCommandImpl implements BundleCommand {
 					is.close();
 				}
 			} catch (IOException e) {
-				bundleTransition.setTransitionError(project);
+				bundleNode.setBundleTransitionError(TransitionError.SERVICE_EXCEPTION);
 				throw new InPlaceException(e, "io_exception_install", locationIdentifier);
 			} finally {
-				if (null != bundle) {
-					BundleTransitionListener.addBundleTransition(new TransitionEvent(project, bundleNode
-							.getTransition()));
-				}
-				if (bundleNode.hasTransitionError()) {
+				if (bundleNode.hasBundleTransitionError()) {
 					bundleNode.rollBack();
 				} else {
 					bundleNode.getState().commit(bundleNode);
+					if (null != bundle) {
+						BundleTransitionListener.addBundleTransition(new TransitionEvent(project, bundleNode
+								.getTransition()));
+					}
 				}
 			}
 		}
@@ -318,7 +325,7 @@ public class BundleCommandImpl implements BundleCommand {
 					BundleNode node = bundleRegion.getBundleNode(bundle);
 					int state = getState(bundle);
 					if ((state & (Bundle.UNINSTALLED | Bundle.INSTALLED)) != 0) {
-						node.setTransitionError(TransitionError.ERROR);
+						node.setBundleTransitionError(TransitionError.ERROR);
 					}
 				}
 			}
@@ -328,7 +335,7 @@ public class BundleCommandImpl implements BundleCommand {
 			for (Bundle bundle : bundles) {
 				if ((getState(bundle) & (Bundle.UNINSTALLED | Bundle.INSTALLED)) != 0) {
 					BundleNode node = bundleRegion.getBundleNode(bundle);
-					node.setTransitionError(TransitionError.EXCEPTION);
+					node.setBundleTransitionError(TransitionError.SERVICE_EXCEPTION);
 				}
 			}
 			throw new InPlaceException(e, "bundles_security_error", bundleRegion.formatBundleList(
@@ -337,7 +344,7 @@ public class BundleCommandImpl implements BundleCommand {
 			for (Bundle bundle : bundles) {
 				if ((getState(bundle) & (Bundle.UNINSTALLED | Bundle.INSTALLED)) != 0) {
 					BundleNode node = bundleRegion.getBundleNode(bundle);
-					node.setTransitionError(TransitionError.EXCEPTION);
+					node.setBundleTransitionError(TransitionError.SERVICE_EXCEPTION);
 				}
 			}
 			throw new InPlaceException(e, "bundles_argument_resolve_bundle",
@@ -346,12 +353,12 @@ public class BundleCommandImpl implements BundleCommand {
 			// The last step (after unresolve) in resolve is resolve. Force a resolve trace
 			for (Bundle bundle : bundles) {
 				BundleNode node = bundleRegion.getBundleNode(bundle);
-				BundleTransitionListener
-						.addBundleTransition(new TransitionEvent(bundle, Transition.RESOLVE));
-				if (node.hasTransitionError()) {
+				if (node.hasBundleTransitionError()) {
 					node.rollBack();
 				} else {
 					node.getState().commit(node);
+					BundleTransitionListener
+							.addBundleTransition(new TransitionEvent(bundle, Transition.RESOLVE));
 				}
 			}
 		}
@@ -404,7 +411,7 @@ public class BundleCommandImpl implements BundleCommand {
 							if ((event.getType() & (FrameworkEvent.ERROR)) != 0) {
 								for (Bundle bundle : bundles) {
 									BundleNode node = bundleRegion.getBundleNode(bundle);
-									node.setTransitionError(TransitionError.ERROR);
+									node.setBundleTransitionError(TransitionError.ERROR);
 								}
 								refreshStatus.setStatusCode(StatusCode.EXCEPTION);
 								Throwable throwable = event.getThrowable();
@@ -432,14 +439,14 @@ public class BundleCommandImpl implements BundleCommand {
 			} catch (SecurityException e) {
 				for (Bundle bundle : bundles) {
 					BundleNode node = bundleRegion.getBundleNode(bundle);
-					node.setTransitionError(TransitionError.EXCEPTION);
+					node.setBundleTransitionError(TransitionError.SERVICE_EXCEPTION);
 				}
 				throw new InPlaceException(e, "framework_bundle_security_error",
 						bundleRegion.formatBundleList(bundles, true));
 			} catch (IllegalArgumentException e) {
 				for (Bundle bundle : bundles) {
 					BundleNode node = bundleRegion.getBundleNode(bundle);
-					node.setTransitionError(TransitionError.EXCEPTION);
+					node.setBundleTransitionError(TransitionError.SERVICE_EXCEPTION);
 				}
 				throw new InPlaceException(e, "bundles_argument_refresh_bundle",
 						bundleRegion.formatBundleList(bundles, true));
@@ -453,17 +460,6 @@ public class BundleCommandImpl implements BundleCommand {
 					this.wait();
 				}
 			}
-		// TODO Remove test code
-//		if (null == null) {
-//			refreshStatus.setStatusCode(StatusCode.EXCEPTION);
-//			for (Bundle bundle : bundles) {
-//				BundleNode node = bundleRegion.getBundleNode(bundle);
-//				node.setTransitionError(TransitionError.EXCEPTION);
-//			}
-//			throw new InPlaceException(refreshStatus);
-//		}
-
-			// Wait
 		} catch (InterruptedException e) {
 			throw new InPlaceException(e, "interrupt_exception_refresh",
 					BundleCommandImpl.class.getSimpleName());
@@ -474,12 +470,11 @@ public class BundleCommandImpl implements BundleCommand {
 						BundleCommandImpl.class.getSimpleName());
 			for (Bundle bundle : bundles) {
 				BundleNode node = bundleRegion.getBundleNode(bundle);
-				BundleTransitionListener
-						.addBundleTransition(new TransitionEvent(bundle, Transition.REFRESH));
-				if (node.hasTransitionError()) {
+				if (node.hasBundleTransitionError()) {
 					node.rollBack();
 				} else {
 					node.getState().commit(node);
+					BundleTransitionListener.addBundleTransition(new TransitionEvent(bundle, Transition.REFRESH));
 				}
 			}
 		}
@@ -513,7 +508,8 @@ public class BundleCommandImpl implements BundleCommand {
 		} catch (CancellationException e) {
 			throw new InPlaceException(e);
 		} catch (TimeoutException e) {
-			bundleTransition.setTransitionError(bundle, TransitionError.STATECHANGE);
+			BundleNode bundleNode = bundleRegion.getBundleNode(bundle);
+			bundleNode.setBundleTransitionError(TransitionError.SERVICE_STATECHANGE);
 			throw new BundleStateChangeException(e, "bundle_task_start_terminate", bundle);
 		} catch (InterruptedException e) {
 			throw e;
@@ -552,36 +548,36 @@ public class BundleCommandImpl implements BundleCommand {
 			node.getState().start(node);
 			bundle.start(startOption);
 		} catch (IllegalStateException e) {
-			node.setTransitionError(TransitionError.EXCEPTION);
+			node.setBundleTransitionError(TransitionError.SERVICE_EXCEPTION);
 			throw new InPlaceException(e, "bundle_state_error", bundle);
 		} catch (SecurityException e) {
-			node.setTransitionError(TransitionError.EXCEPTION);
+			node.setBundleTransitionError(TransitionError.SERVICE_EXCEPTION);
 			throw new InPlaceException(e, "bundle_security_error", bundle);
 		} catch (BundleException e) {
 			if (null != e.getCause() && (e.getCause() instanceof ThreadDeath)) {
-				node.setTransitionError(TransitionError.INCOMPLETE);
+				node.setBundleTransitionError(TransitionError.SERVICE_INCOMPLETE);
 				String msg = ExceptionMessage.getInstance().formatString("bundle_task_start_terminate",
 						bundle);
 				throw new IllegalStateException(msg, e);
 			}
-			node.setTransitionError(TransitionError.EXCEPTION);
+			node.setBundleTransitionError(TransitionError.SERVICE_EXCEPTION);
 			if (e.getType() == BundleException.ACTIVATOR_ERROR) {
 				throw new BundleActivatorException(e, "bundle_activator_error", bundle);
 			} else if (e.getType() == BundleException.STATECHANGE_ERROR) {
-				node.setTransitionError(TransitionError.STATECHANGE);
+				node.setBundleTransitionError(TransitionError.SERVICE_STATECHANGE);
 				throw new BundleStateChangeException(e, "bundle_statechange_error", bundle);
 			} else {
 				throw new InPlaceException(e, "bundle_start_error", bundle);
 			}
 		} finally {
 			msec = System.currentTimeMillis() - startTime;
-			BundleTransitionListener
-					.addBundleTransition(new TransitionEvent(bundle, node.getTransition()));
 			// The framework moves the bundle to state resolve for incomplete (exceptions) start commands
-			if (node.hasTransitionError()) {
+			if (node.hasBundleTransitionError()) {
 				node.getState().rollBack(node);
 			} else {
 				node.getState().commit(node);
+				BundleTransitionListener
+						.addBundleTransition(new TransitionEvent(bundle, node.getTransition()));
 			}
 		}
 	}
@@ -657,19 +653,19 @@ public class BundleCommandImpl implements BundleCommand {
 				bundle.stop(Bundle.STOP_TRANSIENT);
 			}
 		} catch (IllegalStateException e) {
-			node.setTransitionError(TransitionError.EXCEPTION);
+			node.setBundleTransitionError(TransitionError.SERVICE_EXCEPTION);
 			throw new InPlaceException(e, "bundle_state_error", bundle);
 		} catch (SecurityException e) {
-			node.setTransitionError(TransitionError.EXCEPTION);
+			node.setBundleTransitionError(TransitionError.SERVICE_EXCEPTION);
 			throw new InPlaceException(e, "bundle_security_error", bundle);
 		} catch (BundleException e) {
 			if (null != e.getCause() && (e.getCause() instanceof ThreadDeath)) {
-				node.setTransitionError(TransitionError.INCOMPLETE);
+				node.setBundleTransitionError(TransitionError.SERVICE_INCOMPLETE);
 				String msg = ExceptionMessage.getInstance().formatString("bundle_task_stop_terminate",
 						bundle);
 				throw new IllegalStateException(msg, e);
 			}
-			node.setTransitionError(TransitionError.EXCEPTION);
+			node.setBundleTransitionError(TransitionError.SERVICE_EXCEPTION);
 			if (e.getType() == BundleException.STATECHANGE_ERROR) {
 				throw new BundleStateChangeException(e, "bundle_statechange_error", bundle);
 			} else {
@@ -696,11 +692,11 @@ public class BundleCommandImpl implements BundleCommand {
 	 * @return the object of the updated bundle
 	 * @throws InPlaceException if bundle is null or any of the {@link Bundle#update(InputStream)}
 	 * exceptions
-	 * @throws DuplicateBundleException if this bundle is a duplicate - same symbolic name and version
+	 * @throws WorkspaceDuplicateException if this bundle is a duplicate - same symbolic name and version
 	 * - of an already installed bundle with a different location identifier.
 	 */
 	@Override
-	public Bundle update(Bundle bundle) throws InPlaceException, DuplicateBundleException {
+	public Bundle update(Bundle bundle) throws InPlaceException, WorkspaceDuplicateException {
 
 		InputStream is = null;
 		if (bundle == null) {
@@ -721,45 +717,52 @@ public class BundleCommandImpl implements BundleCommand {
 			duplicateInstanceCandidates.add(bundle);
 			duplicateInstanceGroups.put(bundle, duplicateInstanceCandidates);
 			getResolverHookFactory().setGroups(duplicateInstanceGroups);
+			Activator.getDefault().getDuplicateEvents().symbolicNameDuplicate(bundle);
 			location = bundle.getLocation();
 			URL bundlereference = new URL(location);
 			is = bundlereference.openStream();
 			bundle.update(is);
 		} catch (MalformedURLException e) {
-			node.setTransitionError(TransitionError.EXCEPTION);
+			node.setBundleTransitionError(TransitionError.SERVICE_EXCEPTION);
 			throw new InPlaceException(e, "bundle_update_malformed_error", location);
 		} catch (IOException e) {
-			node.setTransitionError(TransitionError.EXCEPTION);
+			node.setBundleTransitionError(TransitionError.SERVICE_EXCEPTION);
 			throw new InPlaceException(e, "io_exception_update", bundle, location);
 		} catch (IllegalStateException e) {
-			node.setTransitionError(TransitionError.EXCEPTION);
+			node.setBundleTransitionError(TransitionError.SERVICE_EXCEPTION);
 			throw new InPlaceException(e, "bundle_state_error", bundle);
 		} catch (SecurityException e) {
-			node.setTransitionError(TransitionError.EXCEPTION);
+			node.setBundleTransitionError(TransitionError.SERVICE_EXCEPTION);
 			throw new InPlaceException(e, "bundle_security_error", bundle);
 		} catch (BundleException e) {
 			if (e.getType() == BundleException.DUPLICATE_BUNDLE_ERROR) {
-				node.setTransitionError(TransitionError.DUPLICATE);
-				throw new DuplicateBundleException(e, "duplicate_bundle_update_error", location, bundle);
+				node.setBundleTransitionError(TransitionError.WORKSPACE_DUPLICATE);
+				IProject project = node.getProject();
+				String msg = NLS.bind(Msg.WORKSPACE_UPATE_DUPLICATE_EXP, new Object[] {project.getName(), bundle, 
+						BundleNode.formatSymbolicKey(null, project)});
+				throw new WorkspaceDuplicateException(e, msg);
 			} else {
-				node.setTransitionError(TransitionError.EXCEPTION);
+				node.setBundleTransitionError(TransitionError.SERVICE_EXCEPTION);
 				throw new InPlaceException(e, "bundle_update_error", bundle);
 			}
+		} catch (ExternalDuplicateException e) {
+			node.setBundleTransitionError(TransitionError.EXTERNAL_DUPLICATE);
+			throw e;
 		} finally {
 			try {
 				if (null != is) {
 					is.close();
 				}
 			} catch (IOException e) {
-				node.setTransitionError(TransitionError.EXCEPTION);
+				node.setBundleTransitionError(TransitionError.SERVICE_EXCEPTION);
 				throw new InPlaceException(e, "io_exception_update", bundle, location);
 			} finally {
-				BundleTransitionListener.addBundleTransition(new TransitionEvent(bundle, node
-						.getTransition()));
-				if (node.hasTransitionError()) {
+				if (node.hasBundleTransitionError()) {
 					node.getState().rollBack(node);
 				} else {
 					node.getState().commit(node);
+					BundleTransitionListener.addBundleTransition(new TransitionEvent(bundle, node
+							.getTransition()));
 				}
 				// TODO Check again if resolver hook has been visited during update.
 				duplicateInstanceGroups.clear();
@@ -767,7 +770,7 @@ public class BundleCommandImpl implements BundleCommand {
 			}
 		}
 		return bundle;
-	}
+	}	
 
 	@Override
 	public IProject uninstall(Bundle bundle, Boolean unregister) throws InPlaceException,
@@ -802,22 +805,21 @@ public class BundleCommandImpl implements BundleCommand {
 			state.uninstall(node);
 			bundle.uninstall();
 		} catch (IllegalStateException e) {
-			node.setTransitionError(TransitionError.EXCEPTION);
+			node.setBundleTransitionError(TransitionError.SERVICE_EXCEPTION);
 			throw new InPlaceException(e, "bundle_state_error", bundle);
 		} catch (SecurityException e) {
-			node.setTransitionError(TransitionError.EXCEPTION);
+			node.setBundleTransitionError(TransitionError.SERVICE_EXCEPTION);
 			throw new InPlaceException(e, "bundle_security_error", bundle);
 		} catch (BundleException e) {
-			node.setTransitionError(TransitionError.EXCEPTION);
+			node.setBundleTransitionError(TransitionError.SERVICE_EXCEPTION);
 			throw new InPlaceException(e, "bundle_uninstall_error", bundle);
 		} finally {
-			BundleTransitionListener
-					.addBundleTransition(new TransitionEvent(bundle, Transition.UNINSTALL));
 			if (null != node) {
-				if (node.hasTransitionError()) {
+				if (node.hasBundleTransitionError()) {
 					node.getState().rollBack(node);
 				} else {
 					node.getState().commit(node);
+					BundleTransitionListener.addBundleTransition(new TransitionEvent(bundle, Transition.UNINSTALL));
 				}
 			}
 		}

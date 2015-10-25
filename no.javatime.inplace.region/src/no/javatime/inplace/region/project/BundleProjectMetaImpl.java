@@ -18,11 +18,11 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Map;
 import java.util.Properties;
 
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.region.Activator;
-import no.javatime.inplace.region.closure.BundleProjectBuildError;
 import no.javatime.inplace.region.events.TransitionEvent;
 import no.javatime.inplace.region.intface.BundleProjectMeta;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
@@ -37,6 +37,7 @@ import no.javatime.util.messages.TraceMessage;
 import no.javatime.util.messages.WarnMessage;
 
 import org.eclipse.core.internal.runtime.DevClassPathHelper;
+import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.IWorkspaceRoot;
@@ -47,6 +48,7 @@ import org.eclipse.core.runtime.Path;
 import org.eclipse.jdt.core.IClasspathEntry;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.IPackageFragmentRoot;
+import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.osgi.util.ManifestElement;
 import org.eclipse.osgi.util.NLS;
@@ -57,7 +59,6 @@ import org.eclipse.ui.statushandlers.StatusManager;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Constants;
-import org.osgi.framework.Version;
 
 @SuppressWarnings("restriction")
 public class BundleProjectMetaImpl extends CachedManifestOperationsImpl implements BundleProjectMeta {
@@ -76,17 +77,29 @@ public class BundleProjectMetaImpl extends CachedManifestOperationsImpl implemen
 	
 	@Override
 	public Boolean isDefaultOutputFolder(IProject project) throws InPlaceException {
-		if (!BundleProjectBuildError.hasManifest(project)) {
+		if (!hasManifest(project)) {
 			throw new InPlaceException("no_manifest_found_project", project.getName());
 		}
 
-		IBundleProjectDescription bundleProjDesc = Activator.getBundleDescription(project);
-		IPath defaultOutpUtPath = bundleProjDesc.getDefaultOutputFolder();
-		String bundleClassPath = bundleProjDesc.getHeader(Constants.BUNDLE_CLASSPATH);
+		// IBundleProjectDescription bundleProjDesc = Activator.getBundleDescription(project);
+		IPath defaultOutpUtPath = null; // bundleProjDesc.getDefaultOutputFolder();
+		String bundleClassPath = null; //bundleProjDesc.getHeader(Constants.BUNDLE_CLASSPATH);
 
+		IJavaProject jp = JavaCore.create(project);
+		if (jp.exists()) {
+			try {
+				defaultOutpUtPath = jp.getOutputLocation().removeFirstSegments(1);
+			} catch (JavaModelException e) {
+				throw new InPlaceException(new BundleStatus(StatusCode.ERROR, Activator.PLUGIN_ID, e.getMessage(), e));
+			}
+		} else {
+			return false;
+		}
+		bundleClassPath = getHeader(project, Constants.BUNDLE_CLASSPATH);
 		if (null == bundleClassPath || null == defaultOutpUtPath) {
 			return false;
 		}
+		
 		if (Category.DEBUG && Category.getState(Category.binpath)) {
 			TraceMessage.getInstance().getString("default_output_folder", project.getName(),
 					defaultOutpUtPath);
@@ -94,14 +107,25 @@ public class BundleProjectMetaImpl extends CachedManifestOperationsImpl implemen
 		return BundleProjectMetaImpl.INSTANCE.verifyPathInCachedClassPath(defaultOutpUtPath, bundleClassPath,
 				project.getName());
 	}
-
+	
 	/* (non-Javadoc)
 	 * @see no.javatime.inplace.region.project.BundleProjectDescription#getDefaultOutputFolder(org.eclipse.core.resources.IProject)
 	 */
 	@Override
-	public IPath getDefaultOutputFolder(IProject project) {
-		IBundleProjectDescription bundleProjDesc = Activator.getBundleDescription(project);
-		return bundleProjDesc.getDefaultOutputFolder();
+	public IPath getDefaultOutputFolder(IProject project) throws InPlaceException {
+
+		IJavaProject jp = JavaCore.create(project);
+		if (jp.exists()) {
+			try {
+				return jp.getOutputLocation().removeFirstSegments(1);
+			} catch (JavaModelException e) {
+				throw new InPlaceException(new BundleStatus(StatusCode.ERROR, Activator.PLUGIN_ID, e.getMessage(), e));
+			}
+		}
+		return null;
+
+//		IBundleProjectDescription bundleProjDesc = Activator.getBundleDescription(project);
+//		return bundleProjDesc.getDefaultOutputFolder();
 	}
 	
 	/* (non-Javadoc)
@@ -109,9 +133,10 @@ public class BundleProjectMetaImpl extends CachedManifestOperationsImpl implemen
 	 */
 	@Override
 	public String getBundleClassPath(IProject project) {
-		IBundleProjectDescription bundleProjDesc = Activator.getBundleDescription(project);
-		return bundleProjDesc.getHeader(Constants.BUNDLE_CLASSPATH);
+
+		return super.getHeader(project, Constants.BUNDLE_CLASSPATH);
 	}
+	
 	/* (non-Javadoc)
 	 * @see no.javatime.inplace.region.project.BundleProjectDescription#createClassPathEntry(org.eclipse.core.resources.IProject)
 	 */
@@ -178,7 +203,7 @@ public class BundleProjectMetaImpl extends CachedManifestOperationsImpl implemen
 	@Override
 	public Boolean addDefaultOutputFolder(IProject project) throws InPlaceException {
 		try {
-			if (!BundleProjectBuildError.hasManifest(project)) {
+			if (!hasManifest(project)) {
 				throw new InPlaceException("no_manifest_found_project", project.getName());
 			}
 			IBundleProjectDescription bundleProjDesc = Activator.getBundleDescription(project);
@@ -243,7 +268,7 @@ public class BundleProjectMetaImpl extends CachedManifestOperationsImpl implemen
 		boolean removed = false;
 
 		try {
-			if (!BundleProjectBuildError.hasManifest(project)) {
+			if (!hasManifest(project)) {
 				throw new InPlaceException("no_manifest_found_project", project.getName());
 			}
 			IBundleProjectDescription bundleProjDesc = Activator.getBundleDescription(project);
@@ -335,65 +360,61 @@ public class BundleProjectMetaImpl extends CachedManifestOperationsImpl implemen
 	@Override
 	public Boolean getActivationPolicy(IProject project)
 			throws InPlaceException {
+
 		if (null == project) {
 			throw new InPlaceException(ExceptionMessage.getInstance().getString("project_null"));
 		}
-		IBundleProjectDescription bundleProjDesc = Activator.getBundleDescription(project);
-		if (null == bundleProjDesc) {
-			throw new InPlaceException(ExceptionMessage.getInstance().getString("project_description_null"));
-		}
-		String policy = bundleProjDesc.getActivationPolicy();
+		String policy =  super.getHeader(project, Constants.BUNDLE_ACTIVATIONPOLICY);
 		if (null != policy && policy.equals(Constants.ACTIVATION_LAZY)) {
 			return true;
 		}
 		return false;
 	}
 
-	/* (non-Javadoc)
-	 * @see no.javatime.inplace.region.project.BundleProjectDescription#getSymbolicName(org.eclipse.core.resources.IProject)
-	 */
 	@Override
 	public String getSymbolicName(IProject project) throws InPlaceException {
 
-		IBundleProjectDescription bundleProjDesc = Activator.getBundleDescription(project);
-		if (null == bundleProjDesc) {
-			return null;
-		}
-		return bundleProjDesc.getSymbolicName();
+		return super.getHeader(project, Constants.BUNDLE_SYMBOLICNAME);
 	}
 
-	/* (non-Javadoc)
-	 * @see no.javatime.inplace.region.project.BundleProjectDescription#getBundleVersion(org.eclipse.core.resources.IProject)
-	 */
 	@Override
 	public String getBundleVersion(IProject project) throws InPlaceException {
-		if (null == project) {
-			return null;
-		}
-		IBundleProjectDescription bundleProjDesc = Activator.getBundleDescription(project);
-		if (null == bundleProjDesc) {
-			return null;
-		}
-		Version version = bundleProjDesc.getBundleVersion();
-		if (null != version) {
-			return version.toString();
-		}
+
+		return super.getHeader(project, Constants.BUNDLE_VERSION);
+	}
+	
+	@Override
+	public boolean isFragment(IProject project) throws InPlaceException {
+
+		return null != super.getHeader(project, Constants.FRAGMENT_HOST) ? true : false;
+	}
+	
+	public ManifestElement[] getRequiredBundles(IProject project) throws InPlaceException {
+		
+		if (null != project && project.isAccessible()) {
+			IFile manifestFile = BundleProjectMetaImpl.INSTANCE.getManifestFile(project);
+			if (manifestFile.exists()) {
+				try {
+					Map<String, String> headers = ManifestElement.parseBundleManifest(manifestFile.getContents(), null);
+					ManifestElement[] elements = parseHeader(headers, Constants.REQUIRE_BUNDLE);
+					return elements;
+				} catch (CoreException | IOException | BundleException e) {
+					throw new InPlaceException(new BundleStatus(StatusCode.ERROR, Activator.PLUGIN_ID, e.getMessage(), e));
+				}
+			}
+		}		
 		return null;
 	}
 
-	/* (non-Javadoc)
-	 * @see no.javatime.inplace.region.project.BundleProjectDescription#getProject(org.osgi.framework.Bundle)
-	 */
 	@Override
 	public IProject getProject(Bundle bundle) {
 		IWorkspace workspace = ResourcesPlugin.getWorkspace();
 		IWorkspaceRoot root = workspace.getRoot();
 		for (IProject project : root.getProjects()) {
 			try {
-				IBundleProjectDescription bundleProjDesc = Activator.getBundleDescription(project);
-				String symbolicName = bundleProjDesc.getSymbolicName();
+				String symbolicName = getSymbolicName(project);
 				if (null != symbolicName && symbolicName.equals(bundle.getSymbolicName())) {
-					Version version = bundleProjDesc.getBundleVersion();
+					String version = getBundleVersion(project);
 					if (null != version && version.equals(bundle.getVersion())) {
 						return project;
 					}

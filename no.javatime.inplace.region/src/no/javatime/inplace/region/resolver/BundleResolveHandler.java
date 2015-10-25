@@ -46,7 +46,7 @@ import org.osgi.framework.wiring.BundleRevision;
  * <p>
  * <b>Removing duplicates.</b>
  * <p>
- * Duplicates,in this context, may occur when a workspace bundle (or plug-in project) has been
+ * Duplicates, in this context, may occur when a workspace bundle (or plug-in project) has been
  * modified and needs to be updated. If the workspace bundle to update is a singleton a collision
  * occur with the current revision of the bundle to update, when the bundle is resolved as part of
  * the update process. By removing the current resolved bundle from being resolved (the duplicate) a
@@ -122,70 +122,73 @@ class BundleResolveHandler implements ResolverHook {
 				return;
 			}
 		}
-		// Delay resolve for bundles dependent on deactivated bundles until deactivated bundles are
-		// activated
-		Collection<BundleRevision> dependentBundles = delayResolve(activatedBundles,
-				deactivatedBundles);
-		if (dependentBundles.size() > 0) {
-			candidates.removeAll(dependentBundles);
-		}
+		// All deactivated providers are by default removed form the candidate list so there is no need
+		// to remove deactivated providers here.
+		delayResolve(activatedBundles, deactivatedBundles);
 	}
 
 	/**
-	 * Filters out activated candidate bundles that have requirements on deactivated candidate
-	 * bundles.
-	 * <p>
-	 * A pending transition for later activation is assigned to deactivated candidate bundles
-	 * providing capabilities to activated candidate bundles.
-	 * <p>
-	 * The bundle revision to not resolve will be resolved together with the deactivated provider when
-	 * the provider is activated, updated (delayed update) and resolved
-	 * <p>
-	 * Note the transitivity with respect to not resolved bundles and bundles to activate. Activated
-	 * bundles dependent on an activated bundle which again is dependent on a deactivated bundle is
-	 * included in the list of activated requiring bundle revisions to not resolve. From this follows
-	 * that deactivated bundles providing capabilities to other deactivated bundles providing
-	 * capabilities to an activated bundle are activated when the deactivated bundle in question is
-	 * activated.
+	 * Filters out deactivated candidate bundles that provide capabilities to activated bundles and
+	 * add them as pending transitions for activation
 	 * 
-	 * @param activatedRevs all activated candidate workspace bundles
-	 * @param deactivatedRevs all deactivated candidate workspace bundles
-	 * @return all activated bundles that requires capabilities from deactivated bundles or an empty
-	 * collection if no such requirements exist
+	 * <p>
+	 * The set of activated candidate bundles that have requirements on deactivated candidate bundles
+	 * will be unresolved by this resolve as long as the returned provider(s) are removed from the
+	 * candidate list to resolve. They will than be resolved again later together with the deactivated
+	 * provider when the provider is resolved as part of the activation process.
+	 * <p>
+	 * A second alternative is to remove the dependency closure (activated requires and deactivated
+	 * providers) from the candidate list to resolve. The activated bundles should than be rolled back
+	 * before returning from the resolver hook. The closure would than be resolved when the
+	 * deactivated providers are activated.
+	 * <p>
+	 * A third alternative is to add the deactivated providers to the candidate list to resolve. The
+	 * dependency closure will then be resolved again a second time when the deactivated providers are
+	 * activated.
+	 * <p>
+	 * Note the transitivity with respect to activated bundles with dependencies on deactivated
+	 * bundles. From this follows that deactivated bundles providing capabilities to other deactivated
+	 * bundles providing capabilities to an activated bundle are activated when the deactivated bundle
+	 * in question is activated.
+	 * 
+	 * @param activatedBundleRevisons all activated candidate workspace bundles
+	 * @param deactivatedBundleRevisions all deactivated candidate workspace bundles
+	 * @return all deactivated bundle revisions providing capabilities to the specified set of
+	 * activated bundles
 	 */
 	private Collection<BundleRevision> delayResolve(
-			Collection<BundleRevision> activatedRevs, Collection<BundleRevision> deactivatedRevs) {
+			Collection<BundleRevision> activatedBundleRevisons,
+			Collection<BundleRevision> deactivatedBundleRevisions) {
 
-		// Activated bundles requiring capabilities from deactivated bundles
-		Collection<BundleRevision> bundlesToNotResolve = null;
+		// Deactivated bundles providing capabilities to activated bundles
+		Collection<BundleRevision> deactivatedProviders = null;
 
 		// Does any bundles in the set of activated candidate bundles to resolve have requirements on
 		// any deactivated candidate bundles
-		for (BundleRevision deactivatedRev : deactivatedRevs) {
+		for (BundleRevision deactivatedRev : deactivatedBundleRevisions) {
 			Collection<BundleRevision> activatedReqs = BundleDependencies.getRequiringBundles(
-					deactivatedRev, activatedRevs, null, new LinkedHashSet<BundleRevision>());
+					deactivatedRev, activatedBundleRevisons, null, new LinkedHashSet<BundleRevision>());
 			if (activatedReqs.size() > 0) {
-				if (null == bundlesToNotResolve) {
-					bundlesToNotResolve = new LinkedHashSet<BundleRevision>();
+				if (null == deactivatedProviders) {
+					deactivatedProviders = new LinkedHashSet<BundleRevision>();
 				}
-				// Inform others (typically build and job listeners)that this bundle project should be
-				// activated
+				// Inform others (build and job listeners) that this bundle project should be activated
 				bundleTransition.addPending(deactivatedRev.getBundle(), Transition.ACTIVATE_PROJECT);
-				bundlesToNotResolve.addAll(rollBackTransition(activatedReqs));
+				deactivatedProviders.add(deactivatedRev);
 			}
 		}
-		if (null != bundlesToNotResolve) {
-			return bundlesToNotResolve;
-		}
-		return Collections.<BundleRevision> emptySet();
+		return null != deactivatedProviders ? deactivatedProviders : Collections
+				.<BundleRevision> emptySet();
 	}
 
 	/**
-	 * Set bundle and transition states to installed for the specified list of bundle revisions
+	 * Set bundle and transition states to the state before resolve for the specified list of bundle
+	 * revisions
 	 * 
-	 * @param notResolveList bundles to roll back to state installed
-	 * @return the specified list to revert or an empty list if the specified list is null
+	 * @param notResolveList bundles to roll back
+	 * @return the specified list to roll back or an empty list if the specified list is null
 	 */
+	@SuppressWarnings("unused")
 	private Collection<BundleRevision> rollBackTransition(Collection<BundleRevision> notResolveList) {
 
 		if (null == notResolveList) {
@@ -244,7 +247,7 @@ class BundleResolveHandler implements ResolverHook {
 		} catch (ExtenderException e) {
 			StatusManager.getManager().handle(
 					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),
-					StatusManager.LOG);						
+					StatusManager.LOG);
 		}
 	}
 

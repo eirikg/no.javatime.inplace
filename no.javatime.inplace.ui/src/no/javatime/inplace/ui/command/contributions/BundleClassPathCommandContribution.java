@@ -3,9 +3,6 @@ package no.javatime.inplace.ui.command.contributions;
 import java.util.ArrayList;
 import java.util.Collection;
 
-import no.javatime.inplace.bundlejobs.intface.ActivateProject;
-import no.javatime.inplace.dl.preferences.intface.MessageOptions;
-import no.javatime.inplace.extender.intface.Extender;
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.region.closure.BundleProjectBuildError;
 import no.javatime.inplace.region.intface.BundleProjectCandidates;
@@ -14,7 +11,6 @@ import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import no.javatime.inplace.ui.Activator;
 import no.javatime.inplace.ui.msg.Msg;
-import no.javatime.util.messages.WarnMessage;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.jface.action.ContributionItem;
@@ -69,7 +65,6 @@ public class BundleClassPathCommandContribution extends BundleMainCommandsContri
 		if (projects.size() > 0) {
 			int nAdd = 0;
 			int nRemove = 0;
-			Collection<IProject> errProjects = null;
 			for (IProject project : projects) {
 				try {
 					if (!BundleProjectBuildError.hasManifestBuildErrors(project)) {
@@ -78,33 +73,8 @@ public class BundleClassPathCommandContribution extends BundleMainCommandsContri
 						} else {
 							nRemove++;
 						}
-					} else {
-						if (null == errProjects) {
-							errProjects = new ArrayList<IProject>();
-						}
-						Extender<ActivateProject> activateProjectExt = Activator.getTracker().getTrackedExtender(
-								ActivateProject.class.getName());
-						try {
-							ActivateProject activateproject = activateProjectExt.getService();
-							if (activateproject.isProjectActivated(project)) {
-								errProjects.add(project);
-							}
-						} finally {
-							activateProjectExt.ungetService();
-						}
 					}
 				} catch (ExtenderException | InPlaceException e) {
-				}
-			}
-			if (null != errProjects) {
-				MessageOptions messageOptions = Activator.getMessageOptionsService();
-				if (messageOptions.isInfoMessages() || messageOptions.isBundleEvents()
-						|| messageOptions.isBundleOperations()) {
-					String msg = WarnMessage.getInstance().formatString("error_not_update_classpath",
-							Activator.getBundleProjectCandidatesService().formatProjectList(errProjects));
-					StatusManager.getManager()
-							.handle(new BundleStatus(StatusCode.ERROR, Activator.PLUGIN_ID, msg, null),
-									StatusManager.LOG);
 				}
 			}
 			if (nAdd > 0) {

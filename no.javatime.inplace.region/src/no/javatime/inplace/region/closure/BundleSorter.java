@@ -450,9 +450,9 @@ public class BundleSorter extends BaseSorter {
 			BundleSorter bs = new BundleSorter();
 			bs.setAllowCycles(true);
 			Collection<Bundle> bundles = bs.sortDeclaredRequiringBundles(Collections.<Bundle>singletonList(parent), WorkspaceRegionImpl.INSTANCE.getBundles());
-			BundleTransitionImpl.INSTANCE.setTransitionError(parent, TransitionError.CYCLE);
+			BundleTransitionImpl.INSTANCE.setBuildTransitionError(parent, TransitionError.CYCLE);
 			bundles.addAll(bs.sortDeclaredRequiringBundles(Collections.<Bundle>singletonList(child), WorkspaceRegionImpl.INSTANCE.getBundles()));
-			BundleTransitionImpl.INSTANCE.setTransitionError(child, TransitionError.CYCLE);
+			BundleTransitionImpl.INSTANCE.setBuildTransitionError(child, TransitionError.CYCLE);
 			if (null == circularException) {
 				circularException = new CircularReferenceException();
 			}

@@ -1,6 +1,3 @@
-/**
- * 
- */
 package no.javatime.inplace.region.closure;
 
 import java.util.Collection;
@@ -27,7 +24,7 @@ import org.eclipse.core.resources.IProject;
  * @see ProjectBuildErrorClosure
  * @see BundleProjectBuildError
  */
-public class BundleBuildErrorClosure extends ProjectBuildErrorClosure {
+public class BundleDuplicateBuildErrorClosure extends BundleBuildErrorClosure {
 
 	/**
 	 * Calculate the bundle error closures for the specified projects where the bundle error closure
@@ -40,7 +37,7 @@ public class BundleBuildErrorClosure extends ProjectBuildErrorClosure {
 	 * {@code Closure.REQUIRING}) The providing/requiring closure is interpreted as bundle projects
 	 * providing/requiring capabilities to/from an initial project.
 	 */
-	public BundleBuildErrorClosure(Collection<IProject> initialProjects, Transition transition,
+	public BundleDuplicateBuildErrorClosure(Collection<IProject> initialProjects, Transition transition,
 			Closure closure) {
 		super(initialProjects, transition, closure);
 	}
@@ -71,7 +68,7 @@ public class BundleBuildErrorClosure extends ProjectBuildErrorClosure {
 	 * @param activationScope is deactivated ({@code ActivationLevel.DEACTIVATED}), activated (
 	 * {@code ActivationLevel.ACTIVATED}) or all ({@code ActivationLevel.ALL}) projects
 	 */
-	public BundleBuildErrorClosure(Collection<IProject> initialProjects, Transition transition,
+	public BundleDuplicateBuildErrorClosure(Collection<IProject> initialProjects, Transition transition,
 			Closure closure, int activationLevel, ActivationScope scope) {
 		super(initialProjects, transition, closure, activationLevel, scope);
 	}
@@ -96,7 +93,7 @@ public class BundleBuildErrorClosure extends ProjectBuildErrorClosure {
 		if (Activator.getCommandOptionsService().isActivateOnCompileError()) {
 			try {
 				if (null == errorProjects) {
-					errorProjects = BundleProjectBuildError.getBundleErrors(getProjectClosures(), includeDuplicates);
+					errorProjects = BundleProjectBuildError.getBundleErrors(getProjectClosures(), false);
 				}
 			} catch (CircularReferenceException e) {
 				if (null == errorProjects) {

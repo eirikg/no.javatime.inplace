@@ -292,13 +292,13 @@ public class ProjectSorter extends BaseSorter {
 		// Hosts can import packages from fragment (no complaints from PDE),
 		// even if fragment is an inherent part of the host. Is this a kind of self reference?
 		// Must check both parent and child, due to traversal order (providing or requiring)
-		if (!getAllowCycles() && (!BundleProjectCandidatesImpl.INSTANCE.isFragment(child) && !BundleProjectCandidatesImpl.INSTANCE.isFragment(parent))) {
+		if (!getAllowCycles() && (!BundleProjectCandidatesImpl.isFragment(child) && !BundleProjectCandidatesImpl.isFragment(parent))) {
 			ProjectSorter ps = new ProjectSorter();
 			ps.setAllowCycles(true);
 			Collection<IProject> projects = ps.sortRequiringProjects(Collections.<IProject>singletonList(parent));
 			projects.addAll(ps.sortRequiringProjects(Collections.<IProject>singletonList(child)));
-			BundleTransitionImpl.INSTANCE.setTransitionError(parent, TransitionError.CYCLE);
-			BundleTransitionImpl.INSTANCE.setTransitionError(child, TransitionError.CYCLE);
+			BundleTransitionImpl.INSTANCE.setBuildTransitionError(parent, TransitionError.CYCLE);
+			BundleTransitionImpl.INSTANCE.setBuildTransitionError(child, TransitionError.CYCLE);
 			if (null == circularException) {
 				circularException = new CircularReferenceException();
 			}

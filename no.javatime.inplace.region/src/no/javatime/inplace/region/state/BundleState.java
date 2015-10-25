@@ -72,7 +72,7 @@ public abstract class BundleState {
 	 * @param event information about the external command
 	 */
 	public void incomplete(BundleNode bundleNode, BundleEvent event, TransitionError error) {
-		bundleNode.setTransitionError(error);
+		bundleNode.setBundleTransitionError(error);
 	}
 
 	/**
@@ -91,7 +91,7 @@ public abstract class BundleState {
 			BundleTransitionImpl bundleTransition = BundleTransitionImpl.INSTANCE;
 			final String symbolicName = WorkspaceRegionImpl.INSTANCE.getSymbolicKey(bundle, null);
 			final String stateName = bundleCommand.getStateName(event);
-			if (bundleTransition.getError(bundle) == TransitionError.INCOMPLETE) {
+			if (bundleTransition.getBuildError(bundle) == TransitionError.SERVICE_INCOMPLETE) {
 				if (Activator.getMessageOptionsService().isBundleOperations()) {
 					String msg = NLS.bind(Msg.INCOMPLETE_BUNDLE_OP_INFO, new Object[] {symbolicName, stateName,
 							location});

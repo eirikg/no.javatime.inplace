@@ -28,17 +28,16 @@ public class InPlaceException extends RuntimeException {
 	}
 
 	/**
-	 * Outputs and logs exception
+	 * Forwards the exception
 	 * 
 	 * @param tex the current thrown exception
 	 */
 	public InPlaceException (Throwable tex) {
 		super(tex);	
-		ExceptionMessage.getInstance().handleMessage(tex, null);
 	}
 	
 	/**
-	 * Outputs and logs exception and message based on message key
+	 * Formats the message based on message key
 	 * 
 	 * @param tex the current thrown exception
 	 * @param key to access message from resource bundle
@@ -49,7 +48,7 @@ public class InPlaceException extends RuntimeException {
 	}
 	
 	/**
-	 * Outputs and logs the specified message
+	 * Forwards the specified message
 	 * 
 	 * @param msg message to log
 	 */
@@ -62,7 +61,7 @@ public class InPlaceException extends RuntimeException {
 	}
 
 	/**
-	 * Outputs and logs a message based on message key
+	 * Formats the message based on message key
 	 * 
 	 * @param key to access message from resource bundle
 	 * @param substitutions message strings to insert into the retrieved message

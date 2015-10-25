@@ -105,7 +105,6 @@ public class ResetJob extends BundleJob implements Reset {
 				addInfoMessage("Terminating with no bundles to to reset");
 				return getJobSatus();
 			}
-
 			Uninstall uninstall = new UninstallJob(Msg.RESET_UNINSTALL_JOB, uninstallClosures);
 			uninstall.getJob().setProgressGroup(groupMonitor, 1);
 			uninstall.setAddRequiring(false);
@@ -148,7 +147,18 @@ public class ResetJob extends BundleJob implements Reset {
 
 	private Collection<IProject> getClosures(Collection<IProject> pendingProjects) {
 
-		Collection<IProject> initialProjects = new LinkedHashSet<>(pendingProjects /* -getPendingProjects() */);
+		
+//		Collection<IProject> projects = bundleRegion.getProjects();
+//		Map<IProject, IProject> wsDuplicates = bundleRegion.getWorkspaceDuplicates(projects, projects);
+//		if (wsDuplicates.size() > 0) {
+//			return Collections.<IProject>emptySet();
+//		}
+//		for (IProject project : projects) {
+//			if (BundleProjectBuildError.isExternalDuplicate(project)) {				
+//				return Collections.<IProject>emptySet();
+//			}
+//		}		
+		Collection<IProject> initialProjects = new LinkedHashSet<>(pendingProjects);
 
 		BundleClosures closures = new BundleClosures();
 		// Ignore uninstalled bundles
@@ -156,7 +166,6 @@ public class ResetJob extends BundleJob implements Reset {
 				bundleRegion.getBundles(getPendingProjects()), Bundle.UNINSTALLED);
 		if (uninstalledBundles.size() > 0) {
 			initialProjects.removeAll(uninstalledBundles);
-			// -removePendingProjects(bundleRegion.getProjects(uninstalledBundles));
 		}
 		Collection<IProject> errorStatusProjects = new LinkedHashSet<>();
 		// Remove installed bundles with errors. No dependencies here
@@ -164,10 +173,9 @@ public class ResetJob extends BundleJob implements Reset {
 				bundleRegion.getBundles(getPendingProjects()), Bundle.INSTALLED);
 		if (installedBundles.size() > 0) {
 			for (Bundle bundle : installedBundles) {
-				if (BundleProjectBuildError.hasErrors(bundleRegion.getProject(bundle))) {
+				if (BundleProjectBuildError.hasErrors(bundleRegion.getProject(bundle), false)) {
 					IProject errorProject = bundleRegion.getProject(bundle);
 					initialProjects.remove(errorProject);
-					// -removePendingProject(errorProject);
 					errorStatusProjects.add(errorProject);
 				}
 			}
@@ -176,14 +184,14 @@ public class ResetJob extends BundleJob implements Reset {
 		// Use providing and requiring closure instead of requiring closure plus providing closure
 		// to include bundles required by refresh (after uninstall) and resolve (after install)
 		Collection<IProject> uninstallClosures = closures.projectDeactivation(
-				Closure.PROVIDING_AND_REQUIRING, initialProjects, true /* -getPendingProjects() */);
+				Closure.PROVIDING_AND_REQUIRING, initialProjects, true);
 		BundleBuildErrorClosure be = new BundleBuildErrorClosure(uninstallClosures,
 				Transition.UNINSTALL, Closure.PROVIDING, Bundle.RESOLVED, ActivationScope.ACTIVATED);
-		if (be.hasBuildErrors()) {
+		if (be.hasBuildErrors(true)) {
 			// Remove legal closures that have overlapping bundles with error closures
-			Collection<IProject> errorProjects = be.getBuildErrors();
+			Collection<IProject> errorProjects = be.getBuildErrors(true);
 			Collection<IProject> errorClosures = null;
-			Collection<IProject> resolvedProjects = new LinkedHashSet<>(initialProjects /* -getPendingProjects() */);
+			Collection<IProject> resolvedProjects = new LinkedHashSet<>(initialProjects);
 			resolvedProjects.removeAll(bundleRegion.getProjects(installedBundles));
 			do {
 				errorClosures = closures.projectDeactivation(Closure.PROVIDING_AND_REQUIRING,
@@ -201,23 +209,19 @@ public class ResetJob extends BundleJob implements Reset {
 				}
 			} while (errorClosures.size() > 0);
 		}	
-		Collection<IProject> externalDuplicates = getExternalDuplicateClosures(uninstallClosures, null);
-		if (null != externalDuplicates) {
-			// TODO
-		}
-		Collection<IProject> wsDuplicates = removeWorkspaceDuplicates(uninstallClosures, null, null,
-				bundleProjectCandidates.getInstallable(), Msg.DUPLICATE_WS_BUNDLE_INSTALL_ERROR);
-		if (null != externalDuplicates || null != wsDuplicates) {
-			// TODO
-		}
-		
 		if (errorStatusProjects.size() > 0) {
-			IBundleStatus errorStatus = new BundleStatus(StatusCode.WARNING, Activator.PLUGIN_ID, "Error bundle projects and their closures not beeing reset:");
+			IBundleStatus errorStatus = new BundleStatus(StatusCode.WARNING, Activator.PLUGIN_ID, "Error bundle project closure(s):");
 			StatusCode statusCode = StatusCode.OK;
 			for (IProject errProject : errorStatusProjects)  {
-				statusCode = BundleProjectBuildError.hasErrors(errProject) ? StatusCode.ERROR : StatusCode.OK; 
-				errorStatus.add(new BundleStatus(statusCode, Activator.PLUGIN_ID, errProject, errProject.getName(),null));
+				statusCode = BundleProjectBuildError.hasErrors(errProject, true) ? StatusCode.ERROR : StatusCode.OK; 
+				IBundleStatus projectStatus = new BundleStatus(statusCode, Activator.PLUGIN_ID, errProject, errProject.getName(),null);	
+				IBundleStatus status = bundleRegion.getBundleStatus(errProject);
+				if (null != status) {
+					projectStatus.add(status);
+				}
+				errorStatus.add(projectStatus);
 			}
+			errorStatus.add(be.getErrorClosureStatus());
 			addLogStatus(errorStatus);
 		}
 		installedBundles = bundleRegion.getBundles(bundleRegion.getBundles(initialProjects),

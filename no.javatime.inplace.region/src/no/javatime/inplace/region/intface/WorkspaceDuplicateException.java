@@ -10,22 +10,34 @@
  *******************************************************************************/
 package no.javatime.inplace.region.intface;
 
+import no.javatime.inplace.region.manager.BaseException;
+import no.javatime.util.messages.ExceptionMessage;
 
 
 
-public class DuplicateBundleException extends InPlaceException {
+
+public class WorkspaceDuplicateException extends BaseException {
 
 	private static final long serialVersionUID = -6632902141188744336L;
 	
-	public DuplicateBundleException () {
+	public WorkspaceDuplicateException () {
 		super();	
 	}
-	public DuplicateBundleException(Throwable tex, String key, Object ... substitutions) {
-		super(tex, key, substitutions);
+
+	public WorkspaceDuplicateException(String msg) {
+		super(msg);
+	}
+
+	public WorkspaceDuplicateException(Throwable tex, String msg) {
+		super(msg, tex);
+	}
+
+	public WorkspaceDuplicateException(Throwable tex, String key, Object ... substitutions) {
+		super(ExceptionMessage.getInstance().formatString(key, substitutions), tex);
 	}
 	
-	public DuplicateBundleException(String key, Object ... substitutions) {
-		super(key, substitutions);
+	public WorkspaceDuplicateException(String key, Object ... substitutions) {
+		super(ExceptionMessage.getInstance().formatString(key, substitutions));
 	}
 	
 	

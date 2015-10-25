@@ -14,7 +14,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 
-import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.util.messages.ExceptionMessage;
@@ -28,7 +27,7 @@ import org.osgi.framework.Bundle;
  * All elements (projects or bundles) included in cycles and a list of status objects, one for each cycle, is
  * registered and can be obtained from the exception.
  */
-public class CircularReferenceException extends InPlaceException {
+public class CircularReferenceException extends RuntimeException {
 
 	private static final long serialVersionUID = -6180458290568463709L;
 	private transient Collection<Bundle> bundles;
@@ -39,7 +38,7 @@ public class CircularReferenceException extends InPlaceException {
 	 * Creates a circular exception containing a default message indicating a termination due to a cycle.
 	 */
 	public CircularReferenceException() {
-		super(ExceptionMessage.getInstance().getString("circular_reference_termination"));
+		super(ExceptionMessage.getInstance().formatString("circular_reference_termination"));
 	}
 
 	/**

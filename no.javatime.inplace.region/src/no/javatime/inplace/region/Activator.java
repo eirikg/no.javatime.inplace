@@ -4,6 +4,7 @@ import no.javatime.inplace.dl.preferences.intface.CommandOptions;
 import no.javatime.inplace.dl.preferences.intface.DependencyOptions;
 import no.javatime.inplace.dl.preferences.intface.MessageOptions;
 import no.javatime.inplace.extender.intface.ExtenderException;
+import no.javatime.inplace.region.closure.ExternalDuplicates;
 import no.javatime.inplace.region.intface.BundleCommand;
 import no.javatime.inplace.region.intface.BundleProjectCandidates;
 import no.javatime.inplace.region.intface.BundleProjectMeta;
@@ -36,6 +37,7 @@ public class Activator extends AbstractUIPlugin {
 	private static Bundle bundle;
 
 	private BundleStateEvents bundleEvents = new BundleStateEvents();
+	private ExternalDuplicates duplicateEvents = new ExternalDuplicates();
 
 	private static ServiceTracker<IBundleProjectService, IBundleProjectService> bundleProjectTracker;
 
@@ -52,10 +54,10 @@ public class Activator extends AbstractUIPlugin {
 
 	// Register and track extenders and get and unget services provided by this and other bundles
 	private static ExtenderTracker extenderTracker;
-
+	
 	public Activator() {
 	}
-
+	
 	/*
 	 * (non-Javadoc)
 	 * 
@@ -70,7 +72,7 @@ public class Activator extends AbstractUIPlugin {
 		Activator.context.addBundleListener(bundleEvents);
 		BundleCommandImpl bundleCommandImpl = BundleCommandImpl.INSTANCE;
 		bundleCommandImpl.initFrameworkWiring();
-		extenderTracker = new ExtenderTracker(context, Bundle.ACTIVE, null);
+		extenderTracker = new ExtenderTracker(context, Bundle.INSTALLED | Bundle.UNINSTALLED | Bundle.ACTIVE, null);
 		extenderTracker.open();
 		extenderTracker.trackOwn();		
 		bundleProjectTracker = new ServiceTracker<IBundleProjectService, IBundleProjectService>(
@@ -85,6 +87,7 @@ public class Activator extends AbstractUIPlugin {
 	 */
 	public void stop(BundleContext context) throws Exception {
 
+		Activator.context.removeBundleListener(duplicateEvents);
 		Activator.context.removeBundleListener(bundleEvents);
 		bundleProjectTracker.close();
 		bundleProjectTracker = null;
@@ -143,6 +146,14 @@ public class Activator extends AbstractUIPlugin {
 	 */
 	public void unregisterResolverHook() {
 		resolveHookRegistration.unregister();
+	}
+	
+	/**
+	 * Get the duplicate event handler
+	 * @return The duplicate event handler
+	 */
+	public ExternalDuplicates getDuplicateEvents() {
+		return duplicateEvents;
 	}
 
 	/**

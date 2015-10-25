@@ -51,7 +51,7 @@ public interface BundleCommand {
 	 * properties file, default output folder is missing or any of the
 	 * {@link BundleContext#installBundle(String, InputStream)} exceptions except the duplicate bundle
 	 * exception
-	 * @throws DuplicateBundleException if a bundle with the same symbolic name and version already
+	 * @throws WorkspaceDuplicateException if a bundle with the same symbolic name and version already
 	 * exists
 	 * @throws ProjectLocationException if the specified project is null or the location of the
 	 * specified project could not be found
@@ -65,7 +65,7 @@ public interface BundleCommand {
 	 * @see BundleCommand#start(Bundle, int)
 	 * @see BundleCommand#start(Bundle, int, long)
 	 */
-	public Bundle activate(IProject project) throws InPlaceException, DuplicateBundleException,
+	public Bundle activate(IProject project) throws InPlaceException, WorkspaceDuplicateException,
 			ProjectLocationException, InterruptedException, IllegalStateException, ExtenderException;
 
 	/**
@@ -112,7 +112,7 @@ public interface BundleCommand {
 	 * @return the installed bundle object
 	 * @throws InPlaceException Any of the {@link BundleContext#installBundle(String, InputStream)}
 	 * exceptions except duplicate bundles
-	 * @throws DuplicateBundleException if a bundle with the same symbolic name and version already
+	 * @throws WorkspaceDuplicateException if a bundle with the same symbolic name and version already
 	 * exists
 	 * @throws ProjectLocationException if the specified project is null or the location of the
 	 * specified project could not be found
@@ -120,7 +120,7 @@ public interface BundleCommand {
 	 * @see BundleContext#installBundle(String, InputStream)
 	 */
 	public Bundle install(IProject project, Boolean activate) throws InPlaceException,
-			DuplicateBundleException, ProjectLocationException;
+			WorkspaceDuplicateException, ProjectLocationException;
 
 	/**
 	 * Resolves the specified set of bundles. If no bundles are specified, then the Framework will
@@ -198,10 +198,10 @@ public interface BundleCommand {
 	 * @return the object of the updated bundle
 	 * @throws InPlaceException if bundle is null or any of the {@link Bundle#update(InputStream)}
 	 * exceptions
-	 * @throws DuplicateBundleException if this bundle is a duplicate - same symbolic name and version
+	 * @throws WorkspaceDuplicateException if this bundle is a duplicate - same symbolic name and version
 	 * - of an already installed bundle with a different location identifier.
 	 */
-	public Bundle update(Bundle bundle) throws InPlaceException, DuplicateBundleException;
+	public Bundle update(Bundle bundle) throws InPlaceException, WorkspaceDuplicateException;
 
 	/**
 	 * Refresh the specified set of bundles synchronously.

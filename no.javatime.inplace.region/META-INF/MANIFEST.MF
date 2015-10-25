@@ -1,7 +1,7 @@
 Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: InPlace Bundle Project Region
-Bundle-SymbolicName: no.javatime.inplace.region
+Bundle-SymbolicName: no.javatime.inplace.region;singleton:=true
 Bundle-Version: 0.1.8.qualifier
 Bundle-Activator: no.javatime.inplace.region.Activator
 Bundle-Command-Service: no.javatime.inplace.region.manager.BundleCommandImpl
@@ -19,23 +19,9 @@ Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Import-Package: no.javatime.inplace.dl.preferences.intface,
  no.javatime.inplace.extender.intface,
  no.javatime.util.messages
-Export-Package: no.javatime.inplace.region.closure;
-  uses:="no.javatime.inplace.region.status,
-   no.javatime.inplace.region.manager,
-   org.eclipse.core.resources,
-   org.osgi.framework.wiring,
-   org.osgi.framework,
-   no.javatime.inplace.dl.preferences.intface",
- no.javatime.inplace.region.events;uses:="no.javatime.inplace.region.manager,org.eclipse.core.resources,org.osgi.framework",
+Export-Package: no.javatime.inplace.region.closure,
+ no.javatime.inplace.region.events,
  no.javatime.inplace.region.intface,
- no.javatime.inplace.region.project;
-  uses:="org.eclipse.core.runtime,
-   org.eclipse.jdt.core,
-   org.eclipse.core.resources,
-   org.osgi.framework",
- no.javatime.inplace.region.status;
-  uses:="org.eclipse.core.runtime,
-   no.javatime.inplace.region.manager,
-   org.eclipse.core.resources,
-   org.osgi.framework"
+ no.javatime.inplace.region.project,
+ no.javatime.inplace.region.status
 Bundle-Vendor: JavaTime Project

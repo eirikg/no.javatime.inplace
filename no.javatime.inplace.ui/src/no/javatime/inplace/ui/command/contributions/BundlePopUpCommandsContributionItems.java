@@ -177,7 +177,7 @@ public class BundlePopUpCommandsContributionItems extends BundleCommandsContribu
 		try {
 			if (null != bundle && activated) {
 				BundleProjectMeta bundlePrrojectMeta = Activator.getBundleProjectMetaService();
-				if (!bundlePrrojectMeta.isFragment(bundle)) {
+				if (!bundlePrrojectMeta.isCachedFragment(bundle)) {
 					if ((bundle.getState() & (Bundle.INSTALLED | Bundle.RESOLVED | Bundle.STOPPING)) != 0) {
 						return createContibution(menuId, dynamicPopUpCommandId, Msg.START_LABEL, startParamId,
 								CommandContributionItem.STYLE_PUSH, startImage);

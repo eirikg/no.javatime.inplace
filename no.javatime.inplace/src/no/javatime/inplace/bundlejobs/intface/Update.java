@@ -28,7 +28,7 @@ import org.eclipse.core.resources.IProject;
  * handled by the resolver hook. The resolver hook is visited by the framework during resolve.
  * </ol>
  * <p>
- * Duplicates
+ * ExternalDuplicates
  * <ol>
  * <li>Workspace bundles that are duplicates (bundles with same symbolic name (version may be
  * different)) of external or jar bundles are excluded from the update process and an error status

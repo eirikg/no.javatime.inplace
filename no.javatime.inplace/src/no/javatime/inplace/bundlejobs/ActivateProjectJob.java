@@ -23,7 +23,6 @@ import no.javatime.inplace.region.closure.BundleClosures;
 import no.javatime.inplace.region.closure.CircularReferenceException;
 import no.javatime.inplace.region.closure.ProjectBuildErrorClosure.ActivationScope;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
-import no.javatime.inplace.region.intface.BundleTransition.TransitionError;
 import no.javatime.inplace.region.intface.BundleTransitionListener;
 import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.status.BundleStatus;
@@ -81,7 +80,7 @@ public class ActivateProjectJob extends NatureJob implements ActivateProject {
 	/**
 	 * Runs the project(s) activation operation.
 	 * 
-	 * @return A bundle status object obtained from {@link #getJobSatus()} 
+	 * @return A bundle status object obtained from {@link #getJobSatus()}
 	 */
 	@Override
 	public IBundleStatus runInWorkspace(IProgressMonitor monitor) {
@@ -101,8 +100,6 @@ public class ActivateProjectJob extends NatureJob implements ActivateProject {
 			BundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, msg);
 			multiStatus.add(e.getStatusList());
 			addStatus(multiStatus);
-			// Remove error on the duplicates that are deactivated
-			Activator.getBundleTransitionService().removeTransitionError(TransitionError.CYCLE);
 		} catch (ExtenderException e) {
 			addError(e, NLS.bind(Msg.SERVICE_EXECUTOR_EXP, getName()));
 		} catch (InPlaceException e) {
@@ -143,125 +140,64 @@ public class ActivateProjectJob extends NatureJob implements ActivateProject {
 	private IBundleStatus activate(IProgressMonitor monitor) throws InPlaceException,
 			InterruptedException, CircularReferenceException {
 
-		if (pendingProjects() > 0) {
-			// Include dependent projects to activate according to dependency options
-			BundleClosures closures = new BundleClosures();
-			// As a minimum (mandatory) these closures include providing deactivated projects
-			Collection<IProject> pendingProjects = closures
-					.projectActivation(getPendingProjects(), false);
-			resetPendingProjects(pendingProjects);
-			// Remove any build error closures from projects to activate
-			Collection<IProject> errorClosure = buildErrorClosure(getPendingProjects());
-			if (errorClosure.size() > 0) {
-				removePendingProjects(errorClosure);
-				if (pendingProjects() == 0) {
-					return getLastErrorStatus();
-				}
-			}
-			// Uninstall any installed bundles before activating workspace
-			IBundleStatus result = initWorkspace(monitor);
-			if (!result.hasStatus(StatusCode.OK) && !result.hasStatus(StatusCode.INFO)) {
-				return result;
-			}
-			saveDirtyMetaFiles(true);
-			boolean isWorkspaceActivated =  isProjectWorkspaceActivated();
-			activateNature(getPendingProjects(), new SubProgressMonitor(monitor, 1));
-			// An activate project job triggers an update job when the workspace is activated and
-			// an activate bundle job when the workspace is deactivated
-			// If Update on Build is switched off and workspace is activated, mark that these projects
-			// should be updated as part of the activation process
-			if (!commandOptions.isUpdateOnBuild() && isWorkspaceActivated) {
-				for (IProject project : getPendingProjects()) {
-					if (isProjectActivated(project)) {
-						bundleTransition.addPending(project, Transition.UPDATE_ON_ACTIVATE);
-					}
-				}
-			}
-		} else {
+		if (pendingProjects() == 0) {
 			if (messageOptions.isBundleOperations()) {
 				addLogStatus(new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID,
 						Msg.NO_PROJECTS_TO_ACTIVATE_INFO));
 			}
 			return getLastErrorStatus();
 		}
+		boolean isWorkspaceActivated = isProjectWorkspaceActivated();
+		saveDirtyMetaFiles(true);
+		// Include dependent projects to activate according to dependency options
+		BundleClosures closures = new BundleClosures();
+		// As a minimum (mandatory) these closures include providing deactivated projects
+		Collection<IProject> pendingProjects = closures.projectActivation(getPendingProjects(), false);
+		resetPendingProjects(pendingProjects);
+		if (!isWorkspaceActivated) {
+			// Must be able to install all projects or none in a deactivated workspace
+			Collection<IProject> projects = bundleProjectCandidates.getBundleProjects();
+			Collection<IProject> errorClosure = buildErrorClosure(projects);
+			if (errorClosure.size() > 0) {
+				return getLastErrorStatus();
+			}
+		} else {
+			Collection<IProject> errorClosure = buildErrorClosure(getPendingProjects());
+			if (errorClosure.size() > 0) {
+				removePendingProjects(errorClosure);
+			}
+		}
+		// Return if there are no closures left to activate after error closures have been removed
+		if (pendingProjects() == 0) {
+			return getLastErrorStatus();
+		}
+		// Uninstall any installed bundles before activating workspace
+		IBundleStatus result = initWorkspace(monitor);
+		if (!result.hasStatus(StatusCode.OK) && !result.hasStatus(StatusCode.INFO)) {
+			return result;
+		}
+		activateNature(getPendingProjects(), new SubProgressMonitor(monitor, 1));
+		// An activate project job triggers an update job when the workspace is activated and
+		// an activate bundle job when the workspace is deactivated
+		// If Update on Build is switched off and workspace is activated, mark that these projects
+		// should be updated as part of the activation process
+		if (!commandOptions.isUpdateOnBuild() && isWorkspaceActivated) {
+			for (IProject project : getPendingProjects()) {
+				if (isProjectActivated(project)) {
+					bundleTransition.addPending(project, Transition.UPDATE_ON_ACTIVATE);
+				}
+			}
+		}
 		return getLastErrorStatus();
 	}
 
 	/**
 	 * Find and return build error closures among the specified deactivated projects to activate.
-	 * Missing build state or build errors in manifest are considered fatal (install may fail) and
-	 * prevents the workspace from activation.
-	 * <p>
-	 * All specified deactivated projects to activate are collectively either in state uninstalled
-	 * (deactivated workspace) or installed (activated workspace).
-	 * <p>
-	 * Build error closures that allows and prevents an activation of a deactivated bundle project
-	 * are:
-	 * <ol>
-	 * <li><b>Requiring activate closures</b>
-	 * <p>
-	 * <br>
-	 * <b>Activated requiring closure.</b> Activate should be rejected when there exists activated
-	 * bundles with build errors requiring capabilities from a project to activate. This is an
-	 * impossible state and is therefore not checked. Activated bundles project with build errors
-	 * which at the same time requires capabilities from a deactivated bundle project will not be
-	 * allowed by the requiring update closure or the providing deactivate closure invoked at
-	 * shutdown.
-	 * <p>
-	 * <br>
-	 * <b>Deactivated requiring closure.</b> Deactivated bundle projects with build errors requiring
-	 * capabilities from a project to activate is allowed due to the deactivated requiring bundle is
-	 * not forced to be activated.
-	 * <p>
-	 * <br>
-	 * <li><b>Providing activate closures</b>
-	 * <p>
-	 * <br>
-	 * <b>Deactivated providing closure.</b> Activate is rejected when deactivated bundles with build
-	 * errors provides capabilities to a project to activate. This closure require the providing
-	 * bundle to be activated (and resolved) to satisfy the requirements of the bundle to activate and
-	 * resolve.
-	 * <p>
-	 * <br>
-	 * <b>Activated providing closure.</b> It is legal to activate the project when there are
-	 * activated bundles with build errors that provides capabilities to the project to activate. The
-	 * providing bundles will not be affected (resolved and started) when the project is activated.
-	 * The project to activate will get wired to the current revision (that is from the last
-	 * successful resolve) of the activated bundles with build errors when resolved.
-	 * </ol>
 	 * 
-	 * @param projects projects to activate with possible illegal build error closures
-	 * @return set of build error closures
-	 * @throws CircularReferenceException if cycles are detected in the project graph
-	 * @throws InPlaceException if failing to get the dependency options service or illegal
-	 * operation/closure combination
+	 * @param projects projects to activate with possible build error closures
+	 * @return set of providing build error closures or an empty set
 	 */
-	private Collection<IProject> buildErrorClosure(Collection<IProject> projects)
-			throws InPlaceException, CircularReferenceException {
-
-		// Uninstalled projects missing build state or with build errors in manifest prevents activation
-		// of any project
-//		if (!isProjectWorkspaceActivated()) {
-//			Collection<IProject> errorProjects = BundleProjectBuildError.getBundleErrors((bundleProjectCandidates.getBundleProjects()));
-//			if (errorProjects.size() > 0) {
-//				
-//			}
-//			IBundleStatus multiStatus = new BundleStatus(StatusCode.ERROR, Activator.PLUGIN_ID,
-//					Msg.FATAL_ACTIVATE_ERROR);
-//			for (IProject project : errorProjects) {
-//				if (!BundleProjectBuildError.hasBuildState(project)) {
-//					multiStatus.add(new BundleStatus(StatusCode.WARNING, Activator.PLUGIN_ID, project, NLS
-//							.bind(Msg.BUILD_STATE_ERROR, project.getName()), null));
-//				} else if (BundleProjectBuildError.hasManifestBuildErrors(project)) {
-//					multiStatus.add(new BundleStatus(StatusCode.ERROR, Activator.PLUGIN_ID, project, NLS.bind(
-//							Msg.MANIFEST_BUILD_ERROR, project.getName()), null));
-//				}
-//			}
-//			if (multiStatus.getChildren().length > 0) {
-//				addStatus(multiStatus);
-//				return new LinkedHashSet<IProject>(projects);
-//			}
-//		}
+	private Collection<IProject> buildErrorClosure(Collection<IProject> projects) {
 
 		// Deactivated providing closure. In this case the activation scope is deactivated as long as we
 		// are not checking activated providing or requiring bundles with build errors
@@ -269,9 +205,13 @@ public class ActivateProjectJob extends NatureJob implements ActivateProject {
 		// Note that the bundles to activate are not activated yet.
 		BundleBuildErrorClosure be = new BundleBuildErrorClosure(projects, Transition.ACTIVATE_PROJECT,
 				Closure.PROVIDING, Bundle.UNINSTALLED, ActivationScope.DEACTIVATED);
-		if (be.hasBuildErrors()) {
-			Collection<IProject> errorClosure = be.getBuildErrorClosures();
-			if (messageOptions.isBundleOperations()) {
+		if (be.hasBuildErrors(true)) {
+			Collection<IProject> errorClosure = be.getBuildErrorClosures(true);
+			try {
+				if (messageOptions.isBundleOperations()) {
+					addLogStatus(be.getErrorClosureStatus());
+				}
+			} catch (ExtenderException e) {
 				addLogStatus(be.getErrorClosureStatus());
 			}
 			return errorClosure;

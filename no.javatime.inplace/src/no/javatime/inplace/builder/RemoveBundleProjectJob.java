@@ -140,23 +140,26 @@ public class RemoveBundleProjectJob extends NatureJob implements RemoveBundlePro
 			String msg = ExceptionMessage.getInstance().formatString("exception_job", getName());
 			addError(e, msg);
 		} finally {
-			monitor.done();
-			for (IProject removedProject : getPendingProjects()) {
-				if (bundleTransition.containsPending(removedProject, Transition.CLOSE_PROJECT, false)) {
-					// Do not unregister closed projects to preserve pending build transition
-					BundleTransitionListener.addBundleTransition(new TransitionEvent(removedProject,
-							Transition.CLOSE_PROJECT));
-					bundleTransition.removePending(removedProject, Transition.CLOSE_PROJECT);
-					
-				} else if (bundleTransition.containsPending(removedProject, Transition.DELETE_PROJECT, false)) {
-					BundleTransitionListener.addBundleTransition(new TransitionEvent(removedProject,
-							Transition.DELETE_PROJECT));
-					bundleTransition.removePending(removedProject, Transition.DELETE_PROJECT);
-					// Unregister deleted projects from the workspace region
+			try{
+				for (IProject removedProject : getPendingProjects()) {
+					if (bundleTransition.containsPending(removedProject, Transition.CLOSE_PROJECT, false)) {
+						// Do not unregister closed projects to preserve pending build transition
+						BundleTransitionListener.addBundleTransition(new TransitionEvent(removedProject,
+								Transition.CLOSE_PROJECT));
+						bundleTransition.removePending(removedProject, Transition.CLOSE_PROJECT);
+
+					} else if (bundleTransition.containsPending(removedProject, Transition.DELETE_PROJECT, false)) {
+						BundleTransitionListener.addBundleTransition(new TransitionEvent(removedProject,
+								Transition.DELETE_PROJECT));
+						bundleTransition.removePending(removedProject, Transition.DELETE_PROJECT);
+					}
+					// Unregister deleted and closed projects from the workspace region
 					bundleRegion.unregisterBundleProject(removedProject);					
 				}
+			} finally {
+				BundleTransitionListener.removeBundleTransitionListener(this);
+				monitor.done();
 			}
-			BundleTransitionListener.removeBundleTransitionListener(this);
 		}
 		return getJobSatus();
 	}

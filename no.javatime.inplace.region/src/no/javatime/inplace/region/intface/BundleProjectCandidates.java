@@ -117,9 +117,8 @@ public interface BundleProjectCandidates {
 	 * Returns the Java project corresponding to the given project.
 	 * 
 	 * @param project a given project
-	 * @return the java project or null if the java project is closed or the java project is null
-	 * @throws InPlaceException if the specified project is null, open but does not exist or a core
-	 * exception is thrown (should not be the case)
+	 * @return the java project or null if the java project is null or closed
+	 * @throws InPlaceException if the specified project is null or open but does not exist
 	 */
 	public IJavaProject getJavaProject(IProject project) throws InPlaceException;
 
@@ -197,8 +196,7 @@ public interface BundleProjectCandidates {
 	 * @param natureId the nature identifier to check against the specified project
 	 * @return true if the project is nature enabled with the specified nature. False if the project
 	 * is closed or not nature enabled with the specified nature
-	 * @throws InPlaceException if the specified project is null, open but does not exist or a core
-	 * exception is thrown internally (should not be the case for open and existing projects)
+	 * @throws InPlaceException if the specified project is null, open but does not exist
 	 */
 	public Boolean isNatureEnabled(IProject project, String natureId) throws InPlaceException;
 

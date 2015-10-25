@@ -46,6 +46,10 @@ import org.eclipse.ui.statushandlers.StatusManager;
 import org.osgi.framework.Bundle;
 import org.osgi.service.prefs.BackingStoreException;
 
+/**
+ * Note that the deactivate job should try to deactivate all pending projects independent
+ * of any kind of build errors.
+ */
 public class DeactivateJob extends NatureJob implements Deactivate {
 
 	/** Ignore build errors when deactivating */
@@ -306,21 +310,27 @@ public class DeactivateJob extends NatureJob implements Deactivate {
 		} finally {
 			progress.worked(1);
 		}
+		
+		
 	}
 
 	private Collection<IProject> deactivateBuildErrorClosure(Collection<IProject> activatedProjects) {
 
 		BundleBuildErrorClosure be = new BundleBuildErrorClosure(activatedProjects,
 				Transition.DEACTIVATE, Closure.PROVIDING, Bundle.UNINSTALLED, ActivationScope.ALL);
-		if (be.hasBuildErrors()) {
-			Collection<IProject> buildErrorClosures = be.getBuildErrorClosures();
-			String msg = NLS.bind(Msg.DEACTIVATE_BUILD_ERROR_INFO,
-					new Object[] { bundleProjectCandidates.formatProjectList(buildErrorClosures),
-							bundleProjectCandidates.formatProjectList(be.getBuildErrors()) });
-			be.setBuildErrorHeaderMessage(msg);
-			IBundleStatus bundleStatus = be.getErrorClosureStatus();
-			if (bundleStatus.getStatusCode() != StatusCode.OK) {
-				addLogStatus(bundleStatus);
+			Collection<IProject> buildErrorClosures = be.getBuildErrorClosures(true);
+			if (buildErrorClosures.size() > 0) {
+			try {
+				String msg = NLS.bind(Msg.DEACTIVATE_BUILD_ERROR_INFO,
+						new Object[] { bundleProjectCandidates.formatProjectList(buildErrorClosures),
+						bundleProjectCandidates.formatProjectList(be.getBuildErrors(true)) });
+				be.setBuildErrorHeaderMessage(msg);
+				IBundleStatus bundleStatus = be.getErrorClosureStatus();
+				if (bundleStatus.getStatusCode() != StatusCode.OK) {
+					addLogStatus(bundleStatus);
+				}
+			} catch (ExtenderException e) {
+				addLogStatus(new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e));
 			}
 			return buildErrorClosures;
 		}

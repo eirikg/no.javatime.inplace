@@ -11,6 +11,7 @@
 package no.javatime.inplace.bundlejobs;
 
 import java.util.Collection;
+import java.util.Collections;
 
 import no.javatime.inplace.Activator;
 import no.javatime.inplace.bundlejobs.intface.Install;
@@ -19,11 +20,12 @@ import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.closure.BundleBuildErrorClosure;
 import no.javatime.inplace.region.closure.CircularReferenceException;
-import no.javatime.inplace.region.closure.ProjectSorter;
+import no.javatime.inplace.region.closure.ProjectBuildErrorClosure.ActivationScope;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
-import no.javatime.inplace.region.intface.BundleTransition.TransitionError;
 import no.javatime.inplace.region.intface.BundleTransitionListener;
 import no.javatime.inplace.region.intface.InPlaceException;
+import no.javatime.inplace.region.intface.ProjectLocationException;
+import no.javatime.inplace.region.intface.WorkspaceDuplicateException;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
@@ -35,6 +37,7 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.osgi.util.NLS;
+import org.osgi.framework.Bundle;
 
 public class InstallJob extends NatureJob implements Install {
 
@@ -86,14 +89,32 @@ public class InstallJob extends NatureJob implements Install {
 			super.runInWorkspace(monitor);
 			monitor.beginTask(Msg.INSTALL_TASK_JOB, 1);
 			BundleTransitionListener.addBundleTransitionListener(this);
-			if (isProjectWorkspaceActivated()) {
+			boolean isWorkspaceActivated = isProjectWorkspaceActivated();
+
+			if (isWorkspaceActivated) {
 				if (!bundleRegion.isRegionActivated()) {
 					// First nature activated projects. Activate the workspace
 					addPendingProjects(bundleProjectCandidates.getBundleProjects());
 				}
+				Collection<IProject> errorClosure = buildErrorClosure(getPendingProjects());
+				if (errorClosure.size() > 0) {
+					removePendingProjects(errorClosure);
+				}
+			}	else {
+				// Must be able to install all projects or none in a deactivated workspace
+				Collection<IProject> projects = bundleProjectCandidates.getBundleProjects();
+				Collection<IProject> errorClosure = buildErrorClosure(projects);
+				if (errorClosure.size() > 0) {
+					return getLastErrorStatus();
+				}
 			}
-			removeErrorClosures(new ProjectSorter());
-			install(getPendingProjects(), monitor);
+			try {
+				install(getPendingProjects(), monitor);
+			} catch (InPlaceException | WorkspaceDuplicateException | ProjectLocationException e) {
+				bundleTransition.addPendingCommand(getActivatedProjects(), Transition.DEACTIVATE);
+				return addStatus(new BundleStatus(StatusCode.JOBERROR, Activator.PLUGIN_ID, Msg.INSTALL_ERROR));
+			}
+
 			if (monitor.isCanceled()) {
 				throw new OperationCanceledException();
 			}
@@ -127,57 +148,30 @@ public class InstallJob extends NatureJob implements Install {
 	}
 
 	/**
-	 * Remove build and duplicate error closures from the set of pending projects. Error closures
-	 * status objects are also added to the log status list if logging is enabled.
+	 * Find and return build error closures among the specified deactivated projects to install.
 	 * 
-	 * @param projectSorter Topological sort of projects
-	 * @return Status object with a {@code StatusCode.OK} if no duplicates and build errors and a
-	 * status object of {@code StatusCode.BUILDERROR} if duplicates and/or build errors.
-	 * @throws InPlaceException if one of the specified projects does not exist or is closed
+	 * @param projects projects to activate with possible build error closures
+	 * @return set of providing build error closures or an empty set
 	 */
-	private IBundleStatus removeErrorClosures(ProjectSorter projectSorter) throws InPlaceException {
+	private Collection<IProject> buildErrorClosure(Collection<IProject> projects) {
 
-		IBundleStatus status = createStatus();
-
-		Collection<IProject> projectErrorClosures = null;
-		BundleBuildErrorClosure be = null;
-		try {
-			be = new BundleBuildErrorClosure(getPendingProjects(), Transition.INSTALL,
-					Closure.REQUIRING);
-			if (be.hasBuildErrors()) {
-				projectErrorClosures = be.getBuildErrorClosures();
-				status.setStatusCode(StatusCode.BUILDERROR);
-				removePendingProjects(projectErrorClosures);
+		// Deactivated providing closure. In this case the activation scope is deactivated as long as we
+		// are not checking activated providing or requiring bundles with build errors
+		// Activated requiring closure is not checked (see method comments)
+		// Note that the bundles to activate are not activated yet.
+		BundleBuildErrorClosure be = new BundleBuildErrorClosure(projects, Transition.ACTIVATE_PROJECT,
+				Closure.PROVIDING, Bundle.UNINSTALLED, ActivationScope.DEACTIVATED);
+		if (be.hasBuildErrors(false)) {
+			Collection<IProject> errorClosure = be.getBuildErrorClosures(false);
+			try {
 				if (messageOptions.isBundleOperations()) {
-					IBundleStatus bundleStatus = be.getErrorClosureStatus();
-					if (null != bundleStatus) {
-						addLogStatus(bundleStatus);
-					}
+					addLogStatus(be.getErrorClosureStatus());
 				}
+			} catch (ExtenderException e) {
+				addLogStatus(be.getErrorClosureStatus());
 			}
-			bundleTransition.removeTransitionError(TransitionError.DUPLICATE);
-			Collection<IProject> externalDuplicates = getExternalDuplicateClosures(getPendingProjects(), null);
-			if (null != externalDuplicates) {
-				removePendingProjects(externalDuplicates);
-			}
-			Collection<IProject> duplicates = removeWorkspaceDuplicates(getPendingProjects(), null, null,
-					bundleProjectCandidates.getInstallable(), Msg.DUPLICATE_WS_BUNDLE_INSTALL_ERROR);
-			if (null != duplicates) {
-				status.setStatusCode(StatusCode.BUILDERROR);
-				Collection<IProject> requiringBundles = projectSorter.sortRequiringProjects(duplicates,
-						true);
-				if (requiringBundles.size() > 0) {
-					removePendingProjects(requiringBundles);
-				}
-			}
-
-		} catch (CircularReferenceException e) {
-			projectErrorClosures = be.getBuildErrorClosures();
-			if (projectErrorClosures.size() > 0) {
-				status.setStatusCode(StatusCode.BUILDERROR);
-				removePendingProjects(projectErrorClosures);
-			}
+			return errorClosure;
 		}
-		return status;
+		return Collections.<IProject> emptySet();
 	}
 }

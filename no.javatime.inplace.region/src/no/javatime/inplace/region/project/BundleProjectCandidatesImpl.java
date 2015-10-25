@@ -38,10 +38,8 @@ import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.JavaCore;
+import org.eclipse.osgi.util.ManifestElement;
 import org.eclipse.osgi.util.NLS;
-import org.eclipse.pde.core.project.IBundleProjectDescription;
-import org.eclipse.pde.core.project.IHostDescription;
-import org.eclipse.pde.core.project.IRequiredBundleDescription;
 
 /**
  * Utility to:
@@ -246,25 +244,18 @@ public class BundleProjectCandidatesImpl implements BundleProjectCandidates {
 		return false;
 	}
 
-	/* (non-Javadoc)
-	 * @see no.javatime.inplace.region.project.BundleCandidates#isUIContributor(org.eclipse.core.resources.IProject)
-	 */
 	public Boolean isUIPlugin(IProject project) throws InPlaceException {
 
 		if (null == project) {
 			throw new InPlaceException(ExceptionMessage.getInstance().getString("project_null_location"));
 		}
-		IBundleProjectDescription bundleProjDesc = Activator.getBundleDescription(project);
-		if (null == bundleProjDesc) {
-			return false;
-		}
-		IRequiredBundleDescription[] bd = bundleProjDesc.getRequiredBundles();
-		if (null == bd) {
-			return false;
-		}
-		for (int i = 0; i < bd.length; i++) {
-			if (bd[i].getName().equals("org.eclipse.ui")) {
-				return true;
+		ManifestElement[] elements = BundleProjectMetaImpl.INSTANCE.getRequiredBundles(project);
+		if (elements != null && elements.length > 0) {
+			for (int i = 0; i < elements.length; i++) {
+				ManifestElement rb = elements[i];
+				if (rb.getValue().equals("org.eclipse.ui")) {
+					return true;
+				}
 			}
 		}
 		return false;
@@ -301,9 +292,7 @@ public class BundleProjectCandidatesImpl implements BundleProjectCandidates {
 
 	public static Boolean isFragment(IProject project) throws InPlaceException {
 	
-		IBundleProjectDescription bundleProjDesc = Activator.getBundleDescription(project);
-		IHostDescription host = bundleProjDesc.getHost();
-		return null != host ? true : false;
+		return BundleProjectMetaImpl.INSTANCE.isFragment(project);
 	}
 
 	/* (non-Javadoc)

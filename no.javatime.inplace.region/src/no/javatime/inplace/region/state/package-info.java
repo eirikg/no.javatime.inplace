@@ -13,7 +13,7 @@ package-info.java
 
 
 State(S) x Event(E) -> Actions (A), State(S')<br>
-These relations are interpreted as meaning:<br>
+These relations are interpreted as:<br>
 If we are in state S and the event E occurs, we should perform the actions A and make a transition to the state S'.
 
  <!-- Put @see and @since tags down here. -->

@@ -27,11 +27,11 @@ import no.javatime.inplace.msg.Msg;
 import no.javatime.inplace.region.closure.BundleSorter;
 import no.javatime.inplace.region.closure.CircularReferenceException;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
-import no.javatime.inplace.region.intface.BundleTransition.TransitionError;
 import no.javatime.inplace.region.intface.BundleTransitionListener;
-import no.javatime.inplace.region.intface.DuplicateBundleException;
+import no.javatime.inplace.region.intface.ExternalDuplicateException;
 import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.intface.ProjectLocationException;
+import no.javatime.inplace.region.intface.WorkspaceDuplicateException;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
@@ -190,7 +190,7 @@ public class UpdateJob extends BundleJob implements Update {
 		Collection<IBundleStatus> errorStatusList = updateByReference(bundlesToUpdate,
 				new SubProgressMonitor(monitor, 1));
 		// (5) Report any update errors
-		handleUpdateExceptions(errorStatusList, requiringClosure);
+		// handleUpdateExceptions(errorStatusList, requiringClosure);
 		if (monitor.isCanceled()) {
 			throw new OperationCanceledException();
 		}
@@ -271,7 +271,7 @@ public class UpdateJob extends BundleJob implements Update {
 		if (commandOptions.isRefreshOnUpdate()) {
 			// Get the requiring closure of bundles to update. Any bundles in the domain
 			// with the same symbolic name as in the requiring closure are added to the
-			// requiring closure (required by the resolver). Duplicates are reported by update
+			// requiring closure (required by the resolver). ExternalDuplicates are reported by update
 			requiringClosure = getRefreshClosure(bundlesToUpdate, domain);
 
 			// Get all activated bundles in state installed and their requiring bundles
@@ -300,13 +300,13 @@ public class UpdateJob extends BundleJob implements Update {
 
 		// Remove workspace bundles and their requiring bundle projects that are duplicates of external
 		// bundles
-		Collection<IProject> duplicateProjects = getExternalDuplicateClosures(getPendingProjects(),
-				Msg.USE_CURR_REV_DUPLICATES_ERROR);
-		if (null != duplicateProjects) {
-			// There are no requiring closures on workspace bundles from external bundles
-			removePendingProjects(duplicateProjects);
-			requiringClosure.removeAll(bundleRegion.getBundles(duplicateProjects));
-		}
+//		Collection<IProject> duplicateProjects = getExternalDuplicateClosures(getPendingProjects(),
+//				Msg.USE_CURR_REV_DUPLICATES_ERROR);
+//		if (null != duplicateProjects) {
+//			// There are no requiring closures on workspace bundles from external bundles
+//			removePendingProjects(duplicateProjects);
+//			requiringClosure.removeAll(bundleRegion.getBundles(duplicateProjects));
+//		}
 		return requiringClosure;
 	}
 
@@ -331,16 +331,26 @@ public class UpdateJob extends BundleJob implements Update {
 					if (Category.getState(Category.progressBar))
 						sleep(sleepTime);
 					bundleCommand.update(bundle);
-				} catch (DuplicateBundleException e) {
-					handleDuplicateException(bundleRegion.getProject(bundle), e, null);
-					String msg = ErrorMessage.getInstance().formatString("duplicate_error",
-							bundle.getSymbolicName(), bundle.getVersion().toString());
-					IBundleStatus result = new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID,
-							bundle.getBundleId(), msg, e);
+				} catch (WorkspaceDuplicateException e) {
+					IBundleStatus result = addError(e, e.getMessage(), bundle);
 					if (null == statusList) {
 						statusList = new LinkedHashSet<IBundleStatus>();
 					}
+//					handleDuplicateException(bundleRegion.getProject(bundle), e, null);
+//					String msg = ErrorMessage.getInstance().formatString("duplicate_error",
+//							bundle.getSymbolicName(), bundle.getVersion().toString());
+//					IBundleStatus result = new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID,
+//							bundle.getBundleId(), msg, e);
+//					if (null == statusList) {
+//						statusList = new LinkedHashSet<IBundleStatus>();
+//					}
 					statusList.add(result);
+				} catch (ExternalDuplicateException e) {
+					IBundleStatus result = addError(e, e.getMessage(), bundle);
+					if (null == statusList) {
+						statusList = new LinkedHashSet<IBundleStatus>();
+					}
+					statusList.add(result);					
 				} catch (InPlaceException e) {
 					IBundleStatus result = addError(e, e.getMessage(), bundle);
 					if (null == statusList) {
@@ -459,11 +469,11 @@ public class UpdateJob extends BundleJob implements Update {
 					try {
 						IProject project = bundleRegion.getProject(bundle);
 						Throwable updExp = bundleError.getException();
-						if (null != updExp && updExp instanceof DuplicateBundleException) {
-							bundleTransition.setTransitionError(project, TransitionError.DUPLICATE);
-						} else {
-							bundleTransition.setTransitionError(project);
-						}
+//						if (null != updExp && updExp instanceof WorkspaceDuplicateException) {
+//							bundleTransition.setTransitionError(project, TransitionError.WORKSPACE_DUPLICATE);
+//						} else {
+//							bundleTransition.setTransitionError(project);
+//						}
 					} catch (ProjectLocationException e) {
 						if (null == status) {
 							String msg = ExceptionMessage.getInstance()
@@ -558,11 +568,11 @@ public class UpdateJob extends BundleJob implements Update {
 	 * specified bundles to refresh out parameter
 	 * 
 	 * @param errorStatusList Status objects for error bundles to remove from bundles to refresh
-	 * @param bundlesTorRefresh A non-null out parameter where any error bundles and their requiring
+	 * @param bundlesToRefresh A non-null out parameter where any error bundles and their requiring
 	 * bundles found in the error status list parameter are removed
 	 */
 	private void handleUpdateExceptions(Collection<IBundleStatus> errorStatusList,
-			Collection<Bundle> bundlesTorRefresh) {
+			Collection<Bundle> bundlesToRefresh) {
 
 		if (errorStatusList.size() > 0) {
 			Collection<Bundle> bundles = new LinkedHashSet<Bundle>();
@@ -571,11 +581,11 @@ public class UpdateJob extends BundleJob implements Update {
 				if (null != bundle) {
 					BundleSorter bs = new BundleSorter();
 					Collection<Bundle> affectedBundles = bs.sortDeclaredRequiringBundles(
-							Collections.singleton(bundle), bundlesTorRefresh);
+							Collections.singleton(bundle), bundlesToRefresh);
 					bundles.addAll(affectedBundles);
 				}
 			}
-			bundlesTorRefresh.removeAll(bundles);
+			bundlesToRefresh.removeAll(bundles);
 		}
 	}
 

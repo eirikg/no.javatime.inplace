@@ -226,7 +226,8 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 
 		try {
 			IProject project = getProject();
-			bundleTransition.removeTransitionError(project, TransitionError.BUILD);
+			bundleTransition.clearBuildTransitionError(project);
+			// bundleTransition.removeTransitionError(project, TransitionError.BUILD);
 			bundleTransition.removePending(project, Transition.BUILD);
 			if (Category.DEBUG && Category.getState(Category.build))
 				TraceMessage.getInstance().getString("start_build");
@@ -288,7 +289,7 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 				bundleTransition.addPending(project, Transition.DEACTIVATE);
 			} else {
 				// Use same closure rules as for update
-				if (!BundleProjectBuildError.hasErrors(project)) {
+				if (!BundleProjectBuildError.hasErrors(project, false)) {
 					// Do not handle newly opened, created or imported bundles
 					if (null != bundle) {
 						// Moved projects requires a reactivate (uninstall and bundle activate)
@@ -391,11 +392,11 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 
 		boolean cycle = false;
 		try {
-			// Check for cycles
-			ProjectDependencies.getProvidingProjects(project);
-			ProjectDependencies.getRequiringProjects(project);
 			try {
-				bundleTransition.setTransitionError(project, TransitionError.BUILD);
+				// Check for cycles
+				ProjectDependencies.getProvidingProjects(project);
+				ProjectDependencies.getRequiringProjects(project);
+				bundleTransition.setBuildTransitionError(project, TransitionError.BUILD);
 			} catch (CircularReferenceException e) {
 				String msg = ExceptionMessage.getInstance().formatString("circular_reference_termination");
 				IBundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID,
@@ -450,6 +451,11 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 			StatusManager.getManager().handle(
 					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),
 					StatusManager.LOG);
+		} catch (CircularReferenceException e) {
+			String msg = ExceptionMessage.getInstance().formatString("circular_reference_termination");
+			IBundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, msg, e);
+			multiStatus.add(e.getStatusList());
+			StatusManager.getManager().handle(multiStatus, StatusManager.LOG);
 		}
 	}
 
@@ -492,14 +498,14 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 		} catch (CircularReferenceException e) {
 			String msg = ExceptionMessage.getInstance().formatString("circular_reference_termination");
 			IBundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID,
-					project, msg, null);
+					project, msg, e);
 			multiStatus.add(e.getStatusList());
 			StatusManager.getManager().handle(multiStatus, StatusManager.LOG);
 		} catch (InPlaceException e) {
 			String msg = WarnMessage.getInstance().formatString("uicontributors_fail_get",
 					project.getName());
 			IBundleStatus status = new BundleStatus(StatusCode.WARNING, Activator.PLUGIN_ID, project,
-					msg, null);
+					msg, e);
 			StatusManager.getManager().handle(status, StatusManager.LOG);
 		}
 	}
