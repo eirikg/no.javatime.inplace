@@ -4,6 +4,7 @@ import java.util.Collection;
 import java.util.Map;
 
 import no.javatime.inplace.extender.intface.ExtenderException;
+import no.javatime.inplace.region.intface.BundleTransition.TransitionError;
 import no.javatime.inplace.region.msg.Msg;
 import no.javatime.inplace.region.status.IBundleStatus;
 
@@ -459,6 +460,8 @@ public interface BundleRegion {
 	public IBundleStatus getBundleStatus(IProject  project);
 
 	public void setBundleStatus(IProject project, IBundleStatus status);
+
+	public void setBundleStatus(IProject project, TransitionError transitionError, IBundleStatus status);
 
 	/**
 	 * A bundle exist in the bundle region if it at least is installed. In an activated workspace all

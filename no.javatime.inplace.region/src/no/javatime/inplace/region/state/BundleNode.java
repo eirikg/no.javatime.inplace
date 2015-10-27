@@ -108,6 +108,11 @@ public class BundleNode {
 	public void setStatus(IBundleStatus status) {
 		this.status = status;
 	}
+	
+	public void setStatus(TransitionError transitionError, IBundleStatus status) {
+		setBundleTransitionError(transitionError);
+		this.status = status;
+	}
 
 	public Transition getTransition() {
 		return transition;
@@ -121,6 +126,7 @@ public class BundleNode {
 
 	public boolean clearBuildTransitionError() {
 		this.buildTransitionError = TransitionError.NOERROR;
+		clearBundleTransitionError();
 		status = null;
 		return true;
 	}
@@ -469,9 +475,7 @@ public class BundleNode {
 	 */
 	public void begin(Transition transition, BundleState state) {
 		// If it is a bundle error also clear the bundle error from then build error
-		if (bundleTransitionError == TransitionError.SERVICE_EXCEPTION 
-				|| buildTransitionError == TransitionError.SERVICE_INCOMPLETE 
-				|| buildTransitionError == TransitionError.SERVICE_STATECHANGE) {
+		if (buildTransitionError != TransitionError.BUILD) { 
 			clearBuildTransitionError();
 		}
 		// Start a new bundle command with no bundle errors
@@ -497,7 +501,6 @@ public class BundleNode {
 	 * transition parameters to be overwritten. The bundle is no longer in a state changing state.
 	 */
 	public void commit(Transition transition, BundleState state) {
-
 		prevTransition = this.transition;
 		prevState = this.state;
 		this.transition = transition;
@@ -511,7 +514,6 @@ public class BundleNode {
 	 * changing state.
 	 */
 	public void rollBack() {
-
 		this.transition = this.prevTransition;
 		this.state = this.prevState;
 		isStateChanging = false;
@@ -560,7 +562,7 @@ public class BundleNode {
 				typeName = "STOP";
 				break;
 			case UNINSTALL:
-				typeName = "UNINSTALL";
+				typeName = "EXTTERNAL_UNINSTALL";
 				break;
 			case RESOLVE:
 				typeName = "RESOLVE";
@@ -652,7 +654,7 @@ public class BundleNode {
 			case "STOP":
 				transition = Transition.STOP;
 				break;
-			case "UNINSTALL":
+			case "EXTTERNAL_UNINSTALL":
 				transition = Transition.UNINSTALL;
 				break;
 			case "RESOLVE":

@@ -15,7 +15,6 @@ import no.javatime.inplace.StatePersistParticipant;
 import no.javatime.inplace.bundlejobs.ActivateProjectJob;
 import no.javatime.inplace.bundlejobs.intface.ActivateProject;
 import no.javatime.inplace.extender.intface.ExtenderException;
-import no.javatime.inplace.region.closure.BundleProjectBuildError;
 import no.javatime.inplace.region.events.BundleTransitionEvent;
 import no.javatime.inplace.region.events.BundleTransitionEventListener;
 import no.javatime.inplace.region.events.TransitionEvent;
@@ -100,9 +99,9 @@ public class PreBuildListener implements IResourceChangeListener, BundleTransiti
 						&& (projectResource.getType() & (IResource.PROJECT)) != 0) {
 					IProject project = projectResource.getProject();
 					try {
-						// Make errors available in deactivated projects
-						if (!projectActivator.isProjectActivated(project) 
-								&& !BundleProjectBuildError.hasErrors(project, true)) {
+						// Remove any errors in deactivated projects before build
+						// Errors in activated projects are cleared in the java time builder
+						if (!projectActivator.isProjectActivated(project)) {
 							bundleTransition.clearBuildTransitionError(project);
 						} 
 						try {

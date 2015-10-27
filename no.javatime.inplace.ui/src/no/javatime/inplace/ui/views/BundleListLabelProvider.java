@@ -11,7 +11,6 @@
 package no.javatime.inplace.ui.views;
 
 import no.javatime.inplace.extender.intface.ExtenderException;
-import no.javatime.inplace.region.closure.BundleProjectBuildError;
 import no.javatime.inplace.region.closure.BundleSorter;
 import no.javatime.inplace.region.intface.BundleCommand;
 import no.javatime.inplace.region.intface.BundleTransition;
@@ -133,18 +132,22 @@ public class BundleListLabelProvider extends LabelProvider implements ITableLabe
 					BundleTransition bundleTransition = Activator.getBundleTransitionService();
 					if (bundleTransition.hasBuildTransitionError(project)) {
 						TransitionError error = bundleTransition.getBuildError(project);
-						if (error == TransitionError.WORKSPACE_DUPLICATE) {
+						if (error == TransitionError.CYCLE) {
+							return errorImage;
+						} else if (error == TransitionError.BUILD_STATE) {
+							return errorImage;
+						} else if (error == TransitionError.BUILD_DESCRIPTION_FILE) {
+							return errorImage;
+						} else if (error == TransitionError.BUILD_MANIFEST) {
+							return errorImage;
+						} else if (error == TransitionError.WORKSPACE_DUPLICATE) {
 							return errorImage;
 						} else if (error == TransitionError.EXTERNAL_DUPLICATE) {
 							return errorImage;
-						} else if (error == TransitionError.CYCLE) {
-							return errorImage;
-						} else if (error == TransitionError.DEPENDENCY) {
-							return warningImage;
 						} else if (error == TransitionError.SERVICE_INCOMPLETE) {
 							return errorImage;							
 						} else if (error == TransitionError.BUILD) {
-							return warningImage; 
+							return Activator.getCommandOptionsService().isActivateOnCompileError() ? warningImage : errorImage; 
 						} else if (error == TransitionError.SERVICE_EXCEPTION) {
 							return errorImage;
 						} else if (error == TransitionError.SERVICE_STATECHANGE) {
@@ -152,14 +155,6 @@ public class BundleListLabelProvider extends LabelProvider implements ITableLabe
 						} else {
 							return errorImage;
 						}
-					} else if (!BundleProjectBuildError.hasBuildState(project)) {
-						return errorImage;
-					} else if (!BundleProjectBuildError.hasProjectDescriptionFile(project)) {
-						return errorImage;
-					} else if (BundleProjectBuildError.hasManifestBuildErrors(project)) {
-						return errorImage;
-					} else if (BundleProjectBuildError.hasBuildErrors(project, false)) {
-						return warningImage;
 					} else if (bundleTransition.containsPending(project, Transition.BUILD, false)) {
 						return pendingImage;
 					} else if (isProjectActivated

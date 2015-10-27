@@ -19,6 +19,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import no.javatime.inplace.region.Activator;
 import no.javatime.inplace.region.intface.BundleRegion;
+import no.javatime.inplace.region.intface.BundleTransition.TransitionError;
 import no.javatime.inplace.region.intface.ExternalDuplicateException;
 import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.manager.WorkspaceRegionImpl;
@@ -212,7 +213,8 @@ public class ExternalDuplicates implements BundleListener {
 							bundleRegion.getBundleLocationIdentifier(project));
 				}
 				ExternalDuplicateException e = new ExternalDuplicateException(msg);
-				bundleNode.setStatus(new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, project, msg, e));
+				bundleNode.setStatus(TransitionError.EXTERNAL_DUPLICATE, new BundleStatus(
+						StatusCode.EXCEPTION, Activator.PLUGIN_ID, project, msg, e));
 				throw e;
 			}
 		}
@@ -225,8 +227,8 @@ public class ExternalDuplicates implements BundleListener {
 	 * Use {@link #getBySymbolicKey(IProject)} to find an exact match
 	 * 
 	 * @param bundle The bundle with a symbolic name to check against external bundles
-	 * @return The first external bundle found associated with the specified workspace bundle if it matches
-	 * the symbolic name of an external bundle. Return {@code null} if no duplicates are found
+	 * @return The first external bundle found associated with the specified workspace bundle if it
+	 * matches the symbolic name of an external bundle. Return {@code null} if no duplicates are found
 	 * @throws InPlaceException if the manifest has an invalid syntax or if an error occurs while
 	 * reading the manifest
 	 * @throws ExternalDuplicateException If the symbolic name of the specified bundle is a duplicate
@@ -330,56 +332,56 @@ public class ExternalDuplicates implements BundleListener {
 	 * @return all duplicates and the requiring dependency closure for each duplicate or null if no
 	 * duplicates found.
 	 */
-//	protected Collection<IProject> removeWorkspaceDuplicates(Collection<IProject> projects,
-//			Collection<Bundle> bDepClosures, Collection<IProject> pDepClosures,
-//			Collection<IProject> scope, String message) {
-//		
-//		WorkspaceRegionImpl bundleRegion = WorkspaceRegionImpl.INSTANCE;
-//		Map<IProject, IProject> wsDuplicates = bundleRegion.getWorkspaceDuplicates(projects, scope);
-//		Collection<IProject> duplicateClosures = null;
-//		if (wsDuplicates.size() > 0) {
-//			duplicateClosures = new ArrayList<IProject>();
-//			ProjectSorter ps = new ProjectSorter();
-//			ps.setAllowCycles(true);
-//			for (Map.Entry<IProject, IProject> key : wsDuplicates.entrySet()) {
-//				IProject duplicateProject = key.getKey();
-//				IProject duplicateProject1 = key.getValue();
-//				try {
-//					// If checked on an uninstalled bundle that is not registered yet
-//					if (!bundleRegion.isProjectRegistered(duplicateProject)) {
-//						bundleRegion.registerBundleProject(duplicateProject, null, false);
-//					}
-//					bundleTransition.setTransitionError(duplicateProject, TransitionError.DUPLICATE);
-//					DuplicateBundleException duplicateBundleException = new DuplicateBundleException(
-//							"duplicate_of_ws_bundle", duplicateProject.getName(),
-//							bundleProjectMeta.getSymbolicName(duplicateProject1), duplicateProject1.getLocation());
-//					handleDuplicateException(duplicateProject, duplicateBundleException, message);
-//					Collection<IProject> requiringProjects = ps.sortRequiringProjects(Collections
-//							.<IProject> singletonList(duplicateProject));
-//					if (requiringProjects.size() > 0) {
-//						for (IProject reqProject : requiringProjects) {
-//							bundleTransition.removePending(reqProject, Transition.UPDATE);
-//							bundleTransition.removePending(reqProject, Transition.UPDATE_ON_ACTIVATE);
-//						}
-//						projects.removeAll(requiringProjects);
-//						duplicateClosures.addAll(requiringProjects);
-//						if (null != bDepClosures) {
-//							bDepClosures.removeAll(bundleRegion.getBundles(requiringProjects));
-//						}
-//						if (null != pDepClosures) {
-//							pDepClosures.removeAll(requiringProjects);
-//						}
-//					} else {
-//						projects.remove(duplicateProject);
-//						duplicateClosures.add(duplicateProject);
-//					}
-//				} catch (ProjectLocationException e) {
-//					addError(e, e.getLocalizedMessage(), duplicateProject);
-//				}
-//			}
-//		}
-//		return duplicateClosures;
-//	}
+	// protected Collection<IProject> removeWorkspaceDuplicates(Collection<IProject> projects,
+	// Collection<Bundle> bDepClosures, Collection<IProject> pDepClosures,
+	// Collection<IProject> scope, String message) {
+	//
+	// WorkspaceRegionImpl bundleRegion = WorkspaceRegionImpl.INSTANCE;
+	// Map<IProject, IProject> wsDuplicates = bundleRegion.getWorkspaceDuplicates(projects, scope);
+	// Collection<IProject> duplicateClosures = null;
+	// if (wsDuplicates.size() > 0) {
+	// duplicateClosures = new ArrayList<IProject>();
+	// ProjectSorter ps = new ProjectSorter();
+	// ps.setAllowCycles(true);
+	// for (Map.Entry<IProject, IProject> key : wsDuplicates.entrySet()) {
+	// IProject duplicateProject = key.getKey();
+	// IProject duplicateProject1 = key.getValue();
+	// try {
+	// // If checked on an uninstalled bundle that is not registered yet
+	// if (!bundleRegion.isProjectRegistered(duplicateProject)) {
+	// bundleRegion.registerBundleProject(duplicateProject, null, false);
+	// }
+	// bundleTransition.setTransitionError(duplicateProject, TransitionError.DUPLICATE);
+	// DuplicateBundleException duplicateBundleException = new DuplicateBundleException(
+	// "duplicate_of_ws_bundle", duplicateProject.getName(),
+	// bundleProjectMeta.getSymbolicName(duplicateProject1), duplicateProject1.getLocation());
+	// handleDuplicateException(duplicateProject, duplicateBundleException, message);
+	// Collection<IProject> requiringProjects = ps.sortRequiringProjects(Collections
+	// .<IProject> singletonList(duplicateProject));
+	// if (requiringProjects.size() > 0) {
+	// for (IProject reqProject : requiringProjects) {
+	// bundleTransition.removePending(reqProject, Transition.UPDATE);
+	// bundleTransition.removePending(reqProject, Transition.UPDATE_ON_ACTIVATE);
+	// }
+	// projects.removeAll(requiringProjects);
+	// duplicateClosures.addAll(requiringProjects);
+	// if (null != bDepClosures) {
+	// bDepClosures.removeAll(bundleRegion.getBundles(requiringProjects));
+	// }
+	// if (null != pDepClosures) {
+	// pDepClosures.removeAll(requiringProjects);
+	// }
+	// } else {
+	// projects.remove(duplicateProject);
+	// duplicateClosures.add(duplicateProject);
+	// }
+	// } catch (ProjectLocationException e) {
+	// addError(e, e.getLocalizedMessage(), duplicateProject);
+	// }
+	// }
+	// }
+	// return duplicateClosures;
+	// }
 
 	/**
 	 * Removes pending workspace projects and their requiring projects from the specified projects and

@@ -206,7 +206,8 @@ public interface BundleTransition {
 	}
 
 	public static enum TransitionError {
-		NOERROR, ERROR, SERVICE_EXCEPTION, WORKSPACE_DUPLICATE, EXTERNAL_DUPLICATE, CYCLE, BUILD, DEPENDENCY, SERVICE_STATECHANGE,
+		NOERROR, ERROR, SERVICE_EXCEPTION, WORKSPACE_DUPLICATE, EXTERNAL_DUPLICATE, CYCLE, BUILD, 
+		BUILD_MANIFEST, BUILD_DESCRIPTION_FILE, BUILD_STATE, SERVICE_STATECHANGE,
 		/**
 		 * A state indicating that a bundle command/operation did not complete or did complete, but
 		 * possibly in an inconsistent manner. May for instance happen when executing an infinite loop
@@ -214,7 +215,7 @@ public interface BundleTransition {
 		 * transition error and the state will be the state the bundle had when the previous transition
 		 * ended.
 		 */
-		SERVICE_INCOMPLETE, UNINSTALL
+		SERVICE_INCOMPLETE, EXTTERNAL_UNINSTALL
 	}
 
 	/**

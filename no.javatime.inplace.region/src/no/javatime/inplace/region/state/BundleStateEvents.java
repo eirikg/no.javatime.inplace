@@ -240,7 +240,7 @@ public class BundleStateEvents implements SynchronousBundleListener {
 				node.getState().external(node, event, StateFactory.INSTANCE.uninstalledState,
 						Transition.EXTERNAL);
 				if (WorkspaceRegionImpl.INSTANCE.isRegionActivated()) {
-					bundleTransition.setBuildTransitionError(bundle, TransitionError.UNINSTALL);
+					bundleTransition.setBuildTransitionError(bundle, TransitionError.EXTTERNAL_UNINSTALL);
 					BundleTransitionListener.addBundleTransition(new TransitionEvent(bundle, node.getTransition()));
 				}
 			}

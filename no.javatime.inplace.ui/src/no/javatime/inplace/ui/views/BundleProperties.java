@@ -248,39 +248,35 @@ public class BundleProperties {
 
 		try {
 			if (bundleTransition.hasBuildTransitionError(project)) {
-			TransitionError error = bundleTransition.getBuildError(project);
-			bundleTransition.getBundleError(project);
-			if (error == TransitionError.WORKSPACE_DUPLICATE) {
-				return "Duplicate of Workspace Bundle";
-			} else if (error == TransitionError.EXTERNAL_DUPLICATE) {
-				return "Duplicate of External Bundle";
-			} else if (error == TransitionError.CYCLE) {
-				return "Circular Bundle Reference";
-			} else if (error == TransitionError.DEPENDENCY) {
-				return "Dependent Bundle";
-			} else if (error == TransitionError.SERVICE_INCOMPLETE) {
-				return "Incomplete Transition";
-			} else if (error == TransitionError.BUILD) {
-				return "Build Problems";
-			} else if (error == TransitionError.SERVICE_EXCEPTION) {
-				return "Run Problems";
-			} else if (error == TransitionError.SERVICE_STATECHANGE) {
-				return "State error";
-			} else if (isProjectActivated && (bundleCommand.getState(bundle) & (Bundle.UNINSTALLED)) != 0) {
-				return "Install Problems"; 
-			} else if (isProjectActivated && (bundleCommand.getState(bundle) & (Bundle.INSTALLED)) != 0) {
-				return "Resolve Problems";
-			} else {
-				return "Bundle Problems";
-			}
-		} else if (!BundleProjectBuildError.hasBuildState(project)) {
-				return "Missing Build State";
-			} else if (!BundleProjectBuildError.hasProjectDescriptionFile(project)) {
-				return "Missing project description";
-			} else if (BundleProjectBuildError.hasManifestBuildErrors(project)) {
-				return "Manifest Problems"; 
-			} else if (BundleProjectBuildError.hasBuildErrors(project, false)) {
-				return "Build Problems";
+				TransitionError error = bundleTransition.getBuildError(project);
+				bundleTransition.getBundleError(project);
+				if (error == TransitionError.CYCLE) {
+					return "Circular Bundle Reference";
+				} else if (error == TransitionError.BUILD_STATE) {
+					return "Missing Build State";
+				} else if (error == TransitionError.BUILD_DESCRIPTION_FILE) {
+					return "Missing Description File";
+				} else if (error == TransitionError.BUILD_MANIFEST) {
+					return "Manifest Problems";
+				} else if (error == TransitionError.WORKSPACE_DUPLICATE) {
+					return "Duplicate of Workspace Bundle";
+				} else if (error == TransitionError.EXTERNAL_DUPLICATE) {
+					return "Duplicate of External Bundle";
+				} else if (error == TransitionError.SERVICE_INCOMPLETE) {
+					return "Incomplete Transition";
+				} else if (error == TransitionError.BUILD) {
+					return "Build Problems";
+				} else if (error == TransitionError.SERVICE_EXCEPTION) {
+					return "Run Problems";
+				} else if (error == TransitionError.SERVICE_STATECHANGE) {
+					return "State error";
+				} else if (isProjectActivated && (bundleCommand.getState(bundle) & (Bundle.UNINSTALLED)) != 0) {
+					return "Install Problems"; 
+				} else if (isProjectActivated && (bundleCommand.getState(bundle) & (Bundle.INSTALLED)) != 0) {
+					return "Resolve Problems";
+				} else {
+					return "Bundle Problems";
+				}
 			} else if (bundleTransition.containsPending(project, Transition.BUILD, false)) {
 				return "Build Pending";
 			} else if (isProjectActivated && bundleTransition.containsPending(project, Transition.UPDATE, false)) {
@@ -303,6 +299,36 @@ public class BundleProperties {
 					return "Deactivated"; // Activate Pending
 				}
 			}
+//		} else if (!BundleProjectBuildError.hasBuildState(project)) {
+//				return "Missing Build State";
+//			} else if (!BundleProjectBuildError.hasProjectDescriptionFile(project)) {
+//				return "Missing project description";
+//			} else if (BundleProjectBuildError.hasManifestBuildErrors(project)) {
+//				return "Manifest Problems"; 
+//			} else if (BundleProjectBuildError.hasCompileErrors(project)) {
+//				return "Build Problems";
+//			} else if (bundleTransition.containsPending(project, Transition.BUILD, false)) {
+//				return "Build Pending";
+//			} else if (isProjectActivated && bundleTransition.containsPending(project, Transition.UPDATE, false)) {
+//				return "Update Pending";
+//			} else if (null != bundle && bundleCommand.getBundleRevisions(bundle).size() > 1) {
+//				return "Refresh Pending" + " (" + getBundleRevisions() + ")";
+//			} else if (isProjectActivated && (bundleCommand.getState(bundle) & (Bundle.RESOLVED)) != 0
+//					&& !BundleSorter.isFragment(bundle)) {
+//				return "Start Pending";
+//			} else if (isProjectActivated && (bundleCommand.getState(bundle) & (Bundle.STARTING)) != 0) {
+//				return "Lazy Loading";
+//			} else {
+//				if (isProjectActivated) {
+//					if ((bundleCommand.getState(bundle) & (Bundle.UNINSTALLED | Bundle.INSTALLED | Bundle.RESOLVED | Bundle.STOPPING)) != 0) {
+//						return "Activated";
+//					} else {
+//						return "Running";
+//					}
+//				} else {
+//					return "Deactivated"; // Activate Pending
+//				}
+//			}
 		} catch (ProjectLocationException e) {
 			return "Project Location Problem";
 		} catch (InPlaceException e) {

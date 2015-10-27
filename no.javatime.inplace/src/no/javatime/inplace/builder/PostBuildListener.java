@@ -35,6 +35,7 @@ import no.javatime.inplace.bundlejobs.intface.Update;
 import no.javatime.inplace.dl.preferences.intface.CommandOptions;
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.msg.Msg;
+import no.javatime.inplace.region.closure.BundleProjectBuildError;
 import no.javatime.inplace.region.intface.BundleCommand;
 import no.javatime.inplace.region.intface.BundleProjectCandidates;
 import no.javatime.inplace.region.intface.BundleRegion;
@@ -432,6 +433,8 @@ public class PostBuildListener implements IResourceChangeListener {
 				return false;
 			}
 			bundleTransition.removePending(project, Transition.BUILD);
+			// Make errors available in deactivated projects
+			BundleProjectBuildError.hasBuildErrors(project, true);
 			return true;
 		}
 		return false;

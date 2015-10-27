@@ -269,7 +269,6 @@ public class BundleCommandImpl implements BundleCommand {
 				throw new InPlaceException(e, "bundle_install_error", locationIdentifier);
 			}
 		} catch (ExternalDuplicateException e) {
-			bundleNode.setBundleTransitionError(TransitionError.EXTERNAL_DUPLICATE);
 			throw e;
 		} catch (ProjectLocationException e) {
 			bundleNode.setBundleTransitionError(TransitionError.SERVICE_EXCEPTION);
@@ -746,7 +745,6 @@ public class BundleCommandImpl implements BundleCommand {
 				throw new InPlaceException(e, "bundle_update_error", bundle);
 			}
 		} catch (ExternalDuplicateException e) {
-			node.setBundleTransitionError(TransitionError.EXTERNAL_DUPLICATE);
 			throw e;
 		} finally {
 			try {

@@ -8,16 +8,18 @@ import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.region.Activator;
 import no.javatime.inplace.region.intface.BundleProjectMeta;
 import no.javatime.inplace.region.intface.BundleRegion;
-import no.javatime.inplace.region.intface.BundleTransition;
 import no.javatime.inplace.region.intface.BundleTransition.TransitionError;
 import no.javatime.inplace.region.intface.ExternalDuplicateException;
 import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.intface.WorkspaceDuplicateException;
-import no.javatime.inplace.region.manager.BundleTransitionImpl;
 import no.javatime.inplace.region.manager.WorkspaceRegionImpl;
 import no.javatime.inplace.region.project.BundleProjectCandidatesImpl;
 import no.javatime.inplace.region.project.BundleProjectMetaImpl;
 import no.javatime.inplace.region.project.CachedManifestOperationsImpl;
+import no.javatime.inplace.region.status.BundleStatus;
+import no.javatime.inplace.region.status.IBundleStatus;
+import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
+import no.javatime.util.messages.ExceptionMessage;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarker;
@@ -80,7 +82,8 @@ public class BundleProjectBuildError {
 	 * @return projects with bundle errors
 	 * @see #getBuildErrors(Collection, boolean)
 	 */
-	public static Collection<IProject> getBundleErrors(Collection<IProject> projects, boolean includeDuplicates) {
+	public static Collection<IProject> getBundleErrors(Collection<IProject> projects,
+			boolean includeDuplicates) {
 
 		Collection<IProject> errProjects = new LinkedHashSet<>();
 		for (IProject project : projects) {
@@ -106,7 +109,8 @@ public class BundleProjectBuildError {
 	 * @return projects with build errors
 	 * @see #getBundleErrors(Collection, boolean)
 	 */
-	public static Collection<IProject> getBuildErrors(Collection<IProject> projects, boolean includeDuplicates) {
+	public static Collection<IProject> getBuildErrors(Collection<IProject> projects,
+			boolean includeDuplicates) {
 
 		Collection<IProject> errors = new LinkedHashSet<>();
 		for (IProject project : projects) {
@@ -129,7 +133,8 @@ public class BundleProjectBuildError {
 	 * @see #hasBundleErrors(IProject, boolean)
 	 * @see #hasBuildErrors(IProject, boolean)
 	 */
-	public static boolean hasErrors(IProject project, boolean includeDuplicates) throws ExtenderException {
+	public static boolean hasErrors(IProject project, boolean includeDuplicates)
+			throws ExtenderException {
 
 		if (Activator.getCommandOptionsService().isActivateOnCompileError()) {
 			return hasBundleErrors(project, includeDuplicates);
@@ -201,12 +206,37 @@ public class BundleProjectBuildError {
 			boolean isBundleError = hasBundleErrors(project, includeDuplicates);
 			if (isBundleError) {
 				return true;
+			} else if (hasCompileErrors(project)) {
+					return true;
 			}
+		} catch (InPlaceException e) {
+			return true;
+		}
+		return false;
+	}
+
+	public static boolean hasCompileErrors(IProject project) {
+
+		try {
 			IMarker[] problems = project.findMarkers(IMarker.PROBLEM, true, IResource.DEPTH_INFINITE);
 			// check if any of these have a severity attribute that indicates an error
 			for (int problemsIndex = 0; problemsIndex < problems.length; problemsIndex++) {
 				if (IMarker.SEVERITY_ERROR == problems[problemsIndex].getAttribute(IMarker.SEVERITY,
 						IMarker.SEVERITY_INFO)) {
+					boolean activateOnCompileErrors = Activator.getCommandOptionsService().isActivateOnCompileError();
+					StatusCode statusCode = null;
+					String msg = null;
+					String errorlocation = project.getName() + " and file " + problems[problemsIndex].getResource().getName();
+					if (activateOnCompileErrors) {
+						statusCode = StatusCode.WARNING;
+						msg = "Running with compile time errors in project " + errorlocation;
+					} else {
+						statusCode = StatusCode.ERROR;
+						msg = "Build problems in project " + errorlocation;
+					}
+					IBundleStatus multiStatus = new BundleStatus(statusCode, Activator.PLUGIN_ID, project, msg, null);
+					BundleRegion bundleRegion = WorkspaceRegionImpl.INSTANCE;
+					bundleRegion.setBundleStatus(project, TransitionError.BUILD, multiStatus);
 					return true;
 				}
 			}
@@ -256,6 +286,10 @@ public class BundleProjectBuildError {
 			}
 		} catch (InPlaceException e) {
 		}
+		BundleRegion bundleRegion = WorkspaceRegionImpl.INSTANCE;
+		IBundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID,
+				project, "Missing build state in " + project.getName(), null);
+		bundleRegion.setBundleStatus(project, TransitionError.BUILD_STATE, multiStatus);
 		return false;
 	}
 
@@ -277,8 +311,7 @@ public class BundleProjectBuildError {
 		try {
 			Activator.getDefault().getDuplicateEvents().symbolicNameDuplicate(project);
 		} catch (ExternalDuplicateException e) {
-			BundleTransition bt = BundleTransitionImpl.INSTANCE;
-			bt.setBuildTransitionError(project, TransitionError.EXTERNAL_DUPLICATE);
+			// Status already set 
 			return true;
 		} catch (InPlaceException e) {
 		}
@@ -286,17 +319,17 @@ public class BundleProjectBuildError {
 	}
 
 	/**
-	 * Check if the specified project has a symbolic name and version that is a duplicate of the symbolic name of
-	 * a workspace bundle
+	 * Check if the specified project has a symbolic name and version that is a duplicate of the
+	 * symbolic name of a workspace bundle
 	 * <p>
 	 * If the specified project is null or not accessible (open but does not exist or closed) this is
 	 * regarded as both a build and a bundle error and {@code true} is returned
 	 * 
 	 * @param project The project with a symbolic name and version to check against workspace bundles
-	 * @return True if the symbolic name and version of the specified project matches the symbolic name of another
-	 * workspace bundle. Return false if no duplicates are found, the symbolic name of the specified
-	 * project could not be obtained, the manifest has syntax errors or if an error occurs while
-	 * reading the manifest
+	 * @return True if the symbolic name and version of the specified project matches the symbolic
+	 * name of another workspace bundle. Return false if no duplicates are found, the symbolic name of
+	 * the specified project could not be obtained, the manifest has syntax errors or if an error
+	 * occurs while reading the manifest
 	 */
 	public static boolean isWorkspaceDuplicate(IProject project) {
 
@@ -304,8 +337,7 @@ public class BundleProjectBuildError {
 			BundleRegion br = WorkspaceRegionImpl.INSTANCE;
 			br.workspaceDuplicate(project);
 		} catch (WorkspaceDuplicateException e) {
-			BundleTransition bt = BundleTransitionImpl.INSTANCE;
-			bt.setBuildTransitionError(project, TransitionError.WORKSPACE_DUPLICATE);
+			// Status already set 
 			return true;
 		}
 		return false;
@@ -350,6 +382,12 @@ public class BundleProjectBuildError {
 			ps.sortProvidingProjects(Collections.<IProject> singletonList(project));
 			return false;
 		} catch (CircularReferenceException e) {
+			BundleRegion bundleRegion = WorkspaceRegionImpl.INSTANCE;
+			String msg = ExceptionMessage.getInstance().formatString("circular_reference_termination");
+			IBundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID,
+					project, msg, e);
+			multiStatus.add(e.getStatusList());
+			bundleRegion.setBundleStatus(project, TransitionError.CYCLE, multiStatus);
 		}
 		return true;
 	}
@@ -402,6 +440,10 @@ public class BundleProjectBuildError {
 				for (int problemsIndex = 0; problemsIndex < problems.length; problemsIndex++) {
 					if (IMarker.SEVERITY_ERROR == problems[problemsIndex].getAttribute(IMarker.SEVERITY,
 							IMarker.SEVERITY_INFO)) {
+						BundleRegion bundleRegion = WorkspaceRegionImpl.INSTANCE;
+						IBundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID,
+								project, "Error in manifest for " + project.getName(), null);
+						bundleRegion.setBundleStatus(project, TransitionError.BUILD_MANIFEST, multiStatus);
 						return true;
 					}
 				}
@@ -431,6 +473,10 @@ public class BundleProjectBuildError {
 			if (projectDesc.exists()) {
 				return true;
 			}
+			BundleRegion bundleRegion = WorkspaceRegionImpl.INSTANCE;
+			IBundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID,
+					project, "Missing description fil in " + project.getName(), null);
+			bundleRegion.setBundleStatus(project, TransitionError.BUILD_DESCRIPTION_FILE, multiStatus);
 		}
 		return false;
 	}
