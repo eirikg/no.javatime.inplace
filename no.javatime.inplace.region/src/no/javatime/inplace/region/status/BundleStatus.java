@@ -49,7 +49,7 @@ public class BundleStatus extends MultiStatus implements IBundleStatus {
 	 * @param statusCode one of the <code>StatusCode</code> constants
 	 * @param pluginId the unique identifier of the relevant plug-in
 	 * @param message a verbose message related to the status
-	 * @see #convertToSeverity(no.javatime.inplace.region.status.IBundleStatus.StatusCode)
+	 * @see #convertSeverity()
 	 */
 	public BundleStatus(StatusCode statusCode, String pluginId, String message) {
 		super(pluginId, IStatus.OK, message, null);
@@ -61,7 +61,7 @@ public class BundleStatus extends MultiStatus implements IBundleStatus {
 	 * {@code BundleStatus} object. The {@IStatus] status code is converted to a {@code StatusCode}
 	 * 
 	 * @param status object to convert to a {@BundleStatus} object
-	 * @see #converToStausCode(int)
+	 * @see #converToStatusCode()
 	 */
 	public BundleStatus(IStatus status) {
 		super(status.getPlugin(), status.getSeverity(), status.getMessage(), status.getException());
@@ -69,7 +69,8 @@ public class BundleStatus extends MultiStatus implements IBundleStatus {
 			IBundleStatus bundleStatus = (BundleStatus) status;
 			init(bundleStatus.getStatusCode(), bundleStatus.getBundle(), bundleStatus.getProject());			
 		} else {
-			init(converToStausCode(status.getSeverity()), null, null);
+			setSeverity(status.getSeverity());
+			init(converToStatusCode(), null, null);
 		}
 	}
 
@@ -82,7 +83,7 @@ public class BundleStatus extends MultiStatus implements IBundleStatus {
 	 * @param project associated with this status object
 	 * @param message a verbose message related to the status
 	 * @param exception an exception or <code>null</code> if not applicable
-	 * @see #convertToSeverity(no.javatime.inplace.region.status.IBundleStatus.StatusCode)
+	 * @see #convertSeverity()
 	 */
 	public BundleStatus(StatusCode statusCode, String pluginId, IProject project, String message,
 			Throwable exception) {
@@ -105,7 +106,7 @@ public class BundleStatus extends MultiStatus implements IBundleStatus {
 	 * @param bundle associated with this status object
 	 * @param message a verbose message related to the status
 	 * @param exception an exception or <code>null</code> if not applicable
-	 * @see #convertToSeverity(no.javatime.inplace.region.status.IBundleStatus.StatusCode)
+	 * @see #convertSeverity()
 	 */
 	public BundleStatus(StatusCode statusCode, String pluginId, Long bundleId, String message, Throwable exception) {
 		super(pluginId, IStatus.OK, message, exception);
@@ -121,7 +122,7 @@ public class BundleStatus extends MultiStatus implements IBundleStatus {
 	 * @param bundle associated with this status object
 	 * @param message a verbose message related to the status
 	 * @param exception an exception or <code>null</code> if not applicable
-	 * @see #convertToSeverity(no.javatime.inplace.region.status.IBundleStatus.StatusCode)
+	 * @see #convertSeverity()
 	 */
 	public BundleStatus(StatusCode statusCode, String pluginId, Bundle bundle, String message, Throwable exception) {
 		super(pluginId, IStatus.OK, message, exception);
@@ -141,7 +142,7 @@ public class BundleStatus extends MultiStatus implements IBundleStatus {
 	 * @param pluginId the unique identifier of the relevant plug-in
 	 * @param message a verbose message related to the status
 	 * @param exception an exception or <code>null</code> if not applicable
-	 * @see #convertToSeverity(no.javatime.inplace.region.status.IBundleStatus.StatusCode)
+	 * @see #convertSeverity()
 	 */
 	public BundleStatus(StatusCode statusCode, String pluginId, String message, Throwable exception) {
 		super(pluginId, IStatus.OK, message, exception);
@@ -209,53 +210,110 @@ public class BundleStatus extends MultiStatus implements IBundleStatus {
 		} else {
 			setPlugin(symbolicName);
 		}
-		convertToSeverity(statusCode);
+		// convertToSeverity(statusCode);
 		this.statusCode = statusCode;
 		this.project = project;		
 	}
 
 	/**
-	 * Converts a {@code StatusCode} to an {@code Status} status code.
-	 * @param statusCode is the status code to convert to an {@code IStatus} status
-	 * IStaus code CANCEL is not sent to the log view. 
+	 * Converts a {@code StatusCode} to a {@code Status} status code
+	 * 
 	 * @return the converted {@code StatusCode} to an {@code Status} status
 	 */
-	private int convertToSeverity(StatusCode statusCode) {
+	public int convertSeverity() {
 
-		if (statusCode == StatusCode.INFO || statusCode == StatusCode.JOBERROR
-				|| statusCode == StatusCode.CANCEL) {
-			setSeverity(IStatus.INFO);
-		} else if(statusCode == StatusCode.ERROR
-				|| statusCode == StatusCode.EXCEPTION) {
-			setSeverity(IStatus.ERROR);				
-		} else if(statusCode == StatusCode.WARNING
-				|| statusCode == StatusCode.BUILDERROR) {
-			setSeverity(IStatus.WARNING);
-		}  else if(statusCode == StatusCode.OK) {
+		switch (statusCode) {
+		case OK:
 			setSeverity(IStatus.OK);
-		} 
+			break;
+		case WARNING:
+		case BUILD_WARNING:	
+			setSeverity(IStatus.WARNING);
+			break;
+		case INFO:
+			setSeverity(IStatus.INFO);
+			break;
+		case CANCEL:
+			setSeverity(IStatus.CANCEL);
+			break;
+		case JOB_ERROR:
+		case BUILD_ERROR:
+		case SERVICE_ERROR:
+		case MODULAR_ERROR:
+		case ERROR:
+		case EXCEPTION:
+			setSeverity(IStatus.ERROR);
+			break;
+		default:	
+			setSeverity(IStatus.OK);			
+		}
 		return getSeverity();
 	}
 
 	/**
-	 * Converts an {@code IStatus} status to a {@code StatusCode}.
+	 * Converts an {@code IStatus} status to a {@code StatusCode}
 	 * @param statusCode is the status code to convert to an {@code Status} status
+	 * 
 	 * @return the converted {@code Status} to a {@code StatusCode} status
 	 */
-	private StatusCode converToStausCode(int severity) {
+	public StatusCode converToStatusCode() {
 
-		if (severity == IStatus.INFO) {
-			return StatusCode.INFO;
-		} else if(severity == IStatus.ERROR) {
-			return StatusCode.ERROR;
-		} else if(severity == IStatus.WARNING) {
-			return StatusCode.WARNING;
-		} else if(severity == IStatus.CANCEL) {
-			return StatusCode.CANCEL;
-		}  else if(severity == IStatus.OK) {
-			return StatusCode.OK;
-		} 
-		return StatusCode.OK;
+		switch (new Integer(getSeverity())) {
+		case OK:
+			setStatusCode(StatusCode.OK);
+			break;
+		case WARNING:
+			setStatusCode(StatusCode.WARNING);
+			break;
+		case INFO:
+			setStatusCode(StatusCode.INFO);
+			break;
+		case CANCEL:
+			setStatusCode(StatusCode.CANCEL);
+			break;
+		case ERROR:
+			setStatusCode(StatusCode.ERROR);
+			break;
+		default:	
+			setStatusCode(StatusCode.OK);
+		}
+		return statusCode;
+	}
+
+	/**
+	 * Set highest severity from children
+	 */
+	public StatusCode setHighestStatusCode() {		
+		
+		return statusCode = setHighestStatusCode(this, statusCode);
+		
+	}
+	
+	public StatusCode setHighestStatusCode(IBundleStatus status, StatusCode statusCode) {		
+
+		if (statusCode == StatusCode.ERROR) {
+			return statusCode;
+		}
+		switch (status.getStatusCode()) {
+		case WARNING:
+		case BUILD_WARNING:	
+			statusCode = StatusCode.WARNING;					
+			break;
+		case BUILD_ERROR:
+		case SERVICE_ERROR:
+		case MODULAR_ERROR:
+		case ERROR:
+		case EXCEPTION:
+			statusCode = StatusCode.ERROR;
+		default:
+			break;
+		}
+		for (IStatus childStatus : status.getChildren()) {
+			if (childStatus instanceof IBundleStatus) {
+				statusCode = setHighestStatusCode((IBundleStatus) childStatus, statusCode);
+			}
+		}	
+		return statusCode;
 	}
 	
 	@Override
@@ -292,15 +350,13 @@ public class BundleStatus extends MultiStatus implements IBundleStatus {
 
 	@Override
 	public void setSeverity(int severity) {
-		// TODO this one destroys the original StatusCode
-		statusCode = converToStausCode(severity);
 		super.setSeverity(severity);
 	}
 
 	@Override
 	public void setStatusCode(StatusCode statusCode) {
 		this.statusCode = statusCode;
-		super.setSeverity(convertToSeverity(statusCode));
+		super.setSeverity(convertSeverity());
 	}
 	
 	public StatusCode getStatusCode() {
@@ -314,29 +370,6 @@ public class BundleStatus extends MultiStatus implements IBundleStatus {
 		}
 	}
 	
-	/**
-	 * Set highest severity from children
-	 */
-	public void setStatusCode() {
-		
-		// If no children, use the severity from the root status object
-		for (IStatus status : getChildren()) {
-			if (status instanceof IBundleStatus) {
-				IBundleStatus bundleStatus = (IBundleStatus) status;
-				if (bundleStatus.getStatusCode() == StatusCode.ERROR) {
-					statusCode = StatusCode.ERROR;
-					break;
-				} else if (bundleStatus.getStatusCode() == StatusCode.BUILDERROR) {
-					statusCode = StatusCode.BUILDERROR;
-					break;
-				} else if (bundleStatus.getStatusCode() == StatusCode.WARNING) {
-					statusCode = StatusCode.WARNING;					
-				}
-			}
-		}
-		setStatusCode(statusCode);
-	}
-
 	@Override
 	public final IProject getProject() {
 		if (null == project && null != bundle) {

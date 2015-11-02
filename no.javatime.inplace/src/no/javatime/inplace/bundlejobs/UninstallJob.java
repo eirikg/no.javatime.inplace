@@ -90,12 +90,6 @@ public class UninstallJob extends NatureJob implements Uninstall {
 		includeRequiring = true;
 	}
 
-	@Override
-	public void end() {		
-		super.end();
-		init();
-	}
-
 	/*
 	 * (non-Javadoc)
 	 * 
@@ -153,12 +147,12 @@ public class UninstallJob extends NatureJob implements Uninstall {
 			String msg = ExceptionMessage.getInstance().formatString("interrupt_job", getName());
 			addError(e, msg);
 		} catch (OperationCanceledException e) {
-			addCancelMessage(e, NLS.bind(Msg.CANCEL_JOB_INFO, getName()));
+			addCancel(e, NLS.bind(Msg.CANCEL_JOB_INFO, getName()));
 		} catch (CircularReferenceException e) {
 			String msg = ExceptionMessage.getInstance().formatString("circular_reference", getName());
 			BundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, msg);
 			multiStatus.add(e.getStatusList());
-			addStatus(multiStatus);
+			addError(multiStatus);
 		} catch (IllegalStateException e) {
 			String msg = WarnMessage.getInstance().formatString("node_removed_preference_store");
 			StatusManager.getManager().handle(

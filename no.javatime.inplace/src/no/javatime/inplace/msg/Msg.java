@@ -51,8 +51,6 @@ public class Msg extends NLS {
 	public static String NO_RESOURCE_DELTA_BUILD_AVAILABLE_TRACE;
 	public static String INCREMENTAL_BUILD_TRACE;
 	public static String FULL_BUILD_TRACE;
-	public static String BUILD_ERROR_UPDATE_TRACE;
-	public static String BUILD_ERROR_TRACE;
 	public static String USING_CURRENT_REVISION_TRACE;
 	
 	// Bundle job and task names

@@ -45,7 +45,7 @@ public class ExternalTransition implements BundleTransitionEventListener {
 			Bundle bundle = evt.getBundle();
 			IProject project = evt.getProject();
 			BundleTransition transition = Activator.getBundleTransitionService();
-			if (transition.getBuildError(bundle) == TransitionError.EXTTERNAL_UNINSTALL) {
+			if (transition.getBuildTransitionError(bundle) == TransitionError.MODULAR_EXTERNAL_UNINSTALL) {
 				transition.clearBuildTransitionError(project);
 				externalUninstall(bundle, project);
 			}

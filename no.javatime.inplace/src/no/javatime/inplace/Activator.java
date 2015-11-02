@@ -261,6 +261,11 @@ public class Activator extends AbstractUIPlugin  {
 		return extenderTracker.bundleLogExtender.getService(bundle).log(status);
 	}
 
+	public static String logDirect(IBundleStatus status) throws BundleLogException, ExtenderException {
+
+		return extenderTracker.bundleLogExtender.getService(bundle).logDirect(status);
+	}
+
 	/**
 	 * Return the bundle console service view
 	 * 

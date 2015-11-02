@@ -104,9 +104,6 @@ public class StatusHandler extends WorkbenchErrorHandler {
 		// Only consider bundle status objects
 		if (status instanceof IBundleStatus) {
 			IBundleStatus bundleStatus = (IBundleStatus) status;
-			if (bundleStatus.isMultiStatus()) {
-				bundleStatus.setStatusCode();
-			}
 			try {
 				// Also send the error status objects to the bundle log
 				if (Activator.getMessageOptionsService().isBundleOperations()) {
@@ -117,7 +114,13 @@ public class StatusHandler extends WorkbenchErrorHandler {
 						e)), style);
 			}
 			// Send to error log
-			if (bundleStatus.getStatusCode() != StatusCode.INFO) {
+			bundleStatus.setHighestStatusCode();
+			if (bundleStatus.getStatusCode() != StatusCode.INFO
+					&& bundleStatus.getStatusCode() != StatusCode.OK
+					&& bundleStatus.getStatusCode() != StatusCode.CANCEL 
+					&& bundleStatus.getStatusCode() != StatusCode.WARNING
+					&& bundleStatus.getStatusCode() != StatusCode.BUILD_WARNING)  {
+				convertServerity(bundleStatus);
 				statusAdapter.setStatus(bundleStatus);
 				super.handle(statusAdapter, style);
 			}
@@ -125,6 +128,16 @@ public class StatusHandler extends WorkbenchErrorHandler {
 			// Forward any other type of status objects to the standard error handler
 			super.handle(statusAdapter, style);
 		}
+	}
+	public void convertServerity(IBundleStatus status) {
+		
+		status.convertSeverity();
+		for (IStatus childStatus : status.getChildren()) {
+			if (childStatus instanceof IBundleStatus) {
+				IBundleStatus bundleStatus = (IBundleStatus) childStatus;
+				convertServerity(bundleStatus);
+			}
+		}		
 	}
 
 	/**

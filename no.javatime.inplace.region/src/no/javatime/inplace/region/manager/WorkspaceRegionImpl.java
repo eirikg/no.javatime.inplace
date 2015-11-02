@@ -38,7 +38,6 @@ import no.javatime.inplace.region.project.BundleProjectMetaImpl;
 import no.javatime.inplace.region.state.BundleNode;
 import no.javatime.inplace.region.state.BundleState;
 import no.javatime.inplace.region.status.BundleStatus;
-import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import no.javatime.util.messages.Category;
 import no.javatime.util.messages.ExceptionMessage;
@@ -483,8 +482,10 @@ public class WorkspaceRegionImpl implements BundleRegion {
 			}
 			BundleNode bundleNode = getBundleNode(project);
 			WorkspaceDuplicateException e = new WorkspaceDuplicateException(msg);
-			bundleNode.setStatus(TransitionError.WORKSPACE_DUPLICATE, new BundleStatus(
-					StatusCode.EXCEPTION, Activator.PLUGIN_ID, project, msg, e));
+			if (null != bundleNode) {
+				bundleNode.setBundleStatus(TransitionError.BUILD_MODULAR_WORKSPACE_DUPLICATE, new BundleStatus(
+						StatusCode.BUILD_ERROR, Activator.PLUGIN_ID, project, msg, e));
+			}
 			throw e;
 		}
 	}
@@ -566,32 +567,6 @@ public class WorkspaceRegionImpl implements BundleRegion {
 	public boolean exist(Bundle bundle) {
 
 		return (null != bundleProjects.get(bundle.getBundleId())) ? true : false;
-	}
-
-	@Override
-	public IBundleStatus getBundleStatus(IProject project) {
-		BundleNode node = getNode(project);
-		if (null != node) {
-			return node.getStatus();
-		}
-		return null;
-	}
-
-	@Override
-	public void setBundleStatus(IProject project, IBundleStatus status) {
-		BundleNode node = getNode(project);
-		if (null != node) {
-			node.setStatus(status);
-		}
-	}
-
-	@Override
-	public void setBundleStatus(IProject project, TransitionError transitionError,
-			IBundleStatus status) {
-		BundleNode node = getNode(project);
-		if (null != node) {
-			node.setStatus(transitionError, status);
-		}
 	}
 
 	@Override

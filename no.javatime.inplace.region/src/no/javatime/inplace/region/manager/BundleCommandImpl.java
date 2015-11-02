@@ -245,33 +245,33 @@ public class BundleCommandImpl implements BundleCommand {
 			is = bundleReference.openStream();
 			bundle = Activator.getContext().installBundle(locationIdentifier, is);
 		} catch (MalformedURLException e) {
-			bundleNode.setBundleTransitionError(TransitionError.SERVICE_EXCEPTION);
+			bundleNode.setBundleTransitionError(TransitionError.MODULAR_EXCEPTION);
 			throw new InPlaceException(e, "bundle_install_malformed_error", locationIdentifier);
 		} catch (IOException e) {
-			bundleNode.setBundleTransitionError(TransitionError.SERVICE_EXCEPTION);
+			bundleNode.setBundleTransitionError(TransitionError.MODULAR_EXCEPTION);
 			throw new InPlaceException(e, "bundle_install_error", locationIdentifier);
 		} catch (NullPointerException npe) {
-			bundleNode.setBundleTransitionError(TransitionError.SERVICE_EXCEPTION);
+			bundleNode.setBundleTransitionError(TransitionError.MODULAR_EXCEPTION);
 			throw new InPlaceException(npe, "bundle_install_npe_error", locationIdentifier);
 		} catch (IllegalStateException e) {
-			bundleNode.setBundleTransitionError(TransitionError.SERVICE_EXCEPTION);
+			bundleNode.setBundleTransitionError(TransitionError.MODULAR_EXCEPTION);
 			throw new InPlaceException(e, "bundle_state_error", locationIdentifier);
 		} catch (SecurityException e) {
-			bundleNode.setBundleTransitionError(TransitionError.SERVICE_EXCEPTION);
+			bundleNode.setBundleTransitionError(TransitionError.MODULAR_EXCEPTION);
 			throw new InPlaceException(e, "bundle_security_error", locationIdentifier);
 		} catch (BundleException e) {
 			if (e.getType() == BundleException.DUPLICATE_BUNDLE_ERROR) {
-				bundleNode.setBundleTransitionError(TransitionError.WORKSPACE_DUPLICATE);
+				bundleNode.setBundleTransitionError(TransitionError.BUILD_MODULAR_WORKSPACE_DUPLICATE);
 				String msg = NLS.bind(Msg.WORKSPACE_INSTALL_DUPLICATE_EXP, bundleRegion.getSymbolicKey(null, project), locationIdentifier);
 				throw new WorkspaceDuplicateException(e, msg);
 			} else {
-				bundleNode.setBundleTransitionError(TransitionError.SERVICE_EXCEPTION);
+				bundleNode.setBundleTransitionError(TransitionError.MODULAR_EXCEPTION);
 				throw new InPlaceException(e, "bundle_install_error", locationIdentifier);
 			}
 		} catch (ExternalDuplicateException e) {
 			throw e;
 		} catch (ProjectLocationException e) {
-			bundleNode.setBundleTransitionError(TransitionError.SERVICE_EXCEPTION);
+			bundleNode.setBundleTransitionError(TransitionError.MODULAR_EXCEPTION);
 			throw e;
 		} finally {
 			try {
@@ -279,7 +279,7 @@ public class BundleCommandImpl implements BundleCommand {
 					is.close();
 				}
 			} catch (IOException e) {
-				bundleNode.setBundleTransitionError(TransitionError.SERVICE_EXCEPTION);
+				bundleNode.setBundleTransitionError(TransitionError.MODULAR_EXCEPTION);
 				throw new InPlaceException(e, "io_exception_install", locationIdentifier);
 			} finally {
 				if (bundleNode.hasBundleTransitionError()) {
@@ -324,7 +324,7 @@ public class BundleCommandImpl implements BundleCommand {
 					BundleNode node = bundleRegion.getBundleNode(bundle);
 					int state = getState(bundle);
 					if ((state & (Bundle.UNINSTALLED | Bundle.INSTALLED)) != 0) {
-						node.setBundleTransitionError(TransitionError.ERROR);
+						node.setBundleTransitionError(TransitionError.MODULAR_REFRESH_ERROR);
 					}
 				}
 			}
@@ -334,7 +334,7 @@ public class BundleCommandImpl implements BundleCommand {
 			for (Bundle bundle : bundles) {
 				if ((getState(bundle) & (Bundle.UNINSTALLED | Bundle.INSTALLED)) != 0) {
 					BundleNode node = bundleRegion.getBundleNode(bundle);
-					node.setBundleTransitionError(TransitionError.SERVICE_EXCEPTION);
+					node.setBundleTransitionError(TransitionError.MODULAR_EXCEPTION);
 				}
 			}
 			throw new InPlaceException(e, "bundles_security_error", bundleRegion.formatBundleList(
@@ -343,7 +343,7 @@ public class BundleCommandImpl implements BundleCommand {
 			for (Bundle bundle : bundles) {
 				if ((getState(bundle) & (Bundle.UNINSTALLED | Bundle.INSTALLED)) != 0) {
 					BundleNode node = bundleRegion.getBundleNode(bundle);
-					node.setBundleTransitionError(TransitionError.SERVICE_EXCEPTION);
+					node.setBundleTransitionError(TransitionError.MODULAR_EXCEPTION);
 				}
 			}
 			throw new InPlaceException(e, "bundles_argument_resolve_bundle",
@@ -410,7 +410,7 @@ public class BundleCommandImpl implements BundleCommand {
 							if ((event.getType() & (FrameworkEvent.ERROR)) != 0) {
 								for (Bundle bundle : bundles) {
 									BundleNode node = bundleRegion.getBundleNode(bundle);
-									node.setBundleTransitionError(TransitionError.ERROR);
+									node.setBundleTransitionError(TransitionError.MODULAR_REFRESH_ERROR);
 								}
 								refreshStatus.setStatusCode(StatusCode.EXCEPTION);
 								Throwable throwable = event.getThrowable();
@@ -438,14 +438,14 @@ public class BundleCommandImpl implements BundleCommand {
 			} catch (SecurityException e) {
 				for (Bundle bundle : bundles) {
 					BundleNode node = bundleRegion.getBundleNode(bundle);
-					node.setBundleTransitionError(TransitionError.SERVICE_EXCEPTION);
+					node.setBundleTransitionError(TransitionError.MODULAR_EXCEPTION);
 				}
 				throw new InPlaceException(e, "framework_bundle_security_error",
 						bundleRegion.formatBundleList(bundles, true));
 			} catch (IllegalArgumentException e) {
 				for (Bundle bundle : bundles) {
 					BundleNode node = bundleRegion.getBundleNode(bundle);
-					node.setBundleTransitionError(TransitionError.SERVICE_EXCEPTION);
+					node.setBundleTransitionError(TransitionError.MODULAR_EXCEPTION);
 				}
 				throw new InPlaceException(e, "bundles_argument_refresh_bundle",
 						bundleRegion.formatBundleList(bundles, true));
@@ -554,7 +554,7 @@ public class BundleCommandImpl implements BundleCommand {
 			throw new InPlaceException(e, "bundle_security_error", bundle);
 		} catch (BundleException e) {
 			if (null != e.getCause() && (e.getCause() instanceof ThreadDeath)) {
-				node.setBundleTransitionError(TransitionError.SERVICE_INCOMPLETE);
+				node.setBundleTransitionError(TransitionError.SERVICE_INCOMPLETE_TRANSITION);
 				String msg = ExceptionMessage.getInstance().formatString("bundle_task_start_terminate",
 						bundle);
 				throw new IllegalStateException(msg, e);
@@ -659,7 +659,7 @@ public class BundleCommandImpl implements BundleCommand {
 			throw new InPlaceException(e, "bundle_security_error", bundle);
 		} catch (BundleException e) {
 			if (null != e.getCause() && (e.getCause() instanceof ThreadDeath)) {
-				node.setBundleTransitionError(TransitionError.SERVICE_INCOMPLETE);
+				node.setBundleTransitionError(TransitionError.SERVICE_INCOMPLETE_TRANSITION);
 				String msg = ExceptionMessage.getInstance().formatString("bundle_task_stop_terminate",
 						bundle);
 				throw new IllegalStateException(msg, e);
@@ -722,26 +722,26 @@ public class BundleCommandImpl implements BundleCommand {
 			is = bundlereference.openStream();
 			bundle.update(is);
 		} catch (MalformedURLException e) {
-			node.setBundleTransitionError(TransitionError.SERVICE_EXCEPTION);
+			node.setBundleTransitionError(TransitionError.MODULAR_EXCEPTION);
 			throw new InPlaceException(e, "bundle_update_malformed_error", location);
 		} catch (IOException e) {
-			node.setBundleTransitionError(TransitionError.SERVICE_EXCEPTION);
+			node.setBundleTransitionError(TransitionError.MODULAR_EXCEPTION);
 			throw new InPlaceException(e, "io_exception_update", bundle, location);
 		} catch (IllegalStateException e) {
-			node.setBundleTransitionError(TransitionError.SERVICE_EXCEPTION);
+			node.setBundleTransitionError(TransitionError.MODULAR_EXCEPTION);
 			throw new InPlaceException(e, "bundle_state_error", bundle);
 		} catch (SecurityException e) {
-			node.setBundleTransitionError(TransitionError.SERVICE_EXCEPTION);
+			node.setBundleTransitionError(TransitionError.MODULAR_EXCEPTION);
 			throw new InPlaceException(e, "bundle_security_error", bundle);
 		} catch (BundleException e) {
 			if (e.getType() == BundleException.DUPLICATE_BUNDLE_ERROR) {
-				node.setBundleTransitionError(TransitionError.WORKSPACE_DUPLICATE);
+				node.setBundleTransitionError(TransitionError.BUILD_MODULAR_WORKSPACE_DUPLICATE);
 				IProject project = node.getProject();
 				String msg = NLS.bind(Msg.WORKSPACE_UPATE_DUPLICATE_EXP, new Object[] {project.getName(), bundle, 
 						BundleNode.formatSymbolicKey(null, project)});
 				throw new WorkspaceDuplicateException(e, msg);
 			} else {
-				node.setBundleTransitionError(TransitionError.SERVICE_EXCEPTION);
+				node.setBundleTransitionError(TransitionError.MODULAR_EXCEPTION);
 				throw new InPlaceException(e, "bundle_update_error", bundle);
 			}
 		} catch (ExternalDuplicateException e) {
@@ -752,7 +752,7 @@ public class BundleCommandImpl implements BundleCommand {
 					is.close();
 				}
 			} catch (IOException e) {
-				node.setBundleTransitionError(TransitionError.SERVICE_EXCEPTION);
+				node.setBundleTransitionError(TransitionError.MODULAR_EXCEPTION);
 				throw new InPlaceException(e, "io_exception_update", bundle, location);
 			} finally {
 				if (node.hasBundleTransitionError()) {
@@ -803,13 +803,13 @@ public class BundleCommandImpl implements BundleCommand {
 			state.uninstall(node);
 			bundle.uninstall();
 		} catch (IllegalStateException e) {
-			node.setBundleTransitionError(TransitionError.SERVICE_EXCEPTION);
+			node.setBundleTransitionError(TransitionError.MODULAR_EXCEPTION);
 			throw new InPlaceException(e, "bundle_state_error", bundle);
 		} catch (SecurityException e) {
-			node.setBundleTransitionError(TransitionError.SERVICE_EXCEPTION);
+			node.setBundleTransitionError(TransitionError.MODULAR_EXCEPTION);
 			throw new InPlaceException(e, "bundle_security_error", bundle);
 		} catch (BundleException e) {
-			node.setBundleTransitionError(TransitionError.SERVICE_EXCEPTION);
+			node.setBundleTransitionError(TransitionError.MODULAR_EXCEPTION);
 			throw new InPlaceException(e, "bundle_uninstall_error", bundle);
 		} finally {
 			if (null != node) {
@@ -983,7 +983,7 @@ public class BundleCommandImpl implements BundleCommand {
 			typeName = "STARTED";
 			break;
 		case FrameworkEvent.ERROR:
-			typeName = "ERROR";
+			typeName = "MODULAR_REFRESH_ERROR";
 			break;
 		case FrameworkEvent.WARNING:
 			typeName = "WARNING";

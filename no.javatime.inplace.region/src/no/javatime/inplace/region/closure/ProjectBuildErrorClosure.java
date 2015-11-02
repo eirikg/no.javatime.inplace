@@ -464,7 +464,7 @@ public class ProjectBuildErrorClosure {
 					statusHeader.add(new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, msg));
 				}
 				// Get any registered errors status on the bundle project
-				IBundleStatus bundleStatus = bundleRegion.getBundleStatus(errorProject);
+				IBundleStatus bundleStatus = bundleTransition.getTransitionStatus(errorProject);
 				if (null != bundleStatus) {
 					statusHeader.add(bundleStatus);
 				}

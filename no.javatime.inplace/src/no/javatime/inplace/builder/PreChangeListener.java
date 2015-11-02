@@ -68,17 +68,23 @@ public class PreChangeListener implements IResourceChangeListener {
 	public void resourceChanged(IResourceChangeEvent event) {
 		
 		
-		// Do not return if waiting for additional projects to uninstall
-		// May occur if the workspace becomes deactivated while waiting for new projects to remove
-		if (!projectActivation.isProjectWorkspaceActivated()
-				&& !(ResourceStateHandler.getWaitingBundleJob() instanceof RemoveBundleProject)) {
-			return;
-		}
 		final IResource resource = event.getResource();
 		if (null != resource && resource.isAccessible()
 				&& (resource.getType() & (IResource.PROJECT)) != 0) {
 			final IProject project = resource.getProject();
 			try {
+				if (!projectActivation.isProjectWorkspaceActivated()) {
+					BundleRegion bundleRegion = Activator.getBundleRegionService();
+					if (bundleRegion.isProjectRegistered(project)) {
+						bundleRegion.unregisterBundleProject(project);
+						return;
+					}
+					// Do not return if waiting for additional projects to uninstall
+					// May occur if the workspace becomes deactivated while waiting for new projects to remove
+					if (!(ResourceStateHandler.getWaitingBundleJob() instanceof RemoveBundleProject)) {
+						return;
+					}
+				}
 				BundleRegion bundleRegion = Activator.getBundleRegionService();
 				Bundle bundle = bundleRegion.getBundle(project);
 				if (null == bundle) {

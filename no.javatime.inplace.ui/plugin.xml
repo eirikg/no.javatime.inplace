@@ -126,6 +126,17 @@
                id="no.javatime.inplace.command.newpluginwizard"
                name="no.javatime.inplace.command.newpluginwizard">
          </command>
+         <command
+               categoryId="no.javatime.inplace.command.category"
+               defaultHandler="no.javatime.inplace.ui.command.handlers.ActivateOnErrorHandler"
+               description="Activate bundles wihj Java build errors"
+               id="no.javatime.inplace.command.activateonerror"
+               name="no.javatime.inplace.command.activateonerror">
+            <state
+                  class="org.eclipse.ui.handlers.RegistryToggleState:true"
+                  id="org.eclipse.ui.commands.toggleState">
+            </state>
+         </command>
       </extension>
       <extension
             id="no.javatime.inplace.menucontributions"
@@ -185,19 +196,20 @@
                      visible="true">
                </separator>
                <command
-                     commandId="no.javatime.inplace.command.autorefresh"
-                     label="Refresh on Update"
-                     style="toggle">
-               </command>
-               <command
                      commandId="no.javatime.inplace.command.autoupdate"
                      label="Update on Build"
                      style="toggle">
                </command>
                <command
-                     commandId="no.javatime.inplace.command.deactivate"
-                     label="Deactivate Workspace on Exit"
+                     commandId="no.javatime.inplace.command.autorefresh"
+                     label="Refresh on Update"
                      style="toggle">
+               </command>
+               <command
+                     commandId="no.javatime.inplace.command.activateonerror"
+                     label="Activate with Java Build Errors"
+                     style="toggle"
+                     tooltip="Activate and Start/Stop bundle project with compilation errors">
                </command>
                <command
                      commandId="no.javatime.inplace.command.eageractivation"
@@ -212,6 +224,11 @@
                <command
                      commandId="no.javatime.inplace.command.uicontributors"
                      label="Allow UI Contributions using Extensions"
+                     style="toggle">
+               </command>
+               <command
+                     commandId="no.javatime.inplace.command.deactivate"
+                     label="Deactivate Workspace on Exit"
                      style="toggle">
                </command>
             </menu>

@@ -39,6 +39,36 @@ public class BundleLogimpl implements BundleLog {
 	}
 
 	@Override
+	public String logDirect(IBundleStatus status) throws BundleLogException {
+
+		String msg = null;
+		try {
+			Bundle bundle = status.getBundle();
+			if (null == bundle) {
+				BundleContext context = Activator.getContext();
+				if (null != context) {
+					bundle = context.getBundle();
+				} else {
+					throw new IllegalStateException(NLS.bind(Messages.NULL_CONTEXT_EXP, Activator.PLUGIN_ID));
+				}
+			}
+			msg = status.getMessage();
+			// Write directly to the log file
+			LogWriter logWriter = Activator.getDefault().getLogWriter();
+			if (null != logWriter) {
+				logWriter.log(new BundleLogEntryImpl(status));
+				return msg;
+			}
+		} catch (IllegalArgumentException e) {
+			throw new BundleLogException(e, Messages.FORMAT_ARG_EXP);
+		} catch (IllegalStateException e) {
+			String errMsg = NLS.bind(Messages.INVALID_CONTEXT_EXP, Activator.PLUGIN_ID);
+			throw new BundleLogException(e, errMsg);
+		}
+		return msg;
+	}
+
+	@Override
 	public String log(IBundleStatus status) throws BundleLogException {
 
 		return logStatus(status);
@@ -460,6 +490,8 @@ public class BundleLogimpl implements BundleLog {
 			// Write directly to the log file
 			LogWriter logWriter = activator.getLogWriter();
 			if (null != logWriter) {
+				status.setHighestStatusCode();
+				logWriter.convertServerity(status);
 				logWriter.log(new BundleLogEntryImpl(status));
 			}
 		} else {

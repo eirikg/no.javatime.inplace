@@ -213,8 +213,10 @@ public class ExternalDuplicates implements BundleListener {
 							bundleRegion.getBundleLocationIdentifier(project));
 				}
 				ExternalDuplicateException e = new ExternalDuplicateException(msg);
-				bundleNode.setStatus(TransitionError.EXTERNAL_DUPLICATE, new BundleStatus(
-						StatusCode.EXCEPTION, Activator.PLUGIN_ID, project, msg, e));
+				if (null != bundleNode) {
+					bundleNode.setBundleStatus(TransitionError.BUILD_MODULAR_EXTERNAL_DUPLICATE, new BundleStatus(
+							StatusCode.EXCEPTION, Activator.PLUGIN_ID, project, msg, e));
+				}
 				throw e;
 			}
 		}

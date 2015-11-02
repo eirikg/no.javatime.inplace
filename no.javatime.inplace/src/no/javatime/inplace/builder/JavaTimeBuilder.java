@@ -20,10 +20,12 @@ import no.javatime.inplace.Activator;
 import no.javatime.inplace.bundlejobs.ActivateProjectJob;
 import no.javatime.inplace.bundlejobs.intface.ActivateProject;
 import no.javatime.inplace.dl.preferences.intface.CommandOptions;
+import no.javatime.inplace.dl.preferences.intface.DependencyOptions.Closure;
 import no.javatime.inplace.dl.preferences.intface.MessageOptions;
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.log.intface.BundleLogException;
 import no.javatime.inplace.msg.Msg;
+import no.javatime.inplace.region.closure.BundleClosures;
 import no.javatime.inplace.region.closure.BundleProjectBuildError;
 import no.javatime.inplace.region.closure.CircularReferenceException;
 import no.javatime.inplace.region.closure.ProjectSorter;
@@ -122,6 +124,8 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),
 					StatusManager.LOG);
 			autoBuildOff = false;
+		} finally {
+			builds.clear();			
 		}
 	}
 
@@ -141,10 +145,10 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 			if (Activator.getMessageOptionsService().isBundleOperations()) {
 				if (!builds.isEmpty()) {
 					if (autoBuildOff) {
-						mStatus = new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID,
+						mStatus = new BundleStatus(StatusCode.OK, Activator.PLUGIN_ID,
 								Msg.BUILD_HEADER_TRACE_AUTO_BUILD_OFF);
 					} else {
-						mStatus = new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, NLS.bind(
+						mStatus = new BundleStatus(StatusCode.OK, Activator.PLUGIN_ID, NLS.bind(
 								Msg.BUILD_HEADER_TRACE,
 								new DecimalFormat().format(System.currentTimeMillis() - startTime)));
 					}
@@ -223,7 +227,6 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 		try {
 			IProject project = getProject();
 			bundleTransition.clearBuildTransitionError(project);
-			// bundleTransition.removeTransitionError(project, TransitionError.BUILD);
 			bundleTransition.removePending(project, Transition.BUILD);
 			if (Category.DEBUG && Category.getState(Category.build))
 				TraceMessage.getInstance().getString("start_build");
@@ -250,7 +253,8 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 					}
 				}
 			}
-			if (null != resourceDelta && resourceDelta.length == 0) { // no change since last build
+			// No change since last build
+			if (null != resourceDelta && resourceDelta.length == 0) {
 				if (messageOptions.isBundleOperations()) {
 					String msg = NLS.bind(Msg.NO_RESOURCE_DELTA_BUILD_TRACE,
 							new Object[] { project.getName() });
@@ -259,10 +263,8 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 						builds.add(status);
 					}
 				}
-				// TODO NB Test
 				return null;
 			}
-
 			// Activated project is imported, opened or has new requirements on UI plug-in(s), when UI
 			// plug-ins are not allowed
 			if (!commandOptions.isAllowUIContributions()
@@ -270,9 +272,6 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 				if (null == bundle) {
 					ActivateProject activate = new ActivateProjectJob();
 					if (!bundleRegion.isProjectRegistered(project)) {
-						// TODO TEST THIS After setting false in register bundle project
-						boolean natureEnabled = activate.isProjectActivated(project);
-						// bundleRegion.registerBundleProject(project, bundle, natureEnabled);
 						bundleRegion.registerBundleProject(project, bundle, false);
 					}
 					// When an activated project is imported or opened, install in an activated workspace
@@ -334,7 +333,7 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 			Bundle bundle = bundleRegion.getBundle(project);
 			String msg = NLS.bind(Msg.FULL_BUILD_TRACE, new Object[] { project.getName(),
 					project.getLocation().toOSString() });
-			IBundleStatus status = new BundleStatus(StatusCode.INFO, bundle, project, msg, null);
+			IBundleStatus status = new BundleStatus(StatusCode.OK, bundle, project, msg, null);
 			synchronized (builds) {
 				builds.add(status);
 			}
@@ -351,7 +350,7 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 			Bundle bundle = bundleRegion.getBundle(project);
 			String msg = NLS.bind(Msg.INCREMENTAL_BUILD_TRACE, new Object[] { project.getName(),
 					project.getLocation().toOSString() });
-			IBundleStatus status = new BundleStatus(StatusCode.INFO, bundle, project, msg, null);
+			IBundleStatus status = new BundleStatus(StatusCode.OK, bundle, project, msg, null);
 			synchronized (builds) {
 				builds.add(status);
 			}
@@ -372,100 +371,100 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 	}
 
 	/**
-	 * Log messages to Log View. Include requiring and providing projects if any and select status
-	 * object depending on the "Update on Build" option.
-	 * <p>
-	 * Other projects that are going to be built in this batch may not have a build state (clean
-	 * build)or an updated error status yet. This prevent the use of the build error closure classes
-	 * to calculate requiring and providing projects to this error project
+	 * Examine the specified project for build errors and adds them to the list of build projects
 	 * 
-	 * @param project with build error(s)
-	 * @return TODO
+	 * @param project Project to examine for build errors
+	 * @return True if the project has errors and false otherwise
 	 */
 	private boolean hasBuildError(IProject project) throws ExtenderException {
 
-		String msg = null;
-		Bundle bundle = bundleRegion.getBundle(project);
-//		if (commandOptions.isUpdateOnBuild()) {
-//			msg = NLS.bind(Msg.BUILD_ERROR_UPDATE_TRACE, project.getName());
-//		} else {
-//			msg = NLS.bind(Msg.BUILD_ERROR_TRACE, project.getName());
-//		}
-		// Root status object
-//		IBundleStatus buildStatus = new BundleStatus(StatusCode.BUILDERROR, bundle, project, msg,
-//				null);
 		if (BundleProjectBuildError.hasCycles(project)) {
-			IBundleStatus status = bundleRegion.getBundleStatus(project); 
+			IBundleStatus status = bundleTransition.getTransitionStatus(project);
 			if (null != status) {
-				// buildStatus.add(status);
 				synchronized (builds) {
 					builds.add(status);
 				}
 			}
 			return true;
 		} else if (BundleProjectBuildError.hasBundleErrors(project, true)) {
-			IBundleStatus status = bundleRegion.getBundleStatus(project); 
+			IBundleStatus status = bundleTransition.getTransitionStatus(project);
 			if (null != status) {
-				// buildStatus.add(status);
 				synchronized (builds) {
 					builds.add(status);
 				}
 			}
 			return true;
-		} else if (BundleProjectBuildError.hasBuildErrors(project, true)) {
-			IBundleStatus status = bundleRegion.getBundleStatus(project); 
+		} else if (BundleProjectBuildError.hasCompileErrors(project)) {
+			IBundleStatus status = bundleTransition.getTransitionStatus(project);
 			if (null != status) {
-				// buildStatus.add(status);
 				synchronized (builds) {
 					builds.add(status);
 				}
 			}
-			return Activator.getCommandOptionsService().isActivateOnCompileError() ? false : true;
+			if (Activator.getCommandOptionsService().isActivateOnCompileError()) {
+				addDependencyStatus(project, status);
+				return false;
+			} else {
+				// Current revision status
+				Bundle bundle = bundleRegion.getBundle(project);
+				if (null != bundle && (bundle.getState() & (Bundle.INSTALLED | Bundle.UNINSTALLED)) == 0) {
+					String msg = NLS.bind(Msg.USING_CURRENT_REVISION_TRACE, bundle);
+					IBundleStatus revisionStatus = new BundleStatus(StatusCode.INFO, bundle, project, msg,
+							null);
+					status.add(revisionStatus);
+				}
+				return true;
+			}
 		}
 		return false;
-//		try {
-//			if (messageOptions.isBundleOperations()) {
-//				Collection<IProject> projectClosure = null;
-//				BundleClosures closures = new BundleClosures();
-//				// Current revision status
-//				if (null != bundle && (bundle.getState() & (Bundle.INSTALLED | Bundle.UNINSTALLED)) == 0) {
-//					msg = NLS.bind(Msg.USING_CURRENT_REVISION_TRACE, bundle);
-//					IBundleStatus revisionStatus = new BundleStatus(StatusCode.INFO, bundle, project, msg,
-//							null);
-//					buildStatus.add(revisionStatus);
-//				}
-//				// Providing bundle status
-//				projectClosure = closures.projectActivation(Closure.PROVIDING,
-//						Collections.<IProject> singletonList(project), true);
-//				projectClosure.remove(project);
-//				if (projectClosure.size() > 0) {
-//					msg = NLS.bind(Msg.PROVIDING_BUNDLES_INFO, project.getName(),
-//							bundleProjectCandidates.formatProjectList(projectClosure));
-//					buildStatus.add(new BundleStatus(StatusCode.INFO, bundle, project, msg, null));
-//				}
-//				// Requiring bundle status
-//				projectClosure = closures.projectDeactivation(Closure.REQUIRING,
-//						Collections.<IProject> singletonList(project), true);
-//				projectClosure.remove(project);
-//				if (projectClosure.size() > 0) {
-//					msg = NLS.bind(Msg.REQUIRING_BUNDLES_INFO, project.getName(),
-//							bundleProjectCandidates.formatProjectList(projectClosure));
-//					buildStatus.add(new BundleStatus(StatusCode.INFO, bundle, project, msg, null));
-//				}
-//				synchronized (builds) {
-//					builds.add(buildStatus);
-//				}
-//			}
-//		} catch (InPlaceException | ExtenderException e) {
-//			StatusManager.getManager().handle(
-//					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),
-//					StatusManager.LOG);
-//		}
+	}
+
+	/**
+	 * Add status objects to the specified status describing dependent projects to the specified
+	 * project
+	 * 
+	 * @param project Project with dependencies
+	 * @param result Status object to add status objects to describing dependencies to the specified
+	 * project or no added status objects if the project has no dependencies
+	 */
+	private void addDependencyStatus(IProject project, IBundleStatus result) {
+
+		try {
+			if (messageOptions.isBundleOperations()) {
+				Bundle bundle = bundleRegion.getBundle(project);
+				if (null != bundle) {
+					Collection<IProject> projectClosure = null;
+					BundleClosures closures = new BundleClosures();
+					// Providing bundle status
+					projectClosure = closures.projectActivation(Closure.PROVIDING,
+							Collections.<IProject> singletonList(project), true);
+					projectClosure.remove(project);
+					if (projectClosure.size() > 0) {
+						String msg = NLS.bind(Msg.PROVIDING_BUNDLES_INFO, project.getName(),
+								bundleProjectCandidates.formatProjectList(projectClosure));
+						result.add(new BundleStatus(StatusCode.INFO, bundle, project, msg, null));
+					}
+					// Requiring bundle status
+					projectClosure = closures.projectDeactivation(Closure.REQUIRING,
+							Collections.<IProject> singletonList(project), true);
+					projectClosure.remove(project);
+					if (projectClosure.size() > 0) {
+						String msg = NLS.bind(Msg.REQUIRING_BUNDLES_INFO, project.getName(),
+								bundleProjectCandidates.formatProjectList(projectClosure));
+						result.add(new BundleStatus(StatusCode.INFO, bundle, project, msg, null));
+					}
+				}
+			}
+		} catch (InPlaceException | ExtenderException | CircularReferenceException e) {
+			StatusManager.getManager().handle(
+					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),
+					StatusManager.LOG);
+		}
 	}
 
 	/**
 	 * Sends a warning to the Log View that the specified project has providing projects that allows
-	 * UI contributions using Extensions when not allowed. If the project have no such providing
+	 * UI contributions using Extensions when not allowed. If the project has no such providing
 	 * projects or does not contribute to the UI itself an internal warning message is sent to the Log
 	 * View
 	 * 
@@ -473,7 +472,6 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 	 * contributes to the UI using Extensions
 	 */
 	private void logDependentUIContributors(IProject project) {
-
 		try {
 			ProjectSorter ps = new ProjectSorter();
 			Collection<IProject> projects = ps.sortProvidingProjects(Collections.singleton(project));
@@ -500,11 +498,10 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 			}
 			StatusManager.getManager().handle(buildStatus, StatusManager.LOG);
 		} catch (CircularReferenceException e) {
-			String msg = ExceptionMessage.getInstance().formatString("circular_reference_termination");
-			IBundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID,
-					project, msg, e);
-			multiStatus.add(e.getStatusList());
-			StatusManager.getManager().handle(multiStatus, StatusManager.LOG);
+			IBundleStatus status = bundleTransition.getTransitionStatus(project);
+			if (null != status) {
+				StatusManager.getManager().handle(status, StatusManager.LOG);
+			}
 		} catch (InPlaceException e) {
 			String msg = WarnMessage.getInstance().formatString("uicontributors_fail_get",
 					project.getName());

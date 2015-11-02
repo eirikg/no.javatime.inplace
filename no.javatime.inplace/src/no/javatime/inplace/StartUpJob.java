@@ -16,12 +16,13 @@ import no.javatime.inplace.builder.AutoBuildListener;
 import no.javatime.inplace.bundlejobs.ActivateBundleJob;
 import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.msg.Msg;
+import no.javatime.inplace.region.closure.BundleProjectBuildError;
 import no.javatime.inplace.region.closure.CircularReferenceException;
 import no.javatime.inplace.region.intface.BundleRegion;
 import no.javatime.inplace.region.intface.BundleTransitionListener;
-import no.javatime.inplace.region.intface.WorkspaceDuplicateException;
 import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.intface.ProjectLocationException;
+import no.javatime.inplace.region.intface.WorkspaceDuplicateException;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
@@ -42,8 +43,8 @@ import org.osgi.framework.Bundle;
 import org.osgi.service.prefs.BackingStoreException;
 
 /**
- * Start up activates or deactivates bundle projects at start up. The activation
- * level, transition state and pending transitions added to bundles is determined by the
+ * Start up activates or deactivates bundle projects at start up. The activation level, transition
+ * state and pending transitions added to bundles is determined by the
  * {@link StatePersistParticipant} class.
  * <p>
  * If activated bundle projects had build errors at shut down or the "Deactivate on Exit" preference
@@ -122,6 +123,17 @@ class StartUpJob extends ActivateBundleJob {
 					addLogStatus(Msg.RECOVERY_NO_ACTION_BUNDLE_INFO);
 				}
 				StatePersistParticipant.restoreSessionState();
+				// Calculate errors after workspace is deactivated
+				for (IProject project : bundleRegion.getProjects()) {
+					if (BundleProjectBuildError.hasErrors(project, true)) {
+						IBundleStatus status = bundleTransition.getTransitionStatus(project);
+						if (null != status) {
+							// Only at start up
+							// We are usually not sending messages to the log in a deactivated workspace
+							addLogStatus(status);
+						}
+					}
+				}
 			}
 		} catch (IllegalStateException e) {
 			String msg = WarnMessage.getInstance().formatString("node_removed_preference_store");
@@ -136,7 +148,7 @@ class StartUpJob extends ActivateBundleJob {
 			multiStatus.add(e.getStatusList());
 			StatusManager.getManager().handle(multiStatus, StatusManager.LOG);
 		} catch (OperationCanceledException e) {
-			addCancelMessage(e, NLS.bind(Msg.CANCEL_JOB_INFO, getName()));
+			addCancel(e, NLS.bind(Msg.CANCEL_JOB_INFO, getName()));
 		} catch (InPlaceException | ExtenderException e) {
 			addError(e, Msg.INIT_BUNDLE_STATE_ERROR);
 			String msg = ExceptionMessage.getInstance().formatString("terminate_job_with_errors",
@@ -158,7 +170,7 @@ class StartUpJob extends ActivateBundleJob {
 			} catch (BackingStoreException e) {
 				String msg = WarnMessage.getInstance().formatString("failed_getting_preference_store");
 				addError(e, msg);
-			}		
+			}
 			BundleTransitionListener.removeBundleTransitionListener(this);
 		}
 		return getJobSatus();
@@ -182,12 +194,13 @@ class StartUpJob extends ActivateBundleJob {
 	private boolean deactivateWorkspace(IProgressMonitor monitor,
 			Collection<IProject> activatedPendingProjects, boolean isRecoveryMode)
 			throws IllegalStateException, ExtenderException, InPlaceException, BackingStoreException {
-		
+
 		SubMonitor progress = SubMonitor.convert(monitor, activatedPendingProjects.size());
 		try {
 			BundleRegion bundleRegion = Activator.getBundleRegionService();
 			Collection<IProject> bundleProjects = bundleProjectCandidates.getBundleProjects();
-			Collection<IProject> projectsToDeactivate = SessionManager.isDeactivateOnExit(bundleProjects, activatedPendingProjects); 
+			Collection<IProject> projectsToDeactivate = SessionManager.isDeactivateOnExit(bundleProjects,
+					activatedPendingProjects);
 			if (projectsToDeactivate.size() > 0) {
 				setName(Msg.DEACTIVATE_WORKSPACE_JOB);
 				monitor.beginTask(Msg.DEACTIVATE_TASK_JOB, getTicks());
@@ -205,11 +218,11 @@ class StartUpJob extends ActivateBundleJob {
 						bundles = bundleRegion.getBundles();
 						uninstall(bundles, monitor, false, false);
 					} finally {
-						messageOptions.setIsBundleOperations(isBundleOperation);						
+						messageOptions.setIsBundleOperations(isBundleOperation);
 					}
 					refresh(bundles, monitor);
 					addLogStatus(Msg.RECOVERY_DEACTIVATE_BUNDLE_INFO);
-				} 
+				}
 				if (commandOptions.isDeactivateOnExit()) {
 					addLogStatus(Msg.STARTUP_DEACTIVATE_ON_EXIT_INFO);
 				} else {

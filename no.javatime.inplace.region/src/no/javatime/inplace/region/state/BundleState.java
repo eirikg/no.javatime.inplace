@@ -91,7 +91,7 @@ public abstract class BundleState {
 			BundleTransitionImpl bundleTransition = BundleTransitionImpl.INSTANCE;
 			final String symbolicName = WorkspaceRegionImpl.INSTANCE.getSymbolicKey(bundle, null);
 			final String stateName = bundleCommand.getStateName(event);
-			if (bundleTransition.getBuildError(bundle) == TransitionError.SERVICE_INCOMPLETE) {
+			if (bundleTransition.getBuildTransitionError(bundle) == TransitionError.SERVICE_INCOMPLETE_TRANSITION) {
 				if (Activator.getMessageOptionsService().isBundleOperations()) {
 					String msg = NLS.bind(Msg.INCOMPLETE_BUNDLE_OP_INFO, new Object[] {symbolicName, stateName,
 							location});

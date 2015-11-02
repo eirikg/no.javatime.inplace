@@ -3,6 +3,8 @@ package no.javatime.inplace.region.intface;
 import java.util.Collection;
 import java.util.EnumSet;
 
+import no.javatime.inplace.region.status.IBundleStatus;
+
 import org.eclipse.core.resources.IProject;
 import org.osgi.framework.Bundle;
 
@@ -134,8 +136,8 @@ public interface BundleTransition {
 		/**
 		 * Active when a project is refreshed
 		 * <p>
-		 * Pending bundles tagged with a pending {@code Transition.REFRESH} transition are added to
-		 * the set of bundles to refresh before the refresh (requiring) closure is calculated
+		 * Pending bundles tagged with a pending {@code Transition.REFRESH} transition are added to the
+		 * set of bundles to refresh before the refresh (requiring) closure is calculated
 		 */
 		REFRESH,
 		/**
@@ -205,17 +207,81 @@ public interface BundleTransition {
 		NO_TRANSITION,
 	}
 
+	/**
+	 * Build and life cycle time errors. Life cycle time errors are divided into modular (all but
+	 * start and stop) and service errors (start and stop).
+	 * <p>
+	 * Some build time errors detected by the build system are also checked independent (before or
+	 * after) of builds. Duplicates are not detected by the build system and duplicates of external
+	 * bundles are by default not detected by the modular system.
+	 * <ol>
+	 * <li>Duplicates are not detected by the build system but may be detected at build and modular
+	 * (install and update) time. Note that duplicates are both build and modular type errors.
+	 * <li>Errors in manifest files may also be checked independent of the build system
+	 * <li>The build state of a project is checked independent of the build system
+	 * <li>Validation of the description file can be checked independent of the build system
+	 * <p>
+	 * Cycles are detected by the build system, but can also be detected independent of the build
+	 * system
+	 * </ol>
+	 */
 	public static enum TransitionError {
-		NOERROR, ERROR, SERVICE_EXCEPTION, WORKSPACE_DUPLICATE, EXTERNAL_DUPLICATE, CYCLE, BUILD, 
-		BUILD_MANIFEST, BUILD_DESCRIPTION_FILE, BUILD_STATE, SERVICE_STATECHANGE,
+
+		/** Last known transition was successful without any errors */
+		NOERROR,
+		/** Framework error returned to the refresh event listener */
+		MODULAR_REFRESH_ERROR,
+		/** Modular exceptions thrown by install, uninstall, resolve, update, unresolve and refresh */
+		MODULAR_EXCEPTION,
+		/** Runtime exception thrown by start and stop transitions */
+		SERVICE_EXCEPTION,
 		/**
-		 * A state indicating that a bundle command/operation did not complete or did complete, but
-		 * possibly in an inconsistent manner. May for instance happen when executing an infinite loop
-		 * in Start/Stop methods. Never ending operations and operations that time out will have an incomplete
-		 * transition error and the state will be the state the bundle had when the previous transition
-		 * ended.
+		 * Duplicates of workspace bundle projects. Not detected by the build system. Can be detected
+		 * after build and before install and update. This is both a build time and a modular errors
 		 */
-		SERVICE_INCOMPLETE, EXTTERNAL_UNINSTALL
+		BUILD_MODULAR_WORKSPACE_DUPLICATE,
+		/**
+		 * Duplicates between workspace bundles and jar bundles. Not detected by the build system or the
+		 * OSGi. Can now be detected after build and before install and update. This is both a build
+		 * time and a modular errors
+		 */
+		BUILD_MODULAR_EXTERNAL_DUPLICATE,
+		/**
+		 * Circular references are detected by the build system, and should always be detected at build
+		 * time
+		 */
+		BUILD_CYCLE,
+		/** This is all build time errors detected by teh build system */
+		BUILD,
+		/**
+		 * If there are build errors in the manifest file. Also detected by
+		 * {@code TransitionError.BUILD}
+		 */
+		BUILD_MANIFEST,
+		/**
+		 * If the description file is invalid or missing. Also detected by {@code TransitionError.BUILD}
+		 */
+		BUILD_DESCRIPTION_FILE,
+		/**
+		 * If build state is missing for a project. Usually occurs if file refresh is needed and for
+		 * bundles involved in a cycle
+		 */
+		BUILD_STATE,
+		/**
+		 * OSGi state change exception. If trying to execute a bundle command while another is currently
+		 * executing
+		 */
+		SERVICE_STATECHANGE,
+		/**
+		 * A state indicating that a bundle operation did not complete or did complete, but possibly in
+		 * an inconsistent manner. Stopping a bundle operation manually (e.g. endless loop) will raise
+		 * an incomplete transition exception
+		 */
+		SERVICE_INCOMPLETE_TRANSITION,
+		/**
+		 * If a bundle is unistalled from an external source (e.g. Host OSGi Console)
+		 */
+		MODULAR_EXTERNAL_UNINSTALL
 	}
 
 	/**
@@ -254,7 +320,7 @@ public interface BundleTransition {
 	 * @see #getTransition(String)
 	 */
 	String getTransitionName(Transition transition, boolean format, boolean caption);
-	
+
 	/**
 	 * Get a transition based on its textual name
 	 * 
@@ -296,9 +362,19 @@ public interface BundleTransition {
 	 */
 	Transition getTransition(Bundle bundle);
 
+	public IBundleStatus getTransitionStatus(IProject project);
+
+	public TransitionError getTransitionError(IProject project);
+
+	public void setBuildStatus(IProject project, TransitionError transitionError, IBundleStatus status);
+
+	public void setBundleStatus(IProject project, TransitionError transitionError,
+			IBundleStatus status);
+
 	/**
-	 * Mark the current transition of the specified bundle project with {@code TransitionError#ERROR}.
-	 * Convenience method for {@code setTransitionError(project, TransitionError.ERROR)}.
+	 * Mark the current transition of the specified bundle project with
+	 * {@code TransitionError#MODULAR_REFRESH_ERROR}. Convenience method for
+	 * {@code setTransitionError(project, TransitionError.MODULAR_REFRESH_ERROR)}.
 	 * 
 	 * @param project bundle project with a transition to be marked as erroneous.
 	 * @return true if the error was set on transition for the specified bundle project, otherwise
@@ -307,7 +383,6 @@ public interface BundleTransition {
 	 * specified project could not be found
 	 * @see #setBuildTransitionError(IProject, TransitionError)
 	 */
-	boolean setBuildTransitionError(IProject project) throws ProjectLocationException;
 
 	/**
 	 * Mark the current transition of the specified bundle project with the specified transition error
@@ -320,19 +395,17 @@ public interface BundleTransition {
 	 * @throws ProjectLocationException if the specified project is null or the location of the
 	 * specified project could not be found
 	 */
-	boolean setBuildTransitionError(IProject project, TransitionError error)
-			throws ProjectLocationException;
 
 	/**
-	 * Mark the current transition of the specified bundle project with {@code TransitionError#ERROR}.
-	 * Convenience method for {@code setTransitionError(bundle, TransitionError.ERROR)}.
+	 * Mark the current transition of the specified bundle project with
+	 * {@code TransitionError#MODULAR_REFRESH_ERROR}. Convenience method for
+	 * {@code setTransitionError(bundle, TransitionError.MODULAR_REFRESH_ERROR)}.
 	 * 
 	 * @param bundle bundle project with a transition to be marked as erroneous.
 	 * @return true if the error was set on transition for the specified bundle project, otherwise
 	 * false
 	 * @see #setBuildTransitionError(Bundle, TransitionError)
 	 */
-	boolean setBuildTransitionError(Bundle bundle);
 
 	/**
 	 * Mark the current transition of the specified bundle project with the specified transition error
@@ -343,7 +416,6 @@ public interface BundleTransition {
 	 * @return true if the error was set on transition for the specified bundle project, otherwise
 	 * false
 	 */
-	boolean setBuildTransitionError(Bundle bundle, TransitionError error);
 
 	/**
 	 * Check if the current transition of the specified bundle project is erroneous.
@@ -354,7 +426,6 @@ public interface BundleTransition {
 	 * @throws ProjectLocationException if the specified project is null or the location of the
 	 * specified project could not be found
 	 */
-	boolean hasBuildTransitionError(IProject project) throws ProjectLocationException;
 
 	/**
 	 * Check if the current transition of the specified bundle project is erroneous.
@@ -363,7 +434,6 @@ public interface BundleTransition {
 	 * @return true if the current transition of the specified bundle project is erroneous or false if
 	 * not.
 	 */
-	boolean hasBuildTransitionError(Bundle bundle);
 
 	/**
 	 * Check if the specified transition error exist among at least one of the workspace bundle
@@ -383,17 +453,18 @@ public interface BundleTransition {
 	 * @throws ProjectLocationException if the specified project is null or the location of the
 	 * specified project could not be found
 	 */
-	TransitionError getBuildError(IProject project) throws ProjectLocationException;
-	
+	TransitionError getBuildTransitionError(IProject project) throws ProjectLocationException;
+
 	/**
-	 * Get the bundle error associated with bundle project or {@code TransitionError#NOERROR} if no error
+	 * Get the bundle error associated with bundle project or {@code TransitionError#NOERROR} if no
+	 * error
 	 * 
 	 * @param project the bundle project containing the transition error
 	 * @return one of the {@code TransitionError} types or {@code TransitionError#NOERROR}
 	 * @throws ProjectLocationException if the specified project is null or the location of the
 	 * specified project could not be found
 	 */
-	TransitionError getBundleError(IProject project) throws ProjectLocationException;
+	TransitionError getBundleTransitionError(IProject project) throws ProjectLocationException;
 
 	/**
 	 * Get the error associated with bundle project or {@code TransitionError#NOERROR} if no error
@@ -401,7 +472,7 @@ public interface BundleTransition {
 	 * @param bundle the bundle project containing the transition error
 	 * @return one of the {@code TransitionError} types or {@code TransitionError#NOERROR}
 	 */
-	TransitionError getBuildError(Bundle bundle);
+	TransitionError getBuildTransitionError(Bundle bundle);
 
 	/**
 	 * Clear the error flag of the current transition of the specified bundle project.
@@ -413,6 +484,15 @@ public interface BundleTransition {
 	 */
 	boolean clearBuildTransitionError(IProject project) throws ProjectLocationException;
 
+	/**
+	 * Clear the error flag of the current transition of the specified bundle project.
+	 * 
+	 * @param project the bundle project containing the transition to clear the error flag from
+	 * @return true if the error flag is cleared in current transition of the specified bundle.
+	 * @throws ProjectLocationException if the specified project is null or the location of the
+	 * specified project could not be found
+	 */
+	boolean clearBundleTransitionError(IProject project) throws ProjectLocationException;
 	/**
 	 * Get all projects among the specified projects that contains the specified pending transition
 	 * 

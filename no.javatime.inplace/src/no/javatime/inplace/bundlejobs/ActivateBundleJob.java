@@ -100,12 +100,6 @@ public class ActivateBundleJob extends NatureJob implements ActivateBundle {
 		activatedBundles = null;
 	}
 	
-	@Override
-	public void end() {
-		super.end();		
-		init();
-	}
-
 	/**
 	 * Runs the bundle(s) activation operation.
 	 * 
@@ -123,12 +117,12 @@ public class ActivateBundleJob extends NatureJob implements ActivateBundle {
 			String msg = ExceptionMessage.getInstance().formatString("interrupt_job", getName());
 			addError(e, msg);
 		} catch (OperationCanceledException e) {
-			addCancelMessage(e, NLS.bind(Msg.CANCEL_JOB_INFO, getName()));
+			addCancel(e, NLS.bind(Msg.CANCEL_JOB_INFO, getName()));
 		} catch (CircularReferenceException e) {
 			String msg = ExceptionMessage.getInstance().formatString("circular_reference", getName());
 			BundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, msg);
 			multiStatus.add(e.getStatusList());
-			addStatus(multiStatus);
+			addError(multiStatus);
 		} catch (ExtenderException e) {
 			addError(e, NLS.bind(Msg.SERVICE_EXECUTOR_EXP, getName()));
 		} catch (InPlaceException e) {
@@ -209,7 +203,7 @@ public class ActivateBundleJob extends NatureJob implements ActivateBundle {
 				String msg = ExceptionMessage.getInstance().formatString("circular_reference", getName());
 				BundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, msg);
 				multiStatus.add(e.getStatusList());
-				addStatus(multiStatus);
+				addError(multiStatus);
 				// Remove all pending projects that participate in the cycle(s)
 				if (null != e.getProjects()) {
 					removePendingProjects(e.getProjects());
@@ -219,7 +213,7 @@ public class ActivateBundleJob extends NatureJob implements ActivateBundle {
 				activatedBundles = install(getPendingProjects(), monitor);
 			} catch (InPlaceException | WorkspaceDuplicateException | ExternalDuplicateException | ProjectLocationException e) {
 				bundleTransition.addPendingCommand(getActivatedProjects(), Transition.DEACTIVATE);
-				return addStatus(new BundleStatus(StatusCode.JOBERROR, Activator.PLUGIN_ID, Msg.INSTALL_ERROR));
+				return addError(new BundleStatus(StatusCode.JOB_ERROR, Activator.PLUGIN_ID, Msg.INSTALL_ERROR));
 			}
 		}
 		// No projects are activated or no activated bundle projects have been installed

@@ -106,7 +106,7 @@ public class BuildJob extends NatureJob {
 				fullBuild(monitor);
 			}
 		} catch (OperationCanceledException e) {
-			addCancelMessage(e, NLS.bind(Msg.CANCEL_JOB_INFO, getName()));
+			addCancel(e, NLS.bind(Msg.CANCEL_JOB_INFO, getName()));
 		} catch (NullPointerException e) {
 			String msg = ExceptionMessage.getInstance().formatString("npe_job", getName());
 			addError(e, msg);

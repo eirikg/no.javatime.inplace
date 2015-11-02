@@ -130,29 +130,27 @@ public class BundleListLabelProvider extends LabelProvider implements ITableLabe
 					boolean isProjectActivated = Activator.getBundleRegionService().isBundleActivated(project);
 					BundleCommand bundleCommand = Activator.getBundleCommandService(); 
 					BundleTransition bundleTransition = Activator.getBundleTransitionService();
-					if (bundleTransition.hasBuildTransitionError(project)) {
-						TransitionError error = bundleTransition.getBuildError(project);
-						if (error == TransitionError.CYCLE) {
+					TransitionError error = bundleTransition.getTransitionError(project);
+					if (error != TransitionError.NOERROR) {
+						switch (error) {
+						case BUILD_CYCLE:
+						case BUILD_STATE:
+						case BUILD_DESCRIPTION_FILE:
+						case BUILD_MANIFEST:
+						case BUILD_MODULAR_EXTERNAL_DUPLICATE:
+						case BUILD_MODULAR_WORKSPACE_DUPLICATE:
+						case MODULAR_REFRESH_ERROR:
+						case MODULAR_EXCEPTION:
 							return errorImage;
-						} else if (error == TransitionError.BUILD_STATE) {
+						case MODULAR_EXTERNAL_UNINSTALL:
+							return warningImage;
+						case SERVICE_EXCEPTION:
+						case SERVICE_INCOMPLETE_TRANSITION:
+						case SERVICE_STATECHANGE:
 							return errorImage;
-						} else if (error == TransitionError.BUILD_DESCRIPTION_FILE) {
-							return errorImage;
-						} else if (error == TransitionError.BUILD_MANIFEST) {
-							return errorImage;
-						} else if (error == TransitionError.WORKSPACE_DUPLICATE) {
-							return errorImage;
-						} else if (error == TransitionError.EXTERNAL_DUPLICATE) {
-							return errorImage;
-						} else if (error == TransitionError.SERVICE_INCOMPLETE) {
-							return errorImage;							
-						} else if (error == TransitionError.BUILD) {
+						case BUILD:
 							return Activator.getCommandOptionsService().isActivateOnCompileError() ? warningImage : errorImage; 
-						} else if (error == TransitionError.SERVICE_EXCEPTION) {
-							return errorImage;
-						} else if (error == TransitionError.SERVICE_STATECHANGE) {
-							return errorImage;
-						} else {
+						default:
 							return errorImage;
 						}
 					} else if (bundleTransition.containsPending(project, Transition.BUILD, false)) {

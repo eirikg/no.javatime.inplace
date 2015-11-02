@@ -12,8 +12,8 @@ import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import org.osgi.framework.Bundle;
 
 /**
- * Save status objects to the log file. Logged status objects are always displayed in the view
- * defined by the {@link BundleLogView} service interface.
+ * Save status objects to the log file. Logged status objects are displayed in the view defined by
+ * the {@link BundleLogView} service interface.
  * <p>
  * The log is based on the {@link IBundleStatus} status object. To be independent of the status
  * object use the methods associated with the {@code log()} method. The methods associated with the
@@ -22,6 +22,9 @@ import org.osgi.framework.Bundle;
  * in itself may be a tree. The rest of the log methods creates and sends a single status object to
  * the log.
  * <p>
+ * Status codes are {@link IBundleStatus#convertSeverity() mapped} to {@code IStatus} severity
+ * codes before the are logged
+ * <p>
  * The InPlace Activator uses the {@link MessageOptions#setIsBundleOperations(boolean)} or
  * {@link #enableLogging(boolean)} option to determine if a status object should be logged or not.
  * It is possible to toggle this logging option from the user interface in the log view.
@@ -29,10 +32,10 @@ import org.osgi.framework.Bundle;
  * option used by the InPlace Activator.
  * <p>
  * The service scope should be bundle (e.g. see
- * {@link Extenders#register(Bundle, Bundle, String, Object, Dictionary)}) if
- * {@link #log()} is used. The {@code log()} and its associated add methods are shared among all
- * threads in a bundle. To acquire a separate bundle status tree for a thread you can register a
- * separate extender with bundle scope for that thread.
+ * {@link Extenders#register(Bundle, Bundle, String, Object, Dictionary)}) if {@link #log()} is
+ * used. The {@code log()} and its associated add methods are shared among all threads in a bundle.
+ * To acquire a separate bundle status tree for a thread you can register a separate extender with
+ * bundle scope for that thread.
  * 
  * @see BundleLogView
  * @see MessageOptions#isBundleEvents()
@@ -52,6 +55,8 @@ public interface BundleLog {
 	 * If the bundle or the project is added to the specified status object the bundle or project name
 	 * along with the state of the bundle or the state of the corresponding bundle of the project is
 	 * logged.
+	 * <p>
+	 * If the workspace is closed or closing the status object is written directly to the log.
 	 * 
 	 * @param status the status object to log
 	 * @return the logged message of the specified status object
@@ -59,6 +64,21 @@ public interface BundleLog {
 	 * {@code #BundleContext} of this bundle is no longer valid
 	 */
 	public String log(IBundleStatus status) throws BundleLogException;
+
+	/**
+	 * Logs the specified status object directly to the log. In this case the status object is not
+	 * shown in the log view until another of the log methods is used
+	 * <p>
+	 * If the bundle or the project is added to the specified status object the bundle or project name
+	 * along with the state of the bundle or the state of the corresponding bundle of the project is
+	 * logged.
+	 * 
+	 * @param status the status object to log
+	 * @return the logged message of the specified status object
+	 * @throws BundleLogException If bundle in the specified status object is null and the
+	 * {@code #BundleContext} of this bundle is no longer valid
+	 */
+	public String logDirect(IBundleStatus status) throws BundleLogException;
 
 	/**
 	 * Logs the specified status code, bundle symbolic name, bundle state and message.
@@ -226,8 +246,8 @@ public interface BundleLog {
 	 * @see #clear()
 	 * @see #log()
 	 */
-	public void addToParent(StatusCode statusCode, Bundle bundle, Exception exception,
-			String msg) throws BundleLogException;
+	public void addToParent(StatusCode statusCode, Bundle bundle, Exception exception, String msg)
+			throws BundleLogException;
 
 	/**
 	 * Creates a status object from the specified parameters and adds it as a sibling to the current

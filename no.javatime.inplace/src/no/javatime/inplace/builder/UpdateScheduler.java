@@ -230,7 +230,7 @@ public class UpdateScheduler {
 
 		ActivateBundle postActivateBundleJob = null;
 
-		if (!bundleTransition.hasBuildTransitionError(TransitionError.WORKSPACE_DUPLICATE)) {
+		if (!bundleTransition.hasBuildTransitionError(TransitionError.BUILD_MODULAR_WORKSPACE_DUPLICATE)) {
 			return postActivateBundleJob;
 		}
 
@@ -252,7 +252,7 @@ public class UpdateScheduler {
 					Bundle bundle = bundleRegion.getBundle(project);
 					// Activate uninstalled bundles and update installed bundles
 					if (null == bundle) {
-						if (bundleTransition.getBuildError(project) == TransitionError.WORKSPACE_DUPLICATE) {
+						if (bundleTransition.getBuildTransitionError(project) == TransitionError.BUILD_MODULAR_WORKSPACE_DUPLICATE) {
 							if (null == postActivateBundleJob) {
 								postActivateBundleJob = new ActivateBundleJob();
 							}

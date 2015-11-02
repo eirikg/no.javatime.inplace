@@ -102,7 +102,7 @@ public class ResetJob extends BundleJob implements Reset {
 			Collection<IProject> uninstallClosures = getClosures(getPendingProjects());
 			resetPendingProjects(uninstallClosures);
 			if (uninstallClosures.size() == 0) {
-				addInfoMessage("Terminating with no bundles to to reset");
+				addInfo("Terminating with no bundles to to reset");
 				return getJobSatus();
 			}
 			Uninstall uninstall = new UninstallJob(Msg.RESET_UNINSTALL_JOB, uninstallClosures);
@@ -120,12 +120,12 @@ public class ResetJob extends BundleJob implements Reset {
 			bundleExecutorService.add(uninstall, 0);
 			bundleExecutorService.add(activateBundle, 0);
 		} catch (OperationCanceledException e) {
-			addCancelMessage(e, NLS.bind(Msg.CANCEL_JOB_INFO, getName()));
+			addCancel(e, NLS.bind(Msg.CANCEL_JOB_INFO, getName()));
 		} catch (CircularReferenceException e) {
 			String msg = ExceptionMessage.getInstance().formatString("circular_reference", getName());
 			BundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, msg);
 			multiStatus.add(e.getStatusList());
-			addStatus(multiStatus);
+			addError(multiStatus);
 		} catch (ExtenderException e) {
 			addError(e, NLS.bind(Msg.SERVICE_EXECUTOR_EXP, getName()));
 		} catch (InPlaceException e) {
@@ -147,17 +147,6 @@ public class ResetJob extends BundleJob implements Reset {
 
 	private Collection<IProject> getClosures(Collection<IProject> pendingProjects) {
 
-		
-//		Collection<IProject> projects = bundleRegion.getProjects();
-//		Map<IProject, IProject> wsDuplicates = bundleRegion.getWorkspaceDuplicates(projects, projects);
-//		if (wsDuplicates.size() > 0) {
-//			return Collections.<IProject>emptySet();
-//		}
-//		for (IProject project : projects) {
-//			if (BundleProjectBuildError.isExternalDuplicate(project)) {				
-//				return Collections.<IProject>emptySet();
-//			}
-//		}		
 		Collection<IProject> initialProjects = new LinkedHashSet<>(pendingProjects);
 
 		BundleClosures closures = new BundleClosures();
@@ -215,7 +204,7 @@ public class ResetJob extends BundleJob implements Reset {
 			for (IProject errProject : errorStatusProjects)  {
 				statusCode = BundleProjectBuildError.hasErrors(errProject, true) ? StatusCode.ERROR : StatusCode.OK; 
 				IBundleStatus projectStatus = new BundleStatus(statusCode, Activator.PLUGIN_ID, errProject, errProject.getName(),null);	
-				IBundleStatus status = bundleRegion.getBundleStatus(errProject);
+				IBundleStatus status = bundleTransition.getTransitionStatus(errProject);
 				if (null != status) {
 					projectStatus.add(status);
 				}

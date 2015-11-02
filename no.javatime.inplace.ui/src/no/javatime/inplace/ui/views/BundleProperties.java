@@ -245,31 +245,40 @@ public class BundleProperties {
 	public String getBundleStatus() {
 
 		boolean isProjectActivated = bundleRegion.isBundleActivated(project);
-
 		try {
-			if (bundleTransition.hasBuildTransitionError(project)) {
-				TransitionError error = bundleTransition.getBuildError(project);
-				bundleTransition.getBundleError(project);
-				if (error == TransitionError.CYCLE) {
-					return "Circular Bundle Reference";
-				} else if (error == TransitionError.BUILD_STATE) {
-					return "Missing Build State";
-				} else if (error == TransitionError.BUILD_DESCRIPTION_FILE) {
-					return "Missing Description File";
-				} else if (error == TransitionError.BUILD_MANIFEST) {
-					return "Manifest Problems";
-				} else if (error == TransitionError.WORKSPACE_DUPLICATE) {
-					return "Duplicate of Workspace Bundle";
-				} else if (error == TransitionError.EXTERNAL_DUPLICATE) {
-					return "Duplicate of External Bundle";
-				} else if (error == TransitionError.SERVICE_INCOMPLETE) {
-					return "Incomplete Transition";
-				} else if (error == TransitionError.BUILD) {
-					return "Build Problems";
-				} else if (error == TransitionError.SERVICE_EXCEPTION) {
-					return "Run Problems";
-				} else if (error == TransitionError.SERVICE_STATECHANGE) {
-					return "State error";
+			TransitionError error = bundleTransition.getTransitionError(project);
+			if (error != TransitionError.NOERROR) {
+				if (error != TransitionError.NOERROR) {
+					switch (error) {
+					case BUILD_CYCLE:
+						return "Circular Bundle Reference";
+					case BUILD_STATE:
+						return "Missing Build State";
+					case BUILD_DESCRIPTION_FILE:
+						return "Missing Description File";
+					case BUILD_MANIFEST:
+						return "Manifest Problems";
+					case BUILD_MODULAR_EXTERNAL_DUPLICATE:
+						return "Duplicate of External Bundle";
+					case BUILD_MODULAR_WORKSPACE_DUPLICATE:
+						return "Duplicate of Workspace Bundle";
+					case MODULAR_REFRESH_ERROR:
+						return "Refresh Error";
+					case MODULAR_EXCEPTION:
+						return "Modular Problems";
+					case MODULAR_EXTERNAL_UNINSTALL:
+						return "External Uninstall";
+					case SERVICE_EXCEPTION:
+						return "Runtime Error";
+					case SERVICE_INCOMPLETE_TRANSITION:
+						return "Incomplete Transition";
+					case SERVICE_STATECHANGE:
+						return "State Change Error";
+					case BUILD:
+						return "Build Problems";
+					default:
+						return "Bundle Problems";
+					}
 				} else if (isProjectActivated && (bundleCommand.getState(bundle) & (Bundle.UNINSTALLED)) != 0) {
 					return "Install Problems"; 
 				} else if (isProjectActivated && (bundleCommand.getState(bundle) & (Bundle.INSTALLED)) != 0) {

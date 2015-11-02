@@ -99,22 +99,35 @@ public class PreBuildListener implements IResourceChangeListener, BundleTransiti
 						&& (projectResource.getType() & (IResource.PROJECT)) != 0) {
 					IProject project = projectResource.getProject();
 					try {
+						if ((projectDelta.getFlags() & IResourceDelta.OPEN) != 0) {
+							// This is the first encounter with an opened, imported and new project
+							// The project is pending add project after build in post build listener
+//							BundleProjectCandidates bundleProjectcandidates = Activator
+//									.getBundleProjectCandidatesService();
+							if (!bundleRegion.isProjectRegistered(project)) {
+								bundleRegion.registerBundleProject(project, null,
+										projectActivator.isProjectActivated(project));
+							}
+						}
 						// Remove any errors in deactivated projects before build
 						// Errors in activated projects are cleared in the java time builder
 						if (!projectActivator.isProjectActivated(project)) {
 							bundleTransition.clearBuildTransitionError(project);
-						} 
+							bundleTransition.clearBundleTransitionError(project);
+						}
 						try {
-							// Add a pending build to the preference store to retain pending build between sessions
+							// Add a pending build to the preference store to retain pending build between
+							// sessions
 							// A request for auto build when auto build is switched off
 							if (!bundlProjecteCandidates.isAutoBuilding()) {
 								if (buildKind == IncrementalProjectBuilder.AUTO_BUILD) {
-								StatePersistParticipant.savePendingBuildTransition(
-										StatePersistParticipant.getSessionPreferences(), project, true);
+									StatePersistParticipant.savePendingBuildTransition(
+											StatePersistParticipant.getSessionPreferences(), project, true);
 								}
 							}
 						} catch (IllegalStateException | BackingStoreException e) {
-							String msg = WarnMessage.getInstance().formatString("failed_getting_preference_store");
+							String msg = WarnMessage.getInstance()
+									.formatString("failed_getting_preference_store");
 							StatusManager.getManager().handle(
 									new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, msg, e),
 									StatusManager.LOG);
@@ -168,7 +181,7 @@ public class PreBuildListener implements IResourceChangeListener, BundleTransiti
 	public void bundleTransitionChanged(BundleTransitionEvent event) {
 		Transition transition = event.getTransition();
 		if (transition == Transition.DEACTIVATE) {
-			// bundleTransition.removePending(bundleRegion.getProjects(), Transition.BUILD);	
+			// bundleTransition.removePending(bundleRegion.getProjects(), Transition.BUILD);
 		}
 	}
 

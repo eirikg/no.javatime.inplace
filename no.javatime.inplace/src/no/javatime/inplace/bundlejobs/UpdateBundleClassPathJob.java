@@ -80,12 +80,6 @@ public class UpdateBundleClassPathJob extends NatureJob implements UpdateBundleC
 		addToPath = true;
 	}
 	
-	@Override
-	public void end() {
-		super.end();
-		init();
-	}
-
 	/**
 	 * Runs the bundle project(s) update bundle class path operation.
 	 * 
@@ -122,13 +116,13 @@ public class UpdateBundleClassPathJob extends NatureJob implements UpdateBundleC
 			}
 			if (pendingProjects() > 0 && !bundleProjectCandidates.isAutoBuilding()) {
 				if (messageOptions.isBundleOperations()) {
-					addInfoMessage(Msg.ATOBUILD_OFF_RESET_INFO);
+					addInfo(Msg.ATOBUILD_OFF_RESET_INFO);
 				}
 				resetJob.setSaveWorkspaceSnaphot(false);
 				Activator.getBundleExecutorEventService().add(resetJob, 0);
 			}
 		} catch (OperationCanceledException e) {
-			addCancelMessage(e, NLS.bind(Msg.CANCEL_JOB_INFO, getName()));
+			addCancel(e, NLS.bind(Msg.CANCEL_JOB_INFO, getName()));
 		} catch (ExtenderException e) {			
 			addError(e, NLS.bind(Msg.SERVICE_EXECUTOR_EXP, getName()));
 		} catch (InPlaceException e) {

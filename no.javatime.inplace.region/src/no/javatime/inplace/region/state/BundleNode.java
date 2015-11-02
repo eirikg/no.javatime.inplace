@@ -84,7 +84,8 @@ public class BundleNode {
 	// A set of pending transitions in random order waiting to be executed
 	private EnumSet<Transition> pendingTranitions = EnumSet.noneOf(Transition.class);
 
-	private IBundleStatus status;
+	private IBundleStatus buildStatus;
+	private IBundleStatus bundleStatus;
 
 	/**
 	 * Creates a bundle node with a one-to-one relationship between a project and a bundle, called a
@@ -101,18 +102,66 @@ public class BundleNode {
 		this.bundle = bundle;
 	}
 
-	public IBundleStatus getStatus() {
-		return status;
+	public TransitionError getTransitionError() {
+		if (hasBundleTransitionError()) {
+			return bundleTransitionError;
+		} else if (hasBuildTransitionError()) {
+			return buildTransitionError;
+		}
+		return TransitionError.NOERROR;
 	}
 
-	public void setStatus(IBundleStatus status) {
-		this.status = status;
+	public IBundleStatus getTransitionStatus() {
+		if (null != bundleStatus) {
+			return bundleStatus;
+		} else if (null != buildStatus) {
+			return buildStatus;
+		}
+		return null;
+	}
+
+	public IBundleStatus getBuildStatus() {
+		return buildStatus;
+	}
+
+	public void setBuildStatus(TransitionError transitionError, IBundleStatus status) {
+		setBuildTransitionError(transitionError);
+		this.buildStatus = status;
+	}
+
+	public void setBuildStatus(IBundleStatus status) {
+		this.buildStatus = status;
+	}
+	public boolean clearBuildTransitionError() {
+		this.buildTransitionError = TransitionError.NOERROR;
+		buildStatus = null;
+		return true;
+	}
+
+	public IBundleStatus getBundleStatus() {
+		return bundleStatus;
+	}
+
+	public void setBundleStatus(TransitionError transitionError, IBundleStatus status) {
+		// Duplicates are both build and modular errors
+		if (transitionError.equals(TransitionError.BUILD_MODULAR_EXTERNAL_DUPLICATE)
+				|| transitionError.equals(TransitionError.BUILD_MODULAR_WORKSPACE_DUPLICATE)) {
+			setBuildStatus(transitionError, status);
+		}
+		setBundleTransitionError(transitionError);
+		this.bundleStatus = status;
+	}
+
+	public void setBundleStatus(IBundleStatus status) {
+		this.bundleStatus = status;
+	}
+
+	public boolean clearBundleTransitionError() {
+		this.bundleTransitionError = TransitionError.NOERROR;
+		bundleStatus = null;
+		return true;
 	}
 	
-	public void setStatus(TransitionError transitionError, IBundleStatus status) {
-		setBundleTransitionError(transitionError);
-		this.status = status;
-	}
 
 	public Transition getTransition() {
 		return transition;
@@ -122,26 +171,6 @@ public class BundleNode {
 		Transition tmp = this.transition;
 		this.transition = transition;
 		return tmp;
-	}
-
-	public boolean clearBuildTransitionError() {
-		this.buildTransitionError = TransitionError.NOERROR;
-		clearBundleTransitionError();
-		status = null;
-		return true;
-	}
-
-	private boolean clearBundleTransitionError() {
-		this.bundleTransitionError = TransitionError.NOERROR;
-		return true;
-	}
-
-	public boolean removeBuildTransitionError(TransitionError transitionError) {
-		if (this.buildTransitionError == transitionError) {
-			this.buildTransitionError = TransitionError.NOERROR;
-			return true;
-		}
-		return false;
 	}
 
 	public TransitionError getBuildTransitionError() {
@@ -158,8 +187,6 @@ public class BundleNode {
 
 	public void setBundleTransitionError(TransitionError bundleTransitionError) {
 		this.bundleTransitionError = bundleTransitionError;
-		// Bundle transitions is a subset of build transitions (see class comments)
-		this.buildTransitionError = bundleTransitionError;
 	}
 
 	public boolean hasBuildTransitionError() {
@@ -474,10 +501,6 @@ public class BundleNode {
 	 * @param state the new current state
 	 */
 	public void begin(Transition transition, BundleState state) {
-		// If it is a bundle error also clear the bundle error from then build error
-		if (buildTransitionError != TransitionError.BUILD) { 
-			clearBuildTransitionError();
-		}
 		// Start a new bundle command with no bundle errors
 		clearBundleTransitionError();
 		this.prevTransition = this.transition;
@@ -562,7 +585,7 @@ public class BundleNode {
 				typeName = "STOP";
 				break;
 			case UNINSTALL:
-				typeName = "EXTTERNAL_UNINSTALL";
+				typeName = "MODULAR_EXTERNAL_UNINSTALL";
 				break;
 			case RESOLVE:
 				typeName = "RESOLVE";
@@ -654,7 +677,7 @@ public class BundleNode {
 			case "STOP":
 				transition = Transition.STOP;
 				break;
-			case "EXTTERNAL_UNINSTALL":
+			case "MODULAR_EXTERNAL_UNINSTALL":
 				transition = Transition.UNINSTALL;
 				break;
 			case "RESOLVE":

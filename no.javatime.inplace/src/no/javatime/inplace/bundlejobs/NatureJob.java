@@ -89,12 +89,6 @@ public abstract class NatureJob extends BundleJob {
 		return super.runInWorkspace(monitor);
 	}
 
-	@Override
-	public void end() {
-
-		super.end();
-	}
-
 	public Boolean isProjectActivated(IProject project) throws InPlaceException, ExtenderException {
 
 		if (null == bundleProjectCandidates) {
@@ -298,7 +292,7 @@ public abstract class NatureJob extends BundleJob {
 							install(Collections.<IProject> singletonList(project), new SubProgressMonitor(monitor, 1));
 						} catch (InPlaceException | WorkspaceDuplicateException | ProjectLocationException e) {
 							bundleTransition.addPendingCommand(getActivatedProjects(), Transition.DEACTIVATE);
-							return addStatus(new BundleStatus(StatusCode.JOBERROR, Activator.PLUGIN_ID, Msg.INSTALL_ERROR));
+							return addError(new BundleStatus(StatusCode.JOB_ERROR, Activator.PLUGIN_ID, Msg.INSTALL_ERROR));
 						}
 					}
 				} catch (WorkspaceDuplicateException e) {
@@ -518,7 +512,7 @@ public abstract class NatureJob extends BundleJob {
 					Collection<IResource> pendingDirtyResources = SaveOptionsJob.getScopedDirtyMetaFiles(
 							getPendingProjects(), includeProjectMetaFiles);
 					if (!allSaved || pendingDirtyResources.size() > 0) {
-						addCancelMessage(null, NLS.bind(Msg.SAVE_FILES_CANCELLED_INFO, getName()));
+						addCancel(null, NLS.bind(Msg.SAVE_FILES_CANCELLED_INFO, getName()));
 					}
 					if (messageOptions.isBundleOperations()) {
 						for (IResource dirtyResource : dirtyResources) {

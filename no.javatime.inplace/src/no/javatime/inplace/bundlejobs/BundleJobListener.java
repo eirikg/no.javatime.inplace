@@ -80,7 +80,7 @@ public class BundleJobListener extends JobChangeAdapter {
 					// final String execTime = Long.toString(System.currentTimeMillis() - startTime);
 					final Collection<IBundleStatus> logList = bundleJob.getLogStatusList();
 					if (logList.size() > 0) {
-						final IBundleStatus multiStatus = new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID,
+						final IBundleStatus multiStatus = new BundleStatus(StatusCode.OK, Activator.PLUGIN_ID,
 								NLS.bind(
 										Msg.JOB_NAME_TRACE,
 										bundleJob.getName(),
@@ -89,7 +89,6 @@ public class BundleJobListener extends JobChangeAdapter {
 						for (IBundleStatus status : logList) {
 							multiStatus.add(status);
 						}
-						multiStatus.setStatusCode();
 						Activator.log(multiStatus);
 					}
 				}

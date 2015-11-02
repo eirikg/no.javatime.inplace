@@ -12,6 +12,7 @@ package no.javatime.inplace.region.state;
 
 import no.javatime.inplace.region.Activator;
 import no.javatime.inplace.region.events.TransitionEvent;
+import no.javatime.inplace.region.intface.BundleRegion;
 import no.javatime.inplace.region.intface.BundleTransition.Transition;
 import no.javatime.inplace.region.intface.BundleTransition.TransitionError;
 import no.javatime.inplace.region.intface.BundleTransitionListener;
@@ -239,8 +240,9 @@ public class BundleStateEvents implements SynchronousBundleListener {
 			if (!node.isStateChanging()) {
 				node.getState().external(node, event, StateFactory.INSTANCE.uninstalledState,
 						Transition.EXTERNAL);
-				if (WorkspaceRegionImpl.INSTANCE.isRegionActivated()) {
-					bundleTransition.setBuildTransitionError(bundle, TransitionError.EXTTERNAL_UNINSTALL);
+				BundleRegion bundleRegion = WorkspaceRegionImpl.INSTANCE;
+				if (bundleRegion.isRegionActivated()) {
+					bundleTransition.setBuildStatus(bundleRegion.getProject(bundle), TransitionError.MODULAR_EXTERNAL_UNINSTALL, null);
 					BundleTransitionListener.addBundleTransition(new TransitionEvent(bundle, node.getTransition()));
 				}
 			}

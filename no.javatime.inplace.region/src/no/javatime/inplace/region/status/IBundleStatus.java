@@ -19,22 +19,25 @@ import org.eclipse.core.runtime.IStatus;
 import org.osgi.framework.Bundle;
 
 /**
- * Bundle status object containing status codes, exceptions and messages associated with a bundle project.
+ * Bundle status object containing status codes, exceptions and messages associated with a bundle
+ * project.
  */
 public interface IBundleStatus extends IStatus {
 
 	/**
-	 * Status codes assigned to <code>BundleStatus</code> objects. Used instead of <code>IStatus</code> status types.
+	 * Status codes assigned to <code>BundleStatus</code> objects. Used instead of
+	 * <code>IStatus</code> status types.
 	 */
 	public enum StatusCode {
-		OK, CANCEL, INFO, WARNING, ERROR, EXCEPTION, BUILDERROR, JOBERROR
+		OK, CANCEL, INFO, WARNING, ERROR, EXCEPTION, BUILD_WARNING, BUILD_ERROR, MODULAR_ERROR, SERVICE_ERROR, JOB_ERROR
 	}
 
 	/**
 	 * Check the status code in the <code>BundleStatus</code> object against the specified status code
 	 * 
 	 * @param statusCode the status code to check
-	 * @return true if the status code for this <code>BundleStatus</code> object is the same as the specified status code
+	 * @return true if the status code for this <code>BundleStatus</code> object is the same as the
+	 * specified status code
 	 */
 	boolean hasStatus(StatusCode statusCode);
 
@@ -53,14 +56,16 @@ public interface IBundleStatus extends IStatus {
 	StatusCode getStatusCode();
 
 	/**
-	 * Bundle state at time of creation of this bundle status object
-	 * if not changed by {@linkplain #setBundleState(int)}
+	 * Bundle state at time of creation of this bundle status object if not changed by
+	 * {@linkplain #setBundleState(int)}
+	 * 
 	 * @return the bundle state
 	 */
 	int getBundleState();
-	
+
 	/**
 	 * Set the bundle state
+	 * 
 	 * @param bundleState the bundle state
 	 */
 	void setBundleState(int bundleState);
@@ -69,7 +74,7 @@ public interface IBundleStatus extends IStatus {
 
 	public void setBundleTransition(Transition bundleTransition);
 
-		/**
+	/**
 	 * Returns the message describing the outcome. The message is localized to the current locale.
 	 * 
 	 * @return a localized message
@@ -87,7 +92,8 @@ public interface IBundleStatus extends IStatus {
 	/**
 	 * The project associated with status object if any
 	 * 
-	 * @return The project associated with the status object or null if no project is registered with the status object
+	 * @return The project associated with the status object or null if no project is registered with
+	 * the status object
 	 */
 	IProject getProject();
 
@@ -101,7 +107,8 @@ public interface IBundleStatus extends IStatus {
 	/**
 	 * The bundle associated with status object if any
 	 * 
-	 * @return The bundle associated with the status object or null if no bundle is registered with the status object
+	 * @return The bundle associated with the status object or null if no bundle is registered with
+	 * the status object
 	 */
 	Bundle getBundle();
 
@@ -115,17 +122,15 @@ public interface IBundleStatus extends IStatus {
 	/**
 	 * Sets the severity status
 	 * 
-	 * @param severity the severity; one of <code>OK</code>, <code>ERROR</code>, <code>INFO</code>, <code>WARNING</code>,
-	 *          or <code>CANCEL</code>
+	 * @param severity the severity; one of <code>OK</code>, <code>MODULAR_REFRESH_ERROR</code>,
+	 * <code>INFO</code>, <code>WARNING</code>, or <code>CANCEL</code>
 	 */
 	void setSeverity(int severity);
-	
-	
+
 	/**
 	 * Sets the exception.
-	 *
-	 * @param exception a low-level exception, or <code>null</code> if not
-	 *    applicable 
+	 * 
+	 * @param exception a low-level exception, or <code>null</code> if not applicable
 	 */
 	void setException(Throwable exception);
 
@@ -150,11 +155,45 @@ public interface IBundleStatus extends IStatus {
 	 * @see org.eclipse.core.runtime.MultiStatus#merge(IStatus)
 	 */
 	void merge(IStatus status);
-	
+
 	/**
-	 * If this status object has children, assign the status code from the children with
-	 * the highest ranking where the ranking in increasing order is {@code StatusCode#WARNING},
-	 * {@code StatusCode#BUILDERROR}, {@code StatusCode#ERROR}
+	 * Assign the severity of the underlying {@code IStatus} to this bundle status object.
+	 * <p>
+	 * The mapping is one-to-one where the name of the enum element status code is the same as the
+	 * constant name of the severity
+	 * 
+	 * @return The converted status code
 	 */
-	public void setStatusCode();
+	StatusCode converToStatusCode();
+
+	/**
+	 * Convert the status code of this bundle status object to a severity of {@code IStatus} and
+	 * assigns it to the underlying {@code IStatus} object of this status object. The mapping is:
+	 * <ol>
+	 * <li> {@code StatusCode.OK} -> {@code IStatus.OK}
+	 * <li> {@code StatusCode.WARNING} -> {@code IStatus.WARNING}
+	 * <li>{@code StatusCode.INFO} -> {@code IStatus.INFO}
+	 * <li> {@code StatusCode.CANCEL} -> {@code IStatus.CANCEL}
+	 * <li> {@code StatusCode.ERROR}, {@code StatusCode.EXCEPTION}, {@code StatusCode.BUILD_ERROR}
+	 * {@code StatusCode.MODULAR_ERROR}, {@code StatusCode.SERVICE_ERROR},
+	 * {@code StatusCode.JOB_ERROR} -> {@code IStatus.ERROR}
+	 * </ol>
+	 * 
+	 * @return The converted severity
+	 */
+	int convertSeverity();
+
+	/**
+	 * If this status object has children, assign the status code from the children with the highest
+	 * ranking where the ranking from lowest to highest is:
+	 * <ol>
+	 * <li> {@code StatusCode.OK}, {@code StatusCode.CANCEL}, {@code StatusCode.INFO}
+	 * <li> {@code StatusCode.WARNING}
+	 * <li> {@code StatusCode.ERROR}, {@code StatusCode.EXCEPTION}, {@code StatusCode.BUILD_ERROR}
+	 * {@code StatusCode.MODULAR_ERROR}, {@code StatusCode.SERVICE_ERROR}
+	 * </ol>
+	 * 
+	 * @return The highest ranked status code
+	 */
+	public StatusCode setHighestStatusCode();
 }

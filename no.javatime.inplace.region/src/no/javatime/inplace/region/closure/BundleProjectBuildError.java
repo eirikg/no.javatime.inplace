@@ -8,10 +8,12 @@ import no.javatime.inplace.extender.intface.ExtenderException;
 import no.javatime.inplace.region.Activator;
 import no.javatime.inplace.region.intface.BundleProjectMeta;
 import no.javatime.inplace.region.intface.BundleRegion;
+import no.javatime.inplace.region.intface.BundleTransition;
 import no.javatime.inplace.region.intface.BundleTransition.TransitionError;
 import no.javatime.inplace.region.intface.ExternalDuplicateException;
 import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.intface.WorkspaceDuplicateException;
+import no.javatime.inplace.region.manager.BundleTransitionImpl;
 import no.javatime.inplace.region.manager.WorkspaceRegionImpl;
 import no.javatime.inplace.region.project.BundleProjectCandidatesImpl;
 import no.javatime.inplace.region.project.BundleProjectMetaImpl;
@@ -19,7 +21,6 @@ import no.javatime.inplace.region.project.CachedManifestOperationsImpl;
 import no.javatime.inplace.region.status.BundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
-import no.javatime.util.messages.ExceptionMessage;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarker;
@@ -207,7 +208,7 @@ public class BundleProjectBuildError {
 			if (isBundleError) {
 				return true;
 			} else if (hasCompileErrors(project)) {
-					return true;
+				return true;
 			}
 		} catch (InPlaceException e) {
 			return true;
@@ -226,17 +227,16 @@ public class BundleProjectBuildError {
 					boolean activateOnCompileErrors = Activator.getCommandOptionsService().isActivateOnCompileError();
 					StatusCode statusCode = null;
 					String msg = null;
-					String errorlocation = project.getName() + " and file " + problems[problemsIndex].getResource().getName();
 					if (activateOnCompileErrors) {
-						statusCode = StatusCode.WARNING;
-						msg = "Running with compile time errors in project " + errorlocation;
+						statusCode = StatusCode.BUILD_WARNING;
+						msg = "Running " + project.getName() + " with compile time errors";
 					} else {
-						statusCode = StatusCode.ERROR;
-						msg = "Build problems in project " + errorlocation;
+						statusCode = StatusCode.BUILD_ERROR;
+						msg = "Build problems in project " + project.getName();
 					}
 					IBundleStatus multiStatus = new BundleStatus(statusCode, Activator.PLUGIN_ID, project, msg, null);
-					BundleRegion bundleRegion = WorkspaceRegionImpl.INSTANCE;
-					bundleRegion.setBundleStatus(project, TransitionError.BUILD, multiStatus);
+					BundleTransition bundleTransition = BundleTransitionImpl.INSTANCE;
+					bundleTransition.setBuildStatus(project, TransitionError.BUILD, multiStatus);
 					return true;
 				}
 			}
@@ -286,10 +286,10 @@ public class BundleProjectBuildError {
 			}
 		} catch (InPlaceException e) {
 		}
-		BundleRegion bundleRegion = WorkspaceRegionImpl.INSTANCE;
 		IBundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID,
 				project, "Missing build state in " + project.getName(), null);
-		bundleRegion.setBundleStatus(project, TransitionError.BUILD_STATE, multiStatus);
+		BundleTransition bundleTransition = BundleTransitionImpl.INSTANCE;
+		bundleTransition.setBuildStatus(project, TransitionError.BUILD_STATE, multiStatus);
 		return false;
 	}
 
@@ -382,12 +382,12 @@ public class BundleProjectBuildError {
 			ps.sortProvidingProjects(Collections.<IProject> singletonList(project));
 			return false;
 		} catch (CircularReferenceException e) {
-			BundleRegion bundleRegion = WorkspaceRegionImpl.INSTANCE;
-			String msg = ExceptionMessage.getInstance().formatString("circular_reference_termination");
-			IBundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID,
-					project, msg, e);
-			multiStatus.add(e.getStatusList());
-			bundleRegion.setBundleStatus(project, TransitionError.CYCLE, multiStatus);
+//			BundleRegion bundleRegion = WorkspaceRegionImpl.INSTANCE;
+//			String msg = ExceptionMessage.getInstance().formatString("circular_reference_termination");
+//			IBundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID,
+//					project, msg, e);
+//			multiStatus.add(e.getStatusList());
+//			bundleRegion.setBuildStatus(project, TransitionError.BUILD_CYCLE, multiStatus);
 		}
 		return true;
 	}
@@ -440,10 +440,10 @@ public class BundleProjectBuildError {
 				for (int problemsIndex = 0; problemsIndex < problems.length; problemsIndex++) {
 					if (IMarker.SEVERITY_ERROR == problems[problemsIndex].getAttribute(IMarker.SEVERITY,
 							IMarker.SEVERITY_INFO)) {
-						BundleRegion bundleRegion = WorkspaceRegionImpl.INSTANCE;
 						IBundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID,
 								project, "Error in manifest for " + project.getName(), null);
-						bundleRegion.setBundleStatus(project, TransitionError.BUILD_MANIFEST, multiStatus);
+						BundleTransition bundleTransition = BundleTransitionImpl.INSTANCE;
+						bundleTransition.setBuildStatus(project, TransitionError.BUILD_MANIFEST, multiStatus);
 						return true;
 					}
 				}
@@ -473,10 +473,10 @@ public class BundleProjectBuildError {
 			if (projectDesc.exists()) {
 				return true;
 			}
-			BundleRegion bundleRegion = WorkspaceRegionImpl.INSTANCE;
 			IBundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID,
 					project, "Missing description fil in " + project.getName(), null);
-			bundleRegion.setBundleStatus(project, TransitionError.BUILD_DESCRIPTION_FILE, multiStatus);
+			BundleTransition bundleTransition = BundleTransitionImpl.INSTANCE;
+			bundleTransition.setBuildStatus(project, TransitionError.BUILD_DESCRIPTION_FILE, multiStatus);
 		}
 		return false;
 	}

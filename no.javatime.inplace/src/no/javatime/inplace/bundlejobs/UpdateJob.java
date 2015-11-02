@@ -105,12 +105,12 @@ public class UpdateJob extends BundleJob implements Update {
 			String msg = ExceptionMessage.getInstance().formatString("interrupt_job", getName());
 			addError(e, msg);
 		} catch (OperationCanceledException e) {
-			addCancelMessage(e, NLS.bind(Msg.CANCEL_JOB_INFO, getName()));
+			addCancel(e, NLS.bind(Msg.CANCEL_JOB_INFO, getName()));
 		} catch (CircularReferenceException e) {
 			String msg = ExceptionMessage.getInstance().formatString("circular_reference", getName());
 			BundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, msg);
 			multiStatus.add(e.getStatusList());
-			addStatus(multiStatus);
+			addError(multiStatus);
 		} catch (ExtenderException e) {
 			addError(e, NLS.bind(Msg.SERVICE_EXECUTOR_EXP, getName()));
 		} catch (InPlaceException e) {
@@ -470,7 +470,7 @@ public class UpdateJob extends BundleJob implements Update {
 						IProject project = bundleRegion.getProject(bundle);
 						Throwable updExp = bundleError.getException();
 //						if (null != updExp && updExp instanceof WorkspaceDuplicateException) {
-//							bundleTransition.setTransitionError(project, TransitionError.WORKSPACE_DUPLICATE);
+//							bundleTransition.setTransitionError(project, TransitionError.BUILD_MODULAR_WORKSPACE_DUPLICATE);
 //						} else {
 //							bundleTransition.setTransitionError(project);
 //						}
@@ -489,7 +489,7 @@ public class UpdateJob extends BundleJob implements Update {
 				}
 			}
 			if (null != status) {
-				addStatus(status);
+				addError(status);
 			}
 		}
 	}

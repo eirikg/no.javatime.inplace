@@ -295,7 +295,12 @@ public class LogWriter implements SynchronousLogListener, LogFilter {
 		}
 	}
 // --- Begin writing TraceLogEntry --
-
+	
+	/**
+	 * Bypass the listener and use this to log directly to the log 
+	 * 
+	 * @param traceLogEntry log entry for bundles
+	 */
 	public synchronized void log(BundleLogEntryImpl traceLogEntry) {
 		if (traceLogEntry == null)
 			return;
@@ -705,7 +710,7 @@ public class LogWriter implements SynchronousLogListener, LogFilter {
 
 		String newLogLevel = environmentInfo.getProperty(PROP_LOG_LEVEL);
 		if (newLogLevel != null) {
-			if (newLogLevel.equals("ERROR")) //$NON-NLS-1$
+			if (newLogLevel.equals("MODULAR_REFRESH_ERROR")) //$NON-NLS-1$
 				logLevel = FrameworkLogEntry.ERROR;
 			else if (newLogLevel.equals("WARNING")) //$NON-NLS-1$
 				logLevel = FrameworkLogEntry.ERROR | FrameworkLogEntry.WARNING;
@@ -742,6 +747,9 @@ public class LogWriter implements SynchronousLogListener, LogFilter {
 		ExtendedLogEntry extended = (ExtendedLogEntry) entry;
 		Object context = extended.getContext();
 		if (context instanceof IBundleStatus) {
+			IBundleStatus s = (IBundleStatus) context;
+			s.setHighestStatusCode();
+			convertServerity(s);
 			log(new BundleLogEntryImpl((IBundleStatus) context));
 			return;
 		}
@@ -750,7 +758,18 @@ public class LogWriter implements SynchronousLogListener, LogFilter {
 			return;
 		}
 	}
-
+	
+	public void convertServerity(IBundleStatus status) {
+		
+		status.convertSeverity();
+		for (IStatus childStatus : status.getChildren()) {
+			if (childStatus instanceof IBundleStatus) {
+				IBundleStatus bundleStatus = (IBundleStatus) childStatus;
+				convertServerity(bundleStatus);
+			}
+		}		
+	}
+	
 	private static int convertSeverity(int entryLevel) {
 		switch (entryLevel) {
 			case LogService.LOG_ERROR :

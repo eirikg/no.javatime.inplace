@@ -15,12 +15,14 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 
 import no.javatime.inplace.region.Activator;
+import no.javatime.inplace.region.intface.BundleTransition;
 import no.javatime.inplace.region.intface.BundleTransition.TransitionError;
 import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.manager.BundleTransitionImpl;
 import no.javatime.inplace.region.manager.WorkspaceRegionImpl;
 import no.javatime.inplace.region.project.BundleProjectCandidatesImpl;
 import no.javatime.inplace.region.status.BundleStatus;
+import no.javatime.inplace.region.status.IBundleStatus;
 import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
 import no.javatime.util.messages.ExceptionMessage;
 
@@ -297,8 +299,6 @@ public class ProjectSorter extends BaseSorter {
 			ps.setAllowCycles(true);
 			Collection<IProject> projects = ps.sortRequiringProjects(Collections.<IProject>singletonList(parent));
 			projects.addAll(ps.sortRequiringProjects(Collections.<IProject>singletonList(child)));
-			BundleTransitionImpl.INSTANCE.setBuildTransitionError(parent, TransitionError.CYCLE);
-			BundleTransitionImpl.INSTANCE.setBuildTransitionError(child, TransitionError.CYCLE);
 			if (null == circularException) {
 				circularException = new CircularReferenceException();
 			}
@@ -314,6 +314,19 @@ public class ProjectSorter extends BaseSorter {
 			}
 			circularException.addToStatusList(new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, msg, null));
 			circularException.addProjects(projects);
+
+			// Parent
+			BundleTransition bundleTransition = BundleTransitionImpl.INSTANCE;
+			msg = ExceptionMessage.getInstance().formatString("circular_reference_termination");
+			IBundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID,
+					parent, msg, circularException);
+			multiStatus.add(circularException.getStatusList());
+			bundleTransition.setBuildStatus(parent, TransitionError.BUILD_CYCLE, multiStatus);
+			// Child
+			multiStatus = new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID,
+					child, msg, circularException);
+			multiStatus.add(circularException.getStatusList());
+			bundleTransition.setBuildStatus(child, TransitionError.BUILD_CYCLE, multiStatus);
 		}
 	}
 

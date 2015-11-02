@@ -57,12 +57,6 @@ public class SaveOptionsJob extends BundleJob implements SaveOptions {
 		setSaveWorkspaceSnaphot(false);
 	}
 	
-	@Override
-	public void end() {
-		super.end();
-		init();
-	}
-
 	/**
 	 * Runs the bundle(s) save operation.
 	 * 
@@ -75,7 +69,7 @@ public class SaveOptionsJob extends BundleJob implements SaveOptions {
 			startTime = System.currentTimeMillis();
 			saveFiles();
 		} catch (OperationCanceledException e) {
-			addCancelMessage(e, NLS.bind(Msg.CANCEL_JOB_INFO, getName()));
+			addCancel(e, NLS.bind(Msg.CANCEL_JOB_INFO, getName()));
 		} catch (InPlaceException | ExtenderException e) {
 			String msg = ExceptionMessage.getInstance().formatString("terminate_job_with_errors",
 					getName());
@@ -160,7 +154,7 @@ public class SaveOptionsJob extends BundleJob implements SaveOptions {
 				public void run() {
 					try {							
 						if (!PlatformUI.getWorkbench().saveAllEditors(false)) {
-							addStatus(new BundleStatus(StatusCode.ERROR, Activator.PLUGIN_ID,
+							addError(new BundleStatus(StatusCode.ERROR, Activator.PLUGIN_ID,
 									Msg.SAVE_FILES_OPTION_ERROR));
 						} else {
 							if (messageOptions.isBundleOperations()) {

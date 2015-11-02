@@ -184,6 +184,7 @@ public class PostBuildListener implements IResourceChangeListener {
 			// Pending transitions for activated projects are removed in the JavaTime builder
 			if (!projectActivator.isProjectWorkspaceActivated()) {
 				removePendingBuildTransition(buildKind, resourceDeltas);
+				// Safe to return if closed or deleted. Nothing to do in the remove bundle job
 				return;
 			}
 			update = new UpdateJob();

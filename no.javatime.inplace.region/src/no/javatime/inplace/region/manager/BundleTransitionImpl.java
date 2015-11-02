@@ -6,6 +6,7 @@ import java.util.EnumSet;
 import no.javatime.inplace.region.intface.BundleTransition;
 import no.javatime.inplace.region.intface.ProjectLocationException;
 import no.javatime.inplace.region.state.BundleNode;
+import no.javatime.inplace.region.status.IBundleStatus;
 
 import org.eclipse.core.resources.IProject;
 import org.osgi.framework.Bundle;
@@ -41,70 +42,44 @@ public class BundleTransitionImpl implements BundleTransition {
 	public String getTransitionName(Transition transition, boolean format, boolean caption) {
 		return BundleNode.getTransitionName(transition, format, caption);
 	}
-	@Override
-	public Transition getTransition(String transitionName) {
-		return BundleNode.getTransition(transitionName);
-	}
 
 	@Override
-	public boolean setBuildTransitionError(IProject project) throws ProjectLocationException {
-		BundleNode bn = ws.getBundleNode(project);
-		if (null == bn) {
-			return false;
-		}		
-		bn.setBuildTransitionError(TransitionError.ERROR);
-		return true;
-	}
-
-	@Override
-	public boolean setBuildTransitionError(IProject project, TransitionError error) throws ProjectLocationException {
-
-		BundleNode bn = ws.getBundleNode(project);
-		if (null == bn) {
-			return false;
-		}		
-		bn.setBuildTransitionError(error);
-		return true;
+	public IBundleStatus getTransitionStatus(IProject project) {
+		BundleNode node = ws.getBundleNode(project);
+		if (null != node) {
+			return node.getTransitionStatus();
+		}
+		return null;
 	}
 	
 	@Override
-	public boolean setBuildTransitionError(Bundle bundle) {
-		if (null == bundle) {
-			return false;
+	public TransitionError getTransitionError(IProject project) {
+
+		BundleNode node = ws.getBundleNode(project);
+		if (null != node) {
+			return node.getTransitionError();
 		}
-		BundleNode bn = ws.getBundleNode(bundle);
-		bn.setBuildTransitionError(TransitionError.ERROR);
-		return true;
+		return TransitionError.NOERROR;
 	}
 
 	@Override
-	public boolean setBuildTransitionError(Bundle bundle, TransitionError error) {
-		if (null == bundle) {
-			return false;
+	public void setBuildStatus(IProject project, TransitionError transitionError,
+			IBundleStatus status) {
+		BundleNode node = ws.getBundleNode(project);
+		if (null != node) {
+			node.setBuildStatus(transitionError, status);
 		}
-		BundleNode bn = ws.getBundleNode(bundle);
-		bn.setBuildTransitionError(error);
-		return true;
+	}
+
+	@Override
+	public void setBundleStatus(IProject project, TransitionError transitionError,
+			IBundleStatus status) {
+		BundleNode node = ws.getBundleNode(project);
+		if (null != node) {
+			node.setBundleStatus(transitionError, status);
+		}
 	}
 	
-	@Override
-	public boolean hasBuildTransitionError(IProject project) throws ProjectLocationException {
-		BundleNode bn = ws.getBundleNode(project);
-		if (null == bn) {
-			return false;
-		}
-		return bn.hasBuildTransitionError();
-	}
-
-	@Override
-	public boolean hasBuildTransitionError(Bundle bundle) {
-		BundleNode bn = ws.getBundleNode(bundle);
-		if (null == bn) {
-			return false;
-		}
-		return bn.hasBuildTransitionError();
-	}
-
 	@Override
 	public boolean hasBuildTransitionError(TransitionError transitionError) {
 		for (IProject project : ws.getProjects()) {
@@ -117,7 +92,7 @@ public class BundleTransitionImpl implements BundleTransition {
 	}
 	
 	@Override
-	public TransitionError getBuildError(IProject project) throws ProjectLocationException {
+	public TransitionError getBuildTransitionError(IProject project) throws ProjectLocationException {
 		BundleNode bn = ws.getBundleNode(project);
 		if (null == bn) {
 			return TransitionError.NOERROR;
@@ -125,18 +100,9 @@ public class BundleTransitionImpl implements BundleTransition {
 		return bn.getBuildTransitionError();
 	}
 
-	public TransitionError getBundleError(IProject project) throws ProjectLocationException {
-		BundleNode bn = ws.getBundleNode(project);
-		if (null == bn) {
-			return TransitionError.NOERROR;
-		}		
-		return bn.getBundleTransitionError();
-	}
-
-
 	@Override
-	public TransitionError getBuildError(Bundle bundle) throws ProjectLocationException {
-
+	public TransitionError getBuildTransitionError(Bundle bundle) throws ProjectLocationException {
+	
 		if (null == bundle) {
 			return TransitionError.NOERROR;
 		}
@@ -147,7 +113,15 @@ public class BundleTransitionImpl implements BundleTransition {
 		}
 		return bn.getBuildTransitionError();
 	}
-	
+
+	public TransitionError getBundleTransitionError(IProject project) throws ProjectLocationException {
+		BundleNode bn = ws.getBundleNode(project);
+		if (null == bn) {
+			return TransitionError.NOERROR;
+		}		
+		return bn.getBundleTransitionError();
+	}
+
 	@Override
 	public boolean clearBuildTransitionError(IProject project) throws ProjectLocationException {
 
@@ -158,58 +132,18 @@ public class BundleTransitionImpl implements BundleTransition {
 		return bn.clearBuildTransitionError();
 	}
 
-	/**
-	 * Remove the specified transition from bundle projects
-	 * 
-	 * @param transitionError to remove from all bundle projects containing the error
-	 * @throws ProjectLocationException if the specified project is null or the location of the
-	 * specified project could not be found
-	 */
-	@SuppressWarnings("unused")
-	private boolean removeBuildTransitionError(IProject project, TransitionError transitionError) throws ProjectLocationException {
+	public boolean clearBundleTransitionError(IProject project) throws ProjectLocationException  {
 		BundleNode bn = ws.getBundleNode(project);
 		if (null == bn) {
 			return false;
 		}		
-		return bn.removeBuildTransitionError(transitionError);
+		return bn.clearBundleTransitionError();		
 	}
-	
-	/**
-	 * Get all projects among the specified projects that contains the specified pending transition
-	 * 
-	 * @param projects bundle projects to check for the specified transition
-	 * @param transition transition to check for in the specified projects
-	 * @return all projects among the specified projects containing the specified transition or an
-	 * empty collection
-	 */
-	@SuppressWarnings("unused")
-	private void removeBuildTransitionError(TransitionError transitionError) throws ProjectLocationException {
-		for (IProject project : ws.getProjects()) {
-			BundleNode bn = ws.getBundleNode(project);
-			if (null == bn) {
-				continue;
-			}		
-			bn.removeBuildTransitionError(transitionError);			
-		}
+	@Override
+	public Transition getTransition(String transitionName) {
+		return BundleNode.getTransition(transitionName);
 	}
 
-	/**
-	 * Get all bundles among the specified bundles that contains the specified transition
-	 * 
-	 * @param bundles bundle projects to check for the specified transition
-	 * @param transition transition to check for in the specified projects
-	 * @return all bundles among the specified bundles containing the specified transition or an empty
-	 * collection
-	 */
-	@SuppressWarnings("unused")
-	private boolean removeBuildTransitionError(Bundle bundle, TransitionError transitionError) {
-
-		if (null == bundle) {
-			return false;
-		}
-		BundleNode bn = ws.getBundleNode(bundle);
-		return bn.removeBuildTransitionError(transitionError);
-	}
 
 	@Override
 	public Transition setTransition(IProject project, Transition transition) throws ProjectLocationException {
