@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: InPlace Service Extender
 Bundle-SymbolicName: no.javatime.inplace.extender
-Bundle-Version: 0.1.3.qualifier
+Bundle-Version: 0.1.4.qualifier
 Bundle-Activator: no.javatime.inplace.extender.Activator
 Bundle-Vendor: JavaTime Project
 Bundle-RequiredExecutionEnvironment: JavaSE-1.7
