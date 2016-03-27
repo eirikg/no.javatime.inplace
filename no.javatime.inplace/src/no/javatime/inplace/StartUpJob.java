@@ -132,6 +132,8 @@ class StartUpJob extends ActivateBundleJob {
 							// Only at start up
 							// We are usually not sending messages to the log in a deactivated workspace
 							addLogStatus(status);
+							bundleTransition.clearBuildTransitionError(project);
+							bundleTransition.clearBundleTransitionError(project);	
 						}
 					}
 				}
