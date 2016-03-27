@@ -59,11 +59,11 @@ public class ExtenderTracker extends ExtenderBundleTracker {
 	public void trackOwn() {
 
 		try {
-			bundleCommandExtender = trackExtender(thisBundle, BundleCommand.class.getName(), BundleCommandImpl.INSTANCE);
-			bundleRegionExtender = trackExtender(thisBundle, BundleRegion.class.getName(), WorkspaceRegionImpl.INSTANCE);
-			bundleTransitionExtender = trackExtender(thisBundle, BundleTransition.class.getName(), BundleTransitionImpl.INSTANCE);
-			bundleProjectCandidatesExtender = trackExtender(thisBundle, BundleProjectCandidates.class.getName(), BundleProjectCandidatesImpl.INSTANCE);
-			bundleProjectMetaExtender = trackExtender(thisBundle, BundleProjectMeta.class.getName(), BundleProjectMetaImpl.INSTANCE);
+			bundleCommandExtender = trackExtender(thisBundle, BundleCommand.class.getName(), BundleCommandImpl.INSTANCE, null);
+			bundleRegionExtender = trackExtender(thisBundle, BundleRegion.class.getName(), WorkspaceRegionImpl.INSTANCE, null);
+			bundleTransitionExtender = trackExtender(thisBundle, BundleTransition.class.getName(), BundleTransitionImpl.INSTANCE, null);
+			bundleProjectCandidatesExtender = trackExtender(thisBundle, BundleProjectCandidates.class.getName(), BundleProjectCandidatesImpl.INSTANCE, null);
+			bundleProjectMetaExtender = trackExtender(thisBundle, BundleProjectMeta.class.getName(), BundleProjectMetaImpl.INSTANCE, null);
 		} catch (ExtenderException | IllegalStateException e) {
 			StatusManager.getManager().handle(
 					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),
@@ -85,15 +85,15 @@ public class ExtenderTracker extends ExtenderBundleTracker {
 			
 			String serviceName = headers.get(CommandOptions.COMMAND_OPTIONS_SERVICE);
 			if (null != serviceName) {
-				commandOptionsExtender = trackExtender(bundle, CommandOptions.class.getName(), serviceName);
+				commandOptionsExtender = trackExtender(bundle, CommandOptions.class.getName(), serviceName, null);
 			}
 			serviceName = headers.get(MessageOptions.MESSAGE_OPTIONS_SERVICE);
 			if (null != serviceName) {
-				messageOptionsExtender = trackExtender(bundle, MessageOptions.class.getName(),serviceName);
+				messageOptionsExtender = trackExtender(bundle, MessageOptions.class.getName(),serviceName, null);
 			}
 			serviceName = headers.get(DependencyOptions.DEPENDENCY_OPTIONS_SERVICE);
 			if (null != serviceName) {
-				dependencyOptionsExtender = trackExtender(bundle, DependencyOptions.class.getName(),serviceName);
+				dependencyOptionsExtender = trackExtender(bundle, DependencyOptions.class.getName(),serviceName, null);
 			}			
 		} catch (ExtenderException | IllegalStateException e) {
 			StatusManager.getManager().handle(

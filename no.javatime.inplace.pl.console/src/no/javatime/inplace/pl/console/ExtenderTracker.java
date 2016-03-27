@@ -33,7 +33,7 @@ public class ExtenderTracker extends ExtenderBundleTracker {
 		try {
 			String serviceName = bundle.getHeaders().get(MessageOptions.MESSAGE_OPTIONS_SERVICE);
 			if (null != serviceName) {
-				messageOptionsExtender = trackExtender(bundle, MessageOptions.class.getName(), serviceName);
+				messageOptionsExtender = trackExtender(bundle, MessageOptions.class.getName(), serviceName, null);
 			}
 		} catch (ExtenderException | IllegalStateException e) {
 			e.printStackTrace();

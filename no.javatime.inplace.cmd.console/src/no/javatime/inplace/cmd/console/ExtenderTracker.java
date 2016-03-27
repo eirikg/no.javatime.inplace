@@ -48,7 +48,7 @@ public class ExtenderTracker extends ExtenderBundleTracker {
 	
 	public void trackOwn() {
 		
-		register(context.getBundle(), CommandProvider.class.getName(),
+		registerAndTrack(context.getBundle(), CommandProvider.class.getName(),
 				new BundleProjectCommandProvider(), null);
 	}
 	
@@ -62,28 +62,28 @@ public class ExtenderTracker extends ExtenderBundleTracker {
 			Dictionary<String, String> headers =  bundle.getHeaders();
 			String serviceName = headers.get(ActivateProject.ACTIVATE_PROJECT_SERVICE);
 			if (null != serviceName) {
-				trackExtender(bundle, ActivateProject.class.getName(), new BundleExecutorServiceFactory(serviceName));
-				trackExtender(bundle, Install.class.getName(), new BundleExecutorServiceFactory(headers.get(Install.INSTALL_BUNDLE_SERVICE)));
-				trackExtender(bundle, Deactivate.class.getName(), new BundleExecutorServiceFactory(headers.get(Deactivate.DEACTIVATE_BUNDLE_SERVICE)));
-				trackExtender(bundle, Start.class.getName(), new BundleExecutorServiceFactory(headers.get(Start.START_BUNDLE_SERVICE)));
-				trackExtender(bundle, Stop.class.getName(), new BundleExecutorServiceFactory(headers.get(Stop.STOP_BUNDLE_SERVICE)));
-				trackExtender(bundle, Refresh.class.getName(), new BundleExecutorServiceFactory(headers.get(Refresh.REFRESH_BUNDLE_SERVICE)));
-				trackExtender(bundle, Update.class.getName(), new BundleExecutorServiceFactory(headers.get(Update.UPDATE_BUNDLE_SERVICE)));
-				trackExtender(bundle, Reset.class.getName(), new BundleExecutorServiceFactory(headers.get(Reset.RESET_BUNDLE_SERVICE)));
+				trackExtender(bundle, ActivateProject.class.getName(), new BundleExecutorServiceFactory(serviceName), null);
+				trackExtender(bundle, Install.class.getName(), new BundleExecutorServiceFactory(headers.get(Install.INSTALL_BUNDLE_SERVICE)), null);
+				trackExtender(bundle, Deactivate.class.getName(), new BundleExecutorServiceFactory(headers.get(Deactivate.DEACTIVATE_BUNDLE_SERVICE)), null);
+				trackExtender(bundle, Start.class.getName(), new BundleExecutorServiceFactory(headers.get(Start.START_BUNDLE_SERVICE)), null);
+				trackExtender(bundle, Stop.class.getName(), new BundleExecutorServiceFactory(headers.get(Stop.STOP_BUNDLE_SERVICE)), null);
+				trackExtender(bundle, Refresh.class.getName(), new BundleExecutorServiceFactory(headers.get(Refresh.REFRESH_BUNDLE_SERVICE)), null);
+				trackExtender(bundle, Update.class.getName(), new BundleExecutorServiceFactory(headers.get(Update.UPDATE_BUNDLE_SERVICE)), null);
+				trackExtender(bundle, Reset.class.getName(), new BundleExecutorServiceFactory(headers.get(Reset.RESET_BUNDLE_SERVICE)), null);
 				//track(bundle, TogglePolicy.class.getName(), new BundleExecutorServiceFactory(headers.get(TogglePolicy.TOGGLE_POLICY_SERVICE)));
 				//track(bundle, UpdateBundleClassPath.class.getName(), new BundleExecutorServiceFactory(headers.get(UpdateBundleClassPath.UPDATE_BUNDLE_CLASS_PATH_SERVICE)));
 			}
 			serviceName = headers.get(BundleCommand.BUNDLE_COMMAND_SERVICE);
 			if (null != serviceName) {
-				trackExtender(bundle, BundleCommand.class.getName(), new BundleCommandServiceFactory());
-				bundleRegionExtender = trackExtender(bundle, BundleRegion.class.getName(), new BundleRegionServiceFactory());
-				trackExtender(bundle, BundleTransition.class.getName(), new BundleTransitionServiceFactory());
-				trackExtender(bundle, BundleProjectCandidates.class.getName(), new BundleProjectCandidatesServiceFactory());
-				trackExtender(bundle, BundleProjectMeta.class.getName(), new BundleProjectMetaServiceFactory());
+				trackExtender(bundle, BundleCommand.class.getName(), new BundleCommandServiceFactory(), null);
+				bundleRegionExtender = trackExtender(bundle, BundleRegion.class.getName(), new BundleRegionServiceFactory(), null);
+				trackExtender(bundle, BundleTransition.class.getName(), new BundleTransitionServiceFactory(), null);
+				trackExtender(bundle, BundleProjectCandidates.class.getName(), new BundleProjectCandidatesServiceFactory(), null);
+				trackExtender(bundle, BundleProjectMeta.class.getName(), new BundleProjectMetaServiceFactory(), null);
 			}
 			serviceName = headers.get(CommandOptions.COMMAND_OPTIONS_SERVICE);
 			if (null != serviceName) {
-				commandOptionsExtender = trackExtender(bundle, CommandOptions.class.getName(), serviceName);
+				commandOptionsExtender = trackExtender(bundle, CommandOptions.class.getName(), serviceName, null);
 			}
 		} catch (ExtenderException | IllegalStateException e) {
 			e.printStackTrace();

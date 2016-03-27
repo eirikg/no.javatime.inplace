@@ -33,7 +33,7 @@ public class ExtenderTracker extends ExtenderBundleTracker {
 		try {
 			String serviceName = bundle.getHeaders().get(CommandOptions.COMMAND_OPTIONS_SERVICE);
 			if (null != serviceName) {
-				commandOptionsExtender = trackExtender(bundle, CommandOptions.class.getName(), serviceName);
+				commandOptionsExtender = trackExtender(bundle, CommandOptions.class.getName(), serviceName, null);
 			}
 		} catch (ExtenderException | IllegalStateException e) {
 			e.printStackTrace();

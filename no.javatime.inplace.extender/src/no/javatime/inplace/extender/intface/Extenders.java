@@ -281,7 +281,7 @@ public class Extenders {
 	 */
 	public static <S> S getService(Class<S> service, Bundle userBundle) throws ExtenderException {
 
-		Extender<S> extender = getExtender(service.getName(),userBundle);
+		Extender<S> extender = getExtender(service.getName(), userBundle);
 		return null != extender ? extender.getService() : null;
 	}
 
@@ -291,7 +291,8 @@ public class Extenders {
 	 * @param serviceInterfaceName one of possible multiple interface names of the extension bundle.
 	 * @return the extender instance or null if the service is not tracked under the specified
 	 * interface name.
-	 * @throws ExtenderException If no extender were registered with the specified interface name
+	 * @throws ExtenderException if the service exist and service id is null for the registered service with the
+	 * specified service interface name
 	 */
 	public static final <S> Extender<S> getExtender(String serviceInterfaceName)
 			throws ExtenderException {
@@ -355,9 +356,9 @@ public class Extenders {
 		Collection<Extender<S>> extenders = Extenders.getExtenders(serviceInterfaceName, null);
 		if (null != extenders) {
 			for (Extender<S> extender : extenders) {
-				Bundle ownerBundle = extender.getOwner();
-				Bundle registrBundle = extender.getRegistrar();
-				if (ownerBundle.equals(sourceBundle) && registrBundle.equals(sourceBundle)) {
+				// Bundle ownerBundle = extender.getOwner();
+				Bundle registrarBundle = extender.getRegistrar();
+				if (/* ownerBundle.equals(sourceBundle) && */ registrarBundle.equals(sourceBundle)) {
 					return extender;
 				}
 			}

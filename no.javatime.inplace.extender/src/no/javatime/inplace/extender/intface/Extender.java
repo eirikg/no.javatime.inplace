@@ -319,8 +319,8 @@ public interface Extender<S> {
 	 * Get the bundle tracker tracking this extender
 	 * <p>
 	 * An extender can be registered and tracked by a bundle tracker by using
-	 * {@link ExtenderBundleTracker#register(Bundle, String[], Object, Dictionary)} or
-	 * {@link ExtenderBundleTracker#register(Bundle, String, Object, Dictionary)}
+	 * {@link ExtenderBundleTracker#registerAndTrack(Bundle, String[], Object, Dictionary)} or
+	 * {@link ExtenderBundleTracker#registerAndTrack(Bundle, String, Object, Dictionary)}
 	 * 
 	 * @return the bundle tracker or null if the extender was not registered and tracked with a bundle
 	 * tracker
