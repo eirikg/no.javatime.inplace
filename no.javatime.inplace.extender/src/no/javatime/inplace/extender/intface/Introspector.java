@@ -93,8 +93,7 @@ public class Introspector {
 	}
 
 	/**
-	 * Loads extension class, creates extension object and executes an arbitrary class member method given 
-	 * its class, object, formal and actual parameters
+	 * Executes an arbitrary class member method given its class, object, formal and actual parameters
 	 * 
 	 * @param T type of class
 	 * @param methodName method name to invoke
