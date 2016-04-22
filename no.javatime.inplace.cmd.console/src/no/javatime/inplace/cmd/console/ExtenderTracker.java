@@ -45,13 +45,13 @@ public class ExtenderTracker extends ExtenderBundleTracker {
 			BundleTrackerCustomizer<Collection<Extender<?>>> customizer) {
 		super(context, stateMask, customizer);
 	}
-	
+
 	public void trackOwn() {
-		
+
 		register(context.getBundle(), CommandProvider.class.getName(),
 				new BundleProjectCommandProvider(), null);
 	}
-	
+
 	public Collection<Extender<?>> addingBundle(Bundle bundle, BundleEvent event) {
 
 		if (!getFilter(bundle)) {
@@ -89,8 +89,8 @@ public class ExtenderTracker extends ExtenderBundleTracker {
 			e.printStackTrace();
 		}
 		return super.addingBundle(bundle, event);
-	}	
-	
+	}
+
 	@Override
 	public void unregistering(Extender<?> extender) {
 

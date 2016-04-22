@@ -41,16 +41,16 @@ public class ExtenderTracker extends ExtenderBundleTracker {
 	Extender<BundleTransition> bundleTransitionExtender;
 	Extender<BundleProjectCandidates> bundleProjectCandidatesExtender;
 	Extender<BundleProjectMeta> bundleProjectMetaExtender;
-	
+
 	Extender<CommandOptions> commandOptionsExtender;
 	Extender<MessageOptions> messageOptionsExtender;
 	Extender<DependencyOptions> dependencyOptionsExtender;
-	
+
 	public ExtenderTracker(BundleContext context, int stateMask, BundleTrackerCustomizer<Collection<Extender<?>>> customizer) {
 		super(context, stateMask, customizer);
 		thisBundle = context.getBundle();
 	}
-	
+
 	/**
 	 * Register and track extenders hosted by this bundle.
 	 * <p>
@@ -67,7 +67,7 @@ public class ExtenderTracker extends ExtenderBundleTracker {
 		} catch (ExtenderException | IllegalStateException e) {
 			StatusManager.getManager().handle(
 					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),
-					StatusManager.LOG);						
+					StatusManager.LOG);
 		}
 	}
 
@@ -80,9 +80,9 @@ public class ExtenderTracker extends ExtenderBundleTracker {
 			return null;
 		}
 
-		try { 
+		try {
 			Dictionary<String, String> headers =  bundle.getHeaders();
-			
+
 			String serviceName = headers.get(CommandOptions.COMMAND_OPTIONS_SERVICE);
 			if (null != serviceName) {
 				commandOptionsExtender = trackExtender(bundle, CommandOptions.class.getName(), serviceName);
@@ -94,41 +94,41 @@ public class ExtenderTracker extends ExtenderBundleTracker {
 			serviceName = headers.get(DependencyOptions.DEPENDENCY_OPTIONS_SERVICE);
 			if (null != serviceName) {
 				dependencyOptionsExtender = trackExtender(bundle, DependencyOptions.class.getName(),serviceName);
-			}			
+			}
 		} catch (ExtenderException | IllegalStateException e) {
 			StatusManager.getManager().handle(
 					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),
-					StatusManager.LOG);						
+					StatusManager.LOG);
 		}
 		return super.addingBundle(bundle, event);
 	}
-	
+
 	@Override
 	public void unregistering(Extender<?> extender) {
 
 		serviceDown(extender);
 		super.unregistering(extender);
 	}
-	
+
 	@Override
 	public void unregistering(Extension<?> extension) {
 
 		if (extension.getTrackingCount() != -1) {
 			extension.closeTrackedService();
 		}
-		super.unregistering(extension);	
+		super.unregistering(extension);
 	}
-	
+
 	private void serviceDown (Extender<?> extender) {
-		
-		// Service should not be unregistered while this bundle tracker is open 
+
+		// Service should not be unregistered while this bundle tracker is open
 		if (getTrackingCount() != -1) {
 			try {
-			} catch (Exception e) {	
+			} catch (Exception e) {
 				// The bundle log is the unregistered service
 				// TODO Elaborate
 				System.err.println("Service going down: " + extender.getServiceInterfaceName());
 			}
-		}		
+		}
 	}
 }

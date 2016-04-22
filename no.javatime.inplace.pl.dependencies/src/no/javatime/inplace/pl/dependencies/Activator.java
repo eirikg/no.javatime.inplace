@@ -48,7 +48,7 @@ public class Activator extends AbstractUIPlugin {
 		// The service (extender) should be registered by the bundle using this extension
 		/*
 		Bundle bundle = context.getBundle();
-		Dictionary<String, String> dictionary = bundle.getHeaders();		
+		Dictionary<String, String> dictionary = bundle.getHeaders();
 		String depDlgClassName = dictionary.get(DependencyDialog.DEPENDENCY_DIALOG_SERVICE);
 		ExtenderImpl.register(bundle, DependencyDialog.class, depDlgClassName);
 		*/
@@ -83,14 +83,14 @@ public class Activator extends AbstractUIPlugin {
 
 	/**
 	 * Returns an image descriptor for the image file at the given plug-in relative path
-	 * 
+	 *
 	 * @param path the path
 	 * @return the image descriptor
 	 */
 	public static ImageDescriptor getImageDescriptor(String path) {
 		return imageDescriptorFromPlugin(PLUGIN_ID, path);
 	}
-	
+
 	public Shell getShell() {
 		return Activator.getDefault().getActiveWorkbenchWindow().getShell();
 	}
@@ -118,7 +118,7 @@ public class Activator extends AbstractUIPlugin {
 	}
 	/**
 	 * Get a valid display
-	 * 
+	 *
 	 * @return a display
 	 */
 	public static Display getDisplay() {
