@@ -5,8 +5,7 @@ Require-Bundle: org.eclipse.ui,
  org.eclipse.debug.ui,
  org.eclipse.pde.core,
  org.eclipse.ltk.core.refactoring,
- org.eclipse.ui.ide,
- org.eclipse.jdt.launching
+ org.eclipse.ui.ide
 Export-Package: no.javatime.inplace.builder.intface,
  no.javatime.inplace.bundlejobs.events.intface,
  no.javatime.inplace.bundlejobs.intface
