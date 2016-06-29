@@ -5,12 +5,13 @@ Require-Bundle: org.eclipse.ui,
  org.eclipse.debug.ui,
  org.eclipse.pde.core,
  org.eclipse.ltk.core.refactoring,
- org.eclipse.ui.ide
+ org.eclipse.ui.ide,
+ org.eclipse.jdt.launching
 Export-Package: no.javatime.inplace.builder.intface,
  no.javatime.inplace.bundlejobs.events.intface,
  no.javatime.inplace.bundlejobs.intface
 Bundle-Vendor: JavaTime Project
-Bundle-Version: 0.3.0.qualifier
+Bundle-Version: 0.3.1.qualifier
 Bundle-Name: InPlace Core
 Bundle-Activator: no.javatime.inplace.Activator
 Bundle-ManifestVersion: 2

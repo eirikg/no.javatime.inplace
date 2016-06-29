@@ -33,9 +33,9 @@ public class ExtenderTracker extends ExtenderBundleTracker {
 		}
 
 		if (null != bundle.getHeaders().get(CommandOptions.COMMAND_OPTIONS_SERVICE)) {
-			register(bundle, CommandOptions.class.getName(), new CommandOptionsImpl(), null);	
-			register(bundle, DependencyOptions.class.getName(), new DependencyOptionsImpl(), null); 
-			register(bundle, MessageOptions.class.getName(), new MessageOptionsImpl(), null);
+			registerAndTrack(bundle, CommandOptions.class.getName(), new CommandOptionsImpl(), null);	
+			registerAndTrack(bundle, DependencyOptions.class.getName(), new DependencyOptionsImpl(), null); 
+			registerAndTrack(bundle, MessageOptions.class.getName(), new MessageOptionsImpl(), null);
 		}
 		return super.addingBundle(bundle, event);
 	}

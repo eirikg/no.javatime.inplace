@@ -284,7 +284,9 @@ public class BundleProjectCandidatesImpl implements BundleProjectCandidates {
 				return project.hasNature(natureId) ? true : false;
 			} catch (CoreException e) {
 				// Closed or non-existing project should not happen at this point
-				throw new InPlaceException(NLS.bind(Msg.PROJECT_NATURE_CORE_EXP, natureId));
+				// TODO Problems if projects is closed in source IDE and 
+				// open and imported with reference to source IDE in target IDE
+				// throw new InPlaceException(NLS.bind(Msg.PROJECT_NATURE_CORE_EXP, natureId));
 			}
 		}
 		return false;

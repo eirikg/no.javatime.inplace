@@ -10,11 +10,9 @@
  *******************************************************************************/
 package no.javatime.inplace.region.closure;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashSet;
-import java.util.List;
 
 import no.javatime.inplace.region.Activator;
 import no.javatime.inplace.region.intface.InPlaceException;
@@ -107,7 +105,7 @@ public class BundleDependencies {
 		if (null != bundle) {
 			BundleWiring wiredReqBundle = bundle.adapt(BundleWiring.class);
 			if (null != wiredReqBundle && wiredReqBundle.isInUse()) {
-				List<Bundle> requiredBundles = new ArrayList<Bundle>();
+				Collection<Bundle> requiredBundles = new LinkedHashSet<Bundle>();
 				// Get the capabilities from all name spaces
 				for (BundleWire wire : wiredReqBundle.getProvidedWires(null)) {
 					Bundle reqBundle = wire.getRequirerWiring().getBundle();
@@ -176,7 +174,7 @@ public class BundleDependencies {
 		if (null != bundle) {
 			BundleWiring wiredProvBundle = bundle.adapt(BundleWiring.class);
 			if (null != wiredProvBundle && wiredProvBundle.isInUse()) {
-				List<Bundle> providedBundles = new ArrayList<Bundle>();
+				Collection<Bundle> providedBundles = new LinkedHashSet<Bundle>();
 				// Get the requirements from all name spaces
 				for (BundleWire wire : wiredProvBundle.getRequiredWires(null)) {
 					Bundle provBundle = wire.getProviderWiring().getBundle();

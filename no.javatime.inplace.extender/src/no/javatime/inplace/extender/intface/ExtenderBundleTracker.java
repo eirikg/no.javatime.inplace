@@ -31,16 +31,16 @@ public class ExtenderBundleTracker extends BundleTracker<Collection<Extender<?>>
 	Collection<Extender<?>> extenders = null;
 	Collection<Extension<?>> extensions = null;
 	String filter = "no.javatime.inplace";
-	
+
 	public ExtenderBundleTracker(BundleContext context, int stateMask,
 			BundleTrackerCustomizer<Collection<Extender<?>>> customizer) {
 		super(context, stateMask, customizer);
 	}
-	
+
 	public void setFilter(String filter) {
 		this.filter = filter;
 	}
-	
+
 	public boolean getFilter(Bundle bundle) {
 
 		if (!bundle.getSymbolicName().startsWith(filter)) {
@@ -48,16 +48,17 @@ public class ExtenderBundleTracker extends BundleTracker<Collection<Extender<?>>
 		}
 		return true;
 		// Do not consider workspace region bundles
-		//	if (null != bundleRegionExtender && bundleRegionExtender.getService().exist(bundle)) {
-		//		return null;
-		//	}
+		// if (null != bundleRegionExtender && bundleRegionExtender.getService().exist(bundle)) {
+		// return null;
+		// }
 	}
+
 	/**
-	 * Registers and tracks a service with the specified properties under the specified
-	 * service interface class names as an extender where {@code owner} is the bundle hosting the
-	 * service and the service.
+	 * Registers and tracks a service with the specified properties under the specified service
+	 * interface class names as an extender where {@code owner} is the bundle hosting the service and
+	 * the service.
 	 * <p>
-	 * The using bundle is by the default the bundle registering this extender.
+	 * The using bundle the bundle registering this extender.
 	 * <p>
 	 * If the specified service is a service factory object the service scope is bundle (
 	 * {@code ServiceFactory}) or prototype ({@code PrototypeServiceFactory}), and singleton if the
@@ -79,7 +80,7 @@ public class ExtenderBundleTracker extends BundleTracker<Collection<Extender<?>>
 	 * not be obtained
 	 * @see org.osgi.framework.BundleContext#registerService(String[], Object, Dictionary)
 	 */
-	public <S> Extender<S> register(Bundle owner, String[] serviceInterfaceNames, Object service,
+	public <S> Extender<S> registerAndTrack(Bundle owner, String[] serviceInterfaceNames, Object service,
 			Dictionary<String, ?> properties) throws ExtenderException {
 
 		Extender<S> extender = new ExtenderImpl<>(this, owner, context.getBundle(),
@@ -89,13 +90,13 @@ public class ExtenderBundleTracker extends BundleTracker<Collection<Extender<?>>
 	}
 
 	/**
-	 * Registers the specified service with the specified properties under the specified service
+	 * Register and track the specified service with the specified properties under the specified service
 	 * interface class name as an extender where {@code owner} is the bundle hosting the service and
 	 * the service interface class name.
 	 * <p>
-	 * The using bundle is by the default the bundle registering this extender.
+	 * The using bundle is the bundle registering this extender.
 	 * <p>
-	 * This method is otherwise identical to {@link #register(Bundle, String[], Object, Dictionary)}
+	 * This method is otherwise identical to {@link #registerAndTrack(Bundle, String[], Object, Dictionary)}
 	 * and is provided as a convenience when the {@code service} will only be registered under a
 	 * single interface class name.
 	 * <p>
@@ -114,7 +115,7 @@ public class ExtenderBundleTracker extends BundleTracker<Collection<Extender<?>>
 	 * interface, the interface name is illegal, a security violation or if the service object could
 	 * not be obtained
 	 */
-	public <S> Extender<S> register(Bundle owner, String serviceInterfaceName, Object service,
+	public <S> Extender<S> registerAndTrack(Bundle owner, String serviceInterfaceName, Object service,
 			Dictionary<String, ?> properties) throws ExtenderException {
 
 		Extender<S> extender = new ExtenderImpl<>(this, owner, context.getBundle(),
@@ -144,12 +145,12 @@ public class ExtenderBundleTracker extends BundleTracker<Collection<Extender<?>>
 	 * interface, the interface name is illegal, a security violation or if the service object could
 	 * not be obtained
 	 */
-	protected <S> Extension<S> trackExtension(Bundle bundle, String serviceIntefaceName, Object service)
-			throws ExtenderException {
+	protected <S> Extension<S> trackExtension(Bundle bundle, String serviceIntefaceName,
+			Object service) throws ExtenderException {
 
 		Extender<S> extender = Extenders.getExtender(serviceIntefaceName, bundle);
 		if (null == extender) {
-			extender = register(bundle, serviceIntefaceName, service, null);
+			extender = registerAndTrack(bundle, serviceIntefaceName, service, null);
 		} else {
 			trackExtender(extender);
 		}
@@ -161,12 +162,34 @@ public class ExtenderBundleTracker extends BundleTracker<Collection<Extender<?>>
 		return extension;
 	}
 
-	protected <S> Extender<S> trackExtender(Bundle bundle, String serviceIntefaceName, Object service)
+	/**
+	 * Get an extender with the specified service interface name owned and registered by the specified
+	 * bundle. If there are more than one extender owned and registered by the bundle hosting the
+	 * extender service the first one encountered is returned.
+	 * <p>
+	 * If an extender exist it is tracked, and if not it is registered and tracked where the using bundle
+	 * is the bundle registering the extender
+	 * 
+	 * @param bundle The bundle both owing and is the registrar of the specified service and the
+	 * service interface name
+	 * @param service A fully qualified class name where the class representing the class name has a
+	 * default or empty constructor, a service object or a {@code ServiceFactory} object
+	 * @param properties The properties for this service. Can be null.
+	 * @param serviceInterfaceName The class or interface name under which the service can be located.
+	 * @param properties The properties for this service. Can be null.
+	 * @return An extender object of the registered extender tracked by this bundle tracker and this
+	 * bundle as the owing and using bundle of the extender
+	 * @throws ExtenderException if the bundle context of the specified registrar or owner bundle is
+	 * no longer valid, the registered implementation class does not implement the registered
+	 * interface, the interface name is illegal, a security violation or if the service object could
+	 * not be obtained
+	 */
+	protected <S> Extender<S> trackExtender(Bundle bundle, String serviceIntefaceName, Object service, Dictionary<String, ?> properties)
 			throws ExtenderException {
 
 		Extender<S> extender = Extenders.getExtender(serviceIntefaceName, bundle);
 		if (null == extender) {
-			extender = register(bundle, serviceIntefaceName, service, null);
+			extender = registerAndTrack(bundle, serviceIntefaceName, service, properties);
 		} else {
 			trackExtender(extender);
 		}
@@ -210,8 +233,8 @@ public class ExtenderBundleTracker extends BundleTracker<Collection<Extender<?>>
 	 * {@link ServiceRegistration#unregister()}
 	 * 
 	 * @param extender An extender registered by this bundle and tracked by this bundle tracker
-	 * @see #register(Bundle, String, Object, Dictionary)
-	 * @see #register(Bundle, String[], Object, Dictionary)
+	 * @see #registerAndTrack(Bundle, String, Object, Dictionary)
+	 * @see #registerAndTrack(Bundle, String[], Object, Dictionary)
 	 */
 	public void unregistering(Extender<?> extender) {
 	}
@@ -251,9 +274,9 @@ public class ExtenderBundleTracker extends BundleTracker<Collection<Extender<?>>
 		}
 		return s;
 	}
-	
+
 	public <S> Extension<S> getExtension(String serviceInterfaceName) throws ExtenderException {
-		
+
 		Extender<S> extender = getTrackedExtender(serviceInterfaceName);
 		if (null == extender) {
 			throw new ExtenderException("Null extender in {0}", serviceInterfaceName);
@@ -304,9 +327,9 @@ public class ExtenderBundleTracker extends BundleTracker<Collection<Extender<?>>
 			Entry<Bundle, Collection<Extender<?>>> entry = it.next();
 			for (Extender<?> e : entry.getValue()) {
 				if (e.getServiceInterfaceName().equals(interfaceName)) {
-					//if (null != Extenders.getExtender(e.getServiceId())) {
-						trackedExtenders.add(e);
-					//}
+					// if (null != Extenders.getExtender(e.getServiceId())) {
+					trackedExtenders.add(e);
+					// }
 				}
 			}
 		}

@@ -67,6 +67,13 @@ public class BundleLogimpl implements BundleLog {
 		}
 		return msg;
 	}
+	
+	@Override
+	public void logDirect(StatusCode statusCode, Bundle bundle, Exception exception, String msg)
+			throws BundleLogException {
+
+		logDirect(new BundleStatus(statusCode, bundle.getSymbolicName(), msg, exception));
+	}
 
 	@Override
 	public String log(IBundleStatus status) throws BundleLogException {
@@ -485,8 +492,13 @@ public class BundleLogimpl implements BundleLog {
 		// It logs the root message (in the log listener) to the error log in addition
 		// to the log status object to be logged
 		Activator activator = Activator.getDefault();
-		IWorkbench workbench = PlatformUI.getWorkbench();
-		if (null != workbench && workbench.isClosing()) {
+		IWorkbench workbench = null;
+		try {
+			workbench = PlatformUI.getWorkbench();
+		} catch (IllegalStateException e) {
+			// Workbench closed or not opened
+		}
+		if (null == workbench || (null != workbench && workbench.isClosing())) {
 			// Write directly to the log file
 			LogWriter logWriter = activator.getLogWriter();
 			if (null != logWriter) {

@@ -204,9 +204,13 @@ public class ExternalDuplicates implements BundleListener {
 			if (null != bucketList && bucketList.size() > 0) {
 				WorkspaceRegionImpl bundleRegion = WorkspaceRegionImpl.INSTANCE;
 				BundleNode bundleNode = bundleRegion.getBundleNode(project);
-				Bundle bundle = bundleNode.getBundle();
+				Bundle bundle = null;
 				String msg = null;
+				if (null != bundleNode) {
+					bundle = bundleNode.getBundle();
+				}
 				if (null != bundle) {
+					bundle = bundleNode.getBundle();
 					msg = NLS.bind(Msg.EXTERNAL_UPDATE_DUPLICATE_EXP, bundle.getSymbolicName(), key);
 				} else {
 					msg = NLS.bind(Msg.EXTERNAL_INSTALL_DUPLICATE_EXP, key,

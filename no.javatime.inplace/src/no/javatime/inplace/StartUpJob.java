@@ -123,6 +123,7 @@ class StartUpJob extends ActivateBundleJob {
 					addLogStatus(Msg.RECOVERY_NO_ACTION_BUNDLE_INFO);
 				}
 				StatePersistParticipant.restoreSessionState();
+				// TODO Build state is not always reported correct at startup. What to do?
 				// Calculate errors after workspace is deactivated
 				for (IProject project : bundleRegion.getProjects()) {
 					if (BundleProjectBuildError.hasErrors(project, true)) {
@@ -131,6 +132,8 @@ class StartUpJob extends ActivateBundleJob {
 							// Only at start up
 							// We are usually not sending messages to the log in a deactivated workspace
 							addLogStatus(status);
+							bundleTransition.clearBuildTransitionError(project);
+							bundleTransition.clearBundleTransitionError(project);	
 						}
 					}
 				}

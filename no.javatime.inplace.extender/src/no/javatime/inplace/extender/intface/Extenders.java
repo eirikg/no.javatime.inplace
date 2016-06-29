@@ -167,7 +167,7 @@ public class Extenders {
 	public static <S> Boolean isRegistered(String serviceIntefaceName) {
 
 		Extender<S> extender = getExtender(serviceIntefaceName);
-		return null != extender ? extender.isRegistered() : false; 
+		return null != extender ? extender.isRegistered() : false;
 	}
 
 	/**
@@ -176,7 +176,8 @@ public class Extenders {
 	 * 
 	 * @param serviceInterfaceName service interface name
 	 * @user The bundle using the extension
-	 * @return An extension of the extender with highest priority with the given service interface name   
+	 * @return An extension of the extender with highest priority with the given service interface
+	 * name
 	 * @throws ExtenderException if fail to get the registered extension or no extender were
 	 * registered with the specified interface name
 	 */
@@ -193,19 +194,21 @@ public class Extenders {
 		}
 		return extender.getExtension(user);
 	}
+
 	/**
 	 * Create an extension of the extender registered with the specified interface name
 	 * <p>
 	 * 
 	 * @param serviceInterfaceName The service interface name
 	 * @param user The bundle using the extension
-	 * @param bt The bundle tracker unget service is called when the service tracker used by the extension is closed
+	 * @param bt The bundle tracker unget service is called when the service tracker used by the
+	 * extension is closed
 	 * @return The extension based on the extender with the highest priority
 	 * @throws ExtenderException if fail to get the registered extension or no extender were
 	 * registered with the specified interface name
 	 */
-	public static final <S> Extension<S> getExtension(String serviceInterfaceName, Bundle user, ExtenderBundleTracker bt)
-			throws ExtenderException {
+	public static final <S> Extension<S> getExtension(String serviceInterfaceName, Bundle user,
+			ExtenderBundleTracker bt) throws ExtenderException {
 
 		ExtenderServiceMap<S> extServiceMap = Activator.getExtenderServiceMap();
 		Extender<S> extender = extServiceMap.get(serviceInterfaceName);
@@ -246,12 +249,50 @@ public class Extenders {
 	}
 
 	/**
+	 * Get the tracked service object registered with the specified service class instance
+	 * 
+	 * @param service class instance of the service to return
+	 * @return the service object of the specified class instance or null if no service is tracked for
+	 * the specified class instance (extender is null)
+	 * @throws ExtenderException if the service is null, bundle context of the owner bundle is not
+	 * valid, the bundle is in an illegal state (uninstalled, installed or resolved), the service was
+	 * not created by the same framework instance as the BundleContext of the specified bundle or if
+	 * the caller does not have the appropriate AdminPermission[this,CLASS], and the Java Runtime
+	 * Environment supports permissions.
+	 */
+	public static <S> S getService(Class<S> service) throws ExtenderException {
+
+		Extender<S> extender = getExtender(service.getName());
+		return null != extender ? extender.getService() : null;
+	}
+
+	/**
+	 * Get the tracked service object registered with the specified service class instance
+	 * 
+	 * @param service class instance of the service to return
+	 * @param userBundle The bundle using the returned service object
+	 * @return the service object of the specified class instance or null if no service is tracked for
+	 * the specified class instance (extender is null)
+	 * @throws ExtenderException if the service is null, bundle context of the owner bundle is not
+	 * valid, the bundle is in an illegal state (uninstalled, installed or resolved), the service was
+	 * not created by the same framework instance as the BundleContext of the specified bundle or if
+	 * the caller does not have the appropriate AdminPermission[this,CLASS], and the Java Runtime
+	 * Environment supports permissions.
+	 */
+	public static <S> S getService(Class<S> service, Bundle userBundle) throws ExtenderException {
+
+		Extender<S> extender = getExtender(service.getName(), userBundle);
+		return null != extender ? extender.getService() : null;
+	}
+
+	/**
 	 * Get the extender registered with the specified interface name
 	 * 
 	 * @param serviceInterfaceName one of possible multiple interface names of the extension bundle.
 	 * @return the extender instance or null if the service is not tracked under the specified
 	 * interface name.
-	 * @throws ExtenderException If no extender were registered with the specified interface name
+	 * @throws ExtenderException if the service exist and service id is null for the registered service with the
+	 * specified service interface name
 	 */
 	public static final <S> Extender<S> getExtender(String serviceInterfaceName)
 			throws ExtenderException {
@@ -301,6 +342,7 @@ public class Extenders {
 	 * that the using bundle is only dependent on the bundle owing the service registered with the
 	 * extender. If there are no such extenders, registering a new extender result in the same
 	 * dependency as using an extender where the owner and registrar bundle is the same.
+	 * 
 	 * @param serviceInterfaceName the service interface owned and registered by the specified bundle
 	 * @param sourceBundle An extender owned and registered by this source bundle. Extenders are
 	 * always owned by one bundle, but may be registered by multiple bundles
@@ -314,9 +356,9 @@ public class Extenders {
 		Collection<Extender<S>> extenders = Extenders.getExtenders(serviceInterfaceName, null);
 		if (null != extenders) {
 			for (Extender<S> extender : extenders) {
-				Bundle ownerBundle = extender.getOwner();
-				Bundle registrBundle = extender.getRegistrar();
-				if (ownerBundle.equals(sourceBundle) && registrBundle.equals(sourceBundle)) {
+				// Bundle ownerBundle = extender.getOwner();
+				Bundle registrarBundle = extender.getRegistrar();
+				if (/* ownerBundle.equals(sourceBundle) && */ registrarBundle.equals(sourceBundle)) {
 					return extender;
 				}
 			}

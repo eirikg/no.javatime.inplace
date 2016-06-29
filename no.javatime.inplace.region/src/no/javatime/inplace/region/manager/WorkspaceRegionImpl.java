@@ -34,6 +34,7 @@ import no.javatime.inplace.region.intface.InPlaceException;
 import no.javatime.inplace.region.intface.ProjectLocationException;
 import no.javatime.inplace.region.intface.WorkspaceDuplicateException;
 import no.javatime.inplace.region.msg.Msg;
+import no.javatime.inplace.region.project.BundleProjectCandidatesImpl;
 import no.javatime.inplace.region.project.BundleProjectMetaImpl;
 import no.javatime.inplace.region.state.BundleNode;
 import no.javatime.inplace.region.state.BundleState;
@@ -44,8 +45,6 @@ import no.javatime.util.messages.ExceptionMessage;
 import no.javatime.util.messages.TraceMessage;
 
 import org.eclipse.core.resources.IProject;
-import org.eclipse.core.resources.IWorkspace;
-import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.osgi.util.NLS;
@@ -148,10 +147,10 @@ public class WorkspaceRegionImpl implements BundleRegion {
 			if (null != node) {
 				return node.getProject();
 			} else {
-				// Uninstalled bundles are not registered in the workspace region
-				IWorkspace workspace = ResourcesPlugin.getWorkspace();
 				IPath bundlePathLoc = new Path(bundle.getLocation());
-				for (IProject bundleProject : workspace.getRoot().getProjects()) {
+				// Uninstalled bundles are not registered in the workspace region
+				Collection<IProject> bundleProjects = BundleProjectCandidatesImpl.INSTANCE.getBundleProjects();
+				for (IProject bundleProject : bundleProjects) {
 					IPath projectPathLoc = new Path(getBundleLocationIdentifier(bundleProject));
 					if (bundlePathLoc.equals(projectPathLoc)) {
 						return bundleProject;

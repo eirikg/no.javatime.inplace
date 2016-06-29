@@ -81,6 +81,20 @@ public interface BundleLog {
 	public String logDirect(IBundleStatus status) throws BundleLogException;
 
 	/**
+	 * Logs the specified status code, bundle symbolic name, bundle state and message directly to the log.
+	 * In this case the status object is not shown in the log view until another of the log methods is used
+	 * 
+	 * @param statusCode the status code to log
+	 * @param bundle logs the bundle symbolic name and bundle state
+	 * @param exception the exception to log
+	 * @param msg the message to log
+	 * @throws BundleLogException If the specified bundle parameter is null and the
+	 * {@code #BundleContext} of this bundle is no longer valid
+	 */
+	public void logDirect(StatusCode statusCode, Bundle bundle, Exception exception, String msg)
+			throws BundleLogException;
+
+	/**
 	 * Logs the specified status code, bundle symbolic name, bundle state and message.
 	 * <p>
 	 * Uses {@link MessageFormat#format(String, Object...)} to format the message
