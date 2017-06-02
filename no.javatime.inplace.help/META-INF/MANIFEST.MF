@@ -5,7 +5,9 @@ Bundle-Version: 0.1.7.qualifier
 Bundle-Name: InPlace Help System
 Bundle-Activator: no.javatime.help.Activator
 Bundle-ManifestVersion: 2
+Bundle-ClassPath: .
 Bundle-SymbolicName: no.javatime.inplace.help;singleton:=true
 Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Bundle-ActivationPolicy: lazy
+Eclipse-BundleShape: dir
 

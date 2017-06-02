@@ -1,15 +1,12 @@
 Manifest-Version: 1.0
 Require-Bundle: org.eclipse.ui,
  org.eclipse.core.runtime
-Export-Package: no.javatime.util.messages;
-  uses:="org.eclipse.jface.resource,
-   org.eclipse.ui,
-   org.eclipse.swt.graphics,
-   org.eclipse.swt.widgets",
+Export-Package: no.javatime.util.messages,
  no.javatime.util.view
 Bundle-Vendor: JavaTime Project
 Bundle-ActivationPolicy: lazy
 Bundle-Version: 0.2.6.qualifier
+Bundle-ClassPath: .
 Bundle-Name: JavaTime Utilities
 Bundle-Activator: no.javatime.util.Activator
 Bundle-ManifestVersion: 2

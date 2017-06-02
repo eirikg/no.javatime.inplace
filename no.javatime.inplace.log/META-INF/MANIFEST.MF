@@ -3,6 +3,7 @@ Bundle-ManifestVersion: 2
 Bundle-Name: InPlace Log Viewer
 Bundle-SymbolicName: no.javatime.inplace.log;singleton:=true
 Bundle-Version: 0.1.6.qualifier
+Bundle-ClassPath: .
 Bundle-Activator: no.javatime.inplace.log.Activator
 Bundle-Vendor: JavaTime Project
 BundleLog-Service: no.javatime.inplace.log.impl.BundleLogimpl

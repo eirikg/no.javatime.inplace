@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <feature
       id="no.javatime.inplace.feature"
-      label="InPlace Bundle Activator"
-      version="0.3.1.qualifier"
+      label="InPlace Bundle Activator Core "
+      version="0.3.2.qualifier"
       provider-name="Lingo Norge">
 
    <description url="http://javatime.no/blog/inplace-activator-overview/">
-      InPlace Bundle Activator - Run and update bundles in-place on development and target platforms
+      Bundle jobs and UI components to manage bundle project properties and their life cycle
    </description>
 
    <copyright url="http://www.example.com/copyright">
@@ -174,83 +174,6 @@ Java and all Java-based trademarks are trademarks of Oracle Corporation in the U
       <import plugin="com.ibm.icu"/>
       <import plugin="org.eclipse.ui.console"/>
    </requires>
-
-   <plugin
-         id="no.javatime.inplace.source"
-         download-size="0"
-         install-size="0"
-         version="0.0.0"
-         unpack="false"/>
-
-   <plugin
-         id="no.javatime.inplace.ui.source"
-         download-size="0"
-         install-size="0"
-         version="0.0.0"
-         unpack="false"/>
-
-   <plugin
-         id="no.javatime.util.source"
-         download-size="0"
-         install-size="0"
-         version="0.0.0"
-         unpack="false"/>
-
-   <plugin
-         id="no.javatime.inplace.pl.preferences.source"
-         download-size="0"
-         install-size="0"
-         version="0.0.0"
-         unpack="false"/>
-
-   <plugin
-         id="no.javatime.inplace.dl.preferences.source"
-         download-size="0"
-         install-size="0"
-         version="0.0.0"
-         unpack="false"/>
-
-   <plugin
-         id="no.javatime.inplace.extender.source"
-         download-size="0"
-         install-size="0"
-         version="0.0.0"
-         unpack="false"/>
-
-   <plugin
-         id="no.javatime.inplace.log.source"
-         download-size="0"
-         install-size="0"
-         version="0.0.0"
-         unpack="false"/>
-
-   <plugin
-         id="no.javatime.inplace.pl.dependencies.source"
-         download-size="0"
-         install-size="0"
-         version="0.0.0"
-         unpack="false"/>
-
-   <plugin
-         id="no.javatime.inplace.region.source"
-         download-size="0"
-         install-size="0"
-         version="0.0.0"
-         unpack="false"/>
-
-   <plugin
-         id="no.javatime.inplace.pl.console.source"
-         download-size="0"
-         install-size="0"
-         version="0.0.0"
-         unpack="false"/>
-
-   <plugin
-         id="no.javatime.inplace.cmd.console.source"
-         download-size="0"
-         install-size="0"
-         version="0.0.0"
-         unpack="false"/>
 
    <plugin
          id="no.javatime.inplace.dl.preferences"

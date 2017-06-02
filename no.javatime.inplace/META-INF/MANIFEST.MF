@@ -15,6 +15,7 @@ Bundle-Version: 0.3.1.qualifier
 Bundle-Name: InPlace Core
 Bundle-Activator: no.javatime.inplace.Activator
 Bundle-ManifestVersion: 2
+Bundle-ClassPath: .
 Activate-Bundle-Service: no.javatime.inplace.bundlejobs.ActivateBundleJob
 Activate-Project-Service: no.javatime.inplace.bundlejobs.ActivateProjectJob
 Add-Bundle-Project-Service: no.javatime.inplace.builder.AddBundleProjectJob 

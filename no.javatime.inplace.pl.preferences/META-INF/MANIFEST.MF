@@ -3,6 +3,7 @@ Bundle-ManifestVersion: 2
 Bundle-Name: InPlace Preference Page
 Bundle-SymbolicName: no.javatime.inplace.pl.preferences;singleton:=true
 Bundle-Version: 0.1.7.qualifier
+Bundle-ClassPath: .
 Bundle-Activator: no.javatime.inplace.pl.preferences.Activator
 Require-Bundle: org.eclipse.ui,
  org.eclipse.core.runtime

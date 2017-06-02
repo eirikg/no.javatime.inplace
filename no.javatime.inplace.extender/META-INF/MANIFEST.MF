@@ -3,11 +3,12 @@ Bundle-ManifestVersion: 2
 Bundle-Name: InPlace Service Extender
 Bundle-SymbolicName: no.javatime.inplace.extender
 Bundle-Version: 0.1.5.qualifier
+Bundle-ClassPath: .
 Bundle-Activator: no.javatime.inplace.extender.Activator
 Bundle-Vendor: JavaTime Project
 Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Import-Package: org.eclipse.osgi.framework.util,
- org.eclipse.osgi.util;version="1.1.0",
+ org.eclipse.osgi.util,
  org.osgi.framework,
  org.osgi.util.tracker
 Bundle-ActivationPolicy: lazy

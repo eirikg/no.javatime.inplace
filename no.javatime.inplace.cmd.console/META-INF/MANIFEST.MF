@@ -4,6 +4,7 @@ Bundle-Name: InPlace Command Provider
 Command-Provider: Bundle Project Command Provider
 Bundle-SymbolicName: no.javatime.inplace.cmd.console
 Bundle-Version: 0.1.3.qualifier
+Bundle-ClassPath: .
 Bundle-Activator: no.javatime.inplace.cmd.console.Activator
 Export-Package: no.javatime.inplace.cmd.console
 Require-Bundle: org.eclipse.core.runtime,

@@ -1,11 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <site>
-   <feature url="features/no.javatime.inplace.feature_0.0.4.jar" id="no.javatime.inplace.feature" version="0.0.4">
-      <category name="no.javatime.inplace"/>
+   <description url="http://www.javatime.no">
+      InPlace Bundle Activator
+   </description>
+   <feature id="no.javatime.inplace.feature" version="0.0.0">
+      <category name="InPlace"/>
    </feature>
-   <category-def name="no.javatime.inplace" label="In-place Bundle Activator">
+   <feature id="no.javatime.inplace.feature.source" version="0.0.0">
+      <category name="InPlace"/>
+   </feature>
+   <category-def name="InPlace" label="InPlace Bundle Activator">
       <description>
-         Allows activating and deactivating Eclipse Bundles directly from the development workspace.
+         The InPlace Bundle Management Components  
       </description>
    </category-def>
+   <!--
+   <category-def name="InPlace.SDK" label="InPlace Bundle Activator SDK">
+      <description>
+         The InPlace Bundle Management SDK
+      </description>
+   </category-def>
+   -->
 </site>

@@ -1,0 +1,13 @@
+target "Inplace Neon Target Platform"
+
+// include "modules/orbit.tpd"
+
+location Eclipse-Neon "http://download.eclipse.org/releases/neon" {
+	org.eclipse.emf.common.feature.group lazy
+	org.eclipse.emf.ecore.feature.group lazy
+	org.eclipse.platform.feature.group lazy
+	org.eclipse.sdk.feature.group lazy
+//	org.eclipse.equinox.sdk.feature.group lazy
+//	org.eclipse.pde.feature.group lazy
+//	org.eclipse.jdt.feature.group lazy	
+}

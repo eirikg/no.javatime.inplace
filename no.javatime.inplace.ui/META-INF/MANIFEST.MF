@@ -10,6 +10,7 @@ Require-Bundle: org.eclipse.ui,
 Bundle-Vendor: JavaTime Project
 Bundle-ActivationPolicy: lazy
 Bundle-Version: 0.2.8.qualifier
+Bundle-ClassPath: .
 Bundle-Name: InPlace Bundle View & Menus
 Bundle-Activator: no.javatime.inplace.ui.Activator
 Bundle-ManifestVersion: 2

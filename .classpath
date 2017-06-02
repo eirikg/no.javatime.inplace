@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="no.javatime.inplace.cmd.console/src"/>
+	<classpathentry kind="src" path="no.javatime.inplace.dl.preferences/src"/>
+	<classpathentry kind="src" path="no.javatime.inplace.extender/src"/>
+	<classpathentry kind="src" path="no.javatime.inplace.help/src"/>
+	<classpathentry kind="src" path="no.javatime.inplace.pl.console/src"/>
+	<classpathentry kind="src" path="no.javatime.inplace.pl.dependencies/src"/>
+	<classpathentry kind="src" path="no.javatime.inplace.pl.preferences/src"/>
+	<classpathentry kind="src" path="no.javatime.inplace.pl.trace/src"/>
+	<classpathentry kind="src" path="no.javatime.inplace.region/src"/>
+	<classpathentry kind="src" path="no.javatime.inplace.ui/src"/>
+	<classpathentry kind="src" path="no.javatime.inplace/src"/>
+	<classpathentry kind="src" path="no.javatime.util/src"/>
+	<classpathentry kind="lib" path="no.javatime.inplace.cmd.console/target/no.javatime.inplace.cmd.console-0.1.3-SNAPSHOT.jar"/>
+	<classpathentry kind="lib" path="no.javatime.inplace.dl.preferences/target/no.javatime.inplace.dl.preferences-0.1.7-SNAPSHOT.jar"/>
+	<classpathentry kind="lib" path="no.javatime.inplace.extender/target/no.javatime.inplace.extender-0.1.5-SNAPSHOT.jar"/>
+	<classpathentry kind="lib" path="no.javatime.inplace.help/target/no.javatime.inplace.help-0.1.7-SNAPSHOT.jar"/>
+	<classpathentry kind="lib" path="no.javatime.inplace.pl.console/target/no.javatime.inplace.pl.console-0.1.4-SNAPSHOT.jar"/>
+	<classpathentry kind="lib" path="no.javatime.inplace.pl.dependencies/target/no.javatime.inplace.pl.dependencies-0.1.5-SNAPSHOT.jar"/>
+	<classpathentry kind="lib" path="no.javatime.inplace.pl.preferences/target/no.javatime.inplace.pl.preferences-0.1.7-SNAPSHOT.jar"/>
+	<classpathentry kind="lib" path="no.javatime.inplace.pl.trace/target/no.javatime.inplace.log-0.1.6-SNAPSHOT.jar"/>
+	<classpathentry kind="lib" path="no.javatime.inplace.region/target/no.javatime.inplace.region-0.2.0-SNAPSHOT.jar"/>
+	<classpathentry kind="lib" path="no.javatime.inplace.ui/target/no.javatime.inplace.ui-0.2.8-SNAPSHOT.jar"/>
+	<classpathentry kind="lib" path="no.javatime.inplace/target/no.javatime.inplace-0.3.1-SNAPSHOT.jar"/>
+	<classpathentry kind="lib" path="no.javatime.util/target/no.javatime.util-0.2.6-SNAPSHOT.jar"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="output" path="no.javatime.inplace/bin"/>
+</classpath>
