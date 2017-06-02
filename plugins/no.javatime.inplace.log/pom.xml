@@ -5,7 +5,7 @@
   	<groupId>no.javatime.inplace</groupId>
   	<artifactId>inplace-parent</artifactId>
   	<version>0.3.2-SNAPSHOT</version>
-  	<relativePath>../no.javatime.inplace.parent</relativePath>
+	<relativePath>../../packaging/no.javatime.inplace.parent</relativePath>
   </parent>
 
   <artifactId>no.javatime.inplace.log</artifactId>

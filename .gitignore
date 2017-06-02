@@ -1,1 +1,6 @@
+bin
+!*.target
+target/
 target
+class
+debug.log

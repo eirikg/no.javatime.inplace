@@ -5,10 +5,10 @@
   	<groupId>no.javatime.inplace</groupId>
   	<artifactId>inplace-parent</artifactId>
   	<version>0.3.2-SNAPSHOT</version>
-  	<relativePath>../no.javatime.inplace.parent</relativePath>
+	<relativePath>../../packaging/no.javatime.inplace.parent</relativePath>
   </parent>
 
-  <artifactId>no.javatime.inplace.region</artifactId>
+  <artifactId>no.javatime.util</artifactId>
   <packaging>eclipse-plugin</packaging>
-  <version>0.2.0-SNAPSHOT</version>
+  <version>0.2.6-SNAPSHOT</version>
 </project>

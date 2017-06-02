@@ -24,6 +24,7 @@
 	</licenses>
 
 	<properties>
+	    <tycho.scmUrl>scm:git:https://github.com/eirikg/no.javatime.inplace.git</tycho.scmUrl>
 		<tycho-version>1.0.0</tycho-version>
 		<tycho-extras-version>1.0.0</tycho-extras-version>
 		<platform-version-name>juno</platform-version-name>
@@ -32,20 +33,25 @@
 	</properties>
 
 	<modules>
-		<module>../no.javatime.inplace</module>
-		<module>../no.javatime.inplace.cmd.console</module>
-		<module>../no.javatime.inplace.dl.preferences</module>
-		<module>../no.javatime.inplace.extender</module>
-		<module>../no.javatime.inplace.help</module>
-		<module>../no.javatime.inplace.pl.console</module>
-		<module>../no.javatime.inplace.pl.dependencies</module>
-		<module>../no.javatime.inplace.pl.preferences</module>
-		<module>../no.javatime.inplace.region</module>
-		<module>../no.javatime.inplace.ui</module>
-		<module>../no.javatime.util</module>
-		<module>../no.javatime.inplace.feature</module>
-		<module>../no.javatime.inplace.p2</module>
-		<module>../no.javatime.inplace.log</module>
+		<!-- plugins -->
+		<module>../../plugins/no.javatime.inplace</module>
+		<module>../../plugins/no.javatime.inplace.cmd.console</module>
+		<module>../../plugins/no.javatime.inplace.dl.preferences</module>
+		<module>../../plugins/no.javatime.inplace.extender</module>
+		<module>../../plugins/no.javatime.inplace.help</module>
+		<module>../../plugins/no.javatime.inplace.pl.console</module>
+		<module>../../plugins/no.javatime.inplace.pl.dependencies</module>
+		<module>../../plugins/no.javatime.inplace.pl.preferences</module>
+		<module>../../plugins/no.javatime.inplace.region</module>
+		<module>../../plugins/no.javatime.inplace.ui</module>
+		<module>../../plugins/no.javatime.inplace.log</module>
+		<module>../../plugins/no.javatime.util</module>
+		
+		<!-- Features -->
+		<module>../../packaging/no.javatime.inplace.feature</module>
+
+		<!-- Update sites -->
+		<module>../../packaging/no.javatime.inplace.p2</module>
 	</modules>
 
 	<build>
@@ -81,7 +87,7 @@
 							<groupId>no.javatime.inplace</groupId>
 							<artifactId>inplace-parent</artifactId>
 							<version>0.3.2-SNAPSHOT</version>
-							<classifier>../no.javatime.inplace.targets/${target-platform-path}/inplace_${platform-version-name}</classifier>
+							<classifier>../../releng/no.javatime.inplace.targets/${target-platform-path}/inplace_${platform-version-name}</classifier>
 						</artifact>
 					</target>
 				</configuration>
