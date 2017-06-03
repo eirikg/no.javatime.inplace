@@ -27,6 +27,7 @@
 		<tycho.scmUrl>scm:git:http://github.com/eirikg/no.javatime.inplace.git</tycho.scmUrl>
 		<tycho-version>1.0.0</tycho-version>
 		<tycho-extras-version>1.0.0</tycho-extras-version>
+		<!-- Supported targets: juno, neon -->
 		<platform-version-name>juno</platform-version-name>
 		<target-platform-path>.</target-platform-path>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
