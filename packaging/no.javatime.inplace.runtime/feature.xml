@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <feature
-      id="no.javatime.inplace.feature"
-      label="InPlace Bundle Activator Core "
+      id="no.javatime.inplace.runtime"
+      label="InPlace Bundle Activator Manager "
       version="0.3.2.qualifier"
       provider-name="Lingo Norge">
 
    <description url="http://javatime.no/blog/inplace-activator-overview/">
-      Bundle jobs and UI components to manage bundle project properties and their life cycle
+      Bundle jobs and UI components to manage the life cycle of bundle projects and their properties
    </description>
 
    <copyright url="http://www.example.com/copyright">

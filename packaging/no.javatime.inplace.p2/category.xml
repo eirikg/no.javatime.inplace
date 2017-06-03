@@ -3,10 +3,10 @@
    <description url="http://www.javatime.no">
       InPlace Bundle Activator
    </description>
-   <feature id="no.javatime.inplace.feature" version="0.0.0">
+   <feature id="no.javatime.inplace.runtime" version="0.0.0">
       <category name="InPlace"/>
    </feature>
-   <feature id="no.javatime.inplace.feature.source" version="0.0.0">
+   <feature id="no.javatime.inplace.runtime.source" version="0.0.0">
       <category name="InPlace"/>
    </feature>
    <category-def name="InPlace" label="InPlace Bundle Activator">

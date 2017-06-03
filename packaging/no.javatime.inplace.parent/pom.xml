@@ -24,7 +24,7 @@
 	</licenses>
 
 	<properties>
-	    <tycho.scmUrl>scm:git:https://github.com/eirikg/no.javatime.inplace.git</tycho.scmUrl>
+		<tycho.scmUrl>scm:git:http://github.com/eirikg/no.javatime.inplace.git</tycho.scmUrl>
 		<tycho-version>1.0.0</tycho-version>
 		<tycho-extras-version>1.0.0</tycho-extras-version>
 		<platform-version-name>juno</platform-version-name>
@@ -33,25 +33,7 @@
 	</properties>
 
 	<modules>
-		<!-- plugins -->
-		<module>../../plugins/no.javatime.inplace</module>
-		<module>../../plugins/no.javatime.inplace.cmd.console</module>
-		<module>../../plugins/no.javatime.inplace.dl.preferences</module>
-		<module>../../plugins/no.javatime.inplace.extender</module>
-		<module>../../plugins/no.javatime.inplace.help</module>
-		<module>../../plugins/no.javatime.inplace.pl.console</module>
-		<module>../../plugins/no.javatime.inplace.pl.dependencies</module>
-		<module>../../plugins/no.javatime.inplace.pl.preferences</module>
-		<module>../../plugins/no.javatime.inplace.region</module>
-		<module>../../plugins/no.javatime.inplace.ui</module>
-		<module>../../plugins/no.javatime.inplace.log</module>
-		<module>../../plugins/no.javatime.util</module>
-		
-		<!-- Features -->
-		<module>../../packaging/no.javatime.inplace.feature</module>
-
-		<!-- Update sites -->
-		<module>../../packaging/no.javatime.inplace.p2</module>
+		<!-- Modules are contributed by specific profiles, see below -->
 	</modules>
 
 	<build>
@@ -92,12 +74,14 @@
 					</target>
 				</configuration>
 			</plugin>
-			<!-- Generate a source feature based on the original feature with 
-				label: "<original feature> Source Bundles" -->
+			<!-- Generate a source feature based on the original feature with label: 
+				"<original feature> Source Bundles" -->
 			<plugin>
 				<groupId>org.eclipse.tycho.extras</groupId>
 				<artifactId>tycho-source-feature-plugin</artifactId>
 				<version>${tycho-extras-version}</version>
+				<!-- Workaround to Bug 411443: Avoids extremely long filenames in META-INF/maven. -->
+				<!-- See https://bugs.eclipse.org/bugs/show_bug.cgi?id=411443 -->
 				<configuration>
 					<archive>
 						<addMavenDescriptor>false</addMavenDescriptor>
@@ -198,7 +182,39 @@
 	</build>
 	<profiles>
 		<profile>
+			<id>full</id>
+			<activation>
+				<activeByDefault>true</activeByDefault>
+			</activation>
+			<properties>
+				<target-platform-path>.</target-platform-path>
+			</properties>
+			<modules>
+				<!-- plugins -->
+				<module>../../plugins/no.javatime.inplace</module>
+				<module>../../plugins/no.javatime.inplace.cmd.console</module>
+				<module>../../plugins/no.javatime.inplace.dl.preferences</module>
+				<module>../../plugins/no.javatime.inplace.extender</module>
+				<module>../../plugins/no.javatime.inplace.help</module>
+				<module>../../plugins/no.javatime.inplace.pl.console</module>
+				<module>../../plugins/no.javatime.inplace.pl.dependencies</module>
+				<module>../../plugins/no.javatime.inplace.pl.preferences</module>
+				<module>../../plugins/no.javatime.inplace.region</module>
+				<module>../../plugins/no.javatime.inplace.ui</module>
+				<module>../../plugins/no.javatime.inplace.log</module>
+				<module>../../plugins/no.javatime.util</module>
+
+				<!-- Features -->
+				<module>../../packaging/no.javatime.inplace.runtime</module>
+
+				<!-- Update sites -->
+				<module>../../packaging/no.javatime.inplace.p2</module>
+			</modules>
+		</profile>
+
+		<profile>
 			<id>sign</id>
+			<!-- <activation> <activeByDefault>true</activeByDefault> </activation> -->
 			<activation>
 				<property>
 					<name>BUILD_SIGN</name>
