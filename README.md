@@ -14,9 +14,13 @@ The build uses [Tycho](http://www.eclipse.org/tycho/).
  
 To launch a complete build, select: 
 ```
-Run As | Maven clean
+Run As | Maven build...; and Run the goal; clean package
 ```
 from the parent pom file in project `packaging/no.javatime.inplace.parent`.
+
+After a build the local update site can be found in: `packaging/no.javatime.inplace.parent/target/repository`.
+
+### Targets
 
 By default the build uses a Juno-based target platform. To use a different target (e.g. neon) see the
 platform-version-name attribute in the parent pom file in the `packaging/no.javatime.inplace.parent` project.
