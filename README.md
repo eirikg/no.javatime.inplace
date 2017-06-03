@@ -1,12 +1,12 @@
 # InPlace Bundle Activator
 Bundle Activator that manages and executes source bundles and plug-ins contained in an Eclipse development instance
 
-For an overview see: http://javatime.no/blog/inplace-activator-overview/
+For an overview see: [InPlace Activator Overview](http://javatime.no/blog/inplace-activator-overview/).
 
 ### Installing
 
-To install see: [Eclipse MarketPlace] (http://marketplace.eclipse.org/content/inplace-bundle-activator) 
-or [Update Site] (http://javatime.no/blog/download-2).
+To install see: [Eclipse MarketPlace](http://marketplace.eclipse.org/content/inplace-bundle-activator/) 
+or [Update Site](http://javatime.no/blog/download-2/).
 
 ### Building
 
