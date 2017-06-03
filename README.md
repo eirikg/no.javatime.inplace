@@ -18,7 +18,7 @@ Run As | Maven build...; and Run the goal; clean package
 ```
 from the parent pom file in project `packaging/no.javatime.inplace.parent`.
 
-After a build the local update site can be found in: `packaging/no.javatime.inplace.parent/target/repository`.
+After a build, the local update site can be found in: `packaging/no.javatime.inplace.p2/target/repository`.
 
 ### Targets
 
