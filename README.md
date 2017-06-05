@@ -12,11 +12,10 @@ or [InPlace Install Site](http://javatime.no/blog/download-2/).
 
 The build uses [Tycho](http://www.eclipse.org/tycho/).
  
-To launch a complete build, select: 
+To launch a complete build; from the parent pom file in project `packaging/no.javatime.inplace.parent` select: 
 ```
 Run As | Maven build...; and Run the goal; clean package
 ```
-from the parent pom file in project `packaging/no.javatime.inplace.parent`.
 
 After a build, the local update site can be found in: `packaging/no.javatime.inplace.p2/target/repository`.
 
