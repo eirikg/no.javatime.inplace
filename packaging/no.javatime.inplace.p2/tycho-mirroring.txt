@@ -29,3 +29,33 @@
 			</plugin>
 		</plugins>
 	</build>
+	
+	Copy new repo to update site
+		<build>
+		<plugins>
+			<plugin>
+				<groupId>org.eclipse.tycho.extras</groupId>
+				<artifactId>tycho-p2-extras-plugin</artifactId>
+				<version>${tycho-version}</version>
+				<executions>
+					<execution>
+						<id>copy-to-central-site</id>
+						<phase>install</phase>
+						<goals>
+							<goal>mirror</goal>
+						</goals>
+						<configuration>
+							<source>
+								<repository>
+									<url>${project.baseUri}/target/repository</url>
+								</repository>
+							</source>
+							<append>true</append>
+							<destination>C:\Dev\exports\inplace.p2</destination>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
+	
