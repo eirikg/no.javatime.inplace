@@ -1,3 +1,5 @@
+
+	<!-- Copy old style update site to p2 repo -->
 	<build>
 		<plugins>
 			<plugin>
@@ -30,7 +32,7 @@
 		</plugins>
 	</build>
 	
-	Copy new repo to update site
+	<!-- Copy new repo to update site -->
 		<build>
 		<plugins>
 			<plugin>

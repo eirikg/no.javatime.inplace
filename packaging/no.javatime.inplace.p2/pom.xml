@@ -15,11 +15,5 @@
 		<tycho-extras-version>1.0.0</tycho-extras-version>
 	</properties>
 
-	<!-- Add mirroring here -->
-	<!-- <build> <plugins> <plugin> <groupId>org.eclipse.tycho</groupId> <artifactId>tycho-p2-repository-plugin</artifactId> 
-		<version>${tycho.version}</version> -->
-	<!-- <configuration> -->
-	<!-- <includeAllDependencies>true</includeAllDependencies> -->
-	<!-- </configuration> -->
-	<!-- </plugin> </plugins> </build> -->
+	<!-- Add mirroring here. See: .\tycho-mirroring.txt-->
 </project>
