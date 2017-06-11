@@ -1,0 +1,19 @@
+allprojects  {
+  apply plugin: 'maven'
+
+  group = 'no.javatime.inplace'
+  version = '0.3.2-SNAPSHOT'
+}
+
+subprojects {
+  apply plugin: 'java'
+  sourceCompatibility = 1.8
+  targetCompatibility = 1.7
+
+  
+  repositories {
+    mavenLocal()
+    
+    maven { url "http://repo.maven.apache.org/maven2" }
+  }
+}

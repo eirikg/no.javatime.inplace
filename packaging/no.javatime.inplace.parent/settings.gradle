@@ -1,0 +1,30 @@
+rootProject.name = 'no.javatime.inplace.no'
+include ':no.javatime.inplace'
+include ':no.javatime.inplace.cmd.console'
+include ':no.javatime.inplace.dl.preferences'
+include ':no.javatime.inplace.extender'
+include ':no.javatime.inplace.help'
+include ':no.javatime.inplace.pl.console'
+include ':no.javatime.inplace.pl.dependencies'
+include ':no.javatime.inplace.pl.preferences'
+include ':no.javatime.inplace.region'
+include ':no.javatime.inplace.ui'
+include ':no.javatime.inplace.log'
+include ':no.javatime.util'
+include ':no.javatime.inplace.runtime'
+include ':no.javatime.inplace.p2'
+
+project(':no.javatime.inplace').projectDir = "$rootDir/../../plugins/no.javatime.inplace" as File
+project(':no.javatime.inplace.cmd.console').projectDir = "$rootDir/../../plugins/no.javatime.inplace.cmd.console" as File
+project(':no.javatime.inplace.dl.preferences').projectDir = "$rootDir/../../plugins/no.javatime.inplace.dl.preferences" as File
+project(':no.javatime.inplace.extender').projectDir = "$rootDir/../../plugins/no.javatime.inplace.extender" as File
+project(':no.javatime.inplace.help').projectDir = "$rootDir/../../plugins/no.javatime.inplace.help" as File
+project(':no.javatime.inplace.pl.console').projectDir = "$rootDir/../../plugins/no.javatime.inplace.pl.console" as File
+project(':no.javatime.inplace.pl.dependencies').projectDir = "$rootDir/../../plugins/no.javatime.inplace.pl.dependencies" as File
+project(':no.javatime.inplace.pl.preferences').projectDir = "$rootDir/../../plugins/no.javatime.inplace.pl.preferences" as File
+project(':no.javatime.inplace.region').projectDir = "$rootDir/../../plugins/no.javatime.inplace.region" as File
+project(':no.javatime.inplace.ui').projectDir = "$rootDir/../../plugins/no.javatime.inplace.ui" as File
+project(':no.javatime.inplace.log').projectDir = "$rootDir/../../plugins/no.javatime.inplace.log" as File
+project(':no.javatime.util').projectDir = "$rootDir/../../plugins/no.javatime.util" as File
+project(':no.javatime.inplace.runtime').projectDir = "$rootDir/../no.javatime.inplace.runtime" as File
+project(':no.javatime.inplace.p2').projectDir = "$rootDir/../no.javatime.inplace.p2" as File
