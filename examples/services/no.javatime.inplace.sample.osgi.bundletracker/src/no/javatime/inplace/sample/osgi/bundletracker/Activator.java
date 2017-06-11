@@ -19,6 +19,9 @@ import org.osgi.util.tracker.BundleTrackerCustomizer;
 
 /**
  * Prints bundle life cycle changes to the console
+ * <p>
+ * Use the InPlace Bundle Activator Console to view output in the Eclipse instance where you
+ * activate the sample bundle tracker. Make the Bundle Console visible from the Bundle main view
  */
 public class Activator implements BundleActivator {
 
@@ -136,7 +139,9 @@ public class Activator implements BundleActivator {
 		case BundleEvent.STARTED:
 			return "STARTED";
 		case BundleEvent.STARTING:
-			return "Starting";
+			return "STARTING";
+		case BundleEvent.STOPPING:
+			return "STOPPING";
 		case BundleEvent.STOPPED:
 			return "STOPPED";
 		case BundleEvent.UNINSTALLED:
