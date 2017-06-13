@@ -36,8 +36,12 @@
 	<modules>
 		<!-- Modules are contributed by specific profiles, see below -->
 	</modules>
-
 	<build>
+		<resources>
+			<resource>
+				<directory>../../releng/no.javatime.inplace.parent/src/resources</directory>
+			</resource>
+		</resources>
 		<sourceDirectory>src</sourceDirectory>
 		<plugins>
 			<!-- enable tycho build extension -->
@@ -56,7 +60,7 @@
 					<format>'v'yyyyMMdd-HHmm</format>
 				</configuration>
 			</plugin>
-			
+
 			<plugin>
 				<groupId>org.eclipse.tycho</groupId>
 				<artifactId>target-platform-configuration</artifactId>
@@ -114,6 +118,14 @@
 						</goals>
 					</execution>
 				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-resources-plugin</artifactId>
+				<version>2.4.1</version>
+				<configuration>
+					<encoding>ISO-8859-1</encoding>
+				</configuration>
 			</plugin>
 			<plugin>
 				<groupId>org.eclipse.tycho</groupId>
