@@ -28,7 +28,7 @@ public class Activator implements BundleActivator {
 	private MyBundleTracker<?> bundleTracker;
 
 	public void start(BundleContext context) throws Exception {
-		System.out.println("Starting Bundle Tracker");
+		System.out.println("Start tracking bundles");
 		int trackStates = Bundle.STARTING | Bundle.STOPPING | Bundle.RESOLVED | Bundle.INSTALLED
 				| Bundle.UNINSTALLED;
 		bundleTracker = new MyBundleTracker<>(context, trackStates, null);
@@ -36,7 +36,7 @@ public class Activator implements BundleActivator {
 	}
 
 	public void stop(BundleContext context) throws Exception {
-		System.out.println("Stopping Bundle Tracker");
+		System.out.println("Stop tracking bundles");
 		bundleTracker.close();
 		bundleTracker = null;
 	}
@@ -54,7 +54,7 @@ public class Activator implements BundleActivator {
 		public T addingBundle(Bundle bundle, BundleEvent event) {
 			// Typically we would inspect bundle, to figure out if we want to
 			// track it or not. If we don't want to track return null, otherwise
-			// return an object.
+			// return the bundle object.
 			print(bundle, event);
 			@SuppressWarnings("unchecked")
 			T result = (T) bundle;

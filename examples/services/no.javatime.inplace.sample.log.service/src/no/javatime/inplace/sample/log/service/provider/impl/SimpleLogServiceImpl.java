@@ -1,6 +1,6 @@
-package no.javatime.inplace.sample.log.service.impl;
+package no.javatime.inplace.sample.log.service.provider.impl;
 
-import no.javatime.inplace.sample.log.service.SimpleLogService;
+import no.javatime.inplace.sample.log.service.provider.SimpleLogService;
 
 public class SimpleLogServiceImpl implements SimpleLogService {
 

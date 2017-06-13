@@ -3,6 +3,7 @@ Bundle-ManifestVersion: 2
 Bundle-Name: Bundle Tracker Example
 Bundle-SymbolicName: no.javatime.inplace.sample.osgi.bundletracker
 Bundle-Version: 1.0.0
+Bundle-ClassPath: bin
 Bundle-Activator: no.javatime.inplace.sample.osgi.bundletracker.Activator
 Bundle-Vendor: EclipseSource
 Bundle-RequiredExecutionEnvironment: JavaSE-1.7

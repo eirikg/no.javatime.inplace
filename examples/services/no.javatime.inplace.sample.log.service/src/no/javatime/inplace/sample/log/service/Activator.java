@@ -7,23 +7,27 @@ import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceRegistration;
 import org.osgi.util.tracker.ServiceTracker;
 
-import no.javatime.inplace.sample.log.service.impl.SimpleLogServiceImpl;
+import no.javatime.inplace.sample.log.service.provider.SimpleLogService;
+import no.javatime.inplace.sample.log.service.provider.impl.SimpleLogServiceImpl;
 
-class Activator implements BundleActivator {
+/**
+ * Register a simple log service for consumption, and use the registered log
+ * service to log a message when the log service is registered and unregistered
+ */
+public class Activator implements BundleActivator {
 
 	private ServiceTracker<SimpleLogService, SimpleLogService> simpleLogServiceTracker;
 	private SimpleLogService simpleLogService;
-	private ServiceRegistration<?> sr;
-	
+	private ServiceRegistration<?> serviceRegistration;
+
 	public void start(BundleContext context) throws Exception {
-		// register the simple log service as a service
-		sr = context.registerService(SimpleLogService.class.getName(), 
-				new SimpleLogServiceImpl(),
-				new Hashtable<String, Object>());
-		// Use your own registered service to log messages
+		// register the simple log service for consumption
+		serviceRegistration = context.registerService(SimpleLogService.class.getName(),
+				new SimpleLogServiceImpl(), new Hashtable<String, Object>());
+		// Consume your own registered service to log messages
 		// create a tracker to track the registered simple log service
-		simpleLogServiceTracker = new ServiceTracker<SimpleLogService, SimpleLogService>(context,
-				SimpleLogService.class.getName(), null);
+		simpleLogServiceTracker = new ServiceTracker<SimpleLogService, SimpleLogService>(
+				context, SimpleLogService.class.getName(), null);
 		simpleLogServiceTracker.open();
 		// grab the service
 		simpleLogService = simpleLogServiceTracker.getService();
@@ -37,7 +41,7 @@ class Activator implements BundleActivator {
 		// close the service tracker and unregister the simple log service
 		simpleLogServiceTracker.close();
 		simpleLogServiceTracker = null;
-		sr.unregister();
+		serviceRegistration.unregister();
 		simpleLogService = null;
 	}
 

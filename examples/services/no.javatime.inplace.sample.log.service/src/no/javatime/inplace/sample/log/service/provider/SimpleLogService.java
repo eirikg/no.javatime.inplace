@@ -1,4 +1,4 @@
-package no.javatime.inplace.sample.log.service;
+package no.javatime.inplace.sample.log.service.provider;
 
 public interface SimpleLogService {
 

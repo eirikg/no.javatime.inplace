@@ -4,7 +4,7 @@ import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 import org.osgi.util.tracker.ServiceTracker;
 
-import no.javatime.inplace.sample.log.service.SimpleLogService;
+import no.javatime.inplace.sample.log.service.provider.SimpleLogService;
 
 public class Activator implements BundleActivator {
 	
@@ -33,7 +33,7 @@ public class Activator implements BundleActivator {
 		return null != logService ? logService : new AlternativeLog();
 	}
 
-	private class AlternativeLog implements SimpleLogService {
+	private final class AlternativeLog implements SimpleLogService {
 		
 		@Override
 		public void log(String msg) {
