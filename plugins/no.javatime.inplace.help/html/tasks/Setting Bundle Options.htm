@@ -7,6 +7,9 @@
 <!--
  /* Font Definitions */
  @font-face
+	{font-family:Wingdings;
+	panose-1:5 0 0 0 0 0 0 0 0 0;}
+@font-face
 	{font-family:"Cambria Math";
 	panose-1:2 4 5 3 5 4 6 3 2 4;}
 @font-face
@@ -18,6 +21,9 @@
 @font-face
 	{font-family:Tahoma;
 	panose-1:2 11 6 4 3 5 4 4 2 4;}
+@font-face
+	{font-family:"Segoe UI";
+	panose-1:2 11 5 2 4 2 4 2 2 3;}
  /* Style Definitions */
  p.MsoNormal, li.MsoNormal, div.MsoNormal
 	{margin-top:0cm;
@@ -108,6 +114,40 @@ p.MsoTitle, li.MsoTitle, div.MsoTitle
 	margin-right:0cm;
 	margin-bottom:15.0pt;
 	margin-left:0cm;
+	border:none;
+	padding:0cm;
+	font-size:26.0pt;
+	font-family:"Cambria",serif;
+	color:#17365D;
+	letter-spacing:.25pt;}
+p.MsoTitleCxSpFirst, li.MsoTitleCxSpFirst, div.MsoTitleCxSpFirst
+	{mso-style-link:"Title Char";
+	margin:0cm;
+	margin-bottom:.0001pt;
+	border:none;
+	padding:0cm;
+	font-size:26.0pt;
+	font-family:"Cambria",serif;
+	color:#17365D;
+	letter-spacing:.25pt;}
+p.MsoTitleCxSpMiddle, li.MsoTitleCxSpMiddle, div.MsoTitleCxSpMiddle
+	{mso-style-link:"Title Char";
+	margin:0cm;
+	margin-bottom:.0001pt;
+	border:none;
+	padding:0cm;
+	font-size:26.0pt;
+	font-family:"Cambria",serif;
+	color:#17365D;
+	letter-spacing:.25pt;}
+p.MsoTitleCxSpLast, li.MsoTitleCxSpLast, div.MsoTitleCxSpLast
+	{mso-style-link:"Title Char";
+	margin-top:0cm;
+	margin-right:0cm;
+	margin-bottom:15.0pt;
+	margin-left:0cm;
+	border:none;
+	padding:0cm;
 	font-size:26.0pt;
 	font-family:"Cambria",serif;
 	color:#17365D;
@@ -150,6 +190,32 @@ p.MsoListParagraph, li.MsoListParagraph, div.MsoListParagraph
 	line-height:115%;
 	font-size:11.0pt;
 	font-family:"Calibri",sans-serif;}
+p.MsoListParagraphCxSpFirst, li.MsoListParagraphCxSpFirst, div.MsoListParagraphCxSpFirst
+	{margin-top:0cm;
+	margin-right:0cm;
+	margin-bottom:0cm;
+	margin-left:36.0pt;
+	margin-bottom:.0001pt;
+	line-height:115%;
+	font-size:11.0pt;
+	font-family:"Calibri",sans-serif;}
+p.MsoListParagraphCxSpMiddle, li.MsoListParagraphCxSpMiddle, div.MsoListParagraphCxSpMiddle
+	{margin-top:0cm;
+	margin-right:0cm;
+	margin-bottom:0cm;
+	margin-left:36.0pt;
+	margin-bottom:.0001pt;
+	line-height:115%;
+	font-size:11.0pt;
+	font-family:"Calibri",sans-serif;}
+p.MsoListParagraphCxSpLast, li.MsoListParagraphCxSpLast, div.MsoListParagraphCxSpLast
+	{margin-top:0cm;
+	margin-right:0cm;
+	margin-bottom:10.0pt;
+	margin-left:36.0pt;
+	line-height:115%;
+	font-size:11.0pt;
+	font-family:"Calibri",sans-serif;}
 p.MsoTocHeading, li.MsoTocHeading, div.MsoTocHeading
 	{margin-top:24.0pt;
 	margin-right:0cm;
@@ -162,6 +228,12 @@ p.MsoTocHeading, li.MsoTocHeading, div.MsoTocHeading
 	font-family:"Cambria",serif;
 	color:#365F91;
 	font-weight:bold;}
+span.HeaderChar
+	{mso-style-name:"Header Char";
+	mso-style-link:Header;}
+span.FooterChar
+	{mso-style-name:"Footer Char";
+	mso-style-link:Footer;}
 span.Heading1Char
 	{mso-style-name:"Heading 1 Char";
 	mso-style-link:"Heading 1";
@@ -180,25 +252,10 @@ span.Heading3Char
 	font-family:"Cambria",serif;
 	color:#4F81BD;
 	font-weight:bold;}
-p.msonormal0, li.msonormal0, div.msonormal0
-	{mso-style-name:msonormal;
-	margin-right:0cm;
-	margin-bottom:19.5pt;
-	margin-left:0cm;
-	font-size:12.0pt;
-	font-family:"Times New Roman",serif;}
-span.HeaderChar
-	{mso-style-name:"Header Char";
-	mso-style-link:Header;}
-span.FooterChar
-	{mso-style-name:"Footer Char";
-	mso-style-link:Footer;}
-span.TitleChar
-	{mso-style-name:"Title Char";
-	mso-style-link:Title;
-	font-family:"Cambria",serif;
-	color:#17365D;
-	letter-spacing:.25pt;}
+span.BalloonTextChar
+	{mso-style-name:"Balloon Text Char";
+	mso-style-link:"Balloon Text";
+	font-family:"Tahoma",sans-serif;}
 span.SubtitleChar
 	{mso-style-name:"Subtitle Char";
 	mso-style-link:Subtitle;
@@ -206,813 +263,738 @@ span.SubtitleChar
 	color:#4F81BD;
 	letter-spacing:.75pt;
 	font-style:italic;}
-span.BalloonTextChar
-	{mso-style-name:"Balloon Text Char";
-	mso-style-link:"Balloon Text";
-	font-family:"Tahoma",sans-serif;}
-p.msotitlecxspfirst, li.msotitlecxspfirst, div.msotitlecxspfirst
-	{mso-style-name:msotitlecxspfirst;
-	margin:0cm;
-	margin-bottom:.0001pt;
-	font-size:26.0pt;
+span.TitleChar
+	{mso-style-name:"Title Char";
+	mso-style-link:Title;
 	font-family:"Cambria",serif;
 	color:#17365D;
 	letter-spacing:.25pt;}
-p.msotitlecxspmiddle, li.msotitlecxspmiddle, div.msotitlecxspmiddle
-	{mso-style-name:msotitlecxspmiddle;
-	margin:0cm;
-	margin-bottom:.0001pt;
-	font-size:26.0pt;
-	font-family:"Cambria",serif;
-	color:#17365D;
-	letter-spacing:.25pt;}
-p.msotitlecxsplast, li.msotitlecxsplast, div.msotitlecxsplast
-	{mso-style-name:msotitlecxsplast;
-	margin-top:0cm;
-	margin-right:0cm;
-	margin-bottom:15.0pt;
-	margin-left:0cm;
-	font-size:26.0pt;
-	font-family:"Cambria",serif;
-	color:#17365D;
-	letter-spacing:.25pt;}
-p.msolistparagraphcxspfirst, li.msolistparagraphcxspfirst, div.msolistparagraphcxspfirst
-	{mso-style-name:msolistparagraphcxspfirst;
-	margin-top:0cm;
-	margin-right:0cm;
-	margin-bottom:0cm;
-	margin-left:36.0pt;
-	margin-bottom:.0001pt;
-	line-height:115%;
-	font-size:11.0pt;
-	font-family:"Calibri",sans-serif;}
-p.msolistparagraphcxspmiddle, li.msolistparagraphcxspmiddle, div.msolistparagraphcxspmiddle
-	{mso-style-name:msolistparagraphcxspmiddle;
-	margin-top:0cm;
-	margin-right:0cm;
-	margin-bottom:0cm;
-	margin-left:36.0pt;
-	margin-bottom:.0001pt;
-	line-height:115%;
-	font-size:11.0pt;
-	font-family:"Calibri",sans-serif;}
-p.msolistparagraphcxsplast, li.msolistparagraphcxsplast, div.msolistparagraphcxsplast
-	{mso-style-name:msolistparagraphcxsplast;
-	margin-top:0cm;
-	margin-right:0cm;
-	margin-bottom:10.0pt;
-	margin-left:36.0pt;
-	line-height:115%;
-	font-size:11.0pt;
-	font-family:"Calibri",sans-serif;}
-p.msochpdefault, li.msochpdefault, div.msochpdefault
-	{mso-style-name:msochpdefault;
-	margin-right:0cm;
-	margin-bottom:19.5pt;
-	margin-left:0cm;
-	font-size:12.0pt;
-	font-family:"Calibri",sans-serif;}
-p.msopapdefault, li.msopapdefault, div.msopapdefault
-	{mso-style-name:msopapdefault;
-	margin-right:0cm;
-	margin-bottom:10.0pt;
-	margin-left:0cm;
-	line-height:115%;
-	font-size:12.0pt;
-	font-family:"Times New Roman",serif;}
 .MsoChpDefault
-	{font-size:10.0pt;}
-@page WordSection1
+	{font-family:"Calibri",sans-serif;}
+.MsoPapDefault
+	{margin-bottom:10.0pt;
+	line-height:115%;}
+ /* Page Definitions */
+ @page WordSection1
 	{size:595.3pt 841.9pt;
 	margin:70.85pt 70.85pt 70.85pt 70.85pt;}
 div.WordSection1
 	{page:WordSection1;}
+ /* List Definitions */
+ ol
+	{margin-bottom:0cm;}
+ul
+	{margin-bottom:0cm;}
 -->
 </style>
 
 </head>
 
-<body lang=EN-US link=blue vlink=purple>
+<body lang=NO-BOK link=blue vlink=purple>
 
 <div class=WordSection1>
 
-<p class=MsoTitle>Bundle Options&nbsp;</p>
+<div style='border:none;border-bottom:solid #4F81BD 1.0pt;padding:0cm 0cm 4.0pt 0cm'>
 
-<p class=MsoTocHeading>Contents</p>
+<p class=MsoTitle><span lang=EN-US>Bundle Options</span></p>
 
-<p class=MsoToc1><span class=MsoHyperlink><a href="#_Toc434141767">How to<span
-style='color:windowtext;display:none;text-decoration:none'>. 1</span></a></span></p>
+</div>
 
-<p class=MsoToc1><span class=MsoHyperlink><a href="#_Toc434141768">Setting
-Properties in the New Plug-in or OSGi Bundle Project Wizard<span
-style='color:windowtext;display:none;text-decoration:none'>. 1</span></a></span></p>
+<p class=MsoTocHeading><span lang=EN-US>Contents</span></p>
 
-<p class=MsoToc2><span class=MsoHyperlink><a href="#_Toc434141769">Output
-folder<span style='color:windowtext;display:none;text-decoration:none'>. 1</span></a></span></p>
+<p class=MsoToc1><span lang=EN-US><a href="#_Toc350373601">How to<span
+style='color:windowtext;display:none;text-decoration:none'>. </span><span
+style='color:windowtext;display:none;text-decoration:none'>2</span></a></span></p>
 
-<p class=MsoToc2><span class=MsoHyperlink><a href="#_Toc434141770">Target
-Platform<span style='color:windowtext;display:none;text-decoration:none'>.. 1</span></a></span></p>
+<p class=MsoToc1><span lang=EN-US><a href="#_Toc350373602">Setting Properties
+in the New Plug-in or OSGi Bundle Project Wizard<span style='color:windowtext;
+display:none;text-decoration:none'>. </span><span
+style='color:windowtext;display:none;text-decoration:none'>2</span></a></span></p>
 
-<p class=MsoToc2><span class=MsoHyperlink><a href="#_Toc434141771">UI
-Contributions<span style='color:windowtext;display:none;text-decoration:none'>.
-1</span></a></span></p>
+<p class=MsoToc2><span lang=EN-US><a href="#_Toc350373603">Output folder<span
+style='color:windowtext;display:none;text-decoration:none'>. </span><span
+style='color:windowtext;display:none;text-decoration:none'>2</span></a></span></p>
 
-<p class=MsoToc1><span class=MsoHyperlink><a href="#_Toc434141772">Partial
-Dependencies<span style='color:windowtext;display:none;text-decoration:none'>.
-1</span></a></span></p>
+<p class=MsoToc2><span lang=EN-US><a href="#_Toc350373604">Target Platform<span
+style='color:windowtext;display:none;text-decoration:none'>.. </span><span
+style='color:windowtext;display:none;text-decoration:none'>3</span></a></span></p>
 
-<p class=MsoToc2><span class=MsoHyperlink><a href="#_Toc434141773">Default
-values<span style='color:windowtext;display:none;text-decoration:none'>. 1</span></a></span></p>
+<p class=MsoToc2><span lang=EN-US><a href="#_Toc350373605">UI Contributions<span
+style='color:windowtext;display:none;text-decoration:none'>. </span><span
+style='color:windowtext;display:none;text-decoration:none'>3</span></a></span></p>
 
-<p class=MsoToc2><span class=MsoHyperlink><a href="#_Toc434141774">Sets and
-Graphs<span style='color:windowtext;display:none;text-decoration:none'>. 1</span></a></span></p>
+<p class=MsoToc1><span lang=EN-US><a href="#_Toc350373606">Partial Dependencies<span
+style='color:windowtext;display:none;text-decoration:none'>. </span><span
+style='color:windowtext;display:none;text-decoration:none'>4</span></a></span></p>
 
-<p class=MsoToc2><span class=MsoHyperlink><a href="#_Toc434141775">Interpreting
+<p class=MsoToc2><span lang=EN-US><a href="#_Toc350373607">Default values<span
+style='color:windowtext;display:none;text-decoration:none'>. </span><span
+style='color:windowtext;display:none;text-decoration:none'>4</span></a></span></p>
+
+<p class=MsoToc2><span lang=EN-US><a href="#_Toc350373608">Sets and Graphs<span
+style='color:windowtext;display:none;text-decoration:none'>. </span><span
+style='color:windowtext;display:none;text-decoration:none'>5</span></a></span></p>
+
+<p class=MsoToc2><span lang=EN-US><a href="#_Toc350373609">How to interpret the
+different Dependency Options<span style='color:windowtext;display:none;
+text-decoration:none'>. </span><span
+style='color:windowtext;display:none;text-decoration:none'>5</span></a></span></p>
+
+<p class=MsoToc3><span lang=EN-US><a href="#_Toc350373610">Build Errors and
 Dependency Options<span style='color:windowtext;display:none;text-decoration:
-none'>. 1</span></a></span></p>
+none'>. </span><span
+style='color:windowtext;display:none;text-decoration:none'>6</span></a></span></p>
 
-<p class=MsoToc3><span class=MsoHyperlink><a href="#_Toc434141776">Build Errors
-and Dependency Options<span style='color:windowtext;display:none;text-decoration:
-none'>. 1</span></a></span></p>
+<p class=MsoToc2><span lang=EN-US><a href="#_Toc350373611">Global Bundle
+commands<span style='color:windowtext;display:none;text-decoration:none'>. </span><span
+style='color:windowtext;display:none;text-decoration:none'>6</span></a></span></p>
 
-<p class=MsoToc2><span class=MsoHyperlink><a href="#_Toc434141777">Global
-Bundle commands<span style='color:windowtext;display:none;text-decoration:none'>.
-1</span></a></span></p>
+<p class=MsoToc1><span lang=EN-US><a href="#_Toc350373612">Refresh on Update<span
+style='color:windowtext;display:none;text-decoration:none'>. </span><span
+style='color:windowtext;display:none;text-decoration:none'>6</span></a></span></p>
 
-<p class=MsoToc1><span class=MsoHyperlink><a href="#_Toc434141778">Bundle
-Terminate Settings for OSGi Start and Stop Operations<span style='color:windowtext;
-display:none;text-decoration:none'>. 1</span></a></span></p>
+<p class=MsoToc1><span lang=EN-US><a href="#_Toc350373613">Update on Build<span
+style='color:windowtext;display:none;text-decoration:none'>. </span><span
+style='color:windowtext;display:none;text-decoration:none'>7</span></a></span></p>
 
-<p class=MsoToc1><span class=MsoHyperlink><a href="#_Toc434141779">Trapping
-Interrupts<span style='color:windowtext;display:none;text-decoration:none'>. 1</span></a></span></p>
-
-<p class=MsoToc1><span class=MsoHyperlink><a href="#_Toc434141780">Update on
-Build<span style='color:windowtext;display:none;text-decoration:none'>. 1</span></a></span></p>
-
-<p class=MsoToc1><span class=MsoHyperlink><a href="#_Toc434141781">Activate Bundle
-Projects with Java Build Errors<span style='color:windowtext;display:none;
-text-decoration:none'>. 1</span></a></span></p>
-
-<p class=MsoToc1><span class=MsoHyperlink><a href="#_Toc434141782">Refresh on
-Update<span style='color:windowtext;display:none;text-decoration:none'>. 1</span></a></span></p>
-
-<p class=MsoToc1><span class=MsoHyperlink><a href="#_Toc434141783">Update
+<p class=MsoToc1><span lang=EN-US><a href="#_Toc350373614">Update
 Bundle-ClassPath on Activate/Deactivate<span style='color:windowtext;
-display:none;text-decoration:none'>. 1</span></a></span></p>
+display:none;text-decoration:none'>. </span><span
+style='color:windowtext;display:none;text-decoration:none'>7</span></a></span></p>
 
-<p class=MsoToc2><span class=MsoHyperlink><a href="#_Toc434141784">Use the
-osgi.dev System Property<span style='color:windowtext;display:none;text-decoration:
-none'>. 1</span></a></span></p>
+<p class=MsoToc2><span lang=EN-US><a href="#_Toc350373615">Use the osgi.dev
+System Property<span style='color:windowtext;display:none;text-decoration:none'>. </span><span
+style='color:windowtext;display:none;text-decoration:none'>8</span></a></span></p>
 
-<p class=MsoToc2><span class=MsoHyperlink><a href="#_Toc434141785">Use one
-Output Folder per Source Folder<span style='color:windowtext;display:none;
-text-decoration:none'>. 1</span></a></span></p>
+<p class=MsoToc2><span lang=EN-US><a href="#_Toc350373616">Use one Output
+Folder per Source Folder<span style='color:windowtext;display:none;text-decoration:
+none'>. </span><span
+style='color:windowtext;display:none;text-decoration:none'>8</span></a></span></p>
 
-<p class=MsoToc2><span class=MsoHyperlink><a href="#_Toc434141786">Add the
-Output Folder Manually to the Bundle-ClassPath<span style='color:windowtext;
-display:none;text-decoration:none'>. 1</span></a></span></p>
+<p class=MsoToc2><span lang=EN-US><a href="#_Toc350373617">Add the Output
+Folder Manually to the Bundle-ClassPath<span style='color:windowtext;
+display:none;text-decoration:none'>. </span><span
+style='color:windowtext;display:none;text-decoration:none'>8</span></a></span></p>
 
-<p class=MsoToc1><span class=MsoHyperlink><a href="#_Toc434141787">Set
-Activation Policy to Eager on Activate<span style='color:windowtext;display:
-none;text-decoration:none'>. 1</span></a></span></p>
+<p class=MsoToc1><span lang=EN-US><a href="#_Toc350373618">Set Activation
+Policy to Eager on Activate<span style='color:windowtext;display:none;
+text-decoration:none'>. </span><span
+style='color:windowtext;display:none;text-decoration:none'>9</span></a></span></p>
 
-<p class=MsoToc1><span class=MsoHyperlink><a href="#_Toc434141788">Eager
-Activation Policy<span style='color:windowtext;display:none;text-decoration:
-none'>. 1</span></a></span></p>
+<p class=MsoToc1><span lang=EN-US><a href="#_Toc350373619">Eager Activation
+Policy<span style='color:windowtext;display:none;text-decoration:none'>. </span><span
+style='color:windowtext;display:none;text-decoration:none'>9</span></a></span></p>
 
-<p class=MsoToc1><span class=MsoHyperlink><a href="#_Toc434141789">Handle
-External Commands Automatically<span style='color:windowtext;display:none;
-text-decoration:none'>. 1</span></a></span></p>
+<p class=MsoToc1><span lang=EN-US><a href="#_Toc350373620">Handle External
+Commands Automatically<span style='color:windowtext;display:none;text-decoration:
+none'>. </span><span
+style='color:windowtext;display:none;text-decoration:none'>9</span></a></span></p>
 
-<p class=MsoToc1><span class=MsoHyperlink><a href="#_Toc434141790">Deactivate
-Bundles when the IDE Shuts Down<span style='color:windowtext;display:none;
-text-decoration:none'>. 1</span></a></span></p>
+<p class=MsoToc1><span lang=EN-US><a href="#_Toc350373621">Allow Plug-Ins that
+makes Contributions to the Workbench<span style='color:windowtext;display:none;
+text-decoration:none'>. </span><span
+style='color:windowtext;display:none;text-decoration:none'>9</span></a></span></p>
 
-<p class=MsoToc1><span class=MsoHyperlink><a href="#_Toc434141791">Allow
-Plug-Ins that makes Contributions to the Workbench<span style='color:windowtext;
-display:none;text-decoration:none'>. 1</span></a></span></p>
+<p class=MsoToc2><span lang=EN-US><a href="#_Toc350373622">Context Bindings<span
+style='color:windowtext;display:none;text-decoration:none'>. </span><span
+style='color:windowtext;display:none;text-decoration:none'>10</span></a></span></p>
 
-<p class=MsoToc2><span class=MsoHyperlink><a href="#_Toc434141792">Context
-Bindings<span style='color:windowtext;display:none;text-decoration:none'>. 1</span></a></span></p>
+<p class=MsoToc2><span lang=EN-US><a href="#_Toc350373623">Dynamic UI Contributions<span
+style='color:windowtext;display:none;text-decoration:none'>. </span><span
+style='color:windowtext;display:none;text-decoration:none'>10</span></a></span></p>
 
-<p class=MsoToc2><span class=MsoHyperlink><a href="#_Toc434141793">Dynamic UI
-Contributions<span style='color:windowtext;display:none;text-decoration:none'>.
-1</span></a></span></p>
+<p class=MsoToc3><span lang=EN-US><a href="#_Toc350373624">Standard
+Perspectives<span style='color:windowtext;display:none;text-decoration:none'>. </span><span
+style='color:windowtext;display:none;text-decoration:none'>10</span></a></span></p>
 
-<p class=MsoToc3><span class=MsoHyperlink><a href="#_Toc434141794">Standard
-Perspectives<span style='color:windowtext;display:none;text-decoration:none'>.
-1</span></a></span></p>
+<p class=MsoToc3><span lang=EN-US><a href="#_Toc350373625">Customized
+Perspectives<span style='color:windowtext;display:none;text-decoration:none'>. </span><span
+style='color:windowtext;display:none;text-decoration:none'>10</span></a></span></p>
 
-<p class=MsoToc3><span class=MsoHyperlink><a href="#_Toc434141795">Customized
-Perspectives<span style='color:windowtext;display:none;text-decoration:none'>.
-1</span></a></span></p>
+<p class=MsoToc3><span lang=EN-US><a href="#_Toc350373626">Dynamic Menu
+contributions in Version 4.2<span style='color:windowtext;display:none;
+text-decoration:none'>. </span><span
+style='color:windowtext;display:none;text-decoration:none'>10</span></a></span></p>
 
-<p class=MsoToc3><span class=MsoHyperlink><a href="#_Toc434141796">Dynamic Menu
-contributions in Version 4.x<span style='color:windowtext;display:none;
-text-decoration:none'>. 1</span></a></span></p>
+<p class=MsoToc2><span lang=EN-US><a href="#_Toc350373627">Extensions and
+Extension Points<span style='color:windowtext;display:none;text-decoration:
+none'>. </span><span
+style='color:windowtext;display:none;text-decoration:none'>10</span></a></span></p>
 
-<p class=MsoToc2><span class=MsoHyperlink><a href="#_Toc434141797">Extensions
-and Extension Points<span style='color:windowtext;display:none;text-decoration:
-none'>. 1</span></a></span></p>
+<p class=MsoToc1><span lang=EN-US><a href="#_Toc350373628">Saving Resources
+before executing Bundle Operations<span style='color:windowtext;display:none;
+text-decoration:none'>. </span><span
+style='color:windowtext;display:none;text-decoration:none'>11</span></a></span></p>
 
-<p class=MsoToc1><span class=MsoHyperlink><a href="#_Toc434141798">Save Dirty
-Files and a Snapshot of the Workspace before executing Bundle Operations<span
-style='color:windowtext;display:none;text-decoration:none'>. 1</span></a></span></p>
+<p class=MsoNormal><span lang=EN-US>&nbsp;</span></p>
 
-<p class=MsoNormal>&nbsp;</p>
+<h1><a name="_Toc350373601"><span lang=EN-US>How to</span></a></h1>
 
-<h1><a name="_Toc350373601"></a><a name="_Toc434141767"></a>How to</h1>
+<p class=MsoNormal><span lang=EN-US>&nbsp;</span></p>
 
-<p class=MsoNormal>&nbsp;</p>
+<p class=MsoNormal><span lang=EN-US>All options are placed on the Bundle menus.
+The global options are set in the Bundle main menu and the <i>Eager Activation
+Policy</i> option for individual bundles from the context pop-up menus in the
+Package Explorer, the Bundle List Page View and the Bundle Details Page View.</span></p>
 
-<p class=MsoNormal>You find the options on the preference page (Windows |
-Preferences | InPlace Activator) and the most used options in the global Bundle
-menu.&nbsp; It is also possible to set the <i>Eager Activation Policy</i> and
-the <i>Add Output Folder to Bundle-ClassPath</i> option for individual bundles
-from the context pop-up menus in the Package Explorer, the Bundle List Page
-View and the Bundle Details Page View.</p>
+<p class=MsoNormal><span lang=EN-US><img width=417 height=568
+src="Setting%20Bundle%20Options_files/image001.png" alt=" "></span></p>
 
-<p class=MsoNormal style='margin-left:108.0pt'><img border=0 width=652
-height=756 src="Setting%20Bundle%20Options_files/image001.jpg"></p>
+<p class=MsoNormal><span lang=EN-US><img width=622 height=621
+src="Setting%20Bundle%20Options_files/image002.png" alt=" "></span></p>
 
-<p class=MsoNormal>Bundle dependencies are set in the <i>Partial Dependencies</i>
-dialog activated from the Bundle main menu. The dialog is modeless making it
-possible to experiment with the different options while the dialog is open. </p>
+<p class=MsoNormal><span lang=EN-US>Bundle dependencies are set in the <i>Partial
+Dependencies</i> dialog activated from the Bundle main menu. The dialog is modeless
+making it possible to experiment with the different options while the dialog is
+open. </span></p>
 
-<h1><a name="_Toc350373602"></a><a name="_Toc434141768"></a>Setting Properties
-in the New Plug-in or OSGi Bundle Project Wizard</h1>
+<p class=MsoNormal><span lang=EN-US>&nbsp;</span></p>
 
-<p class=MsoNormal>This is a convenience entry in the Bundle main menu, opening
-the same wizard as the <i>New Plug-in Project</i> wizard from the File menu
-entry. Properties in this wizard that influence how bundles are activated and
-updated are commented in this section.</p>
+<h1><a name="_Toc350373602"><span lang=EN-US>Setting Properties in the New
+Plug-in or OSGi Bundle Project Wizard</span></a></h1>
 
-<p class=MsoNormal style='margin-left:108.0pt'><img border=0 width=511
-height=608 src="Setting%20Bundle%20Options_files/image002.jpg"></p>
+<p class=MsoNormal><span lang=EN-US>This is a convenience entry in the Bundle
+main menu, opening the same wizard as the <i>New Plug-in Project</i> wizard from
+the File menu entry. Properties in this wizard that influence how bundles are
+activated and updated are commented in this section.</span></p>
 
-<h2><a name="_Toc434141769"></a><a name="_Toc350373603"></a><a
-name=OutputFolder></a>Output folder</h2>
+<p class=MsoNormal><span lang=EN-US><img width=444 height=498
+src="Setting%20Bundle%20Options_files/image003.png" alt=" "></span><span
+lang=EN-US> </span></p>
 
-<p class=MsoNormal>This setting specifies the default output folder and is
-where class files are ordinarily generated (and resource files, copied).
-&nbsp;The location you specify in this field is added to the Bundle-ClassPath
-header in the manifest file and used when bundles are started (See <a
-href="Start%20and%20Stop%20Bundles.htm">Start and Stop Bundles</a><span
+<h2><a name=OutputFolder></a><a name="_Toc350373603"><span lang=EN-US>Output folder</span></a></h2>
+
+<p class=MsoNormal><span lang=EN-US>This setting specifies the default output
+folder and is where class files are ordinarily generated (and resource files,
+copied).  The location you specify in this field is added to the
+Bundle-ClassPath header in the manifest file and used when bundles are started
+(See <a href="Start%20and%20Stop%20Bundles.htm">Start and Stop Bundles</a><span
 class=MsoHyperlink>.</span>) The Bundle-ClassPath is updated automatically if
 the <a href="#_Update_Bundle_Class-Path">Update Bundle-ClassPath on
-Activate/Deactivate</a> is switched on (default).</p>
+Activate/Deactivate</a> is switched on (default).</span></p>
 
-<h2><a name="_Toc434141770"></a><a name="_Toc350373604"></a><a
-name="_Ref333152223"></a><a name="_Target_Platform"></a>Target Platform</h2>
+<h2><a name="_Toc350373604"></a><a name="_Ref333152223"></a><a
+name="_Target_Platform"></a><span lang=EN-US>Target Platform</span></h2>
 
-<p class=MsoNormal>The InPlace Activator is compatible with both target
-platforms available from the <i>Target Platform section </i>in the wizard<i>.</i></p>
+<p class=MsoNormal><span lang=EN-US>The InPlace Activator is compatible with
+both target platforms available from the <i>Target Platform section </i>in the
+wizard<i>.</i></span></p>
 
-<p class=MsoNormal>If you select <i>an OSGi Framework </i>as the<i> Target
-Platform </i>a pure OSGi bundle project is created with a dependency on the
-imported OSGI framework (“org.osgi.framework” package).&nbsp; Selecting Eclipse
-as the target platform makes your plug-in dependent on the Eclipse runtime (“org.eclipse.core.runtime”
-plug-in) and indirectly of the OSGI framework and other plug-ins through the
-Eclipse runtime plug-in.&nbsp; </p>
+<p class=MsoNormal><span lang=EN-US>If you select <i>an OSGi Framework </i>as
+the<i> Target Platform </i>a pure OSGi bundle project is created with a
+dependency on the imported OSGI framework (“org.osgi,framework” package). 
+Selecting Eclipse as the target platform makes your plug-in dependent on the Eclipse
+runtime (“org.eclipse.core.runtime” plug-in) and indirectly of the OSGI
+framework and other plug-ins through the Eclipse runtime plug-in.  </span></p>
 
-<h2><a name="_Toc350373605"></a><a name="_Toc434141771"></a>UI Contributions</h2>
+<h2><a name="_Toc350373605"><span lang=EN-US>UI Contributions</span></a></h2>
 
-<p class=MsoNormal>If you select the OSGi Framework as the target platform the<i>
-“this Plug-in will make contributions to the UI” </i>option will be disabled.
-This is logical since UI contributions make the plug-in dependent on the
-Eclipse runtime and the standard UI framework (“org.eclipse.ui” plug-in) in
-Eclipse, and your plug-in would then not become a pure OSGi bundle (See the <a
-href="#_Target_Platform">Target Platform</a> section above).&nbsp; If you
-select Eclipse runtime as the target platform you may or may not let the
-plug-in make contributions to the UI. &nbsp;&nbsp;</p>
+<p class=MsoNormal><span lang=EN-US>If you select the OSGi Framework as the
+target platform the<i> “this Plug-in will make contributions to the UI” </i>option
+will be disabled. This is logical since UI contributions make the plug-in
+dependent on the Eclipse runtime and the standard UI framework
+(“org.eclipse.ui” plug-in) in Eclipse, and your plug-in would then not become a
+pure OSGi bundle (See the <a href="#_Target_Platform">Target Platform</a>
+section above).  If you select Eclipse runtime as the target platform you may
+or may not let the plug-in make UI contributions.   </span></p>
 
-<p class=MsoNormal style='margin-left:108.0pt'><img border=0 width=511
-height=608 src="Setting%20Bundle%20Options_files/image003.jpg"></p>
+<p class=MsoNormal><i><span lang=EN-US><img border=0 width=540 height=541
+src="Setting%20Bundle%20Options_files/image004.png" alt=" "></span></i></p>
 
-<p class=MsoNormal>When you create a plug-in with UI contributions this is
-typically done using extensions which may be declarative (specified in
-plugin.xml) or dynamic (created by code).&nbsp; If you use UI contributions,
-please check out the <a href="#_Allow_Plug-Ins_that">Allow Plug-Ins that makes
-Contributions to the Workbench</a> &nbsp;option for any limitations. </p>
+<p class=MsoNormal><span lang=EN-US>When you create a plug-in with UI
+contributions this is typically done using extensions which may be declarative
+(specified in plugin.xml) or dynamic (created by code).  If you use UI
+contributions, please check out the </span><span
+lang=EN-US><a href="#_Allow_Plug-Ins_that">Allow Plug-Ins that makes
+Contributions to the Workbench</a> </span><span lang=EN-US> option for any
+limitations. </span></p>
 
-<h1><a name="_Toc434141772"></a><a name=Dependencies></a><a name="_Toc350373606"></a>Partial
-Dependencies</h1>
+<h1><a name="_Toc350373606"></a><a name=Dependencies><span lang=EN-US>Partial Dependencies</span></a></h1>
 
-<p class=MsoNormal>The dependency options determine which bundles to include
-when a bundle is being activated, deactivated, started or stopped from the
-Bundle List Page View or the Bundle Details Page View.</p>
+<p class=MsoNormal><span lang=EN-US>The dependency options determine which
+bundles to include when a bundle is being activated, deactivated, started or
+stopped from the Bundle List Page View or the Bundle Details Page View.</span></p>
 
-<p class=MsoNormal>From the perspective of a selected or initial bundle there
-is one set of bundles providing capabilities to the bundle and one set of
-bundles requiring capabilities from the bundle. Both the providing and
-requiring set may be empty meaning that the bundle has no dependencies on other
-bundles.</p>
+<p class=MsoNormal><span lang=EN-US>From the perspective of a selected or
+initial bundle there is one set of bundles providing capabilities to the bundle
+and one set of bundles requiring capabilities from the bundle. Both the
+providing and requiring set may be empty meaning that the bundle has no
+dependencies on other bundles.</span></p>
 
-<p class=MsoNormal>An inherent characteristic of dependencies between bundles is
-transitivity, which has a cascading effect activating/deactivating or
-starting/stopping a chain of bundles from an initial bundle that directly or
-indirectly has dependency relationships to other bundles. </p>
+<p class=MsoNormal><span lang=EN-US>An inherent characteristic of dependencies
+between bundles is transitivity, which has a cascading effect
+activating/deactivating or starting/stopping a chain of bundles from an initial
+bundle that directly or indirectly has dependency relationships to other
+bundles. </span></p>
 
-<p class=MsoNormal>Requiring bundles are always deactivated when a providing
-bundle is deactivated and opposite, providing bundles are always activated when
-a requiring bundle is activated.&nbsp; In all other cases, the behavior is
-defined by the dependency options.</p>
+<p class=MsoNormal><span lang=EN-US>Requiring bundles are always deactivated when
+a providing bundle is deactivated and opposite, providing bundles are always
+activated when a requiring bundle is activated.  In all other cases, the
+behavior is defined by the dependency options.</span></p>
 
-<p class=MsoNormal style='margin-left:108.0pt'><img border=0 width=596
-height=435 src="Setting%20Bundle%20Options_files/image004.jpg"></p>
+<p class=MsoNormal><span lang=EN-US><img border=0 width=631 height=392
+src="Setting%20Bundle%20Options_files/image005.png" alt=" "></span></p>
 
-<h2><a name="_Toc350373607"></a><a name="_Toc434141773"></a>Default values</h2>
+<h2><a name="_Toc350373607"><span lang=EN-US>Default values</span></a></h2>
 
-<p class=MsoNormal>The default is to include providing bundles on activate and
-start and requiring bundles on deactivate and stop.</p>
+<p class=MsoNormal><span lang=EN-US>The default is to include providing bundles
+on activate and start and requiring bundles on deactivate and stop.</span></p>
 
-<p class=MsoNormal>Caution should be taken if you select the <i>Single</i> or <i>Requiring</i>
-options on <i>Start</i> due to missing dependencies or <i>Single</i> or <i>Providing</i>
-on <i>Stop</i> due to possible stale references. See <a
+<p class=MsoNormal><span lang=EN-US>Caution should be taken if you select the <i>Single</i>
+or <i>Requiring</i> options on <i>Start</i> due to missing dependencies or <i>Single</i>
+or <i>Providing</i> on <i>Stop</i> due to possible stale references. See <a
 href="Start%20and%20Stop%20Bundles.htm# StaleReferences ">Start and Stop
-Bundles</a> for a discussion about stale references and garbage collection.</p>
+Bundles</a> for a discussion about stale references and garbage collection.</span></p>
 
-<p class=MsoNormal>Besides this all options are considered convenience options
-where you can tune them in such a way that dependent bundles are
-activated/deactivated and started/stopped automatically depending on your
-needs.</p>
+<p class=MsoNormal><span lang=EN-US>Besides this all options are considered
+convenience options where you can tune them in such a way that dependent
+bundles are activated/deactivated and started/stopped automatically depending
+on your needs.</span></p>
 
-<h2><a name="_Toc350373608"></a><a name="_Toc434141774"></a>Sets and Graphs</h2>
+<h2><a name="_Toc350373608"><span lang=EN-US>Sets and Graphs</span></a></h2>
 
-<p class=MsoNormal>For those of you familiar with sets and graphs, all bundles
-- workspace and external - are viewed as a set, where the workspace bundles is
-a subset, containing one or more partitions, where each partition is a directed
-acyclic graph and the dependency relation between the elements or bundles in
-the graph is defined by the different import (Require-Bundle, …) headers in the
-manifest file.&nbsp; For each option a partial dependency order of bundles is
-constructed to be included in the bundle operation to execute. Thus it is
-possible to traverse and sort the set of workspace bundles in dependency
-(requiring or providing) order, based on a random set of initial bundles. </p>
+<p class=MsoNormal><span lang=EN-US>For those of you familiar with sets and
+graphs, all bundles - workspace and external - are viewed as a set, where the
+workspace bundles is a subset, containing one or more partitions, where each
+partition is a directed acyclic graph and the dependency relation between the
+elements or bundles in the graph is defined by the different import
+(Require-Bundle, …) headers in the manifest file.  For each option a partial dependency
+order of bundles is constructed to be included in the bundle operation to
+execute. Thus it is possible to traverse and sort the set of workspace bundles
+in dependency (requiring or providing) order, based on a random set of initial bundles.
+</span></p>
 
-<h2><a name="_Toc434141775"></a><a name="_Toc350373609"></a><a
+<h2><a name="_Toc350373609"></a><a
 name=HowToInterpretTheDifferentDependencyOpti></a><a name="_Ref347672323"></a><a
-name="_How_to_interpret"></a>Interpreting Dependency Options</h2>
+name="_How_to_interpret"></a><span lang=EN-US>How to interpret the different
+Dependency Options</span><span lang=EN-US> </span></h2>
 
-<p class=MsoNormal>Which bundles to include when a bundle is activated,
-deactivated, started or stopped is probably best understood by an example. </p>
+<p class=MsoNormal><span lang=EN-US>Which bundles to include when a bundle is activated,
+deactivated, started or stopped is probably best understood by an example. </span></p>
 
-<p class=MsoNormal>In the following example:</p>
+<p class=MsoNormal><span lang=EN-US>In the following example:</span></p>
 
-<p class=MsoListParagraph style='margin-left:18.0pt;text-align:justify;
-text-indent:-18.0pt'><span style='font-family:Symbol'>·</span><span
-style='font-size:7.0pt;line-height:115%;font-family:"Times New Roman",serif'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-</span>The set of workspace bundles are S = {a, b, c, d, e, f, g, h, i, t, u}</p>
+<p class=MsoListParagraphCxSpFirst style='margin-left:18.0pt;text-align:justify;
+text-indent:-18.0pt'><span lang=EN-US style='font-family:Symbol'>·<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><span lang=EN-US>The set of workspace bundles are S = {a, b, c,
+d, e, f, g, h, i, t, u}</span></p>
 
-<p class=MsoListParagraph style='margin-left:18.0pt;text-align:justify;
-text-indent:-18.0pt'><span style='font-family:Symbol'>·</span><span
-style='font-size:7.0pt;line-height:115%;font-family:"Times New Roman",serif'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-</span>Bundle c is the selected bundle or more formally the initial set ({c})
-of bundles for all options. </p>
+<p class=MsoListParagraphCxSpLast style='margin-left:18.0pt;text-align:justify;
+text-indent:-18.0pt'><span lang=EN-US style='font-family:Symbol'>·<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><span lang=EN-US>Bundle c is the selected bundle or more formally
+the initial set ({c}) of bundles for all options. </span></p>
 
-<p class=MsoListParagraph style='margin-left:90.0pt;text-indent:-18.0pt'><img
-border=0 width=626 height=477
-src="Setting%20Bundle%20Options_files/image005.jpg"></p>
+<p class=MsoNormal>
 
-<p class=MsoNormal><br clear=all>
-The figure illustrates in a graphical manner and in set notation the outcome of
-each option. The outcome or result set is sorted in lexical (not dependency)
-order.</p>
+<table cellpadding=0 cellspacing=0>
+ <tr>
+  <td width=18 height=0></td>
+ </tr>
+ <tr>
+  <td></td>
+  <td><img width=606 height=465
+  src="Setting%20Bundle%20Options_files/image006.png" alt=" "></td>
+ </tr>
+</table>
 
-<p class=MsoNormal>The<i> <a name=ProvidingAndRequiring>Providing and Requiring
-Bundles</a></i> option for deactivate and stop with {c} as the initial set is
-interpreted as follows:&nbsp; </p>
+<br clear=ALL>
+<span lang=EN-US>The figure illustrates in a graphical manner and in set
+notation the outcome of each option. The outcome or result set is sorted in
+lexical (not dependency) order.</span></p>
 
-<p class=MsoListParagraph style='margin-left:18.0pt;text-indent:-18.0pt'>1.<span
-style='font-size:7.0pt;line-height:115%;font-family:"Times New Roman",serif'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-</span>Start with bundle c as the initial set {c} </p>
+<p class=MsoNormal><span lang=EN-US>The<i> <a name=ProvidingAndRequiring>Providing
+and Requiring Bundles</a></i> option for deactivate and stop with {c} as the
+initial set is interpreted as follows:  </span></p>
 
-<p class=MsoListParagraph style='margin-left:18.0pt;text-indent:-18.0pt'>2.<span
-style='font-size:7.0pt;line-height:115%;font-family:"Times New Roman",serif'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-</span>Calculate the set of providing bundles {c, d} with c as the initial
-bundle.&nbsp; Note that the initial set of bundle(s) is always part of the
-result set.</p>
+<p class=MsoListParagraphCxSpFirst style='margin-left:18.0pt;text-indent:-18.0pt'><span
+lang=EN-US>1.<span style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><span lang=EN-US>Start with bundle c as the initial set {c} </span></p>
 
-<p class=MsoListParagraph style='margin-left:18.0pt;text-indent:-18.0pt'>3.<span
-style='font-size:7.0pt;line-height:115%;font-family:"Times New Roman",serif'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-</span>Calculate the set of requiring bundles {a, b, c, d, e, f, i} with the
-providing bundles {c, d} as the initial set of bundles as calculated in step 2.
-</p>
+<p class=MsoListParagraphCxSpMiddle style='margin-left:18.0pt;text-indent:-18.0pt'><span
+lang=EN-US>2.<span style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><span lang=EN-US>Calculate the set of providing bundles {c, d}
+with c as the initial bundle.  Note that the initial set of bundle(s) is always
+part of the result set.</span></p>
 
-<p class=MsoNormal>The <i>Providing Bundles</i> option is the same as
-calculated in step 2 above.</p>
+<p class=MsoListParagraphCxSpLast style='margin-left:18.0pt;text-indent:-18.0pt'><span
+lang=EN-US>3.<span style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><span lang=EN-US>Calculate the set of requiring bundles {a, b, c,
+d, e, f, i} with the providing bundles {c, d} as the initial set of bundles as
+calculated in step 2. </span></p>
 
-<p class=MsoNormal>The same applies to the <i>Requiring and Providing Bundles</i>
-option for activate and start, except that the requiring bundles are calculated
-before the providing bundles:</p>
+<p class=MsoNormal><span lang=EN-US>The <i>Providing Bundles</i> option is the
+same as calculated in step 2 above.</span></p>
 
-<p class=MsoListParagraph style='margin-left:18.0pt;text-indent:-18.0pt'>1.<span
-style='font-size:7.0pt;line-height:115%;font-family:"Times New Roman",serif'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-</span>Start with bundle c as the initial set {c} </p>
+<p class=MsoNormal><span lang=EN-US>The same applies to the <i>Requiring and
+Providing Bundles</i> option for activate and start, except that the requiring
+bundles are calculated before the providing bundles:</span></p>
 
-<p class=MsoListParagraph style='margin-left:18.0pt;text-indent:-18.0pt'>2.<span
-style='font-size:7.0pt;line-height:115%;font-family:"Times New Roman",serif'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-</span>Calculate the set of requiring bundles {a, b, c, i} with c as the
-initial bundle.&nbsp; Note that the initial set of bundle(s) is always part of
-the result set.</p>
+<p class=MsoListParagraphCxSpFirst style='margin-left:18.0pt;text-indent:-18.0pt'><span
+lang=EN-US>1.<span style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><span lang=EN-US>Start with bundle c as the initial set {c} </span></p>
 
-<p class=MsoListParagraph style='margin-left:18.0pt;text-indent:-18.0pt'>3.<span
-style='font-size:7.0pt;line-height:115%;font-family:"Times New Roman",serif'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-</span>Calculate the set of providing bundles {a, b, c, d, i} with the
-requiring bundles {a, b, c, i} as the initial set of bundles as calculated in
-step 2. </p>
+<p class=MsoListParagraphCxSpMiddle style='margin-left:18.0pt;text-indent:-18.0pt'><span
+lang=EN-US>2.<span style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><span lang=EN-US>Calculate the set of requiring bundles {a, b, c,
+i} with c as the initial bundle.  Note that the initial set of bundle(s) is
+always part of the result set.</span></p>
 
-<p class=MsoNormal>The <a name=Requiring><i>Requiring Bundles</i></a> option is
-the same as calculated in step 2 above.</p>
+<p class=MsoListParagraphCxSpLast style='margin-left:18.0pt;text-indent:-18.0pt'><span
+lang=EN-US>3.<span style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><span lang=EN-US>Calculate the set of providing bundles {a, b, c,
+d, i} with the requiring bundles {a, b, c, i} as the initial set of bundles as
+calculated in step 2. </span></p>
 
-<p class=MsoNormal>The <i>Partial Graph </i>option traverses the bundle
-dependencies in both directions until it is not possible to extend the graph
-further. </p>
+<p class=MsoNormal><span lang=EN-US>The <i>Requiring Bundles</i> option is the
+same as calculated in step 2 above.</span></p>
 
-<h3><a name="_Toc350373610"></a><a name="_Toc434141776"></a>Build Errors and
-Dependency Options</h3>
+<p class=MsoNormal><span lang=EN-US>The <i>Partial Graph </i>option traverses
+the bundle dependencies in both directions until it is not possible to extend
+the graph further. </span></p>
 
-<p class=MsoNormal>Start and Stop operations are not affected by bundle errors.
-&nbsp;Deactivating bundles with build errors prohibit activation of the
-affected bundles until the errors are corrected. Affected bundles are bundles
-with build errors and bundles that have requirements on those bundles.
-&nbsp;Only providing bundles of bundles with build errors are activated. To
-which extend providing bundles will be activated is controlled by the
-dependency option used. See <a href="../concepts/Bundle%20Project%20Errors.htm">Bundle
-Project Errors</a> for a general description of error handling in workspace
-bundle projects.</p>
+<h3><a name="_Toc350373610"><span lang=EN-US>Build Errors and Dependency Options</span></a></h3>
 
-<h2><a name="_Toc350373611"></a><a name="_Toc434141777"></a>Global Bundle
-commands</h2>
+<p class=MsoNormal><span lang=EN-US>Start and Stop operations are not affected
+by bundle errors.  Deactivating bundles with build errors prohibit activation
+of the affected bundles until the errors are corrected. Affected bundles are
+bundles with build errors and bundles that have requirements on those bundles.  Only
+providing bundles of bundles with build errors are activated. To which extend providing
+bundles will be activated is controlled by the dependency option used. See <a
+href="../concepts/Bundle%20Project%20Errors.htm">Bundle Project Errors</a> for
+a general description of error handling in workspace bundle projects.</span></p>
 
-<p class=MsoNormal>When activating, deactivating, starting or stopping bundles
-from the Bundle main menu all possible candidate bundles in the workspace are
-included in the selected operation and automatically becomes the set of initial
-bundles. As noted, initial bundles are always included in the result set.&nbsp;
-Dependent bundles are then either in the initial set or already part of the
-result set. The consequence of this is that the Partial Dependency options have
-no effect on global bundle commands initiated from the Bundle main menu.</p>
+<h2><a name="_Toc350373611"><span lang=EN-US>Global Bundle commands</span></a></h2>
 
-<h1><a name=UpdateOnBuild></a><a name="_Toc434141778"></a><a
-name="_Toc350373612"></a><a name=RefreshOnUpdate></a><a name="_Ref347479490"></a><a
-name="_Refresh_on_Update"></a>Bundle Terminate Settings for OSGi Start and Stop
-Operations</h1>
+<p class=MsoNormal><span lang=EN-US>When activating, deactivating, starting or
+stopping bundles from the Bundle main menu all possible candidate bundles in
+the workspace are included in the selected operation and automatically becomes
+the set of initial bundles. As noted, initial bundles are always included in
+the result set.  Dependent bundles are then either in the initial set or already
+part of the result set. The consequence of this is that the Partial Dependency
+options have no effect on global bundle commands initiated from the Bundle main
+menu.</span></p>
 
-<p class=MsoNormal>This is a rescue option for bundles not terminating in Start
-and Stop methods due to endless operations. To terminate the execution, select
-Stop Bundle Operation form the main or local bundle menu. It is also possible
-to automatically terminate an operation after a specified number seconds by
-selecting the “Terminate Automatically on Timeout” option. Lastly, to
-deactivate the bundle and its requiring bundles after the operation is
-terminated, check the “Deactivate bundle and dependent bundles after task is
-terminated”</p>
+<h1><a name="_Toc350373612"></a><a name=RefreshOnUpdate></a><a
+name="_Ref347479490"></a><a name="_Refresh_on_Update"></a><span lang=EN-US>Refresh
+on Update</span></h1>
 
-<p class=MsoNormal>Terminating operations unconditionally in this way may
-generate stale references if the IDE is not restarted.&nbsp; See <a
-href="Start%20and%20Stop%20Bundles.htm#StaleReferences">Stale References</a>
-for a description of the possible consequences. </p>
+<p class=MsoNormal><span lang=EN-US>Updating bundles will create new bundle
+revisions while the existing bundle wirings remain wired to their previous
+bundle revisions. This stale wiring to old bundle revisions is cleaned up by
+the refresh command. This option affects the method used when new revisions and
+wirings between dependent bundles are resolved. </span></p>
 
-<h1><a name="_Toc434141779">Trapping Interrupts</a></h1>
+<p class=MsoNormal><span lang=EN-US>When the <i>Refresh on Update</i> option is
+switched on, new wirings between the updated bundles and all directly and
+indirectly requiring bundles (requiring dependency closure) are created and the
+old ones are released or garbage collected by the OSGi refresh operation.  </span></p>
 
-<p class=MsoNormal>To better control termination of bundles, it is possible to
-send an interrupt to start and stop methods in a running bundle from the main
-and local bundle menus. See <a
-href="Start%20and%20Stop%20Bundles.htm#TrapInterrupts">Runtime Implications of
-Starting and Stopping Bundles</a> for further details. </p>
+<p class=MsoNormal><span lang=EN-US>If build errors are introduced in already
+activated bundles and such bundles are members of the calculated requiring
+dependency closure to refresh a path of bundles including all requiring and
+providing bundles of the error bundles from the requiring dependency closure
+are removed. The removed bundles that are not refreshed retain their current
+revision with its wirings.</span></p>
 
-<h1><a name="_Toc434141780">Update on Build</a></h1>
-
-<p class=MsoNormal>Activated bundle projects are by default updated
-automatically after a build. You can turn this switch off and control the
-update frequency manually by issuing an update command for all activated bundle
-projects that have been built since last update from the main menu or for
-individual bundle projects from one of the local pop-up menus or
-toolbars.&nbsp; An “Update Pending” status is marked on bundles in the Bundle
-View and a separate menu entry is shown in the bundle main menu for bundles
-that needs to be updated after a build. See <a
-href="Update%20and%20Refresh.htm#UpdateBundlesManually">Update Bundles Manually</a>
-for a description of the rules when updating individual bundles from the local
-bundle menus. </p>
-
-<p class=MsoNormal>Bundles are refreshed after a manual update if the <a
-href="#_Refresh_on_Update">Refresh on Update</a> option is switched on and
-resolved if the option is switched off. Note that activating a bundle project
-in an activated workspace is always updated after it is built as part of the activation
-process. Thus this option first becomes operative after bundle projects have
-been activated.</p>
-
-<h1><a name="_Toc434141781">Activate Bundle Projects with Java Build Errors</a></h1>
-
-<p class=MsoNormal>When this option is on it is possible to activate, and
-start, bundles with <a
-href="../concepts/Bundle%20Project%20Errors.htm#JavaBuildErrors">Java Build
-errors</a>. See the <a name="_Toc312283492"></a><a
-href="../concepts/Bundle%20Project%20Errors.htm">Managing Bundle Project Errors</a>
-for a description of the different kind of build errors. If the runtime flow
-does not execute code where the build errors are located, no runtime errors
-occurs due to the build errors. If switched off it is not possible to start
-bundles with build errors.</p>
-
-<h1><a name="_Toc434141782">Refresh on Update</a></h1>
-
-<p class=MsoNormal>Updating bundles will create new bundle revisions while the
-existing bundle wirings remain wired to their previous bundle revisions. This
-stale wiring to old bundle revisions is cleaned up by the refresh command. This
-option affects the method used when new revisions and wirings between dependent
-bundles are resolved. </p>
-
-<p class=MsoNormal>When the <i>Refresh on Update</i> option is switched on, new
-wirings between the updated bundles and all directly and indirectly requiring
-bundles (requiring dependency closure) are created and the old ones are
-released or garbage collected by the OSGi refresh operation.&nbsp; </p>
-
-<p class=MsoNormal>If build errors are introduced in already activated bundles
-and such bundles are members of the calculated requiring dependency closure to
-refresh a path of bundles including all requiring bundles of the error bundles
-from the requiring dependency closure are removed. The removed bundles that are
-not refreshed retain their current revision with its wirings.</p>
-
-<p class=MsoNormal>When the <i>Refresh on Update </i>option is switched off,
-existing bundle wirings remains wired to the previous revision of a bundle
-being updated.&nbsp; You may experience that the number of revisions for a
+<p class=MsoNormal><span lang=EN-US>When the <i>Refresh on Update </i>option is
+switched off, existing bundle wirings remains wired to the previous revision of
+a bundle being updated.  You may experience that the number of revisions for a
 bundle is greater than one when the option is switched off. Turning this option
 on or issuing a manual Refresh command should ensure only one revision per
 bundle. The number of revisions for a bundle may be found in the List <i>Page
-or the</i> Details Page in the Bundle View.</p>
+or the</i> Details Page in the Bundle View.</span></p>
 
-<p class=MsoNormal>A simple scenario, when not refreshing on update, is two
-activated bundles (in state ACTIVE/LAZY or RESOLVED) where A requires and uses
-some capabilities from B. &nbsp;Change and build B. This triggers an update
-which creates a new current revision for B. &nbsp;Bundle B has now two
+<p class=MsoNormal><span lang=EN-US>A simple scenario, when not refreshing on
+update, is two activated bundles (in state ACTIVE/LAZY or RESOLVED) where A
+requires and uses some capabilities from B.  Change and build B. This triggers
+an update which creates a new current revision for B.  Bundle B has now two
 revisions; - the old or previous one with a wiring to A; and - a new current
-revision.&nbsp; For A to be wired to B’s current revision and release the
-previous revision of B a refresh on B, or an another activated bundle providing
+revision.  For A to be wired to B’s current revision and release the previous
+revision of B a refresh on B, or an another activated bundle providing
 capabilities to B, is necessary. One the other hand if you are updating a
 single bundle with no dependencies a resolve would suffice and there will be no
-need for an extra refresh after update. </p>
+need for an extra refresh after update. </span></p>
 
-<p class=MsoNormal>It can be confusing when a requiring bundle (A) is wired to
-a previous revision of a providing bundle (B).&nbsp; Any compiled source
-changes from the latest update of the providing bundle is part of the current
-revision while the requiring bundle is wired to the previous (or an older)
-revision.&nbsp; This means that the requiring bundle is utilizing the
-functionality from the previous revision and not the changes introduced by the
-last update (current revision) of the provider. &nbsp;</p>
+<p class=MsoNormal><span lang=EN-US>It can be confusing when a requiring bundle
+(A) is wired to a previous revision of a providing bundle (B).  Any compiled
+source changes from the latest update of the providing bundle is part of the
+current revision while the requiring bundle is wired to the previous (or an
+older) revision.  This means that the requiring bundle is utilizing the functionality
+from the previous revision and not the changes introduced by the last update (current
+revision) of the provider.  </span></p>
 
-<h1><a name="_Toc434141783"></a><a name="_Toc350373613"></a><a
-name="_Toc350373614"></a><a name=AddbintoBundleClassPathonActivate></a><a
+<h1><a name="_Toc350373613"></a><a name=UpdateOnBuild><span lang=EN-US>Update
+on Build</span></a></h1>
+
+<p class=MsoNormal><span lang=EN-US>Activated bundle projects are by default
+updated automatically after a build. You can turn this switch off and control
+the update frequency manually by issuing an update command for all activated bundle
+projects that have been built since last update from the main menu or for
+individual bundle projects from one of the local pop-up menus or toolbars.  Note
+that only activated bundle projects that have been built since last update are
+updated. See <a href="Update%20and%20Refresh.htm#UpdateBundlesManually">Update
+Bundles Manually</a> for a description of the rules when updating individual
+bundles from the local bundle menus. </span></p>
+
+<p class=MsoNormal><span lang=EN-US>Bundles are refreshed after a manual update
+if the <a href="#_Refresh_on_Update">Refresh on Update</a> option is switched
+on and resolved if the option is switched off. Note that activating a bundle
+project in an activated workspace is always updated after it is built as part
+of the activation process. Thus this option first becomes operative after
+bundle projects have been activated.</span></p>
+
+<h1><a name="_Toc350373614"></a><a name=AddbintoBundleClassPathonActivate></a><a
 name="_Ref333150834"></a><a name="_Update_Bundle_Class-Path"></a><a
-name="_Update_Bundle-ClassPath_on"></a>Update Bundle-ClassPath on
-Activate/Deactivate</h1>
+name="_Update_Bundle-ClassPath_on"></a><span lang=EN-US>Update Bundle-ClassPath
+on Activate</span><span lang=EN-US>/Deactivate</span></h1>
 
-<p class=MsoNormal>The default output folder is where the class (and resource)
-files are stored. The path to the generated class files are needed when a
-bundle project is started. The default output location is initially set in the <a
-href="#OutputFolder"><i>Output folder</i></a> field in the <i>New Plug-in
-Project</i> wizard when you create a new project and defaults to the bin
-folder. The default location can be changed when you create the project, from
-the Java Build-Path entry in the project properties dialog under the source tab
-or from the Java preference (Windows | Preferences | Java | Build Path) dialog
-after the project is created.</p>
+<p class=MsoNormal><span lang=EN-US>The default output folder is where the
+class (and resource) files are stored. The path to the generated class files
+are needed when a bundle project is started. The default output location is
+initially set in the <a href="#OutputFolder"><i>Output folder</i></a> field in
+the <i>New Plug-in Project</i> wizard when you create a new project and
+defaults to the bin folder. The default location can be changed when you create
+the project, from the Java Build-Path entry in the project properties dialog
+under the source tab, from the Java preference (Windows | Preferences | Java |
+Build Path) dialog after the project is created or by changing it directly in
+the “.classpath” file.</span></p>
 
-<p class=MsoNormal>If you are using the default location for the output folder,
-which is also the default setting in Eclipse, and the <i>Update
+<p class=MsoNormal><span lang=EN-US>If you are using the default location for
+the output folder, which is also the default setting in Eclipse, and the <i>Update
 Bundle-ClassPath on Activate/Deactivate</i> option is switched on, the Bundle
 Class-Path header in the manifest file is updated automatically with the
 default output location when the bundle is activated and removed when
-deactivated.</p>
+deactivated.</span></p>
 
-<p class=MsoNormal>If this option is turned off, no action is taken to update
-the Bundle-ClassPath on activation. &nbsp;If the Bundle-ClassPath was not
-updated with the output folder when the bundle was activated it is possible to
-update the Bundle-ClassPath for already activated bundles from the main menu.
+<p class=MsoNormal><span lang=EN-US>If this option is turned off, no action is
+taken to update the Bundle-ClassPath on activation.  If the Bundle-ClassPath was
+not updated with the output folder when the bundle was activated it is possible
+to update the Bundle-ClassPath for already activated bundles from the main menu.
 For full control you can add and remove the default output location in the
-Bundle-ClassPath on any&nbsp; – deactivated and activated - bundle project from
-one of the local menus in the Bundle View.</p>
+Bundle-ClassPath on any  – deactivated and activated - bundle project from one
+of the local menus in the Bundle View.</span></p>
 
-<h2><a name="_Toc350373615"></a><a name="_Toc434141784"></a>Use the osgi.dev
-System Property</h2>
+<h2><a name="_Toc350373615"><span lang=EN-US>Use the osgi.dev System Property</span></a></h2>
 
-<p class=MsoNormal>If you don’t like the idea of updating the Bundle-ClassPath
-when activating and deactivating bundle projects, you can set the osgi.dev
-system property in the configuration.ini file to the default output folder. The
-configuration.ini file is located in the ECLIPSE_HOME/configuration folder
-where ECLIPSE_HOME is the folder where you installed Eclipse. </p>
+<p class=MsoNormal><span lang=EN-US>If you don’t like the idea of updating the
+Bundle-ClassPath when activating and deactivating bundle projects you can set
+the osgi.dev system property in the configuration.ini file to the default
+output folder. The configuration.ini file is located in the ECLIPSE_HOME/configuration
+folder where ECLIPSE_HOME is the folder where you installed Eclipse. </span></p>
 
-<p class=MsoNormal>The setting in the configuration.ini can then be specified
-as <i>osgi.dev=bin </i>where bin (or what you have changed it to) is the
-default output folder. When the osgi.dev system property is set you can turn
-the <i>Update Bundle-ClassPath on Activate/Deactivate</i> option off.</p>
+<p class=MsoNormal><span lang=EN-US>The setting in the configuration.ini can
+then be specified as <i>osgi.dev=bin </i>where bin (or what you have changed it
+to) is the default output folder. When the osgi.dev system property is set you
+can turn the <i>Update Bundle-ClassPath on Activate/Deactivate</i> option off.</span></p>
 
-<p class=MsoNormal>It is also possible to reference a properties file as a
-parameter to the osgi.dev system property. The output folder of each activated
-bundle is then updated with the bundle symbolic name as the key and the output
-folder as the attribute in the specified property file (e.g. Windows:
-osgi.dev=file\:c\:/dev/prj/dev.properties). This is more dynamic and useful
-when bundles have different output folders or the output folder of a bundle is
-changed during an Eclipse session. </p>
+<p class=MsoNormal><span lang=EN-US>It is also possible to reference a properties
+file as a parameter to the osgi.dev system property. The output folder of each
+activated bundle is then updated with the bundle symbolic name as the key and
+the output folder as the attribute in the specified property file (e.g.
+Windows: osgi.dev=file\:c\:/dev/prj/dev.properties). This is more dynamic and
+useful when bundles have different output folders or the output folder of a
+bundle is changed during an Eclipse session. </span></p>
 
-<h2><a name="_Toc350373616"></a><a name="_Toc434141785"></a>Use one Output
-Folder per Source Folder</h2>
+<h2><a name="_Toc350373616"><span lang=EN-US>Use one Output Folder per Source
+Folder</span></a></h2>
 
-<p class=MsoNormal>If you later override the default location by setting the
-output folder per source folder (See the Java Build-Path entry in the project
-properties dialog) you must manually add the new output location to the
-Bundle-ClassPath or use the osgi.dev <span lang=EN style='font-size:10.0pt;
-line-height:115%'>system property</span>. This makes it possible to arrange
-generated class files for different source folders in different output folders,
-and not necessarily the default output folder. This means that the generated
-class files for the project may end up scattered across several folders, rather
-than all in the default output folder (which is more standard).</p>
+<p class=MsoNormal><span lang=EN-US>If you later override the default location
+by setting an output folder per source folder you must manually add the new
+output location to the Bundle-ClassPath or use the osgi.dev system property. This
+feature makes it possible to arrange generated class files for different source
+folders in different output folders, and not necessarily the default output
+folder. This means that the generated class files for the project may end up
+scattered across several folders, rather than all in the default output folder,
+which is the default.</span></p>
 
-<h2><a name="_Toc350373617"></a><a name="_Toc434141786"></a>Add the Output
-Folder Manually to the Bundle-ClassPath </h2>
+<p class=MsoNormal><span lang=EN-US>See the </span><span lang=EN-US
+style='font-size:10.5pt;line-height:115%;color:#333333;background:#F8F8F8'>&quot;<i>Allow
+output folders for source folders</i>&quot; </span><span lang=EN-US>option accessible
+from the project properties dialog in the “Java Build Path” menu entry under the
+source tab, to associate specific output folders to source folders.</span></p>
 
-<p class=MsoNormal>You add an output folder to the Bundle Class-Path manually
-either directly in the manifest file or in the <i>Classpath</i> section from
-the Runtime tab in the Plug-in Manifest Editor of the bundle. To bring up the
-manifest editor select the <img border=0 width=16 height=16
-src="Setting%20Bundle%20Options_files/image007.gif" alt="newpprj_wiz.gif">&nbsp;&nbsp;tool
-bar button in the Bundle View for the selected bundle project or open the manifest.mf
-file in Package or project Explorer. If you for instance use output/bin as the
-output folder for one of your source folders, the class path header should at
-least include the following entry: <i>Bundle Class-Path: output/bin</i>.</p>
+<h2><a name="_Toc350373617"><span lang=EN-US>Add the Output Folder Manually to
+the Bundle-ClassPath</span></a><span lang=EN-US> </span></h2>
 
-<h1><a name="_Toc434141787"></a><a name="_Toc350373618"></a><a
-name=SetActivationPolicyToEagerOnActivate></a><a name="_Set_Activation_Policy"></a>Set
-Activation Policy <span class=Heading1Char><span style='font-weight:normal'>t</span></span>o
-Eager on Activate</h1>
+<p class=MsoNormal><span lang=EN-US>You add an output folder to the Bundle
+Class-Path manually either directly in the manifest file or in the <i>Classpath</i>
+section from the Runtime tab in the Plug-in Manifest Editor of the bundle. To
+bring up the manifest editor select the <img border=0 width=16 height=16
+id="Picture 7" src="Setting%20Bundle%20Options_files/image007.gif"
+alt="newpprj_wiz.gif">  tool bar button in the Bundle View for the selected bundle
+project or open the manifest.mf file in Package or project Explorer. If you for
+instance use output/bin as the output folder for one of your source folders,
+the class path header should at least include the following entry: <i>Bundle
+Class-Path: output/bin</i>.</span></p>
 
-<p class=MsoNormal>By default, the New Plug-in Project wizard in Eclipse
-creates a bundle project with lazy activation policy. A standalone bundle with
-lazy activation will enter state &lt;&lt;LAZY&gt; (or STARTING) when activated
-and the start method in the Activator class will not be executed unless some
-other bundle force one of the classes in the lazy bundle to load.</p>
+<h1><a name="_Toc350373618"></a><a name=SetActivationPolicyToEagerOnActivate></a><a
+name="_Set_Activation_Policy"></a><span lang=EN-US>Set Activation Policy </span><span
+class=Heading1Char><span lang=EN-US style='font-weight:normal'>t</span></span><span
+lang=EN-US>o Eager on Activate</span></h1>
 
-<p class=MsoNormal>By switching this option on, the bundle will activate
-eagerly and enter state ACTIVE, causing the start method in the Activator class
-to execute.</p>
+<p class=MsoNormal><span lang=EN-US>By default the New Plug-in Project wizard
+in Eclipse creates a bundle project with lazy activation policy. A standalone
+bundle with lazy activation will enter state &lt;&lt;LAZY&gt; (or STARTING)
+when activated and the start method in the Activator class will not be executed
+unless some other bundle force one of the classes in the lazy bundle to load.</span></p>
 
-<p class=MsoNormal>This and the <a href="#_Eager_Activation_Policy">Eager
-Activation Policy</a> option respond to the OSGi Bundle-ActivationPolicy header
-in the manifest file and ignore the older Eclipse-LazyStart and the deprecated
-Eclipse-AutoStart headers.</p>
+<p class=MsoNormal><span lang=EN-US>By switching this option on, the bundle
+will activate eagerly and enter state ACTIVE, causing the start method in the
+Activator class to execute.</span></p>
 
-<h1><a name="_Toc434141788"></a><a name="_Toc350373619"></a><a
-name=EagerActivationPolicy></a><a name="_Ref332041219"></a><a
-name="_Eager_Activation_Policy"></a>Eager Activation Policy</h1>
+<p class=MsoNormal><span lang=EN-US>This and the <a
+href="#_Eager_Activation_Policy">Eager Activation Policy</a> option respond to
+the OSGi Bundle-ActivationPolicy header in the manifest file and ignore the
+older Eclipse-LazyStart and the deprecated Eclipse-AutoStart headers.</span></p>
 
-<p class=MsoNormal>This option is set on a per bundle basis from one of the
-Bundle context menus. The option toggles between lazy and eager activation
-policy. Toggling this option on an activated bundle updates the bundle after
-changing the policy setting of the bundle, according to the chosen policy.
-&nbsp;</p>
+<p class=MsoNormal><span lang=EN-US>This option simply manipulates the
+Bundle-ActivationPolicy header in the manifest file.</span></p>
 
-<p class=MsoNormal>This option is overruled by the <a
+<h1><a name="_Toc350373619"></a><a name=EagerActivationPolicy></a><a
+name="_Ref332041219"></a><a name="_Eager_Activation_Policy"></a><span
+lang=EN-US>Eager Activation Policy</span></h1>
+
+<p class=MsoNormal><span lang=EN-US>This option is set on a per bundle basis
+from one of the Bundle context menus. The option toggles between lazy and eager
+activation policy. Toggling this option on an activated bundle updates the
+bundle after changing the policy setting of the bundle, according to the chosen
+policy.  </span></p>
+
+<p class=MsoNormal><span lang=EN-US>This option is overruled by the <a
 href="#SetActivationPolicyToEagerOnActivate"><i>Set Activation Policy to Eager
 on Activate</i></a><i> </i>option when a deactivated bundle is being activated.<i>
-</i>You can fine tune the policy for each bundle with this option by switching
-off the <i>Set Activation Policy to Eager on Activate </i>option.</p>
+</i>You can fine tune the policy for each bundle with this option by switching off
+the <i>Set Activation Policy to Eager on Activate </i>option.</span></p>
 
-<h1><a name="_Toc434141789"></a><a
-name=HandleExternalBundleOprerationsAutomatic></a><a name="_Toc350373620"></a>Handle
-External Commands Automatically</h1>
+<h1><a name="_Toc350373620"></a><a
+name=HandleExternalBundleOprerationsAutomatic><span lang=EN-US>Handle External
+Commands Automatically</span></a></h1>
 
-<p class=MsoNormal>To keep a consistent state between workspace bundles the
-InPlace Activator listens to OSGi commands from the framework, third party
-bundles and external tools as for instance the Host OSGi Console. When this
-option is turned off a modal dialog is provided where you have the option to
-choose what action the InPlace Activator should take when an uninstall command is
-executed in an activated workspace. When turned on, default actions are
-performed silently by the InPlace Activator. See <a
+<p class=MsoNormal><span lang=EN-US>To keep a consistent state between
+workspace bundles the InPlace Activator listens to OSGi commands from the
+framework, third party bundles and external tools as for instance the Host OSGi
+Console. When this option is turned off a modal dialog is provided where you
+have the option to choose what action the InPlace Activator should take when an
+uninstall command is executed in an activated workspace. When turned on,
+default actions are performed silently by the InPlace Activator. See <a
 href="External%20Bundle%20operations.htm">External Bundle operations</a> for a
-description of possible actions.</p>
+description of possible actions.</span></p>
 
-<h1><a name="_Toc434141790">Deactivate Bundles when the IDE Shuts Down</a></h1>
+<h1><a name="_Toc350373621"></a><a name="_Ref335577308"></a><a
+name="_Ref334103569"></a><a name="_Ref333157969"></a><a
+name="_Allow_Plug-Ins_that"></a><span lang=EN-US>Allow Plug-Ins that makes
+Contributions to the </span><span lang=EN-US>Workbench</span></h1>
 
-<p class=MsoNormal>If switched on, the workspace region is deactivated when
-exiting the IDE. If the IDE crashes the workspace region will be deactivated on
-next start up. Also note that if the IDE crashes and the option is off, the
-activated bundles will only be resolved (not started) at the next startup.</p>
+<p class=MsoNormal><span lang=EN-US>Eclipse was initially not designed to
+dynamically activate and deactivate bundles in the middle of a session; - that
+is between startup and shutdown of the IDE or an application. The rewriting of
+the kernel in Eclipse 3.0 supporting OSGi as the runtime architecture with the
+Equinox implementation, opened up for dynamic loading and unloading of bundles.
+This dynamic behavior revealed some issues regarding context binding,
+perspectives and the extension mechanism.</span></p>
 
-<h1><a name="_Toc434141791"></a><a name="_Toc350373621"></a><a
-name="_Ref335577308"></a><a name="_Ref334103569"></a><a name="_Ref333157969"></a><a
-name="_Allow_Plug-Ins_that"></a>Allow Plug-Ins that makes Contributions to the
-Workbench</h1>
+<p class=MsoNormal><span lang=EN-US>This option is provided to avoid accidental
+activation and loading of bundles that require capabilities from the Workbench
+or more specific the Eclipse UI plug-in (“org.eclipse.ui”) and derived UI
+plug-ins. </span></p>
 
-<p class=MsoNormal>Eclipse was initially not designed to dynamically activate
-and deactivate bundles in the middle of a session; - that is between startup
-and shutdown of the IDE or an application. The rewriting of the kernel in
-Eclipse 3.0 supporting OSGi as the runtime architecture with the Equinox
-implementation, opened up for dynamic loading and unloading of bundles. This
-dynamic behavior revealed some issues regarding context binding, perspectives
-and the extension mechanism.</p>
+<p class=MsoNormal><span lang=EN-US>When this option is switched off, bundles
+that make contributions to the UI will not be activated. This also includes
+bundles that require capabilities from UI enabled bundles. When switched on all
+plug-in projects are candidates to be activated.</span></p>
 
-<p class=MsoNormal>This option is provided to avoid accidental activation and
-loading of bundles that require capabilities from the Workbench or more
-specific the Eclipse UI plug-in (“org.eclipse.ui”) and derived UI plug-ins. </p>
+<h2><a name="_Toc350373622"><span lang=EN-US>Context Bindings</span></a></h2>
 
-<p class=MsoNormal>When this option is switched off, bundles that make
-contributions to the UI will not be activated. This also includes bundles that
-require capabilities from UI enabled bundles. When switched on all plug-in
-projects are candidates to be activated.</p>
-
-<h2><a name="_Toc350373622"></a><a name="_Toc434141792"></a>Context Bindings</h2>
-
-<p class=MsoNormal>&nbsp;<a
+<p class=MsoNormal><span lang=EN-US> <a
 href="https://bugs.eclipse.org/bugs/show_bug.cgi?id=295662" target="_blank"
 title="Cannot get the parent identifier from an undefined context">[Bug&nbsp;295662]</a><span
 class=MsoHyperlink>,</span> clutter up the context bindings in Eclipse when
-plug-ins using the command framework is resolved and unresolved after startup.
-This bug is resolved internally in the InPlace Activator as a workaround until
-an official fix comes along. If you use the OSGi Console or any other tool to
+plug-ins using the command framework is resolved and unresolved after startup. This
+bug is resolved internally in the InPlace Activator as a workaround until an
+official fix comes along. If you use the OSGi Console or any other tool to
 resolve or unresolve bundles using the command extension point dynamically, you
 may receive binding errors in the console. Note that this option is not
-relevant for other UI libraries (e.g. JFC/Swing).</p>
+relevant for other UI libraries (e.g. JFC/Swing).</span></p>
 
-<h2><a name="_Toc350373623"></a><a name="_Toc434141793"></a>Dynamic UI
-Contributions</h2>
+<h2><a name="_Toc350373623"><span lang=EN-US>Dynamic UI Contributions</span></a></h2>
 
-<h3><a name="_Toc350373624"></a><a name="_Toc434141794"></a>Standard
-Perspectives</h3>
+<h3><a name="_Toc350373624"><span lang=EN-US>Standard Perspectives</span></a></h3>
 
-<p class=MsoNormal>There is annoying feature - not necessarily a bug - when
-loading and unloading UI dependent bundles. Every time a bundle that
-contributes with a visual UI component is unloaded while in a standard
+<p class=MsoNormal><span lang=EN-US>There is annoying feature - not necessarily
+a bug - when loading and unloading UI dependent bundles. Every time a bundle
+that contributes with a visual UI component is unloaded while in a standard
 perspective a modal dialog pops-up asking for resetting the perspective. To
 avoid this, the workaround is to create a custom perspective using the <i>Window
 | Save Perspective as … </i>menu and save the perspective with a name of your
 own choice. If you use this custom perspective while activating/deactivating
-bundles, the Reset Perspective dialog won’t show up.</p>
+bundles, the Reset Perspective dialog won’t show up.</span></p>
 
-<h3><a name="_Toc350373625"></a><a name="_Toc434141795"></a>Customized
-Perspectives</h3>
+<h3><a name="_Toc350373625"><span lang=EN-US>Customized Perspectives</span></a></h3>
 
-<p class=MsoNormal>If you customize a perspective using the <i>Window |
-Customize Perspective …</i> menu entry, and afterwards resolves or unresolves a
-bundle that makes contributions to the main menu using the command extension
-point an unhandled event loop exception is raised when the menu manager
-&nbsp;tries to contribute the new menu/tool bar item&nbsp; to the main menu.
-This is the case in version 3.x but not in 4.x.</p>
+<p class=MsoNormal><span lang=EN-US>If you customize a perspective using the <i>Window
+| Customize Perspective …</i> menu entry, and afterwards resolves or unresolves
+a bundle that makes contributions to the main menu using the command extension
+point an unhandled event loop exception is raised when the menu manager  tries
+to contribute the new menu/tool bar item  to the main menu. This is the case in
+version 3.x but not in 4.2.</span></p>
 
-<h3><a name="_Toc350373626"></a><a name="_Toc434141796"></a>Dynamic Menu
-contributions in Version 4.x</h3>
+<h3><a name="_Toc350373626"><span lang=EN-US>Dynamic Menu contributions in
+Version 4.2</span></a></h3>
 
-<p class=MsoNormal>Lastly and for some unknown reason Eclipse 4.x does not
-update the main menu and tool bar dynamically. This works in 3.8 and earlier
-versions&nbsp;(from version 3.0).</p>
+<p class=MsoNormal><span lang=EN-US>Lastly and for some unknown reason Eclipse
+4.2 does not update the main menu and tool bar dynamically. This works in 3.8
+and earlier versions  (from version 3.0).</span></p>
 
-<h2><a name="_Toc350373627"></a><a name="_Toc434141797"></a>Extensions and
-Extension Points</h2>
+<h2><a name="_Toc350373627"><span lang=EN-US>Extensions and Extension Points</span></a></h2>
 
-<p class=MsoNormal>When working with dynamic plug-ins, plug-ins that implements
-extensions points should remove all references to classes and resources
-belonging to an extension contributor when the contributed extension is being
-unresolved. Runtime dependencies (e.g. referenced classes) are removed when the
-contributor is unresolved and the extension markup or definition is removed
-when the contributor is uninstalled.</p>
+<p class=MsoNormal><span lang=EN-US>When working with dynamic plug-ins,
+plug-ins that implements extensions points should remove all references to
+classes and resources belonging to an extension contributor when the contributed
+extension is being unresolved. Runtime dependencies (e.g. referenced classes)
+are removed when the contributor is unresolved and the extension markup or
+definition is removed when the contributor is uninstalled.</span></p>
 
-<p class=MsoNormal>The Eclipse stack is dynamic aware, but third party plug-ins
-may not be. Using non dynamic aware plug-ins cause stale references to classes
-in the contributing plug-ins when they are unresolved. <a
-href="http://help.eclipse.org/juno/topic/org.eclipse.platform.doc.isv/reference/api/org/eclipse/core/runtime/dynamichelpers/package-summary.html?resultof=%22%49%45%78%74%65%6e%73%69%6f%6e%54%72%61%63%6b%65%72%22%20%22%69%65%78%74%65%6e%73%69%6f%6e%74%72%61%63%6b%22%20">IExtensionTracker</a>&nbsp;
+<p class=MsoNormal><span lang=EN-US>The Eclipse stack is dynamic aware, but third
+party plug-ins may not be. Using non dynamic aware plug-ins cause stale
+references to classes in the contributing plug-ins when they are unresolved. <a
+href="http://help.eclipse.org/juno/topic/org.eclipse.platform.doc.isv/reference/api/org/eclipse/core/runtime/dynamichelpers/package-summary.html?resultof=%22%49%45%78%74%65%6e%73%69%6f%6e%54%72%61%63%6b%65%72%22%20%22%69%65%78%74%65%6e%73%69%6f%6e%74%72%61%63%6b%22%20">IExtensionTracker</a> 
 is provided for implementing dynamic aware extension points and is also useful
-for tracking additions and removal of extensions in other contexts. </p>
+for tracking additions and removal of extensions in other contexts. </span></p>
 
-<p class=MsoNormal>When dealing with non-dynamic extension points it is possible
-to dynamically add and remove an extension and its references from inside the
-contributing bundle by using <a
+<p class=MsoNormal><span lang=EN-US>When dealing with non-dynamic extension
+points it is possible to dynamically add and remove an extension and its
+references from inside the contributing bundle by using <a
 href="http://help.eclipse.org/juno/index.jsp?topic=%2Forg.eclipse.platform.doc.isv%2Freference%2Fapi%2Forg%2Feclipse%2Fcore%2Fruntime%2FIExtensionRegistry.html">IExtensionRegistry</a>
 and ExtensionRegistry. The ExtensionRegistry class is internal and relevant
 methods for adding and removing extension contributions is at the time of
 writing experimental and part of an interim API that is expected to change in
-the future.</p>
+the future.</span></p>
 
-<p class=MsoNormal>See the <a href="Start%20and%20Stop%20Bundles.htm">Start and
-Stop Bundles</a> section regarding extensions and the OSGi Stop command. </p>
+<p class=MsoNormal><span lang=EN-US>See the <a
+href="Start%20and%20Stop%20Bundles.htm">Start and Stop Bundles</a> section
+regarding extensions and the OSGi Stop command. </span></p>
 
-<h1><a name="_Toc434141798"></a><a name="_Toc350373628"></a>Save Dirty Files
-and a Snapshot of the Workspace before executing Bundle Operations</h1>
+<h1><a name="_Toc350373628"><span lang=EN-US>Saving Resources before executing
+Bundle Operations</span></a></h1>
 
-<p class=MsoNormal>These two options are added to prevent loss of data and
-metadata when the IDE shuts down unexpectedly. </p>
+<p class=MsoNormal><span lang=EN-US>The “Save automatically before build”
+(Window | Preferences | General | Workspace) and “Save required dirty editors
+before launching” (Window | Preferences | Run/Debug | Launching) options are inspected
+before a bundle operation is executed.</span></p>
 
-<p class=MsoNormal>The InPlace Activator activates and deactivates bundles on
-the fly on the development (or source) platform, causing continuous changes in
-the lifecycle of bundles. Starting and stopping a bundle loads and run the
-bundle in-place in the IDE. This may introduce&nbsp;runtime errors&nbsp; where
-the only solution is to end the IDE without the possibility to save the state
-of the workspace. Workspace settings are lost and worse loosing changes done in
-unsaved files.</p>
+<p class=MsoNormal><span lang=EN-US>&nbsp;</span></p>
 
-<p class=MsoNormal>These two options can be used together with the “Save
-automatically before build” (Window | Preferences | General | Workspace) and
-“Save required dirty editors before launching” (Window | Preferences |
-Run/Debug | Launching) options.</p>
+<p class=MsoNormal><span lang=EN-US> “Save automatically before build” saves all
+dirty editors across all open projects. Hidden projects are not included.</span><span
+lang=EN-US style='font-size:9.0pt;line-height:115%;font-family:"Segoe UI",sans-serif'>
+</span><span lang=EN-US> The “Save automatically before build” option is inspected
+first.  If this option is off, the “Save required dirty editors before
+launching” is inspected.</span></p>
 
-<p class=MsoNormal>Note that a snapshot is not a full workspace save, but
-should prevent loss of all critical user data. Note that the “Save a Snapshot
-of the Workspace” is a costly operation. It is recommended to switch the “Save
-automatically before build” and the “Save dirty files” on.</p>
+<p class=MsoNormal><span lang=EN-US>It is recommended to switch the “Save
+automatically before build” on.</span></p>
 
 </div>
 

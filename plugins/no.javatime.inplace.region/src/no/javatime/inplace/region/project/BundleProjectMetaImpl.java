@@ -81,9 +81,8 @@ public class BundleProjectMetaImpl extends CachedManifestOperationsImpl implemen
 			throw new InPlaceException("no_manifest_found_project", project.getName());
 		}
 
-		// IBundleProjectDescription bundleProjDesc = Activator.getBundleDescription(project);
-		IPath defaultOutpUtPath = null; // bundleProjDesc.getDefaultOutputFolder();
-		String bundleClassPath = null; //bundleProjDesc.getHeader(Constants.BUNDLE_CLASSPATH);
+		IPath defaultOutpUtPath = null;
+		String bundleClassPath = null;
 
 		IJavaProject jp = JavaCore.create(project);
 		if (jp.exists()) {
@@ -95,11 +94,11 @@ public class BundleProjectMetaImpl extends CachedManifestOperationsImpl implemen
 		} else {
 			return false;
 		}
-		bundleClassPath = getHeader(project, Constants.BUNDLE_CLASSPATH);
+		bundleClassPath = getHeaderValues(project, Constants.BUNDLE_CLASSPATH);
+
 		if (null == bundleClassPath || null == defaultOutpUtPath) {
 			return false;
 		}
-		
 		if (Category.DEBUG && Category.getState(Category.binpath)) {
 			TraceMessage.getInstance().getString("default_output_folder", project.getName(),
 					defaultOutpUtPath);
@@ -123,9 +122,6 @@ public class BundleProjectMetaImpl extends CachedManifestOperationsImpl implemen
 			}
 		}
 		return null;
-
-//		IBundleProjectDescription bundleProjDesc = Activator.getBundleDescription(project);
-//		return bundleProjDesc.getDefaultOutputFolder();
 	}
 	
 	/* (non-Javadoc)
@@ -134,7 +130,7 @@ public class BundleProjectMetaImpl extends CachedManifestOperationsImpl implemen
 	@Override
 	public String getBundleClassPath(IProject project) {
 
-		return super.getHeader(project, Constants.BUNDLE_CLASSPATH);
+		return super.getHeaderValues(project, Constants.BUNDLE_CLASSPATH);
 	}
 	
 	/* (non-Javadoc)
@@ -364,7 +360,7 @@ public class BundleProjectMetaImpl extends CachedManifestOperationsImpl implemen
 		if (null == project) {
 			throw new InPlaceException(ExceptionMessage.getInstance().getString("project_null"));
 		}
-		String policy =  super.getHeader(project, Constants.BUNDLE_ACTIVATIONPOLICY);
+		String policy =  super.getFirstHeaderValue(project, Constants.BUNDLE_ACTIVATIONPOLICY);
 		if (null != policy && policy.equals(Constants.ACTIVATION_LAZY)) {
 			return true;
 		}
@@ -374,19 +370,19 @@ public class BundleProjectMetaImpl extends CachedManifestOperationsImpl implemen
 	@Override
 	public String getSymbolicName(IProject project) throws InPlaceException {
 
-		return super.getHeader(project, Constants.BUNDLE_SYMBOLICNAME);
+		return super.getFirstHeaderValue(project, Constants.BUNDLE_SYMBOLICNAME);
 	}
 
 	@Override
 	public String getBundleVersion(IProject project) throws InPlaceException {
 
-		return super.getHeader(project, Constants.BUNDLE_VERSION);
+		return super.getFirstHeaderValue(project, Constants.BUNDLE_VERSION);
 	}
 	
 	@Override
 	public boolean isFragment(IProject project) throws InPlaceException {
 
-		return null != super.getHeader(project, Constants.FRAGMENT_HOST) ? true : false;
+		return null != super.getFirstHeaderValue(project, Constants.FRAGMENT_HOST) ? true : false;
 	}
 	
 	public ManifestElement[] getRequiredBundles(IProject project) throws InPlaceException {

@@ -44,71 +44,75 @@ import org.osgi.framework.BundleException;
 import org.osgi.framework.Constants;
 
 /**
- * After a bundle is installed header information in the manifest file and the cached manifest accessed
- * through the bundle may be different. To synchronize the manifest headers an update followed by a refresh is
- * not enough. A re-installation of the bundle is necessary.
+ * After a bundle is installed header information in the manifest file and the cached manifest
+ * accessed through the bundle may be different. To synchronize the manifest headers an update
+ * followed by a refresh is not enough. A re-installation of the bundle is necessary.
  * 
  * @see BundleProjectCandidates
  */
 public class CachedManifestOperationsImpl {
 
 	/**
-	 * Get the first header value of the specified header for the specified project
+	 * Get the header value of the specified header for the specified project
 	 * 
 	 * @param project project with the specified header
-	 * @param header header with a set of values  
-	 * @return the first value in the specified header or null
-	 * @throws InPlaceException if the manifest has an invalid syntax or if an error occurs while reading the manifest
+	 * @param header header with a set of values
+	 * @return the value in the specified header or <code>null</code>
+	 * @throws InPlaceException if the manifest has an invalid syntax or if an error occurs while
+	 * reading the manifest
 	 */
-	public String getHeader(IProject project, String header) throws InPlaceException {
+	public String getHeaderValues(IProject project, String header) throws InPlaceException {
 
-		String key = null; 
+		String key = null;
 		if (null != project && project.isAccessible()) {
 			IFile manifestFile = getManifestFile(project);
 			if (manifestFile.exists()) {
 				try {
-					Map<String, String> headers = ManifestElement.parseBundleManifest(manifestFile.getContents(), null);
-					key = getHeaderValue(headers, header);
+					Map<String, String> headers = ManifestElement
+							.parseBundleManifest(manifestFile.getContents(), null);
+					key = (String) headers.get(Constants.BUNDLE_CLASSPATH);
 				} catch (CoreException | IOException | BundleException e) {
-					throw new InPlaceException(new BundleStatus(StatusCode.ERROR, Activator.PLUGIN_ID, e.getMessage(), e));
+					throw new InPlaceException(
+							new BundleStatus(StatusCode.ERROR, Activator.PLUGIN_ID, e.getMessage(), e));
 				}
 			}
 		}
 		return key;
 	}
-	
+
 	/**
-	 * Get the manifest file of the specified project
+	 * Get the first header value of the specified header for the specified project
 	 * 
-	 * @param project containing the manifest file
-	 * @return the handle of the manifest file or null if project is null
+	 * @param project project with the specified header
+	 * @param header header with a set of values
+	 * @return the first value in the specified header or <code>null</code>
+	 * @throws InPlaceException if the manifest has an invalid syntax or if an error occurs while
+	 * reading the manifest
 	 */
-	public IFile getManifestFile(IProject project) {
-		if (null != project) {
-		IFile manifestFile = project.getFile(BundleProjectMeta.MANIFEST_RELATIVE_PATH
-				+ BundleProjectMetaImpl.MANIFEST_FILE_NAME);
-		return manifestFile;
-		}
-		return null;
-	}
-	
-	/**
-	 * Returns the header value from the Map of ManifestElement's or <code>null</code> if none.
-	 * 
-	 * @param headers map of ManifestElement's
-	 * @param key header name
-	 * @return header value or <code>null</code>
-	 * @throws CoreException if the header value is invalid
-	 */
-	private String getHeaderValue(Map<String, String> headers, String key) throws CoreException {
-		ManifestElement[] elements = parseHeader(headers, key);
-		if (elements != null) {
-			if (elements.length > 0) {
-				return elements[0].getValue();
+	public String getFirstHeaderValue(IProject project, String header) throws InPlaceException {
+
+		String key = null;
+		if (null != project && project.isAccessible()) {
+			IFile manifestFile = getManifestFile(project);
+			if (manifestFile.exists()) {
+				try {
+					Map<String, String> headers = ManifestElement
+							.parseBundleManifest(manifestFile.getContents(), null);
+					ManifestElement[] elements = parseHeader(headers, header);
+					if (elements != null) {
+						if (elements.length > 0) {
+							key = elements[0].getValue();
+						}
+					}
+				} catch (CoreException | IOException | BundleException e) {
+					throw new InPlaceException(
+							new BundleStatus(StatusCode.ERROR, Activator.PLUGIN_ID, e.getMessage(), e));
+				}
 			}
 		}
-		return null;
+		return key;
 	}
+
 	/**
 	 * Parses the specified header.
 	 * 
@@ -117,7 +121,8 @@ public class CachedManifestOperationsImpl {
 	 * @return elements or <code>null</code> if none
 	 * @throws InPlaceException if the header value is invalid
 	 */
-	protected ManifestElement[] parseHeader(Map<String, String> headers, String key) throws InPlaceException {
+	protected ManifestElement[] parseHeader(Map<String, String> headers, String key)
+			throws InPlaceException {
 
 		String value = headers.get(key);
 		if (value != null) {
@@ -125,16 +130,30 @@ public class CachedManifestOperationsImpl {
 				try {
 					return ManifestElement.parseHeader(key, value);
 				} catch (BundleException e) {
-					throw new InPlaceException(new BundleStatus(StatusCode.ERROR, Activator.PLUGIN_ID, e.getMessage(), e));
+					throw new InPlaceException(
+							new BundleStatus(StatusCode.ERROR, Activator.PLUGIN_ID, e.getMessage(), e));
 				}
 			}
-			// empty header
-			return new ManifestElement[0];
 		}
 		return null;
 	}
 
-		@SuppressWarnings("unused")
+	/**
+	 * Get the manifest file of the specified project
+	 * 
+	 * @param project containing the manifest file
+	 * @return the handle of the manifest file or null if project is null
+	 */
+	public IFile getManifestFile(IProject project) {
+		if (null != project) {
+			IFile manifestFile = project.getFile(
+					BundleProjectMeta.MANIFEST_RELATIVE_PATH + BundleProjectMetaImpl.MANIFEST_FILE_NAME);
+			return manifestFile;
+		}
+		return null;
+	}
+
+	@SuppressWarnings("unused")
 	private void setActivationPolicy(Collection<IProject> projects, Boolean eagerActivation) {
 		if (null == projects) {
 			return;
@@ -157,7 +176,7 @@ public class CachedManifestOperationsImpl {
 					}
 				}
 			} catch (ProjectLocationException e) {
-				throw new InPlaceException(e, "parsing_manifest", project.getName());				
+				throw new InPlaceException(e, "parsing_manifest", project.getName());
 			} catch (Exception e) {
 				throw new InPlaceException(e, "parsing_manifest", project.getName());
 			}
@@ -186,18 +205,23 @@ public class CachedManifestOperationsImpl {
 			}
 			saveManifest(project, manifest);
 		} catch (ProjectLocationException e) {
-			throw new InPlaceException(e, "parsing_manifest", project.getName());				
+			throw new InPlaceException(e, "parsing_manifest", project.getName());
 		} catch (Exception e) {
 			throw new InPlaceException(e, "parsing_manifest", project.getName());
 		}
 	}
 
-	/* (non-Javadoc)
-	 * @see no.javatime.inplace.region.project.CachedmanifestOperations#getCachedActivationPolicy(org.osgi.framework.Bundle)
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see
+	 * no.javatime.inplace.region.project.CachedmanifestOperations#getCachedActivationPolicy(org.osgi.
+	 * framework.Bundle)
 	 */
 	public Boolean getCachedActivationPolicy(Bundle bundle) throws InPlaceException {
 		if (null == bundle) {
-			throw new InPlaceException(ExceptionMessage.getInstance().getString("null_bundle_activation_policy"));
+			throw new InPlaceException(
+					ExceptionMessage.getInstance().getString("null_bundle_activation_policy"));
 		}
 		Dictionary<String, String> headers = bundle.getHeaders();
 		String policy = headers.get(Constants.BUNDLE_ACTIVATIONPOLICY);
@@ -207,14 +231,18 @@ public class CachedManifestOperationsImpl {
 		return false;
 	}
 
-	/* (non-Javadoc)
-	 * @see no.javatime.inplace.region.project.CachedmanifestOperations#isFragment(org.osgi.framework.Bundle)
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see no.javatime.inplace.region.project.CachedmanifestOperations#isFragment(org.osgi.framework.
+	 * Bundle)
 	 */
 	public Boolean isCachedFragment(Bundle bundle) throws InPlaceException {
 		if (null == bundle) {
-			throw new InPlaceException(ExceptionMessage.getInstance().getString("null_bundle_check_fragment"));
+			throw new InPlaceException(
+					ExceptionMessage.getInstance().getString("null_bundle_check_fragment"));
 		}
-		try {			
+		try {
 			Dictionary<String, String> headers = bundle.getHeaders();
 			// Key is always not null
 			String fragment = headers.get(Constants.FRAGMENT_HOST);
@@ -227,8 +255,12 @@ public class CachedManifestOperationsImpl {
 		return false;
 	}
 
-	/* (non-Javadoc)
-	 * @see no.javatime.inplace.region.project.CachedmanifestOperations#verifyPathInCachedClassPath(org.osgi.framework.Bundle, org.eclipse.core.runtime.IPath)
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see
+	 * no.javatime.inplace.region.project.CachedmanifestOperations#verifyPathInCachedClassPath(org.
+	 * osgi.framework.Bundle, org.eclipse.core.runtime.IPath)
 	 */
 	public Boolean verifyPathInCachedClassPath(Bundle bundle, IPath path) throws InPlaceException {
 		if (null == bundle) {
@@ -239,19 +271,24 @@ public class CachedManifestOperationsImpl {
 		return verifyPathInCachedClassPath(path, classPath, bundle.getSymbolicName());
 	}
 
-	/* (non-Javadoc)
-	 * @see no.javatime.inplace.region.project.CachedmanifestOperations#verifyPathInCachedClassPath(org.eclipse.core.runtime.IPath, java.lang.String, java.lang.String)
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see
+	 * no.javatime.inplace.region.project.CachedmanifestOperations#verifyPathInCachedClassPath(org.
+	 * eclipse.core.runtime.IPath, java.lang.String, java.lang.String)
 	 */
-	public Boolean verifyPathInCachedClassPath(IPath path, String classPath, String name) throws InPlaceException {
+	public Boolean verifyPathInCachedClassPath(IPath path, String classPath, String name)
+			throws InPlaceException {
 		try {
 
 			// Class path header does not exist
 			if (null == classPath || null == path) {
 				return false;
 			}
-// TODO Use trace from new plug-in
-//			if (Category.DEBUG && Category.getState(Category.binpath))
-//				InPlace.get().trace("classpath_header", name, classPath);
+			// TODO Use trace from new plug-in
+			// if (Category.DEBUG && Category.getState(Category.binpath))
+			// InPlace.get().trace("classpath_header", name, classPath);
 			// Search for the bin class path entry in the class path header
 			if (classPath.isEmpty()) {
 				return false;
@@ -285,8 +322,8 @@ public class CachedManifestOperationsImpl {
 	 * 
 	 * @param bundle to which the manifest is associated with
 	 * @return the manifest file
-	 * @exception InPlaceException if {@code Bundle#getEntry(String)} return null or an i/o error occurs reading
-	 *              the manifest
+	 * @exception InPlaceException if {@code Bundle#getEntry(String)} return null or an i/o error
+	 * occurs reading the manifest
 	 */
 	@SuppressWarnings("unused")
 	private Manifest loadManifest(Bundle bundle) throws InPlaceException {
@@ -359,13 +396,15 @@ public class CachedManifestOperationsImpl {
 	 * 
 	 * @param project containing the manifest file
 	 * @param manifest file
-	 * @throws InPlaceException if the specified project is null, the location identifier for the specified
-	 *           project could not be found, manifest file not found, write error or any other IO error updating
-	 *           the manifest file.
+	 * @throws InPlaceException if the specified project is null, the location identifier for the
+	 * specified project could not be found, manifest file not found, write error or any other IO
+	 * error updating the manifest file.
 	 */
-	private void saveManifest(IProject project, Manifest manifest) throws InPlaceException, ProjectLocationException {
+	private void saveManifest(IProject project, Manifest manifest)
+			throws InPlaceException, ProjectLocationException {
 		String location = null;
-		location = WorkspaceRegionImpl.INSTANCE.getProjectLocationIdentifier(project, BundleRegion.BUNDLE_FILE_LOC_SCHEME);
+		location = WorkspaceRegionImpl.INSTANCE.getProjectLocationIdentifier(project,
+				BundleRegion.BUNDLE_FILE_LOC_SCHEME);
 		URL urlLoc;
 		try {
 			FileOutputStream os = null;
@@ -399,12 +438,12 @@ public class CachedManifestOperationsImpl {
 	 */
 	public boolean hasManifest(IProject project) {
 		if (null != project && project.isAccessible()) {
-			IFile manifestFile = project.getFile(BundleProjectMeta.MANIFEST_RELATIVE_PATH
-					+ BundleProjectMetaImpl.MANIFEST_FILE_NAME);
+			IFile manifestFile = project.getFile(
+					BundleProjectMeta.MANIFEST_RELATIVE_PATH + BundleProjectMetaImpl.MANIFEST_FILE_NAME);
 			if (manifestFile.exists()) {
 				return true;
 			}
 		}
 		return false;
-	}	
+	}
 }
