@@ -109,7 +109,7 @@ public class WorkspaceRegionImpl implements BundleRegion {
 	}
 
 	@Override
-	public IProject getProject(Bundle bundle) {
+	public IProject getProject(Bundle bundle) throws ProjectLocationException {
 
 		BundleNode node = getNode(bundle);
 		if (null != node) {
@@ -137,8 +137,12 @@ public class WorkspaceRegionImpl implements BundleRegion {
 	 * @param bundle the bundle associated with the project to return
 	 * @return the associated project of the specified bundle or null if no project is found or
 	 * workspace is closed
+	 * @throws ProjectLocationException if the specified project is null or the location of the
+	 * specified project could not be found
+	 * @throws InPlaceException If the caller does not have the appropriate
+	 * AdminPermission[this,METADATA], and the Java Runtime Environment supports permissions.
 	 */
-	public IProject getWorkspaceBundleProject(Bundle bundle) {
+	public IProject getWorkspaceBundleProject(Bundle bundle) throws ProjectLocationException, InPlaceException {
 		if (null == bundle) {
 			return null;
 		}

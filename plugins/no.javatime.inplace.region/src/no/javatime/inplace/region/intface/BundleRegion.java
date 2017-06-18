@@ -145,8 +145,8 @@ public interface BundleRegion {
 	 * AdminPermission[this,METADATA], and the Java Runtime Environment supports permissions.
 	 * @see #getProjectLocationIdentifier(IProject, String)
 	 */
-	public String getBundleLocationIdentifier(IProject project) throws ProjectLocationException,
-			InPlaceException;
+	public String getBundleLocationIdentifier(IProject project)
+			throws ProjectLocationException, InPlaceException;
 
 	/**
 	 * Register the specified project and the associated bundle with the region as a bundle project.
@@ -158,9 +158,10 @@ public interface BundleRegion {
 	 * {@code Transition.ACTIVATE_BUNDLE} is added as a pending command. This indicates that the
 	 * bundle should be resolved and optionally started.
 	 * <p>
-	 * If the the specified activation status is false and the bundle state is {@code Bundle.RESOLVED}, {@code Bundle.STARTING}, {@code Bundle.ACTIVE} or {@code Bundle.STOPPING} a
-	 * {@code Transition.DEACTIVATE} is added as a pending bundle command. This indicates that the
-	 * bundle should be deactivated.
+	 * If the the specified activation status is false and the bundle state is
+	 * {@code Bundle.RESOLVED}, {@code Bundle.STARTING}, {@code Bundle.ACTIVE} or
+	 * {@code Bundle.STOPPING} a {@code Transition.DEACTIVATE} is added as a pending bundle command.
+	 * This indicates that the bundle should be deactivated.
 	 * <p>
 	 * You can control this manually by removing pending operations on a registered bundle, and then
 	 * invoke one or more of the bundle commands
@@ -236,8 +237,10 @@ public interface BundleRegion {
 	 * @param bundle the bundle associated with the project to return
 	 * @return the associated project of the specified bundle or null if no project is found
 	 * @see BundleCommand#registerBundleProject(IProject, Bundle, boolean)
+	 * @throws ProjectLocationException if the specified project is null or the location of the
+	 * specified project could not be found
 	 */
-	public IProject getProject(Bundle bundle);
+	public IProject getProject(Bundle bundle) throws ProjectLocationException;
 
 	/**
 	 * Get the project containing the specified symbolic name and version.
@@ -332,8 +335,8 @@ public interface BundleRegion {
 	 * Get all activated bundles with the specified state(s). Note that uninstalled bundles are not
 	 * activated and thus not part of the bundle region.
 	 * 
-	 * @param state a bundle state obtained from on or more of the {@Bundle} state constants
-	 * except {@linkplain Bundle#UNINSTALLED}
+	 * @param state a bundle state obtained from on or more of the {@Bundle} state constants except
+	 * {@linkplain Bundle#UNINSTALLED}
 	 * @return all bundles that matches the specified state(s) or an empty collection
 	 */
 	public Collection<Bundle> getBundles(int state);
@@ -344,8 +347,8 @@ public interface BundleRegion {
 	 * Bundles not registered with the associated project in the region are ignored.
 	 * 
 	 * @param bundles bundles to check for the specified state
-	 * @param state a bundle state obtained from on or more of the {@Bundle} state constants
-	 * except {@linkplain Bundle#UNINSTALLED}
+	 * @param state a bundle state obtained from on or more of the {@Bundle} state constants except
+	 * {@linkplain Bundle#UNINSTALLED}
 	 * @return all bundles that matches the specified state(s) or an empty collection
 	 */
 	public Collection<Bundle> getBundles(Collection<Bundle> bundles, int state);
@@ -384,7 +387,7 @@ public interface BundleRegion {
 	 * @return all installed jar bundles or an empty collection
 	 */
 	public Collection<Bundle> getJarBundles();
-	
+
 	/**
 	 * Check if the specified project is a duplicate of another workspace bundle project
 	 * 
