@@ -36,23 +36,56 @@ import org.eclipse.ui.statushandlers.StatusManager;
 import org.osgi.service.prefs.BackingStoreException;
 
 /**
+ * Act on bundle projects states when auto build is switched on.
+ * <p>
+ * Remove any build - including missing build sate - and bundle errors before projects are built
+ * <p>
  * Update activated bundle projects and remove pending build transitions for deactivated bundle
- * projects after automatic build has been switched on. 
+ * projects after projects have been built.
  * <p>
  * If automatic build is switched on after projects are modified, the post build listener is not
- * called by the builder when build kind is auto build and the resource delta is empty.
+ * called by the build framework when build kind is auto build and the resource delta is empty.
+ * Modifications of meta files (e.g. description and manifest files) leads to empty resource deltas.
  * <p>
- * Modifications of meta files (e.g. .project and manifest files) leads to empty resource deltas.
+ * For activated projects, update should be scheduled if there are pending update transitions (the
+ * java time builder has been invoked).
  * 
- * For activated projects an update should be scheduled if there exists a pending update transition
- * (the java time builder has been invoked) by the build system.
+ * In such cases - where the post builder is not called - an update job is scheduled. In all other
+ * cases the post build listener is responsible for scheduling update jobs for activated projects
+ * that have been built.
  * 
- * This is for instance the case if only meta project files (e.g. manifest) have been changed. In
- * such cases an update job is scheduled by this auto build listener. In all other cases the post
- * build listener is responsible for scheduling update jobs for activated projects that are built.
- * 
+ * @see PostBuildListener
+ * @see PreBuildListener
  */
+
 public class AutoBuildListener implements IExecutionListener {
+
+	final static private String autoBuildCmd = "org.eclipse.ui.project.buildAutomatically";
+
+	/**
+	 * Remove any build and bundle errors from projects to build
+	 * 
+	 * @see #postExecuteSuccess(String, Object)
+	 */
+	@Override
+	public void preExecute(String commandId, ExecutionEvent event) {
+
+		if (commandId.equals(autoBuildCmd)) {
+			// This is the state before toggle. Auto build is switched from off to on
+			if (!Activator.getBundleProjectCandidatesService().isAutoBuilding()) {
+				BundleRegion bundleRegion = Activator.getBundleRegionService();
+				BundleTransition bundleTransition = Activator.getBundleTransitionService();
+				// Pending build added by the pre build listener when auto build was off
+				final Collection<IProject> pendingProjects = bundleTransition
+						.getPendingProjects(bundleRegion.getProjects(), Transition.BUILD);
+				// Remove all errors before a build and after auto build is switched on
+				for (IProject project : pendingProjects) {
+					bundleTransition.clearBuildTransitionError(project);
+					bundleTransition.clearBundleTransitionError(project);
+				}
+			}
+		}
+	}
 
 	/**
 	 * If files have been modified when auto build is off:
@@ -69,21 +102,23 @@ public class AutoBuildListener implements IExecutionListener {
 	 * <li>The post build listener is called occasionally and when called an update job is scheduled
 	 * </ol>
 	 * 
-	 * In the case where auto build is switched on and the post build listener is not called an update
-	 * job is scheduled on behalf of the not called post build listener. To schedule a build the must
-	 * exist bundle projects with pending update transitions (a build has been performed and the
-	 * bundles should be updated).
+	 * In the case where auto build is switched on and the post build listener is not called, an
+	 * update job is scheduled on behalf of the not called post build listener. To schedule a build
+	 * there must exist bundle projects with pending update transitions (a build has been performed
+	 * and the bundles should be updated).
 	 * <p>
 	 */
 	@Override
 	public void postExecuteSuccess(String commandId, Object returnValue) {
 
-		if (commandId.equals("org.eclipse.ui.project.buildAutomatically")) {
+		if (commandId.equals(autoBuildCmd)) {
 			try {
+				// This is the state after toggle. Auto build is switched from off to on
 				if (Activator.getBundleProjectCandidatesService().isAutoBuilding()) {
 					try {
 						// Remove all saved pending build transitions
-						StatePersistParticipant.clearPendingBuildTransitions(StatePersistParticipant.getSessionPreferences());
+						StatePersistParticipant
+								.clearPendingBuildTransitions(StatePersistParticipant.getSessionPreferences());
 					} catch (IllegalStateException | BackingStoreException e) {
 						String msg = WarnMessage.getInstance().formatString("failed_getting_preference_store");
 						StatusManager.getManager().handle(
@@ -92,23 +127,19 @@ public class AutoBuildListener implements IExecutionListener {
 					}
 					BundleRegion bundleRegion = Activator.getBundleRegionService();
 					if (bundleRegion.isRegionActivated()) {
-						execute(bundleRegion);
-					} else {
-						// Execute waits on builder
-						// Let the post build listener remove pending builds 
-						Activator.getResourceStateService().waitOnBuilder(false);
+						postExecute(bundleRegion);
 					}
 					BundleTransition bundleTransition = Activator.getBundleTransitionService();
 					// Remove pending build transition for deactivated bundle projects
-					// Activated bundle projects are removed by the java time builder
-					final Collection<IProject> pendingProjects = bundleTransition.getPendingProjects(
-							bundleRegion.getProjects(false), Transition.BUILD);
+					// Pending build transitions are removed for activated bundle projects by the java time
+					// builder
+					final Collection<IProject> pendingProjects = bundleTransition
+							.getPendingProjects(bundleRegion.getProjects(false), Transition.BUILD);
 					if (pendingProjects.size() > 0) {
-						removeBuildTransition.addPendingProjects(pendingProjects);
-						removeBuildTransition.getJob().schedule();
+						removeBuildTransitionJob.addPendingProjects(pendingProjects);
+						removeBuildTransitionJob.getJob().schedule();
 					}
 				}
-
 			} catch (ExtenderException e) {
 				StatusManager.getManager().handle(
 						new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),
@@ -117,7 +148,11 @@ public class AutoBuildListener implements IExecutionListener {
 		}
 	}
 
-	private BundleExecutor removeBuildTransition = new BundleJob("Remove pending build transition") {
+	/**
+	 * Remove any pending build transitions from projects
+	 */
+	private BundleExecutor removeBuildTransitionJob = new BundleJob(
+			"Remove pending build transition") {
 		@Override
 		public IBundleStatus runInWorkspace(IProgressMonitor monitor) throws CoreException {
 
@@ -141,26 +176,24 @@ public class AutoBuildListener implements IExecutionListener {
 	};
 
 	/**
-	 * Auto build has been switched on. Wait for the builder to finish and update bundles if the post
-	 * build listener has not been called.
+	 * Auto build has been switched on. Update bundles if the post build listener has not been called
+	 * after a build.
 	 * <p>
 	 * Schedule an update job if there are pending bundle projects to update
 	 * 
 	 * @param bundleRegion The bundle region service used to obtain activated bundle projects
 	 */
-	private void execute(final BundleRegion bundleRegion) {
+	private void postExecute(final BundleRegion bundleRegion) {
 
 		ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(1);
 		try {
 			scheduledExecutorService.schedule(new Callable<Object>() {
 				public Object call() throws Exception {
 					try {
-						Activator.getResourceStateService().waitOnBuilder(false);
 						BundleTransition bundleTransition = Activator.getBundleTransitionService();
-
 						// Schedule an update job on behalf of the post build listener
-						Collection<IProject> pendingProjects = bundleTransition.getPendingProjects(
-								bundleRegion.getActivatedProjects(), Transition.UPDATE);
+						Collection<IProject> pendingProjects = bundleTransition
+								.getPendingProjects(bundleRegion.getActivatedProjects(), Transition.UPDATE);
 						if (pendingProjects.size() > 0) {
 							Update update = new UpdateJob();
 							for (IProject project : pendingProjects) {
@@ -189,7 +222,7 @@ public class AutoBuildListener implements IExecutionListener {
 			scheduledExecutorService.shutdown();
 		}
 	}
-		
+
 	@Override
 	public void notHandled(String commandId, NotHandledException exception) {
 	}
@@ -197,9 +230,4 @@ public class AutoBuildListener implements IExecutionListener {
 	@Override
 	public void postExecuteFailure(String commandId, ExecutionException exception) {
 	}
-
-	@Override
-	public void preExecute(String commandId, ExecutionEvent event) {
-	}
-
 }

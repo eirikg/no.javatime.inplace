@@ -96,7 +96,6 @@ class StartUpJob extends ActivateBundleJob {
 	public IBundleStatus runInWorkspace(IProgressMonitor monitor) {
 
 		try {
-			BundleTransitionListener.addBundleTransitionListener(this);
 			// If workspace session is true it implies an IDE crash, and false indicates a normal exit
 			boolean isRecoveryMode = StatePersistParticipant.isWorkspaceSession();
 			// Setting the session to false signals that the workbench is not yet up and running
@@ -107,9 +106,8 @@ class StartUpJob extends ActivateBundleJob {
 			startUpInit();
 			Collection<IProject> activatedPendingProjects = getPendingProjects();
 			if (activatedPendingProjects.size() > 0) {
-				// Indicates an IDE crash. Bundle projects have not been deactivated at shutdown
 				if (!deactivateWorkspace(monitor, activatedPendingProjects, isRecoveryMode)) {
-					// Activate workspace
+					// Activate the workspace
 					if (isRecoveryMode) {
 						addLogStatus(Msg.RECOVERY_RESOLVE_BUNDLE_INFO);
 					}
@@ -117,13 +115,12 @@ class StartUpJob extends ActivateBundleJob {
 					super.runInWorkspace(monitor);
 				}
 			} else {
-				// Deactivated workspace
+				// Only register the bundles with the workspace when it has been deactivated
 				registerBundleProjects();
 				if (isRecoveryMode) {
 					addLogStatus(Msg.RECOVERY_NO_ACTION_BUNDLE_INFO);
 				}
 				StatePersistParticipant.restoreSessionState();
-				// TODO Build state is not always reported correct at startup. What to do?
 				// Calculate errors after workspace is deactivated
 				for (IProject project : bundleRegion.getProjects()) {
 					if (BundleProjectBuildError.hasErrors(project, true)) {
@@ -132,8 +129,6 @@ class StartUpJob extends ActivateBundleJob {
 							// Only at start up
 							// We are usually not sending messages to the log in a deactivated workspace
 							addLogStatus(status);
-							bundleTransition.clearBuildTransitionError(project);
-							bundleTransition.clearBundleTransitionError(project);	
 						}
 					}
 				}
@@ -174,7 +169,6 @@ class StartUpJob extends ActivateBundleJob {
 				String msg = WarnMessage.getInstance().formatString("failed_getting_preference_store");
 				addError(e, msg);
 			}
-			BundleTransitionListener.removeBundleTransitionListener(this);
 		}
 		return getJobSatus();
 	}
@@ -183,7 +177,7 @@ class StartUpJob extends ActivateBundleJob {
 	 * Deactivate workspace if the "deactivate on exit" preference is on or if there are build errors
 	 * among the specified projects or any requiring projects to the specified projects
 	 * <p>
-	 * If the IDE terminated the bundles are refreshed (this is strictly not necessary)
+	 * If the IDE terminated unexpectedly the bundles are refreshed after being deactivated
 	 * 
 	 * @param monitor progress monitor
 	 * @param activatedPendingProjects All activated bundle projects in workspace
@@ -200,6 +194,7 @@ class StartUpJob extends ActivateBundleJob {
 
 		SubMonitor progress = SubMonitor.convert(monitor, activatedPendingProjects.size());
 		try {
+			BundleTransitionListener.addBundleTransitionListener(this);
 			BundleRegion bundleRegion = Activator.getBundleRegionService();
 			Collection<IProject> bundleProjects = bundleProjectCandidates.getBundleProjects();
 			Collection<IProject> projectsToDeactivate = SessionManager.isDeactivateOnExit(bundleProjects,
@@ -235,13 +230,14 @@ class StartUpJob extends ActivateBundleJob {
 				return true;
 			}
 		} finally {
+			BundleTransitionListener.removeBundleTransitionListener(this);
 			progress.worked(1);
 		}
 		return false;
 	}
 
 	private void startUpInit() {
-
+		
 		final IBundleStatus multiStatus = new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID,
 				"Session Settings");
 		final Activator activator = Activator.getInstance();
