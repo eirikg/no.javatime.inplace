@@ -1,0 +1,17 @@
+target "Inplace Oxygen Target Platform"
+
+with source, requirements
+
+location Eclipse-Oxygen "http://download.eclipse.org/releases/oxygen" {
+	org.eclipse.emf.common.feature.group lazy
+	org.eclipse.emf.ecore.feature.group lazy
+	org.eclipse.equinox.sdk.feature.group lazy
+	org.eclipse.platform.feature.group lazy
+	org.eclipse.sdk.feature.group lazy
+	org.eclipse.jdt.feature.group lazy
+}
+
+location Eclipse-Egit "http://download.eclipse.org/egit/updates-4.7.1" { 
+	org.eclipse.egit.feature.group lazy		
+	org.eclipse.jgit.feature.group lazy			
+}
