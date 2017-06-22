@@ -1,5 +1,6 @@
-
 target "Inplace Juno (3.8.2) Target Platform"
+
+with source, requirements
 
 location Eclipse-Juno "http://download.eclipse.org/eclipse/updates/3.8" { 
 	org.eclipse.platform.feature.group lazy
