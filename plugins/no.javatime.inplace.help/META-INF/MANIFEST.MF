@@ -1,7 +1,7 @@
 Manifest-Version: 1.0
 Require-Bundle: org.eclipse.ui,org.eclipse.core.runtime
 Bundle-Vendor: JavaTime Project
-Bundle-Version: 0.1.7.qualifier
+Bundle-Version: 0.1.8.qualifier
 Bundle-Name: InPlace Help System
 Bundle-Activator: no.javatime.help.Activator
 Bundle-ManifestVersion: 2

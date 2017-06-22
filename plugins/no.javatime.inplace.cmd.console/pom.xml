@@ -11,5 +11,5 @@
 
 	<artifactId>no.javatime.inplace.cmd.console</artifactId>
 	<packaging>eclipse-plugin</packaging>
-	<version>0.1.3-SNAPSHOT</version>
+	<version>0.1.4-SNAPSHOT</version>
 </project>

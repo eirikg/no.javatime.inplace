@@ -10,5 +10,5 @@
 
   <artifactId>no.javatime.inplace.log</artifactId>
   <packaging>eclipse-plugin</packaging>
-  <version>0.1.6-SNAPSHOT</version>
+  <version>0.1.7-SNAPSHOT</version>
 </project>

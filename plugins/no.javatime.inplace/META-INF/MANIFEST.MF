@@ -11,7 +11,7 @@ Export-Package: no.javatime.inplace.builder.intface,
  no.javatime.inplace.bundlejobs.events.intface,
  no.javatime.inplace.bundlejobs.intface
 Bundle-Vendor: JavaTime Project
-Bundle-Version: 0.3.1.qualifier
+Bundle-Version: 0.3.2.qualifier
 Bundle-Name: InPlace Core
 Bundle-Activator: no.javatime.inplace.Activator
 Bundle-ManifestVersion: 2

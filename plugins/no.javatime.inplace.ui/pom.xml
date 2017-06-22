@@ -11,5 +11,5 @@
 
 	<artifactId>no.javatime.inplace.ui</artifactId>
 	<packaging>eclipse-plugin</packaging>
-	<version>0.2.8-SNAPSHOT</version>
+	<version>0.2.9-SNAPSHOT</version>
 </project>

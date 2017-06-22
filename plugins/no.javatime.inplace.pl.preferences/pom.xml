@@ -10,5 +10,5 @@
 
   <artifactId>no.javatime.inplace.pl.preferences</artifactId>
   <packaging>eclipse-plugin</packaging>
-  <version>0.1.7-SNAPSHOT</version>
+  <version>0.1.8-SNAPSHOT</version>
 </project>
