@@ -201,7 +201,7 @@ public class AutoBuildListener implements IExecutionListener {
 									UpdateScheduler.addProjectToUpdateJob(project, update);
 								}
 							}
-							if (update.pendingProjects() > 0 && JavaTimeBuilder.hasBuild()) {
+							if (update.pendingProjects() > 0) {
 								JavaTimeBuilder.postBuild();
 								Activator.getBundleExecutorEventService().add(update);
 							}
