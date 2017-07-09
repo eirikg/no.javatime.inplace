@@ -376,12 +376,11 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 	 * @param projects to display in the bundle view
 	 */
 	protected void bundleViewHandler(Collection<IProject> projects) {
-		BundleProjectCandidates bundleProjectCandidates = Activator.getBundleProjectCandidatesService();
+
 		if (!ViewUtil.isVisible(BundleView.ID)) {
 			ViewUtil.show(BundleView.ID);
-			updateBundleListPage(bundleProjectCandidates.toJavaProjects(bundleProjectCandidates
-					.getInstallable()));
 		} else {
+			BundleProjectCandidates bundleProjectCandidates = Activator.getBundleProjectCandidatesService();
 			BundleView bv = BundleCommandsContributionItems.getBundleView();
 			Collection<IJavaProject> javaProjects = bundleProjectCandidates.toJavaProjects(projects);
 			int size = javaProjects.size();

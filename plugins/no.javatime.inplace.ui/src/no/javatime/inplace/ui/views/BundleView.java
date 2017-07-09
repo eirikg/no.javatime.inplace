@@ -62,6 +62,7 @@ import org.eclipse.jface.action.IMenuManager;
 import org.eclipse.jface.action.IToolBarManager;
 import org.eclipse.jface.action.MenuManager;
 import org.eclipse.jface.action.Separator;
+import org.eclipse.jface.dialogs.IDialogSettings;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.viewers.DoubleClickEvent;
 import org.eclipse.jface.viewers.IDoubleClickListener;
@@ -125,6 +126,9 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 	private PageBook pagebook;
 	private TableViewer bundleDetailsPage;
 	private TableViewer bundleListPage;
+	// Label provider for the bundle list page
+	private BundleListLabelProvider bundleListLabelProvider;
+
 	// Local pull down menu
 	private IMenuManager pullDownMenuManager;
 	// Common for both pages
@@ -143,6 +147,14 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 			.getImageDescriptor("icons/gear_list_title.png"); //$NON-NLS-1$
 	final private Image detailsTitleImage = detailsTitleImageDesc.createImage();
 	final private Image listTitleImage = listTitleImageDesc.createImage();
+
+	// Section and key names settings to be stored
+	private final static String bundleViewProjectSelectionSection = "BundleViewProjectSelectionSection";
+	private final static String bundleViewProjectSelection = "ProjectSelection";
+	private final static String bundleViewLinkToSection = "BundleViewLinkToSection";
+	private final static String bundleViewLinkToExplorers = "LinkToExplorers";
+	private final static String bundleViewPageSelectionSection = "BundleViewPageSelectionSection";
+	private final static String bundleViewDetailsPageSelection = "DetailsPageSelection";
 
 	// Toggle between bundle list and bundle details page
 	private Action flipPageAction;
@@ -163,90 +175,93 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 	// Link with explorers
 	private Action linkWithAction;
 	private boolean linkWithState;
-	// Select bundles with this index next time the list page is updated
-	private int selectIndex = 0;
+	// Select bundles with this project name next time the list page is updated
+	private IProject selectedProject;
 	// Renamed, deleted and closed projects are marked as removed to prohibit displaying them in pages
 	private IProject removedProject;
 	// Dynamically delegates the selection provider role to the currently active page.
 	final private SelectionProviderIntermediate selectionProviderIntermediate = new SelectionProviderIntermediate();
 	// Refreshes the bundle properties page
 	private BundlePropertySheetPage bundlePropertySheetPage;
-	// Save/restore session state
-	private IMemento memento;
 	// Track selections in explorers
 	private IViewPart packageExplorer;
 	private IViewPart projectExplorer;
 
-	@Override
-	public void init(IViewSite site, IMemento memento) throws PartInitException {
-		super.init(site, memento);
-		this.memento = memento;
-	}
-
 	/**
-	 * Save session state of selected project if any, the link with explorers state and the flip page
-	 * state
-	 * 
-	 * @param memento interface to persistent state
-	 */
-	@Override
-	public void saveState(IMemento memento) {
-		super.saveState(memento);
-		if (null == memento) {
-			return;
-		}
-		IMemento selMemento = memento.createChild("Selection"); //$NON-NLS-1$
-		IProject project = getSelectedProject();
-		if (null != project) {
-			selMemento.putString("SelectedProject", project.getName()); //$NON-NLS-1$
-		}
-		IMemento linkWithMemento = memento.createChild("LinkWith"); //$NON-NLS-1$
-		linkWithMemento.putBoolean("Explorers", linkWithState); //$NON-NLS-1$
-
-		IMemento detailsPageMemento = memento.createChild("DetailsPage"); //$NON-NLS-1$
-		detailsPageMemento.putBoolean("PageSelection", (isDetailsPageActive() ? true : false)); //$NON-NLS-1$
-	}
-
-	/**
-	 * Set selection to selected bundle project from previous session, restore the link with explorers
-	 * state and the flip page state.
+	 * Load and apply settings for selected project, link to explorers and flip page state from last
+	 * view session
 	 * <p>
-	 * Input should have been set before restoring the selection.
-	 * 
-	 * @param memento interface to access persisted state
+	 * Assumes that the all projects are shown in bundle view before restoring the selection.
 	 */
-	public void restoreState(IMemento memento) {
-		String projectName = null;
-		if (null == memento) {
-			return; // Drop restore and continue silently
-		}
+	public void loadViewSettings() {
+
+		IProject project = null;
 		try {
-			// Set selection to selected project at shutdown if any
-			BundleProjectCandidates bundleProjectCandidates = Activator
-					.getBundleProjectCandidatesService();
-			IMemento[] selMemento = memento.getChildren("Selection"); //$NON-NLS-1$
-			if (null != selMemento && selMemento.length == 1) {
-				projectName = selMemento[0].getString("SelectedProject"); //$NON-NLS-1$
-				if (null != projectName) {
-					selectProject(bundleProjectCandidates.getProject(projectName), true);
-				}
-			}
-			// If link with explores was enabled at shut down enable it
-			IMemento[] linkWithMemento = memento.getChildren("LinkWith"); //$NON-NLS-1$
-			if (null != linkWithMemento && linkWithMemento.length == 1) {
-				linkWithState = linkWithMemento[0].getBoolean("Explorers"); //$NON-NLS-1$
-				linkWithAction.setChecked(linkWithState);
-			}
-			// If the details page was active at shutdown flip to details page on the restored project
-			IMemento[] detailsPageMemento = memento.getChildren("DetailsPage"); //$NON-NLS-1$
-			if (null != detailsPageMemento && detailsPageMemento.length == 1) {
-				boolean detailsPageState = detailsPageMemento[0].getBoolean("PageSelection"); //$NON-NLS-1$
-				if (detailsPageState && null != projectName) {
-					showProject(bundleProjectCandidates.getProject(projectName));
+			IDialogSettings dlgSettings = Activator.getDefault().getDialogSettings();
+			if (null != dlgSettings) {
+				IDialogSettings selectionSect = dlgSettings.getSection(bundleViewProjectSelectionSection);
+				if (null != selectionSect) {
+					String projectName = selectionSect.get(bundleViewProjectSelection);
+					if (null != projectName) {
+						BundleProjectCandidates bundleProjectCandidates = Activator
+								.getBundleProjectCandidatesService();
+						project = bundleProjectCandidates.getProject(projectName);
+						if (selectProject(project, true)) {
+							IDialogSettings pageSelectSect = dlgSettings
+									.getSection(bundleViewPageSelectionSection);
+							if (null != pageSelectSect) {
+								boolean detailsPageState = pageSelectSect
+										.getBoolean(bundleViewDetailsPageSelection);
+								if (detailsPageState) {
+									showProject(project);
+								} else {
+									showProjectInfo();
+								}
+							}
+							IDialogSettings linkToSect = dlgSettings.getSection(bundleViewLinkToSection);
+							if (null != linkToSect) {
+								linkWithState = linkToSect.getBoolean(bundleViewLinkToExplorers);
+								linkWithAction.setChecked(linkWithState);
+								linkWithAction.run();
+							}
+						}
+					}
 				}
 			}
 		} catch (ExtenderException e) {
 			// Project not accessible. Ignore set selection
+		}
+	}
+
+	/**
+	 * Save settings for selected project, link to explorer and current flip page state
+	 * <p>
+	 * To be used next time the bundle view is shown
+	 * 
+	 * @see #loadViewSettings()
+	 */
+	private void saveViewSettings() {
+
+		IDialogSettings dlgSettings = Activator.getDefault().getDialogSettings();
+		if (null != dlgSettings) {
+			IDialogSettings selectionSect = dlgSettings.getSection(bundleViewProjectSelectionSection);
+			if (null == selectionSect) {
+				selectionSect = dlgSettings.addNewSection(bundleViewProjectSelectionSection);
+			}
+			IProject project = getProjectSelection();
+			if (null != project) {
+				selectionSect.put(bundleViewProjectSelection, project.getName());
+			}
+			IDialogSettings linkToSect = dlgSettings.getSection(bundleViewLinkToSection);
+			if (null == linkToSect) {
+				linkToSect = dlgSettings.addNewSection(bundleViewLinkToSection);
+			}
+			linkToSect.put(bundleViewLinkToExplorers, linkWithState);
+			IDialogSettings pageSelectSect = dlgSettings.getSection(bundleViewPageSelectionSection);
+			if (null == pageSelectSect) {
+				pageSelectSect = dlgSettings.addNewSection(bundleViewPageSelectionSection);
+			}
+			pageSelectSect.put(bundleViewDetailsPageSelection, (isDetailsPageActive() ? true : false));
 		}
 	}
 
@@ -270,7 +285,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 		// Page book bundles list page
 		bundleListPage = new TableViewer(pagebook,
 				SWT.BORDER | SWT.FULL_SELECTION | SWT.V_SCROLL | SWT.H_SCROLL);
-		BundleListLabelProvider bundleListLabelProvider = new BundleListLabelProvider();
+		bundleListLabelProvider = new BundleListLabelProvider();
 		bundleListPage.setLabelProvider(bundleListLabelProvider);
 		bundleListPage.setContentProvider(bundleContentProvider);
 		bundleListLabelProvider.createColumns(bundleListPage);
@@ -363,14 +378,14 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 					.toJavaProjects(bundleProjectCandidates.getInstallable());
 			// Initially set input to list page in view and display loaded bundle projects
 			showProjects(javaProjects, true);
-			// Restore view state (selection, details or list page and link status with explorers)
-			restoreState(memento);
+			bundleListLabelProvider.restoreSortColumn();
+			loadViewSettings();
 			// Update the content description display field if workspace is deactivated
 			Extension<ActivateProject> activateProjectExtension = Activator.getTracker()
 					.getExtension(ActivateProject.class.getName());
 			ActivateProject activateProject = activateProjectExtension.getTrackedService();
 			if (!activateProject.isProjectWorkspaceActivated()) {
-				pagebook.getDisplay().asyncExec(new Runnable() {
+				pagebook.getDisplay().syncExec(new Runnable() {
 					@Override
 					public void run() {
 						setContentDescription("Workspace Deactivated"); //$NON-NLS-1$
@@ -389,6 +404,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 	 */
 	@Override
 	public void dispose() {
+		saveViewSettings();
 		pullDownMenuManager.removeMenuListener(pullDownMenuListener);
 		detailsTitleImage.dispose();
 		listTitleImage.dispose();
@@ -461,8 +477,9 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 			// Ignore selections from other sources
 			if (event.getSource() == bundleListPage) {
 				if (!event.getSelection().isEmpty()) {
-					updateExplorerSelection(getSelectedProject());
-					setSelectedItemIndex(bundleListPage.getTable().getSelectionIndex());
+					IProject project = getSelectedProject();
+					updateExplorerSelection(project);
+					setProjectSelection(project);
 				}
 			}
 			setEnablement();
@@ -481,7 +498,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 			// Set details page as the current selection provider
 			selectionProviderIntermediate.setSelectionProviderDelegate(bundleDetailsPage);
 			if (!event.getSelection().isEmpty()) {
-				setSelectedItemIndex(bundleListPage.getTable().getSelectionIndex());
+				setProjectSelection(getSelectedProject());
 			}
 			setEnablement();
 		}
@@ -545,7 +562,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 		try {
 			BundleRegion bundleRegion = Activator.getBundleRegionService();
 			IProject project = null;
-			// If failing to get the project it is probably a jar bundle or 
+			// If failing to get the project it is probably a jar bundle or
 			// the project is in process of being deleted or moved
 			try {
 				project = bundleRegion.getProject(bundle);
@@ -1357,7 +1374,6 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 		bundleListPage.setInput(javaProjects);
 		if (setSelection && null != selectedProject) {
 			selectProject(selectedProject, true);
-			setSelectedItemIndex(bundleListPage.getTable().getSelectionIndex());
 		}
 		setEnablement();
 		pagebook.showPage(bundleListPage.getControl());
@@ -1416,25 +1432,26 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 	}
 
 	/**
-	 * The item to select next time the list page is shown
+	 * The current selected project
+	 * <p>
+	 * Used to store the current selected project to be loaded at next
 	 * 
-	 * @return the selected item in list page
+	 * @return the selected project or null if no project is selected
+	 * @see #setProjectSelection(IProject)
+	 * @see #saveViewSettings()
 	 */
-	@SuppressWarnings("unused")
-	private int getSelectedItemIndex() {
-		// TODO Why am I not calling this method?
-		return selectIndex;
+	private IProject getProjectSelection() {
+		return selectedProject;
 	}
 
 	/**
-	 * This index will be used as the selection index the next time the bundle view is shown.
+	 * Set the current selected project
 	 * 
-	 * @param selectedItem in list page
-	 * @see #selectProject(IProject, Boolean)
-	 * @see #getSelectedItemIndex()
+	 * @param project The current selected project
+	 * @see #getProjectSelection()
 	 */
-	private void setSelectedItemIndex(int index) {
-		this.selectIndex = index;
+	private void setProjectSelection(IProject project) {
+		selectedProject = project;
 	}
 
 	/**
@@ -1445,36 +1462,38 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 	 * if the project is not found, does not exist or is not accessible deselect all rows
 	 * @return true if the project existed in the list page view
 	 */
-	private Boolean selectProject(IProject project, Boolean select) {
-		boolean found = false;
+	private boolean selectProject(IProject project, Boolean select) {
+
+		boolean exists = false;
 
 		if (null == project || !project.isAccessible()) {
 			if (!select) {
 				bundleListPage.getTable().deselectAll();
-				setSelectedItemIndex(-1);
+				setProjectSelection(null);
 			}
-			return found;
+			return exists;
 		}
 		TableItem[] ti = bundleListPage.getTable().getItems();
-		for (int i = 0; i < ti.length && !found; i++) {
+		for (int i = 0; i < ti.length && !exists; i++) {
 			BundleProperties bp = (BundleProperties) ti[i].getData();
 			if (bp.getProject().equals(project)) {
 				if (select) {
 					bundleListPage.getTable().setSelection(ti[i]);
-					setSelectedItemIndex(i);
+					setProjectSelection(project);
 					bundleListPage.getTable().showSelection();
 				} else {
 					bundleListPage.getTable().deselect(i);
-					setSelectedItemIndex(-1);
+					setProjectSelection(null);
 				}
-				found = true;
+				exists = true;
 			}
 		}
 		// Not found
-		if (!found && !select) {
+		if (!exists && !select) {
 			bundleListPage.getTable().deselectAll();
+			setProjectSelection(null);
 		}
-		return found;
+		return exists;
 	}
 
 	/**
