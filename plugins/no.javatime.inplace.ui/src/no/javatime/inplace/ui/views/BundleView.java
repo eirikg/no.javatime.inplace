@@ -1440,7 +1440,7 @@ public class BundleView extends ViewPart implements ISelectionListener, BundleLi
 	 * @see #setProjectSelection(IProject)
 	 * @see #saveViewSettings()
 	 */
-	private IProject getProjectSelection() {
+	public IProject getProjectSelection() {
 		return selectedProject;
 	}
 

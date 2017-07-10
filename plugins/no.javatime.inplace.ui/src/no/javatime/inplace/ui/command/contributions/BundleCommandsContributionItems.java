@@ -314,36 +314,4 @@ public abstract class BundleCommandsContributionItems extends CompoundContributi
 		}
 		return null;
 	}
-
-	/**
-	 * Get and return the selected project in the bundle view
-	 * 
-	 * @return the selected project in bundle view or null if no selection
-	 */
-	protected static IJavaProject getSelectedJavaProjectFromBundleView() {
-
-		// Get the selection from the active page
-		IWorkbenchPage page = Activator.getDefault().getActivePage();
-		if (null == page) {
-			return null;
-		}
-		IWorkbenchPart activePart = page.getActivePart();
-		if (null == activePart) {
-			return null;
-		}
-		ISelection selection = null;
-		if (activePart instanceof BundleView) {
-			selection = page.getSelection(BundleView.ID);
-		}
-		if (null != selection && selection instanceof IStructuredSelection) {
-			Object element = ((IStructuredSelection) selection).getFirstElement();
-			// Bundle view model properties
-			if (element instanceof BundleProperties) {
-				BundleProperties bp = (BundleProperties) element;
-				return bp.getJavaProject();
-			}
-		}
-		return null;
-	}
-
 }

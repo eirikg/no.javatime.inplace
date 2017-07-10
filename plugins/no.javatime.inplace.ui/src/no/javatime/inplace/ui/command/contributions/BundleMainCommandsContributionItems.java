@@ -367,7 +367,7 @@ public class BundleMainCommandsContributionItems extends BundleCommandsContribut
 					CommandContributionItem.STYLE_PUSH, bundleListImage);
 		} else {
 			BundleView bundleView = getBundleView();
-			if (null != bundleView && (null != getSelectedJavaProjectFromBundleView())) {
+			if (null != bundleView && (null != bundleView.getProjectSelection())) {
 				// Bundle view is open and visible and there is a selection
 				if (bundleView.isListPageActive()) {
 					return createContibution(menuId, dynamicMainCommandId, showBundleDetailsPage,

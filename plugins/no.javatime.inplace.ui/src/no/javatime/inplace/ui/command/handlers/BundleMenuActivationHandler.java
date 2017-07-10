@@ -381,28 +381,28 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 			ViewUtil.show(BundleView.ID);
 		} else {
 			BundleProjectCandidates bundleProjectCandidates = Activator.getBundleProjectCandidatesService();
-			BundleView bv = BundleCommandsContributionItems.getBundleView();
+			BundleView bundleView = BundleCommandsContributionItems.getBundleView();
 			Collection<IJavaProject> javaProjects = bundleProjectCandidates.toJavaProjects(projects);
 			int size = javaProjects.size();
 			// Show list page
-			if (bv.isDetailsPageActive()) {
+			if (bundleView.isDetailsPageActive()) {
 				if (size <= 1) {
-					bv.showProjects(
+					bundleView.showProjects(
 							bundleProjectCandidates.toJavaProjects(bundleProjectCandidates.getInstallable()),
 							true);
 				} else {
-					bv.showProjects(javaProjects, true);
+					bundleView.showProjects(javaProjects, true);
 				}
-			} else if (null != getSelectedProject()) {
+			} else if (null != bundleView.getProjectSelection()) {
 				// Show details page
 				if (size == 1) {
-					bv.showProject(projects.toArray(new IProject[projects.size()])[0]);
+					bundleView.showProject(projects.toArray(new IProject[projects.size()])[0]);
 				} else {
 					IJavaProject jp = getSelectedJavaProject();
 					if (null != jp) {
-						bv.showProject(jp.getProject());
+						bundleView.showProject(jp.getProject());
 					} else {
-						bv.showProject(projects.toArray(new IProject[projects.size()])[0]);
+						bundleView.showProject(projects.toArray(new IProject[projects.size()])[0]);
 					}
 				}
 			} else {
