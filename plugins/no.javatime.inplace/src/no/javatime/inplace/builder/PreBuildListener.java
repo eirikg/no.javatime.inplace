@@ -44,7 +44,8 @@ import org.osgi.service.prefs.BackingStoreException;
  * Listen to pre build notifications. Remove transition errors from and add pending build
  * transitions to bundle projects.
  * <p>
- * Error transitions are removed from all bundle projects when the workspace is deactivated.
+ * Error transitions are removed from all deactivated bundle projects when the workspace is
+ * deactivated.
  * <p>
  * Pending build transitions are added to all projects in an activated workspace not being opened or
  * moved. Pending build state is preserved for closed and for source location of moved projects.
@@ -90,8 +91,8 @@ public class PreBuildListener implements IResourceChangeListener, BundleTransiti
 			return;
 		}
 		IResourceDelta rootDelta = event.getDelta();
-		IResourceDelta[] projectDeltas = (null != rootDelta ? rootDelta.getAffectedChildren(
-				IResourceDelta.ADDED | IResourceDelta.CHANGED, IResource.NONE) : null);
+		IResourceDelta[] projectDeltas = (null != rootDelta ? rootDelta
+				.getAffectedChildren(IResourceDelta.ADDED | IResourceDelta.CHANGED, IResource.NONE) : null);
 		if (null != projectDeltas) {
 			for (IResourceDelta projectDelta : projectDeltas) {
 				IResource projectResource = projectDelta.getResource();
@@ -101,15 +102,14 @@ public class PreBuildListener implements IResourceChangeListener, BundleTransiti
 					try {
 						if ((projectDelta.getFlags() & IResourceDelta.OPEN) != 0) {
 							// This is the first encounter with an opened, imported and new project
-							// The project is pending add project after build in post build listener
-//							BundleProjectCandidates bundleProjectcandidates = Activator
-//									.getBundleProjectCandidatesService();
+							// The project is pending and added after build in post build listener
 							if (!bundleRegion.isProjectRegistered(project)) {
 								bundleRegion.registerBundleProject(project, null,
 										projectActivator.isProjectActivated(project));
 							}
 						}
-						// Remove any errors in deactivated projects before build
+						// Remove bundle and build errors in deactivated projects before build
+						// Bundle and build errors are also removed in a deactivated workspace
 						// Errors in activated projects are cleared in the java time builder
 						if (!projectActivator.isProjectActivated(project)) {
 							bundleTransition.clearBuildTransitionError(project);
@@ -121,8 +121,10 @@ public class PreBuildListener implements IResourceChangeListener, BundleTransiti
 							// A request for auto build when auto build is switched off
 							if (!bundlProjecteCandidates.isAutoBuilding()) {
 								if (buildKind == IncrementalProjectBuilder.AUTO_BUILD) {
-									StatePersistParticipant.savePendingBuildTransition(
-											StatePersistParticipant.getSessionPreferences(), project, true);
+									if (!isOpenOrMove(projectDelta, project)) {
+										StatePersistParticipant.savePendingBuildTransition(
+												StatePersistParticipant.getSessionPreferences(), project, true);
+									}
 								}
 							}
 						} catch (IllegalStateException | BackingStoreException e) {
@@ -136,8 +138,8 @@ public class PreBuildListener implements IResourceChangeListener, BundleTransiti
 						if (!isOpenOrMove(projectDelta, project)) {
 							bundleTransition.addPending(project, Transition.BUILD);
 						} else {
-							BundleTransitionListener.addBundleTransition(new TransitionEvent(project,
-									Transition.BUILD));
+							BundleTransitionListener
+									.addBundleTransition(new TransitionEvent(project, Transition.BUILD));
 						}
 					} catch (ExtenderException | InPlaceException e) {
 						String msg = ExceptionMessage.getInstance().formatString("preparing_osgi_command",

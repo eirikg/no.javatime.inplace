@@ -7,23 +7,6 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import no.javatime.inplace.Activator;
-import no.javatime.inplace.StatePersistParticipant;
-import no.javatime.inplace.bundlejobs.BundleJob;
-import no.javatime.inplace.bundlejobs.UpdateJob;
-import no.javatime.inplace.bundlejobs.intface.BundleExecutor;
-import no.javatime.inplace.bundlejobs.intface.Update;
-import no.javatime.inplace.extender.intface.ExtenderException;
-import no.javatime.inplace.msg.Msg;
-import no.javatime.inplace.region.intface.BundleRegion;
-import no.javatime.inplace.region.intface.BundleTransition;
-import no.javatime.inplace.region.intface.BundleTransition.Transition;
-import no.javatime.inplace.region.status.BundleStatus;
-import no.javatime.inplace.region.status.IBundleStatus;
-import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
-import no.javatime.util.messages.ErrorMessage;
-import no.javatime.util.messages.WarnMessage;
-
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.commands.IExecutionListener;
@@ -35,10 +18,30 @@ import org.eclipse.osgi.util.NLS;
 import org.eclipse.ui.statushandlers.StatusManager;
 import org.osgi.service.prefs.BackingStoreException;
 
+import no.javatime.inplace.Activator;
+import no.javatime.inplace.StatePersistParticipant;
+import no.javatime.inplace.bundlejobs.BundleJob;
+import no.javatime.inplace.bundlejobs.UpdateJob;
+import no.javatime.inplace.bundlejobs.intface.BundleExecutor;
+import no.javatime.inplace.bundlejobs.intface.Update;
+import no.javatime.inplace.extender.intface.ExtenderException;
+import no.javatime.inplace.msg.Msg;
+import no.javatime.inplace.region.closure.BundleProjectBuildError;
+import no.javatime.inplace.region.events.TransitionEvent;
+import no.javatime.inplace.region.intface.BundleRegion;
+import no.javatime.inplace.region.intface.BundleTransition;
+import no.javatime.inplace.region.intface.BundleTransitionListener;
+import no.javatime.inplace.region.intface.BundleTransition.Transition;
+import no.javatime.inplace.region.status.BundleStatus;
+import no.javatime.inplace.region.status.IBundleStatus;
+import no.javatime.inplace.region.status.IBundleStatus.StatusCode;
+import no.javatime.util.messages.ErrorMessage;
+import no.javatime.util.messages.WarnMessage;
+
 /**
  * Act on bundle projects states when auto build is switched on.
  * <p>
- * Remove any build - including missing build sate - and bundle errors before projects are built
+ * Remove bundle errors in a deactivated workspace
  * <p>
  * Update activated bundle projects and remove pending build transitions for deactivated bundle
  * projects after projects have been built.
@@ -63,7 +66,7 @@ public class AutoBuildListener implements IExecutionListener {
 	final static private String autoBuildCmd = "org.eclipse.ui.project.buildAutomatically";
 
 	/**
-	 * Remove any build and bundle errors from projects to build
+	 * Remove any bundle errors from projects to build
 	 * 
 	 * @see #postExecuteSuccess(String, Object)
 	 */
@@ -79,6 +82,7 @@ public class AutoBuildListener implements IExecutionListener {
 				final Collection<IProject> pendingProjects = bundleTransition
 						.getPendingProjects(bundleRegion.getProjects(), Transition.BUILD);
 				// Remove all errors before a build and after auto build is switched on
+				// Ok in a deactivated workspace where all bundles are in state uninstalled
 				for (IProject project : pendingProjects) {
 					bundleTransition.clearBuildTransitionError(project);
 					bundleTransition.clearBundleTransitionError(project);
@@ -130,8 +134,8 @@ public class AutoBuildListener implements IExecutionListener {
 						postExecute(bundleRegion);
 					}
 					BundleTransition bundleTransition = Activator.getBundleTransitionService();
-					// Remove pending build transition for deactivated bundle projects
-					// Pending build transitions are removed for activated bundle projects by the java time
+					// Remove pending build transition and check for errors in deactivated bundle projects
+					// Pending build transitions are removed for activated bundle projects in the java time
 					// builder
 					final Collection<IProject> pendingProjects = bundleTransition
 							.getPendingProjects(bundleRegion.getProjects(false), Transition.BUILD);
@@ -149,7 +153,9 @@ public class AutoBuildListener implements IExecutionListener {
 	}
 
 	/**
-	 * Remove any pending build transitions from projects
+	 * Remove any pending build transitions and check for build errors in projects
+	 * <p>
+	 * Running in a bundle job updates status in bundle view
 	 */
 	private BundleExecutor removeBuildTransitionJob = new BundleJob(
 			"Remove pending build transition") {
@@ -162,6 +168,8 @@ public class AutoBuildListener implements IExecutionListener {
 				monitor.beginTask(getName(), 1);
 				for (IProject project : getPendingProjects()) {
 					bundleTransition.removePending(project, Transition.BUILD);
+					// Make error status available in projects
+					BundleProjectBuildError.hasBuildErrors(project, true);
 				}
 			} catch (ExtenderException e) {
 				addError(e, NLS.bind(Msg.SERVICE_EXECUTOR_EXP, getName()));

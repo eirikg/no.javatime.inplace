@@ -180,11 +180,8 @@ public class PostBuildListener implements IResourceChangeListener {
 			// Ignore removed (deleted or closed) projects uninstalled in the pre-change listener
 			IResourceDelta[] resourceDeltas = (null != rootDelta ? rootDelta.getAffectedChildren(
 					IResourceDelta.ADDED | IResourceDelta.CHANGED, IResource.NONE) : null);
-			// Only check for removal of pending transitions in a deactivated workspace.
-			// Pending transitions for activated projects are removed in the JavaTime builder
 			if (!projectActivator.isProjectWorkspaceActivated()) {
-				removePendingBuildTransition(buildKind, resourceDeltas);
-				// Safe to return if closed or deleted. Nothing to do in the remove bundle job
+				updateTransitionState(buildKind, resourceDeltas);
 				return;
 			}
 			update = new UpdateJob();
@@ -199,7 +196,7 @@ public class PostBuildListener implements IResourceChangeListener {
 			if (null == resourceDeltas || resourceDeltas.length == 0) {
 				for (IProject project : bundleProjectCandidates.getInstallable()) {
 					try {
-						removePendingBuildTransition(buildKind, project);
+						updateTransitionState(buildKind, project);
 						if (null != bundleTransition.getPendingTransitions(project)) {
 							handlePendingTransition(project, activateBundle, update, deactivate, uninstall,
 									install);
@@ -223,7 +220,7 @@ public class PostBuildListener implements IResourceChangeListener {
 						try {
 							if (Category.DEBUG && Category.getState(Category.listeners))
 								ProjectChangeListener.traceDeltaKind(event, projectDelta, project);
-							removePendingBuildTransition(buildKind, project);
+							updateTransitionState(buildKind, project);
 							if (!handlePendingTransition(project, activateBundle, update, deactivate, uninstall,
 									install)) {
 								handleCRUDOperation(projectDelta, project, activateBundle, addBundleProject,
@@ -380,11 +377,27 @@ public class PostBuildListener implements IResourceChangeListener {
 		return false;
 	}
 
-	private void removePendingBuildTransition(final int buildKind, IResourceDelta[] resourceDeltas) {
+	/**
+	 * Update build error status and remove pending build transitions in a deactivated workspace
+	 * <p>
+	 * Remove previous build errors and add new build errors detected by this build in the specified
+	 * resource deltas. If the specified resource deltas is {@code null} update the transition state
+	 * of all installable bundle projects. Assumes that the root resource delta of the specified
+	 * children deltas is a project
+	 * <p>
+	 * Use this method in a deactivated workspace. Transition state in an activated workspace
+	 * is handled by the {@link JavaTimeBuilder} and {@link #updateTransitionState(int, IProject)}
+	 * 
+	 * @param buildKind Kind of build. One of incremental build, full build, clean build or auto build
+	 * @param resourceDeltas All children resource deltas of the root delta of the invocation of this
+	 * post build listener
+	 * @see #updateTransitionState(int, IProject)
+	 */
+	private void updateTransitionState(final int buildKind, IResourceDelta[] resourceDeltas) {
 
 		if (null == resourceDeltas || resourceDeltas.length == 0) {
 			for (IProject project : bundleProjectCandidates.getInstallable()) {
-				removePendingBuildTransition(buildKind, project);
+				updateTransitionState(buildKind, project);
 			}
 		} else {
 			for (IResourceDelta projectDelta : resourceDeltas) {
@@ -392,19 +405,20 @@ public class PostBuildListener implements IResourceChangeListener {
 				if (projectResource.isAccessible()
 						&& (projectResource.getType() & (IResource.PROJECT)) != 0) {
 					IProject project = projectResource.getProject();
-					removePendingBuildTransition(buildKind, project);
+					updateTransitionState(buildKind, project);
 				}
 			}
 		}
 	}
 
 	/**
-	 * Remove the pending {@link Transition#BUILD build} transition from the specified project
+	 * Remove the pending {@link Transition#BUILD build} transition and update the build error status
+	 * from the specified deactivated project
 	 * <p>
 	 * 
-	 * Remove pending build transition from deactivated bundle projects, but not when auto build is
-	 * off and the build kind is auto build. This is interpreted as a request for auto build when auto
-	 * build is off.
+	 * Remove pending build transition and update build error status from deactivated bundle projects,
+	 * but not when auto build is off and the build kind is auto build. This is interpreted as a
+	 * request for auto build when auto build is off.
 	 * <p>
 	 * To retain pending builds between IDE sessions - including when the IDE crashes - a pending
 	 * build entry is added to the preference store in the pre build listener when there is a request
@@ -412,7 +426,7 @@ public class PostBuildListener implements IResourceChangeListener {
 	 * listener testing for the same conditions.
 	 * 
 	 * 
-	 * The ending build transition is removed when: is removed when:
+	 * The ending build transition is removed when:
 	 * <ol>
 	 * <li>Automatic build is on (this includes all kind of builds)
 	 * <li>Manual build and automatic build is off (this includes incremental, full and clean build)
@@ -425,7 +439,7 @@ public class PostBuildListener implements IResourceChangeListener {
 	 * @return true if the pending build transition is cleared from the specified project. Otherwise
 	 * false
 	 */
-	private boolean removePendingBuildTransition(final int buildKind, final IProject project) {
+	private boolean updateTransitionState(final int buildKind, final IProject project) {
 
 		// To ensure that activated projects have been built, only remove in the JavaTime Builder
 		if (!bundleRegion.isBundleActivated(project)) {
@@ -434,7 +448,9 @@ public class PostBuildListener implements IResourceChangeListener {
 				return false;
 			}
 			bundleTransition.removePending(project, Transition.BUILD);
-			// Make errors available in deactivated projects
+			bundleTransition.clearBuildTransitionError(project);
+			bundleTransition.clearBundleTransitionError(project);
+			// Make error status available in deactivated projects
 			BundleProjectBuildError.hasBuildErrors(project, true);
 			return true;
 		}
@@ -473,8 +489,8 @@ public class PostBuildListener implements IResourceChangeListener {
 			}
 			// Activate bundles that are no longer duplicates
 			if (update.pendingProjects() > 0) {
-				postActivateBundle = UpdateScheduler.resolveduplicates(activateBundle, update,
-						bundleRegion, bundleTransition, bundleProjectCandidates);
+				postActivateBundle = UpdateScheduler.resolveduplicates(activateBundle, update, bundleRegion,
+						bundleTransition, bundleProjectCandidates);
 			}
 		}
 		return postActivateBundle;
@@ -508,8 +524,8 @@ public class PostBuildListener implements IResourceChangeListener {
 				&& bundleTransition.containsPending(project, Transition.UPDATE, Boolean.FALSE)) {
 			// If this project is part of an activate process and auto update is off, the project is
 			// tagged with an update on activate transition and should be updated
-			if (commandOptions.isUpdateOnBuild()
-					|| bundleTransition.containsPending(project, Transition.UPDATE_ON_ACTIVATE, Boolean.TRUE)) {
+			if (commandOptions.isUpdateOnBuild() || bundleTransition.containsPending(project,
+					Transition.UPDATE_ON_ACTIVATE, Boolean.TRUE)) {
 				return true;
 			}
 		}

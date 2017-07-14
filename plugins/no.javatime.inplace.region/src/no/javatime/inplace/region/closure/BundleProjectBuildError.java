@@ -474,7 +474,7 @@ public class BundleProjectBuildError {
 				return true;
 			}
 			IBundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID,
-					project, "Missing description fil in " + project.getName(), null);
+					project, "Missing description file in " + project.getName(), null);
 			BundleTransition bundleTransition = BundleTransitionImpl.INSTANCE;
 			bundleTransition.setBuildStatus(project, TransitionError.BUILD_DESCRIPTION_FILE, multiStatus);
 		}
