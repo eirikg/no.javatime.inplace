@@ -128,8 +128,10 @@ public class BundleProjectBuildError {
 	 * Check bundle errors if the "Activate on Build Error" option is on and build errors if off.
 	 * 
 	 * @param project the {@link IJavaProject} to check for errors
-	 * @param includeDuplicates TODO
-	 * @return <code>true</code> if the project has bundle errors <code>false</code> otherwise'
+	 * @param includeDuplicates true to check for duplicates. Otherwise false
+	 * @return <code>true</code> if the "Activate on Build Error" option is on and the projects has
+	 * bundle errors and true</code> if the "Activate on Build Error" option is off and the projects
+	 * has build errors. Otherwise false
 	 * @throws ExtenderException If failing to get command options service
 	 * @see #hasBundleErrors(IProject, boolean)
 	 * @see #hasBuildErrors(IProject, boolean)
@@ -204,6 +206,8 @@ public class BundleProjectBuildError {
 	public static boolean hasBuildErrors(IProject project, boolean includeDuplicates) {
 
 		try {
+			
+//			return hasBundleErrors(project, includeDuplicates) || hasCompileErrors(project) ? true : false; 
 			boolean isBundleError = hasBundleErrors(project, includeDuplicates);
 			if (isBundleError) {
 				return true;
@@ -224,7 +228,8 @@ public class BundleProjectBuildError {
 			for (int problemsIndex = 0; problemsIndex < problems.length; problemsIndex++) {
 				if (IMarker.SEVERITY_ERROR == problems[problemsIndex].getAttribute(IMarker.SEVERITY,
 						IMarker.SEVERITY_INFO)) {
-					boolean activateOnCompileErrors = Activator.getCommandOptionsService().isActivateOnCompileError();
+					boolean activateOnCompileErrors = Activator.getCommandOptionsService()
+							.isActivateOnCompileError();
 					StatusCode statusCode = null;
 					String msg = null;
 					if (activateOnCompileErrors) {
@@ -234,7 +239,8 @@ public class BundleProjectBuildError {
 						statusCode = StatusCode.BUILD_ERROR;
 						msg = "Build problems in project " + project.getName();
 					}
-					IBundleStatus multiStatus = new BundleStatus(statusCode, Activator.PLUGIN_ID, project, msg, null);
+					IBundleStatus multiStatus = new BundleStatus(statusCode, Activator.PLUGIN_ID, project,
+							msg, null);
 					BundleTransition bundleTransition = BundleTransitionImpl.INSTANCE;
 					bundleTransition.setBuildStatus(project, TransitionError.BUILD, multiStatus);
 					return true;
@@ -286,8 +292,8 @@ public class BundleProjectBuildError {
 			}
 		} catch (InPlaceException e) {
 		}
-		IBundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID,
-				project, "Missing build state in " + project.getName(), null);
+		IBundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, project,
+				"Missing build state in " + project.getName(), null);
 		BundleTransition bundleTransition = BundleTransitionImpl.INSTANCE;
 		bundleTransition.setBuildStatus(project, TransitionError.BUILD_STATE, multiStatus);
 		return false;
@@ -311,7 +317,7 @@ public class BundleProjectBuildError {
 		try {
 			Activator.getDefault().getDuplicateEvents().symbolicNameDuplicate(project);
 		} catch (ExternalDuplicateException e) {
-			// Status already set 
+			// Status already set
 			return true;
 		} catch (InPlaceException e) {
 		}
@@ -337,7 +343,7 @@ public class BundleProjectBuildError {
 			BundleRegion br = WorkspaceRegionImpl.INSTANCE;
 			br.workspaceDuplicate(project);
 		} catch (WorkspaceDuplicateException e) {
-			// Status already set 
+			// Status already set
 			return true;
 		}
 		return false;
@@ -382,12 +388,12 @@ public class BundleProjectBuildError {
 			ps.sortProvidingProjects(Collections.<IProject> singletonList(project));
 			return false;
 		} catch (CircularReferenceException e) {
-//			BundleRegion bundleRegion = WorkspaceRegionImpl.INSTANCE;
-//			String msg = ExceptionMessage.getInstance().formatString("circular_reference_termination");
-//			IBundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID,
-//					project, msg, e);
-//			multiStatus.add(e.getStatusList());
-//			bundleRegion.setBuildStatus(project, TransitionError.BUILD_CYCLE, multiStatus);
+			// BundleRegion bundleRegion = WorkspaceRegionImpl.INSTANCE;
+			// String msg = ExceptionMessage.getInstance().formatString("circular_reference_termination");
+			// IBundleStatus multiStatus = new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID,
+			// project, msg, e);
+			// multiStatus.add(e.getStatusList());
+			// bundleRegion.setBuildStatus(project, TransitionError.BUILD_CYCLE, multiStatus);
 		}
 		return true;
 	}

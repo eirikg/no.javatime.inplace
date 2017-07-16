@@ -58,23 +58,25 @@ import org.eclipse.ui.statushandlers.StatusManager;
 import org.osgi.framework.Bundle;
 
 /**
- * Remove and add pending bundle transitions to bundle projects that are JavaTime nature enabled
- * (activated). Type of bundle operation to add is determined by the resource delta and the life
- * cycle state of the bundle project.
+ * Remove and add pending bundle transitions to bundle projects that are JavaTime nature enabled. A
+ * project is said to be activated when enabled with the JavaTime nature.
  * <p>
- * An exception - to only considering the resource delta and the state - is the move CRUD operation
- * for a bundle project. If the moved project is in at least state installed it is tagged with an
- * uninstall operation followed by an activate operation.
+ * Type of bundle transition to add is mainly determined by the resource delta and/or the life cycle
+ * state of the bundle project.
+ * <p>
+ * The following conditions determine type of pending transition to add:
  * <ol>
  * <li>Bundle projects with resource deltas or null delta and in at least state installed are tagged
  * for update.
+ * <li>A project with new requirements on UI plug-in(s), when UI plug-ins are not allowed is tagged
+ * for deactivation independent of its state.
+ * <li>If a moved project is in at least state installed, it is tagged with an uninstall transition
+ * followed by an activate transition.
  * <li>Bundle projects with resource deltas or null delta and in state uninstalled are tagged for
  * activate.
- * <li>A project with new requirements on UI plug-in(s), when UI plug-ins are not allowed is tagged
- * for deactivation instead of update. A warning is sent to the Log View
  * <li>Projects with an empty resource delta (not changed since last build) are not tagged with any
- * pending bundle operation.
- * <li>Projects with build errors are not tagged and a warning is sent to the log view
+ * pending bundle transition.
+ * <li>Projects with build errors are not tagged. Instead a warning is sent to the log view.
  * </ol>
  */
 public class JavaTimeBuilder extends IncrementalProjectBuilder {
@@ -125,7 +127,7 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 					StatusManager.LOG);
 			autoBuildOff = false;
 		} finally {
-			builds.clear();			
+			builds.clear();
 		}
 	}
 
@@ -148,9 +150,9 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 						mStatus = new BundleStatus(StatusCode.OK, Activator.PLUGIN_ID,
 								Msg.BUILD_HEADER_TRACE_AUTO_BUILD_OFF);
 					} else {
-						mStatus = new BundleStatus(StatusCode.OK, Activator.PLUGIN_ID, NLS.bind(
-								Msg.BUILD_HEADER_TRACE,
-								new DecimalFormat().format(System.currentTimeMillis() - startTime)));
+						mStatus = new BundleStatus(StatusCode.OK, Activator.PLUGIN_ID,
+								NLS.bind(Msg.BUILD_HEADER_TRACE,
+										new DecimalFormat().format(System.currentTimeMillis() - startTime)));
 					}
 					for (IBundleStatus status : builds) {
 						mStatus.add(status);
@@ -230,20 +232,19 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 			bundleTransition.removePending(project, Transition.BUILD);
 			if (Category.DEBUG && Category.getState(Category.build))
 				TraceMessage.getInstance().getString("start_build");
-			IResourceDelta delta = getDelta(project);
+			IResourceDelta projectDelta = getDelta(project);
 			if (kind == FULL_BUILD) {
 				fullBuild(monitor);
-			} else { // (kind == INCREMENTAL_BUILD || kind == AUTO_BUILD)
-				incrementalBuild(delta, monitor);
+			} else {
+				incrementalBuild(projectDelta, monitor);
 			}
 			Bundle bundle = bundleRegion.getBundle(project);
-			// Uninstalled project with no deltas
-			IResourceDelta[] resourceDelta = null;
-			if (null != delta) {
-				resourceDelta = delta.getAffectedChildren(IResourceDelta.ADDED | IResourceDelta.CHANGED,
-						IResource.NONE);
+			IResourceDelta[] projectChildrenDelta = null;
+			if (null != projectDelta) {
+				projectChildrenDelta = projectDelta
+						.getAffectedChildren(IResourceDelta.ADDED | IResourceDelta.CHANGED, IResource.NONE);
 			} else if (kind != FULL_BUILD) {
-				// null delta when not a full build imply an unspecified change
+				// No project delta and not a full build imply an unspecified change
 				if (messageOptions.isBundleOperations()) {
 					String msg = NLS.bind(Msg.NO_RESOURCE_DELTA_BUILD_AVAILABLE_TRACE,
 							new Object[] { project.getName() });
@@ -254,7 +255,7 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 				}
 			}
 			// No change since last build
-			if (null != resourceDelta && resourceDelta.length == 0) {
+			if (null != projectChildrenDelta && projectChildrenDelta.length == 0) {
 				if (messageOptions.isBundleOperations()) {
 					String msg = NLS.bind(Msg.NO_RESOURCE_DELTA_BUILD_TRACE,
 							new Object[] { project.getName() });
@@ -265,17 +266,16 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 				}
 				return null;
 			}
-			// Activated project is imported, opened or has new requirements on UI plug-in(s), when UI
-			// plug-ins are not allowed
+			// Check dependency on UI plug-in(s), when UI plug-ins are not allowed
 			if (!commandOptions.isAllowUIContributions()
 					&& bundleProjectCandidates.getUIPlugins().contains(project)) {
 				if (null == bundle) {
+					// This is a new (opened or imported) project in state uninstalled
 					ActivateProject activate = new ActivateProjectJob();
 					if (!bundleRegion.isProjectRegistered(project)) {
 						bundleRegion.registerBundleProject(project, bundle, false);
 					}
-					// When an activated project is imported or opened, install in an activated workspace
-					// before deactivating the bundle
+					// Install the new project before deactivating the bundle
 					if (activate.getActivatedProjects().size() > 1) {
 						bundleTransition.addPending(project, Transition.INSTALL);
 					}
@@ -292,20 +292,20 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 								bundleTransition.addPending(project, Transition.UNINSTALL);
 								bundleTransition.addPending(project, Transition.ACTIVATE_BUNDLE);
 								// Project changed since last build
-							} else if (null != resourceDelta && resourceDelta.length > 0) {
+							} else if (null != projectChildrenDelta && projectChildrenDelta.length > 0) {
 								bundleTransition.addPending(project, Transition.UPDATE);
 								// Unspecified change or a full build
-							} else if (null == delta) {
+							} else if (null == projectDelta) {
 								bundleTransition.addPending(project, Transition.UPDATE);
 							}
-						} catch (ProjectLocationException e) {
+						} catch (ProjectLocationException | InPlaceException e) {
 							String msg = null;
-							if (project.isAccessible()) {
+							if (null != project && project.isAccessible()) {
 								msg = ExceptionMessage.getInstance().formatString("project_location_error",
 										project.getName());
 							} else {
-								msg = ExceptionMessage.getInstance().formatString(
-										"project_to_move_is_not_accessible");
+								msg = ExceptionMessage.getInstance()
+										.formatString("project_to_move_is_not_accessible");
 							}
 							IBundleStatus status = new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID,
 									msg, e);
@@ -328,16 +328,8 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 	}
 
 	protected void fullBuild(final IProgressMonitor monitor) throws CoreException, ExtenderException {
-		if (messageOptions.isBundleOperations()) {
-			IProject project = getProject();
-			Bundle bundle = bundleRegion.getBundle(project);
-			String msg = NLS.bind(Msg.FULL_BUILD_TRACE, new Object[] { project.getName(),
-					project.getLocation().toOSString() });
-			IBundleStatus status = new BundleStatus(StatusCode.OK, bundle, project, msg, null);
-			synchronized (builds) {
-				builds.add(status);
-			}
-		}
+
+		addBuildStatusMessage(Msg.FULL_BUILD_TRACE);
 		if (Category.DEBUG && Category.getState(Category.build))
 			getProject().accept(new ResourceVisitor());
 	}
@@ -345,48 +337,20 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 	protected void incrementalBuild(IResourceDelta delta, IProgressMonitor monitor)
 			throws CoreException, ExtenderException {
 
-		if (messageOptions.isBundleOperations()) {
-			IProject project = getProject();
-			Bundle bundle = bundleRegion.getBundle(project);
-			String msg = NLS.bind(Msg.INCREMENTAL_BUILD_TRACE, new Object[] { project.getName(),
-					project.getLocation().toOSString() });
-			IBundleStatus status = new BundleStatus(StatusCode.OK, bundle, project, msg, null);
-			synchronized (builds) {
-				builds.add(status);
-			}
-		}
+		addBuildStatusMessage(Msg.INCREMENTAL_BUILD_TRACE);
 		if (Category.DEBUG && Category.getState(Category.build))
 			delta.accept(new DeltaVisitor());
 	}
 
-	private boolean isMoveOperation(IProject project) throws ProjectLocationException,
-			ExtenderException {
-
-		String projectLoaction = bundleRegion.getProjectLocationIdentifier(project, null);
-		String bundleLocation = bundleRegion.getBundleLocationIdentifier(project);
-		if (!projectLoaction.equals(bundleLocation) && bundleProjectCandidates.isInstallable(project)) {
-			return true;
-		}
-		return false;
-	}
-
 	/**
-	 * Examine the specified project for build errors and adds them to the list of build projects
+	 * Examine the specified project for build errors and add errors to the build status list
 	 * 
 	 * @param project Project to examine for build errors
 	 * @return True if the project has errors and false otherwise
 	 */
 	private boolean hasBuildError(IProject project) throws ExtenderException {
 
-		if (BundleProjectBuildError.hasCycles(project)) {
-			IBundleStatus status = bundleTransition.getTransitionStatus(project);
-			if (null != status) {
-				synchronized (builds) {
-					builds.add(status);
-				}
-			}
-			return true;
-		} else if (BundleProjectBuildError.hasBundleErrors(project, true)) {
+		if (BundleProjectBuildError.hasCycles(project) || BundleProjectBuildError.hasBundleErrors(project, true)) {
 			IBundleStatus status = bundleTransition.getTransitionStatus(project);
 			if (null != status) {
 				synchronized (builds) {
@@ -505,9 +469,46 @@ public class JavaTimeBuilder extends IncrementalProjectBuilder {
 		} catch (InPlaceException e) {
 			String msg = WarnMessage.getInstance().formatString("uicontributors_fail_get",
 					project.getName());
-			IBundleStatus status = new BundleStatus(StatusCode.WARNING, Activator.PLUGIN_ID, project,
-					msg, e);
+			IBundleStatus status = new BundleStatus(StatusCode.WARNING, Activator.PLUGIN_ID, project, msg,
+					e);
 			StatusManager.getManager().handle(status, StatusManager.LOG);
 		}
 	}
+
+	/**
+	 * Determine if the reason for the build of the specified project is a move operation
+	 * @param project The project being moved
+	 * @return True if the project is being moved. Otherwise false
+	 * @throws ProjectLocationException  if the specified project is null or the location of the specified project could not be found
+	 * @throws InPlaceException  if the specified project is null, open but does not exist or a core exception is thrown internally
+	 */
+	private boolean isMoveOperation(IProject project) throws ProjectLocationException, InPlaceException {
+
+		String projectLoaction = bundleRegion.getProjectLocationIdentifier(project, null);
+		String bundleLocation = bundleRegion.getBundleLocationIdentifier(project);
+		return !projectLoaction.equals(bundleLocation) && bundleProjectCandidates.isInstallable(project)
+				? true
+				: false;
+	}
+
+	/**
+	 * Add an informative build message to the build status list
+	 * 
+	 * @param msgKind A message with one substitution for the project name to build 
+	 */
+	private void addBuildStatusMessage(String msgKind) {
+
+		if (messageOptions.isBundleOperations()) {
+			IProject project = getProject();
+			Bundle bundle = bundleRegion.getBundle(project);
+			String locMsg = NLS.bind(Msg.BUNDLE_LOCATION_TRACE, project.getLocation().toOSString());
+			IBundleStatus locStatus = new BundleStatus(StatusCode.INFO, bundle, project, locMsg, null);
+			String msg = NLS.bind(msgKind, new Object[] { project.getName() });
+			IBundleStatus buildStatus = new BundleStatus(StatusCode.OK, bundle, project, msg, null);
+			buildStatus.add(locStatus);
+			synchronized (builds) {
+				builds.add(buildStatus);
+			}
+		}		
+	}	
 }
