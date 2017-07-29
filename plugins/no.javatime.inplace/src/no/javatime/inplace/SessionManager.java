@@ -79,8 +79,8 @@ public class SessionManager implements IStartup, IWorkbenchListener {
 					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),
 					StatusManager.LOG);
 		} finally {
-			IWorkbench workbench = PlatformUI.getWorkbench();
-			if (null != workbench) {
+			if (PlatformUI.isWorkbenchRunning()) {
+				IWorkbench workbench = PlatformUI.getWorkbench();
 				workbench.addWorkbenchListener(this);
 			}
 		}
@@ -145,8 +145,8 @@ public class SessionManager implements IStartup, IWorkbenchListener {
 					// Wait on bundle job and builder to finish before proceeding
 					resourceState.waitOnBundleJob();
 					if (deactivateJob.getErrorStatusList().size() > 0) {
-						final IBundleStatus multiStatus = deactivateJob.createMultiStatus(new BundleStatus(
-								StatusCode.ERROR, Activator.PLUGIN_ID, deactivateJob.getName()));
+						final IBundleStatus multiStatus = deactivateJob.createMultiStatus(
+								new BundleStatus(StatusCode.ERROR, Activator.PLUGIN_ID, deactivateJob.getName()));
 						errorStatusList.add(multiStatus);
 					}
 					resourceState.waitOnBuilder(false);
@@ -163,8 +163,8 @@ public class SessionManager implements IStartup, IWorkbenchListener {
 					// Wait on bundle job and builder to finish before proceeding
 					resourceState.waitOnBundleJob();
 					if (uninstallJob.getErrorStatusList().size() > 0) {
-						final IBundleStatus multiStatus = uninstallJob.createMultiStatus(new BundleStatus(
-								StatusCode.ERROR, Activator.PLUGIN_ID, uninstallJob.getName()));
+						final IBundleStatus multiStatus = uninstallJob.createMultiStatus(
+								new BundleStatus(StatusCode.ERROR, Activator.PLUGIN_ID, uninstallJob.getName()));
 						errorStatusList.add(multiStatus);
 					}
 					resourceState.waitOnBuilder(false);
@@ -206,9 +206,8 @@ public class SessionManager implements IStartup, IWorkbenchListener {
 			StatusManager.getManager().handle(
 					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, msg, e), StatusManager.LOG);
 		} catch (InPlaceException | ExtenderException e) {
-			StatusManager.getManager().handle(
-					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, Msg.INIT_BUNDLE_STATE_ERROR,
-							e), StatusManager.LOG);
+			StatusManager.getManager().handle(new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID,
+					Msg.INIT_BUNDLE_STATE_ERROR, e), StatusManager.LOG);
 			String msg = ExceptionMessage.getInstance().formatString("terminate_job_with_errors",
 					Msg.SHUT_DOWN_JOB);
 			StatusManager.getManager().handle(
@@ -221,11 +220,12 @@ public class SessionManager implements IStartup, IWorkbenchListener {
 	}
 
 	/**
-	 * If there are bundle projects with errors and the workspace is activated or the
-	 * "Deactivate on Exit" option is on return the set of activated projects
+	 * If there are bundle projects with errors and the workspace is activated or the "Deactivate on
+	 * Exit" option is on return the set of activated projects
 	 * <p>
+	 * 
 	 * @param projects all workspace bundle projects
-	 * @param all activated bundle projects 
+	 * @param all activated bundle projects
 	 * @return The set of specified activated projects if there are build errors among any projects or
 	 * the "Deactivate on Exit" option is on. Otherwise return an empty set.
 	 */
@@ -235,7 +235,7 @@ public class SessionManager implements IStartup, IWorkbenchListener {
 		try {
 			if (Activator.getCommandOptionsService().isDeactivateOnExit()) {
 				return activatedProjects;
-			} 
+			}
 		} catch (ExtenderException e) {
 			StatusManager.getManager().handle(
 					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),
@@ -247,7 +247,7 @@ public class SessionManager implements IStartup, IWorkbenchListener {
 		BundleBuildErrorClosure be = new BundleBuildErrorClosure(projects, Transition.DEACTIVATE,
 				Closure.PROVIDING, Bundle.UNINSTALLED, ActivationScope.ALL);
 		Collection<IProject> projectsToDeactivate = be.getBuildErrorClosures(true);
-		return projectsToDeactivate.size() > 0 ? activatedProjects : Collections.<IProject> emptySet(); 
+		return projectsToDeactivate.size() > 0 ? activatedProjects : Collections.<IProject> emptySet();
 	}
 
 	/**

@@ -146,7 +146,7 @@ public class Msg extends NLS {
 	public static String NULL_EXTENSION_EXP;
 	public static String INTERRUPT_EXP;
 	public static String REFRESH_EXP;
-
+	public static String MISSING_WORKBENCH_SETUP_EXP;
 	// Info messages
 	public static String DEACTIVATE_BUILD_ERROR_INFO;
 	public static String UPDATE_BUILD_ERROR_INFO;
@@ -198,7 +198,7 @@ public class Msg extends NLS {
 	public static String RECOVERY_NO_ACTION_BUNDLE_INFO;
 	public static String STARTUP_DEACTIVATE_BUILD_ERROR_INFO;
 	public static String STARTUP_DEACTIVATE_ON_EXIT_INFO;
-
+	public static String SESSION_SETTINGS_INFO;
 	// Dialog and View messages
 	public static String DEACTIVATE_QUESTION_DLG;
 	public static String DEACTIVATE_QUESTION_REQ_DLG;

@@ -496,10 +496,10 @@ public abstract class NatureJob extends BundleJob {
 	protected void saveDirtyMetaFiles(final boolean includeProjectMetaFiles)
 			throws OperationCanceledException {
 
-		IWorkbench workbench = PlatformUI.getWorkbench();
-		if (null == workbench || workbench.isClosing()) {
+		if (!PlatformUI.isWorkbenchRunning()) {
 			return;
 		}
+
 		final Collection<IResource> dirtyResources = SaveOptionsJob.getScopedDirtyMetaFiles(
 				getPendingProjects(), includeProjectMetaFiles);
 		if (dirtyResources.size() > 0) {

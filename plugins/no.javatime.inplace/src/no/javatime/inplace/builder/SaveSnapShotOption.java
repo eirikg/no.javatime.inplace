@@ -49,8 +49,7 @@ public class SaveSnapShotOption {
 		@Override
 		public void rollback(ISaveContext context) {
 			try {
-				IWorkbench workbench = PlatformUI.getWorkbench();
-				if (null != workbench && !workbench.isClosing() && context.getKind() == ISaveContext.SNAPSHOT) {
+				if (PlatformUI.isWorkbenchRunning() && context.getKind() == ISaveContext.SNAPSHOT) {
 					bundleLog.add(StatusCode.WARNING, Activator.getContext().getBundle(), null, Msg.SAVE_WORKSPACE_SNAPSHOT_ERROR);
 				}
 			} finally {								
@@ -69,8 +68,7 @@ public class SaveSnapShotOption {
 		public void doneSaving(ISaveContext context) {
 
 			try {
-				IWorkbench workbench = PlatformUI.getWorkbench();
-				if (null != workbench && !workbench.isClosing() && context.getKind() == ISaveContext.SNAPSHOT) {
+				if (PlatformUI.isWorkbenchRunning() && context.getKind() == ISaveContext.SNAPSHOT) {
 					MessageOptions messageOptions = Activator.getMessageOptionsService();
 					if (messageOptions.isBundleOperations()) {
 						String msg = NLS.bind(Msg.SAVE_WORKSPACE_SNAPSHOT_INFO,

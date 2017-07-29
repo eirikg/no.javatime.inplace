@@ -133,7 +133,7 @@ public class StatePersistParticipant implements ISaveParticipant {
 					Activator.log(status);
 				}
 			}
-		} catch (ExtenderException e) {
+		} catch (ExtenderException | IllegalStateException e) {
 			StatusManager.getManager().handle(
 					new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID, e.getMessage(), e),
 					StatusManager.LOG);

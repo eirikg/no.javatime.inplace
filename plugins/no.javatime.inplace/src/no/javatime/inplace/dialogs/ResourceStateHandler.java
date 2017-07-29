@@ -132,6 +132,8 @@ public class ResourceStateHandler implements ResourceState {
 				job.join();
 				// Only log once
 				waitOnBuilder(false);
+			} catch (IllegalStateException e) {
+				// Job attempted to joined itself	
 			} catch (InterruptedException e) {
 				Activator.log(new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, 
 						Msg.BUILDER_INTERRUPT_INFO, e));				
@@ -201,6 +203,8 @@ public class ResourceStateHandler implements ResourceState {
 			try {
 				bundleJobs[0].join();
 				waitOnBundleJob();
+			} catch (IllegalStateException e) {
+				// Job attempted to joined itself	
 			} catch (InterruptedException e) {
 				Activator.log(new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, 
 						Msg.BUILDER_INTERRUPT_INFO, e));				

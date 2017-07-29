@@ -51,12 +51,12 @@ public class SaveOptionsJob extends BundleJob implements SaveOptions {
 		super(name);
 		init();
 	}
-	
+
 	private void init() {
 		isDisableSaveFiles = false;
 		setSaveWorkspaceSnaphot(false);
 	}
-	
+
 	/**
 	 * Runs the bundle(s) save operation.
 	 * 
@@ -82,18 +82,18 @@ public class SaveOptionsJob extends BundleJob implements SaveOptions {
 		}
 		return getJobSatus();
 	}
-	
+
 	@Override
 	public void resetPendingProjects(Collection<IProject> projects) {
 
 		super.resetPendingProjects(projects);
-	}	
+	}
 
 	@Override
 	public void disableSaveFiles(boolean disable) {
 		isDisableSaveFiles = disable;
 	}
-	
+
 	@Override
 	public boolean isSaveFiles() throws ExtenderException {
 
@@ -106,7 +106,8 @@ public class SaveOptionsJob extends BundleJob implements SaveOptions {
 		}
 		resetPendingProjects(getDirtyProjects());
 		// If no files to save, ignore the save bundle operation option
-		saveFiles = commandOptions.isSaveFilesBeforeBundleOperation() && hasPendingProjects() ? true : false;
+		saveFiles = commandOptions.isSaveFilesBeforeBundleOperation() && hasPendingProjects() ? true
+				: false;
 		return saveFiles;
 	}
 
@@ -122,11 +123,9 @@ public class SaveOptionsJob extends BundleJob implements SaveOptions {
 					activated = true;
 					break;
 				}
-			}	
-			if (activated 
-					&& bundleProjectCandidates.isAutoBuilding() 
-					&& (commandOptions.isUpdateOnBuild()
-							|| bundleTransition.containsPending(Transition.UPDATE_ON_ACTIVATE))) {
+			}
+			if (activated && bundleProjectCandidates.isAutoBuilding() && (commandOptions.isUpdateOnBuild()
+					|| bundleTransition.containsPending(Transition.UPDATE_ON_ACTIVATE))) {
 				return true;
 			}
 		}
@@ -137,13 +136,12 @@ public class SaveOptionsJob extends BundleJob implements SaveOptions {
 	public SaveOptions getSaveOptions() throws ExtenderException {
 		return this;
 	}
-	
+
 	@Override
 	public IBundleStatus saveFiles() throws ExtenderException {
 
-		IWorkbench workbench = Activator.getDefault().getWorkbench();
-		if (null == workbench || workbench.isClosing()) {
-			return getJobSatus();			
+		if (!PlatformUI.isWorkbenchRunning()) {
+			return getJobSatus();
 		}
 		if (isSaveFiles()) {
 			if (null == messageOptions) {
@@ -152,33 +150,33 @@ public class SaveOptionsJob extends BundleJob implements SaveOptions {
 			Activator.getDisplay().syncExec(new Runnable() {
 				@Override
 				public void run() {
-					try {							
+					try {
 						if (!PlatformUI.getWorkbench().saveAllEditors(false)) {
 							addError(new BundleStatus(StatusCode.ERROR, Activator.PLUGIN_ID,
 									Msg.SAVE_FILES_OPTION_ERROR));
 						} else {
 							if (messageOptions.isBundleOperations()) {
 								for (IProject project : getPendingProjects()) {
-									addLogStatus(new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID, NLS.bind(
-											Msg.SAVE_PROJECT_FILES_INFO, project.getName())));
+									addLogStatus(new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID,
+											NLS.bind(Msg.SAVE_PROJECT_FILES_INFO, project.getName())));
 								}
 							}
 						}
 					} finally {
 						clearPendingProjects();
 					}
-				}						
+				}
 			});
 		}
 		return getJobSatus();
 	}
-	
+
 	public static Collection<IProject> getDirtyProjects() throws ExtenderException {
-		
-		Collection<IProject> projects = Activator.getBundleProjectCandidatesService().getProjects();	
+
+		Collection<IProject> projects = Activator.getBundleProjectCandidatesService().getProjects();
 		return getScopedDirtyProjects(projects);
 	}
-		
+
 	public static Collection<IProject> getScopedDirtyProjects(final Collection<IProject> projects) {
 
 		final HashSet<IProject> dirtyProjects = new HashSet<>();
@@ -192,7 +190,8 @@ public class SaveOptionsJob extends BundleJob implements SaveOptions {
 					for (int i = 0; i < pages.length; i++) {
 						IEditorPart[] eparts = pages[i].getDirtyEditors();
 						for (int j = 0; j < eparts.length; j++) {
-							IResource resource = (IResource) eparts[j].getEditorInput().getAdapter(IResource.class);
+							IResource resource = (IResource) eparts[j].getEditorInput()
+									.getAdapter(IResource.class);
 							if (resource != null) {
 								IProject project = resource.getProject();
 								if (projects.contains(project)) {
@@ -202,12 +201,13 @@ public class SaveOptionsJob extends BundleJob implements SaveOptions {
 						}
 					}
 				}
-			}						
+			}
 		});
 		return dirtyProjects;
 	}
 
-	public static Collection<IResource> getScopedDirtyMetaFiles(final Collection<IProject> projects, final boolean includeProjectMetaFiles) {
+	public static Collection<IResource> getScopedDirtyMetaFiles(final Collection<IProject> projects,
+			final boolean includeProjectMetaFiles) {
 
 		final HashSet<IResource> dirtyResources = new HashSet<>();
 		Activator.getDisplay().syncExec(new Runnable() {
@@ -219,7 +219,8 @@ public class SaveOptionsJob extends BundleJob implements SaveOptions {
 					for (int i = 0; i < pages.length; i++) {
 						IEditorPart[] eparts = pages[i].getDirtyEditors();
 						for (int j = 0; j < eparts.length; j++) {
-							IResource resource = (IResource) eparts[j].getEditorInput().getAdapter(IResource.class);
+							IResource resource = (IResource) eparts[j].getEditorInput()
+									.getAdapter(IResource.class);
 							if (resource != null) {
 								IProject project = resource.getProject();
 								if (projects.contains(project)) {
@@ -227,7 +228,7 @@ public class SaveOptionsJob extends BundleJob implements SaveOptions {
 											+ BundleProjectMeta.MANIFEST_FILE_NAME);
 									if (manifestFile.exists() && manifestFile.isAccessible()) {
 										if (resource.getName().equals(manifestFile.getName())) {
-											dirtyResources.add(resource);									
+											dirtyResources.add(resource);
 										}
 									}
 									if (includeProjectMetaFiles) {
@@ -243,22 +244,21 @@ public class SaveOptionsJob extends BundleJob implements SaveOptions {
 						}
 					}
 				}
-			}						
+			}
 		});
 		return dirtyResources;
 	}
 
 	/**
-	 * Causes all editors to save any modified resources in the provided collection
-	 * of projects depending on the user's preference.
+	 * Causes all editors to save any modified resources in the provided collection of projects
+	 * depending on the user's preference.
 	 * 
-	 * @param projects The projects in which to save editors, or <code>null</code>
-	 * to save editors in all projects.
-	 * NOTE Using save all editors from the Workbench API
+	 * @param projects The projects in which to save editors, or <code>null</code> to save editors in
+	 * all projects. NOTE Using save all editors from the Workbench API
 	 */
 	@SuppressWarnings("unused")
 	private void saveEditors(Collection<IProject> projects) throws ExtenderException {
-		
+
 		if (!Activator.getCommandOptionsService().isSaveFilesBeforeBundleOperation()) {
 			return;
 		}
@@ -284,9 +284,9 @@ public class SaveOptionsJob extends BundleJob implements SaveOptions {
 			}
 		}
 	}
-	
+
 	@Override
-	public void saveWorkspace(IProgressMonitor monitor)  {
+	public void saveWorkspace(IProgressMonitor monitor) {
 
 		SaveSnapShotOption ss = new SaveSnapShotOption();
 		ss.saveWorkspace(monitor);

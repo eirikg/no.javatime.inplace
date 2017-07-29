@@ -239,10 +239,16 @@ class StartUpJob extends ActivateBundleJob {
 	private void startUpInit() {
 		
 		final IBundleStatus multiStatus = new BundleStatus(StatusCode.INFO, Activator.PLUGIN_ID,
-				"Session Settings");
+				Msg.SESSION_SETTINGS_INFO);
 		final Activator activator = Activator.getInstance();
 		activator.processLastSavedState();
-		final IWorkbench workbench = PlatformUI.getWorkbench();
+		IWorkbench workbench = null;
+		try {
+			workbench = PlatformUI.getWorkbench();
+		} catch (IllegalStateException e) {
+			addLogStatus(new BundleStatus(StatusCode.EXCEPTION, Activator.PLUGIN_ID,
+					Msg.MISSING_WORKBENCH_SETUP_EXP, e));
+		}
 		if (null != workbench && !workbench.isStarting()) {
 			// Not strictly necessary to run in an UI thread
 			Activator.getDisplay().asyncExec(new Runnable() {

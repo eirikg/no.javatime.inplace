@@ -33,6 +33,7 @@ import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.dynamichelpers.ExtensionTracker;
 import org.eclipse.core.runtime.dynamichelpers.IExtensionChangeHandler;
 import org.eclipse.core.runtime.dynamichelpers.IExtensionTracker;
+import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.contexts.IContextService;
 import org.eclipse.ui.internal.registry.ActionSetDescriptor;
@@ -75,19 +76,24 @@ public class ActionSetContexts implements IContextManagerListener, IExtensionCha
 	private Map<String, IActionSetDescriptor> actionSets = new HashMap<String, IActionSetDescriptor>();
 
 	public Boolean init() {
-		contextService = (IContextService) PlatformUI.getWorkbench().getService(IContextService.class);
+
+		IWorkbench workbench = null;
+		try {
+			workbench = PlatformUI.getWorkbench();
+		} catch (IllegalStateException e) {
+		}
+		if (null == workbench) {
+			return false;
+		}
+		contextService = (IContextService) workbench.getService(IContextService.class);
 		if (null == contextService) {
 			return false;
 		}
 		contextService.addContextManagerListener(this);
 		// Track additions and removals of action set extensions
-		PlatformUI
-				.getWorkbench()
-				.getExtensionTracker()
-				.registerHandler(
-						this,
-						ExtensionTracker
-								.createExtensionPointFilter(new IExtensionPoint[] { getActionSetExtensionPoint() }));
+		workbench.getExtensionTracker().registerHandler(
+				this, ExtensionTracker
+				.createExtensionPointFilter(new IExtensionPoint[] { getActionSetExtensionPoint() }));
 		readInitialStaticActionSets();
 		return true;
 	}

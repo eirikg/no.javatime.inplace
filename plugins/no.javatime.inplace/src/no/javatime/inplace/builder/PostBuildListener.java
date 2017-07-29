@@ -166,10 +166,10 @@ public class PostBuildListener implements IResourceChangeListener {
 	@Override
 	public void resourceChanged(IResourceChangeEvent event) {
 
-		IWorkbench workbench = PlatformUI.getWorkbench();
-		if (null == workbench || workbench.isClosing()) {
+		if (!PlatformUI.isWorkbenchRunning()) {
 			return;
 		}
+
 		try {
 			final int buildKind = event.getBuildKind();
 			// Clean build calls post build listener twice. The first call is of kind {@code CLEAN_BUILD}

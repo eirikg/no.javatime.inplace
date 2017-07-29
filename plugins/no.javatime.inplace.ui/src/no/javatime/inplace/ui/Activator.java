@@ -222,9 +222,12 @@ public class Activator extends AbstractUIPlugin implements BundleExecutorEventLi
 	 * @throws ExtenderException - if the command options extender or service is unavailable
 	 */
 	public void loadCheckedMenus() throws InPlaceException, ExtenderException {
-
-		ICommandService commandService = (ICommandService) PlatformUI.getWorkbench().getService(
-				ICommandService.class);
+		ICommandService commandService = null;
+		try {
+			commandService = (ICommandService) PlatformUI.getWorkbench().getService(
+					ICommandService.class);
+		} catch (IllegalStateException e) {
+		}
 		if (null == commandService) {
 			throw new InPlaceException("invalid_service", ICommandService.class.getName());
 		}
@@ -295,7 +298,7 @@ public class Activator extends AbstractUIPlugin implements BundleExecutorEventLi
 			return null;
 		}
 		final IWorkbench workBench = activator.getWorkbench();
-		if (workBench == null) {
+		if (null == workBench) {
 			return null;
 		}
 		workBenchWindow = null;
@@ -315,7 +318,7 @@ public class Activator extends AbstractUIPlugin implements BundleExecutorEventLi
 	 */
 	public IWorkbenchPage getActivePage() {
 		IWorkbenchWindow activeWorkbenchWindow = getActiveWorkbenchWindow();
-		if (activeWorkbenchWindow == null) {
+		if (null == activeWorkbenchWindow) {
 			return null;
 		}
 		return activeWorkbenchWindow.getActivePage();

@@ -82,10 +82,11 @@ public class PreBuildListener implements IResourceChangeListener, BundleTransiti
 	public void resourceChanged(IResourceChangeEvent event) {
 
 		final int buildKind = event.getBuildKind();
-		IWorkbench workbench = PlatformUI.getWorkbench();
-		if (null == workbench || workbench.isClosing()) {
+
+		if (!PlatformUI.isWorkbenchRunning()) {
 			return;
 		}
+
 		JavaTimeBuilder.preBuild();
 		if (buildKind == 0) {
 			return;

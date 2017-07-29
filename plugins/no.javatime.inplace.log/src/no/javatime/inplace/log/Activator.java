@@ -279,11 +279,11 @@ public class Activator extends AbstractUIPlugin {
 		workBenchWindow = null;
 		getDisplay().syncExec(new Runnable() {
 			public void run() {
-				final IWorkbench workBench = PlatformUI.getWorkbench();
-				if (workBench == null) {
-					return;
+				try {
+					final IWorkbench workBench = PlatformUI.getWorkbench();
+					workBenchWindow = workBench.getActiveWorkbenchWindow();
+				} catch (IllegalStateException e) {
 				}
-				workBenchWindow = workBench.getActiveWorkbenchWindow();
 			}
 		});
 		return workBenchWindow;

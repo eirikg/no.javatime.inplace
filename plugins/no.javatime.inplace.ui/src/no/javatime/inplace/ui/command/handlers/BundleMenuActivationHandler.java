@@ -653,18 +653,21 @@ public abstract class BundleMenuActivationHandler extends AbstractHandler {
 	static public Command setCheckedMenuEntry(String categoryId, String commandId) {
 
 		Command command = null;
-		ICommandService commandService = (ICommandService) PlatformUI.getWorkbench().getService(
-				ICommandService.class);
-		if (commandService != null) {
-			command = commandService.getCommand(commandId);
-			if (command.isDefined()) {
-				State state = command.getState(RegistryToggleState.STATE_ID);
-				if (state != null) {
-					Boolean stateVal = ((Boolean) state.getValue()).booleanValue();
-					Category.setState(categoryId, stateVal);
-					return command;
+		try {
+			ICommandService commandService = (ICommandService) PlatformUI.getWorkbench().getService(
+					ICommandService.class);
+			if (commandService != null) {
+				command = commandService.getCommand(commandId);
+				if (command.isDefined()) {
+					State state = command.getState(RegistryToggleState.STATE_ID);
+					if (state != null) {
+						Boolean stateVal = ((Boolean) state.getValue()).booleanValue();
+						Category.setState(categoryId, stateVal);
+						return command;
+					}
 				}
 			}
+		} catch (IllegalStateException e) {
 		}
 		return command;
 	}
