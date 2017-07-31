@@ -39,6 +39,11 @@ public class Activator implements BundleActivator {
 		public void log(String msg) {
 			System.out.println("Alternative log: " + msg);
 		}
+		@Override
+		public void log(int message) {
+			System.out.println(message);		
+		}
+
 	}
 }
 
