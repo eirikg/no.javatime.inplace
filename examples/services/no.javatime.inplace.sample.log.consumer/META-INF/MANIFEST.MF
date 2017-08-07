@@ -4,7 +4,7 @@ Bundle-Name: LogConsumer
 Bundle-SymbolicName: no.javatime.no.inplace.sample.log.consumer
 Bundle-Version: 1.0.0.qualifier
 Bundle-ClassPath: ./
-Bundle-Activator: no.javatime.no.inplace.sample.log.consumer.Activator
+Bundle-Activator: no.javatime.inplace.sample.log.consumer.Activator
 Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Import-Package: no.javatime.inplace.sample.log.service.provider,
   org.osgi.framework;version="1.3.0",
